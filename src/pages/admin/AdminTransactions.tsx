@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ArrowUpRight, ArrowDownLeft, BarChart3, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, ArrowUpRight, ArrowDownLeft, BarChart3, Download, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 
 interface TxRow {
   id: string;
@@ -47,9 +47,39 @@ const AdminTransactions = () => {
     const fetchData = async () => {
       setLoading(true);
 
+      // If searching, find matching user/market IDs first
+      let matchingUserIds: string[] | null = null;
+      let matchingMarketIds: string[] | null = null;
+
+      if (debouncedSearch) {
+        const searchTerm = `%${debouncedSearch}%`;
+        const [profilesSearch, marketsSearch] = await Promise.all([
+          supabase.from("profiles").select("id").or(`display_name.ilike.${searchTerm},email.ilike.${searchTerm}`),
+          supabase.from("markets").select("id").ilike("title", searchTerm),
+        ]);
+        matchingUserIds = profilesSearch.data?.map((p) => p.id) || [];
+        matchingMarketIds = marketsSearch.data?.map((m) => m.id) || [];
+
+        if (matchingUserIds.length === 0 && matchingMarketIds.length === 0) {
+          setTxns([]);
+          setTotalCount(0);
+          setLoading(false);
+          return;
+        }
+      }
+
+      const applySearchFilter = (q: any) => {
+        if (!matchingUserIds && !matchingMarketIds) return q;
+        const parts: string[] = [];
+        if (matchingUserIds && matchingUserIds.length > 0) parts.push(`user_id.in.(${matchingUserIds.join(",")})`);
+        if (matchingMarketIds && matchingMarketIds.length > 0) parts.push(`market_id.in.(${matchingMarketIds.join(",")})`);
+        return q.or(parts.join(","));
+      };
+
       // Get total count
       let countQuery = supabase.from("transactions").select("*", { count: "exact", head: true });
       if (filter !== "all") countQuery = countQuery.eq("type", filter);
+      countQuery = applySearchFilter(countQuery);
       const { count } = await countQuery;
       setTotalCount(count ?? 0);
 
@@ -63,6 +93,7 @@ const AdminTransactions = () => {
         .range(from, to);
 
       if (filter !== "all") query = query.eq("type", filter);
+      query = applySearchFilter(query);
 
       const { data } = await query;
 
@@ -97,7 +128,7 @@ const AdminTransactions = () => {
       setLoading(false);
     };
     fetchData();
-  }, [filter, page]);
+  }, [filter, page, debouncedSearch]);
 
   const totals = {
     deposits: txns.filter((t) => t.type === "deposit").reduce((s, t) => s + Number(t.amount), 0),
@@ -167,19 +198,36 @@ const AdminTransactions = () => {
         </div>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 w-fit">
-        {(["all", "deposit", "withdrawal", "bet", "payout"] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => { setPage(0); setFilter(f); }}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors capitalize ${
-              filter === f ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {f === "all" ? "All" : (TYPE_STYLES[f]?.label || f)}
-          </button>
-        ))}
+      {/* Search + Filter */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by user or market..."
+            className="w-full pl-9 pr-8 py-2 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          {search && (
+            <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 w-fit">
+          {(["all", "deposit", "withdrawal", "bet", "payout"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => { setPage(0); setFilter(f); }}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors capitalize ${
+                filter === f ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {f === "all" ? "All" : (TYPE_STYLES[f]?.label || f)}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Table */}
