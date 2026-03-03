@@ -297,7 +297,7 @@ const MarketDetail = () => {
 
       {market.imageUrl && (
         <div className="relative w-full max-w-lg mx-auto rounded-xl overflow-hidden">
-          <div className="aspect-video w-full overflow-hidden">
+          <div className="h-48 w-full overflow-hidden">
             <img
               src={market.imageUrl}
               alt={market.title}
