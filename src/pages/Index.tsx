@@ -33,7 +33,10 @@ const Index = () => {
   const [boostModalMarket, setBoostModalMarket] = useState<{ id: string; title: string } | null>(null);
   
   const boostedMarkets = useMemo(() => {
-    return mockMarkets.filter((m) => boostedMarketIds.has(m.id));
+    const boosted = mockMarkets.filter((m) => boostedMarketIds.has(m.id));
+    if (boosted.length > 0) return boosted;
+    // Fallback: show trending markets in carousel when no boosts active
+    return mockMarkets.filter((m) => m.trending).slice(0, 5);
   }, [boostedMarketIds]);
 
   const filteredMarkets = useMemo(() => {
