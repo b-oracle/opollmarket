@@ -227,7 +227,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         </div>
 
         {/* Side actions */}
-        <div className="absolute right-4 bottom-40 z-10 flex flex-col items-center gap-5">
+        <div className="absolute right-4 bottom-40 z-10 flex flex-col items-center gap-4">
           <button onClick={handleLike} className="flex flex-col items-center gap-1 group">
             <div className={`w-10 h-10 rounded-full glass flex items-center justify-center transition-colors ${liked ? 'bg-destructive/20' : 'group-hover:bg-destructive/20'}`}>
               <Heart className={`w-5 h-5 transition-colors ${liked ? 'text-destructive fill-destructive' : 'text-foreground/70 group-hover:text-destructive'}`} />
@@ -235,11 +235,20 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             <span className="text-[10px] text-muted-foreground">{formatCount(likeCount)}</span>
           </button>
           <button
-            onClick={() => navigate(`/market/${market.id}`)}
+            onClick={() => setCommentsOpen(true)}
             className="flex flex-col items-center gap-1 group"
           >
             <div className="w-10 h-10 rounded-full glass flex items-center justify-center group-hover:bg-primary/20 transition-colors">
               <MessageCircle className="w-5 h-5 text-foreground/70 group-hover:text-primary transition-colors" />
+            </div>
+            <span className="text-[10px] text-muted-foreground">{formatCount(commentCount)}</span>
+          </button>
+          <button
+            onClick={() => navigate(`/market/${market.id}`)}
+            className="flex flex-col items-center gap-1 group"
+          >
+            <div className="w-10 h-10 rounded-full glass flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+              <ExternalLink className="w-5 h-5 text-foreground/70 group-hover:text-primary transition-colors" />
             </div>
             <span className="text-[10px] text-muted-foreground">Details</span>
           </button>
