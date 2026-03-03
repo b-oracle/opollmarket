@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
+import watermarkLogo from "@/assets/watermark-logo.png";
 import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2 } from "lucide-react";
 import { useMarket } from "@/hooks/useMarkets";
 import { categoryIcons } from "@/data/markets";
@@ -324,7 +325,7 @@ const MarketDetail = () => {
               </button>
             ))}
           </div>
-          <div className="h-40">
+          <div className="h-40 relative">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                 <defs>
@@ -367,6 +368,7 @@ const MarketDetail = () => {
                 )}
               </AreaChart>
             </ResponsiveContainer>
+            <img src={watermarkLogo} alt="" className="absolute bottom-1 right-1 w-8 h-8 opacity-20 pointer-events-none" />
           </div>
           {isMulti && market.options && (
             <div className="flex flex-wrap gap-2 mt-3">
