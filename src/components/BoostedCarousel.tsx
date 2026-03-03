@@ -68,7 +68,8 @@ const BoostedCarousel = ({
   const handleScroll = () => {
     const container = scrollRef.current;
     if (!container) return;
-    const index = Math.round(container.scrollLeft / (CARD_WIDTH + GAP));
+    const cardWidth = container.offsetWidth;
+    const index = Math.round(container.scrollLeft / (cardWidth + GAP));
     setActiveIndex(index);
   };
 
