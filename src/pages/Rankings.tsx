@@ -456,11 +456,16 @@ const Rankings = () => {
                                 <span>{formatDollar(trader.volume)} vol</span>
                               </div>
                             </div>
-                            <div className="text-right shrink-0">
-                              <p className={`text-sm font-bold flex items-center gap-1 justify-end ${trader.pnl >= 0 ? "text-primary" : "text-destructive"}`}>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <p className={`text-sm font-bold flex items-center gap-1 ${trader.pnl >= 0 ? "text-primary" : "text-destructive"}`}>
                                 {trader.pnl >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
                                 {trader.pnl >= 0 ? "+" : "-"}{formatDollar(trader.pnl)}
                               </p>
+                              {isMe && (
+                                <button onClick={() => shareRank(i + 1, `${trader.pnl >= 0 ? "+" : "-"}${formatDollar(trader.pnl)} PnL`, "Trading")} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+                                  <Share2 className="w-3.5 h-3.5 text-primary" />
+                                </button>
+                              )}
                             </div>
                           </motion.div>
                         );
