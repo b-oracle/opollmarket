@@ -107,11 +107,6 @@ const Index = () => {
                 {/* Thumbnail */}
                 <div className="w-14 h-14 rounded-xl bg-secondary/80 border border-border flex items-center justify-center shrink-0 relative overflow-hidden">
                   <span className="text-2xl">{getMarketImage(market.id, market.category)}</span>
-                  {market.status === "resolved" && (
-                    <div className="absolute bottom-0 inset-x-0 bg-primary/90 text-primary-foreground text-[7px] font-bold text-center py-0.5 uppercase tracking-wider">
-                      Resolved
-                    </div>
-                  )}
                 </div>
 
                 {/* Content */}
