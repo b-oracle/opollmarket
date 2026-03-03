@@ -335,27 +335,8 @@ const MarketDetail = () => {
           </div>
         </div>
 
-        {/* Discussion */}
-        <div className="glass rounded-xl p-4 mb-6">
-          <h3 className="text-sm font-semibold mb-3">Discussion</h3>
-          <div className="space-y-3">
-            {[
-              { user: "alpha_trader", text: "This is definitely going YES. Momentum is insane.", time: "2h" },
-              { user: "bear_case", text: "Everyone's too bullish. Classic contrarian signal.", time: "1h" },
-              { user: "data_nerd", text: "Historical data suggests ~40% probability. Market is overpriced.", time: "45m" },
-            ].map((comment, i) => (
-              <div key={i} className="flex gap-2">
-                <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-[10px] font-bold text-secondary-foreground">{comment.user.charAt(0).toUpperCase()}</span>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold">@{comment.user}</span>
-                    <span className="text-[10px] text-muted-foreground">{comment.time}</span>
-                  </div>
-                  <p className="text-xs text-foreground/80">{comment.text}</p>
-                </div>
-              </div>
+        {/* Comments Section */}
+        <InlineComments marketId={market.id} />
             ))}
           </div>
         </div>
