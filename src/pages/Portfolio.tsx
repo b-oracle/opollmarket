@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
+import { useAuth } from "@/hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   TrendingUp,
@@ -163,6 +164,8 @@ type EnrichedPosition = Position & { currentValue: number; unrealizedPnl: number
 
 const Portfolio = () => {
   const { isConnected } = useAccount();
+  const { user } = useAuth();
+  const isAuthenticated = !!user || isConnected;
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterType>("all");
   const [sellTarget, setSellTarget] = useState<EnrichedPosition | null>(null);
@@ -237,7 +240,7 @@ const Portfolio = () => {
     return `${days}d`;
   };
 
-  if (!isConnected) {
+  if (!isAuthenticated) {
     return (
       <div className="min-h-dvh bg-background pb-20">
         <TopBar />
@@ -246,10 +249,16 @@ const Portfolio = () => {
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
               <Wallet className="w-8 h-8 text-primary" />
             </div>
-            <h2 className="text-xl font-bold mb-2">Connect Wallet</h2>
-            <p className="text-sm text-muted-foreground">
-              Connect your wallet to view your portfolio and active positions.
+            <h2 className="text-xl font-bold mb-2">Sign In Required</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Sign in or connect your wallet to view your portfolio and active positions.
             </p>
+            <button
+              onClick={() => navigate("/auth")}
+              className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
+            >
+              Sign In
+            </button>
           </div>
         </div>
         <BottomNav />
