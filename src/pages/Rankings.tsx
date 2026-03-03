@@ -322,6 +322,17 @@ const Rankings = () => {
   const { user } = useAuth();
   const currentUserId = user?.id;
 
+  const shareRank = useCallback((rank: number, valueLine: string, category: string) => {
+    const url = window.location.href;
+    const text = `🏆 I'm ranked #${rank} on the ${category} leaderboard with ${valueLine}! Can you beat me?\n\n${url}`;
+    if (navigator.share) {
+      navigator.share({ title: "My Leaderboard Rank", text }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text);
+      toast.success("Rank copied to clipboard!");
+    }
+  }, []);
+
   const { referrers, loading: refLoading } = useReferralLeaderboard(timePeriod);
   const { traders, loading: tradeLoading } = useTradingLeaderboard(timePeriod);
 
