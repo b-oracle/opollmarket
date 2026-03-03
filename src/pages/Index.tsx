@@ -110,6 +110,7 @@ const Index = () => {
             const displayPercent = isMulti && topOption
               ? Math.round(topOption.price * 100)
               : yesPercent;
+            const isBoosted = boostedMarketIds.has(market.id);
 
             return (
               <motion.div
@@ -118,7 +119,9 @@ const Index = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.6 + i * 0.08 }}
                 onClick={() => navigate(`/market/${market.id}`)}
-                className="glass rounded-xl p-3 cursor-pointer hover:bg-accent/30 transition-all active:scale-[0.98] flex items-center gap-3"
+                className={`glass rounded-xl p-3 cursor-pointer hover:bg-accent/30 transition-all active:scale-[0.98] flex items-center gap-3 ${
+                  isBoosted ? 'ring-1 ring-primary/30 bg-primary/5' : ''
+                }`}
               >
                 {/* Thumbnail */}
                 <div className="w-14 h-14 rounded-xl bg-secondary/80 border border-border shrink-0 relative overflow-hidden">
