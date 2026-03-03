@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      balances: {
+        Row: {
+          amount: number
+          currency: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          currency?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          currency?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       comment_likes: {
         Row: {
           comment_id: string
@@ -171,10 +195,12 @@ export type Database = {
           category: string
           contract_address: string | null
           created_at: string
+          creator_name: string
           creator_wallet: string
           description: string
           end_date: string
           id: string
+          image_url: string | null
           initial_liquidity: number
           liquidity: number
           market_type: string
@@ -183,6 +209,7 @@ export type Database = {
           resolution_source: string
           status: string
           title: string
+          trending: boolean
           tx_hash: string | null
           updated_at: string
           volume: number
@@ -192,10 +219,12 @@ export type Database = {
           category: string
           contract_address?: string | null
           created_at?: string
+          creator_name?: string
           creator_wallet: string
           description: string
           end_date: string
           id?: string
+          image_url?: string | null
           initial_liquidity?: number
           liquidity?: number
           market_type?: string
@@ -204,6 +233,7 @@ export type Database = {
           resolution_source: string
           status?: string
           title: string
+          trending?: boolean
           tx_hash?: string | null
           updated_at?: string
           volume?: number
@@ -213,10 +243,12 @@ export type Database = {
           category?: string
           contract_address?: string | null
           created_at?: string
+          creator_name?: string
           creator_wallet?: string
           description?: string
           end_date?: string
           id?: string
+          image_url?: string | null
           initial_liquidity?: number
           liquidity?: number
           market_type?: string
@@ -225,12 +257,64 @@ export type Database = {
           resolution_source?: string
           status?: string
           title?: string
+          trending?: boolean
           tx_hash?: string | null
           updated_at?: string
           volume?: number
           yes_price?: number
         }
         Relationships: []
+      }
+      positions: {
+        Row: {
+          avg_price: number
+          created_at: string
+          id: string
+          market_id: string
+          option_id: string | null
+          shares: number
+          side: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_price?: number
+          created_at?: string
+          id?: string
+          market_id: string
+          option_id?: string | null
+          shares?: number
+          side?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_price?: number
+          created_at?: string
+          id?: string
+          market_id?: string
+          option_id?: string | null
+          shares?: number
+          side?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "positions_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "positions_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "market_options"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -261,6 +345,66 @@ export type Database = {
           wallet_address?: string | null
         }
         Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          market_id: string | null
+          option_id: string | null
+          price: number | null
+          shares: number | null
+          side: string | null
+          status: string
+          tx_hash: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          market_id?: string | null
+          option_id?: string | null
+          price?: number | null
+          shares?: number | null
+          side?: string | null
+          status?: string
+          tx_hash?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          market_id?: string | null
+          option_id?: string | null
+          price?: number | null
+          shares?: number | null
+          side?: string | null
+          status?: string
+          tx_hash?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "market_options"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
