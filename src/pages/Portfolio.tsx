@@ -188,11 +188,23 @@ const Portfolio = () => {
       if (Math.random() > 0.1) {
         setSellStep("success");
         toast.success("Position closed successfully!");
+        // Trigger win celebration if profitable
+        if (sellTarget && sellTarget.unrealizedPnl > 0) {
+          setTimeout(() => {
+            setWinModal({
+              open: true,
+              market: sellTarget.marketTitle,
+              side: sellTarget.side.toUpperCase() as "YES" | "NO",
+              payout: sellTarget.currentValue,
+              profit: sellTarget.unrealizedPnl,
+            });
+          }, 600);
+        }
       } else {
         setSellStep("error");
       }
     }, 2500);
-  }, []);
+  }, [sellTarget]);
 
   const positions = MOCK_POSITIONS;
 
@@ -554,6 +566,15 @@ const Portfolio = () => {
           </>
         )}
       </AnimatePresence>
+
+      <WinCelebrationModal
+        open={winModal.open}
+        onClose={() => setWinModal(prev => ({ ...prev, open: false }))}
+        market={winModal.market}
+        side={winModal.side}
+        payout={winModal.payout}
+        profit={winModal.profit}
+      />
 
       <BottomNav />
     </div>
