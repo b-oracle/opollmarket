@@ -8,7 +8,7 @@ import { useActiveBoosts } from "@/hooks/useActiveBoosts";
 const Feed = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { boostedMarketIds } = useActiveBoosts();
+  const { boostedMarketIds, boostDetails } = useActiveBoosts();
 
   // Sort: boosted markets first, then trending, then rest
   const sortedMarkets = useMemo(() => {
@@ -40,14 +40,19 @@ const Feed = () => {
         ref={containerRef}
         className="flex-1 snap-feed pt-14 pb-0"
       >
-        {sortedMarkets.map((market, i) => (
-          <MarketCard
-            key={market.id}
-            market={market}
-            isActive={i === activeIndex}
-            isBoosted={boostedMarketIds.has(market.id)}
-          />
-        ))}
+        {sortedMarkets.map((market, i) => {
+          const boost = boostDetails.get(market.id);
+          return (
+            <MarketCard
+              key={market.id}
+              market={market}
+              isActive={i === activeIndex}
+              isBoosted={boostedMarketIds.has(market.id)}
+              boostEndsAt={boost?.ends_at}
+              boostTier={boost?.tier}
+            />
+          );
+        })}
       </div>
       <BottomNav />
     </div>
