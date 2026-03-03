@@ -385,13 +385,41 @@ const MarketDetail = () => {
       </div>
 
       {/* Visible banner */}
-      {market.imageUrl && (
-        <div className="relative w-full rounded-xl overflow-hidden mt-4">
+      {market.imageUrl && (() => {
+        const boostGlowColor = activeBoost
+          ? activeBoost.tier === "whale" ? "hsla(45, 93%, 58%, 0.6)"
+            : activeBoost.tier === "standard" ? "hsla(280, 70%, 60%, 0.6)"
+            : "hsla(var(--primary), 0.6)"
+          : undefined;
+        const boostBorderColor = activeBoost
+          ? activeBoost.tier === "whale" ? "hsl(45, 93%, 58%)"
+            : activeBoost.tier === "standard" ? "hsl(280, 70%, 60%)"
+            : "hsl(var(--primary))"
+          : undefined;
+
+        return (
+        <div
+          className="relative w-full rounded-xl overflow-hidden mt-4 transition-shadow duration-500"
+          style={activeBoost ? {
+            boxShadow: `0 0 20px ${boostGlowColor}, 0 0 40px ${boostGlowColor?.replace('0.6', '0.3')}, inset 0 0 20px ${boostGlowColor?.replace('0.6', '0.1')}`,
+            border: `1px solid ${boostBorderColor}40`,
+          } : undefined}
+        >
           <div className="h-40 w-full overflow-hidden">
             <img src={market.imageUrl} alt={market.title} className="w-full h-full object-cover blur-[2px] opacity-70 scale-110 will-change-transform" style={{ transform: `scale(1.1) translateY(${scrollY * 0.15}px)` }} />
           </div>
           <div className="absolute inset-0 bg-black/50" />
-          <div className="absolute inset-0 animate-banner-shimmer pointer-events-none" style={{ background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.08) 50%, transparent 60%)', backgroundSize: '200% 100%' }} />
+          {activeBoost && (
+            <div
+              className="absolute inset-0 pointer-events-none animate-pulse"
+              style={{
+                background: `radial-gradient(ellipse at 50% 0%, ${boostGlowColor?.replace('0.6', '0.15')} 0%, transparent 70%)`,
+              }}
+            />
+          )}
+          <div className="absolute inset-0 animate-banner-shimmer pointer-events-none" style={{ background: activeBoost
+            ? `linear-gradient(105deg, transparent 35%, ${boostGlowColor?.replace('0.6', '0.15')} 50%, transparent 65%)`
+            : 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.08) 50%, transparent 60%)', backgroundSize: '200% 100%' }} />
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
             <h1 className="text-lg font-bold text-white leading-snug drop-shadow-lg">{market.title}</h1>
             <p className="text-xs text-white/70 mt-1.5 drop-shadow-md line-clamp-2">{market.description}</p>
@@ -400,7 +428,8 @@ const MarketDetail = () => {
             </span>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       <div className={`${market.imageUrl ? 'pt-4' : 'pt-4'}`}>
         {!market.imageUrl && <h1 className="text-2xl font-bold leading-tight mb-2">{market.title}</h1>}
