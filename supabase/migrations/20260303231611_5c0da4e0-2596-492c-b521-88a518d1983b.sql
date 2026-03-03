@@ -1,0 +1,1 @@
+ALTER TABLE public.market_boosts ADD COLUMN nowpayments_payment_id text;
