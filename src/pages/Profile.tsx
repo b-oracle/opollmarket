@@ -1,5 +1,7 @@
+import { useState } from "react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
+import DepositWithdrawModal from "@/components/DepositWithdrawModal";
 import { Wallet, Copy, ExternalLink, Gift, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { useAccount, useBalance } from "wagmi";
 import { formatUnits } from "viem";
@@ -7,6 +9,11 @@ import { formatUnits } from "viem";
 const Profile = () => {
   const { address, isConnected } = useAccount();
   const { data: balance } = useBalance({ address });
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTab, setModalTab] = useState<"deposit" | "withdraw">("deposit");
+
+  const openDeposit = () => { setModalTab("deposit"); setModalOpen(true); };
+  const openWithdraw = () => { setModalTab("withdraw"); setModalOpen(true); };
 
   return (
     <div className="min-h-dvh bg-background pb-20">
@@ -49,9 +56,21 @@ const Profile = () => {
 
         {/* Actions */}
         <div className="space-y-3">
+          <button
+            onClick={openDeposit}
+            className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]"
+          >
+            <ArrowDownToLine className="w-5 h-5 text-primary" />
+            <span className="text-sm font-medium">Deposit Funds</span>
+          </button>
+          <button
+            onClick={openWithdraw}
+            className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]"
+          >
+            <ArrowUpFromLine className="w-5 h-5 text-primary" />
+            <span className="text-sm font-medium">Withdraw</span>
+          </button>
           {[
-            { icon: ArrowDownToLine, label: "Deposit Funds" },
-            { icon: ArrowUpFromLine, label: "Withdraw" },
             { icon: Gift, label: "Referral Program" },
             { icon: Copy, label: "Copy Referral Link" },
             { icon: ExternalLink, label: "View on BscScan", href: isConnected ? `https://bscscan.com/address/${address}` : undefined },
@@ -88,6 +107,13 @@ const Profile = () => {
           })}
         </div>
       </div>
+
+      <DepositWithdrawModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        initialTab={modalTab}
+      />
+
       <BottomNav />
     </div>
   );
