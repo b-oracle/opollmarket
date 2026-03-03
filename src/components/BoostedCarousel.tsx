@@ -88,7 +88,7 @@ const BoostedCarousel = ({
         onTouchStart={handleInteractionStart}
         onTouchEnd={handleInteractionEnd}
         onScroll={handleScroll}
-        className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide"
+        className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide"
       >
         {markets.map((market) => {
           const boost = boostDetails.get(market.id);
