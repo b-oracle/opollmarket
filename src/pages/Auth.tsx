@@ -21,16 +21,22 @@ const Auth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    if (mode === "login") {
-      const { error } = await signIn(email, password);
-      if (error) { toast.error(error.message); }
-      else { toast.success("Logged in successfully!"); navigate("/"); }
-    } else {
-      const { error } = await signUp(email, password, displayName);
-      if (error) { toast.error(error.message); }
-      else { toast.success("Account created! Logging you in..."); navigate("/"); }
+    try {
+      if (mode === "login") {
+        const { error } = await signIn(email, password);
+        if (error) { toast.error(error.message); }
+        else { toast.success("Logged in successfully!"); navigate("/"); return; }
+      } else {
+        const { error } = await signUp(email, password, displayName);
+        if (error) { toast.error(error.message); }
+        else { toast.success("Account created! Logging you in..."); navigate("/"); return; }
+      }
+    } catch (err: any) {
+      console.error("Auth error:", err);
+      toast.error(err?.message || "Something went wrong");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
