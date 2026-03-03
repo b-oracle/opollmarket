@@ -28,12 +28,18 @@ const MarketDetail = () => {
   const yesPercent = market ? Math.round(market.yesPrice * 100) : 0;
   const noPercent = market ? Math.round(market.noPrice * 100) : 0;
 
-  // Generate realistic chart data
+  const [timePeriod, setTimePeriod] = useState<"1D" | "1W" | "1M" | "All">("1M");
+
+  const pointsMap = { "1D": 24, "1W": 7, "1M": 30, "All": 90 };
+
+  // Generate realistic chart data based on time period
   const chartData = useMemo(() => {
-    const points = 30;
-    const base = yesPercent - 15;
+    const points = pointsMap[timePeriod];
+    const volatility = { "1D": 3, "1W": 6, "1M": 8, "All": 12 }[timePeriod];
+    const base = yesPercent - volatility * 1.5;
     return Array.from({ length: points }, (_, i) => {
-      const noise = Math.sin(i * 0.8) * 8 + Math.cos(i * 0.3) * 5 + (Math.random() - 0.5) * 6;
+      const seed = i * 0.8 + points; // deterministic per period
+      const noise = Math.sin(seed) * volatility + Math.cos(seed * 0.3) * (volatility * 0.6);
       const trend = ((yesPercent - base) / points) * i;
       const value = Math.max(5, Math.min(95, Math.round(base + trend + noise)));
       return {
@@ -42,7 +48,7 @@ const MarketDetail = () => {
         no: i === points - 1 ? noPercent : 100 - value,
       };
     });
-  }, [yesPercent, noPercent]);
+  }, [yesPercent, noPercent, timePeriod]);
 
   const [betSide, setBetSide] = useState<"yes" | "no">("yes");
   const [betOpen, setBetOpen] = useState(false);
@@ -78,12 +84,28 @@ const MarketDetail = () => {
 
         {/* Probability Chart */}
         <div className="glass rounded-2xl p-4 mb-4">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-muted-foreground">Probability</span>
             <div className="flex items-center gap-3">
               <span className="text-xs font-medium" style={{ color: "hsl(0, 80%, 60%)" }}>NO {noPercent}¢</span>
               <span className="text-2xl font-bold" style={{ color: "hsl(142, 70%, 50%)" }}>YES {yesPercent}¢</span>
             </div>
+          </div>
+          {/* Time period toggles */}
+          <div className="flex gap-1 p-0.5 rounded-lg bg-muted/50 mb-3 w-fit">
+            {(["1D", "1W", "1M", "All"] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setTimePeriod(p)}
+                className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                  timePeriod === p
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
           </div>
           <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
