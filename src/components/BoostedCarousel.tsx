@@ -5,8 +5,7 @@ import { Market } from "@/data/markets";
 import { ActiveBoost } from "@/hooks/useActiveBoosts";
 import BoostCountdown from "@/components/BoostCountdown";
 
-const CARD_WIDTH = 260;
-const GAP = 12;
+const GAP = 16;
 const AUTO_SCROLL_INTERVAL = 3500;
 
 interface BoostedCarouselProps {
@@ -37,7 +36,8 @@ const BoostedCarousel = ({
   const scrollToIndex = useCallback((index: number) => {
     const container = scrollRef.current;
     if (!container) return;
-    const scrollLeft = index * (CARD_WIDTH + GAP);
+    const cardWidth = container.offsetWidth;
+    const scrollLeft = index * (cardWidth + GAP);
     container.scrollTo({ left: scrollLeft, behavior: "smooth" });
     setActiveIndex(index);
   }, []);
@@ -68,7 +68,8 @@ const BoostedCarousel = ({
   const handleScroll = () => {
     const container = scrollRef.current;
     if (!container) return;
-    const index = Math.round(container.scrollLeft / (CARD_WIDTH + GAP));
+    const cardWidth = container.offsetWidth;
+    const index = Math.round(container.scrollLeft / (cardWidth + GAP));
     setActiveIndex(index);
   };
 
@@ -87,7 +88,7 @@ const BoostedCarousel = ({
         onTouchStart={handleInteractionStart}
         onTouchEnd={handleInteractionEnd}
         onScroll={handleScroll}
-        className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide"
+        className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide"
       >
         {markets.map((market) => {
           const boost = boostDetails.get(market.id);
@@ -107,7 +108,7 @@ const BoostedCarousel = ({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               onClick={() => navigate(`/market/${market.id}`)}
-              className="snap-start shrink-0 w-[260px] glass rounded-2xl overflow-hidden cursor-pointer hover:ring-1 hover:ring-primary/40 transition-all active:scale-[0.97] ring-1 ring-primary/20"
+              className="snap-start shrink-0 w-full glass rounded-2xl overflow-hidden cursor-pointer hover:ring-1 hover:ring-primary/40 transition-all active:scale-[0.97] ring-1 ring-primary/20"
             >
               {/* Image */}
               <div className="relative h-28 bg-secondary overflow-hidden">
