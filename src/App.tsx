@@ -23,6 +23,7 @@ import AdminCreateMarket from "./pages/admin/AdminCreateMarket";
 import AdminTransactions from "./pages/admin/AdminTransactions";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminCommissions from "./pages/admin/AdminCommissions";
+import Referrals from "./pages/Referrals";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/portfolio" element={<Portfolio />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/referrals" element={<Referrals />} />
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="markets" element={<AdminMarkets />} />
