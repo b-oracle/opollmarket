@@ -2,7 +2,7 @@ import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { useMarkets } from "@/hooks/useMarkets";
 import { categoryIcons } from "@/data/markets";
-import { TrendingUp, Users, Zap, MessageCircle, Loader2 } from "lucide-react";
+import { TrendingUp, Users, Zap, MessageCircle, Loader2, Search, X } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
@@ -44,6 +44,8 @@ const Index = () => {
   const { boostedMarketIds, boostDetails } = useActiveBoosts();
   const [filter, setFilter] = useState<"trending" | "boosted" | "all">("trending");
   const [boostModalMarket, setBoostModalMarket] = useState<{ id: string; title: string } | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("All");
 
   // Capture referral param on landing
   useEffect(() => {
@@ -59,6 +61,11 @@ const Index = () => {
     return markets.filter((m) => m.trending).slice(0, 5);
   }, [markets, boostedMarketIds]);
 
+  const categories = useMemo(() => {
+    const cats = new Set(markets.map((m) => m.category));
+    return ["All", ...Array.from(cats).sort()];
+  }, [markets]);
+
   const filteredMarkets = useMemo(() => {
     let filtered = [...markets];
     if (filter === "boosted") {
@@ -66,12 +73,19 @@ const Index = () => {
     } else if (filter === "trending") {
       filtered = markets.filter((m) => m.trending || boostedMarketIds.has(m.id));
     }
+    if (categoryFilter !== "All") {
+      filtered = filtered.filter((m) => m.category === categoryFilter);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter((m) => m.title.toLowerCase().includes(q) || m.category.toLowerCase().includes(q));
+    }
     return filtered.sort((a, b) => {
       const aBoost = boostedMarketIds.has(a.id) ? 1 : 0;
       const bBoost = boostedMarketIds.has(b.id) ? 1 : 0;
       return bBoost - aBoost;
     });
-  }, [markets, boostedMarketIds, filter]);
+  }, [markets, boostedMarketIds, filter, searchQuery, categoryFilter]);
 
   const totalVolume = markets.reduce((s, m) => s + m.volume, 0);
   const totalTraders = markets.reduce((s, m) => s + m.participants, 0);
@@ -129,6 +143,38 @@ const Index = () => {
           getMarketImage={getMarketImage}
           onBoost={(market) => setBoostModalMarket({ id: market.id, title: market.title })}
         />
+
+        {/* Search */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search markets..."
+            className="w-full bg-muted/50 border border-border rounded-xl pl-9 pr-9 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Category filter */}
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar mb-4">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setCategoryFilter(cat)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                categoryFilter === cat ? "bg-primary text-primary-foreground" : "glass text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
 
         {/* Filter tabs */}
         <div className="flex gap-1.5 p-1 rounded-xl bg-muted/50 mb-4">
