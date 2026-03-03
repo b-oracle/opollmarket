@@ -316,7 +316,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                       }>
                       <CheckCircle2 className="w-8 h-8" style={optionColor ? { color: optionColor } : { color: "hsl(var(--primary))" }} />
                     </motion.div>
-                    <h3 className="text-lg font-bold mb-1">Prediction Placed!</h3>
+                    <h3 className="text-lg font-bold mb-1" style={optionColor ? { color: optionColor } : undefined}>Prediction Placed!</h3>
                     <p className="text-sm text-muted-foreground text-center mb-4">
                       You bought <span className={`font-bold ${optionColor ? "" : sideTextClass}`} style={optionColor ? { color: optionColor } : undefined}>{shares.toFixed(2)}</span> {optionLabel || side.toUpperCase()} shares
                     </p>
