@@ -176,7 +176,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
         </div>
 
         {/* Action buttons */}
-        <div className="px-4 pb-4 grid grid-cols-2 gap-2">
+        <div className="px-4 pb-4 grid grid-cols-3 gap-2">
           <button
             onClick={handleCopy}
             disabled={capturing}
@@ -202,6 +202,18 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
             className="flex items-center justify-center gap-2 py-2.5 rounded-xl glass text-xs font-semibold hover:bg-muted transition-colors"
           >
             <Facebook className="w-4 h-4" /> Facebook
+          </button>
+          <button
+            onClick={handleWhatsApp}
+            className="flex items-center justify-center gap-2 py-2.5 rounded-xl glass text-xs font-semibold hover:bg-muted transition-colors"
+          >
+            <MessageCircle className="w-4 h-4" /> WhatsApp
+          </button>
+          <button
+            onClick={handleTelegram}
+            className="flex items-center justify-center gap-2 py-2.5 rounded-xl glass text-xs font-semibold hover:bg-muted transition-colors"
+          >
+            <Send className="w-4 h-4" /> Telegram
           </button>
         </div>
 
