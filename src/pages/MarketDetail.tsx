@@ -262,7 +262,9 @@ const MarketDetail = () => {
   if (isLoading) return <div className="h-dvh flex items-center justify-center"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>;
   if (!market) return <div className="h-dvh flex items-center justify-center text-muted-foreground">Market not found</div>;
 
-  const selectedOptionObj = selectedOption ? market.options?.find(o => o.label === selectedOption) : null;
+  const selectedOptionIdx = selectedOption ? market.options?.findIndex(o => o.label === selectedOption) ?? -1 : -1;
+  const selectedOptionObj = selectedOptionIdx >= 0 ? market.options?.[selectedOptionIdx] : null;
+  const selectedOptionColor = selectedOptionIdx >= 0 ? optionColors[selectedOptionIdx % optionColors.length] : undefined;
 
   return (
     <div ref={pageRef} className="h-dvh bg-background overflow-y-auto pb-20">
@@ -443,6 +445,7 @@ const MarketDetail = () => {
         marketId={market.id}
         optionId={selectedOptionObj?.id}
         optionLabel={selectedOption ?? undefined}
+        optionColor={selectedOptionColor}
       />
 
       <BoostMarketModal open={boostOpen} onClose={() => setBoostOpen(false)} marketId={market.id} marketTitle={market.title} />
