@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
 import { useMemo, useState } from "react";
 import BoostCountdown from "@/components/BoostCountdown";
+import BoostMarketModal from "@/components/BoostMarketModal";
 
 const formatVolume = (v: number) => {
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(2)}M`;
@@ -28,6 +29,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { boostedMarketIds, boostDetails } = useActiveBoosts();
   const [filter, setFilter] = useState<"trending" | "boosted" | "all">("trending");
+  const [boostModalMarket, setBoostModalMarket] = useState<{ id: string; title: string } | null>(null);
   
   const boostedMarkets = useMemo(() => {
     return mockMarkets.filter((m) => boostedMarketIds.has(m.id));
@@ -158,6 +160,16 @@ const Index = () => {
                       {boost && (
                         <BoostCountdown endsAt={boost.ends_at} tier={boost.tier} compact />
                       )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setBoostModalMarket({ id: market.id, title: market.title });
+                        }}
+                        className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-semibold transition-all active:scale-95 hover:bg-primary/20"
+                      >
+                        <Zap className="w-3.5 h-3.5" />
+                        Boost Again
+                      </button>
                     </div>
                   </motion.div>
                 );
@@ -310,6 +322,12 @@ const Index = () => {
           })}
         </div>
       </div>
+      <BoostMarketModal
+        open={!!boostModalMarket}
+        onClose={() => setBoostModalMarket(null)}
+        marketId={boostModalMarket?.id || ""}
+        marketTitle={boostModalMarket?.title || ""}
+      />
       <BottomNav />
     </div>
   );
