@@ -52,6 +52,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const [likeCount, setLikeCount] = useState(Math.floor(Math.random() * 5000) + 500);
   const [bookmarked, setBookmarked] = useState(false);
   const [betModal, setBetModal] = useState<{ open: boolean; side: "yes" | "no" }>({ open: false, side: "yes" });
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [commentCount] = useState(Math.floor(Math.random() * 200) + 20);
   const [dragX, setDragX] = useState(0);
   const [swiping, setSwiping] = useState(false);
 
