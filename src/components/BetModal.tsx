@@ -309,10 +309,14 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                 {step === "success" && (
                   <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center py-6">
                     <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", damping: 10 }}
-                      className="w-16 h-16 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center mb-4">
-                      <CheckCircle2 className="w-8 h-8 text-primary" />
+                      className="w-16 h-16 rounded-full flex items-center justify-center mb-4 border"
+                      style={optionColor
+                        ? { backgroundColor: `${optionColor}20`, borderColor: `${optionColor}66` }
+                        : { backgroundColor: "hsl(var(--primary) / 0.2)", borderColor: "hsl(var(--primary) / 0.4)" }
+                      }>
+                      <CheckCircle2 className="w-8 h-8" style={optionColor ? { color: optionColor } : { color: "hsl(var(--primary))" }} />
                     </motion.div>
-                    <h3 className="text-lg font-bold mb-1">Prediction Placed!</h3>
+                    <h3 className="text-lg font-bold mb-1" style={optionColor ? { color: optionColor } : undefined}>Prediction Placed!</h3>
                     <p className="text-sm text-muted-foreground text-center mb-4">
                       You bought <span className={`font-bold ${optionColor ? "" : sideTextClass}`} style={optionColor ? { color: optionColor } : undefined}>{shares.toFixed(2)}</span> {optionLabel || side.toUpperCase()} shares
                     </p>
