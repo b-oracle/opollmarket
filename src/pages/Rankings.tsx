@@ -548,10 +548,15 @@ const Rankings = () => {
                                 {ref.totalReferrals} referral{ref.totalReferrals !== 1 ? "s" : ""}
                               </div>
                             </div>
-                            <div className="text-right shrink-0">
-                              <p className="text-sm font-bold text-primary flex items-center gap-1 justify-end">
+                            <div className="flex items-center gap-2 shrink-0">
+                              <p className="text-sm font-bold text-primary flex items-center gap-1">
                                 <TrendingUp className="w-3.5 h-3.5" />+{ref.totalEarned.toFixed(0)}
                               </p>
+                              {isMe && (
+                                <button onClick={() => shareRank(i + 1, `+${formatDollar(ref.totalEarned)} earned`, "Referrals")} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+                                  <Share2 className="w-3.5 h-3.5 text-primary" />
+                                </button>
+                              )}
                             </div>
                           </motion.div>
                         );
