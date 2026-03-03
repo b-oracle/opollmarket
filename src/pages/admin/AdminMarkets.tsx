@@ -154,6 +154,7 @@ const AdminMarkets = () => {
               {f}
             </button>
           ))}
+          </div>
         </div>
       </div>
 
