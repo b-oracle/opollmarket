@@ -233,8 +233,6 @@ const Profile = () => {
               <span className="text-sm font-medium flex-1">Follow on X</span>
               <ExternalLink className="w-4 h-4 text-muted-foreground" />
             </a>
-              </a>
-            ))}
           </div>
         </div>
 
