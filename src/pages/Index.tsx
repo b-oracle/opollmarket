@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
 import { useMemo, useState } from "react";
+import BoostCountdown from "@/components/BoostCountdown";
 
 const formatVolume = (v: number) => {
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(2)}M`;
@@ -138,7 +139,7 @@ const Index = () => {
               ? Math.round(topOption.price * 100)
               : yesPercent;
             const isBoosted = boostedMarketIds.has(market.id);
-
+            const boost = boostDetails.get(market.id);
             return (
               <motion.div
                 key={market.id}
@@ -172,9 +173,12 @@ const Index = () => {
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1.5 py-0.5 rounded bg-muted/80 border border-border">
                       {market.category}
                     </span>
-                    {isBoosted && (
-                      <span className="text-[10px] font-bold text-primary flex items-center gap-0.5 animate-pulse">
-                        <Zap className="w-3 h-3" /> Boosted
+                    {isBoosted && boost && (
+                      <BoostCountdown endsAt={boost.ends_at} tier={boost.tier} compact />
+                    )}
+                    {!isBoosted && market.trending && (
+                      <span className="text-[10px] font-bold text-primary flex items-center gap-0.5">
+                        <Zap className="w-3 h-3" /> Trending
                       </span>
                     )}
                     <span className="text-[10px] text-muted-foreground font-mono ml-auto">

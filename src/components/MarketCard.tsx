@@ -2,11 +2,14 @@ import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap 
 import { motion } from "framer-motion";
 import { Market, categoryIcons } from "@/data/markets";
 import { useNavigate } from "react-router-dom";
+import BoostCountdown from "@/components/BoostCountdown";
 
 interface MarketCardProps {
   market: Market;
   isActive: boolean;
   isBoosted?: boolean;
+  boostEndsAt?: string;
+  boostTier?: string;
 }
 
 const formatVolume = (v: number) => {
@@ -32,7 +35,7 @@ const optionColors = [
   "hsl(var(--muted-foreground))",
 ];
 
-const MarketCard = ({ market, isActive, isBoosted = false }: MarketCardProps) => {
+const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTier }: MarketCardProps) => {
   const navigate = useNavigate();
   const yesPercent = Math.round(market.yesPrice * 100);
   const noPercent = Math.round(market.noPrice * 100);
@@ -134,6 +137,13 @@ const MarketCard = ({ market, isActive, isBoosted = false }: MarketCardProps) =>
             </span>
           )}
         </div>
+
+        {/* Boost countdown */}
+        {isBoosted && boostEndsAt && (
+          <div className="mb-2">
+            <BoostCountdown endsAt={boostEndsAt} tier={boostTier} />
+          </div>
+        )}
 
         <h2
           className="text-xl font-bold leading-tight mb-3 cursor-pointer hover:text-primary transition-colors"
