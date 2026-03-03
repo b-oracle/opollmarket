@@ -125,10 +125,10 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto"
           >
-            <div className="glass-strong rounded-t-3xl p-5 max-h-[85dvh] overflow-y-auto" style={{ paddingBottom: "max(5rem, calc(env(safe-area-inset-bottom) + 4rem))" }}>
-              <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-4" />
+            <div className="glass-strong rounded-t-3xl p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] max-h-[80dvh] overflow-y-auto">
+              <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-3" />
 
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <div className={`w-3 h-3 rounded-full ${optionColor ? "" : isYes ? "bg-primary" : "bg-destructive"}`} style={optionColor ? { backgroundColor: optionColor } : undefined} />
                   <h2 className="text-lg font-bold">
@@ -140,7 +140,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                 </button>
               </div>
 
-              <p className="text-xs text-muted-foreground mb-5 line-clamp-2">{marketTitle}</p>
+              <p className="text-xs text-muted-foreground mb-3 line-clamp-1">{marketTitle}</p>
 
               <AnimatePresence mode="wait">
                 {step === "input" && (
@@ -148,7 +148,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                     {!user && (
                       <button
                         onClick={() => { handleClose(); navigate("/auth"); }}
-                        className="flex items-center gap-2 p-3 rounded-xl bg-primary/10 border border-primary/20 mb-4 w-full"
+                        className="flex items-center gap-2 p-2.5 rounded-xl bg-primary/10 border border-primary/20 mb-3 w-full"
                       >
                         <LogIn className="w-4 h-4 text-primary shrink-0" />
                         <p className="text-xs text-primary font-medium">Sign in to place predictions</p>
@@ -156,23 +156,23 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                     )}
 
                     {user && (
-                      <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border mb-4">
+                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/50 border border-border mb-3">
                       <span className="text-xs text-muted-foreground">Your Balance</span>
                         <span className="text-sm font-bold">${totalBalance.toFixed(2)}</span>
                       </div>
                     )}
 
-                    <div className={`rounded-xl p-3 mb-4 border ${sideBgClass}`}>
+                    <div className={`rounded-xl p-2.5 mb-3 border ${sideBgClass}`}>
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">Current Price</span>
                         <span className={`text-xl font-bold ${sideTextClass}`}>{price}¢</span>
                       </div>
                     </div>
 
-                    <div className="mb-3">
-                      <label className="text-xs text-muted-foreground mb-1.5 block">Amount (USDT)</label>
+                    <div className="mb-2">
+                      <label className="text-xs text-muted-foreground mb-1 block">Amount (USDT)</label>
                       <div className="flex items-center gap-2">
-                        <button onClick={() => adjustAmount(-5)} className="w-10 h-10 rounded-xl glass flex items-center justify-center shrink-0 active:scale-95 transition-transform">
+                        <button onClick={() => adjustAmount(-5)} className="w-9 h-9 rounded-xl glass flex items-center justify-center shrink-0 active:scale-95 transition-transform">
                           <Minus className="w-4 h-4" />
                         </button>
                         <input
@@ -181,9 +181,9 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                           value={amount}
                           onChange={(e) => handleAmountChange(e.target.value)}
                           placeholder="0.00"
-                          className="flex-1 text-center text-2xl font-bold bg-muted/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                          className="flex-1 text-center text-xl font-bold bg-muted/50 border border-border rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
                         />
-                        <button onClick={() => adjustAmount(5)} className="w-10 h-10 rounded-xl glass flex items-center justify-center shrink-0 active:scale-95 transition-transform">
+                        <button onClick={() => adjustAmount(5)} className="w-9 h-9 rounded-xl glass flex items-center justify-center shrink-0 active:scale-95 transition-transform">
                           <Plus className="w-4 h-4" />
                         </button>
                       </div>
@@ -193,12 +193,12 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                       <p className="text-xs text-destructive mb-2">Insufficient balance. You need ${(totalCost - totalBalance).toFixed(2)} more.</p>
                     )}
 
-                    <div className="flex gap-2 mb-5">
+                    <div className="flex gap-2 mb-4">
                       {PRESET_AMOUNTS.map((preset) => (
                         <button
                           key={preset}
                           onClick={() => setAmount(preset.toString())}
-                          className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all active:scale-95 ${
+                          className={`flex-1 py-1.5 rounded-xl text-sm font-semibold transition-all active:scale-95 ${
                             numAmount === preset ? "bg-primary text-primary-foreground" : "glass hover:bg-accent/50"
                           }`}
                         >
@@ -208,7 +208,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                     </div>
 
                     {numAmount > 0 && (
-                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="glass rounded-xl p-3 mb-5 space-y-2">
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="glass rounded-xl p-2.5 mb-4 space-y-1.5">
                         <div className="flex justify-between text-xs">
                           <span className="text-muted-foreground">Shares</span>
                           <span className="font-semibold">{shares.toFixed(2)}</span>
@@ -241,7 +241,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                     <button
                       onClick={() => setStep("confirm")}
                       disabled={!isValid || !user}
-                      className={`w-full ${sideBtnClass} py-4 rounded-xl font-bold text-base transition-all active:scale-95 disabled:opacity-40 disabled:active:scale-100 flex items-center justify-center gap-2`}
+                      className={`w-full ${sideBtnClass} py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-40 disabled:active:scale-100 flex items-center justify-center gap-2`}
                     >
                       Review Order <ArrowRight className="w-4 h-4" />
                     </button>
