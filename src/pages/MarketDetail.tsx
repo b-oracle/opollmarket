@@ -337,9 +337,6 @@ const MarketDetail = () => {
 
         {/* Comments Section */}
         <InlineComments marketId={market.id} />
-            ))}
-          </div>
-        </div>
 
       </div>
 
