@@ -209,17 +209,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           </div>
         </div>
 
-        {/* Category badge */}
-        <div className="absolute top-8 left-4 z-10 flex items-center gap-2">
-          <span className="glass px-3 py-1.5 rounded-full text-xs font-medium text-foreground/80">
-            {categoryIcons[market.category]} {market.category}
-          </span>
-          {isMulti && (
-            <span className="glass px-2 py-1.5 rounded-full text-[10px] font-bold text-primary">
-              {market.marketType === "range" ? "📊 Range" : "🎯 Multi"}
-            </span>
-          )}
-        </div>
+
+
 
         {/* Side actions */}
         <div className="absolute right-4 bottom-40 z-10 flex flex-col items-center gap-4">
