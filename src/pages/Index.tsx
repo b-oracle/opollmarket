@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
 import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import BoostCountdown from "@/components/BoostCountdown";
+import BoostedCarousel from "@/components/BoostedCarousel";
 import BoostMarketModal from "@/components/BoostMarketModal";
 
 const formatVolume = (v: number) => {
