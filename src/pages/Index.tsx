@@ -258,8 +258,21 @@ const Index = () => {
                   </div>
                 </div>
 
-                {/* Chart icon */}
-                <TrendingUp className="w-5 h-5 text-muted-foreground shrink-0" />
+                {/* Boost button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setBoostModalMarket({ id: market.id, title: market.title });
+                  }}
+                  className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-90 ${
+                    isBoosted
+                      ? 'bg-primary/20 text-primary'
+                      : 'glass hover:bg-primary/10 text-muted-foreground hover:text-primary'
+                  }`}
+                  title="Boost this market"
+                >
+                  <Zap className="w-4 h-4" />
+                </button>
               </motion.div>
             );
           })}
