@@ -5,8 +5,7 @@ import { Market } from "@/data/markets";
 import { ActiveBoost } from "@/hooks/useActiveBoosts";
 import BoostCountdown from "@/components/BoostCountdown";
 
-const CARD_WIDTH = 260;
-const GAP = 12;
+const GAP = 16;
 const AUTO_SCROLL_INTERVAL = 3500;
 
 interface BoostedCarouselProps {
