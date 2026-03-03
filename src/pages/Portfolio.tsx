@@ -167,6 +167,9 @@ const Portfolio = () => {
   const [filter, setFilter] = useState<FilterType>("all");
   const [sellTarget, setSellTarget] = useState<EnrichedPosition | null>(null);
   const [sellStep, setSellStep] = useState<"confirm" | "executing" | "success" | "error">("confirm");
+  const [winModal, setWinModal] = useState<{ open: boolean; market: string; side: "YES" | "NO"; payout: number; profit: number }>({
+    open: false, market: "", side: "YES", payout: 0, profit: 0,
+  });
 
   const openSell = (pos: EnrichedPosition, e: React.MouseEvent) => {
     e.stopPropagation();
