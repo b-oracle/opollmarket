@@ -322,6 +322,7 @@ const Rankings = () => {
   const [traderSort, setTraderSort] = useState<TraderSort>("pnl");
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("all");
   const { user } = useAuth();
+  const navigate = useNavigate();
   const currentUserId = user?.id;
 
   const [shareModal, setShareModal] = useState<{
