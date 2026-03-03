@@ -267,9 +267,9 @@ const Portfolio = () => {
   }
 
   return (
-    <div className="min-h-dvh bg-background pb-20">
+    <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
       <TopBar />
-      <div className="max-w-lg mx-auto px-4 pt-20">
+      <div className="max-w-lg mx-auto px-3 sm:px-4 pt-20">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-5">
           <h1 className="text-2xl font-bold mb-1">Portfolio</h1>
@@ -325,7 +325,7 @@ const Portfolio = () => {
         </motion.div>
 
         {/* Filter tabs */}
-        <div className="flex gap-1 p-0.5 rounded-lg bg-muted/50 mb-4 w-fit">
+        <div className="flex gap-1 p-0.5 rounded-lg bg-muted/50 mb-4 w-full sm:w-fit overflow-x-auto scrollbar-hide">
           {([
             { key: "all" as FilterType, label: "All" },
             { key: "profit" as FilterType, label: "In Profit", icon: TrendingUp },
@@ -334,7 +334,7 @@ const Portfolio = () => {
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
                 filter === f.key
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground"
@@ -372,7 +372,7 @@ const Portfolio = () => {
               </div>
 
               {/* Stats row */}
-              <div className="grid grid-cols-4 gap-2 mb-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
                 <div>
                   <p className="text-[9px] text-muted-foreground uppercase">Shares</p>
                   <p className="text-xs font-bold">{pos.shares}</p>

@@ -43,7 +43,7 @@ const Feed = () => {
   return (
     <div className="h-dvh flex flex-col bg-background">
       <TopBar />
-      <div ref={containerRef} className="flex-1 snap-feed pt-14 pb-0">
+      <div ref={containerRef} className="flex-1 snap-feed pt-14" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         {sortedMarkets.map((market, i) => {
           const boost = boostDetails.get(market.id);
           return (

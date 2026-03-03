@@ -276,7 +276,7 @@ const MarketDetail = () => {
   const selectedOptionColor = selectedOptionIdx >= 0 ? optionColors[selectedOptionIdx % optionColors.length] : undefined;
 
   return (
-    <div ref={pageRef} className="h-dvh bg-background overflow-y-auto pb-20">
+    <div ref={pageRef} className="h-dvh bg-background overflow-y-auto" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
       <div className="sticky top-0 z-20 glass-strong">
         <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto">
           <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full glass flex items-center justify-center"><ArrowLeft className="w-5 h-5" /></button>
@@ -296,7 +296,7 @@ const MarketDetail = () => {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4">
+      <div className="max-w-lg mx-auto px-3 sm:px-4">
       {/* Share capture area: banner + chart only */}
       <div ref={shareRef} className="relative">
       {market.imageUrl && (
@@ -426,11 +426,11 @@ const MarketDetail = () => {
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="glass rounded-xl p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><TrendingUp className="w-3.5 h-3.5" /><span className="text-xs">Volume</span></div><span className="text-lg font-bold">{formatVolume(market.volume)}</span></div>
-          <div className="glass rounded-xl p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Droplets className="w-3.5 h-3.5" /><span className="text-xs">Liquidity</span></div><span className="text-lg font-bold">{formatVolume(market.liquidity)}</span></div>
-          <div className="glass rounded-xl p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Users className="w-3.5 h-3.5" /><span className="text-xs">Traders</span></div><span className="text-lg font-bold">{market.participants.toLocaleString()}</span></div>
-          <div className="glass rounded-xl p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Clock className="w-3.5 h-3.5" /><span className="text-xs">Ends</span></div><span className="text-lg font-bold">{getTimeRemaining(market.endDate)}</span></div>
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4">
+          <div className="glass rounded-xl p-2.5 sm:p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><TrendingUp className="w-3.5 h-3.5" /><span className="text-[11px] sm:text-xs">Volume</span></div><span className="text-base sm:text-lg font-bold">{formatVolume(market.volume)}</span></div>
+          <div className="glass rounded-xl p-2.5 sm:p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Droplets className="w-3.5 h-3.5" /><span className="text-[11px] sm:text-xs">Liquidity</span></div><span className="text-base sm:text-lg font-bold">{formatVolume(market.liquidity)}</span></div>
+          <div className="glass rounded-xl p-2.5 sm:p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Users className="w-3.5 h-3.5" /><span className="text-[11px] sm:text-xs">Traders</span></div><span className="text-base sm:text-lg font-bold">{market.participants.toLocaleString()}</span></div>
+          <div className="glass rounded-xl p-2.5 sm:p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Clock className="w-3.5 h-3.5" /><span className="text-[11px] sm:text-xs">Ends</span></div><span className="text-base sm:text-lg font-bold">{getTimeRemaining(market.endDate)}</span></div>
         </div>
 
         {!isMulti && <OrderBook yesPrice={yesPercent} noPrice={noPercent} liquidity={market.liquidity} />}
@@ -449,10 +449,10 @@ const MarketDetail = () => {
       </div>
 
       {!isMulti && (
-        <div className="fixed bottom-16 left-0 right-0 z-30 px-4 pb-3 pt-2 bg-gradient-to-t from-background via-background/95 to-transparent">
+        <div className="fixed bottom-16 left-0 right-0 z-30 px-4 pb-3 pt-2 bg-gradient-to-t from-background via-background/95 to-transparent" style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}>
           <div className="max-w-lg mx-auto flex gap-3">
-            <button onClick={() => { setBetSide("yes"); setBetOpen(true); }} className="flex-1 btn-yes py-4 rounded-xl font-bold text-base tracking-wide transition-all active:scale-95">YES {yesPercent}¢</button>
-            <button onClick={() => { setBetSide("no"); setBetOpen(true); }} className="flex-1 btn-no py-4 rounded-xl font-bold text-base tracking-wide transition-all active:scale-95">NO {noPercent}¢</button>
+            <button onClick={() => { setBetSide("yes"); setBetOpen(true); }} className="flex-1 btn-yes py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">YES {yesPercent}¢</button>
+            <button onClick={() => { setBetSide("no"); setBetOpen(true); }} className="flex-1 btn-no py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">NO {noPercent}¢</button>
           </div>
         </div>
       )}
