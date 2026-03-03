@@ -15,8 +15,7 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: corsHeaders,
+        status: 401, headers: corsHeaders,
       });
     }
 
@@ -27,17 +26,15 @@ Deno.serve(async (req) => {
     );
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } =
-      await supabase.auth.getClaims(token);
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
     if (claimsError || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: corsHeaders,
+        status: 401, headers: corsHeaders,
       });
     }
 
     const userId = claimsData.claims.sub;
-    const { amount } = await req.json();
+    const { amount, pay_currency } = await req.json();
 
     if (!amount || amount < 1 || amount > 50000) {
       return new Response(
@@ -54,39 +51,37 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create NOWPayments invoice
-    const npResponse = await fetch(
-      "https://api.nowpayments.io/v1/invoice",
-      {
-        method: "POST",
-        headers: {
-          "x-api-key": apiKey,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          price_amount: amount,
-          price_currency: "usd",
-          order_id: `deposit_${userId}_${Date.now()}`,
-          order_description: `Deposit $${amount} USDT to OPOLL`,
-          ipn_callback_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/nowpayments-webhook`,
-          success_url: `${req.headers.get("origin") || "https://opollmarket.lovable.app"}/portfolio`,
-          cancel_url: `${req.headers.get("origin") || "https://opollmarket.lovable.app"}/portfolio`,
-        }),
-      }
-    );
+    const orderId = `deposit_${userId}_${Date.now()}`;
+
+    // Use Create Payment API (returns pay_address for in-app display)
+    const npResponse = await fetch("https://api.nowpayments.io/v1/payment", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        price_amount: amount,
+        price_currency: "usd",
+        pay_currency: pay_currency || "usdtbsc",
+        order_id: orderId,
+        order_description: `Deposit $${amount} to OPOLL`,
+        ipn_callback_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/nowpayments-webhook`,
+      }),
+    });
 
     if (!npResponse.ok) {
       const errText = await npResponse.text();
       console.error("NOWPayments error:", errText);
       return new Response(
-        JSON.stringify({ error: "Failed to create payment invoice" }),
+        JSON.stringify({ error: "Failed to create payment" }),
         { status: 500, headers: corsHeaders }
       );
     }
 
-    const invoice = await npResponse.json();
+    const payment = await npResponse.json();
 
-    // Insert pending deposit transaction using service role
+    // Insert pending deposit transaction
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -97,13 +92,17 @@ Deno.serve(async (req) => {
       type: "deposit",
       amount: amount,
       status: "pending",
-      nowpayments_payment_id: String(invoice.id),
+      nowpayments_payment_id: String(payment.payment_id),
     });
 
     return new Response(
       JSON.stringify({
-        invoice_url: invoice.invoice_url,
-        invoice_id: invoice.id,
+        payment_id: payment.payment_id,
+        pay_address: payment.pay_address,
+        pay_amount: payment.pay_amount,
+        pay_currency: payment.pay_currency,
+        expiration_estimate_date: payment.expiration_estimate_date,
+        payment_status: payment.payment_status,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
