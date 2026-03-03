@@ -3,9 +3,8 @@ import { useAccount, useConnect } from "wagmi";
 import { useNavigate } from "react-router-dom";
 import { bsc } from "wagmi/chains";
 import { motion, AnimatePresence } from "framer-motion";
-import { motion, AnimatePresence } from "framer-motion";
-import { TrendingUp } from "lucide-react";
 import {
+  TrendingUp,
   Lock,
   Unlock,
   CheckCircle2,
