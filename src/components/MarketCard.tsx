@@ -68,7 +68,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const SWIPE_THRESHOLD = 80;
 
   const handleDrag = useCallback((_: any, info: { offset: { x: number } }) => {
-    if (isMulti) return; // Don't allow swipe on multi-option markets
+    if (isMulti) return;
     setDragX(info.offset.x);
     if (!swiping && Math.abs(info.offset.x) > 10) setSwiping(true);
   }, [isMulti, swiping]);
@@ -133,7 +133,6 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         {/* Swipe overlay indicators */}
         {!isMulti && swiping && (
           <>
-            {/* YES indicator (right swipe) */}
             <motion.div
               className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
               style={{ opacity: swipeSide === "yes" ? swipeProgress * 0.8 : 0 }}
@@ -150,7 +149,6 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
               </motion.div>
             </motion.div>
 
-            {/* NO indicator (left swipe) */}
             <motion.div
               className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
               style={{ opacity: swipeSide === "no" ? swipeProgress * 0.8 : 0 }}
@@ -171,18 +169,13 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         {/* Background image */}
         {market.imageUrl && (
           <div className="absolute inset-0">
-            <img
-              src={market.imageUrl}
-              alt=""
-              className="w-full h-full object-cover opacity-20"
-            />
+            <img src={market.imageUrl} alt="" className="w-full h-full object-cover opacity-20" />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/40" />
           </div>
         )}
 
         <div className={`absolute inset-0 ${isBoosted ? 'bg-gradient-to-br from-primary/15 via-primary/5 to-transparent' : ''}`} />
 
-        {/* Boosted glow effects */}
         {isBoosted && (
           <>
             <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-primary/10 blur-3xl animate-pulse pointer-events-none" />
@@ -205,14 +198,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             <div className="relative w-20 h-20">
               <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
                 <circle cx="40" cy="40" r="34" fill="none" stroke="hsl(var(--muted))" strokeWidth="4" />
-                <circle
-                  cx="40" cy="40" r="34"
-                  fill="none"
-                  stroke="hsl(var(--neon-yes))"
-                  strokeWidth="4"
-                  strokeDasharray={`${yesPercent * 2.136} ${213.6 - yesPercent * 2.136}`}
-                  strokeLinecap="round"
-                />
+                <circle cx="40" cy="40" r="34" fill="none" stroke="hsl(var(--neon-yes))" strokeWidth="4" strokeDasharray={`${yesPercent * 2.136} ${213.6 - yesPercent * 2.136}`} strokeLinecap="round" />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-lg font-bold neon-yes">{yesPercent}%</span>
@@ -242,19 +228,13 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             </div>
             <span className="text-[10px] text-muted-foreground">{formatCount(likeCount)}</span>
           </button>
-          <button
-            onClick={() => setCommentsOpen(true)}
-            className="flex flex-col items-center gap-1 group"
-          >
+          <button onClick={() => setCommentsOpen(true)} className="flex flex-col items-center gap-1 group">
             <div className="w-10 h-10 rounded-full glass flex items-center justify-center group-hover:bg-primary/20 transition-colors">
               <MessageCircle className="w-5 h-5 text-foreground/70 group-hover:text-primary transition-colors" />
             </div>
             <span className="text-[10px] text-muted-foreground">{formatCount(commentCount)}</span>
           </button>
-          <button
-            onClick={() => navigate(`/market/${market.id}`)}
-            className="flex flex-col items-center gap-1 group"
-          >
+          <button onClick={() => navigate(`/market/${market.id}`)} className="flex flex-col items-center gap-1 group">
             <div className="w-10 h-10 rounded-full glass flex items-center justify-center group-hover:bg-primary/20 transition-colors">
               <ExternalLink className="w-5 h-5 text-foreground/70 group-hover:text-primary transition-colors" />
             </div>
@@ -292,7 +272,6 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             )}
           </div>
 
-          {/* Boost countdown */}
           {isBoosted && boostEndsAt && (
             <div className="mb-2">
               <BoostCountdown endsAt={boostEndsAt} tier={boostTier} />
@@ -336,26 +315,22 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                       <button
                         key={opt.id}
                         onClick={() => setBetModal({ open: true, side: "yes", optionLabel: opt.label, optionPrice: pct })}
-                        className="w-full relative rounded-xl px-4 py-3 flex items-center justify-between transition-all active:scale-[0.98] overflow-hidden border backdrop-blur-md"
+                        className="w-full relative rounded-xl px-4 py-3 flex items-center justify-between transition-all active:scale-[0.98] overflow-hidden"
                         style={{
-                          background: `linear-gradient(135deg, ${colorAlpha(color, 0.18)} 0%, ${colorAlpha(color, 0.12)} 60%, ${colorAlpha(color, 0.08)} 100%)`,
-                          borderColor: colorAlpha(color, 0.25),
-                          boxShadow: `inset 0 1px 0 ${colorAlpha(color, 0.2)}, 0 2px 12px ${colorAlpha(color, 0.1)}`,
+                          background: colorAlpha(color, 0.1),
                         }}
                       >
-                        {/* Fill bar background */}
+                        {/* Fill bar showing probability */}
                         <div
-                          className="absolute inset-0 rounded-xl transition-all"
+                          className="absolute inset-0 rounded-xl"
                           style={{
-                            background: `linear-gradient(90deg, ${colorAlpha(color, 0.22)} 0%, ${colorAlpha(color, 0.1)} ${pct}%, transparent ${pct}%)`,
+                            background: `linear-gradient(90deg, ${colorAlpha(color, 0.12)} 0%, ${colorAlpha(color, 0.04)} ${pct}%, transparent ${pct}%)`,
                           }}
                         />
-                        {/* Glass shine */}
-                        <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
 
                         <div className="flex items-center gap-2.5 relative z-10">
                           <div
-                            className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
                             style={{ backgroundColor: color, boxShadow: `0 0 6px ${colorAlpha(color, 0.5)}` }}
                           />
                           <span className="text-sm font-semibold">{opt.label}</span>
@@ -396,7 +371,6 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             </motion.div>
           )}
 
-          {/* Swipe hint for binary markets */}
           {isActive && !isMulti && (
             <motion.p
               initial={{ opacity: 0 }}
@@ -410,7 +384,6 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         </div>
       </motion.div>
 
-      {/* Bet Modal */}
       <BetModal
         open={betModal.open}
         onClose={() => setBetModal({ open: false, side: "yes" })}
@@ -420,7 +393,6 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         optionLabel={betModal.optionLabel}
       />
 
-      {/* Comments Drawer */}
       <CommentsDrawer
         open={commentsOpen}
         onClose={() => setCommentsOpen(false)}
