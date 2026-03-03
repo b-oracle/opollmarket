@@ -109,7 +109,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle }: BetModalProps) =>
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto"
           >
-            <div className="glass-strong rounded-t-3xl p-5 pb-safe-bottom max-h-[85dvh] overflow-y-auto" style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom))" }}>
+            <div className="glass-strong rounded-t-3xl p-5 max-h-[85dvh] overflow-y-auto" style={{ paddingBottom: "max(5rem, calc(env(safe-area-inset-bottom) + 4rem))" }}>
               {/* Handle bar */}
               <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-4" />
 
