@@ -218,6 +218,7 @@ const Index = () => {
                         <Zap className="w-3 h-3" /> Trending
                       </span>
                     )}
+                    <CommentBadge marketId={market.id} />
                     <span className="text-[10px] text-muted-foreground font-mono ml-auto">
                       {formatVolume(market.volume)} Vol
                     </span>
