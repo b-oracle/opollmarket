@@ -156,9 +156,21 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                     )}
 
                     {user && !isEmailVerified && (
-                      <div className="flex items-center gap-2 p-2.5 rounded-xl bg-destructive/10 border border-destructive/20 mb-3 w-full">
-                        <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
-                        <p className="text-xs text-destructive font-medium">Please verify your email before placing predictions. Check your inbox for the confirmation link.</p>
+                      <div className="p-2.5 rounded-xl bg-destructive/10 border border-destructive/20 mb-3 w-full">
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+                          <p className="text-xs text-destructive font-medium">Verify your email before placing predictions.</p>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            const { error } = await supabase.auth.resend({ type: "signup", email: user.email! });
+                            if (error) toast.error(error.message);
+                            else toast.success("Verification email sent! Check your inbox.");
+                          }}
+                          className="mt-2 w-full text-xs font-semibold text-destructive hover:text-destructive/80 underline underline-offset-2 transition-colors"
+                        >
+                          Resend verification email
+                        </button>
                       </div>
                     )}
 
