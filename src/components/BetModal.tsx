@@ -24,6 +24,7 @@ interface BetModalProps {
   side: BetSide;
   price: number; // 0-100 cents
   marketTitle: string;
+  optionLabel?: string;
 }
 
 const PRESET_AMOUNTS = [10, 25, 50, 100];
@@ -31,7 +32,7 @@ const MIN_AMOUNT = 1;
 const MAX_AMOUNT = 10000;
 const PLATFORM_FEE = 0.02;
 
-const BetModal = ({ open, onClose, side, price, marketTitle }: BetModalProps) => {
+const BetModal = ({ open, onClose, side, price, marketTitle, optionLabel }: BetModalProps) => {
   const { isConnected, address } = useAccount();
   const [amount, setAmount] = useState("");
   const [step, setStep] = useState<ModalStep>("input");
@@ -116,9 +117,9 @@ const BetModal = ({ open, onClose, side, price, marketTitle }: BetModalProps) =>
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${isYes ? "bg-primary" : "bg-destructive"}`} />
+                  <div className={`w-3 h-3 rounded-full ${optionLabel ? "bg-primary" : isYes ? "bg-primary" : "bg-destructive"}`} />
                   <h2 className="text-lg font-bold">
-                    Buy <span className={sideTextClass}>{side.toUpperCase()}</span>
+                    Buy <span className={optionLabel ? "neon-yes" : sideTextClass}>{optionLabel || side.toUpperCase()}</span>
                   </h2>
                 </div>
                 <button
