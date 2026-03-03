@@ -28,7 +28,7 @@ const Auth = () => {
     } else {
       const { error } = await signUp(email, password, displayName);
       if (error) { toast.error(error.message); }
-      else { toast.success("Check your email to verify your account!"); }
+      else { toast.success("Account created! Logging you in..."); navigate("/"); }
     }
     setLoading(false);
   };
