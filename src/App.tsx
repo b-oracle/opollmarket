@@ -13,6 +13,12 @@ import Create from "./pages/Create";
 import Rankings from "./pages/Rankings";
 import Profile from "./pages/Profile";
 import Portfolio from "./pages/Portfolio";
+import Auth from "./pages/Auth";
+import AdminLayout from "./pages/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminMarkets from "./pages/admin/AdminMarkets";
+import AdminComments from "./pages/admin/AdminComments";
+import AdminUsers from "./pages/admin/AdminUsers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +39,13 @@ const App = () => (
               <Route path="/rankings" element={<Rankings />} />
               <Route path="/portfolio" element={<Portfolio />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="markets" element={<AdminMarkets />} />
+                <Route path="comments" element={<AdminComments />} />
+                <Route path="users" element={<AdminUsers />} />
+              </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
