@@ -162,12 +162,12 @@ const MarketDetail = () => {
                   ) : (
                     <>
                       <linearGradient id="yesGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
-                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
+                        <stop offset="0%" stopColor="hsl(var(--neon-yes))" stopOpacity={0.4} />
+                        <stop offset="100%" stopColor="hsl(var(--neon-yes))" stopOpacity={0.05} />
                       </linearGradient>
                       <linearGradient id="noGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.3} />
-                        <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.05} />
+                        <stop offset="0%" stopColor="hsl(var(--neon-no))" stopOpacity={0.3} />
+                        <stop offset="100%" stopColor="hsl(var(--neon-no))" stopOpacity={0.05} />
                       </linearGradient>
                     </>
                   )}
@@ -200,8 +200,8 @@ const MarketDetail = () => {
                   ))
                 ) : (
                   <>
-                    <Area type="monotone" dataKey="yes" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#yesGrad)" animationDuration={1500} />
-                    <Area type="monotone" dataKey="no" stroke="hsl(var(--destructive))" strokeWidth={1.5} fill="url(#noGrad)" animationDuration={1800} />
+                    <Area type="monotone" dataKey="yes" stroke="hsl(var(--neon-yes))" strokeWidth={2} fill="url(#yesGrad)" animationDuration={1500} />
+                    <Area type="monotone" dataKey="no" stroke="hsl(var(--neon-no))" strokeWidth={1.5} fill="url(#noGrad)" animationDuration={1800} />
                   </>
                 )}
               </AreaChart>
