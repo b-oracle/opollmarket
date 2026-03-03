@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { FileText, Shield, AlertTriangle, HelpCircle, ChevronRight, LogIn } from "lucide-react";
+import { FileText, Shield, AlertTriangle, HelpCircle, ChevronRight, LogIn, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface MoreMenuProps {
@@ -16,6 +16,7 @@ const legalLinks = [
 
 const resourceLinks = [
   { icon: HelpCircle, label: "FAQ", path: "/faq" },
+  { icon: Download, label: "Download App", path: "__install__" },
 ];
 
 const socialLinks = [
@@ -28,6 +29,10 @@ const MoreMenu = ({ open, onOpenChange }: MoreMenuProps) => {
 
   const handleNavigate = (path: string) => {
     onOpenChange(false);
+    if (path === "__install__") {
+      triggerInstallPrompt();
+      return;
+    }
     navigate(path);
   };
 
