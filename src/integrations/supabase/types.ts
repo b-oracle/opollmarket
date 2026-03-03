@@ -17,6 +17,7 @@ export type Database = {
       balances: {
         Row: {
           amount: number
+          bonus_balance: number
           currency: string
           id: string
           updated_at: string
@@ -24,6 +25,7 @@ export type Database = {
         }
         Insert: {
           amount?: number
+          bonus_balance?: number
           currency?: string
           id?: string
           updated_at?: string
@@ -31,6 +33,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          bonus_balance?: number
           currency?: string
           id?: string
           updated_at?: string
@@ -113,6 +116,7 @@ export type Database = {
           admin_fee_percent: number
           creator_fee_percent: number
           id: string
+          referral_reward_amount: number
           updated_at: string
           updated_by: string | null
         }
@@ -120,6 +124,7 @@ export type Database = {
           admin_fee_percent?: number
           creator_fee_percent?: number
           id?: string
+          referral_reward_amount?: number
           updated_at?: string
           updated_by?: string | null
         }
@@ -127,6 +132,7 @@ export type Database = {
           admin_fee_percent?: number
           creator_fee_percent?: number
           id?: string
+          referral_reward_amount?: number
           updated_at?: string
           updated_by?: string | null
         }
@@ -347,6 +353,7 @@ export type Database = {
           display_name: string | null
           email: string | null
           id: string
+          referred_by: string | null
           updated_at: string
           wallet_address: string | null
         }
@@ -356,6 +363,7 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id: string
+          referred_by?: string | null
           updated_at?: string
           wallet_address?: string | null
         }
@@ -365,8 +373,33 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
+          referred_by?: string | null
           updated_at?: string
           wallet_address?: string | null
+        }
+        Relationships: []
+      }
+      referral_rewards: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          referred_id: string
+          referrer_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          referred_id: string
+          referrer_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          referred_id?: string
+          referrer_id?: string
         }
         Relationships: []
       }

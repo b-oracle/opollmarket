@@ -159,9 +159,10 @@ const Profile = () => {
             <span className="text-sm font-medium flex-1 text-left">Leaderboard</span>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
-          <button className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
+          <button onClick={() => navigate("/referrals")} className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
             <Gift className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium">Referral Program</span>
+            <span className="text-sm font-medium flex-1 text-left">Referral Program</span>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
 
