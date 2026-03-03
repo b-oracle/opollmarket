@@ -1,4 +1,4 @@
-import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3 } from "lucide-react";
+import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import { Market, categoryIcons } from "@/data/markets";
 import { useNavigate } from "react-router-dom";
@@ -114,7 +114,7 @@ const MarketCard = ({ market, isActive }: MarketCardProps) => {
           <span className="text-sm font-medium text-foreground/80">@{market.creatorName}</span>
           {market.trending && (
             <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold flex items-center gap-1">
-              <TrendingUp className="w-3 h-3" /> Trending
+              <Zap className="w-3 h-3" /> Boosted
             </span>
           )}
         </div>
