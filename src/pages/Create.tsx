@@ -633,8 +633,12 @@ const Create = () => {
                     Back
                   </button>
                   <button
-                    onClick={handleCreateMarket}
-                    disabled={!isFormValid || !initialLiquidity}
+                    onClick={() => {
+                      setTouched((t) => ({ ...t, initialLiquidity: true }));
+                      if (errors.initialLiquidity) { shake("initialLiquidity"); return; }
+                      handleCreateMarket();
+                    }}
+                    disabled={!isFormValid || !!errors.initialLiquidity}
                     className="flex-1 btn-yes py-3.5 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-40 disabled:active:scale-100 flex items-center justify-center gap-2"
                   >
                     <Sparkles className="w-4 h-4" />
