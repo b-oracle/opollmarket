@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import BulkCSVImport from "@/components/admin/BulkCSVImport";
@@ -11,6 +11,7 @@ const CATEGORIES = ["Crypto", "AI & Tech", "Science", "Economy", "Entertainment"
 interface MarketRow {
   id: string;
   title: string;
+  description: string;
   category: string;
   status: string;
   market_type: string;
@@ -38,6 +39,7 @@ interface ResolveState {
 interface EditState {
   id: string;
   title: string;
+  description: string;
   category: string;
   end_date: string;
 }
@@ -51,12 +53,13 @@ const AdminMarkets = () => {
   const [resolving, setResolving] = useState(false);
   const [editState, setEditState] = useState<EditState | null>(null);
   const [saving, setSaving] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
   const fetchMarkets = async () => {
     let query = supabase
       .from("markets")
-      .select("id, title, category, status, market_type, volume, participants, yes_price, end_date, created_at")
+      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at")
       .order("created_at", { ascending: false });
     if (filter !== "all") query = query.eq("status", filter);
     const { data, error } = await query;
@@ -71,7 +74,8 @@ const AdminMarkets = () => {
   }, [editState?.id]);
 
   const startEdit = (m: MarketRow) => {
-    setEditState({ id: m.id, title: m.title, category: m.category, end_date: m.end_date });
+    setEditState({ id: m.id, title: m.title, description: m.description, category: m.category, end_date: m.end_date });
+    setExpandedId(m.id);
   };
 
   const cancelEdit = () => setEditState(null);
@@ -82,6 +86,7 @@ const AdminMarkets = () => {
     setSaving(true);
     const { error } = await supabase.from("markets").update({
       title: editState.title.trim(),
+      description: editState.description.trim(),
       category: editState.category,
       end_date: editState.end_date,
     }).eq("id", editState.id);
