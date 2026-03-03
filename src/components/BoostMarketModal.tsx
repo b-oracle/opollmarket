@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { X, Zap, Flame, Crown, Copy, Check, Loader2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import BottomSheet from "@/components/BottomSheet";
 
 interface BoostTier {
   id: "flash" | "standard" | "whale";
@@ -66,14 +67,12 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
   } | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Clean up polling on unmount or close
   useEffect(() => {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, []);
 
-  // Reset state when modal closes
   useEffect(() => {
     if (!open) {
       setStep("select");
@@ -138,133 +137,115 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
   };
 
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-          <motion.div
-            className="relative w-full max-w-md mx-4 mb-0 sm:mb-0 rounded-t-2xl sm:rounded-2xl overflow-hidden"
-            style={{ background: "hsl(var(--card))" }}
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between p-5 border-b border-border">
-              <div className="flex items-center gap-2">
-                <Zap className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-bold">
-                  {step === "success" ? "Boost Active! 🚀" : "Boost Market"}
-                </h2>
+    <BottomSheet open={open} onClose={onClose} className="p-5">
+      <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-4" />
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2">
+          <Zap className="w-5 h-5 text-primary" />
+          <h2 className="text-lg font-bold">
+            {step === "success" ? "Boost Active! 🚀" : "Boost Market"}
+          </h2>
+        </div>
+        <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors">
+          <X className="w-5 h-5 text-muted-foreground" />
+        </button>
+      </div>
+
+      <div className="space-y-5">
+        {step === "select" && (
+          <>
+            <div className="grid grid-cols-3 gap-3">
+              {BOOST_TIERS.map((tier) => (
+                <button
+                  key={tier.id}
+                  onClick={() => setSelectedTier(tier)}
+                  className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
+                    selectedTier.id === tier.id
+                      ? "border-primary/50 bg-primary/5 scale-105"
+                      : "border-border bg-muted/30 hover:border-muted-foreground/30"
+                  }`}
+                >
+                  <div style={{ color: tier.color }}>{tier.icon}</div>
+                  <span className="text-sm font-bold">{tier.label}</span>
+                  <span className="text-xs text-muted-foreground">{tier.duration}</span>
+                  <span className="text-sm font-bold px-3 py-1 rounded-md bg-background border border-border">
+                    ${tier.price}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={handleCreatePayment}
+              disabled={loading}
+              className="w-full py-3.5 rounded-xl font-bold text-sm bg-primary text-primary-foreground transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Creating payment...
+                </>
+              ) : (
+                `Pay $${selectedTier.price} & Boost`
+              )}
+            </button>
+          </>
+        )}
+
+        {step === "pay" && paymentInfo && (
+          <>
+            <div className="text-center space-y-1">
+              <p className="text-sm text-muted-foreground">
+                Send exactly <span className="font-bold text-foreground">{paymentInfo.pay_amount} {paymentInfo.pay_currency.toUpperCase()}</span> to:
+              </p>
+            </div>
+
+            <div className="glass rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
+                <code className="text-xs flex-1 break-all text-foreground/80">{paymentInfo.pay_address}</code>
+                <button
+                  onClick={() => handleCopy(paymentInfo.pay_address)}
+                  className="shrink-0 w-8 h-8 rounded-md flex items-center justify-center hover:bg-muted transition-colors"
+                >
+                  {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
+                </button>
               </div>
-              <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors">
-                <X className="w-5 h-5 text-muted-foreground" />
-              </button>
             </div>
 
-            <div className="p-5 space-y-5" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}>
-              {step === "select" && (
-                <>
-                  {/* Tier selection */}
-                  <div className="grid grid-cols-3 gap-3">
-                    {BOOST_TIERS.map((tier) => (
-                      <button
-                        key={tier.id}
-                        onClick={() => setSelectedTier(tier)}
-                        className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
-                          selectedTier.id === tier.id
-                            ? "border-primary/50 bg-primary/5 scale-105"
-                            : "border-border bg-muted/30 hover:border-muted-foreground/30"
-                        }`}
-                      >
-                        <div style={{ color: tier.color }}>{tier.icon}</div>
-                        <span className="text-sm font-bold">{tier.label}</span>
-                        <span className="text-xs text-muted-foreground">{tier.duration}</span>
-                        <span className="text-sm font-bold px-3 py-1 rounded-md bg-background border border-border">
-                          ${tier.price}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={handleCreatePayment}
-                    disabled={loading}
-                    className="w-full py-3.5 rounded-xl font-bold text-sm bg-primary text-primary-foreground transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Creating payment...
-                      </>
-                    ) : (
-                      `Pay $${selectedTier.price} & Boost`
-                    )}
-                  </button>
-                </>
-              )}
-
-              {step === "pay" && paymentInfo && (
-                <>
-                  <div className="text-center space-y-1">
-                    <p className="text-sm text-muted-foreground">
-                      Send exactly <span className="font-bold text-foreground">{paymentInfo.pay_amount} {paymentInfo.pay_currency.toUpperCase()}</span> to:
-                    </p>
-                  </div>
-
-                  <div className="glass rounded-xl p-4 space-y-3">
-                    <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
-                      <code className="text-xs flex-1 break-all text-foreground/80">{paymentInfo.pay_address}</code>
-                      <button
-                        onClick={() => handleCopy(paymentInfo.pay_address)}
-                        className="shrink-0 w-8 h-8 rounded-md flex items-center justify-center hover:bg-muted transition-colors"
-                      >
-                        {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Waiting for payment confirmation...
-                  </div>
-
-                  <p className="text-xs text-center text-muted-foreground">
-                    The boost will activate automatically once payment is confirmed. This usually takes 1-5 minutes.
-                  </p>
-                </>
-              )}
-
-              {step === "success" && (
-                <div className="text-center space-y-4 py-4">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                    <Zap className="w-8 h-8 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-lg">Boost is Live!</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Your {selectedTier.label} boost ({selectedTier.duration}) is now active.
-                    </p>
-                  </div>
-                  <button
-                    onClick={onClose}
-                    className="w-full py-3 rounded-xl font-bold text-sm bg-primary text-primary-foreground transition-all active:scale-95"
-                  >
-                    Done
-                  </button>
-                </div>
-              )}
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Waiting for payment confirmation...
             </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+
+            <p className="text-xs text-center text-muted-foreground">
+              The boost will activate automatically once payment is confirmed. This usually takes 1-5 minutes.
+            </p>
+          </>
+        )}
+
+        {step === "success" && (
+          <div className="text-center space-y-4 py-4">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+              <Zap className="w-8 h-8 text-primary" />
+            </div>
+            <div>
+              <p className="font-bold text-lg">Boost is Live!</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Your {selectedTier.label} boost ({selectedTier.duration}) is now active.
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-full py-3 rounded-xl font-bold text-sm bg-primary text-primary-foreground transition-all active:scale-95"
+            >
+              Done
+            </button>
+          </div>
+        )}
+      </div>
+    </BottomSheet>
   );
 };
 
