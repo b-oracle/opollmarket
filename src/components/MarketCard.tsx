@@ -1,10 +1,11 @@
 import { useState, useCallback } from "react";
-import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Market, categoryIcons } from "@/data/markets";
 import { useNavigate } from "react-router-dom";
 import BoostCountdown from "@/components/BoostCountdown";
 import BetModal from "@/components/BetModal";
+import CommentsDrawer from "@/components/CommentsDrawer";
 import { toast } from "sonner";
 
 interface MarketCardProps {
