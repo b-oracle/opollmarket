@@ -36,7 +36,8 @@ const BoostedCarousel = ({
   const scrollToIndex = useCallback((index: number) => {
     const container = scrollRef.current;
     if (!container) return;
-    const scrollLeft = index * (CARD_WIDTH + GAP);
+    const cardWidth = container.offsetWidth;
+    const scrollLeft = index * (cardWidth + GAP);
     container.scrollTo({ left: scrollLeft, behavior: "smooth" });
     setActiveIndex(index);
   }, []);
