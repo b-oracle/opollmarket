@@ -433,7 +433,6 @@ const Portfolio = () => {
 
       {/* Sell Confirmation Modal */}
       <BottomSheet open={!!sellTarget} onClose={closeSell} className="p-5">
-                <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-4" />
 
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-bold">Close Position</h2>
