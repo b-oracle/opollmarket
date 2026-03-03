@@ -264,7 +264,7 @@ const Profile = () => {
             {[
               { icon: Video, label: "How-to Video Tutorials", href: "#" },
               { icon: FileText, label: "Documentation", href: "#" },
-              { icon: HelpCircle, label: "Frequently Asked Questions", href: "#" },
+              { icon: HelpCircle, label: "Frequently Asked Questions", href: "/faq" },
             ].map((item) => (
               <a
                 key={item.label}
@@ -286,9 +286,9 @@ const Profile = () => {
           <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Legal</h3>
           <div className="space-y-2">
             {[
-              { icon: Shield, label: "Disclaimer", href: "#" },
-              { icon: ClipboardCheck, label: "Terms & Conditions", href: "#" },
-              { icon: Lock, label: "Privacy Policy", href: "#" },
+              { icon: Shield, label: "Disclaimer", href: "/disclaimer" },
+              { icon: ClipboardCheck, label: "Terms & Conditions", href: "/terms" },
+              { icon: Lock, label: "Privacy Policy", href: "/privacy" },
             ].map((item) => (
               <a
                 key={item.label}
