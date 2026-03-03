@@ -6,8 +6,9 @@ import { TrendingUp, Users, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import BoostCountdown from "@/components/BoostCountdown";
+import BoostedCarousel from "@/components/BoostedCarousel";
 import BoostMarketModal from "@/components/BoostMarketModal";
 
 const formatVolume = (v: number) => {
@@ -108,75 +109,17 @@ const Index = () => {
 
         {/* Boosted carousel */}
         {boostedMarkets.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 text-primary" /> Boosted Markets
-            </h3>
-            <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide">
-              {boostedMarkets.map((market) => {
-                const boost = boostDetails.get(market.id);
-                const isMulti = market.marketType !== "binary";
-                const topOption = isMulti && market.options
-                  ? market.options.reduce((a, b) => (a.price > b.price ? a : b))
-                  : null;
-                const displayPercent = isMulti && topOption
-                  ? Math.round(topOption.price * 100)
-                  : Math.round(market.yesPrice * 100);
-
-                return (
-                  <motion.div
-                    key={market.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    onClick={() => navigate(`/market/${market.id}`)}
-                    className="snap-start shrink-0 w-[260px] glass rounded-2xl overflow-hidden cursor-pointer hover:ring-1 hover:ring-primary/40 transition-all active:scale-[0.97] ring-1 ring-primary/20"
-                  >
-                    {/* Image */}
-                    <div className="relative h-28 bg-secondary overflow-hidden">
-                      {market.imageUrl ? (
-                        <img src={market.imageUrl} alt={market.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-3xl">
-                          {getMarketImage(market.id, market.category)}
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-card/90 to-transparent" />
-                      <div className="absolute top-2 left-2 flex items-center gap-1 glass rounded-full px-2 py-0.5">
-                        <Zap className="w-3 h-3 text-primary" />
-                        <span className="text-[10px] font-bold text-primary">Boosted</span>
-                      </div>
-                      <div className="absolute top-2 right-2 glass rounded-full px-2 py-0.5">
-                        <span className="text-[10px] font-bold neon-yes">{displayPercent}%</span>
-                      </div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="p-3 space-y-2">
-                      <h4 className="text-sm font-bold leading-snug line-clamp-2">{market.title}</h4>
-                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                        <span>{market.category}</span>
-                        <span>{formatVolume(market.volume)} Vol</span>
-                      </div>
-                      {boost && (
-                        <BoostCountdown endsAt={boost.ends_at} tier={boost.tier} compact />
-                      )}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setBoostModalMarket({ id: market.id, title: market.title });
-                        }}
-                        className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-semibold transition-all active:scale-95 hover:bg-primary/20"
-                      >
-                        <Zap className="w-3.5 h-3.5" />
-                        Boost Again
-                      </button>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
+          <BoostedCarousel
+            markets={boostedMarkets}
+            boostDetails={boostDetails}
+            navigate={navigate}
+            formatVolume={formatVolume}
+            getMarketImage={getMarketImage}
+            onBoost={(market) => setBoostModalMarket({ id: market.id, title: market.title })}
+          />
         )}
+
+
 
         {/* Filter tabs */}
         <div className="flex gap-1.5 p-1 rounded-xl bg-muted/50 mb-4">
