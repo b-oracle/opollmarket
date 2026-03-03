@@ -1,5 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import BackToTop from "@/components/BackToTop";
 
 const faqItems = [
   {
@@ -74,6 +75,7 @@ const FAQ = () => {
           </div>
         ))}
       </div>
+      <BackToTop />
     </div>
   );
 };
