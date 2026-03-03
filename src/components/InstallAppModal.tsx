@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import BottomSheet from "@/components/BottomSheet";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import {
   Download,
@@ -46,25 +46,7 @@ const InstallAppModal = ({ open, onClose }: InstallAppModalProps) => {
   if (!open) return null;
 
   return (
-    <AnimatePresence>
-      {open && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[60]"
-          />
-
-          <motion.div
-            initial={{ opacity: 0, y: 100, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 100, scale: 0.95 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-[60] max-w-lg mx-auto"
-          >
-            <div className="glass-strong rounded-t-3xl p-5 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] max-h-[85dvh] overflow-y-auto">
+    <BottomSheet open={open} onClose={onClose} className="p-5">
               <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-4" />
 
               {/* Header */}
@@ -214,10 +196,7 @@ const InstallAppModal = ({ open, onClose }: InstallAppModalProps) => {
                 </>
               )}
             </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+    </BottomSheet>
   );
 };
 

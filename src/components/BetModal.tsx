@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import BottomSheet from "@/components/BottomSheet";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -117,24 +118,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
   if (!open) return null;
 
   return (
-    <AnimatePresence>
-      {open && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={handleClose}
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[60]"
-          />
-          <motion.div
-            initial={{ opacity: 0, y: 100, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 100, scale: 0.95 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-[60] max-w-lg mx-auto"
-          >
-            <div className="glass-strong rounded-t-3xl p-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] max-h-[80dvh] overflow-y-auto">
+    <BottomSheet open={open} onClose={handleClose} maxHeight="80dvh" className="p-4">
               <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-3" />
 
               <div className="flex items-center justify-between mb-3">
@@ -382,13 +366,9 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                       <button onClick={() => setStep("input")} className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm transition-all active:scale-95">Try Again</button>
                     </div>
                   </motion.div>
-                )}
               </AnimatePresence>
             </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+    </BottomSheet>
   );
 };
 
