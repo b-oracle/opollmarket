@@ -592,11 +592,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                       transition={{ type: "spring", damping: 10 }}
                       className="w-16 h-16 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center mb-4"
                     >
-                      {isDeposit ? (
-                        <CheckCircle2 className="w-8 h-8 text-primary" />
-                      ) : (
-                        <Clock className="w-8 h-8 text-primary" />
-                      )}
+                      <CheckCircle2 className="w-8 h-8 text-primary" />
                     </motion.div>
                     <h3 className="text-lg font-bold mb-1">
                       {isDeposit ? "Deposit Confirmed!" : "Withdrawal Submitted!"}
