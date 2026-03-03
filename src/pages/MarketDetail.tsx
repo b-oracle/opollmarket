@@ -264,7 +264,7 @@ const MarketDetail = () => {
   const selectedOptionObj = selectedOption ? market.options?.find(o => o.label === selectedOption) : null;
 
   return (
-    <div className="h-dvh bg-background overflow-y-auto pb-20">
+    <div ref={pageRef} className="h-dvh bg-background overflow-y-auto pb-20">
       <div className="sticky top-0 z-20 glass-strong">
         <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto">
           <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full glass flex items-center justify-center"><ArrowLeft className="w-5 h-5" /></button>
