@@ -3,6 +3,7 @@ import { ArrowLeft, Share2, Heart, TrendingUp, Users, Clock, Droplets } from "lu
 import { mockMarkets, categoryIcons } from "@/data/markets";
 import BottomNav from "@/components/BottomNav";
 import BetModal from "@/components/BetModal";
+import OrderBook from "@/components/OrderBook";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useMemo, useState } from "react";
 
