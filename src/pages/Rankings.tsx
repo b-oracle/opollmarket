@@ -395,6 +395,23 @@ const Rankings = () => {
                         positive: t.pnl >= 0,
                       })}
                     />
+                    {(() => {
+                      if (!currentUserId) return null;
+                      const idx = sortedTraders.findIndex((t) => t.userId === currentUserId);
+                      if (idx === -1 || idx < VISIBLE_COUNT) return null;
+                      const me = sortedTraders[idx];
+                      return (
+                        <YourRankCard
+                          rank={idx + 1}
+                          name={me.name}
+                          avatar={me.avatar}
+                          statLine={`${me.trades} trade${me.trades !== 1 ? "s" : ""} · ${formatDollar(me.volume)} vol`}
+                          valueLine={`${me.pnl >= 0 ? "+" : "-"}${formatDollar(me.pnl)}`}
+                          valuePositive={me.pnl >= 0}
+                          totalCount={sortedTraders.length}
+                        />
+                      );
+                    })()}
                     <div className="space-y-2">
                       {sortedTraders.map((trader, i) => {
                         const isMe = currentUserId === trader.userId;
