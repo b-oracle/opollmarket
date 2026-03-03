@@ -595,12 +595,12 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                       <CheckCircle2 className="w-8 h-8 text-primary" />
                     </motion.div>
                     <h3 className="text-lg font-bold mb-1">
-                      {isDeposit ? "Deposit Confirmed!" : "Withdrawal Submitted!"}
+                      {isDeposit ? "Deposit Confirmed!" : "Withdrawal Sent!"}
                     </h3>
                     <p className="text-sm text-muted-foreground text-center mb-4">
                       {isDeposit
                         ? `$${numAmount.toFixed(2)} has been credited to your platform balance.`
-                        : `Your withdrawal of $${numAmount.toFixed(2)} is pending review and will be processed within 24 hours.`}
+                        : `$${numAmount.toFixed(2)} has been sent to your wallet. It may take a few minutes to arrive.`}
                     </p>
                     <button
                       onClick={handleClose}
