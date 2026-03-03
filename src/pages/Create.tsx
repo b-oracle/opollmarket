@@ -247,7 +247,8 @@ const Create = () => {
     description.trim().length >= 20 &&
     category &&
     endDate &&
-    resolutionSource.trim().length >= 10;
+    resolutionSource.trim().length >= 10 &&
+    (marketType === "binary" || options.filter(o => o.trim()).length >= 2);
 
   const statusIcon = (status: GateStatus) => {
     switch (status) {
