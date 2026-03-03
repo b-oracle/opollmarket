@@ -154,7 +154,15 @@ const BulkCSVImport = ({ onComplete }: BulkCSVImportProps) => {
     e.preventDefault();
     setDragging(false);
     const file = e.dataTransfer.files?.[0];
-    if (file) processFile(file);
+    if (file) {
+      if (!file.name.toLowerCase().endsWith(".csv")) {
+        toast.error("Invalid file type", {
+          description: `"${file.name}" is not a CSV file. Only .csv files are accepted.`,
+        });
+        return;
+      }
+      processFile(file);
+    }
   };
 
   const handleDragOver = (e: React.DragEvent) => {
