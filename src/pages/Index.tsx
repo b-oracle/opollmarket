@@ -26,19 +26,24 @@ const getMarketImage = (id: string, category: string) => {
 const Index = () => {
   const navigate = useNavigate();
   const { boostedMarketIds, boostDetails } = useActiveBoosts();
+  const [filter, setFilter] = useState<"trending" | "boosted" | "all">("trending");
   
-  // Merge boosted status: DB boosts + mock trending
-  const trending = useMemo(() => {
-    const allTrending = mockMarkets.filter(
-      (m) => m.trending || boostedMarketIds.has(m.id)
-    );
+  const filteredMarkets = useMemo(() => {
+    let filtered: typeof mockMarkets;
+    if (filter === "boosted") {
+      filtered = mockMarkets.filter((m) => boostedMarketIds.has(m.id));
+    } else if (filter === "trending") {
+      filtered = mockMarkets.filter((m) => m.trending || boostedMarketIds.has(m.id));
+    } else {
+      filtered = [...mockMarkets];
+    }
     // Sort boosted first
-    return allTrending.sort((a, b) => {
+    return filtered.sort((a, b) => {
       const aBoost = boostedMarketIds.has(a.id) ? 1 : 0;
       const bBoost = boostedMarketIds.has(b.id) ? 1 : 0;
       return bBoost - aBoost;
     });
-  }, [boostedMarketIds]);
+  }, [boostedMarketIds, filter]);
   
   const totalVolume = mockMarkets.reduce((s, m) => s + m.volume, 0);
   const totalTraders = mockMarkets.reduce((s, m) => s + m.participants, 0);
