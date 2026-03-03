@@ -15,8 +15,7 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: corsHeaders,
+        status: 401, headers: corsHeaders,
       });
     }
 
@@ -27,12 +26,10 @@ Deno.serve(async (req) => {
     );
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } =
-      await supabase.auth.getClaims(token);
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
     if (claimsError || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: corsHeaders,
+        status: 401, headers: corsHeaders,
       });
     }
 
@@ -53,12 +50,20 @@ Deno.serve(async (req) => {
       );
     }
 
+    const apiKey = Deno.env.get("NOWPAYMENTS_API_KEY");
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: "Payment service not configured" }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Check user has made at least one deposit
+    // Check user has made at least one confirmed deposit
     const { count: depositCount } = await adminClient
       .from("transactions")
       .select("id", { count: "exact", head: true })
@@ -68,14 +73,12 @@ Deno.serve(async (req) => {
 
     if (!depositCount || depositCount === 0) {
       return new Response(
-        JSON.stringify({
-          error: "You must make at least one deposit before withdrawing",
-        }),
+        JSON.stringify({ error: "You must make at least one deposit before withdrawing" }),
         { status: 400, headers: corsHeaders }
       );
     }
 
-    // Check balance (only main balance, not bonus)
+    // Check balance (main balance only, not bonus)
     const { data: balance } = await adminClient
       .from("balances")
       .select("amount")
@@ -91,7 +94,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Deduct balance
+    // Deduct balance immediately
     await adminClient
       .from("balances")
       .update({
@@ -101,33 +104,102 @@ Deno.serve(async (req) => {
       .eq("user_id", userId)
       .eq("currency", "USDT");
 
-    // Create withdrawal request
+    const payCurrency = crypto_currency || "usdtbsc";
+
+    // Call NOWPayments Payout API to send crypto automatically
+    let payoutSuccess = false;
+    let payoutId = null;
+    let payoutError = null;
+
+    try {
+      // First, get an estimated price to know how much crypto to send
+      const estimateRes = await fetch(
+        `https://api.nowpayments.io/v1/estimate?amount=${amount}&currency_from=usd&currency_to=${payCurrency}`,
+        { headers: { "x-api-key": apiKey } }
+      );
+
+      if (!estimateRes.ok) {
+        throw new Error("Failed to get payout estimate");
+      }
+
+      const estimate = await estimateRes.json();
+      const cryptoAmount = estimate.estimated_amount;
+
+      // Create payout
+      const payoutRes = await fetch("https://api.nowpayments.io/v1/payout", {
+        method: "POST",
+        headers: {
+          "x-api-key": apiKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          address: wallet_address.trim(),
+          currency: payCurrency,
+          amount: cryptoAmount,
+          ipn_callback_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/nowpayments-webhook`,
+        }),
+      });
+
+      if (payoutRes.ok) {
+        const payoutData = await payoutRes.json();
+        payoutId = payoutData.id;
+        payoutSuccess = true;
+      } else {
+        const errText = await payoutRes.text();
+        console.error("Payout API error:", errText);
+        payoutError = errText;
+      }
+    } catch (err) {
+      console.error("Payout request failed:", err);
+      payoutError = String(err);
+    }
+
+    if (!payoutSuccess) {
+      // Refund balance since payout failed
+      await adminClient
+        .from("balances")
+        .update({
+          amount: currentBalance,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId)
+        .eq("currency", "USDT");
+
+      return new Response(
+        JSON.stringify({ error: "Payout failed. Your balance has been refunded. Please try again later." }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    // Record withdrawal request as completed
     await adminClient.from("withdrawal_requests").insert({
       user_id: userId,
       amount,
       wallet_address: wallet_address.trim(),
-      crypto_currency: crypto_currency || "usdtbsc",
-      status: "pending",
+      crypto_currency: payCurrency,
+      status: "completed",
+      nowpayments_id: payoutId ? String(payoutId) : null,
     });
 
-    // Insert withdrawal transaction
+    // Insert confirmed withdrawal transaction
     await adminClient.from("transactions").insert({
       user_id: userId,
       type: "withdrawal",
       amount,
-      status: "pending",
+      status: "confirmed",
+      nowpayments_payment_id: payoutId ? String(payoutId) : null,
     });
 
     // Notify user
     await adminClient.from("notifications").insert({
       user_id: userId,
-      title: "Withdrawal Requested",
-      message: `Your withdrawal of $${Number(amount).toFixed(2)} is pending admin review.`,
+      title: "Withdrawal Sent",
+      message: `Your withdrawal of $${Number(amount).toFixed(2)} has been sent to ${wallet_address.trim().slice(0, 8)}...`,
       type: "withdrawal",
     });
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, payout_id: payoutId }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {

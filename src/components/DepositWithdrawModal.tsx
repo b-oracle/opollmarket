@@ -418,7 +418,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                       <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border mb-5">
                         <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                         <p className="text-[10px] text-muted-foreground">
-                          Withdrawals are reviewed and typically processed within 24 hours. Bonus balance cannot be withdrawn.
+                          Withdrawals are processed instantly and sent directly to your wallet. Bonus balance cannot be withdrawn.
                         </p>
                       </div>
                     )}
@@ -592,19 +592,15 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                       transition={{ type: "spring", damping: 10 }}
                       className="w-16 h-16 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center mb-4"
                     >
-                      {isDeposit ? (
-                        <CheckCircle2 className="w-8 h-8 text-primary" />
-                      ) : (
-                        <Clock className="w-8 h-8 text-primary" />
-                      )}
+                      <CheckCircle2 className="w-8 h-8 text-primary" />
                     </motion.div>
                     <h3 className="text-lg font-bold mb-1">
-                      {isDeposit ? "Deposit Confirmed!" : "Withdrawal Submitted!"}
+                      {isDeposit ? "Deposit Confirmed!" : "Withdrawal Sent!"}
                     </h3>
                     <p className="text-sm text-muted-foreground text-center mb-4">
                       {isDeposit
                         ? `$${numAmount.toFixed(2)} has been credited to your platform balance.`
-                        : `Your withdrawal of $${numAmount.toFixed(2)} is pending review and will be processed within 24 hours.`}
+                        : `$${numAmount.toFixed(2)} has been sent to your wallet. It may take a few minutes to arrive.`}
                     </p>
                     <button
                       onClick={handleClose}
