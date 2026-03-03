@@ -5,23 +5,29 @@ import { useAuth } from "./useAuth";
 export const useUserBalance = () => {
   const { user } = useAuth();
 
-  const { data: balance = 0, isLoading } = useQuery({
+  const { data: balanceData = { amount: 0, bonus: 0 }, isLoading } = useQuery({
     queryKey: ["balance", user?.id],
     queryFn: async () => {
-      if (!user) return 0;
+      if (!user) return { amount: 0, bonus: 0 };
       const { data, error } = await supabase
         .from("balances")
-        .select("amount")
+        .select("amount, bonus_balance")
         .eq("user_id", user.id)
         .eq("currency", "USDT")
         .single();
-      if (error) return 0;
-      return Number(data.amount);
+      if (error) return { amount: 0, bonus: 0 };
+      return { amount: Number(data.amount), bonus: Number(data.bonus_balance ?? 0) };
     },
     enabled: !!user,
   });
 
-  return { balance, isLoading, userId: user?.id };
+  return {
+    balance: balanceData.amount,
+    bonusBalance: balanceData.bonus,
+    totalBalance: balanceData.amount + balanceData.bonus,
+    isLoading,
+    userId: user?.id,
+  };
 };
 
 export const usePlaceBet = () => {
@@ -46,35 +52,46 @@ export const usePlaceBet = () => {
     }) => {
       if (!user) throw new Error("Not authenticated");
 
-      // Fetch commission settings
+      // Fetch commission settings (includes referral_reward_amount)
       const { data: commData } = await supabase
         .from("commission_settings")
-        .select("admin_fee_percent, creator_fee_percent")
+        .select("admin_fee_percent, creator_fee_percent, referral_reward_amount")
         .limit(1)
         .single();
 
       const adminFeePercent = Number(commData?.admin_fee_percent ?? 2) / 100;
       const creatorFeePercent = Number(commData?.creator_fee_percent ?? 3) / 100;
+      const referralRewardAmount = Number(commData?.referral_reward_amount ?? 5);
 
       const adminAmount = amount * adminFeePercent;
       const creatorAmount = amount * creatorFeePercent;
-      const totalCost = amount; // full amount deducted from user
+      const totalCost = amount;
 
-      // Check balance
+      // Check balance (amount + bonus_balance)
       const { data: balData } = await supabase
         .from("balances")
-        .select("amount")
+        .select("amount, bonus_balance")
         .eq("user_id", user.id)
         .eq("currency", "USDT")
         .single();
 
       const currentBalance = Number(balData?.amount || 0);
-      if (currentBalance < totalCost) throw new Error("Insufficient balance");
+      const currentBonus = Number(balData?.bonus_balance || 0);
+      const totalAvailable = currentBalance + currentBonus;
 
-      // Deduct balance from user
+      if (totalAvailable < totalCost) throw new Error("Insufficient balance");
+
+      // Deduct from bonus first, then main balance
+      let bonusDeduct = Math.min(currentBonus, totalCost);
+      let mainDeduct = totalCost - bonusDeduct;
+
       const { error: balError } = await supabase
         .from("balances")
-        .update({ amount: currentBalance - totalCost, updated_at: new Date().toISOString() })
+        .update({
+          amount: currentBalance - mainDeduct,
+          bonus_balance: currentBonus - bonusDeduct,
+          updated_at: new Date().toISOString(),
+        })
         .eq("user_id", user.id)
         .eq("currency", "USDT");
       if (balError) throw balError;
@@ -103,7 +120,6 @@ export const usePlaceBet = () => {
             .eq("currency", "USDT");
         }
 
-        // Record admin commission transaction
         await supabase.from("transactions").insert({
           user_id: adminRole.user_id,
           type: "commission",
@@ -124,7 +140,6 @@ export const usePlaceBet = () => {
           .single();
 
         if (market?.creator_wallet) {
-          // Find creator's user_id via profiles
           const { data: creatorProfile } = await supabase
             .from("profiles")
             .select("id")
@@ -147,7 +162,6 @@ export const usePlaceBet = () => {
                 .eq("user_id", creatorProfile.id)
                 .eq("currency", "USDT");
             } else {
-              // Create balance row for creator
               await supabase.from("balances").insert({
                 user_id: creatorProfile.id,
                 amount: creatorAmount,
@@ -155,7 +169,6 @@ export const usePlaceBet = () => {
               });
             }
 
-            // Record creator commission transaction
             await supabase.from("transactions").insert({
               user_id: creatorProfile.id,
               type: "commission",
@@ -169,7 +182,6 @@ export const usePlaceBet = () => {
         }
       }
 
-      // Pool amount (what actually goes into the market)
       const poolAmount = amount - adminAmount - creatorAmount;
 
       // Insert position
@@ -183,7 +195,7 @@ export const usePlaceBet = () => {
       });
       if (posError) throw posError;
 
-      // Insert transaction for the bet
+      // Insert transaction
       const { error: txError } = await supabase.from("transactions").insert({
         user_id: user.id,
         type: "buy",
@@ -213,6 +225,49 @@ export const usePlaceBet = () => {
           .eq("id", marketId);
       }
 
+      // --- Referral reward: check if this is user's first prediction ---
+      const { count: posCount } = await supabase
+        .from("positions")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id);
+
+      if (posCount === 1) {
+        // First prediction! Check if user was referred
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("referred_by")
+          .eq("id", user.id)
+          .single();
+
+        if (profile?.referred_by && referralRewardAmount > 0) {
+          // Credit referrer's bonus_balance
+          const { data: referrerBal } = await supabase
+            .from("balances")
+            .select("bonus_balance")
+            .eq("user_id", profile.referred_by)
+            .eq("currency", "USDT")
+            .single();
+
+          if (referrerBal) {
+            await supabase
+              .from("balances")
+              .update({
+                bonus_balance: Number(referrerBal.bonus_balance) + referralRewardAmount,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("user_id", profile.referred_by)
+              .eq("currency", "USDT");
+          }
+
+          // Record referral reward
+          await supabase.from("referral_rewards").insert({
+            referrer_id: profile.referred_by,
+            referred_id: user.id,
+            amount: referralRewardAmount,
+          });
+        }
+      }
+
       return { success: true };
     },
     onSuccess: () => {
@@ -220,6 +275,8 @@ export const usePlaceBet = () => {
       queryClient.invalidateQueries({ queryKey: ["positions"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["markets"] });
+      queryClient.invalidateQueries({ queryKey: ["referral_rewards"] });
+      queryClient.invalidateQueries({ queryKey: ["bonus_balance"] });
     },
   });
 };
