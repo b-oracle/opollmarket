@@ -330,7 +330,6 @@ const Profile = () => {
           <div className="space-y-2">
             {[
               { icon: Video, label: "How-to Video Tutorials", href: "#", comingSoon: true },
-              { icon: FileText, label: "Documentation", href: "#" },
               { icon: HelpCircle, label: "Frequently Asked Questions", href: "/faq" },
               { icon: Download, label: "Download App", href: "__install__" },
             ].map((item) => (
