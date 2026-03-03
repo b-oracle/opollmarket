@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Wallet, Gift, ArrowDownToLine, ArrowUpFromLine, ArrowUpRight, ArrowDownLeft,
   Repeat, LogIn, Send, MessageCircle, ExternalLink, ChevronRight,
-  Video, FileText, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download,
+  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -330,7 +330,6 @@ const Profile = () => {
           <div className="space-y-2">
             {[
               { icon: Video, label: "How-to Video Tutorials", href: "#", comingSoon: true },
-              { icon: FileText, label: "Documentation", href: "#" },
               { icon: HelpCircle, label: "Frequently Asked Questions", href: "/faq" },
               { icon: Download, label: "Download App", href: "__install__" },
             ].map((item) => (
