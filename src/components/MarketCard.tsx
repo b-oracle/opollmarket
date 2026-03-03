@@ -51,7 +51,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(Math.floor(Math.random() * 5000) + 500);
   const [bookmarked, setBookmarked] = useState(false);
-  const [betModal, setBetModal] = useState<{ open: boolean; side: "yes" | "no" }>({ open: false, side: "yes" });
+  const [betModal, setBetModal] = useState<{ open: boolean; side: "yes" | "no"; optionLabel?: string; optionPrice?: number }>({ open: false, side: "yes" });
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [commentCount] = useState(Math.floor(Math.random() * 200) + 20);
   const [dragX, setDragX] = useState(0);
@@ -323,30 +323,36 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                 <div className="space-y-2">
                   {market.options.slice(0, 4).map((opt, i) => {
                     const pct = Math.round(opt.price * 100);
+                    const color = optionColors[i % optionColors.length];
                     return (
                       <button
                         key={opt.id}
-                        onClick={() => navigate(`/market/${market.id}`)}
-                        className="w-full glass rounded-xl px-4 py-2.5 flex items-center justify-between transition-all active:scale-[0.98] hover:bg-accent/50"
+                        onClick={() => setBetModal({ open: true, side: "yes", optionLabel: opt.label, optionPrice: pct })}
+                        className="w-full relative rounded-xl px-4 py-3 flex items-center justify-between transition-all active:scale-[0.98] overflow-hidden border border-white/10 backdrop-blur-md"
+                        style={{
+                          background: `linear-gradient(135deg, ${color}15 0%, ${color}08 50%, transparent 100%)`,
+                          boxShadow: `inset 0 1px 0 ${color}20, 0 2px 8px ${color}10`,
+                        }}
                       >
-                        <div className="flex items-center gap-2">
+                        {/* Fill bar background */}
+                        <div
+                          className="absolute inset-0 rounded-xl transition-all"
+                          style={{
+                            background: `linear-gradient(90deg, ${color}25 0%, ${color}10 ${pct}%, transparent ${pct}%)`,
+                          }}
+                        />
+                        {/* Glass shine */}
+                        <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+
+                        <div className="flex items-center gap-2.5 relative z-10">
                           <div
-                            className="w-2.5 h-2.5 rounded-full shrink-0"
-                            style={{ backgroundColor: optionColors[i % optionColors.length] }}
+                            className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
+                            style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}80` }}
                           />
-                          <span className="text-sm font-medium">{opt.label}</span>
+                          <span className="text-sm font-semibold">{opt.label}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
-                            <div
-                              className="h-full rounded-full transition-all"
-                              style={{
-                                width: `${pct}%`,
-                                backgroundColor: optionColors[i % optionColors.length],
-                              }}
-                            />
-                          </div>
-                          <span className="text-sm font-bold" style={{ color: optionColors[i % optionColors.length] }}>
+                        <div className="flex items-center gap-2 relative z-10">
+                          <span className="text-sm font-bold" style={{ color }}>
                             {pct}¢
                           </span>
                         </div>
