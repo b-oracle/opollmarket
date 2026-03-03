@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import SlideToConfirm from "@/components/SlideToConfirm";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAccount, useBalance } from "wagmi";
 import { formatUnits } from "viem";
@@ -450,28 +451,17 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                       </div>
                     </div>
 
-                    <div className="flex gap-3">
+                    <div className="space-y-3">
+                      <SlideToConfirm
+                        onConfirm={handleExecute}
+                        label={isDeposit ? "Slide to Deposit" : "Slide to Withdraw"}
+                        color="yes"
+                      />
                       <button
                         onClick={() => setStep(isDeposit && !approved ? "approve" : "input")}
-                        className="flex-1 glass py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-95"
+                        className="w-full glass py-3 rounded-xl font-semibold text-sm text-muted-foreground transition-all active:scale-95"
                       >
                         Back
-                      </button>
-                      <button
-                        onClick={handleExecute}
-                        className="flex-1 bg-primary text-primary-foreground py-3.5 rounded-xl font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
-                      >
-                        {isDeposit ? (
-                          <>
-                            <ArrowDownToLine className="w-4 h-4" />
-                            Deposit Now
-                          </>
-                        ) : (
-                          <>
-                            <ArrowUpFromLine className="w-4 h-4" />
-                            Withdraw Now
-                          </>
-                        )}
                       </button>
                     </div>
                   </motion.div>
