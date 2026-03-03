@@ -74,5 +74,7 @@ export const useAuth = () => {
     await supabase.auth.signOut();
   };
 
-  return { user, session, loading, isAdmin, signIn, signUp, signOut };
+  const isEmailVerified = !!user?.email_confirmed_at;
+
+  return { user, session, loading, isAdmin, isEmailVerified, signIn, signUp, signOut };
 };

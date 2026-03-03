@@ -38,7 +38,7 @@ const MIN_AMOUNT = 1;
 const MAX_AMOUNT = 10000;
 
 const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId, optionLabel, optionColor }: BetModalProps) => {
-  const { user } = useAuth();
+  const { user, isEmailVerified } = useAuth();
   const { balance, totalBalance } = useUserBalance();
   const { data: commission } = useCommissionSettings();
   const placeBet = usePlaceBet();
@@ -155,6 +155,13 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                       </button>
                     )}
 
+                    {user && !isEmailVerified && (
+                      <div className="flex items-center gap-2 p-2.5 rounded-xl bg-destructive/10 border border-destructive/20 mb-3 w-full">
+                        <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+                        <p className="text-xs text-destructive font-medium">Please verify your email before placing predictions. Check your inbox for the confirmation link.</p>
+                      </div>
+                    )}
+
                     {user && (
                       <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/50 border border-border mb-3">
                       <span className="text-xs text-muted-foreground">Your Balance</span>
@@ -240,7 +247,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
 
                     <button
                       onClick={() => setStep("confirm")}
-                      disabled={!isValid || !user}
+                      disabled={!isValid || !user || !isEmailVerified}
                       className={`w-full ${sideBtnClass} py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-40 disabled:active:scale-100 flex items-center justify-center gap-2`}
                     >
                       Review Order <ArrowRight className="w-4 h-4" />
