@@ -49,9 +49,33 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
           windowHeight: target.scrollHeight,
         });
 
-        // Draw watermark logo on the canvas
         const ctx = canvas.getContext("2d");
         if (ctx) {
+          // Draw branded gradient border
+          const borderWidth = 8;
+          const w = canvas.width;
+          const h = canvas.height;
+          const gradient = ctx.createLinearGradient(0, 0, w, h);
+          gradient.addColorStop(0, "#02C7FC");
+          gradient.addColorStop(0.5, "#A855F7");
+          gradient.addColorStop(1, "#02C7FC");
+          ctx.strokeStyle = gradient;
+          ctx.lineWidth = borderWidth;
+          const r = 24;
+          ctx.beginPath();
+          ctx.moveTo(r, 0);
+          ctx.lineTo(w - r, 0);
+          ctx.quadraticCurveTo(w, 0, w, r);
+          ctx.lineTo(w, h - r);
+          ctx.quadraticCurveTo(w, h, w - r, h);
+          ctx.lineTo(r, h);
+          ctx.quadraticCurveTo(0, h, 0, h - r);
+          ctx.lineTo(0, r);
+          ctx.quadraticCurveTo(0, 0, r, 0);
+          ctx.closePath();
+          ctx.stroke();
+
+          // Draw watermark logo
           const logo = new Image();
           logo.src = watermarkLogo;
           await new Promise<void>((resolve) => {
