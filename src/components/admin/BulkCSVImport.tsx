@@ -290,10 +290,19 @@ const BulkCSVImport = ({ onComplete }: BulkCSVImportProps) => {
               {parsed.length === 0 && !results && (
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full h-36 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer"
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  className={`w-full h-36 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-2 transition-all cursor-pointer ${
+                    dragging
+                      ? "border-primary bg-primary/10 scale-[1.02]"
+                      : "border-border hover:border-primary/40 hover:bg-primary/5"
+                  }`}
                 >
-                  <Upload className="w-8 h-8 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Click to upload CSV file</p>
+                  <Upload className={`w-8 h-8 ${dragging ? "text-primary" : "text-muted-foreground"}`} />
+                  <p className="text-sm text-muted-foreground">
+                    {dragging ? "Drop CSV file here" : "Drag & drop or click to upload CSV"}
+                  </p>
                   <p className="text-[10px] text-muted-foreground">
                     Required: title, description, category, end_date, resolution_source
                   </p>
