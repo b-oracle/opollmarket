@@ -406,8 +406,9 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         open={betModal.open}
         onClose={() => setBetModal({ open: false, side: "yes" })}
         side={betModal.side}
-        price={betModal.side === "yes" ? yesPercent : noPercent}
-        marketTitle={market.title}
+        price={betModal.optionPrice ?? (betModal.side === "yes" ? yesPercent : noPercent)}
+        marketTitle={betModal.optionLabel ? `${market.title} — ${betModal.optionLabel}` : market.title}
+        optionLabel={betModal.optionLabel}
       />
 
       {/* Comments Drawer */}

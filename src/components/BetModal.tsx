@@ -24,6 +24,7 @@ interface BetModalProps {
   side: BetSide;
   price: number; // 0-100 cents
   marketTitle: string;
+  optionLabel?: string;
 }
 
 const PRESET_AMOUNTS = [10, 25, 50, 100];
@@ -31,7 +32,7 @@ const MIN_AMOUNT = 1;
 const MAX_AMOUNT = 10000;
 const PLATFORM_FEE = 0.02;
 
-const BetModal = ({ open, onClose, side, price, marketTitle }: BetModalProps) => {
+const BetModal = ({ open, onClose, side, price, marketTitle, optionLabel }: BetModalProps) => {
   const { isConnected, address } = useAccount();
   const [amount, setAmount] = useState("");
   const [step, setStep] = useState<ModalStep>("input");
