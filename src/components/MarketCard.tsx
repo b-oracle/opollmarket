@@ -40,8 +40,18 @@ const MarketCard = ({ market, isActive, isBoosted = false }: MarketCardProps) =>
   const showBoosted = isBoosted || market.trending;
 
   return (
-    <div className={`snap-item relative h-[calc(100dvh-5rem)] w-full flex items-end pb-6 px-4 ${isBoosted ? 'ring-1 ring-primary/20' : ''}`}>
-      <div className={`absolute inset-0 ${isBoosted ? 'bg-gradient-to-br from-primary/10 via-background to-background' : 'bg-gradient-to-br from-secondary/50 via-background to-background'}`} />
+    <div className={`snap-item relative h-[calc(100dvh-5rem)] w-full flex items-end pb-6 px-4 overflow-hidden ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}>
+      <div className={`absolute inset-0 ${isBoosted ? 'bg-gradient-to-br from-primary/15 via-primary/5 to-background' : 'bg-gradient-to-br from-secondary/50 via-background to-background'}`} />
+      
+      {/* Boosted glow effects */}
+      {isBoosted && (
+        <>
+          <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-primary/10 blur-3xl animate-pulse pointer-events-none" />
+          <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-primary/8 blur-2xl animate-pulse pointer-events-none" style={{ animationDelay: '1s' }} />
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+        </>
+      )}
 
       {/* Probability ring or multi-option indicator */}
       <div className="absolute top-8 right-4 z-10">

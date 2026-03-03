@@ -181,3 +181,8 @@
   60% { transform: translateX(-4px); }
   80% { transform: translateX(4px); }
 }
+
+@keyframes boost-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
