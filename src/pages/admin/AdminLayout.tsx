@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate, Outlet, NavLink } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { LayoutDashboard, ShoppingBag, MessageSquare, Users, LogOut, Loader2, ArrowLeft, PlusCircle, Receipt } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, MessageSquare, Users, LogOut, Loader2, ArrowLeft, PlusCircle, Receipt, Settings } from "lucide-react";
 
 const navItems = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -10,6 +10,7 @@ const navItems = [
   { to: "/admin/transactions", label: "Transactions", icon: Receipt },
   { to: "/admin/comments", label: "Comments", icon: MessageSquare },
   { to: "/admin/users", label: "Users", icon: Users },
+  { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 const AdminLayout = () => {
