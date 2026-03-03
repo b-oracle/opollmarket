@@ -157,10 +157,37 @@ const Sparkline = ({ avgPrice, currentPrice, side, seed }: { avgPrice: number; c
   );
 };
 
+type EnrichedPosition = Position & { currentValue: number; unrealizedPnl: number; pnlPercent: number; maxPayout: number };
+
 const Portfolio = () => {
   const { isConnected } = useAccount();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterType>("all");
+  const [sellTarget, setSellTarget] = useState<EnrichedPosition | null>(null);
+  const [sellStep, setSellStep] = useState<"confirm" | "executing" | "success" | "error">("confirm");
+
+  const openSell = (pos: EnrichedPosition, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSellTarget(pos);
+    setSellStep("confirm");
+  };
+
+  const closeSell = () => {
+    setSellTarget(null);
+    setSellStep("confirm");
+  };
+
+  const executeSell = useCallback(() => {
+    setSellStep("executing");
+    setTimeout(() => {
+      if (Math.random() > 0.1) {
+        setSellStep("success");
+        toast.success("Position closed successfully!");
+      } else {
+        setSellStep("error");
+      }
+    }, 2500);
+  }, []);
 
   const positions = MOCK_POSITIONS;
 
