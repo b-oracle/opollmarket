@@ -483,6 +483,23 @@ const Rankings = () => {
                         positive: true,
                       })}
                     />
+                    {(() => {
+                      if (!currentUserId) return null;
+                      const idx = sortedReferrers.findIndex((r) => r.userId === currentUserId);
+                      if (idx === -1 || idx < VISIBLE_COUNT) return null;
+                      const me = sortedReferrers[idx];
+                      return (
+                        <YourRankCard
+                          rank={idx + 1}
+                          name={me.name}
+                          avatar={me.avatar}
+                          statLine={`${me.totalReferrals} referral${me.totalReferrals !== 1 ? "s" : ""}`}
+                          valueLine={`+${formatDollar(me.totalEarned)}`}
+                          valuePositive={true}
+                          totalCount={sortedReferrers.length}
+                        />
+                      );
+                    })()}
                     <div className="space-y-2">
                       {sortedReferrers.map((ref, i) => {
                         const isMe = currentUserId === ref.userId;
