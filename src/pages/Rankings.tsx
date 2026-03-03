@@ -74,6 +74,56 @@ const EmptyState = ({ message, sub }: { message: string; sub: string }) => (
   </div>
 );
 
+// ── Your Rank Card ────────────────────────────────────────────────────
+const VISIBLE_COUNT = 10;
+
+const YourRankCard = ({
+  rank,
+  name,
+  avatar,
+  statLine,
+  valueLine,
+  valuePositive,
+  totalCount,
+}: {
+  rank: number;
+  name: string;
+  avatar: string | null;
+  statLine: string;
+  valueLine: string;
+  valuePositive: boolean;
+  totalCount: number;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: -8 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="glass rounded-xl p-3.5 flex items-center gap-3 mb-4 ring-1 ring-primary/40 bg-primary/5 relative overflow-hidden"
+  >
+    <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent pointer-events-none" />
+    <div className="w-8 flex justify-center shrink-0">
+      <span className="text-sm font-bold text-primary">#{rank}</span>
+    </div>
+    <AvatarCircle avatar={avatar} name={name} />
+    <div className="flex-1 min-w-0">
+      <div className="flex items-center gap-1.5">
+        <span className="text-sm font-bold text-primary truncate">You</span>
+        <Star className="w-3 h-3 text-primary fill-primary shrink-0" />
+      </div>
+      <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+        <span>{statLine}</span>
+        <span>·</span>
+        <span>Top {Math.round((rank / totalCount) * 100)}%</span>
+      </div>
+    </div>
+    <div className="text-right shrink-0">
+      <p className={`text-sm font-bold flex items-center gap-1 justify-end ${valuePositive ? "text-primary" : "text-destructive"}`}>
+        {valuePositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+        {valueLine}
+      </p>
+    </div>
+  </motion.div>
+);
+
 // ── Referral Leaderboard ──────────────────────────────────────────────
 const useReferralLeaderboard = (period: TimePeriod) => {
   const [referrers, setReferrers] = useState<Referrer[]>([]);
