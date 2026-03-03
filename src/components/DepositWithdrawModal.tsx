@@ -2,6 +2,9 @@ import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAccount, useBalance } from "wagmi";
 import { formatUnits } from "viem";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
   X,
   ArrowDownToLine,
@@ -36,11 +39,27 @@ const MOCK_USDT_WALLET_BALANCE = 1280.42;
 const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: DepositWithdrawModalProps) => {
   const { isConnected, address } = useAccount();
   const { data: nativeBalance } = useBalance({ address });
+  const { user } = useAuth();
 
   const [tab, setTab] = useState<Tab>(initialTab);
   const [amount, setAmount] = useState("");
   const [step, setStep] = useState<FlowStep>("input");
   const [approved, setApproved] = useState(false);
+
+  // Check if user has made at least one deposit
+  const { data: hasDeposit = false } = useQuery({
+    queryKey: ["has_deposit", user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { count } = await supabase
+        .from("transactions")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("type", "deposit");
+      return (count ?? 0) > 0;
+    },
+    enabled: !!user,
+  });
 
   const numAmount = parseFloat(amount) || 0;
   const isDeposit = tab === "deposit";
@@ -256,18 +275,27 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                       </div>
                     )}
 
-                    {!isDeposit && (
+                    {!isDeposit && !hasDeposit && (
+                      <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 mb-5">
+                        <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+                        <p className="text-[10px] text-destructive font-medium">
+                          You must make at least one deposit before you can withdraw funds.
+                        </p>
+                      </div>
+                    )}
+
+                    {!isDeposit && hasDeposit && (
                       <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border mb-5">
                         <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                         <p className="text-[10px] text-muted-foreground">
-                          Withdrawals send USDT (BEP-20) back to your connected wallet. Processing is instant on-chain.
+                          Withdrawals send USDT (BEP-20) back to your connected wallet. Processing is instant on-chain. Bonus balance cannot be withdrawn.
                         </p>
                       </div>
                     )}
 
                     <button
                       onClick={() => setStep(isDeposit && !approved ? "approve" : "confirm")}
-                      disabled={!isValid || !isConnected}
+                      disabled={!isValid || !isConnected || (!isDeposit && !hasDeposit)}
                       className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold text-base transition-all active:scale-95 disabled:opacity-40 disabled:active:scale-100 flex items-center justify-center gap-2"
                     >
                       {isDeposit ? "Continue to Approve" : "Review Withdrawal"}
