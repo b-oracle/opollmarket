@@ -27,6 +27,17 @@ const getMarketImage = (id: string, category: string) => {
   return icons[category] || "💡";
 };
 
+const CommentBadge = ({ marketId }: { marketId: string }) => {
+  const count = useCommentCount(marketId);
+  if (count === 0) return null;
+  return (
+    <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+      <MessageCircle className="w-3 h-3" />
+      {count}
+    </span>
+  );
+};
+
 const Index = () => {
   const navigate = useNavigate();
   const { boostedMarketIds, boostDetails } = useActiveBoosts();
@@ -120,18 +131,6 @@ const Index = () => {
           getMarketImage={getMarketImage}
           onBoost={(market) => setBoostModalMarket({ id: market.id, title: market.title })}
         />
-
-const CommentBadge = ({ marketId }: { marketId: string }) => {
-  const count = useCommentCount(marketId);
-  if (count === 0) return null;
-  return (
-    <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-      <MessageCircle className="w-3 h-3" />
-      {count}
-    </span>
-  );
-};
-
 
 
         {/* Filter tabs */}
