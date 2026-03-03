@@ -3,7 +3,7 @@ import { useNavigate, Outlet, NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard, ShoppingBag, MessageSquare, Users, LogOut, Loader2,
-  ArrowLeft, PlusCircle, Receipt, Settings, Coins, Menu, X,
+  ArrowLeft, PlusCircle, Receipt, Settings, Coins, Menu, X, ArrowUpFromLine,
 } from "lucide-react";
 
 const navItems = [
@@ -11,6 +11,7 @@ const navItems = [
   { to: "/admin/markets", label: "Markets", icon: ShoppingBag },
   { to: "/admin/create-market", label: "Create Market", icon: PlusCircle },
   { to: "/admin/transactions", label: "Transactions", icon: Receipt },
+  { to: "/admin/withdrawals", label: "Withdrawals", icon: ArrowUpFromLine },
   { to: "/admin/comments", label: "Comments", icon: MessageSquare },
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/commissions", label: "Commissions", icon: Coins },
