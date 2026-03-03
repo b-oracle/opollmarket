@@ -35,6 +35,261 @@ const optionColors = [
   "hsl(var(--muted-foreground))",
 ];
 
+interface DbComment {
+  id: string;
+  market_id: string;
+  parent_id: string | null;
+  author_name: string;
+  author_wallet: string | null;
+  content: string;
+  likes_count: number;
+  created_at: string;
+  liked?: boolean;
+  replies?: DbComment[];
+}
+
+const formatCommentTime = (dateStr: string) => {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "now";
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
+};
+
+const InlineCommentItem = ({
+  comment,
+  isReply = false,
+  onReply,
+  onLike,
+}: {
+  comment: DbComment;
+  isReply?: boolean;
+  onReply: (id: string, author: string) => void;
+  onLike: (id: string, liked: boolean) => void;
+}) => {
+  const [showReplies, setShowReplies] = useState(true);
+  const replies = comment.replies || [];
+
+  return (
+    <div className={isReply ? "ml-8 border-l border-border/30 pl-3" : ""}>
+      <div className="flex gap-2.5 py-2.5">
+        <div className="w-7 h-7 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0">
+          <span className="text-[10px] font-bold text-primary">{comment.author_name.charAt(0).toUpperCase()}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-xs font-semibold">@{comment.author_name}</span>
+            <span className="text-[10px] text-muted-foreground">{formatCommentTime(comment.created_at)}</span>
+          </div>
+          <p className="text-xs text-foreground/80 leading-relaxed break-words">{comment.content}</p>
+          <div className="flex items-center gap-4 mt-1">
+            <button
+              onClick={() => onLike(comment.id, !!comment.liked)}
+              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-destructive transition-colors"
+            >
+              <Heart className={`w-3 h-3 ${comment.liked ? "text-destructive fill-destructive" : ""}`} />
+              {comment.likes_count}
+            </button>
+            {!isReply && (
+              <button
+                onClick={() => onReply(comment.id, comment.author_name)}
+                className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
+              >
+                <CornerDownRight className="w-3 h-3" />
+                Reply
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+      {replies.length > 0 && (
+        <div>
+          {replies.length > 1 && (
+            <button
+              onClick={() => setShowReplies(!showReplies)}
+              className="flex items-center gap-1 ml-9 text-[10px] text-primary font-semibold py-0.5"
+            >
+              <ChevronDown className={`w-3 h-3 transition-transform ${showReplies ? "rotate-180" : ""}`} />
+              {showReplies ? "Hide" : "View"} {replies.length} replies
+            </button>
+          )}
+          {showReplies && replies.map((r) => (
+            <InlineCommentItem key={r.id} comment={r} isReply onReply={onReply} onLike={onLike} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const InlineComments = ({ marketId }: { marketId: string }) => {
+  const { address } = useAccount();
+  const [comments, setComments] = useState<DbComment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [inputValue, setInputValue] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [replyTo, setReplyTo] = useState<{ id: string; author: string } | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const walletId = address || `anon-${Math.random().toString(36).slice(2, 10)}`;
+
+  const fetchComments = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("comments")
+        .select("*")
+        .eq("market_id", marketId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+
+      const { data: userLikes } = await supabase
+        .from("comment_likes")
+        .select("comment_id")
+        .eq("wallet_address", walletId);
+      const likedIds = new Set(userLikes?.map((l) => l.comment_id) || []);
+
+      const map = new Map<string, DbComment>();
+      const topLevel: DbComment[] = [];
+      for (const c of data || []) {
+        map.set(c.id, { ...c, liked: likedIds.has(c.id), replies: [] });
+      }
+      for (const c of data || []) {
+        const comment = map.get(c.id)!;
+        if (c.parent_id && map.has(c.parent_id)) {
+          map.get(c.parent_id)!.replies!.push(comment);
+        } else if (!c.parent_id) {
+          topLevel.push(comment);
+        }
+      }
+      for (const c of map.values()) {
+        c.replies?.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      }
+      setComments(topLevel);
+    } catch (err) {
+      console.error("Failed to fetch comments:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [marketId, walletId]);
+
+  useEffect(() => {
+    fetchComments();
+    const channel = supabase
+      .channel(`detail-comments-${marketId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "comments", filter: `market_id=eq.${marketId}` }, () => fetchComments())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [marketId, fetchComments]);
+
+  useEffect(() => {
+    if (replyTo && inputRef.current) inputRef.current.focus();
+  }, [replyTo]);
+
+  const handleSend = async () => {
+    const text = inputValue.trim();
+    if (!text || submitting) return;
+    const cleanText = replyTo ? text.replace(new RegExp(`^@${replyTo.author}\\s*`), "").trim() || text : text;
+    setSubmitting(true);
+    try {
+      const authorName = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "Anonymous";
+      const { error } = await supabase.from("comments").insert({
+        market_id: marketId,
+        parent_id: replyTo?.id || null,
+        author_name: authorName,
+        author_wallet: address || null,
+        content: cleanText,
+      });
+      if (error) throw error;
+      setInputValue("");
+      setReplyTo(null);
+    } catch {
+      toast.error("Failed to post comment");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleLike = async (commentId: string, alreadyLiked: boolean) => {
+    try {
+      if (alreadyLiked) {
+        await supabase.from("comment_likes").delete().eq("comment_id", commentId).eq("wallet_address", walletId);
+      } else {
+        await supabase.from("comment_likes").insert({ comment_id: commentId, wallet_address: walletId });
+      }
+      const updateLike = (arr: DbComment[]): DbComment[] =>
+        arr.map((c) => ({
+          ...c,
+          liked: c.id === commentId ? !alreadyLiked : c.liked,
+          likes_count: c.id === commentId ? (alreadyLiked ? c.likes_count - 1 : c.likes_count + 1) : c.likes_count,
+          replies: updateLike(c.replies || []),
+        }));
+      setComments(updateLike);
+    } catch (err) {
+      console.error("Failed to toggle like:", err);
+    }
+  };
+
+  const handleReply = (commentId: string, author: string) => {
+    setReplyTo({ id: commentId, author });
+    setInputValue(`@${author} `);
+  };
+
+  const totalComments = comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0);
+
+  return (
+    <div className="glass rounded-xl p-4 mb-6">
+      <h3 className="text-sm font-semibold mb-3">💬 Discussion ({totalComments})</h3>
+
+      {/* Input */}
+      <div className="mb-4">
+        {replyTo && (
+          <div className="flex items-center justify-between mb-1.5 px-1">
+            <span className="text-[10px] text-primary">Replying to @{replyTo.author}</span>
+            <button onClick={() => { setReplyTo(null); setInputValue(""); }} className="text-[10px] text-muted-foreground hover:text-foreground">Cancel</button>
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            placeholder={replyTo ? `Reply to @${replyTo.author}...` : "Add a comment..."}
+            className="flex-1 bg-muted/50 border border-border rounded-full px-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+            disabled={submitting}
+          />
+          <button
+            onClick={handleSend}
+            disabled={!inputValue.trim() || submitting}
+            className="w-8 h-8 rounded-full bg-primary flex items-center justify-center transition-all active:scale-90 disabled:opacity-40"
+          >
+            {submitting ? <Loader2 className="w-3.5 h-3.5 text-primary-foreground animate-spin" /> : <Send className="w-3.5 h-3.5 text-primary-foreground" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Comments list */}
+      {loading ? (
+        <div className="flex items-center justify-center py-6">
+          <Loader2 className="w-5 h-5 text-primary animate-spin" />
+        </div>
+      ) : comments.length === 0 ? (
+        <div className="text-center py-6 text-muted-foreground">
+          <p className="text-xs">No comments yet. Be the first!</p>
+        </div>
+      ) : (
+        <div className="divide-y divide-border/20">
+          {comments.map((c) => (
+            <InlineCommentItem key={c.id} comment={c} onReply={handleReply} onLike={handleLike} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const MarketDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
