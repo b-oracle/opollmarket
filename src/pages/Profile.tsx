@@ -1,9 +1,10 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import DepositWithdrawModal from "@/components/DepositWithdrawModal";
+import InstallAppModal from "@/components/InstallAppModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserBalance } from "@/hooks/useUserBalance";
 import { useQuery } from "@tanstack/react-query";
@@ -45,25 +46,7 @@ const Profile = () => {
   const [txFilter, setTxFilter] = useState<FilterType>("all");
   const [editingProfile, setEditingProfile] = useState(false);
   const [editName, setEditName] = useState(user?.user_metadata?.display_name || "");
-  const deferredPrompt = useRef<any>(null);
-
-  useEffect(() => {
-    const handler = (e: Event) => {
-      e.preventDefault();
-      deferredPrompt.current = e;
-    };
-    window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
-  }, []);
-
-  const triggerInstallPrompt = () => {
-    if (deferredPrompt.current) {
-      deferredPrompt.current.prompt();
-      deferredPrompt.current = null;
-    } else {
-      alert("To install, use your browser's menu and select 'Add to Home Screen' or 'Install App'.");
-    }
-  };
+  const [installOpen, setInstallOpen] = useState(false);
 
   const { data: transactions = [] } = useQuery({
     queryKey: ["transactions", user?.id],
@@ -356,7 +339,7 @@ const Profile = () => {
                   key={item.label}
                   onClick={() => {
                     if (item.href === "__install__") {
-                      triggerInstallPrompt();
+                      setInstallOpen(true);
                     } else {
                       toast({ title: "Coming Soon", description: `${item.label} will be available soon!` });
                     }
@@ -412,6 +395,7 @@ const Profile = () => {
       </div>
 
       <DepositWithdrawModal open={modalOpen} onClose={() => setModalOpen(false)} initialTab={modalTab} />
+      <InstallAppModal open={installOpen} onClose={() => setInstallOpen(false)} />
       <BottomNav />
     </div>
   );
