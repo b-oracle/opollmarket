@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 interface MarketCardProps {
   market: Market;
   isActive: boolean;
+  isBoosted?: boolean;
 }
 
 const formatVolume = (v: number) => {
@@ -31,15 +32,16 @@ const optionColors = [
   "hsl(var(--muted-foreground))",
 ];
 
-const MarketCard = ({ market, isActive }: MarketCardProps) => {
+const MarketCard = ({ market, isActive, isBoosted = false }: MarketCardProps) => {
   const navigate = useNavigate();
   const yesPercent = Math.round(market.yesPrice * 100);
   const noPercent = Math.round(market.noPrice * 100);
   const isMulti = market.marketType === "multi" || market.marketType === "range";
+  const showBoosted = isBoosted || market.trending;
 
   return (
-    <div className="snap-item relative h-[calc(100dvh-5rem)] w-full flex items-end pb-6 px-4">
-      <div className="absolute inset-0 bg-gradient-to-br from-secondary/50 via-background to-background" />
+    <div className={`snap-item relative h-[calc(100dvh-5rem)] w-full flex items-end pb-6 px-4 ${isBoosted ? 'ring-1 ring-primary/20' : ''}`}>
+      <div className={`absolute inset-0 ${isBoosted ? 'bg-gradient-to-br from-primary/10 via-background to-background' : 'bg-gradient-to-br from-secondary/50 via-background to-background'}`} />
 
       {/* Probability ring or multi-option indicator */}
       <div className="absolute top-8 right-4 z-10">
@@ -112,9 +114,13 @@ const MarketCard = ({ market, isActive }: MarketCardProps) => {
             <span className="text-xs font-bold text-primary">{market.creatorName.charAt(0)}</span>
           </div>
           <span className="text-sm font-medium text-foreground/80">@{market.creatorName}</span>
-          {market.trending && (
-            <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold flex items-center gap-1">
-              <Zap className="w-3 h-3" /> Boosted
+          {showBoosted && (
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 ${
+              isBoosted 
+                ? 'bg-primary/20 text-primary animate-pulse' 
+                : 'bg-primary/10 text-primary'
+            }`}>
+              <Zap className="w-3 h-3" /> {isBoosted ? 'Boosted 🔥' : 'Trending'}
             </span>
           )}
         </div>

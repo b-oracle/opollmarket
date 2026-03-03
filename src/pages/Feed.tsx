@@ -1,12 +1,23 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import MarketCard from "@/components/MarketCard";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { mockMarkets } from "@/data/markets";
+import { useActiveBoosts } from "@/hooks/useActiveBoosts";
 
 const Feed = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const { boostedMarketIds } = useActiveBoosts();
+
+  // Sort: boosted markets first, then trending, then rest
+  const sortedMarkets = useMemo(() => {
+    return [...mockMarkets].sort((a, b) => {
+      const aBoost = boostedMarketIds.has(a.id) ? 2 : a.trending ? 1 : 0;
+      const bBoost = boostedMarketIds.has(b.id) ? 2 : b.trending ? 1 : 0;
+      return bBoost - aBoost;
+    });
+  }, [boostedMarketIds]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -29,8 +40,13 @@ const Feed = () => {
         ref={containerRef}
         className="flex-1 snap-feed pt-14 pb-0"
       >
-        {mockMarkets.map((market, i) => (
-          <MarketCard key={market.id} market={market} isActive={i === activeIndex} />
+        {sortedMarkets.map((market, i) => (
+          <MarketCard
+            key={market.id}
+            market={market}
+            isActive={i === activeIndex}
+            isBoosted={boostedMarketIds.has(market.id)}
+          />
         ))}
       </div>
       <BottomNav />

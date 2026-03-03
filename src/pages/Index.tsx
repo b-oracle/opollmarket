@@ -5,6 +5,8 @@ import { categoryIcons } from "@/data/markets";
 import { TrendingUp, Users, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useActiveBoosts } from "@/hooks/useActiveBoosts";
+import { useMemo } from "react";
 
 const formatVolume = (v: number) => {
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(2)}M`;
@@ -23,7 +25,21 @@ const getMarketImage = (id: string, category: string) => {
 
 const Index = () => {
   const navigate = useNavigate();
-  const trending = mockMarkets.filter((m) => m.trending);
+  const { boostedMarketIds, boostDetails } = useActiveBoosts();
+  
+  // Merge boosted status: DB boosts + mock trending
+  const trending = useMemo(() => {
+    const allTrending = mockMarkets.filter(
+      (m) => m.trending || boostedMarketIds.has(m.id)
+    );
+    // Sort boosted first
+    return allTrending.sort((a, b) => {
+      const aBoost = boostedMarketIds.has(a.id) ? 1 : 0;
+      const bBoost = boostedMarketIds.has(b.id) ? 1 : 0;
+      return bBoost - aBoost;
+    });
+  }, [boostedMarketIds]);
+  
   const totalVolume = mockMarkets.reduce((s, m) => s + m.volume, 0);
   const totalTraders = mockMarkets.reduce((s, m) => s + m.participants, 0);
 
@@ -94,6 +110,7 @@ const Index = () => {
             const displayPercent = isMulti && topOption
               ? Math.round(topOption.price * 100)
               : yesPercent;
+            const isBoosted = boostedMarketIds.has(market.id);
 
             return (
               <motion.div
@@ -102,7 +119,9 @@ const Index = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.6 + i * 0.08 }}
                 onClick={() => navigate(`/market/${market.id}`)}
-                className="glass rounded-xl p-3 cursor-pointer hover:bg-accent/30 transition-all active:scale-[0.98] flex items-center gap-3"
+                className={`glass rounded-xl p-3 cursor-pointer hover:bg-accent/30 transition-all active:scale-[0.98] flex items-center gap-3 ${
+                  isBoosted ? 'ring-1 ring-primary/30 bg-primary/5' : ''
+                }`}
               >
                 {/* Thumbnail */}
                 <div className="w-14 h-14 rounded-xl bg-secondary/80 border border-border shrink-0 relative overflow-hidden">
@@ -126,7 +145,12 @@ const Index = () => {
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1.5 py-0.5 rounded bg-muted/80 border border-border">
                       {market.category}
                     </span>
-                    <span className="text-[10px] text-muted-foreground font-mono">
+                    {isBoosted && (
+                      <span className="text-[10px] font-bold text-primary flex items-center gap-0.5 animate-pulse">
+                        <Zap className="w-3 h-3" /> Boosted
+                      </span>
+                    )}
+                    <span className="text-[10px] text-muted-foreground font-mono ml-auto">
                       {formatVolume(market.volume)} Vol
                     </span>
                   </div>
