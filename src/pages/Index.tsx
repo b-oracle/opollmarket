@@ -105,8 +105,18 @@ const Index = () => {
                 className="glass rounded-xl p-3 cursor-pointer hover:bg-accent/30 transition-all active:scale-[0.98] flex items-center gap-3"
               >
                 {/* Thumbnail */}
-                <div className="w-14 h-14 rounded-xl bg-secondary/80 border border-border flex items-center justify-center shrink-0 relative overflow-hidden">
-                  <span className="text-2xl">{getMarketImage(market.id, market.category)}</span>
+                <div className="w-14 h-14 rounded-xl bg-secondary/80 border border-border shrink-0 relative overflow-hidden">
+                  {market.imageUrl ? (
+                    <img
+                      src={market.imageUrl}
+                      alt={market.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <span className="text-2xl">{getMarketImage(market.id, market.category)}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Content */}

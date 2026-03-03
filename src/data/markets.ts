@@ -39,7 +39,7 @@ export const mockMarkets: Market[] = [
     endDate: "2026-07-01",
     creatorAddress: "0x1a2b...3c4d",
     creatorName: "CryptoOracle",
-    imageUrl: "",
+    imageUrl: "/images/market-btc.jpg",
     trending: true,
   },
   {
@@ -56,7 +56,7 @@ export const mockMarkets: Market[] = [
     endDate: "2026-12-31",
     creatorAddress: "0x5e6f...7g8h",
     creatorName: "TechFuturist",
-    imageUrl: "",
+    imageUrl: "/images/market-ai.jpg",
     trending: true,
   },
   {
@@ -81,7 +81,7 @@ export const mockMarkets: Market[] = [
     endDate: "2026-07-19",
     creatorAddress: "0xab12...cd34",
     creatorName: "SportsBet",
-    imageUrl: "",
+    imageUrl: "/images/market-worldcup.jpg",
     trending: true,
   },
   {
@@ -98,7 +98,7 @@ export const mockMarkets: Market[] = [
     endDate: "2030-01-01",
     creatorAddress: "0x9i0j...1k2l",
     creatorName: "SpaceWatcher",
-    imageUrl: "",
+    imageUrl: "/images/market-spacex.jpg",
     trending: false,
   },
   {
@@ -122,7 +122,7 @@ export const mockMarkets: Market[] = [
     endDate: "2027-01-01",
     creatorAddress: "0xef56...gh78",
     creatorName: "RangeTrader",
-    imageUrl: "",
+    imageUrl: "/images/market-btcprice.jpg",
     trending: true,
   },
   {
@@ -139,7 +139,7 @@ export const mockMarkets: Market[] = [
     endDate: "2027-03-01",
     creatorAddress: "0x3m4n...5o6p",
     creatorName: "MacroTrader",
-    imageUrl: "",
+    imageUrl: "/images/market-economy.jpg",
     trending: true,
   },
   {
@@ -162,7 +162,7 @@ export const mockMarkets: Market[] = [
     endDate: "2028-11-05",
     creatorAddress: "0xij90...kl12",
     creatorName: "PollWatcher",
-    imageUrl: "",
+    imageUrl: "/images/market-politics.jpg",
     trending: true,
   },
   {
@@ -179,7 +179,7 @@ export const mockMarkets: Market[] = [
     endDate: "2026-09-01",
     creatorAddress: "0x7q8r...9s0t",
     creatorName: "PopCulture",
-    imageUrl: "",
+    imageUrl: "/images/market-taylor.jpg",
     trending: false,
   },
   {
@@ -196,7 +196,7 @@ export const mockMarkets: Market[] = [
     endDate: "2027-01-01",
     creatorAddress: "0xuv1w...2x3y",
     creatorName: "DeFiDegen",
-    imageUrl: "",
+    imageUrl: "/images/market-eth.jpg",
     trending: true,
   },
 ];
