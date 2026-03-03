@@ -428,7 +428,7 @@ const Rankings = () => {
                           valueLine={`${me.pnl >= 0 ? "+" : "-"}${formatDollar(me.pnl)}`}
                           valuePositive={me.pnl >= 0}
                           totalCount={sortedTraders.length}
-                          onShare={() => shareRank(idx + 1, `${me.pnl >= 0 ? "+" : "-"}${formatDollar(me.pnl)} PnL`, "Trading")}
+                          onShare={() => shareRank(idx + 1, me.name, me.avatar, `${me.pnl >= 0 ? "+" : "-"}${formatDollar(me.pnl)}`, me.pnl >= 0, `${me.trades} trade${me.trades !== 1 ? "s" : ""} · ${formatDollar(me.volume)} vol`, "Trading", sortedTraders.length)}
                         />
                       );
                     })()}
@@ -462,7 +462,7 @@ const Rankings = () => {
                                 {trader.pnl >= 0 ? "+" : "-"}{formatDollar(trader.pnl)}
                               </p>
                               {isMe && (
-                                <button onClick={() => shareRank(i + 1, `${trader.pnl >= 0 ? "+" : "-"}${formatDollar(trader.pnl)} PnL`, "Trading")} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+                                <button onClick={() => shareRank(i + 1, trader.name, trader.avatar, `${trader.pnl >= 0 ? "+" : "-"}${formatDollar(trader.pnl)}`, trader.pnl >= 0, `${trader.trades} trade${trader.trades !== 1 ? "s" : ""} · ${formatDollar(trader.volume)} vol`, "Trading", sortedTraders.length)} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
                                   <Share2 className="w-3.5 h-3.5 text-primary" />
                                 </button>
                               )}
@@ -522,7 +522,7 @@ const Rankings = () => {
                           valueLine={`+${formatDollar(me.totalEarned)}`}
                           valuePositive={true}
                           totalCount={sortedReferrers.length}
-                          onShare={() => shareRank(idx + 1, `+${formatDollar(me.totalEarned)} earned`, "Referrals")}
+                          onShare={() => shareRank(idx + 1, me.name, me.avatar, `+${formatDollar(me.totalEarned)}`, true, `${me.totalReferrals} referral${me.totalReferrals !== 1 ? "s" : ""}`, "Referrals", sortedReferrers.length)}
                         />
                       );
                     })()}
@@ -553,7 +553,7 @@ const Rankings = () => {
                                 <TrendingUp className="w-3.5 h-3.5" />+{ref.totalEarned.toFixed(0)}
                               </p>
                               {isMe && (
-                                <button onClick={() => shareRank(i + 1, `+${formatDollar(ref.totalEarned)} earned`, "Referrals")} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+                                <button onClick={() => shareRank(i + 1, ref.name, ref.avatar, `+${formatDollar(ref.totalEarned)}`, true, `${ref.totalReferrals} referral${ref.totalReferrals !== 1 ? "s" : ""}`, "Referrals", sortedReferrers.length)} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
                                   <Share2 className="w-3.5 h-3.5 text-primary" />
                                 </button>
                               )}
