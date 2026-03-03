@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
-import { Trophy, TrendingUp, TrendingDown, Medal, Crown, Award, Users, Loader2, Star, Calendar, Share2 } from "lucide-react";
+import { Trophy, TrendingUp, TrendingDown, Medal, Crown, Award, Users, Loader2, Star, Calendar, Share2, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import RankShareModal from "@/components/RankShareModal";
@@ -321,6 +322,7 @@ const Rankings = () => {
   const [traderSort, setTraderSort] = useState<TraderSort>("pnl");
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("all");
   const { user } = useAuth();
+  const navigate = useNavigate();
   const currentUserId = user?.id;
 
   const [shareModal, setShareModal] = useState<{
@@ -352,10 +354,15 @@ const Rankings = () => {
     <div className="min-h-dvh bg-background pb-20">
       <TopBar />
       <div className="max-w-lg mx-auto px-4 pt-20">
-        <h2 className="text-xl font-bold mb-1 flex items-center gap-2">
-          <Trophy className="w-5 h-5 text-primary" /> Leaderboard
-        </h2>
-        <p className="text-xs text-muted-foreground mb-5">Top performers on the platform</p>
+        <div className="flex items-center gap-3 mb-1">
+          <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full glass flex items-center justify-center hover:bg-muted transition-colors">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-primary" /> Leaderboard
+          </h2>
+        </div>
+        <p className="text-xs text-muted-foreground mb-5 ml-12">Top performers on the platform</p>
 
         {/* Tabs */}
         <div className="flex gap-2 mb-4">
