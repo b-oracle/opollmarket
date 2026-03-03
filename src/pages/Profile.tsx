@@ -349,11 +349,18 @@ const Profile = () => {
               { icon: Video, label: "How-to Video Tutorials", href: "#", comingSoon: true },
               { icon: FileText, label: "Documentation", href: "#" },
               { icon: HelpCircle, label: "Frequently Asked Questions", href: "/faq" },
+              { icon: Download, label: "Download App", href: "__install__" },
             ].map((item) => (
-              item.comingSoon ? (
+              item.comingSoon || item.href === "__install__" ? (
                 <button
                   key={item.label}
-                  onClick={() => toast({ title: "Coming Soon", description: `${item.label} will be available soon!` })}
+                  onClick={() => {
+                    if (item.href === "__install__") {
+                      triggerInstallPrompt();
+                    } else {
+                      toast({ title: "Coming Soon", description: `${item.label} will be available soon!` });
+                    }
+                  }}
                   className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98] text-left"
                 >
                   <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0 text-muted-foreground">
