@@ -115,10 +115,9 @@ const BulkCSVImport = ({ onComplete }: BulkCSVImportProps) => {
   const [parsed, setParsed] = useState<ParsedMarket[]>([]);
   const [importing, setImporting] = useState(false);
   const [results, setResults] = useState<{ success: number; failed: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const processFile = (file: File) => {
     if (!file.name.endsWith(".csv")) {
       toast.error("Please upload a .csv file");
       return;
@@ -142,7 +141,29 @@ const BulkCSVImport = ({ onComplete }: BulkCSVImportProps) => {
       setResults(null);
     };
     reader.readAsText(file);
+  };
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
   };
 
   const downloadTemplate = () => {
