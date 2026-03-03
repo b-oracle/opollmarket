@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Eye, Plus } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+
+const CATEGORIES = ["Crypto", "AI & Tech", "Science", "Economy", "Entertainment", "Sports", "Politics", "Other"];
 
 interface MarketRow {
   id: string;
@@ -32,6 +34,13 @@ interface ResolveState {
   winningOptionId: string | null;
 }
 
+interface EditState {
+  id: string;
+  title: string;
+  category: string;
+  end_date: string;
+}
+
 const AdminMarkets = () => {
   const navigate = useNavigate();
   const [markets, setMarkets] = useState<MarketRow[]>([]);
@@ -39,21 +48,51 @@ const AdminMarkets = () => {
   const [filter, setFilter] = useState<"all" | "active" | "resolved" | "cancelled">("all");
   const [resolveState, setResolveState] = useState<ResolveState | null>(null);
   const [resolving, setResolving] = useState(false);
+  const [editState, setEditState] = useState<EditState | null>(null);
+  const [saving, setSaving] = useState(false);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   const fetchMarkets = async () => {
     let query = supabase
       .from("markets")
       .select("id, title, category, status, market_type, volume, participants, yes_price, end_date, created_at")
       .order("created_at", { ascending: false });
-
     if (filter !== "all") query = query.eq("status", filter);
-
     const { data, error } = await query;
     if (!error && data) setMarkets(data);
     setLoading(false);
   };
 
   useEffect(() => { fetchMarkets(); }, [filter]);
+
+  useEffect(() => {
+    if (editState && titleInputRef.current) titleInputRef.current.focus();
+  }, [editState?.id]);
+
+  const startEdit = (m: MarketRow) => {
+    setEditState({ id: m.id, title: m.title, category: m.category, end_date: m.end_date });
+  };
+
+  const cancelEdit = () => setEditState(null);
+
+  const saveEdit = async () => {
+    if (!editState) return;
+    if (editState.title.trim().length < 5) { toast.error("Title must be at least 5 characters"); return; }
+    setSaving(true);
+    const { error } = await supabase.from("markets").update({
+      title: editState.title.trim(),
+      category: editState.category,
+      end_date: editState.end_date,
+    }).eq("id", editState.id);
+    if (error) toast.error("Failed to save changes");
+    else { toast.success("Market updated"); setEditState(null); fetchMarkets(); }
+    setSaving(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") saveEdit();
+    if (e.key === "Escape") cancelEdit();
+  };
 
   const openResolveModal = async (market: MarketRow) => {
     if (market.market_type === "multi") {
@@ -71,40 +110,21 @@ const AdminMarkets = () => {
   const confirmResolve = async () => {
     if (!resolveState) return;
     const { market, winningSide, winningOptionId } = resolveState;
-
-    if (market.market_type === "binary" && !winningSide) {
-      toast.error("Select the winning side (Yes or No)");
-      return;
-    }
-    if (market.market_type === "multi" && !winningOptionId) {
-      toast.error("Select the winning option");
-      return;
-    }
-
+    if (market.market_type === "binary" && !winningSide) { toast.error("Select the winning side (Yes or No)"); return; }
+    if (market.market_type === "multi" && !winningOptionId) { toast.error("Select the winning option"); return; }
     setResolving(true);
-
-    // Update market status to resolved
     const updateData: Record<string, unknown> = { status: "resolved" };
     if (market.market_type === "binary" && winningSide) {
       updateData.yes_price = winningSide === "yes" ? 1 : 0;
       updateData.no_price = winningSide === "no" ? 1 : 0;
     }
-
     const { error } = await supabase.from("markets").update(updateData).eq("id", market.id);
-
     if (market.market_type === "multi" && winningOptionId) {
-      // Set winning option price to 1, others to 0
       await supabase.from("market_options").update({ price: 0 }).eq("market_id", market.id);
       await supabase.from("market_options").update({ price: 1 }).eq("id", winningOptionId);
     }
-
-    if (error) {
-      toast.error("Failed to resolve market");
-    } else {
-      toast.success("Market resolved successfully!");
-      setResolveState(null);
-      fetchMarkets();
-    }
+    if (error) toast.error("Failed to resolve market");
+    else { toast.success("Market resolved successfully!"); setResolveState(null); fetchMarkets(); }
     setResolving(false);
   };
 
@@ -143,17 +163,17 @@ const AdminMarkets = () => {
             Create Market
           </button>
           <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
-          {(["all", "active", "resolved", "cancelled"] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => { setLoading(true); setFilter(f); }}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors capitalize ${
-                filter === f ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {f}
-            </button>
-          ))}
+            {(["all", "active", "resolved", "cancelled"] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => { setLoading(true); setFilter(f); }}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors capitalize ${
+                  filter === f ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {f}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -164,6 +184,7 @@ const AdminMarkets = () => {
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted-foreground">
                 <th className="p-3">Title</th>
+                <th className="p-3">Category</th>
                 <th className="p-3">Type</th>
                 <th className="p-3">Status</th>
                 <th className="p-3">Volume</th>
@@ -172,67 +193,145 @@ const AdminMarkets = () => {
               </tr>
             </thead>
             <tbody>
-              {markets.map((m) => (
-                <tr key={m.id} className="border-b border-border/50 hover:bg-muted/30">
-                  <td className="p-3 font-medium max-w-[220px] truncate">{m.title}</td>
-                  <td className="p-3">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary">
-                      {m.market_type}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      m.status === "active" ? "bg-green-500/10 text-green-500" :
-                      m.status === "resolved" ? "bg-blue-500/10 text-blue-500" :
-                      "bg-yellow-500/10 text-yellow-500"
-                    }`}>
-                      {m.status}
-                    </span>
-                  </td>
-                  <td className="p-3 text-muted-foreground">${Number(m.volume).toLocaleString()}</td>
-                  <td className="p-3 text-muted-foreground text-xs">{new Date(m.end_date).toLocaleDateString()}</td>
-                  <td className="p-3">
-                    <div className="flex items-center gap-1">
-                      {m.status === "active" && (
-                        <>
-                          <button
-                            onClick={() => openResolveModal(m)}
-                            className="p-1.5 rounded-lg hover:bg-green-500/10 text-green-500 transition-colors"
-                            title="Resolve Market"
-                          >
-                            <Gavel className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleCancel(m.id)}
-                            className="p-1.5 rounded-lg hover:bg-yellow-500/10 text-yellow-500 transition-colors"
-                            title="Cancel Market"
-                          >
-                            <XCircle className="w-4 h-4" />
-                          </button>
-                        </>
+              {markets.map((m) => {
+                const isEditing = editState?.id === m.id;
+                return (
+                  <tr key={m.id} className={`border-b border-border/50 ${isEditing ? "bg-primary/5" : "hover:bg-muted/30"}`}>
+                    {/* Title */}
+                    <td className="p-3 max-w-[220px]">
+                      {isEditing ? (
+                        <input
+                          ref={titleInputRef}
+                          value={editState.title}
+                          onChange={(e) => setEditState({ ...editState, title: e.target.value })}
+                          onKeyDown={handleKeyDown}
+                          className="w-full bg-muted/50 border border-border rounded-lg px-2 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                      ) : (
+                        <span className="font-medium truncate block">{m.title}</span>
                       )}
-                      {(m.status === "resolved" || m.status === "cancelled") && (
-                        <button
-                          onClick={() => handleReactivate(m.id)}
-                          className="p-1.5 rounded-lg hover:bg-blue-500/10 text-blue-500 transition-colors"
-                          title="Reactivate"
+                    </td>
+                    {/* Category */}
+                    <td className="p-3">
+                      {isEditing ? (
+                        <select
+                          value={editState.category}
+                          onChange={(e) => setEditState({ ...editState, category: e.target.value })}
+                          className="bg-muted/50 border border-border rounded-lg px-2 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
                         >
-                          <CheckCircle className="w-4 h-4" />
-                        </button>
+                          {CATEGORIES.map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">{m.category}</span>
                       )}
-                      <button
-                        onClick={() => handleDelete(m.id)}
-                        className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    {/* Type */}
+                    <td className="p-3">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary">
+                        {m.market_type}
+                      </span>
+                    </td>
+                    {/* Status */}
+                    <td className="p-3">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        m.status === "active" ? "bg-green-500/10 text-green-500" :
+                        m.status === "resolved" ? "bg-blue-500/10 text-blue-500" :
+                        "bg-yellow-500/10 text-yellow-500"
+                      }`}>
+                        {m.status}
+                      </span>
+                    </td>
+                    {/* Volume */}
+                    <td className="p-3 text-muted-foreground">${Number(m.volume).toLocaleString()}</td>
+                    {/* End Date */}
+                    <td className="p-3">
+                      {isEditing ? (
+                        <input
+                          type="date"
+                          value={editState.end_date}
+                          onChange={(e) => setEditState({ ...editState, end_date: e.target.value })}
+                          onKeyDown={handleKeyDown}
+                          className="bg-muted/50 border border-border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                      ) : (
+                        <span className="text-muted-foreground text-xs">{new Date(m.end_date).toLocaleDateString()}</span>
+                      )}
+                    </td>
+                    {/* Actions */}
+                    <td className="p-3">
+                      <div className="flex items-center gap-1">
+                        {isEditing ? (
+                          <>
+                            <button
+                              onClick={saveEdit}
+                              disabled={saving}
+                              className="p-1.5 rounded-lg hover:bg-green-500/10 text-green-500 transition-colors"
+                              title="Save"
+                            >
+                              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                            </button>
+                            <button
+                              onClick={cancelEdit}
+                              className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
+                              title="Cancel"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => startEdit(m)}
+                              className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+                              title="Edit"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            {m.status === "active" && (
+                              <>
+                                <button
+                                  onClick={() => openResolveModal(m)}
+                                  className="p-1.5 rounded-lg hover:bg-green-500/10 text-green-500 transition-colors"
+                                  title="Resolve Market"
+                                >
+                                  <Gavel className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleCancel(m.id)}
+                                  className="p-1.5 rounded-lg hover:bg-yellow-500/10 text-yellow-500 transition-colors"
+                                  title="Cancel Market"
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
+                            {(m.status === "resolved" || m.status === "cancelled") && (
+                              <button
+                                onClick={() => handleReactivate(m.id)}
+                                className="p-1.5 rounded-lg hover:bg-blue-500/10 text-blue-500 transition-colors"
+                                title="Reactivate"
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDelete(m.id)}
+                              className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
               {markets.length === 0 && (
-                <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No markets found</td></tr>
+                <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No markets found</td></tr>
               )}
             </tbody>
           </table>
