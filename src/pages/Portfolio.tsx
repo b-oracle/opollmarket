@@ -19,9 +19,11 @@ import {
   AlertTriangle,
   LogOut,
   Shield,
+  Trophy,
 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
+import WinCelebrationModal from "@/components/WinCelebrationModal";
 import { toast } from "sonner";
 
 interface Position {
