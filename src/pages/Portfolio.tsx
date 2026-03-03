@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   TrendingUp,
   TrendingDown,
@@ -9,14 +9,20 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Clock,
-  Filter,
   BarChart3,
   DollarSign,
   Target,
   Percent,
+  X,
+  Loader2,
+  CheckCircle2,
+  AlertTriangle,
+  LogOut,
+  Shield,
 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
+import { toast } from "sonner";
 
 interface Position {
   id: string;
@@ -151,10 +157,37 @@ const Sparkline = ({ avgPrice, currentPrice, side, seed }: { avgPrice: number; c
   );
 };
 
+type EnrichedPosition = Position & { currentValue: number; unrealizedPnl: number; pnlPercent: number; maxPayout: number };
+
 const Portfolio = () => {
   const { isConnected } = useAccount();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterType>("all");
+  const [sellTarget, setSellTarget] = useState<EnrichedPosition | null>(null);
+  const [sellStep, setSellStep] = useState<"confirm" | "executing" | "success" | "error">("confirm");
+
+  const openSell = (pos: EnrichedPosition, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSellTarget(pos);
+    setSellStep("confirm");
+  };
+
+  const closeSell = () => {
+    setSellTarget(null);
+    setSellStep("confirm");
+  };
+
+  const executeSell = useCallback(() => {
+    setSellStep("executing");
+    setTimeout(() => {
+      if (Math.random() > 0.1) {
+        setSellStep("success");
+        toast.success("Position closed successfully!");
+      } else {
+        setSellStep("error");
+      }
+    }, 2500);
+  }, []);
 
   const positions = MOCK_POSITIONS;
 
@@ -290,13 +323,13 @@ const Portfolio = () => {
         {/* Positions list */}
         <div className="space-y-3">
           {filtered.map((pos, i) => (
-            <motion.button
+            <motion.div
               key={pos.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
               onClick={() => navigate(`/market/${pos.marketId}`)}
-              className="w-full glass rounded-xl p-4 text-left transition-all active:scale-[0.98] hover:bg-accent/30"
+              className="w-full glass rounded-xl p-4 text-left transition-all active:scale-[0.98] hover:bg-accent/30 cursor-pointer"
             >
               {/* Top row: title + side badge */}
               <div className="flex items-start justify-between gap-3 mb-3">
@@ -340,21 +373,26 @@ const Portfolio = () => {
               {/* Sparkline */}
               <Sparkline avgPrice={pos.avgPrice} currentPrice={pos.currentPrice} side={pos.side} seed={pos.id} />
 
-              {/* P&L bar */}
+              {/* P&L bar + Sell button */}
               <div className="flex items-center justify-between pt-2 border-t border-border">
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground">Invested:</span>
-                  <span className="text-xs font-semibold">${pos.invested.toFixed(2)}</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-muted-foreground">P&L:</span>
+                    <span className={`text-xs font-bold flex items-center gap-0.5 ${pos.unrealizedPnl >= 0 ? "neon-yes" : "neon-no"}`}>
+                      {pos.unrealizedPnl >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                      ${Math.abs(pos.unrealizedPnl).toFixed(2)}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground">P&L:</span>
-                  <span className={`text-xs font-bold flex items-center gap-0.5 ${pos.unrealizedPnl >= 0 ? "neon-yes" : "neon-no"}`}>
-                    {pos.unrealizedPnl >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                    ${Math.abs(pos.unrealizedPnl).toFixed(2)} ({pos.pnlPercent >= 0 ? "+" : ""}{pos.pnlPercent.toFixed(1)}%)
-                  </span>
-                </div>
+                <button
+                  onClick={(e) => openSell(pos, e)}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-[10px] font-bold uppercase tracking-wider hover:bg-destructive/20 transition-all active:scale-95"
+                >
+                  <LogOut className="w-3 h-3" />
+                  Sell
+                </button>
               </div>
-            </motion.button>
+            </motion.div>
           ))}
 
           {filtered.length === 0 && (
@@ -365,6 +403,153 @@ const Portfolio = () => {
           )}
         </div>
       </div>
+
+      {/* Sell Confirmation Modal */}
+      <AnimatePresence>
+        {sellTarget && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeSell}
+              className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 100, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 100, scale: 0.95 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto"
+            >
+              <div className="glass-strong rounded-t-3xl p-5 pb-8">
+                <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-4" />
+
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-bold">Close Position</h2>
+                  <button onClick={closeSell} className="w-8 h-8 rounded-full glass flex items-center justify-center">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <AnimatePresence mode="wait">
+                  {sellStep === "confirm" && (
+                    <motion.div key="confirm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                      <p className="text-xs text-muted-foreground mb-4 line-clamp-2">{sellTarget.marketTitle}</p>
+
+                      <div className="glass rounded-xl p-4 mb-4 space-y-2.5">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Side</span>
+                          <span className={`font-bold uppercase ${sellTarget.side === "yes" ? "neon-yes" : "neon-no"}`}>{sellTarget.side}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Shares</span>
+                          <span className="font-semibold">{sellTarget.shares}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Avg Entry</span>
+                          <span className="font-semibold">{sellTarget.avgPrice}¢</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Current Price</span>
+                          <span className={`font-semibold ${sellTarget.currentPrice > sellTarget.avgPrice ? "neon-yes" : "neon-no"}`}>
+                            {sellTarget.currentPrice}¢
+                          </span>
+                        </div>
+                        <div className="border-t border-border pt-2 flex justify-between text-sm">
+                          <span className="text-muted-foreground">Sale Proceeds</span>
+                          <span className="font-bold text-lg">${sellTarget.currentValue.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Realized P&L</span>
+                          <span className={`font-bold ${sellTarget.unrealizedPnl >= 0 ? "neon-yes" : "neon-no"}`}>
+                            {sellTarget.unrealizedPnl >= 0 ? "+" : ""}${sellTarget.unrealizedPnl.toFixed(2)} ({sellTarget.pnlPercent >= 0 ? "+" : ""}{sellTarget.pnlPercent.toFixed(1)}%)
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border mb-5">
+                        <AlertTriangle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                        <p className="text-[10px] text-muted-foreground">
+                          Selling will close your entire position. Proceeds will be credited to your platform balance instantly.
+                        </p>
+                      </div>
+
+                      <div className="flex gap-3">
+                        <button onClick={closeSell} className="flex-1 glass py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-95">
+                          Cancel
+                        </button>
+                        <button
+                          onClick={executeSell}
+                          className="flex-1 bg-destructive text-destructive-foreground py-3.5 rounded-xl font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Confirm Sell
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {sellStep === "executing" && (
+                    <motion.div key="executing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-8">
+                      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}>
+                        <Loader2 className="w-12 h-12 text-primary" />
+                      </motion.div>
+                      <h3 className="text-lg font-bold mt-4 mb-1">Selling Position...</h3>
+                      <p className="text-sm text-muted-foreground">Executing trade on-chain</p>
+                    </motion.div>
+                  )}
+
+                  {sellStep === "success" && (
+                    <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center py-6">
+                      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", damping: 10 }}
+                        className="w-16 h-16 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center mb-4"
+                      >
+                        <CheckCircle2 className="w-8 h-8 text-primary" />
+                      </motion.div>
+                      <h3 className="text-lg font-bold mb-1">Position Closed!</h3>
+                      <p className="text-sm text-muted-foreground text-center mb-2">
+                        Sold {sellTarget.shares} {sellTarget.side.toUpperCase()} shares
+                      </p>
+                      <p className={`text-xl font-bold mb-4 ${sellTarget.unrealizedPnl >= 0 ? "neon-yes" : "neon-no"}`}>
+                        {sellTarget.unrealizedPnl >= 0 ? "+" : ""}${sellTarget.unrealizedPnl.toFixed(2)}
+                      </p>
+                      <div className="glass rounded-xl p-3 w-full space-y-1.5 mb-5">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Proceeds</span>
+                          <span className="font-semibold">${sellTarget.currentValue.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Tx Hash</span>
+                          <span className="font-mono text-primary">0x4f8c...b72a</span>
+                        </div>
+                      </div>
+                      <button onClick={closeSell} className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm transition-all active:scale-95">
+                        Done
+                      </button>
+                    </motion.div>
+                  )}
+
+                  {sellStep === "error" && (
+                    <motion.div key="error" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center py-6">
+                      <div className="w-16 h-16 rounded-full bg-destructive/20 border border-destructive/40 flex items-center justify-center mb-4">
+                        <AlertTriangle className="w-8 h-8 text-destructive" />
+                      </div>
+                      <h3 className="text-lg font-bold mb-1">Sale Failed</h3>
+                      <p className="text-sm text-muted-foreground text-center mb-5">Transaction rejected or failed. No shares were sold.</p>
+                      <div className="flex gap-3 w-full">
+                        <button onClick={closeSell} className="flex-1 glass py-3 rounded-xl font-semibold text-sm transition-all active:scale-95">Cancel</button>
+                        <button onClick={() => setSellStep("confirm")} className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm transition-all active:scale-95">Try Again</button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       <BottomNav />
     </div>
   );
