@@ -111,16 +111,14 @@ const Index = () => {
         </motion.button>
 
         {/* Boosted carousel */}
-        {boostedMarkets.length > 0 && (
-          <BoostedCarousel
-            markets={boostedMarkets}
-            boostDetails={boostDetails}
-            navigate={navigate}
-            formatVolume={formatVolume}
-            getMarketImage={getMarketImage}
-            onBoost={(market) => setBoostModalMarket({ id: market.id, title: market.title })}
-          />
-        )}
+        <BoostedCarousel
+          markets={boostedMarkets}
+          boostDetails={boostDetails}
+          navigate={navigate}
+          formatVolume={formatVolume}
+          getMarketImage={getMarketImage}
+          onBoost={(market) => setBoostModalMarket({ id: market.id, title: market.title })}
+        />
 
 
 
