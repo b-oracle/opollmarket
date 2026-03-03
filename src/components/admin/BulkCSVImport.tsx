@@ -309,6 +309,10 @@ const BulkCSVImport = ({ onComplete }: BulkCSVImportProps) => {
                   <p className="text-[10px] text-muted-foreground">
                     Required: title, description, category, end_date, resolution_source
                   </p>
+                  <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-medium">
+                    <FileSpreadsheet className="w-3 h-3" />
+                    .csv only
+                  </span>
                 </div>
               )}
               <input ref={fileInputRef} type="file" accept=".csv" onChange={handleFile} className="hidden" />
