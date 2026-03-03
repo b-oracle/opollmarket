@@ -210,7 +210,7 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
               </div>
               <div className="glass rounded-xl p-3 text-center">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Percentile</p>
-                <p className="text-lg font-bold text-primary">Top {topPercent}%</p>
+                <p className="text-lg font-bold" style={{ color: rankTheme.accent }}>Top {topPercent}%</p>
               </div>
             </div>
 
