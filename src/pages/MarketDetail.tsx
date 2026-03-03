@@ -2,8 +2,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Share2, Heart, TrendingUp, Users, Clock, Droplets } from "lucide-react";
 import { mockMarkets, categoryIcons } from "@/data/markets";
 import BottomNav from "@/components/BottomNav";
+import BetModal from "@/components/BetModal";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 const formatVolume = (v: number) => {
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
@@ -42,6 +43,9 @@ const MarketDetail = () => {
       };
     });
   }, [yesPercent, noPercent]);
+
+  const [betSide, setBetSide] = useState<"yes" | "no">("yes");
+  const [betOpen, setBetOpen] = useState(false);
 
   if (!market) return <div className="h-dvh flex items-center justify-center text-muted-foreground">Market not found</div>;
 
@@ -199,14 +203,28 @@ const MarketDetail = () => {
 
         {/* Bet buttons - sticky bottom */}
         <div className="sticky bottom-20 flex gap-3 pb-4">
-          <button className="flex-1 btn-yes py-4 rounded-xl font-bold text-base tracking-wide transition-all active:scale-95">
+          <button
+            onClick={() => { setBetSide("yes"); setBetOpen(true); }}
+            className="flex-1 btn-yes py-4 rounded-xl font-bold text-base tracking-wide transition-all active:scale-95"
+          >
             YES {yesPercent}¢
           </button>
-          <button className="flex-1 btn-no py-4 rounded-xl font-bold text-base tracking-wide transition-all active:scale-95">
+          <button
+            onClick={() => { setBetSide("no"); setBetOpen(true); }}
+            className="flex-1 btn-no py-4 rounded-xl font-bold text-base tracking-wide transition-all active:scale-95"
+          >
             NO {noPercent}¢
           </button>
         </div>
       </div>
+
+      <BetModal
+        open={betOpen}
+        onClose={() => setBetOpen(false)}
+        side={betSide}
+        price={betSide === "yes" ? yesPercent : noPercent}
+        marketTitle={market.title}
+      />
 
       <BottomNav />
     </div>
