@@ -297,7 +297,7 @@ const MarketDetail = () => {
 
       {market.imageUrl && (
         <div className="relative w-full max-w-lg mx-auto rounded-xl overflow-hidden">
-          <div className="h-48 w-full overflow-hidden">
+          <div className="h-40 w-full overflow-hidden">
             <img
               src={market.imageUrl}
               alt={market.title}
@@ -306,9 +306,9 @@ const MarketDetail = () => {
             />
           </div>
           <div className="absolute inset-0 bg-black/50" />
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            <h1 className="text-2xl font-bold text-white leading-tight drop-shadow-lg">{market.title}</h1>
-            <p className="text-sm text-white/80 mt-2 drop-shadow-md line-clamp-2">{market.description}</p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
+            <h1 className="text-lg font-bold text-white leading-snug drop-shadow-lg">{market.title}</h1>
+            <p className="text-xs text-white/70 mt-1.5 drop-shadow-md line-clamp-2">{market.description}</p>
           </div>
         </div>
       )}
