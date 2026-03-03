@@ -39,10 +39,19 @@ const CommentBadge = ({ marketId }: { marketId: string }) => {
 
 const Index = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { data: markets = [], isLoading } = useMarkets();
   const { boostedMarketIds, boostDetails } = useActiveBoosts();
   const [filter, setFilter] = useState<"trending" | "boosted" | "all">("trending");
   const [boostModalMarket, setBoostModalMarket] = useState<{ id: string; title: string } | null>(null);
+
+  // Capture referral param on landing
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref) {
+      localStorage.setItem("referral_id", ref);
+    }
+  }, [searchParams]);
 
   const boostedMarkets = useMemo(() => {
     const boosted = markets.filter((m) => boostedMarketIds.has(m.id));
