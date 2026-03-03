@@ -507,10 +507,11 @@ const MarketDetail = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
                   onClick={() => { setSelectedOption(opt.label); setBetSide("yes"); setBetOpen(true); }}
-                  className="w-full relative rounded-xl px-4 py-3.5 flex items-center justify-between transition-all active:scale-[0.98] overflow-hidden border border-white/10 backdrop-blur-md cursor-pointer"
+                  className="w-full relative rounded-xl px-4 py-3.5 flex items-center justify-between transition-all active:scale-[0.98] overflow-hidden border backdrop-blur-md cursor-pointer"
                   style={{
-                    background: `linear-gradient(135deg, ${color}15 0%, ${color}08 50%, transparent 100%)`,
-                    boxShadow: `inset 0 1px 0 ${color}20, 0 2px 8px ${color}10`,
+                    background: `linear-gradient(135deg, ${color}20 0%, ${color}12 60%, ${color}08 100%)`,
+                    borderColor: `${color}25`,
+                    boxShadow: `inset 0 1px 0 ${color}15, 0 2px 12px ${color}08`,
                   }}
                 >
                   {/* Fill bar background */}
