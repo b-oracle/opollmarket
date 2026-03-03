@@ -29,8 +29,21 @@ const MarketDetail = () => {
   const yesPercent = Math.round(market.yesPrice * 100);
   const noPercent = Math.round(market.noPrice * 100);
 
-  // Mock chart data points
-  const chartPoints = [42, 48, 45, 52, 58, 55, 60, 62, yesPercent];
+  // Generate realistic chart data
+  const chartData = useMemo(() => {
+    const points = 30;
+    const base = yesPercent - 15;
+    return Array.from({ length: points }, (_, i) => {
+      const noise = Math.sin(i * 0.8) * 8 + Math.cos(i * 0.3) * 5 + (Math.random() - 0.5) * 6;
+      const trend = ((yesPercent - base) / points) * i;
+      const value = Math.max(5, Math.min(95, Math.round(base + trend + noise)));
+      return {
+        day: i + 1,
+        yes: i === points - 1 ? yesPercent : value,
+        no: i === points - 1 ? noPercent : 100 - value,
+      };
+    });
+  }, [yesPercent, noPercent]);
 
   return (
     <div className="h-dvh bg-background overflow-y-auto pb-20">
