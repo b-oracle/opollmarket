@@ -13,6 +13,7 @@ import {
   Minus,
   Plus,
 } from "lucide-react";
+import SlideToConfirm from "@/components/SlideToConfirm";
 
 type BetSide = "yes" | "no";
 type ModalStep = "input" | "confirm" | "executing" | "success" | "error";
@@ -108,7 +109,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle }: BetModalProps) =>
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto"
           >
-            <div className="glass-strong rounded-t-3xl p-5 pb-8 max-h-[85dvh] overflow-y-auto">
+            <div className="glass-strong rounded-t-3xl p-5 pb-safe-bottom max-h-[85dvh] overflow-y-auto" style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom))" }}>
               {/* Handle bar */}
               <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-4" />
 
@@ -295,20 +296,18 @@ const BetModal = ({ open, onClose, side, price, marketTitle }: BetModalProps) =>
                       </p>
                     </div>
 
-                    <div className="flex gap-3">
+                    <div className="space-y-3">
                       <button
                         onClick={() => setStep("input")}
-                        className="flex-1 glass py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-95"
+                        className="w-full glass py-3 rounded-xl font-semibold text-sm transition-all active:scale-95"
                       >
-                        Back
+                        ← Back to Edit
                       </button>
-                      <button
-                        onClick={handleConfirm}
-                        className={`flex-1 ${sideBtnClass} py-3.5 rounded-xl font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2`}
-                      >
-                        Confirm & Sign
-                        <Wallet className="w-4 h-4" />
-                      </button>
+                      <SlideToConfirm
+                        onConfirm={handleConfirm}
+                        label="Slide to Confirm"
+                        color={isYes ? "yes" : "no"}
+                      />
                     </div>
                   </motion.div>
                 )}
