@@ -211,7 +211,21 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           {/* Text overlay for share screenshot */}
           <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
             <h3 className="text-xl font-bold text-white mb-1 line-clamp-2">{market.title}</h3>
-            <p className="text-sm text-white/70 line-clamp-2">{market.description}</p>
+            <p className="text-sm text-white/70 line-clamp-2 mb-3">{market.description}</p>
+            {isMulti && market.options ? (
+              <div className="flex flex-wrap gap-2">
+                {market.options.slice(0, 4).map((opt, i) => (
+                  <span key={opt.id} className="px-2.5 py-1 rounded-full text-xs font-bold text-white" style={{ backgroundColor: optionColors[i % optionColors.length] + '99' }}>
+                    {opt.label} {Math.round(opt.price * 100)}%
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <span className="px-3 py-1 rounded-full text-xs font-bold text-white" style={{ backgroundColor: 'hsl(145, 80%, 42%, 0.85)' }}>YES {yesPercent}%</span>
+                <span className="px-3 py-1 rounded-full text-xs font-bold text-white" style={{ backgroundColor: 'hsl(0, 85%, 55%, 0.85)' }}>NO {noPercent}%</span>
+              </div>
+            )}
           </div>
         </div>
 
