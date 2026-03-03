@@ -484,6 +484,91 @@ const Create = () => {
                 </div>
               </div>
 
+              {/* Market Type */}
+              <div className="glass rounded-xl p-4">
+                <label className="flex items-center gap-2 text-sm font-semibold mb-3">
+                  <BarChart3 className="w-4 h-4 text-primary" />
+                  Market Type
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { key: "binary" as const, label: "Yes / No", icon: <Target className="w-4 h-4" />, desc: "Two outcomes" },
+                    { key: "multi" as const, label: "Multiple", icon: <BarChart3 className="w-4 h-4" />, desc: "2-6 choices" },
+                    { key: "range" as const, label: "Range", icon: <TrendingUp className="w-4 h-4" />, desc: "Price brackets" },
+                  ]).map((t) => (
+                    <button
+                      key={t.key}
+                      onClick={() => {
+                        setMarketType(t.key);
+                        if (t.key === "binary") setOptions(["", ""]);
+                      }}
+                      className={`flex flex-col items-center gap-1.5 p-3 rounded-xl text-center transition-all active:scale-95 ${
+                        marketType === t.key
+                          ? "bg-primary/15 border border-primary/40 text-primary"
+                          : "bg-muted/50 border border-border text-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {t.icon}
+                      <span className="text-xs font-semibold">{t.label}</span>
+                      <span className="text-[9px] text-muted-foreground">{t.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Options builder for multi/range */}
+              {marketType !== "binary" && (
+                <div className={`glass rounded-xl p-4 ${shakeClass("options")} ${touched.options && errors.options ? "border-destructive/50" : ""}`}>
+                  <label className="flex items-center gap-2 text-sm font-semibold mb-3">
+                    <Plus className="w-4 h-4 text-primary" />
+                    {marketType === "range" ? "Price Brackets" : "Answer Options"}
+                  </label>
+                  <div className="space-y-2">
+                    {options.map((opt, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full shrink-0"
+                          style={{ backgroundColor: [
+                            "hsl(var(--primary))", "hsl(var(--destructive))", "hsl(45, 93%, 58%)",
+                            "hsl(280, 70%, 60%)", "hsl(30, 80%, 55%)", "hsl(var(--muted-foreground))"
+                          ][i] }}
+                        />
+                        <input
+                          type="text"
+                          value={opt}
+                          onChange={(e) => updateOption(i, e.target.value)}
+                          placeholder={marketType === "range" ? `e.g. $50K – $100K` : `Option ${i + 1}`}
+                          className="flex-1 bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          maxLength={50}
+                        />
+                        {options.length > 2 && (
+                          <button
+                            onClick={() => removeOption(i)}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {options.length < 6 && (
+                    <button
+                      onClick={addOption}
+                      className="mt-2 w-full py-2 rounded-lg border border-dashed border-border text-xs font-semibold text-muted-foreground hover:text-primary hover:border-primary/30 transition-all"
+                    >
+                      + Add Option
+                    </button>
+                  )}
+                  {touched.options && errors.options && (
+                    <p className="text-[10px] text-destructive mt-2">{errors.options}</p>
+                  )}
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    Prices will be distributed equally at launch. {options.filter(o => o.trim()).length}/6 options.
+                  </p>
+                </div>
+              )}
+
               <button
                 onClick={tryAdvanceStep1}
                 className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
