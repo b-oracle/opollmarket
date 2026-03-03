@@ -33,13 +33,20 @@ const getTimeRemaining = (endDate: string) => {
 };
 
 const optionColors = [
-  "hsl(var(--primary))",
-  "hsl(var(--destructive))",
-  "hsl(45, 93%, 58%)",
-  "hsl(280, 70%, 60%)",
-  "hsl(30, 80%, 55%)",
-  "hsl(var(--muted-foreground))",
+  "#02C7FC",
+  "#EF4444",
+  "#EAB308",
+  "#A855F7",
+  "#F97316",
+  "#9CA3AF",
 ];
+
+const colorAlpha = (hex: string, alpha: number) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+};
 
 const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTier }: MarketCardProps) => {
   const navigate = useNavigate();
@@ -331,16 +338,16 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                         onClick={() => setBetModal({ open: true, side: "yes", optionLabel: opt.label, optionPrice: pct })}
                         className="w-full relative rounded-xl px-4 py-3 flex items-center justify-between transition-all active:scale-[0.98] overflow-hidden border backdrop-blur-md"
                         style={{
-                          background: `linear-gradient(135deg, ${color}20 0%, ${color}12 60%, ${color}08 100%)`,
-                          borderColor: `${color}25`,
-                          boxShadow: `inset 0 1px 0 ${color}15, 0 2px 12px ${color}08`,
+                          background: `linear-gradient(135deg, ${colorAlpha(color, 0.18)} 0%, ${colorAlpha(color, 0.12)} 60%, ${colorAlpha(color, 0.08)} 100%)`,
+                          borderColor: colorAlpha(color, 0.25),
+                          boxShadow: `inset 0 1px 0 ${colorAlpha(color, 0.2)}, 0 2px 12px ${colorAlpha(color, 0.1)}`,
                         }}
                       >
                         {/* Fill bar background */}
                         <div
                           className="absolute inset-0 rounded-xl transition-all"
                           style={{
-                            background: `linear-gradient(90deg, ${color}25 0%, ${color}10 ${pct}%, transparent ${pct}%)`,
+                            background: `linear-gradient(90deg, ${colorAlpha(color, 0.22)} 0%, ${colorAlpha(color, 0.1)} ${pct}%, transparent ${pct}%)`,
                           }}
                         />
                         {/* Glass shine */}
@@ -349,7 +356,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                         <div className="flex items-center gap-2.5 relative z-10">
                           <div
                             className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
-                            style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}80` }}
+                            style={{ backgroundColor: color, boxShadow: `0 0 6px ${colorAlpha(color, 0.5)}` }}
                           />
                           <span className="text-sm font-semibold">{opt.label}</span>
                         </div>
