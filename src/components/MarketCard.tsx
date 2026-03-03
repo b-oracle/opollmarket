@@ -122,7 +122,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         dragElastic={0.3}
         onDrag={handleDrag}
         onDragEnd={handleDragEnd}
-        className={`snap-item relative h-[calc(100dvh-5rem)] w-full flex items-end pb-6 px-4 overflow-hidden ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}
+        className={`snap-item relative h-[calc(100dvh-5rem-env(safe-area-inset-bottom))] w-full flex items-end pb-6 px-3 sm:px-4 overflow-hidden ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}
         style={{ touchAction: "pan-y" }}
       >
         {/* Swipe overlay indicators */}
@@ -277,7 +277,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           )}
 
           <h2
-            className="text-xl font-bold leading-tight mb-3 cursor-pointer hover:text-primary transition-colors"
+            className="text-lg sm:text-xl font-bold leading-tight mb-3 cursor-pointer hover:text-primary transition-colors"
             onClick={() => navigate(`/market/${market.id}`)}
           >
             {market.title}

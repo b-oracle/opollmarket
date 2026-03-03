@@ -383,9 +383,9 @@ const Create = () => {
 
   // --- Market Creation Form ---
   return (
-    <div className="min-h-dvh bg-background pb-24">
+    <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
       <TopBar />
-      <div className="max-w-lg mx-auto px-4 pt-20">
+      <div className="max-w-lg mx-auto px-3 sm:px-4 pt-20">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}

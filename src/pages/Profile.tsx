@@ -106,9 +106,9 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-dvh bg-background pb-20">
+    <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
       <TopBar />
-      <div className="max-w-lg mx-auto px-4 pt-20">
+      <div className="max-w-lg mx-auto px-3 sm:px-4 pt-20">
         {/* Avatar */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center mb-3">
