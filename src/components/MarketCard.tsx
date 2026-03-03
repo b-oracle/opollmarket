@@ -33,13 +33,20 @@ const getTimeRemaining = (endDate: string) => {
 };
 
 const optionColors = [
-  "hsl(var(--primary))",
-  "hsl(var(--destructive))",
-  "hsl(45, 93%, 58%)",
-  "hsl(280, 70%, 60%)",
-  "hsl(30, 80%, 55%)",
-  "hsl(var(--muted-foreground))",
+  "#02C7FC",
+  "#EF4444",
+  "#EAB308",
+  "#A855F7",
+  "#F97316",
+  "#9CA3AF",
 ];
+
+const colorAlpha = (hex: string, alpha: number) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+};
 
 const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTier }: MarketCardProps) => {
   const navigate = useNavigate();
