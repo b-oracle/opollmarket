@@ -2,7 +2,7 @@ import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { mockMarkets } from "@/data/markets";
 import { categoryIcons } from "@/data/markets";
-import { TrendingUp, Users, Zap } from "lucide-react";
+import { TrendingUp, Users, Zap, MessageCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
@@ -10,6 +10,7 @@ import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import BoostCountdown from "@/components/BoostCountdown";
 import BoostedCarousel from "@/components/BoostedCarousel";
 import BoostMarketModal from "@/components/BoostMarketModal";
+import { useCommentCount } from "@/hooks/useCommentCount";
 
 const formatVolume = (v: number) => {
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(2)}M`;
