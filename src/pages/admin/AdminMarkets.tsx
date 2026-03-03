@@ -20,6 +20,8 @@ interface MarketRow {
   yes_price: number;
   end_date: string;
   created_at: string;
+  resolution_source: string;
+  trending: boolean;
 }
 
 interface MarketOption {
@@ -42,6 +44,8 @@ interface EditState {
   description: string;
   category: string;
   end_date: string;
+  resolution_source: string;
+  trending: boolean;
 }
 
 const AdminMarkets = () => {
@@ -59,7 +63,7 @@ const AdminMarkets = () => {
   const fetchMarkets = async () => {
     let query = supabase
       .from("markets")
-      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at")
+      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending")
       .order("created_at", { ascending: false });
     if (filter !== "all") query = query.eq("status", filter);
     const { data, error } = await query;
@@ -74,7 +78,7 @@ const AdminMarkets = () => {
   }, [editState?.id]);
 
   const startEdit = (m: MarketRow) => {
-    setEditState({ id: m.id, title: m.title, description: m.description, category: m.category, end_date: m.end_date });
+    setEditState({ id: m.id, title: m.title, description: m.description, category: m.category, end_date: m.end_date, resolution_source: m.resolution_source, trending: m.trending });
     setExpandedId(m.id);
   };
 
@@ -89,6 +93,8 @@ const AdminMarkets = () => {
       description: editState.description.trim(),
       category: editState.category,
       end_date: editState.end_date,
+      resolution_source: editState.resolution_source.trim(),
+      trending: editState.trending,
     }).eq("id", editState.id);
     if (error) toast.error("Failed to save changes");
     else { toast.success("Market updated"); setEditState(null); fetchMarkets(); }
@@ -350,19 +356,63 @@ const AdminMarkets = () => {
                     {isExpanded && (
                       <tr className={`border-b border-border/50 ${isEditing ? "bg-primary/5" : "bg-muted/20"}`}>
                         <td colSpan={7} className="px-3 py-3">
-                          <div className="pl-6">
-                            <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1 block">Description</label>
-                            {isEditing ? (
-                              <textarea
-                                value={editState.description}
-                                onChange={(e) => setEditState({ ...editState, description: e.target.value })}
-                                rows={3}
-                                className="w-full bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
-                                placeholder="Market description..."
-                              />
-                            ) : (
-                              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{m.description || "No description"}</p>
-                            )}
+                          <div className="pl-6 space-y-3">
+                            {/* Description */}
+                            <div>
+                              <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1 block">Description</label>
+                              {isEditing ? (
+                                <textarea
+                                  value={editState.description}
+                                  onChange={(e) => setEditState({ ...editState, description: e.target.value })}
+                                  rows={3}
+                                  className="w-full bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                                  placeholder="Market description..."
+                                />
+                              ) : (
+                                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{m.description || "No description"}</p>
+                              )}
+                            </div>
+
+                            {/* Resolution Source */}
+                            <div>
+                              <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1 block">Resolution Source</label>
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  value={editState.resolution_source}
+                                  onChange={(e) => setEditState({ ...editState, resolution_source: e.target.value })}
+                                  className="w-full bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                  placeholder="e.g. CoinGecko price data..."
+                                />
+                              ) : (
+                                <p className="text-sm text-muted-foreground">{m.resolution_source || "Not specified"}</p>
+                              )}
+                            </div>
+
+                            {/* Trending */}
+                            <div className="flex items-center justify-between">
+                              <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Trending</label>
+                              {isEditing ? (
+                                <button
+                                  onClick={() => setEditState({ ...editState, trending: !editState.trending })}
+                                  className={`w-11 h-6 rounded-full transition-colors relative ${
+                                    editState.trending ? "bg-primary" : "bg-muted"
+                                  }`}
+                                >
+                                  <div
+                                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                                      editState.trending ? "translate-x-[22px]" : "translate-x-0.5"
+                                    }`}
+                                  />
+                                </button>
+                              ) : (
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                  m.trending ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                                }`}>
+                                  {m.trending ? "Yes" : "No"}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </td>
                       </tr>
