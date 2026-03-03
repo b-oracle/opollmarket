@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, DollarSign, TrendingUp, Users, PieChart as PieChartIcon } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, BarChart, Bar,
+  PieChart, Pie, Cell,
 } from "recharts";
 
 interface CommissionTxn {
@@ -20,114 +20,128 @@ interface DailyData {
   total: number;
 }
 
+type RangeKey = "7d" | "30d" | "90d" | "all";
+const RANGES: { key: RangeKey; label: string; days: number | null }[] = [
+  { key: "7d", label: "7D", days: 7 },
+  { key: "30d", label: "30D", days: 30 },
+  { key: "90d", label: "90D", days: 90 },
+  { key: "all", label: "All Time", days: null },
+];
+
 const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2))"];
 
 const AdminCommissions = () => {
   const [loading, setLoading] = useState(true);
-  const [totalAdmin, setTotalAdmin] = useState(0);
-  const [totalCreator, setTotalCreator] = useState(0);
-  const [dailyData, setDailyData] = useState<DailyData[]>([]);
-  const [topCreators, setTopCreators] = useState<{ name: string; earned: number }[]>([]);
+  const [range, setRange] = useState<RangeKey>("30d");
+  const [allTxns, setAllTxns] = useState<CommissionTxn[]>([]);
+  const [adminIds, setAdminIds] = useState<Set<string>>(new Set());
+  const [profileMap, setProfileMap] = useState<Map<string, string>>(new Map());
 
   useEffect(() => {
-    const fetch = async () => {
-      // Get all commission transactions
-      const { data: txns } = await supabase
-        .from("transactions")
-        .select("amount, created_at, user_id, market_id")
-        .eq("type", "commission")
-        .order("created_at", { ascending: true });
+    const fetchData = async () => {
+      const [{ data: txns }, { data: adminRoles }] = await Promise.all([
+        supabase
+          .from("transactions")
+          .select("amount, created_at, user_id, market_id")
+          .eq("type", "commission")
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("user_roles")
+          .select("user_id")
+          .eq("role", "admin"),
+      ]);
 
-      if (!txns || txns.length === 0) {
-        setLoading(false);
-        return;
-      }
+      const ids = new Set((adminRoles || []).map((r) => r.user_id));
+      setAdminIds(ids);
+      setAllTxns(txns || []);
 
-      // Get admin user ids
-      const { data: adminRoles } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "admin");
-
-      const adminIds = new Set((adminRoles || []).map((r) => r.user_id));
-
-      let adminTotal = 0;
-      let creatorTotal = 0;
-      const dayMap = new Map<string, { admin: number; creator: number }>();
-      const creatorEarnings = new Map<string, number>();
-
-      txns.forEach((t) => {
-        const isAdmin = adminIds.has(t.user_id);
-        if (isAdmin) {
-          adminTotal += Number(t.amount);
-        } else {
-          creatorTotal += Number(t.amount);
-          creatorEarnings.set(t.user_id, (creatorEarnings.get(t.user_id) || 0) + Number(t.amount));
-        }
-
-        const day = t.created_at.slice(0, 10);
-        const existing = dayMap.get(day) || { admin: 0, creator: 0 };
-        if (isAdmin) existing.admin += Number(t.amount);
-        else existing.creator += Number(t.amount);
-        dayMap.set(day, existing);
-      });
-
-      setTotalAdmin(adminTotal);
-      setTotalCreator(creatorTotal);
-
-      // Build daily data for last 30 days
-      const last30 = Array.from({ length: 30 }, (_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - (29 - i));
-        return d.toISOString().slice(0, 10);
-      });
-
-      let cumAdmin = 0;
-      let cumCreator = 0;
-      // Accumulate everything before the 30-day window
-      dayMap.forEach((v, day) => {
-        if (day < last30[0]) {
-          cumAdmin += v.admin;
-          cumCreator += v.creator;
-        }
-      });
-
-      setDailyData(
-        last30.map((date) => {
-          const d = dayMap.get(date) || { admin: 0, creator: 0 };
-          cumAdmin += d.admin;
-          cumCreator += d.creator;
-          return {
-            date: new Date(date).toLocaleDateString("en", { month: "short", day: "numeric" }),
-            admin: Math.round(cumAdmin * 100) / 100,
-            creator: Math.round(cumCreator * 100) / 100,
-            total: Math.round((cumAdmin + cumCreator) * 100) / 100,
-          };
-        })
-      );
-
-      // Top creators
-      if (creatorEarnings.size > 0) {
-        const creatorIds = Array.from(creatorEarnings.keys());
+      // Fetch creator profiles
+      const creatorUserIds = [...new Set((txns || []).filter(t => !ids.has(t.user_id)).map(t => t.user_id))];
+      if (creatorUserIds.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
           .select("id, display_name, email")
-          .in("id", creatorIds);
-
-        const profileMap = new Map((profiles || []).map((p) => [p.id, p.display_name || p.email || p.id.slice(0, 8)]));
-
-        setTopCreators(
-          Array.from(creatorEarnings.entries())
-            .map(([id, earned]) => ({ name: profileMap.get(id) || id.slice(0, 8), earned }))
-            .sort((a, b) => b.earned - a.earned)
-            .slice(0, 10)
-        );
+          .in("id", creatorUserIds);
+        setProfileMap(new Map((profiles || []).map((p) => [p.id, p.display_name || p.email || p.id.slice(0, 8)])));
       }
 
       setLoading(false);
     };
-    fetch();
+    fetchData();
   }, []);
+
+  const { totalAdmin, totalCreator, dailyData, topCreators } = useMemo(() => {
+    const selectedRange = RANGES.find(r => r.key === range)!;
+    const days = selectedRange.days;
+
+    // Filter txns by date range
+    let cutoff = "";
+    if (days) {
+      const d = new Date();
+      d.setDate(d.getDate() - days);
+      cutoff = d.toISOString().slice(0, 10);
+    }
+
+    const filtered = days
+      ? allTxns.filter(t => t.created_at.slice(0, 10) >= cutoff)
+      : allTxns;
+
+    let adminTotal = 0;
+    let creatorTotal = 0;
+    const dayMap = new Map<string, { admin: number; creator: number }>();
+    const creatorEarnings = new Map<string, number>();
+
+    filtered.forEach((t) => {
+      const isAdmin = adminIds.has(t.user_id);
+      const amt = Number(t.amount);
+      if (isAdmin) {
+        adminTotal += amt;
+      } else {
+        creatorTotal += amt;
+        creatorEarnings.set(t.user_id, (creatorEarnings.get(t.user_id) || 0) + amt);
+      }
+      const day = t.created_at.slice(0, 10);
+      const existing = dayMap.get(day) || { admin: 0, creator: 0 };
+      if (isAdmin) existing.admin += amt;
+      else existing.creator += amt;
+      dayMap.set(day, existing);
+    });
+
+    // Build chart data
+    const numDays = days || (allTxns.length > 0
+      ? Math.max(7, Math.ceil((Date.now() - new Date(allTxns[0].created_at).getTime()) / 86400000) + 1)
+      : 30);
+
+    const dateRange = Array.from({ length: numDays }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (numDays - 1 - i));
+      return d.toISOString().slice(0, 10);
+    });
+
+    let cumAdmin = 0;
+    let cumCreator = 0;
+
+    // For ranged views, accumulate pre-window data from filtered set? No — we want cumulative within the window.
+    // Actually for cumulative chart, start from 0 within the window.
+    const chartData = dateRange.map((date) => {
+      const d = dayMap.get(date) || { admin: 0, creator: 0 };
+      cumAdmin += d.admin;
+      cumCreator += d.creator;
+      return {
+        date: new Date(date).toLocaleDateString("en", { month: "short", day: "numeric" }),
+        admin: Math.round(cumAdmin * 100) / 100,
+        creator: Math.round(cumCreator * 100) / 100,
+        total: Math.round((cumAdmin + cumCreator) * 100) / 100,
+      };
+    });
+
+    const creators = Array.from(creatorEarnings.entries())
+      .map(([id, earned]) => ({ name: profileMap.get(id) || id.slice(0, 8), earned }))
+      .sort((a, b) => b.earned - a.earned)
+      .slice(0, 10);
+
+    return { totalAdmin: adminTotal, totalCreator: creatorTotal, dailyData: chartData, topCreators: creators };
+  }, [allTxns, adminIds, profileMap, range]);
 
   if (loading) {
     return (
@@ -143,16 +157,35 @@ const AdminCommissions = () => {
     { name: "Creators", value: totalCreator },
   ].filter((d) => d.value > 0);
 
+  const selectedLabel = RANGES.find(r => r.key === range)!.label;
+
   const cards = [
     { label: "Total Commissions", value: `$${grandTotal.toFixed(2)}`, icon: DollarSign, color: "text-primary" },
-    { label: "Admin Earned", value: `$${totalAdmin.toFixed(2)}`, icon: TrendingUp, color: "text-green-500" },
-    { label: "Creators Earned", value: `$${totalCreator.toFixed(2)}`, icon: Users, color: "text-blue-500" },
-    { label: "Top Creators", value: topCreators.length, icon: PieChartIcon, color: "text-yellow-500" },
+    { label: "Admin Earned", value: `$${totalAdmin.toFixed(2)}`, icon: TrendingUp, color: "text-primary" },
+    { label: "Creators Earned", value: `$${totalCreator.toFixed(2)}`, icon: Users, color: "text-primary" },
+    { label: "Top Creators", value: topCreators.length, icon: PieChartIcon, color: "text-primary" },
   ];
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Commission Earnings</h2>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h2 className="text-2xl font-bold">Commission Earnings</h2>
+        <div className="flex gap-1 p-1 rounded-xl bg-muted/50">
+          {RANGES.map((r) => (
+            <button
+              key={r.key}
+              onClick={() => setRange(r.key)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                range === r.key
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -175,7 +208,7 @@ const AdminCommissions = () => {
         <>
           {/* Cumulative earnings chart */}
           <div className="bg-card border border-border rounded-xl p-5">
-            <h3 className="text-sm font-semibold mb-4">Cumulative Earnings (30 Days)</h3>
+            <h3 className="text-sm font-semibold mb-4">Cumulative Earnings ({selectedLabel})</h3>
             <div className="h-60">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={dailyData}>
@@ -251,7 +284,7 @@ const AdminCommissions = () => {
               </div>
             </div>
 
-            {/* Top creators bar */}
+            {/* Top creators */}
             <div className="bg-card border border-border rounded-xl p-5">
               <h3 className="text-sm font-semibold mb-4">Top Earning Creators</h3>
               {topCreators.length > 0 ? (
