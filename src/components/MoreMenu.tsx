@@ -1,6 +1,7 @@
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { FileText, Shield, AlertTriangle, HelpCircle, ChevronRight, LogIn } from "lucide-react";
+import { FileText, Shield, AlertTriangle, HelpCircle, ChevronRight, LogIn, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface MoreMenuProps {
@@ -16,6 +17,7 @@ const legalLinks = [
 
 const resourceLinks = [
   { icon: HelpCircle, label: "FAQ", path: "/faq" },
+  { icon: Download, label: "Download App", path: "__install__" },
 ];
 
 const socialLinks = [
@@ -25,9 +27,33 @@ const socialLinks = [
 
 const MoreMenu = ({ open, onOpenChange }: MoreMenuProps) => {
   const navigate = useNavigate();
+  const deferredPrompt = useRef<any>(null);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      deferredPrompt.current = e;
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const triggerInstallPrompt = () => {
+    if (deferredPrompt.current) {
+      deferredPrompt.current.prompt();
+      deferredPrompt.current = null;
+    } else {
+      // Fallback: guide user
+      alert("To install, use your browser's menu and select 'Add to Home Screen' or 'Install App'.");
+    }
+  };
 
   const handleNavigate = (path: string) => {
     onOpenChange(false);
+    if (path === "__install__") {
+      triggerInstallPrompt();
+      return;
+    }
     navigate(path);
   };
 
