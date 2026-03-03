@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ArrowUpRight, ArrowDownLeft, BarChart3, Download } from "lucide-react";
+import { Loader2, ArrowUpRight, ArrowDownLeft, BarChart3, Download, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface TxRow {
   id: string;
