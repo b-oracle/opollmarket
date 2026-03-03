@@ -286,20 +286,21 @@ const MarketDetail = () => {
       </div>
 
       {market.imageUrl && (
-        <div className="relative w-full max-w-lg mx-auto">
+        <div className="relative w-full max-w-lg mx-auto rounded-xl overflow-hidden">
           <div className="aspect-video w-full overflow-hidden">
             <img
               src={market.imageUrl}
               alt={market.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover blur-[2px] opacity-70"
             />
           </div>
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+          <h1 className="absolute bottom-4 left-4 right-4 text-2xl font-bold text-white leading-tight drop-shadow-lg">{market.title}</h1>
         </div>
       )}
 
       <div className={`max-w-lg mx-auto px-4 ${market.imageUrl ? 'pt-2' : 'pt-4'}`}>
-        <h1 className="text-2xl font-bold leading-tight mb-2">{market.title}</h1>
+        {!market.imageUrl && <h1 className="text-2xl font-bold leading-tight mb-2">{market.title}</h1>}
         <p className="text-sm text-muted-foreground mb-6">{market.description}</p>
 
         {/* Chart */}
