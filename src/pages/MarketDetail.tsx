@@ -225,6 +225,7 @@ const MarketDetail = () => {
   const { bookmarked, toggleBookmark } = useBookmark(id);
   const [shareOpen, setShareOpen] = useState(false);
   const pageRef = useRef<HTMLDivElement>(null);
+  const shareRef = useRef<HTMLDivElement>(null);
 
   const pointsMap = { "1D": 24, "1W": 7, "1M": 30, "All": 90 };
 
@@ -295,6 +296,7 @@ const MarketDetail = () => {
         </div>
       </div>
 
+      <div ref={shareRef}>
       {market.imageUrl && (
         <div className="relative w-full max-w-lg mx-auto rounded-xl overflow-hidden">
           <div className="h-40 w-full overflow-hidden">
@@ -394,6 +396,7 @@ const MarketDetail = () => {
             </div>
           )}
         </div>
+      </div>
 
         {/* Multi-option pricing */}
         {isMulti && market.options && (
@@ -469,7 +472,7 @@ const MarketDetail = () => {
         title={market.title}
         description={market.description}
         marketUrl={window.location.href}
-        captureRef={pageRef}
+        captureRef={shareRef}
       />
       <BottomNav />
     </div>
