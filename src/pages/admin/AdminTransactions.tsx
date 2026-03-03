@@ -28,15 +28,28 @@ const AdminTransactions = () => {
   const [txns, setTxns] = useState<TxRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "deposit" | "withdrawal" | "bet" | "payout">("all");
+  const [page, setPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const PAGE_SIZE = 25;
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchData = async () => {
       setLoading(true);
+
+      // Get total count
+      let countQuery = supabase.from("transactions").select("*", { count: "exact", head: true });
+      if (filter !== "all") countQuery = countQuery.eq("type", filter);
+      const { count } = await countQuery;
+      setTotalCount(count ?? 0);
+
+      // Get page
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
       let query = supabase
         .from("transactions")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(200);
+        .range(from, to);
 
       if (filter !== "all") query = query.eq("type", filter);
 
@@ -72,8 +85,8 @@ const AdminTransactions = () => {
       );
       setLoading(false);
     };
-    fetch();
-  }, [filter]);
+    fetchData();
+  }, [filter, page]);
 
   const totals = {
     deposits: txns.filter((t) => t.type === "deposit").reduce((s, t) => s + Number(t.amount), 0),
