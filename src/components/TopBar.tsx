@@ -7,7 +7,7 @@ const TopBar = () => (
     <div className="flex items-center justify-between h-14 max-w-lg mx-auto px-4">
       <div className="flex items-center gap-1.5">
         <img src={logo} alt="OPOLL" className="h-8 w-8" />
-        <span className="text-lg font-bold tracking-tight text-primary">Poll</span>
+        <span className="text-2xl font-bold tracking-tight text-primary leading-none">Poll</span>
       </div>
       <div className="flex items-center gap-2">
         <ThemeToggle />
