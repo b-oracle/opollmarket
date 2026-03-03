@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Market, categoryIcons } from "@/data/markets";
 import { useNavigate } from "react-router-dom";
@@ -51,6 +51,33 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const [likeCount, setLikeCount] = useState(Math.floor(Math.random() * 5000) + 500);
   const [bookmarked, setBookmarked] = useState(false);
   const [betModal, setBetModal] = useState<{ open: boolean; side: "yes" | "no" }>({ open: false, side: "yes" });
+  const [dragX, setDragX] = useState(0);
+  const [swiping, setSwiping] = useState(false);
+
+  const SWIPE_THRESHOLD = 80;
+
+  const handleDrag = useCallback((_: any, info: { offset: { x: number } }) => {
+    if (isMulti) return; // Don't allow swipe on multi-option markets
+    setDragX(info.offset.x);
+    if (!swiping && Math.abs(info.offset.x) > 10) setSwiping(true);
+  }, [isMulti, swiping]);
+
+  const handleDragEnd = useCallback((_: any, info: { offset: { x: number }; velocity: { x: number } }) => {
+    if (isMulti) { setDragX(0); setSwiping(false); return; }
+    const swipeDistance = info.offset.x;
+    const velocity = Math.abs(info.velocity.x);
+    const triggered = Math.abs(swipeDistance) > SWIPE_THRESHOLD || (velocity > 300 && Math.abs(swipeDistance) > 30);
+
+    if (triggered) {
+      const side = swipeDistance > 0 ? "yes" : "no";
+      setBetModal({ open: true, side });
+    }
+    setDragX(0);
+    setSwiping(false);
+  }, [isMulti]);
+
+  const swipeProgress = Math.min(Math.abs(dragX) / SWIPE_THRESHOLD, 1);
+  const swipeSide = dragX > 0 ? "yes" : dragX < 0 ? "no" : null;
 
   const handleLike = () => {
     setLiked((prev) => !prev);
