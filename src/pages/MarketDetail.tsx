@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Share2, Heart, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2 } from "lucide-react";
+import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2 } from "lucide-react";
 import { useMarket } from "@/hooks/useMarkets";
 import { categoryIcons } from "@/data/markets";
 import BottomNav from "@/components/BottomNav";
