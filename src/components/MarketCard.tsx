@@ -60,7 +60,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(Math.floor(Math.random() * 5000) + 500);
   const [bookmarked, setBookmarked] = useState(false);
-  const [betModal, setBetModal] = useState<{ open: boolean; side: "yes" | "no"; optionLabel?: string; optionPrice?: number }>({ open: false, side: "yes" });
+  const [betModal, setBetModal] = useState<{ open: boolean; side: "yes" | "no"; optionLabel?: string; optionPrice?: number; optionColor?: string }>({ open: false, side: "yes" });
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const commentCount = useCommentCount(market.id);
@@ -308,7 +308,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                     return (
                       <button
                         key={opt.id}
-                        onClick={() => setBetModal({ open: true, side: "yes", optionLabel: opt.label, optionPrice: pct })}
+                        onClick={() => setBetModal({ open: true, side: "yes", optionLabel: opt.label, optionPrice: pct, optionColor: color })}
                         className="w-full relative rounded-xl px-4 py-3 flex items-center justify-between transition-all active:scale-[0.98] overflow-hidden"
                         style={{
                           background: colorAlpha(color, 0.1),
@@ -385,6 +385,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         price={betModal.optionPrice ?? (betModal.side === "yes" ? yesPercent : noPercent)}
         marketTitle={betModal.optionLabel ? `${market.title} — ${betModal.optionLabel}` : market.title}
         optionLabel={betModal.optionLabel}
+        optionColor={betModal.optionColor}
       />
 
       <CommentsDrawer

@@ -30,13 +30,14 @@ interface BetModalProps {
   marketId?: string;
   optionId?: string;
   optionLabel?: string;
+  optionColor?: string;
 }
 
 const PRESET_AMOUNTS = [10, 25, 50, 100];
 const MIN_AMOUNT = 1;
 const MAX_AMOUNT = 10000;
 
-const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId, optionLabel }: BetModalProps) => {
+const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId, optionLabel, optionColor }: BetModalProps) => {
   const { user } = useAuth();
   const { balance, totalBalance } = useUserBalance();
   const { data: commission } = useCommissionSettings();
@@ -129,9 +130,9 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
 
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${optionLabel ? "bg-primary" : isYes ? "bg-primary" : "bg-destructive"}`} />
+                  <div className={`w-3 h-3 rounded-full ${optionColor ? "" : isYes ? "bg-primary" : "bg-destructive"}`} style={optionColor ? { backgroundColor: optionColor } : undefined} />
                   <h2 className="text-lg font-bold">
-                    Buy <span className={optionLabel ? "neon-yes" : sideTextClass}>{optionLabel || side.toUpperCase()}</span>
+                    Buy <span className={optionColor ? "font-bold" : sideTextClass} style={optionColor ? { color: optionColor } : undefined}>{optionLabel || side.toUpperCase()}</span>
                   </h2>
                 </div>
                 <button onClick={handleClose} className="w-8 h-8 rounded-full glass flex items-center justify-center">
@@ -256,7 +257,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Side</span>
-                          <span className={`font-bold ${sideTextClass}`}>{optionLabel || side.toUpperCase()}</span>
+                          <span className={`font-bold ${optionColor ? "" : sideTextClass}`} style={optionColor ? { color: optionColor } : undefined}>{optionLabel || side.toUpperCase()}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Amount</span>
@@ -276,7 +277,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                         </div>
                         <div className="border-t border-border pt-2 flex justify-between text-sm">
                           <span className="text-muted-foreground">Potential Payout</span>
-                          <span className={`font-bold text-lg ${sideTextClass}`}>${potentialPayout.toFixed(2)}</span>
+                          <span className={`font-bold text-lg ${optionColor ? "" : sideTextClass}`} style={optionColor ? { color: optionColor } : undefined}>${potentialPayout.toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -313,7 +314,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                     </motion.div>
                     <h3 className="text-lg font-bold mb-1">Prediction Placed!</h3>
                     <p className="text-sm text-muted-foreground text-center mb-4">
-                      You bought <span className={`font-bold ${sideTextClass}`}>{shares.toFixed(2)}</span> {optionLabel || side.toUpperCase()} shares
+                      You bought <span className={`font-bold ${optionColor ? "" : sideTextClass}`} style={optionColor ? { color: optionColor } : undefined}>{shares.toFixed(2)}</span> {optionLabel || side.toUpperCase()} shares
                     </p>
                     <div className="glass rounded-xl p-3 w-full space-y-1.5 mb-5">
                       <div className="flex justify-between text-xs">
@@ -322,7 +323,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                       </div>
                       <div className="flex justify-between text-xs">
                         <span className="text-muted-foreground">Max Payout</span>
-                        <span className={`font-bold ${sideTextClass}`}>${potentialPayout.toFixed(2)}</span>
+                        <span className={`font-bold ${optionColor ? "" : sideTextClass}`} style={optionColor ? { color: optionColor } : undefined}>${potentialPayout.toFixed(2)}</span>
                       </div>
                     </div>
                     <div className="flex gap-3 w-full">
