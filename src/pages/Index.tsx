@@ -322,6 +322,12 @@ const Index = () => {
           })}
         </div>
       </div>
+      <BoostMarketModal
+        open={!!boostModalMarket}
+        onClose={() => setBoostModalMarket(null)}
+        marketId={boostModalMarket?.id || ""}
+        marketTitle={boostModalMarket?.title || ""}
+      />
       <BottomNav />
     </div>
   );
