@@ -485,6 +485,7 @@ export type Database = {
           created_at: string
           id: string
           market_id: string | null
+          nowpayments_payment_id: string | null
           option_id: string | null
           price: number | null
           shares: number | null
@@ -499,6 +500,7 @@ export type Database = {
           created_at?: string
           id?: string
           market_id?: string | null
+          nowpayments_payment_id?: string | null
           option_id?: string | null
           price?: number | null
           shares?: number | null
@@ -513,6 +515,7 @@ export type Database = {
           created_at?: string
           id?: string
           market_id?: string | null
+          nowpayments_payment_id?: string | null
           option_id?: string | null
           price?: number | null
           shares?: number | null
@@ -554,6 +557,48 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      withdrawal_requests: {
+        Row: {
+          admin_note: string | null
+          amount: number
+          created_at: string
+          crypto_currency: string
+          id: string
+          nowpayments_id: string | null
+          status: string
+          tx_hash: string | null
+          updated_at: string
+          user_id: string
+          wallet_address: string
+        }
+        Insert: {
+          admin_note?: string | null
+          amount: number
+          created_at?: string
+          crypto_currency?: string
+          id?: string
+          nowpayments_id?: string | null
+          status?: string
+          tx_hash?: string | null
+          updated_at?: string
+          user_id: string
+          wallet_address: string
+        }
+        Update: {
+          admin_note?: string | null
+          amount?: number
+          created_at?: string
+          crypto_currency?: string
+          id?: string
+          nowpayments_id?: string | null
+          status?: string
+          tx_hash?: string | null
+          updated_at?: string
+          user_id?: string
+          wallet_address?: string
         }
         Relationships: []
       }
