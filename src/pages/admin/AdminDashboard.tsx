@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingUp, Users, MessageSquare, ShoppingBag, Loader2, DollarSign, Activity } from "lucide-react";
+import { TrendingUp, Users, MessageSquare, ShoppingBag, Loader2, DollarSign, Activity, Gift, UserPlus } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
 
 interface Stats {
@@ -10,6 +10,8 @@ interface Stats {
   activeBoosts: number;
   totalUsers: number;
   totalTransactions: number;
+  totalReferrals: number;
+  totalRewardsPaid: number;
 }
 
 interface MarketRow {
@@ -39,18 +41,20 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [markets, comments, boosts, users, txns] = await Promise.all([
+      const [markets, comments, boosts, users, txns, referrals] = await Promise.all([
         supabase.from("markets").select("*", { count: "exact", head: true }),
         supabase.from("comments").select("*", { count: "exact", head: true }),
         supabase.from("market_boosts").select("*", { count: "exact", head: true }).eq("status", "active"),
         supabase.from("profiles").select("*", { count: "exact", head: true }),
         supabase.from("transactions").select("*", { count: "exact", head: true }),
+        supabase.from("referral_rewards").select("amount"),
       ]);
 
       const { data: marketRows } = await supabase.from("markets").select("category, volume, status, created_at");
       const { data: txnRows } = await supabase.from("transactions").select("created_at, amount");
 
       const totalVolume = marketRows?.reduce((sum, m) => sum + Number(m.volume), 0) ?? 0;
+      const totalRewardsPaid = referrals.data?.reduce((sum, r) => sum + Number(r.amount), 0) ?? 0;
 
       setStats({
         totalMarkets: markets.count ?? 0,
@@ -59,6 +63,8 @@ const AdminDashboard = () => {
         activeBoosts: boosts.count ?? 0,
         totalUsers: users.count ?? 0,
         totalTransactions: txns.count ?? 0,
+        totalReferrals: referrals.data?.length ?? 0,
+        totalRewardsPaid,
       });
 
       // Category breakdown
@@ -127,6 +133,8 @@ const AdminDashboard = () => {
     { label: "Transactions", value: stats?.totalTransactions ?? 0, icon: DollarSign, color: "text-yellow-500" },
     { label: "Comments", value: stats?.totalComments ?? 0, icon: MessageSquare, color: "text-purple-500" },
     { label: "Active Boosts", value: stats?.activeBoosts ?? 0, icon: Activity, color: "text-pink-500" },
+    { label: "Referrals", value: stats?.totalReferrals ?? 0, icon: UserPlus, color: "text-cyan-500" },
+    { label: "Rewards Paid", value: `$${(stats?.totalRewardsPaid ?? 0).toFixed(0)}`, icon: Gift, color: "text-orange-500" },
   ];
 
   return (
