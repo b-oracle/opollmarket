@@ -63,6 +63,7 @@ const App = () => (
                 <Route path="create-market" element={<AdminCreateMarket />} />
                 <Route path="comments" element={<AdminComments />} />
                 <Route path="transactions" element={<AdminTransactions />} />
+                <Route path="withdrawals" element={<AdminWithdrawals />} />
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="commissions" element={<AdminCommissions />} />
                 <Route path="settings" element={<AdminSettings />} />
