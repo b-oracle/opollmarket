@@ -217,6 +217,8 @@ const MarketDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: market, isLoading } = useMarket(id);
+  const { boostDetails } = useActiveBoosts();
+  const activeBoost = id ? boostDetails.get(id) : undefined;
 
   const isMulti = market?.marketType === "multi" || market?.marketType === "range";
   const yesPercent = market ? Math.round(market.yesPrice * 100) : 0;
