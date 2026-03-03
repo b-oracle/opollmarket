@@ -1,11 +1,11 @@
-import { Home, Compass, PlusCircle, Trophy, User } from "lucide-react";
+import { Home, Compass, PlusCircle, BarChart3, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const navItems = [
   { icon: Home, label: "Home", path: "/" },
   { icon: Compass, label: "Feed", path: "/feed" },
   { icon: PlusCircle, label: "Create", path: "/create" },
-  { icon: Trophy, label: "Ranks", path: "/rankings" },
+  { icon: BarChart3, label: "Portfolio", path: "/portfolio" },
   { icon: User, label: "Profile", path: "/profile" },
 ];
 

@@ -11,6 +11,7 @@ import MarketDetail from "./pages/MarketDetail";
 import Create from "./pages/Create";
 import Rankings from "./pages/Rankings";
 import Profile from "./pages/Profile";
+import Portfolio from "./pages/Portfolio";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/market/:id" element={<MarketDetail />} />
             <Route path="/create" element={<Create />} />
             <Route path="/rankings" element={<Rankings />} />
+            <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
