@@ -557,7 +557,7 @@ const Create = () => {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-4"
             >
-              <div className="glass rounded-xl p-4">
+              <div className={`glass rounded-xl p-4 ${shakeClass("initialLiquidity")} ${touched.initialLiquidity && errors.initialLiquidity ? "border-destructive/50" : ""}`}>
                 <label className="flex items-center gap-2 text-sm font-semibold mb-2">
                   <DollarSign className="w-4 h-4 text-primary" />
                   Initial Liquidity (USDT)
@@ -566,13 +566,20 @@ const Create = () => {
                   type="number"
                   value={initialLiquidity}
                   onChange={(e) => setInitialLiquidity(e.target.value)}
+                  onBlur={() => markTouched("initialLiquidity")}
                   placeholder="100"
                   min="10"
-                  className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                  className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 transition-all ${
+                    touched.initialLiquidity && errors.initialLiquidity ? "border-destructive focus:ring-destructive/30" : "border-border focus:ring-primary/30"
+                  }`}
                 />
-                <p className="text-[10px] text-muted-foreground mt-1.5">
-                  Minimum 10 USDT. Higher liquidity attracts more traders.
-                </p>
+                {touched.initialLiquidity && errors.initialLiquidity ? (
+                  <p className="text-[10px] text-destructive mt-1.5">{errors.initialLiquidity}</p>
+                ) : (
+                  <p className="text-[10px] text-muted-foreground mt-1.5">
+                    Minimum 10 USDT. Higher liquidity attracts more traders.
+                  </p>
+                )}
               </div>
 
               {/* Review card */}
