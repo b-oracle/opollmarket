@@ -296,9 +296,9 @@ const MarketDetail = () => {
         </div>
       </div>
 
-      <div ref={shareRef}>
+      <div ref={shareRef} className="max-w-lg mx-auto px-4">
       {market.imageUrl && (
-        <div className="relative w-full max-w-lg mx-auto rounded-xl overflow-hidden">
+        <div className="relative w-full rounded-xl overflow-hidden mt-4">
           <div className="h-40 w-full overflow-hidden">
             <img
               src={market.imageUrl}
@@ -316,7 +316,7 @@ const MarketDetail = () => {
         </div>
       )}
 
-      <div className={`max-w-lg mx-auto px-4 ${market.imageUrl ? 'pt-4' : 'pt-4'}`}>
+      <div className={`${market.imageUrl ? 'pt-4' : 'pt-4'}`}>
         {!market.imageUrl && <h1 className="text-2xl font-bold leading-tight mb-2">{market.title}</h1>}
         {!market.imageUrl && <p className="text-sm text-muted-foreground mb-6">{market.description}</p>}
 
