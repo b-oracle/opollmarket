@@ -445,6 +445,7 @@ const MarketDetail = () => {
         marketId={market.id}
         optionId={selectedOptionObj?.id}
         optionLabel={selectedOption ?? undefined}
+        optionColor={selectedOptionColor}
       />
 
       <BoostMarketModal open={boostOpen} onClose={() => setBoostOpen(false)} marketId={market.id} marketTitle={market.title} />
