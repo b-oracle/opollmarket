@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Wallet, LogOut, ChevronDown, Copy, Check, ExternalLink } from "lucide-react";
 import { useAccount, useDisconnect, useBalance, useConnect } from "wagmi";
+import { formatUnits } from "viem";
+import { bsc } from "wagmi/chains";
+import { motion, AnimatePresence } from "framer-motion";
 import { bsc } from "wagmi/chains";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -97,7 +100,7 @@ const WalletButton = () => {
             <div className="mb-3 px-1">
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Balance</p>
               <p className="text-lg font-bold">
-                {balance ? `${parseFloat(balance.formatted).toFixed(4)} ${balance.symbol}` : "Loading..."}
+                {balance ? `${parseFloat(formatUnits(balance.value, balance.decimals)).toFixed(4)} ${balance.symbol}` : "Loading..."}
               </p>
             </div>
 

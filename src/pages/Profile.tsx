@@ -2,6 +2,7 @@ import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { Wallet, Copy, ExternalLink, Gift, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { useAccount, useBalance } from "wagmi";
+import { formatUnits } from "viem";
 
 const Profile = () => {
   const { address, isConnected } = useAccount();
@@ -27,7 +28,7 @@ const Profile = () => {
           </h2>
           <p className="text-xs text-muted-foreground">
             {isConnected
-              ? `${balance ? `${parseFloat(balance.formatted).toFixed(4)} ${balance.symbol}` : "Loading..."}`
+              ? `${balance ? `${parseFloat(formatUnits(balance.value, balance.decimals)).toFixed(4)} ${balance.symbol}` : "Loading..."}`
               : "Connect your wallet to view profile"}
           </p>
         </div>
