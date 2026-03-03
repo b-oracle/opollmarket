@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { FileText, Shield, AlertTriangle, HelpCircle, ChevronRight, LogIn, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import InstallAppModal from "@/components/InstallAppModal";
 
 interface MoreMenuProps {
   open: boolean;
@@ -27,118 +28,99 @@ const socialLinks = [
 
 const MoreMenu = ({ open, onOpenChange }: MoreMenuProps) => {
   const navigate = useNavigate();
-  const deferredPrompt = useRef<any>(null);
-
-  useEffect(() => {
-    const handler = (e: Event) => {
-      e.preventDefault();
-      deferredPrompt.current = e;
-    };
-    window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
-  }, []);
-
-  const triggerInstallPrompt = () => {
-    if (deferredPrompt.current) {
-      deferredPrompt.current.prompt();
-      deferredPrompt.current = null;
-    } else {
-      // Fallback: guide user
-      alert("To install, use your browser's menu and select 'Add to Home Screen' or 'Install App'.");
-    }
-  };
+  const [installOpen, setInstallOpen] = useState(false);
 
   const handleNavigate = (path: string) => {
     onOpenChange(false);
     if (path === "__install__") {
-      triggerInstallPrompt();
+      setTimeout(() => setInstallOpen(true), 300);
       return;
     }
     navigate(path);
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-2xl px-4 pb-8 pt-2 border-border bg-background">
-        <div className="mx-auto mt-2 mb-4 h-1.5 w-12 rounded-full bg-muted" />
-        <SheetHeader className="pb-2">
-          <SheetTitle className="text-left text-lg">More</SheetTitle>
-        </SheetHeader>
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="bottom" className="rounded-t-2xl px-4 pb-8 pt-2 border-border bg-background">
+          <div className="mx-auto mt-2 mb-4 h-1.5 w-12 rounded-full bg-muted" />
+          <SheetHeader className="pb-2">
+            <SheetTitle className="text-left text-lg">More</SheetTitle>
+          </SheetHeader>
 
-        <div className="space-y-5">
-          {/* Sign In CTA */}
-          <Button
-            className="w-full h-12 text-base font-semibold"
-            onClick={() => handleNavigate("/auth")}
-          >
-            <LogIn className="w-5 h-5 mr-2" />
-            Sign In / Sign Up
-          </Button>
+          <div className="space-y-5">
+            <Button
+              className="w-full h-12 text-base font-semibold"
+              onClick={() => handleNavigate("/auth")}
+            >
+              <LogIn className="w-5 h-5 mr-2" />
+              Sign In / Sign Up
+            </Button>
 
-          {/* Legal */}
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Legal</p>
-            <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
-              {legalLinks.map(({ icon: Icon, label, path }) => (
-                <button
-                  key={path}
-                  onClick={() => handleNavigate(path)}
-                  className="flex items-center gap-3 w-full px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <Icon className="w-4 h-4 text-primary" />
-                  </div>
-                  <span className="flex-1 text-sm font-medium text-foreground">{label}</span>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                </button>
-              ))}
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Legal</p>
+              <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
+                {legalLinks.map(({ icon: Icon, label, path }) => (
+                  <button
+                    key={path}
+                    onClick={() => handleNavigate(path)}
+                    className="flex items-center gap-3 w-full px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Icon className="w-4 h-4 text-primary" />
+                    </div>
+                    <span className="flex-1 text-sm font-medium text-foreground">{label}</span>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Resources</p>
+              <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
+                {resourceLinks.map(({ icon: Icon, label, path }) => (
+                  <button
+                    key={path}
+                    onClick={() => handleNavigate(path)}
+                    className="flex items-center gap-3 w-full px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Icon className="w-4 h-4 text-primary" />
+                    </div>
+                    <span className="flex-1 text-sm font-medium text-foreground">{label}</span>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Social</p>
+              <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
+                {socialLinks.map(({ icon, label, href }) => (
+                  <a
+                    key={href}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 w-full px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 text-primary text-sm">
+                      {icon}
+                    </div>
+                    <span className="flex-1 text-sm font-medium text-foreground">{label}</span>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
+        </SheetContent>
+      </Sheet>
 
-          {/* Resources */}
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Resources</p>
-            <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
-              {resourceLinks.map(({ icon: Icon, label, path }) => (
-                <button
-                  key={path}
-                  onClick={() => handleNavigate(path)}
-                  className="flex items-center gap-3 w-full px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <Icon className="w-4 h-4 text-primary" />
-                  </div>
-                  <span className="flex-1 text-sm font-medium text-foreground">{label}</span>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Social */}
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Social</p>
-            <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
-              {socialLinks.map(({ icon, label, href }) => (
-                <a
-                  key={href}
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 w-full px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 text-primary text-sm">
-                    {icon}
-                  </div>
-                  <span className="flex-1 text-sm font-medium text-foreground">{label}</span>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                </a>
-              ))}
-            </div>
-          </div>
-        </div>
-      </SheetContent>
-    </Sheet>
+      <InstallAppModal open={installOpen} onClose={() => setInstallOpen(false)} />
+    </>
   );
 };
 
