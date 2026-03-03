@@ -407,7 +407,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         title={market.title}
         description={market.description}
         marketUrl={`${window.location.origin}/market/${market.id}`}
-        captureRef={cardRef}
+        captureRef={captureContentRef}
       />
     </>
   );
