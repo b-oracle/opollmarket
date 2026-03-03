@@ -1,11 +1,17 @@
 import { useState, useEffect } from "react";
-import { Zap } from "lucide-react";
+import { Zap, Flame, Crown } from "lucide-react";
 
 interface BoostCountdownProps {
   endsAt: string;
   tier?: string;
   compact?: boolean;
 }
+
+const TIER_CONFIG: Record<string, { color: string; label: string; icon: typeof Zap }> = {
+  flash: { color: "hsl(var(--primary))", label: "Flash Boost", icon: Zap },
+  standard: { color: "hsl(280, 70%, 60%)", label: "Standard", icon: Flame },
+  whale: { color: "hsl(45, 93%, 58%)", label: "Whale Pin", icon: Crown },
+};
 
 const formatCountdown = (ms: number) => {
   if (ms <= 0) return "Expired";
@@ -22,6 +28,8 @@ const formatCountdown = (ms: number) => {
 
 const BoostCountdown = ({ endsAt, tier, compact = false }: BoostCountdownProps) => {
   const [remaining, setRemaining] = useState(() => new Date(endsAt).getTime() - Date.now());
+  const config = TIER_CONFIG[tier || "flash"] || TIER_CONFIG.flash;
+  const Icon = config.icon;
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -45,8 +53,8 @@ const BoostCountdown = ({ endsAt, tier, compact = false }: BoostCountdownProps) 
 
   if (compact) {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-primary">
-        <Zap className="w-3 h-3" />
+      <span className="inline-flex items-center gap-1 text-[10px] font-bold" style={{ color: config.color }}>
+        <Icon className="w-3 h-3" />
         {formatCountdown(remaining)}
       </span>
     );
@@ -54,18 +62,18 @@ const BoostCountdown = ({ endsAt, tier, compact = false }: BoostCountdownProps) 
 
   return (
     <div className="glass rounded-lg px-3 py-2 flex items-center gap-2.5 min-w-0">
-      <Zap className="w-3.5 h-3.5 text-primary shrink-0" />
+      <Icon className="w-3.5 h-3.5 shrink-0" style={{ color: config.color }} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px] font-semibold text-primary">Boost Active</span>
+          <span className="text-[10px] font-semibold" style={{ color: config.color }}>{config.label}</span>
           <span className="text-[10px] font-bold text-foreground tabular-nums">
             {formatCountdown(remaining)}
           </span>
         </div>
         <div className="h-1 rounded-full bg-muted overflow-hidden">
           <div
-            className="h-full rounded-full bg-primary transition-all duration-1000"
-            style={{ width: `${progress}%` }}
+            className="h-full rounded-full transition-all duration-1000"
+            style={{ width: `${progress}%`, backgroundColor: config.color }}
           />
         </div>
       </div>
