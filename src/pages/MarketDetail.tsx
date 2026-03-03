@@ -44,6 +44,9 @@ const MarketDetail = () => {
     });
   }, [yesPercent, noPercent]);
 
+  const [betSide, setBetSide] = useState<"yes" | "no">("yes");
+  const [betOpen, setBetOpen] = useState(false);
+
   if (!market) return <div className="h-dvh flex items-center justify-center text-muted-foreground">Market not found</div>;
 
   return (
