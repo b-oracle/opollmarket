@@ -11,9 +11,9 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Wallet, Gift, ArrowDownToLine, ArrowUpFromLine, ArrowUpRight, ArrowDownLeft,
   Repeat, LogIn, Send, MessageCircle, ExternalLink, ChevronRight,
-  Video, FileText, HelpCircle, Shield, ClipboardCheck, Lock, Trophy,
+  Video, FileText, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
 type TxType = "buy" | "sell" | "deposit" | "withdraw";
 
@@ -43,6 +43,8 @@ const Profile = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<"deposit" | "withdraw">("deposit");
   const [txFilter, setTxFilter] = useState<FilterType>("all");
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [editName, setEditName] = useState(user?.user_metadata?.display_name || "");
 
   const { data: transactions = [] } = useQuery({
     queryKey: ["transactions", user?.id],
@@ -109,7 +111,7 @@ const Profile = () => {
     <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
       <TopBar />
       <div className="max-w-lg mx-auto px-3 sm:px-4 pt-20">
-        {/* Avatar */}
+        {/* Avatar & Profile Edit */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center mb-3">
             <span className="text-2xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
@@ -124,7 +126,68 @@ const Profile = () => {
             )}
           </div>
           <p className="text-xs text-muted-foreground">{user?.email}</p>
+          <button
+            onClick={() => setEditingProfile(true)}
+            className="mt-2 text-xs text-primary font-semibold hover:underline flex items-center gap-1"
+          >
+            <Pencil className="w-3 h-3" /> Edit Profile
+          </button>
         </div>
+
+        {/* Profile Edit Modal */}
+        <AnimatePresence>
+          {editingProfile && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                onClick={() => setEditingProfile(false)}
+                className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+                className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-sm mx-auto glass-strong rounded-2xl p-5 z-50"
+              >
+                <h3 className="text-sm font-bold mb-4">Edit Profile</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Display Name</label>
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="w-full bg-muted/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      placeholder="Your name"
+                      maxLength={50}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setEditingProfile(false)}
+                      className="flex-1 glass py-2.5 rounded-xl font-semibold text-sm"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!editName.trim()) { toast({ title: "Name cannot be empty" }); return; }
+                        const { error: authError } = await supabase.auth.updateUser({
+                          data: { display_name: editName.trim() },
+                        });
+                        if (authError) { toast({ title: "Failed to update", description: authError.message }); return; }
+                        await supabase.from("profiles").update({ display_name: editName.trim() }).eq("id", user!.id);
+                        toast({ title: "Profile updated!" });
+                        setEditingProfile(false);
+                      }}
+                      className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-xl font-semibold text-sm"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
 
         {/* Balance + Stats */}
         <div className="glass rounded-xl p-4 mb-6 text-center">

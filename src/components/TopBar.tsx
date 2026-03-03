@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import ThemeToggle from "@/components/ThemeToggle";
+import NotificationBell from "@/components/NotificationBell";
 import logo from "@/assets/logo.png";
 import { User, LogOut, Shield, ArrowLeft } from "lucide-react";
 import { useState } from "react";
@@ -51,6 +52,7 @@ const TopBar = () => {
               )}
             </button>
           )}
+          <NotificationBell />
           <ThemeToggle />
           {loading ? null : user ? (
             <div className="relative">
