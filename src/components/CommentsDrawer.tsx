@@ -289,7 +289,8 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
   return (
     <BottomSheet open={open} onClose={onClose} maxHeight="70dvh">
             <div className="flex flex-col" style={{ maxHeight: "70dvh" }}>
-              {/* Handle provided by BottomSheet */}
+              {/* Handle */}
+              <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mt-3 mb-2" />
 
               {/* Header */}
               <div className="flex items-center justify-between px-5 pb-3 border-b border-border/30">

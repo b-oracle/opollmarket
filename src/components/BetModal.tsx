@@ -119,6 +119,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
 
   return (
     <BottomSheet open={open} onClose={handleClose} maxHeight="80dvh" className="p-4">
+              <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-3" />
 
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
