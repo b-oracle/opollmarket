@@ -115,6 +115,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   return (
     <>
       <motion.div
+        ref={cardRef}
         drag={isMulti ? false : "x"}
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.3}
@@ -391,6 +392,14 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         onClose={() => setCommentsOpen(false)}
         marketId={market.id}
         marketTitle={market.title}
+      />
+      <ShareModal
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        title={market.title}
+        description={market.description}
+        marketUrl={`${window.location.origin}/market/${market.id}`}
+        captureRef={cardRef}
       />
     </>
   );
