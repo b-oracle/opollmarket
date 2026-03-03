@@ -2,6 +2,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2 } from "lucide-react";
 import { useMarket } from "@/hooks/useMarkets";
+import { useActiveBoosts } from "@/hooks/useActiveBoosts";
+import BoostCountdown from "@/components/BoostCountdown";
 import { categoryIcons } from "@/data/markets";
 import BottomNav from "@/components/BottomNav";
 import BetModal from "@/components/BetModal";
