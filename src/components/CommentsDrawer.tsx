@@ -123,7 +123,6 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { checkLimit: checkCommentLimit } = useRateLimit(3, 30000); // 3 comments per 30s
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   const walletId = address || `anon-${Math.random().toString(36).slice(2, 10)}`;
 
