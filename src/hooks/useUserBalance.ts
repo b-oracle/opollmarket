@@ -46,6 +46,20 @@ export const usePlaceBet = () => {
     }) => {
       if (!user) throw new Error("Not authenticated");
 
+      // Fetch commission settings
+      const { data: commData } = await supabase
+        .from("commission_settings")
+        .select("admin_fee_percent, creator_fee_percent")
+        .limit(1)
+        .single();
+
+      const adminFeePercent = Number(commData?.admin_fee_percent ?? 2) / 100;
+      const creatorFeePercent = Number(commData?.creator_fee_percent ?? 3) / 100;
+
+      const adminAmount = amount * adminFeePercent;
+      const creatorAmount = amount * creatorFeePercent;
+      const totalCost = amount; // full amount deducted from user
+
       // Check balance
       const { data: balData } = await supabase
         .from("balances")
@@ -55,16 +69,108 @@ export const usePlaceBet = () => {
         .single();
 
       const currentBalance = Number(balData?.amount || 0);
-      const totalCost = amount * 1.02; // 2% fee
       if (currentBalance < totalCost) throw new Error("Insufficient balance");
 
-      // Deduct balance
+      // Deduct balance from user
       const { error: balError } = await supabase
         .from("balances")
         .update({ amount: currentBalance - totalCost, updated_at: new Date().toISOString() })
         .eq("user_id", user.id)
         .eq("currency", "USDT");
       if (balError) throw balError;
+
+      // --- Credit admin commission ---
+      const { data: adminRole } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin")
+        .limit(1)
+        .single();
+
+      if (adminRole && adminAmount > 0) {
+        const { data: adminBal } = await supabase
+          .from("balances")
+          .select("amount")
+          .eq("user_id", adminRole.user_id)
+          .eq("currency", "USDT")
+          .single();
+
+        if (adminBal) {
+          await supabase
+            .from("balances")
+            .update({ amount: Number(adminBal.amount) + adminAmount, updated_at: new Date().toISOString() })
+            .eq("user_id", adminRole.user_id)
+            .eq("currency", "USDT");
+        }
+
+        // Record admin commission transaction
+        await supabase.from("transactions").insert({
+          user_id: adminRole.user_id,
+          type: "commission",
+          amount: adminAmount,
+          market_id: marketId,
+          option_id: optionId || null,
+          side,
+          status: "confirmed",
+        });
+      }
+
+      // --- Credit creator commission ---
+      if (creatorAmount > 0) {
+        const { data: market } = await supabase
+          .from("markets")
+          .select("creator_wallet")
+          .eq("id", marketId)
+          .single();
+
+        if (market?.creator_wallet) {
+          // Find creator's user_id via profiles
+          const { data: creatorProfile } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("wallet_address", market.creator_wallet)
+            .limit(1)
+            .single();
+
+          if (creatorProfile) {
+            const { data: creatorBal } = await supabase
+              .from("balances")
+              .select("amount")
+              .eq("user_id", creatorProfile.id)
+              .eq("currency", "USDT")
+              .single();
+
+            if (creatorBal) {
+              await supabase
+                .from("balances")
+                .update({ amount: Number(creatorBal.amount) + creatorAmount, updated_at: new Date().toISOString() })
+                .eq("user_id", creatorProfile.id)
+                .eq("currency", "USDT");
+            } else {
+              // Create balance row for creator
+              await supabase.from("balances").insert({
+                user_id: creatorProfile.id,
+                amount: creatorAmount,
+                currency: "USDT",
+              });
+            }
+
+            // Record creator commission transaction
+            await supabase.from("transactions").insert({
+              user_id: creatorProfile.id,
+              type: "commission",
+              amount: creatorAmount,
+              market_id: marketId,
+              option_id: optionId || null,
+              side,
+              status: "confirmed",
+            });
+          }
+        }
+      }
+
+      // Pool amount (what actually goes into the market)
+      const poolAmount = amount - adminAmount - creatorAmount;
 
       // Insert position
       const { error: posError } = await supabase.from("positions").insert({
@@ -77,7 +183,7 @@ export const usePlaceBet = () => {
       });
       if (posError) throw posError;
 
-      // Insert transaction
+      // Insert transaction for the bet
       const { error: txError } = await supabase.from("transactions").insert({
         user_id: user.id,
         type: "buy",
@@ -92,8 +198,6 @@ export const usePlaceBet = () => {
       if (txError) throw txError;
 
       // Update market volume & participants
-      await supabase.rpc("has_role", { _user_id: user.id, _role: "user" }); // dummy call; we update via direct update
-      // Actually update the market stats
       const { data: mkt } = await supabase
         .from("markets")
         .select("volume, participants")
@@ -103,7 +207,7 @@ export const usePlaceBet = () => {
         await supabase
           .from("markets")
           .update({
-            volume: Number(mkt.volume) + amount,
+            volume: Number(mkt.volume) + poolAmount,
             participants: mkt.participants + 1,
           })
           .eq("id", marketId);
