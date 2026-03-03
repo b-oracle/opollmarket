@@ -258,12 +258,14 @@ export type Database = {
           no_price: number
           participants: number
           resolution_source: string
+          resolved_side: string | null
           status: string
           title: string
           trending: boolean
           tx_hash: string | null
           updated_at: string
           volume: number
+          winning_option_id: string | null
           yes_price: number
         }
         Insert: {
@@ -282,12 +284,14 @@ export type Database = {
           no_price?: number
           participants?: number
           resolution_source: string
+          resolved_side?: string | null
           status?: string
           title: string
           trending?: boolean
           tx_hash?: string | null
           updated_at?: string
           volume?: number
+          winning_option_id?: string | null
           yes_price?: number
         }
         Update: {
@@ -306,15 +310,25 @@ export type Database = {
           no_price?: number
           participants?: number
           resolution_source?: string
+          resolved_side?: string | null
           status?: string
           title?: string
           trending?: boolean
           tx_hash?: string | null
           updated_at?: string
           volume?: number
+          winning_option_id?: string | null
           yes_price?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "markets_winning_option_id_fkey"
+            columns: ["winning_option_id"]
+            isOneToOne: false
+            referencedRelation: "market_options"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       positions: {
         Row: {

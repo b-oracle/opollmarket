@@ -125,18 +125,22 @@ const AdminMarkets = () => {
     if (market.market_type === "binary" && !winningSide) { toast.error("Select the winning side (Yes or No)"); return; }
     if (market.market_type === "multi" && !winningOptionId) { toast.error("Select the winning option"); return; }
     setResolving(true);
-    const updateData: Record<string, unknown> = { status: "resolved" };
-    if (market.market_type === "binary" && winningSide) {
-      updateData.yes_price = winningSide === "yes" ? 1 : 0;
-      updateData.no_price = winningSide === "no" ? 1 : 0;
+    try {
+      const { data, error } = await supabase.functions.invoke("resolve-market", {
+        body: {
+          market_id: market.id,
+          winning_side: winningSide,
+          winning_option_id: winningOptionId,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Market resolved! ${data.winners} winners paid out $${data.total_paid_out?.toFixed(2)}`);
+      setResolveState(null);
+      fetchMarkets();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to resolve market");
     }
-    const { error } = await supabase.from("markets").update(updateData).eq("id", market.id);
-    if (market.market_type === "multi" && winningOptionId) {
-      await supabase.from("market_options").update({ price: 0 }).eq("market_id", market.id);
-      await supabase.from("market_options").update({ price: 1 }).eq("id", winningOptionId);
-    }
-    if (error) toast.error("Failed to resolve market");
-    else { toast.success("Market resolved successfully!"); setResolveState(null); fetchMarkets(); }
     setResolving(false);
   };
 
