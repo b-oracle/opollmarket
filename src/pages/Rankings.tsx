@@ -570,6 +570,13 @@ const Rankings = () => {
         )}
       </div>
       <BottomNav />
+      {shareModal && (
+        <RankShareModal
+          open={!!shareModal}
+          onOpenChange={(v) => { if (!v) setShareModal(null); }}
+          {...shareModal}
+        />
+      )}
     </div>
   );
 };
