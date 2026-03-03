@@ -1,8 +1,9 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Share2, Heart, TrendingUp, Users, Clock, Droplets } from "lucide-react";
-import { mockMarkets } from "@/data/markets";
-import { categoryIcons } from "@/data/markets";
+import { mockMarkets, categoryIcons } from "@/data/markets";
 import BottomNav from "@/components/BottomNav";
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { useMemo } from "react";
 
 const formatVolume = (v: number) => {
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
@@ -23,13 +24,26 @@ const MarketDetail = () => {
   const navigate = useNavigate();
   const market = mockMarkets.find((m) => m.id === id);
 
+  const yesPercent = market ? Math.round(market.yesPrice * 100) : 0;
+  const noPercent = market ? Math.round(market.noPrice * 100) : 0;
+
+  // Generate realistic chart data
+  const chartData = useMemo(() => {
+    const points = 30;
+    const base = yesPercent - 15;
+    return Array.from({ length: points }, (_, i) => {
+      const noise = Math.sin(i * 0.8) * 8 + Math.cos(i * 0.3) * 5 + (Math.random() - 0.5) * 6;
+      const trend = ((yesPercent - base) / points) * i;
+      const value = Math.max(5, Math.min(95, Math.round(base + trend + noise)));
+      return {
+        day: i + 1,
+        yes: i === points - 1 ? yesPercent : value,
+        no: i === points - 1 ? noPercent : 100 - value,
+      };
+    });
+  }, [yesPercent, noPercent]);
+
   if (!market) return <div className="h-dvh flex items-center justify-center text-muted-foreground">Market not found</div>;
-
-  const yesPercent = Math.round(market.yesPrice * 100);
-  const noPercent = Math.round(market.noPrice * 100);
-
-  // Mock chart data points
-  const chartPoints = [42, 48, 45, 52, 58, 55, 60, 62, yesPercent];
 
   return (
     <div className="h-dvh bg-background overflow-y-auto pb-20">
@@ -58,26 +72,60 @@ const MarketDetail = () => {
         <h1 className="text-2xl font-bold leading-tight mb-2">{market.title}</h1>
         <p className="text-sm text-muted-foreground mb-6">{market.description}</p>
 
-        {/* Price chart mock */}
+        {/* Probability Chart */}
         <div className="glass rounded-2xl p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-muted-foreground">Price History</span>
-            <span className="neon-yes text-2xl font-bold">{yesPercent}¢</span>
+            <span className="text-sm font-medium text-muted-foreground">Probability</span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-medium" style={{ color: "hsl(0, 80%, 60%)" }}>NO {noPercent}¢</span>
+              <span className="text-2xl font-bold" style={{ color: "hsl(142, 70%, 50%)" }}>YES {yesPercent}¢</span>
+            </div>
           </div>
-          <div className="h-32 flex items-end gap-1">
-            {chartPoints.map((point, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                <div
-                  className="w-full rounded-t-sm transition-all"
-                  style={{
-                    height: `${point * 1.2}%`,
-                    background: i === chartPoints.length - 1
-                      ? "hsl(var(--neon-yes))"
-                      : "hsl(var(--neon-yes) / 0.3)",
+          <div className="h-40">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="yesGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(142, 70%, 50%)" stopOpacity={0.4} />
+                    <stop offset="100%" stopColor="hsl(142, 70%, 50%)" stopOpacity={0.05} />
+                  </linearGradient>
+                  <linearGradient id="noGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(0, 80%, 60%)" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="hsl(0, 80%, 60%)" stopOpacity={0.05} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="day" hide />
+                <YAxis domain={[0, 100]} hide />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "0.75rem",
+                    fontSize: "12px",
                   }}
+                  formatter={(value: number, name: string) => [`${value}¢`, name.toUpperCase()]}
+                  labelFormatter={(label) => `Day ${label}`}
                 />
-              </div>
-            ))}
+                <Area
+                  type="monotone"
+                  dataKey="yes"
+                  stroke="hsl(142, 70%, 50%)"
+                  strokeWidth={2}
+                  fill="url(#yesGrad)"
+                  animationDuration={1500}
+                  animationEasing="ease-in-out"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="no"
+                  stroke="hsl(0, 80%, 60%)"
+                  strokeWidth={1.5}
+                  fill="url(#noGrad)"
+                  animationDuration={1800}
+                  animationEasing="ease-in-out"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
