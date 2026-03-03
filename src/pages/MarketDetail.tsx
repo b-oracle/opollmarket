@@ -614,10 +614,11 @@ const MarketDetail = () => {
 
       <BetModal
         open={betOpen}
-        onClose={() => setBetOpen(false)}
+        onClose={() => { setBetOpen(false); setSelectedOption(null); }}
         side={betSide}
-        price={betSide === "yes" ? yesPercent : noPercent}
-        marketTitle={market.title}
+        price={selectedOption ? Math.round((market.options?.find(o => o.label === selectedOption)?.price ?? 0) * 100) : (betSide === "yes" ? yesPercent : noPercent)}
+        marketTitle={selectedOption ? `${market.title} — ${selectedOption}` : market.title}
+        optionLabel={selectedOption ?? undefined}
       />
 
       <BoostMarketModal
