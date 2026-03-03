@@ -19,12 +19,13 @@ const TopBar = () => {
         ) : (
           <img src={logo} alt="OPOLL" className="h-8" />
         )}
-      <div className="flex items-center gap-2">
-        <ThemeToggle />
-        <WalletButton />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <WalletButton />
+        </div>
       </div>
-    </div>
-  </header>
-);
+    </header>
+  );
+};
 
 export default TopBar;
