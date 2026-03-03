@@ -14,7 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      markets: {
+        Row: {
+          category: string
+          contract_address: string | null
+          created_at: string
+          creator_wallet: string
+          description: string
+          end_date: string
+          id: string
+          initial_liquidity: number
+          liquidity: number
+          no_price: number
+          participants: number
+          resolution_source: string
+          status: string
+          title: string
+          tx_hash: string | null
+          updated_at: string
+          volume: number
+          yes_price: number
+        }
+        Insert: {
+          category: string
+          contract_address?: string | null
+          created_at?: string
+          creator_wallet: string
+          description: string
+          end_date: string
+          id?: string
+          initial_liquidity?: number
+          liquidity?: number
+          no_price?: number
+          participants?: number
+          resolution_source: string
+          status?: string
+          title: string
+          tx_hash?: string | null
+          updated_at?: string
+          volume?: number
+          yes_price?: number
+        }
+        Update: {
+          category?: string
+          contract_address?: string | null
+          created_at?: string
+          creator_wallet?: string
+          description?: string
+          end_date?: string
+          id?: string
+          initial_liquidity?: number
+          liquidity?: number
+          no_price?: number
+          participants?: number
+          resolution_source?: string
+          status?: string
+          title?: string
+          tx_hash?: string | null
+          updated_at?: string
+          volume?: number
+          yes_price?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
