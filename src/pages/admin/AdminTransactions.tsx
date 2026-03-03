@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ArrowUpRight, ArrowDownLeft, BarChart3, Download } from "lucide-react";
+import { Loader2, ArrowUpRight, ArrowDownLeft, BarChart3, Download, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface TxRow {
   id: string;
@@ -28,15 +28,28 @@ const AdminTransactions = () => {
   const [txns, setTxns] = useState<TxRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "deposit" | "withdrawal" | "bet" | "payout">("all");
+  const [page, setPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const PAGE_SIZE = 25;
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchData = async () => {
       setLoading(true);
+
+      // Get total count
+      let countQuery = supabase.from("transactions").select("*", { count: "exact", head: true });
+      if (filter !== "all") countQuery = countQuery.eq("type", filter);
+      const { count } = await countQuery;
+      setTotalCount(count ?? 0);
+
+      // Get page
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
       let query = supabase
         .from("transactions")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(200);
+        .range(from, to);
 
       if (filter !== "all") query = query.eq("type", filter);
 
@@ -72,8 +85,8 @@ const AdminTransactions = () => {
       );
       setLoading(false);
     };
-    fetch();
-  }, [filter]);
+    fetchData();
+  }, [filter, page]);
 
   const totals = {
     deposits: txns.filter((t) => t.type === "deposit").reduce((s, t) => s + Number(t.amount), 0),
@@ -148,7 +161,7 @@ const AdminTransactions = () => {
         {(["all", "deposit", "withdrawal", "bet", "payout"] as const).map((f) => (
           <button
             key={f}
-            onClick={() => setFilter(f)}
+            onClick={() => { setPage(0); setFilter(f); }}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors capitalize ${
               filter === f ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             }`}
@@ -219,6 +232,57 @@ const AdminTransactions = () => {
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {totalCount > PAGE_SIZE && (
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalCount)} of {totalCount}
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="p-2 rounded-lg border border-border hover:bg-muted transition-colors disabled:opacity-30"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            {Array.from({ length: Math.min(Math.ceil(totalCount / PAGE_SIZE), 7) }, (_, i) => {
+              const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+              let pageNum: number;
+              if (totalPages <= 7) {
+                pageNum = i;
+              } else if (page < 3) {
+                pageNum = i;
+              } else if (page > totalPages - 4) {
+                pageNum = totalPages - 7 + i;
+              } else {
+                pageNum = page - 3 + i;
+              }
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${
+                    page === pageNum
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {pageNum + 1}
+                </button>
+              );
+            })}
+            <button
+              onClick={() => setPage((p) => Math.min(Math.ceil(totalCount / PAGE_SIZE) - 1, p + 1))}
+              disabled={page >= Math.ceil(totalCount / PAGE_SIZE) - 1}
+              className="p-2 rounded-lg border border-border hover:bg-muted transition-colors disabled:opacity-30"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
