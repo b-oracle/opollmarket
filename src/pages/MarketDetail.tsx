@@ -296,7 +296,9 @@ const MarketDetail = () => {
         </div>
       </div>
 
-      <div ref={shareRef} className="max-w-lg mx-auto px-4">
+      <div className="max-w-lg mx-auto px-4">
+      {/* Share capture area: banner + chart only */}
+      <div ref={shareRef} className="relative">
       {market.imageUrl && (
         <div className="relative w-full rounded-xl overflow-hidden mt-4">
           <div className="h-40 w-full overflow-hidden">
@@ -397,6 +399,8 @@ const MarketDetail = () => {
           )}
         </div>
       </div>
+      </div>
+      {/* End share capture area */}
 
         {/* Multi-option pricing */}
         {isMulti && market.options && (
