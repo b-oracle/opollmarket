@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      market_boosts: {
+        Row: {
+          amount: number
+          created_at: string
+          ends_at: string
+          id: string
+          market_id: string
+          payer_wallet: string
+          starts_at: string
+          status: string
+          tier: string
+          tx_hash: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          ends_at: string
+          id?: string
+          market_id: string
+          payer_wallet: string
+          starts_at?: string
+          status?: string
+          tier: string
+          tx_hash?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          ends_at?: string
+          id?: string
+          market_id?: string
+          payer_wallet?: string
+          starts_at?: string
+          status?: string
+          tier?: string
+          tx_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_boosts_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       market_options: {
         Row: {
           created_at: string
