@@ -145,10 +145,18 @@ const AdminMarkets = () => {
   };
 
   const handleCancel = async (id: string) => {
-    if (!confirm("Cancel this market? All bets will need to be refunded.")) return;
-    const { error } = await supabase.from("markets").update({ status: "cancelled" }).eq("id", id);
-    if (error) toast.error("Failed to cancel market");
-    else { toast.success("Market cancelled"); fetchMarkets(); }
+    if (!confirm("Cancel this market and refund all bets?")) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("cancel-market", {
+        body: { market_id: id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Market cancelled! ${data.users_refunded} users refunded $${data.total_refunded?.toFixed(2)}`);
+      fetchMarkets();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to cancel market");
+    }
   };
 
   const handleDelete = async (id: string) => {
