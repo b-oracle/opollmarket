@@ -150,6 +150,15 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
 
   const topPercent = Math.round((rank / totalCount) * 100);
 
+  // Rank-specific theme colors
+  const rankTheme = rank === 1
+    ? { gradient: "from-yellow-900/40 via-card to-yellow-500/15", border: "border-yellow-500/50", accent: "#EAB308", accentBg: "bg-yellow-500/20", ring: "ring-yellow-500/30" }
+    : rank === 2
+    ? { gradient: "from-slate-400/20 via-card to-slate-300/10", border: "border-slate-400/50", accent: "#94A3B8", accentBg: "bg-slate-400/20", ring: "ring-slate-400/30" }
+    : rank === 3
+    ? { gradient: "from-orange-900/30 via-card to-orange-500/10", border: "border-orange-700/50", accent: "#B45309", accentBg: "bg-orange-700/20", ring: "ring-orange-700/30" }
+    : { gradient: "from-card via-card to-primary/10", border: "border-border/30", accent: "hsl(var(--primary))", accentBg: "bg-primary/20", ring: "ring-primary/30" };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm p-0 gap-0 glass border-border/50 rounded-2xl overflow-hidden [&>button]:hidden">
@@ -163,17 +172,17 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
 
         {/* The share card to be screenshotted */}
         <div className="px-4 py-3">
-          <div ref={cardRef} className="rounded-2xl overflow-hidden bg-gradient-to-br from-card via-card to-primary/10 border border-border/30 p-5">
+          <div ref={cardRef} className={`rounded-2xl overflow-hidden bg-gradient-to-br ${rankTheme.gradient} border ${rankTheme.border} p-5`}>
             {/* Top section */}
             <div className="flex items-center gap-2 mb-4">
-              <Trophy className="w-5 h-5 text-primary" />
+              <Trophy className="w-5 h-5" style={{ color: rankTheme.accent }} />
               <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{category} Leaderboard</span>
             </div>
 
             {/* Rank display */}
             <div className="flex items-center gap-4 mb-4">
               {/* Avatar */}
-              <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-2xl shrink-0 overflow-hidden border-2 border-primary">
+              <div className={`w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-2xl shrink-0 overflow-hidden border-2 ${rankTheme.ring}`} style={{ borderColor: rankTheme.accent }}>
                 {avatar ? (
                   <img src={avatar} alt={name} className="w-full h-full object-cover" />
                 ) : (
@@ -185,7 +194,7 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
                 <p className="text-lg font-bold truncate">{name}</p>
                 <div className="flex items-center gap-2 mt-1">
                   {rankBadge(rank)}
-                  <span className="text-3xl font-black text-primary">#{rank}</span>
+                  <span className="text-3xl font-black" style={{ color: rankTheme.accent }}>#{rank}</span>
                 </div>
               </div>
             </div>
@@ -201,7 +210,7 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
               </div>
               <div className="glass rounded-xl p-3 text-center">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Percentile</p>
-                <p className="text-lg font-bold text-primary">Top {topPercent}%</p>
+                <p className="text-lg font-bold" style={{ color: rankTheme.accent }}>Top {topPercent}%</p>
               </div>
             </div>
 
