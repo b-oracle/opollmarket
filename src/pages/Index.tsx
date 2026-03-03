@@ -5,6 +5,8 @@ import { categoryIcons } from "@/data/markets";
 import { TrendingUp, Users, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useActiveBoosts } from "@/hooks/useActiveBoosts";
+import { useMemo } from "react";
 
 const formatVolume = (v: number) => {
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(2)}M`;
@@ -23,7 +25,21 @@ const getMarketImage = (id: string, category: string) => {
 
 const Index = () => {
   const navigate = useNavigate();
-  const trending = mockMarkets.filter((m) => m.trending);
+  const { boostedMarketIds, boostDetails } = useActiveBoosts();
+  
+  // Merge boosted status: DB boosts + mock trending
+  const trending = useMemo(() => {
+    const allTrending = mockMarkets.filter(
+      (m) => m.trending || boostedMarketIds.has(m.id)
+    );
+    // Sort boosted first
+    return allTrending.sort((a, b) => {
+      const aBoost = boostedMarketIds.has(a.id) ? 1 : 0;
+      const bBoost = boostedMarketIds.has(b.id) ? 1 : 0;
+      return bBoost - aBoost;
+    });
+  }, [boostedMarketIds]);
+  
   const totalVolume = mockMarkets.reduce((s, m) => s + m.volume, 0);
   const totalTraders = mockMarkets.reduce((s, m) => s + m.participants, 0);
 
