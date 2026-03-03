@@ -203,14 +203,28 @@ const MarketDetail = () => {
 
         {/* Bet buttons - sticky bottom */}
         <div className="sticky bottom-20 flex gap-3 pb-4">
-          <button className="flex-1 btn-yes py-4 rounded-xl font-bold text-base tracking-wide transition-all active:scale-95">
+          <button
+            onClick={() => { setBetSide("yes"); setBetOpen(true); }}
+            className="flex-1 btn-yes py-4 rounded-xl font-bold text-base tracking-wide transition-all active:scale-95"
+          >
             YES {yesPercent}¢
           </button>
-          <button className="flex-1 btn-no py-4 rounded-xl font-bold text-base tracking-wide transition-all active:scale-95">
+          <button
+            onClick={() => { setBetSide("no"); setBetOpen(true); }}
+            className="flex-1 btn-no py-4 rounded-xl font-bold text-base tracking-wide transition-all active:scale-95"
+          >
             NO {noPercent}¢
           </button>
         </div>
       </div>
+
+      <BetModal
+        open={betOpen}
+        onClose={() => setBetOpen(false)}
+        side={betSide}
+        price={betSide === "yes" ? yesPercent : noPercent}
+        marketTitle={market.title}
+      />
 
       <BottomNav />
     </div>
