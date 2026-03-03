@@ -514,26 +514,22 @@ const MarketDetail = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
                   onClick={() => { setSelectedOption(opt.label); setBetSide("yes"); setBetOpen(true); }}
-                  className="w-full relative rounded-xl px-4 py-3.5 flex items-center justify-between transition-all active:scale-[0.98] overflow-hidden border backdrop-blur-md cursor-pointer"
+                  className="w-full relative rounded-xl px-4 py-3.5 flex items-center justify-between transition-all active:scale-[0.98] overflow-hidden cursor-pointer"
                   style={{
-                    background: `linear-gradient(135deg, ${colorAlpha(color, 0.18)} 0%, ${colorAlpha(color, 0.12)} 60%, ${colorAlpha(color, 0.08)} 100%)`,
-                    borderColor: colorAlpha(color, 0.25),
-                    boxShadow: `inset 0 1px 0 ${colorAlpha(color, 0.2)}, 0 2px 12px ${colorAlpha(color, 0.1)}`,
+                    background: colorAlpha(color, 0.1),
                   }}
                 >
-                  {/* Fill bar background */}
+                  {/* Fill bar showing probability */}
                   <div
-                    className="absolute inset-0 rounded-xl transition-all"
+                    className="absolute inset-0 rounded-xl"
                     style={{
-                      background: `linear-gradient(90deg, ${colorAlpha(color, 0.22)} 0%, ${colorAlpha(color, 0.1)} ${pct}%, transparent ${pct}%)`,
+                      background: `linear-gradient(90deg, ${colorAlpha(color, 0.12)} 0%, ${colorAlpha(color, 0.04)} ${pct}%, transparent ${pct}%)`,
                     }}
                   />
-                  {/* Glass shine */}
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
 
                   <div className="flex items-center gap-2.5 relative z-10">
                     <div
-                      className="w-3 h-3 rounded-full shrink-0 shadow-sm"
+                      className="w-3 h-3 rounded-full shrink-0"
                       style={{ backgroundColor: color, boxShadow: `0 0 6px ${colorAlpha(color, 0.5)}` }}
                     />
                     <span className="text-sm font-semibold">{opt.label}</span>
