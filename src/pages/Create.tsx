@@ -105,9 +105,10 @@ const Create = () => {
   const shakeClass = (field: string) => shakeField === field ? "animate-[shake_0.4s_ease-in-out]" : "";
 
   const tryAdvanceStep1 = () => {
-    setTouched((t) => ({ ...t, title: true, description: true }));
+    setTouched((t) => ({ ...t, title: true, description: true, options: true }));
     if (errors.title) { shake("title"); return; }
     if (errors.description) { shake("description"); return; }
+    if (marketType !== "binary" && errors.options) { shake("options"); return; }
     setStep(2);
   };
 
