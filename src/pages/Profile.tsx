@@ -45,6 +45,25 @@ const Profile = () => {
   const [txFilter, setTxFilter] = useState<FilterType>("all");
   const [editingProfile, setEditingProfile] = useState(false);
   const [editName, setEditName] = useState(user?.user_metadata?.display_name || "");
+  const deferredPrompt = useRef<any>(null);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      deferredPrompt.current = e;
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const triggerInstallPrompt = () => {
+    if (deferredPrompt.current) {
+      deferredPrompt.current.prompt();
+      deferredPrompt.current = null;
+    } else {
+      alert("To install, use your browser's menu and select 'Add to Home Screen' or 'Install App'.");
+    }
+  };
 
   const { data: transactions = [] } = useQuery({
     queryKey: ["transactions", user?.id],
