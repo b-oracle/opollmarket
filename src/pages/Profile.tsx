@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Wallet, Gift, ArrowDownToLine, ArrowUpFromLine, ArrowUpRight, ArrowDownLeft,
   Repeat, LogIn, Send, MessageCircle, ExternalLink, ChevronRight,
-  Video, FileText, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download,
+  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
