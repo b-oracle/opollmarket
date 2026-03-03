@@ -428,6 +428,7 @@ const Rankings = () => {
                           valueLine={`${me.pnl >= 0 ? "+" : "-"}${formatDollar(me.pnl)}`}
                           valuePositive={me.pnl >= 0}
                           totalCount={sortedTraders.length}
+                          onShare={() => shareRank(idx + 1, `${me.pnl >= 0 ? "+" : "-"}${formatDollar(me.pnl)} PnL`, "Trading")}
                         />
                       );
                     })()}
@@ -516,6 +517,7 @@ const Rankings = () => {
                           valueLine={`+${formatDollar(me.totalEarned)}`}
                           valuePositive={true}
                           totalCount={sortedReferrers.length}
+                          onShare={() => shareRank(idx + 1, `+${formatDollar(me.totalEarned)} earned`, "Referrals")}
                         />
                       );
                     })()}
