@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { motion } from "framer-motion";
@@ -101,6 +101,55 @@ const MOCK_POSITIONS: Position[] = [
 ];
 
 type FilterType = "all" | "profit" | "loss";
+
+const Sparkline = ({ avgPrice, currentPrice, side, seed }: { avgPrice: number; currentPrice: number; side: string; seed: string }) => {
+  const points = useMemo(() => {
+    const count = 20;
+    const seedNum = seed.charCodeAt(seed.length - 1);
+    const pts: number[] = [];
+    for (let i = 0; i < count; i++) {
+      const progress = i / (count - 1);
+      const base = avgPrice + (currentPrice - avgPrice) * progress;
+      const noise = Math.sin(i * 1.3 + seedNum) * 3 + Math.cos(i * 0.7 + seedNum * 2) * 2;
+      pts.push(base + noise);
+    }
+    pts[pts.length - 1] = currentPrice;
+    return pts;
+  }, [avgPrice, currentPrice, seed]);
+
+  const min = Math.min(...points) - 1;
+  const max = Math.max(...points) + 1;
+  const w = 120;
+  const h = 28;
+  const isUp = currentPrice >= avgPrice;
+  const color = isUp ? "hsl(var(--neon-yes))" : "hsl(var(--neon-no))";
+
+  const pathD = points
+    .map((p, i) => {
+      const x = (i / (points.length - 1)) * w;
+      const y = h - ((p - min) / (max - min)) * h;
+      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+
+  const areaD = pathD + ` L${w},${h} L0,${h} Z`;
+
+  return (
+    <div className="my-2">
+      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height: h }}>
+        <defs>
+          <linearGradient id={`spark-${seed}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={0.2} />
+            <stop offset="100%" stopColor={color} stopOpacity={0.02} />
+          </linearGradient>
+        </defs>
+        <path d={areaD} fill={`url(#spark-${seed})`} />
+        <path d={pathD} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx={w} cy={h - ((currentPrice - min) / (max - min)) * h} r={2.5} fill={color} />
+      </svg>
+    </div>
+  );
+};
 
 const Portfolio = () => {
   const { isConnected } = useAccount();
@@ -287,6 +336,9 @@ const Portfolio = () => {
                   </p>
                 </div>
               </div>
+
+              {/* Sparkline */}
+              <Sparkline avgPrice={pos.avgPrice} currentPrice={pos.currentPrice} side={pos.side} seed={pos.id} />
 
               {/* P&L bar */}
               <div className="flex items-center justify-between pt-2 border-t border-border">
