@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAccount, useBalance } from "wagmi";
 import { formatUnits } from "viem";
@@ -44,8 +44,14 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
   const [tab, setTab] = useState<Tab>(initialTab);
 
   // Sync tab when initialTab changes (e.g. profile page deposit vs withdraw buttons)
-  useState(() => {});
-  // Use useEffect-like pattern via key prop or explicit sync:
+  useEffect(() => {
+    if (open) {
+      setTab(initialTab);
+      setAmount("");
+      setStep("input");
+      setApproved(false);
+    }
+  }, [initialTab, open]);
 
   const [amount, setAmount] = useState("");
   const [step, setStep] = useState<FlowStep>("input");
