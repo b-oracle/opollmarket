@@ -7,9 +7,18 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
 const formatVolume = (v: number) => {
-  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`;
-  return `$${v}`;
+  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(2)}M`;
+  if (v >= 1_000) return `$${(v / 1_000).toFixed(1)}K`;
+  return `$${v.toFixed(2)}`;
+};
+
+// Deterministic placeholder image based on market id
+const getMarketImage = (id: string, category: string) => {
+  const icons: Record<string, string> = {
+    Crypto: "₿", "AI & Tech": "🤖", Science: "🚀", Economy: "📈",
+    Entertainment: "🎵", Sports: "⚽", Politics: "🏛️", Other: "💡",
+  };
+  return icons[category] || "💡";
 };
 
 const Index = () => {
@@ -77,31 +86,95 @@ const Index = () => {
         <div className="space-y-3">
           {trending.map((market, i) => {
             const yesPercent = Math.round(market.yesPrice * 100);
+            const noPercent = 100 - yesPercent;
+            const isMulti = market.marketType !== "binary";
+            const topOption = isMulti && market.options
+              ? market.options.reduce((a, b) => (a.price > b.price ? a : b))
+              : null;
+            const displayPercent = isMulti && topOption
+              ? Math.round(topOption.price * 100)
+              : yesPercent;
+
             return (
               <motion.div
                 key={market.id}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.6 + i * 0.1 }}
+                transition={{ delay: 0.6 + i * 0.08 }}
                 onClick={() => navigate(`/market/${market.id}`)}
-                className="glass rounded-xl p-4 cursor-pointer hover:bg-accent/50 transition-colors active:scale-[0.98]"
+                className="glass rounded-xl p-3 cursor-pointer hover:bg-accent/30 transition-all active:scale-[0.98] flex items-center gap-3"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1">
-                    <span className="text-[10px] text-muted-foreground">
-                      {categoryIcons[market.category]} {market.category}
-                    </span>
-                    <h4 className="text-sm font-semibold mt-1 leading-snug">{market.title}</h4>
-                    <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
-                      <span>{formatVolume(market.volume)} vol</span>
-                      <span>{market.participants.toLocaleString()} traders</span>
+                {/* Thumbnail */}
+                <div className="w-14 h-14 rounded-xl bg-secondary/80 border border-border flex items-center justify-center shrink-0 relative overflow-hidden">
+                  <span className="text-2xl">{getMarketImage(market.id, market.category)}</span>
+                  {market.status === "resolved" && (
+                    <div className="absolute bottom-0 inset-x-0 bg-primary/90 text-primary-foreground text-[7px] font-bold text-center py-0.5 uppercase tracking-wider">
+                      Resolved
                     </div>
+                  )}
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  {/* Top row: category + volume */}
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1.5 py-0.5 rounded bg-muted/80 border border-border">
+                      {market.category}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground font-mono">
+                      {formatVolume(market.volume)} Vol
+                    </span>
                   </div>
-                  <div className="text-right shrink-0">
-                    <span className="neon-yes text-xl font-bold">{yesPercent}%</span>
-                    <p className="text-[10px] text-muted-foreground">chance</p>
+
+                  {/* Title */}
+                  <h4 className="text-sm font-bold leading-snug truncate mb-1.5">{market.title}</h4>
+
+                  {/* Progress bar */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-2 rounded-full overflow-hidden flex bg-muted">
+                      {isMulti && market.options ? (
+                        market.options.map((opt, oi) => (
+                          <div
+                            key={opt.id}
+                            className="h-full transition-all"
+                            style={{
+                              width: `${opt.price * 100}%`,
+                              backgroundColor: [
+                                "hsl(var(--neon-yes))",
+                                "hsl(var(--neon-no))",
+                                "hsl(var(--primary))",
+                                "hsl(45, 93%, 58%)",
+                                "hsl(280, 70%, 60%)",
+                                "hsl(var(--muted-foreground))",
+                              ][oi % 6],
+                            }}
+                          />
+                        ))
+                      ) : (
+                        <>
+                          <div
+                            className="h-full rounded-l-full transition-all"
+                            style={{
+                              width: `${yesPercent}%`,
+                              backgroundColor: "hsl(var(--neon-yes))",
+                            }}
+                          />
+                          <div
+                            className="h-full rounded-r-full transition-all"
+                            style={{
+                              width: `${noPercent}%`,
+                              backgroundColor: "hsl(var(--neon-no))",
+                            }}
+                          />
+                        </>
+                      )}
+                    </div>
+                    <span className="text-sm font-bold neon-yes shrink-0">{displayPercent}%</span>
                   </div>
                 </div>
+
+                {/* Chart icon */}
+                <TrendingUp className="w-5 h-5 text-muted-foreground shrink-0" />
               </motion.div>
             );
           })}
