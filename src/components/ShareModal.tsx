@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { X, Download, Copy, Share2, Loader2, Twitter, Facebook } from "lucide-react";
+import { X, Download, Copy, Share2, Loader2, Twitter, Facebook, MessageCircle, Send } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import html2canvas from "html2canvas";
@@ -130,6 +130,17 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, "_blank");
   };
 
+  const handleWhatsApp = () => {
+    const text = encodeURIComponent(`🔥 "${title}" - Make your prediction now!\n\n${referralLink}`);
+    window.open(`https://wa.me/?text=${text}`, "_blank");
+  };
+
+  const handleTelegram = () => {
+    const text = encodeURIComponent(`🔥 "${title}" - Make your prediction now!`);
+    const url = encodeURIComponent(referralLink);
+    window.open(`https://t.me/share/url?url=${url}&text=${text}`, "_blank");
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm p-0 gap-0 glass border-border/50 rounded-2xl overflow-hidden [&>button]:hidden">
@@ -165,7 +176,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
         </div>
 
         {/* Action buttons */}
-        <div className="px-4 pb-4 grid grid-cols-2 gap-2">
+        <div className="px-4 pb-4 grid grid-cols-3 gap-2">
           <button
             onClick={handleCopy}
             disabled={capturing}
@@ -191,6 +202,18 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
             className="flex items-center justify-center gap-2 py-2.5 rounded-xl glass text-xs font-semibold hover:bg-muted transition-colors"
           >
             <Facebook className="w-4 h-4" /> Facebook
+          </button>
+          <button
+            onClick={handleWhatsApp}
+            className="flex items-center justify-center gap-2 py-2.5 rounded-xl glass text-xs font-semibold hover:bg-muted transition-colors"
+          >
+            <MessageCircle className="w-4 h-4" /> WhatsApp
+          </button>
+          <button
+            onClick={handleTelegram}
+            className="flex items-center justify-center gap-2 py-2.5 rounded-xl glass text-xs font-semibold hover:bg-muted transition-colors"
+          >
+            <Send className="w-4 h-4" /> Telegram
           </button>
         </div>
 
