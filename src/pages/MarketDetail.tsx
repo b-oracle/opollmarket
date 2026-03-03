@@ -357,9 +357,12 @@ const MarketDetail = () => {
           </div>
         </div>
 
-        {/* Bet buttons (binary only) */}
-        {!isMulti && (
-          <div className="sticky bottom-20 flex gap-3 pb-4">
+      </div>
+
+      {/* Bet buttons (binary only) - fixed to bottom */}
+      {!isMulti && (
+        <div className="fixed bottom-16 left-0 right-0 z-30 px-4 pb-3 pt-2 bg-gradient-to-t from-background via-background/95 to-transparent">
+          <div className="max-w-lg mx-auto flex gap-3">
             <button
               onClick={() => { setBetSide("yes"); setBetOpen(true); }}
               className="flex-1 btn-yes py-4 rounded-xl font-bold text-base tracking-wide transition-all active:scale-95"
@@ -373,8 +376,8 @@ const MarketDetail = () => {
               NO {noPercent}¢
             </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <BetModal
         open={betOpen}
