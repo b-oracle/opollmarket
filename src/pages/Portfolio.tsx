@@ -553,7 +553,6 @@ const Portfolio = () => {
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
       </BottomSheet>
 
       <WinCelebrationModal

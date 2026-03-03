@@ -366,6 +366,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                       <button onClick={() => setStep("input")} className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm transition-all active:scale-95">Try Again</button>
                     </div>
                   </motion.div>
+                )}
               </AnimatePresence>
     </BottomSheet>
   );
