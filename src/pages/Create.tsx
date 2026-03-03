@@ -721,7 +721,11 @@ const Create = () => {
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Description</p>
                     <p className="text-muted-foreground text-xs">{description || "—"}</p>
                   </div>
-                  <div className="flex gap-4">
+                  <div className="flex gap-4 flex-wrap">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Type</p>
+                      <p className="font-medium capitalize">{marketType}</p>
+                    </div>
                     <div>
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Category</p>
                       <p className="font-medium">
@@ -737,6 +741,16 @@ const Create = () => {
                       <p className="font-medium">{initialLiquidity ? `$${initialLiquidity}` : "—"}</p>
                     </div>
                   </div>
+                  {marketType !== "binary" && (
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Options</p>
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {options.filter(o => o.trim()).map((o, i) => (
+                          <span key={i} className="text-xs bg-muted px-2 py-1 rounded-lg">{o}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
