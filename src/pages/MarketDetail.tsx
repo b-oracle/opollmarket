@@ -1,8 +1,9 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Share2, Heart, TrendingUp, Users, Clock, Droplets, BarChart3 } from "lucide-react";
+import { ArrowLeft, Share2, Heart, TrendingUp, Users, Clock, Droplets, BarChart3, Zap } from "lucide-react";
 import { mockMarkets, categoryIcons } from "@/data/markets";
 import BottomNav from "@/components/BottomNav";
 import BetModal from "@/components/BetModal";
+import BoostMarketModal from "@/components/BoostMarketModal";
 import OrderBook from "@/components/OrderBook";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useMemo, useState } from "react";
@@ -84,6 +85,7 @@ const MarketDetail = () => {
 
   const [betSide, setBetSide] = useState<"yes" | "no">("yes");
   const [betOpen, setBetOpen] = useState(false);
+  const [boostOpen, setBoostOpen] = useState(false);
 
   if (!market) return <div className="h-dvh flex items-center justify-center text-muted-foreground">Market not found</div>;
 
@@ -106,6 +108,13 @@ const MarketDetail = () => {
             )}
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={() => setBoostOpen(true)}
+              className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors"
+              title="Boost Market"
+            >
+              <Zap className="w-5 h-5 text-primary" />
+            </button>
             <button className="w-10 h-10 rounded-full glass flex items-center justify-center">
               <Heart className="w-5 h-5" />
             </button>
@@ -372,6 +381,13 @@ const MarketDetail = () => {
         onClose={() => setBetOpen(false)}
         side={betSide}
         price={betSide === "yes" ? yesPercent : noPercent}
+        marketTitle={market.title}
+      />
+
+      <BoostMarketModal
+        open={boostOpen}
+        onClose={() => setBoostOpen(false)}
+        marketId={market.id}
         marketTitle={market.title}
       />
 
