@@ -395,6 +395,7 @@ const Profile = () => {
       </div>
 
       <DepositWithdrawModal open={modalOpen} onClose={() => setModalOpen(false)} initialTab={modalTab} />
+      <InstallAppModal open={installOpen} onClose={() => setInstallOpen(false)} />
       <BottomNav />
     </div>
   );
