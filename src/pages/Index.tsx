@@ -121,6 +121,17 @@ const Index = () => {
           onBoost={(market) => setBoostModalMarket({ id: market.id, title: market.title })}
         />
 
+const CommentBadge = ({ marketId }: { marketId: string }) => {
+  const count = useCommentCount(marketId);
+  if (count === 0) return null;
+  return (
+    <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+      <MessageCircle className="w-3 h-3" />
+      {count}
+    </span>
+  );
+};
+
 
 
         {/* Filter tabs */}
