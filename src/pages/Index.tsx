@@ -229,6 +229,11 @@ const Index = () => {
                       <span className="text-2xl">{getMarketImage(market.id, market.category)}</span>
                     </div>
                   )}
+                  {isBoosted && (
+                    <div className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-bl-lg rounded-tr-xl bg-primary/90 flex items-center justify-center animate-pulse shadow-[0_0_8px_hsl(var(--primary)/0.6)]">
+                      <Zap className="w-3 h-3 text-primary-foreground" fill="currentColor" />
+                    </div>
+                  )}
                 </div>
 
                 {/* Content */}
