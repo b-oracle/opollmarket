@@ -47,7 +47,6 @@ const MoreMenu = ({ open, onOpenChange }: MoreMenuProps) => {
       alert("To install, use your browser's menu and select 'Add to Home Screen' or 'Install App'.");
     }
   };
-  const navigate = useNavigate();
 
   const handleNavigate = (path: string) => {
     onOpenChange(false);
