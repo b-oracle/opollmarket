@@ -233,21 +233,21 @@ const Profile = () => {
         <div className="mb-6">
           <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Connect</h3>
           <div className="space-y-2">
-            <a href="#" target="_blank" rel="noopener noreferrer" className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
+            <a href="https://t.me/opoll_predict_bot" target="_blank" rel="noopener noreferrer" className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
               <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0 text-sky-400">
                 <Send className="w-5 h-5" />
               </div>
               <span className="text-sm font-medium flex-1">Predict via Telegram</span>
               <ExternalLink className="w-4 h-4 text-muted-foreground" />
             </a>
-            <a href="#" target="_blank" rel="noopener noreferrer" className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
+            <button onClick={() => toast({ title: "Coming Soon", description: "Predict via WhatsApp will be available soon!" })} className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98] text-left">
               <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0 text-green-500">
                 <MessageCircle className="w-5 h-5" />
               </div>
               <span className="text-sm font-medium flex-1">Predict via WhatsApp</span>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            </a>
-            <a href="#" target="_blank" rel="noopener noreferrer" className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
+            </button>
+            <a href="https://x.com/opollmarket" target="_blank" rel="noopener noreferrer" className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
               <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0 text-foreground">
                 <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
               </div>
@@ -262,7 +262,7 @@ const Profile = () => {
           <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Resources</h3>
           <div className="space-y-2">
             {[
-              { icon: Video, label: "How-to Video Tutorials", href: "#" },
+              { icon: Video, label: "How-to Video Tutorials", href: "#", comingSoon: true },
               { icon: FileText, label: "Documentation", href: "#" },
               { icon: HelpCircle, label: "Frequently Asked Questions", href: "/faq" },
             ].map((item) => (
