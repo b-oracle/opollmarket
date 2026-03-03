@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserBalance, usePlaceBet } from "@/hooks/useUserBalance";
+import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import { useNavigate } from "react-router-dom";
 import {
   X,
@@ -34,11 +35,11 @@ interface BetModalProps {
 const PRESET_AMOUNTS = [10, 25, 50, 100];
 const MIN_AMOUNT = 1;
 const MAX_AMOUNT = 10000;
-const PLATFORM_FEE = 0.02;
 
 const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId, optionLabel }: BetModalProps) => {
   const { user } = useAuth();
   const { balance } = useUserBalance();
+  const { data: commission } = useCommissionSettings();
   const placeBet = usePlaceBet();
   const navigate = useNavigate();
   const [amount, setAmount] = useState("");
@@ -46,10 +47,12 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
   const [errorMsg, setErrorMsg] = useState("");
 
   const numAmount = parseFloat(amount) || 0;
-  const shares = numAmount > 0 ? numAmount / (price / 100) : 0;
+  const totalFeePercent = (commission?.admin_fee_percent ?? 2) + (commission?.creator_fee_percent ?? 3);
+  const fee = numAmount * (totalFeePercent / 100);
+  const poolAmount = numAmount - fee;
+  const shares = poolAmount > 0 ? poolAmount / (price / 100) : 0;
   const potentialPayout = shares;
-  const fee = numAmount * PLATFORM_FEE;
-  const totalCost = numAmount + fee;
+  const totalCost = numAmount;
   const profit = potentialPayout - totalCost;
   const roi = numAmount > 0 ? (profit / totalCost) * 100 : 0;
 
@@ -210,8 +213,12 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                           <span className="font-semibold">{shares.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">Platform Fee (2%)</span>
-                          <span className="font-semibold">${fee.toFixed(2)}</span>
+                          <span className="text-muted-foreground">Admin Fee ({commission?.admin_fee_percent ?? 2}%)</span>
+                          <span className="font-semibold">${(numAmount * (commission?.admin_fee_percent ?? 2) / 100).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Creator Fee ({commission?.creator_fee_percent ?? 3}%)</span>
+                          <span className="font-semibold">${(numAmount * (commission?.creator_fee_percent ?? 3) / 100).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-xs">
                           <span className="text-muted-foreground">Total Cost</span>

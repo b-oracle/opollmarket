@@ -108,6 +108,30 @@ export type Database = {
           },
         ]
       }
+      commission_settings: {
+        Row: {
+          admin_fee_percent: number
+          creator_fee_percent: number
+          id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          admin_fee_percent?: number
+          creator_fee_percent?: number
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          admin_fee_percent?: number
+          creator_fee_percent?: number
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       market_boosts: {
         Row: {
           amount: number
