@@ -110,7 +110,53 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
   return (
     <>
-      <div className={`snap-item relative h-[calc(100dvh-5rem)] w-full flex items-end pb-6 px-4 overflow-hidden ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}>
+      <motion.div
+        drag={isMulti ? false : "x"}
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.3}
+        onDrag={handleDrag}
+        onDragEnd={handleDragEnd}
+        className={`snap-item relative h-[calc(100dvh-5rem)] w-full flex items-end pb-6 px-4 overflow-hidden ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}
+        style={{ touchAction: "pan-y" }}
+      >
+        {/* Swipe overlay indicators */}
+        {!isMulti && swiping && (
+          <>
+            {/* YES indicator (right swipe) */}
+            <motion.div
+              className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
+              style={{ opacity: swipeSide === "yes" ? swipeProgress * 0.8 : 0 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-primary/25" />
+              <motion.div
+                className="flex flex-col items-center gap-2"
+                style={{ scale: 0.8 + swipeProgress * 0.4, opacity: swipeSide === "yes" ? swipeProgress : 0 }}
+              >
+                <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center backdrop-blur-sm">
+                  <ThumbsUp className="w-10 h-10 text-primary" />
+                </div>
+                <span className="text-lg font-bold neon-yes">YES {yesPercent}¢</span>
+              </motion.div>
+            </motion.div>
+
+            {/* NO indicator (left swipe) */}
+            <motion.div
+              className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
+              style={{ opacity: swipeSide === "no" ? swipeProgress * 0.8 : 0 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-l from-transparent via-destructive/10 to-destructive/25" />
+              <motion.div
+                className="flex flex-col items-center gap-2"
+                style={{ scale: 0.8 + swipeProgress * 0.4, opacity: swipeSide === "no" ? swipeProgress : 0 }}
+              >
+                <div className="w-20 h-20 rounded-full bg-destructive/20 border-2 border-destructive flex items-center justify-center backdrop-blur-sm">
+                  <ThumbsDown className="w-10 h-10 text-destructive" />
+                </div>
+                <span className="text-lg font-bold neon-no">NO {noPercent}¢</span>
+              </motion.div>
+            </motion.div>
+          </>
+        )}
         {/* Background image */}
         {market.imageUrl && (
           <div className="absolute inset-0">
