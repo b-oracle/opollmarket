@@ -1,5 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import BackToTop from "@/components/BackToTop";
 
 const Privacy = () => {
   const navigate = useNavigate();
@@ -68,6 +69,7 @@ const Privacy = () => {
 
         <p className="text-xs text-muted-foreground/60 pt-4">Last updated: March 2026</p>
       </div>
+      <BackToTop />
     </div>
   );
 };
