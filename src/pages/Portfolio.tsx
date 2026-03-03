@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { motion } from "framer-motion";
@@ -287,6 +287,9 @@ const Portfolio = () => {
                   </p>
                 </div>
               </div>
+
+              {/* Sparkline */}
+              <Sparkline avgPrice={pos.avgPrice} currentPrice={pos.currentPrice} side={pos.side} seed={pos.id} />
 
               {/* P&L bar */}
               <div className="flex items-center justify-between pt-2 border-t border-border">
