@@ -100,12 +100,34 @@ const Index = () => {
           🔥 Start Swiping
         </motion.button>
 
-        {/* Trending */}
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-          🔥 Trending Markets
-        </h3>
+        {/* Filter tabs */}
+        <div className="flex gap-1.5 p-1 rounded-xl bg-muted/50 mb-4">
+          {([
+            { key: "trending" as const, label: "🔥 Trending" },
+            { key: "boosted" as const, label: "⚡ Boosted" },
+            { key: "all" as const, label: "All" },
+          ]).map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                filter === tab.key
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         <div className="space-y-3">
-          {trending.map((market, i) => {
+          {filteredMarkets.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground text-sm">
+              No boosted markets right now. Be the first to boost one!
+            </div>
+          )}
+          {filteredMarkets.map((market, i) => {
             const yesPercent = Math.round(market.yesPrice * 100);
             const noPercent = 100 - yesPercent;
             const isMulti = market.marketType !== "binary";
