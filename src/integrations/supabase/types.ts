@@ -166,6 +166,7 @@ export type Database = {
           ends_at: string
           id: string
           market_id: string
+          nowpayments_payment_id: string | null
           payer_wallet: string
           starts_at: string
           status: string
@@ -178,6 +179,7 @@ export type Database = {
           ends_at: string
           id?: string
           market_id: string
+          nowpayments_payment_id?: string | null
           payer_wallet: string
           starts_at?: string
           status?: string
@@ -190,6 +192,7 @@ export type Database = {
           ends_at?: string
           id?: string
           market_id?: string
+          nowpayments_payment_id?: string | null
           payer_wallet?: string
           starts_at?: string
           status?: string
