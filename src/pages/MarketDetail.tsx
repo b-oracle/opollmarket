@@ -5,6 +5,7 @@ import { categoryIcons } from "@/data/markets";
 import BottomNav from "@/components/BottomNav";
 import BetModal from "@/components/BetModal";
 import BoostMarketModal from "@/components/BoostMarketModal";
+import ShareModal from "@/components/ShareModal";
 import OrderBook from "@/components/OrderBook";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
@@ -220,6 +221,8 @@ const MarketDetail = () => {
   const [timePeriod, setTimePeriod] = useState<"1D" | "1W" | "1M" | "All">("1M");
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [liked, setLiked] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const pageRef = useRef<HTMLDivElement>(null);
 
   const pointsMap = { "1D": 24, "1W": 7, "1M": 30, "All": 90 };
 
@@ -261,7 +264,7 @@ const MarketDetail = () => {
   const selectedOptionObj = selectedOption ? market.options?.find(o => o.label === selectedOption) : null;
 
   return (
-    <div className="h-dvh bg-background overflow-y-auto pb-20">
+    <div ref={pageRef} className="h-dvh bg-background overflow-y-auto pb-20">
       <div className="sticky top-0 z-20 glass-strong">
         <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto">
           <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full glass flex items-center justify-center"><ArrowLeft className="w-5 h-5" /></button>
@@ -276,7 +279,7 @@ const MarketDetail = () => {
             <button onClick={() => { setLiked(p => !p); toast.success(liked ? "Removed from favorites" : "Added to favorites"); }} className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
               <Heart className={`w-5 h-5 transition-colors ${liked ? "text-destructive fill-destructive" : ""}`} />
             </button>
-            <button onClick={() => { if (navigator.share) navigator.share({ title: market?.title, url: window.location.href }); else { navigator.clipboard.writeText(window.location.href); toast.success("Link copied!"); } }} className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors"><Share2 className="w-5 h-5" /></button>
+            <button onClick={() => setShareOpen(true)} className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors"><Share2 className="w-5 h-5" /></button>
           </div>
         </div>
       </div>
@@ -441,6 +444,14 @@ const MarketDetail = () => {
       />
 
       <BoostMarketModal open={boostOpen} onClose={() => setBoostOpen(false)} marketId={market.id} marketTitle={market.title} />
+      <ShareModal
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        title={market.title}
+        description={market.description}
+        marketUrl={window.location.href}
+        captureRef={pageRef}
+      />
       <BottomNav />
     </div>
   );

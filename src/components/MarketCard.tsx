@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Market, categoryIcons } from "@/data/markets";
@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import BoostCountdown from "@/components/BoostCountdown";
 import BetModal from "@/components/BetModal";
 import CommentsDrawer from "@/components/CommentsDrawer";
+import ShareModal from "@/components/ShareModal";
 import { useCommentCount } from "@/hooks/useCommentCount";
 import { toast } from "sonner";
 
@@ -61,8 +62,10 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const [bookmarked, setBookmarked] = useState(false);
   const [betModal, setBetModal] = useState<{ open: boolean; side: "yes" | "no"; optionLabel?: string; optionPrice?: number }>({ open: false, side: "yes" });
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const commentCount = useCommentCount(market.id);
   const [dragX, setDragX] = useState(0);
+  const cardRef = useRef<HTMLDivElement>(null);
   const [swiping, setSwiping] = useState(false);
 
   const SWIPE_THRESHOLD = 80;
@@ -95,18 +98,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
     setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
   };
 
-  const handleShare = async () => {
-    const url = `${window.location.origin}/market/${market.id}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: market.title, url });
-      } catch {
-        // user cancelled
-      }
-    } else {
-      await navigator.clipboard.writeText(url);
-      toast.success("Link copied to clipboard!");
-    }
+  const handleShare = () => {
+    setShareOpen(true);
   };
 
   const handleBookmark = () => {
@@ -122,6 +115,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   return (
     <>
       <motion.div
+        ref={cardRef}
         drag={isMulti ? false : "x"}
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.3}
@@ -398,6 +392,14 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         onClose={() => setCommentsOpen(false)}
         marketId={market.id}
         marketTitle={market.title}
+      />
+      <ShareModal
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        title={market.title}
+        description={market.description}
+        marketUrl={`${window.location.origin}/market/${market.id}`}
+        captureRef={cardRef}
       />
     </>
   );
