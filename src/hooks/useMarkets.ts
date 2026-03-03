@@ -56,7 +56,7 @@ export const useMarkets = () => {
     queryFn: async (): Promise<Market[]> => {
       const { data, error } = await supabase
         .from("markets")
-        .select("*, market_options(*)")
+        .select("*, market_options!market_options_market_id_fkey(*)")
         .eq("status", "active")
         .order("created_at", { ascending: false });
 
@@ -74,7 +74,7 @@ export const useMarket = (id: string | undefined) => {
       if (!id) return null;
       const { data, error } = await supabase
         .from("markets")
-        .select("*, market_options(*)")
+        .select("*, market_options!market_options_market_id_fkey(*)")
         .eq("id", id)
         .single();
 
