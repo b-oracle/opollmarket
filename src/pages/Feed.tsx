@@ -2,44 +2,48 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import MarketCard from "@/components/MarketCard";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
-import { mockMarkets } from "@/data/markets";
+import { useMarkets } from "@/hooks/useMarkets";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
+import { Loader2 } from "lucide-react";
 
 const Feed = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const { data: markets = [], isLoading } = useMarkets();
   const { boostedMarketIds, boostDetails } = useActiveBoosts();
 
-  // Sort: boosted markets first, then trending, then rest
   const sortedMarkets = useMemo(() => {
-    return [...mockMarkets].sort((a, b) => {
+    return [...markets].sort((a, b) => {
       const aBoost = boostedMarketIds.has(a.id) ? 2 : a.trending ? 1 : 0;
       const bBoost = boostedMarketIds.has(b.id) ? 2 : b.trending ? 1 : 0;
       return bBoost - aBoost;
     });
-  }, [boostedMarketIds]);
+  }, [markets, boostedMarketIds]);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-
     const handleScroll = () => {
       const itemHeight = container.clientHeight;
       const index = Math.round(container.scrollTop / itemHeight);
       setActiveIndex(index);
     };
-
     container.addEventListener("scroll", handleScroll, { passive: true });
     return () => container.removeEventListener("scroll", handleScroll);
   }, []);
 
+  if (isLoading) {
+    return (
+      <div className="h-dvh flex flex-col bg-background items-center justify-center">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="h-dvh flex flex-col bg-background">
       <TopBar />
-      <div
-        ref={containerRef}
-        className="flex-1 snap-feed pt-14 pb-0"
-      >
+      <div ref={containerRef} className="flex-1 snap-feed pt-14 pb-0">
         {sortedMarkets.map((market, i) => {
           const boost = boostDetails.get(market.id);
           return (

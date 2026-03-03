@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Share2, Heart, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2 } from "lucide-react";
-import { mockMarkets, categoryIcons } from "@/data/markets";
+import { useMarket } from "@/hooks/useMarkets";
+import { categoryIcons } from "@/data/markets";
 import BottomNav from "@/components/BottomNav";
 import BetModal from "@/components/BetModal";
 import BoostMarketModal from "@/components/BoostMarketModal";
@@ -9,7 +10,7 @@ import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from "rec
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { useAccount } from "wagmi";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 const formatVolume = (v: number) => {
@@ -26,14 +27,7 @@ const getTimeRemaining = (endDate: string) => {
   return `${days}d left`;
 };
 
-const optionColors = [
-  "#02C7FC",
-  "#EF4444",
-  "#EAB308",
-  "#A855F7",
-  "#F97316",
-  "#9CA3AF",
-];
+const optionColors = ["#02C7FC", "#EF4444", "#EAB308", "#A855F7", "#F97316", "#9CA3AF"];
 
 const colorAlpha = (hex: string, alpha: number) => {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -66,19 +60,10 @@ const formatCommentTime = (dateStr: string) => {
 };
 
 const InlineCommentItem = ({
-  comment,
-  isReply = false,
-  onReply,
-  onLike,
-}: {
-  comment: DbComment;
-  isReply?: boolean;
-  onReply: (id: string, author: string) => void;
-  onLike: (id: string, liked: boolean) => void;
-}) => {
+  comment, isReply = false, onReply, onLike,
+}: { comment: DbComment; isReply?: boolean; onReply: (id: string, author: string) => void; onLike: (id: string, liked: boolean) => void; }) => {
   const [showReplies, setShowReplies] = useState(true);
   const replies = comment.replies || [];
-
   return (
     <div className={isReply ? "ml-8 border-l border-border/30 pl-3" : ""}>
       <div className="flex gap-2.5 py-2.5">
@@ -92,20 +77,13 @@ const InlineCommentItem = ({
           </div>
           <p className="text-xs text-foreground/80 leading-relaxed break-words">{comment.content}</p>
           <div className="flex items-center gap-4 mt-1">
-            <button
-              onClick={() => onLike(comment.id, !!comment.liked)}
-              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-destructive transition-colors"
-            >
+            <button onClick={() => onLike(comment.id, !!comment.liked)} className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-destructive transition-colors">
               <Heart className={`w-3 h-3 ${comment.liked ? "text-destructive fill-destructive" : ""}`} />
               {comment.likes_count}
             </button>
             {!isReply && (
-              <button
-                onClick={() => onReply(comment.id, comment.author_name)}
-                className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
-              >
-                <CornerDownRight className="w-3 h-3" />
-                Reply
+              <button onClick={() => onReply(comment.id, comment.author_name)} className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors">
+                <CornerDownRight className="w-3 h-3" /> Reply
               </button>
             )}
           </div>
@@ -114,17 +92,12 @@ const InlineCommentItem = ({
       {replies.length > 0 && (
         <div>
           {replies.length > 1 && (
-            <button
-              onClick={() => setShowReplies(!showReplies)}
-              className="flex items-center gap-1 ml-9 text-[10px] text-primary font-semibold py-0.5"
-            >
+            <button onClick={() => setShowReplies(!showReplies)} className="flex items-center gap-1 ml-9 text-[10px] text-primary font-semibold py-0.5">
               <ChevronDown className={`w-3 h-3 transition-transform ${showReplies ? "rotate-180" : ""}`} />
               {showReplies ? "Hide" : "View"} {replies.length} replies
             </button>
           )}
-          {showReplies && replies.map((r) => (
-            <InlineCommentItem key={r.id} comment={r} isReply onReply={onReply} onLike={onLike} />
-          ))}
+          {showReplies && replies.map((r) => <InlineCommentItem key={r.id} comment={r} isReply onReply={onReply} onLike={onLike} />)}
         </div>
       )}
     </div>
@@ -132,66 +105,44 @@ const InlineCommentItem = ({
 };
 
 const InlineComments = ({ marketId }: { marketId: string }) => {
-  const { address } = useAccount();
+  const { user } = useAuth();
   const [comments, setComments] = useState<DbComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [inputValue, setInputValue] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [replyTo, setReplyTo] = useState<{ id: string; author: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const walletId = address || `anon-${Math.random().toString(36).slice(2, 10)}`;
+  const walletId = user?.id || `anon-${Math.random().toString(36).slice(2, 10)}`;
 
   const fetchComments = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from("comments")
-        .select("*")
-        .eq("market_id", marketId)
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("comments").select("*").eq("market_id", marketId).order("created_at", { ascending: false });
       if (error) throw error;
-
-      const { data: userLikes } = await supabase
-        .from("comment_likes")
-        .select("comment_id")
-        .eq("wallet_address", walletId);
+      const { data: userLikes } = await supabase.from("comment_likes").select("comment_id").eq("wallet_address", walletId);
       const likedIds = new Set(userLikes?.map((l) => l.comment_id) || []);
-
       const map = new Map<string, DbComment>();
       const topLevel: DbComment[] = [];
-      for (const c of data || []) {
-        map.set(c.id, { ...c, liked: likedIds.has(c.id), replies: [] });
-      }
+      for (const c of data || []) { map.set(c.id, { ...c, liked: likedIds.has(c.id), replies: [] }); }
       for (const c of data || []) {
         const comment = map.get(c.id)!;
-        if (c.parent_id && map.has(c.parent_id)) {
-          map.get(c.parent_id)!.replies!.push(comment);
-        } else if (!c.parent_id) {
-          topLevel.push(comment);
-        }
+        if (c.parent_id && map.has(c.parent_id)) { map.get(c.parent_id)!.replies!.push(comment); }
+        else if (!c.parent_id) { topLevel.push(comment); }
       }
-      for (const c of map.values()) {
-        c.replies?.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-      }
+      for (const c of map.values()) { c.replies?.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()); }
       setComments(topLevel);
-    } catch (err) {
-      console.error("Failed to fetch comments:", err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error("Failed to fetch comments:", err); }
+    finally { setLoading(false); }
   }, [marketId, walletId]);
 
   useEffect(() => {
     fetchComments();
-    const channel = supabase
-      .channel(`detail-comments-${marketId}`)
+    const channel = supabase.channel(`detail-comments-${marketId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "comments", filter: `market_id=eq.${marketId}` }, () => fetchComments())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [marketId, fetchComments]);
 
-  useEffect(() => {
-    if (replyTo && inputRef.current) inputRef.current.focus();
-  }, [replyTo]);
+  useEffect(() => { if (replyTo && inputRef.current) inputRef.current.focus(); }, [replyTo]);
 
   const handleSend = async () => {
     const text = inputValue.trim();
@@ -199,56 +150,33 @@ const InlineComments = ({ marketId }: { marketId: string }) => {
     const cleanText = replyTo ? text.replace(new RegExp(`^@${replyTo.author}\\s*`), "").trim() || text : text;
     setSubmitting(true);
     try {
-      const authorName = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "Anonymous";
+      const authorName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Anonymous";
       const { error } = await supabase.from("comments").insert({
-        market_id: marketId,
-        parent_id: replyTo?.id || null,
-        author_name: authorName,
-        author_wallet: address || null,
-        content: cleanText,
+        market_id: marketId, parent_id: replyTo?.id || null,
+        author_name: authorName, author_wallet: user?.id || null, content: cleanText,
       });
       if (error) throw error;
-      setInputValue("");
-      setReplyTo(null);
-    } catch {
-      toast.error("Failed to post comment");
-    } finally {
-      setSubmitting(false);
-    }
+      setInputValue(""); setReplyTo(null);
+    } catch { toast.error("Failed to post comment"); }
+    finally { setSubmitting(false); }
   };
 
   const handleLike = async (commentId: string, alreadyLiked: boolean) => {
     try {
-      if (alreadyLiked) {
-        await supabase.from("comment_likes").delete().eq("comment_id", commentId).eq("wallet_address", walletId);
-      } else {
-        await supabase.from("comment_likes").insert({ comment_id: commentId, wallet_address: walletId });
-      }
+      if (alreadyLiked) { await supabase.from("comment_likes").delete().eq("comment_id", commentId).eq("wallet_address", walletId); }
+      else { await supabase.from("comment_likes").insert({ comment_id: commentId, wallet_address: walletId }); }
       const updateLike = (arr: DbComment[]): DbComment[] =>
-        arr.map((c) => ({
-          ...c,
-          liked: c.id === commentId ? !alreadyLiked : c.liked,
-          likes_count: c.id === commentId ? (alreadyLiked ? c.likes_count - 1 : c.likes_count + 1) : c.likes_count,
-          replies: updateLike(c.replies || []),
-        }));
+        arr.map((c) => ({ ...c, liked: c.id === commentId ? !alreadyLiked : c.liked, likes_count: c.id === commentId ? (alreadyLiked ? c.likes_count - 1 : c.likes_count + 1) : c.likes_count, replies: updateLike(c.replies || []) }));
       setComments(updateLike);
-    } catch (err) {
-      console.error("Failed to toggle like:", err);
-    }
+    } catch (err) { console.error("Failed to toggle like:", err); }
   };
 
-  const handleReply = (commentId: string, author: string) => {
-    setReplyTo({ id: commentId, author });
-    setInputValue(`@${author} `);
-  };
-
+  const handleReply = (commentId: string, author: string) => { setReplyTo({ id: commentId, author }); setInputValue(`@${author} `); };
   const totalComments = comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0);
 
   return (
     <div className="glass rounded-xl p-4 mb-6">
       <h3 className="text-sm font-semibold mb-3">💬 Discussion ({totalComments})</h3>
-
-      {/* Input */}
       <div className="mb-4">
         {replyTo && (
           <div className="flex items-center justify-between mb-1.5 px-1">
@@ -257,40 +185,23 @@ const InlineComments = ({ marketId }: { marketId: string }) => {
           </div>
         )}
         <div className="flex items-center gap-2">
-          <input
-            ref={inputRef}
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+          <input ref={inputRef} type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             placeholder={replyTo ? `Reply to @${replyTo.author}...` : "Add a comment..."}
-            className="flex-1 bg-muted/50 border border-border rounded-full px-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
-            disabled={submitting}
-          />
-          <button
-            onClick={handleSend}
-            disabled={!inputValue.trim() || submitting}
-            className="w-8 h-8 rounded-full bg-primary flex items-center justify-center transition-all active:scale-90 disabled:opacity-40"
-          >
+            className="flex-1 bg-muted/50 border border-border rounded-full px-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" disabled={submitting} />
+          <button onClick={handleSend} disabled={!inputValue.trim() || submitting}
+            className="w-8 h-8 rounded-full bg-primary flex items-center justify-center transition-all active:scale-90 disabled:opacity-40">
             {submitting ? <Loader2 className="w-3.5 h-3.5 text-primary-foreground animate-spin" /> : <Send className="w-3.5 h-3.5 text-primary-foreground" />}
           </button>
         </div>
       </div>
-
-      {/* Comments list */}
       {loading ? (
-        <div className="flex items-center justify-center py-6">
-          <Loader2 className="w-5 h-5 text-primary animate-spin" />
-        </div>
+        <div className="flex items-center justify-center py-6"><Loader2 className="w-5 h-5 text-primary animate-spin" /></div>
       ) : comments.length === 0 ? (
-        <div className="text-center py-6 text-muted-foreground">
-          <p className="text-xs">No comments yet. Be the first!</p>
-        </div>
+        <div className="text-center py-6 text-muted-foreground"><p className="text-xs">No comments yet. Be the first!</p></div>
       ) : (
         <div className="divide-y divide-border/20">
-          {comments.map((c) => (
-            <InlineCommentItem key={c.id} comment={c} onReply={handleReply} onLike={handleLike} />
-          ))}
+          {comments.map((c) => <InlineCommentItem key={c.id} comment={c} onReply={handleReply} onLike={handleLike} />)}
         </div>
       )}
     </div>
@@ -300,7 +211,7 @@ const InlineComments = ({ marketId }: { marketId: string }) => {
 const MarketDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const market = mockMarkets.find((m) => m.id === id);
+  const { data: market, isLoading } = useMarket(id);
 
   const isMulti = market?.marketType === "multi" || market?.marketType === "range";
   const yesPercent = market ? Math.round(market.yesPrice * 100) : 0;
@@ -314,9 +225,7 @@ const MarketDetail = () => {
   const chartData = useMemo(() => {
     if (!market) return [];
     const points = pointsMap[timePeriod];
-
     if (isMulti && market.options) {
-      // Generate chart data for each option
       return Array.from({ length: points }, (_, i) => {
         const entry: Record<string, number> = { day: i + 1 };
         market.options!.forEach((opt, oi) => {
@@ -325,14 +234,11 @@ const MarketDetail = () => {
           const seed = i * 0.8 + points + oi * 7;
           const noise = Math.sin(seed) * volatility + Math.cos(seed * 0.3) * (volatility * 0.4);
           const trend = ((opt.price * 100 - base) / points) * i;
-          entry[opt.label] = i === points - 1
-            ? Math.round(opt.price * 100)
-            : Math.max(1, Math.min(95, Math.round(base + trend + noise)));
+          entry[opt.label] = i === points - 1 ? Math.round(opt.price * 100) : Math.max(1, Math.min(95, Math.round(base + trend + noise)));
         });
         return entry;
       });
     }
-
     const volatility = { "1D": 3, "1W": 6, "1M": 8, "All": 12 }[timePeriod];
     const base = yesPercent - volatility * 1.5;
     return Array.from({ length: points }, (_, i) => {
@@ -340,11 +246,7 @@ const MarketDetail = () => {
       const noise = Math.sin(seed) * volatility + Math.cos(seed * 0.3) * (volatility * 0.6);
       const trend = ((yesPercent - base) / points) * i;
       const value = Math.max(5, Math.min(95, Math.round(base + trend + noise)));
-      return {
-        day: i + 1,
-        yes: i === points - 1 ? yesPercent : value,
-        no: i === points - 1 ? noPercent : 100 - value,
-      };
+      return { day: i + 1, yes: i === points - 1 ? yesPercent : value, no: i === points - 1 ? noPercent : 100 - value };
     });
   }, [market, yesPercent, noPercent, timePeriod, isMulti]);
 
@@ -352,40 +254,26 @@ const MarketDetail = () => {
   const [betOpen, setBetOpen] = useState(false);
   const [boostOpen, setBoostOpen] = useState(false);
 
+  if (isLoading) return <div className="h-dvh flex items-center justify-center"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>;
   if (!market) return <div className="h-dvh flex items-center justify-center text-muted-foreground">Market not found</div>;
+
+  const selectedOptionObj = selectedOption ? market.options?.find(o => o.label === selectedOption) : null;
 
   return (
     <div className="h-dvh bg-background overflow-y-auto pb-20">
-      {/* Header */}
       <div className="sticky top-0 z-20 glass-strong">
         <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full glass flex items-center justify-center">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
+          <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full glass flex items-center justify-center"><ArrowLeft className="w-5 h-5" /></button>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-muted-foreground">
-              {categoryIcons[market.category]} {market.category}
-            </span>
-            {isMulti && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/15 text-primary">
-                {market.marketType === "range" ? "Range" : "Multi"}
-              </span>
-            )}
+            <span className="text-sm font-medium text-muted-foreground">{categoryIcons[market.category]} {market.category}</span>
+            {isMulti && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/15 text-primary">{market.marketType === "range" ? "Range" : "Multi"}</span>}
           </div>
           <div className="flex gap-2">
-            <button
-              onClick={() => setBoostOpen(true)}
-              className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors"
-              title="Boost Market"
-            >
+            <button onClick={() => setBoostOpen(true)} className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors" title="Boost Market">
               <Zap className="w-5 h-5 text-primary" />
             </button>
-            <button className="w-10 h-10 rounded-full glass flex items-center justify-center">
-              <Heart className="w-5 h-5" />
-            </button>
-            <button className="w-10 h-10 rounded-full glass flex items-center justify-center">
-              <Share2 className="w-5 h-5" />
-            </button>
+            <button className="w-10 h-10 rounded-full glass flex items-center justify-center"><Heart className="w-5 h-5" /></button>
+            <button className="w-10 h-10 rounded-full glass flex items-center justify-center"><Share2 className="w-5 h-5" /></button>
           </div>
         </div>
       </div>
@@ -397,9 +285,7 @@ const MarketDetail = () => {
         {/* Chart */}
         <div className="glass rounded-2xl p-4 mb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-muted-foreground">
-              {isMulti ? "Option Probabilities" : "Probability"}
-            </span>
+            <span className="text-sm font-medium text-muted-foreground">{isMulti ? "Option Probabilities" : "Probability"}</span>
             {!isMulti && (
               <div className="flex items-center gap-3">
                 <span className="text-xs font-medium text-destructive">NO {noPercent}¢</span>
@@ -407,21 +293,14 @@ const MarketDetail = () => {
               </div>
             )}
           </div>
-
           <div className="flex gap-1 p-0.5 rounded-lg bg-muted/50 mb-3 w-fit">
             {(["1D", "1W", "1M", "All"] as const).map((p) => (
-              <button
-                key={p}
-                onClick={() => setTimePeriod(p)}
-                className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
-                  timePeriod === p ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
+              <button key={p} onClick={() => setTimePeriod(p)}
+                className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${timePeriod === p ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
                 {p}
               </button>
             ))}
           </div>
-
           <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
@@ -448,29 +327,14 @@ const MarketDetail = () => {
                 </defs>
                 <XAxis dataKey="day" hide />
                 <YAxis domain={[0, 100]} hide />
-                <Tooltip
-                  contentStyle={{
-                    background: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "0.75rem",
-                    fontSize: "12px",
-                  }}
-                  formatter={(value: number, name: string) => [`${value}¢`, name]}
-                  labelFormatter={(label) => `Day ${label}`}
-                />
+                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "0.75rem", fontSize: "12px" }}
+                  formatter={(value: number, name: string) => [`${value}¢`, name]} labelFormatter={(label) => `Day ${label}`} />
                 {isMulti && market.options ? (
                   market.options.map((opt, i) => (
-                    <Area
-                      key={opt.id}
-                      type="monotone"
-                      dataKey={opt.label}
-                      stroke={optionColors[i % optionColors.length]}
+                    <Area key={opt.id} type="monotone" dataKey={opt.label} stroke={optionColors[i % optionColors.length]}
                       strokeWidth={selectedOption === opt.id || !selectedOption ? 2 : 0.5}
-                      fill={`url(#grad-${opt.id})`}
-                      fillOpacity={selectedOption === opt.id || !selectedOption ? 1 : 0.1}
-                      animationDuration={1500 + i * 200}
-                      animationEasing="ease-in-out"
-                    />
+                      fill={`url(#grad-${opt.id})`} fillOpacity={selectedOption === opt.id || !selectedOption ? 1 : 0.1}
+                      animationDuration={1500 + i * 200} animationEasing="ease-in-out" />
                   ))
                 ) : (
                   <>
@@ -481,18 +345,11 @@ const MarketDetail = () => {
               </AreaChart>
             </ResponsiveContainer>
           </div>
-
-          {/* Multi-option legend */}
           {isMulti && market.options && (
             <div className="flex flex-wrap gap-2 mt-3">
               {market.options.map((opt, i) => (
-                <button
-                  key={opt.id}
-                  onClick={() => setSelectedOption(selectedOption === opt.id ? null : opt.id)}
-                  className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-semibold transition-all ${
-                    selectedOption === opt.id ? "bg-secondary ring-1 ring-primary/30" : "hover:bg-muted/50"
-                  }`}
-                >
+                <button key={opt.id} onClick={() => setSelectedOption(selectedOption === opt.id ? null : opt.id)}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-semibold transition-all ${selectedOption === opt.id ? "bg-secondary ring-1 ring-primary/30" : "hover:bg-muted/50"}`}>
                   <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: optionColors[i % optionColors.length] }} />
                   {opt.label}
                 </button>
@@ -501,86 +358,39 @@ const MarketDetail = () => {
           )}
         </div>
 
-        {/* Multi-option pricing cards */}
+        {/* Multi-option pricing */}
         {isMulti && market.options && (
           <div className="space-y-2 mb-4">
             {market.options.map((opt, i) => {
               const pct = Math.round(opt.price * 100);
               const color = optionColors[i % optionColors.length];
               return (
-                <motion.button
-                  key={opt.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
+                <motion.button key={opt.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                   onClick={() => { setSelectedOption(opt.label); setBetSide("yes"); setBetOpen(true); }}
                   className="w-full relative rounded-xl px-4 py-3.5 flex items-center justify-between transition-all active:scale-[0.98] overflow-hidden cursor-pointer"
-                  style={{
-                    background: colorAlpha(color, 0.1),
-                  }}
-                >
-                  {/* Fill bar showing probability */}
-                  <div
-                    className="absolute inset-0 rounded-xl"
-                    style={{
-                      background: `linear-gradient(90deg, ${colorAlpha(color, 0.12)} 0%, ${colorAlpha(color, 0.04)} ${pct}%, transparent ${pct}%)`,
-                    }}
-                  />
-
+                  style={{ background: colorAlpha(color, 0.1) }}>
+                  <div className="absolute inset-0 rounded-xl" style={{ background: `linear-gradient(90deg, ${colorAlpha(color, 0.12)} 0%, ${colorAlpha(color, 0.04)} ${pct}%, transparent ${pct}%)` }} />
                   <div className="flex items-center gap-2.5 relative z-10">
-                    <div
-                      className="w-3 h-3 rounded-full shrink-0"
-                      style={{ backgroundColor: color, boxShadow: `0 0 6px ${colorAlpha(color, 0.5)}` }}
-                    />
+                    <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: color, boxShadow: `0 0 6px ${colorAlpha(color, 0.5)}` }} />
                     <span className="text-sm font-semibold">{opt.label}</span>
                   </div>
-                  <span className="text-sm font-bold relative z-10" style={{ color }}>
-                    {pct}¢
-                  </span>
+                  <span className="text-sm font-bold relative z-10" style={{ color }}>{pct}¢</span>
                 </motion.button>
               );
             })}
           </div>
         )}
 
-        {/* Stats grid */}
+        {/* Stats */}
         <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="glass rounded-xl p-3">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span className="text-xs">Volume</span>
-            </div>
-            <span className="text-lg font-bold">{formatVolume(market.volume)}</span>
-          </div>
-          <div className="glass rounded-xl p-3">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <Droplets className="w-3.5 h-3.5" />
-              <span className="text-xs">Liquidity</span>
-            </div>
-            <span className="text-lg font-bold">{formatVolume(market.liquidity)}</span>
-          </div>
-          <div className="glass rounded-xl p-3">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <Users className="w-3.5 h-3.5" />
-              <span className="text-xs">Traders</span>
-            </div>
-            <span className="text-lg font-bold">{market.participants.toLocaleString()}</span>
-          </div>
-          <div className="glass rounded-xl p-3">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <Clock className="w-3.5 h-3.5" />
-              <span className="text-xs">Ends</span>
-            </div>
-            <span className="text-lg font-bold">{getTimeRemaining(market.endDate)}</span>
-          </div>
+          <div className="glass rounded-xl p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><TrendingUp className="w-3.5 h-3.5" /><span className="text-xs">Volume</span></div><span className="text-lg font-bold">{formatVolume(market.volume)}</span></div>
+          <div className="glass rounded-xl p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Droplets className="w-3.5 h-3.5" /><span className="text-xs">Liquidity</span></div><span className="text-lg font-bold">{formatVolume(market.liquidity)}</span></div>
+          <div className="glass rounded-xl p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Users className="w-3.5 h-3.5" /><span className="text-xs">Traders</span></div><span className="text-lg font-bold">{market.participants.toLocaleString()}</span></div>
+          <div className="glass rounded-xl p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Clock className="w-3.5 h-3.5" /><span className="text-xs">Ends</span></div><span className="text-lg font-bold">{getTimeRemaining(market.endDate)}</span></div>
         </div>
 
-        {/* Order Book (binary only) */}
-        {!isMulti && (
-          <OrderBook yesPrice={yesPercent} noPrice={noPercent} liquidity={market.liquidity} />
-        )}
+        {!isMulti && <OrderBook yesPrice={yesPercent} noPrice={noPercent} liquidity={market.liquidity} />}
 
-        {/* Creator */}
         <div className="glass rounded-xl p-4 mb-4 flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
             <span className="font-bold text-primary">{market.creatorName.charAt(0)}</span>
@@ -591,27 +401,14 @@ const MarketDetail = () => {
           </div>
         </div>
 
-        {/* Comments Section */}
         <InlineComments marketId={market.id} />
-
       </div>
 
-      {/* Bet buttons (binary only) - fixed to bottom */}
       {!isMulti && (
         <div className="fixed bottom-16 left-0 right-0 z-30 px-4 pb-3 pt-2 bg-gradient-to-t from-background via-background/95 to-transparent">
           <div className="max-w-lg mx-auto flex gap-3">
-            <button
-              onClick={() => { setBetSide("yes"); setBetOpen(true); }}
-              className="flex-1 btn-yes py-4 rounded-xl font-bold text-base tracking-wide transition-all active:scale-95"
-            >
-              YES {yesPercent}¢
-            </button>
-            <button
-              onClick={() => { setBetSide("no"); setBetOpen(true); }}
-              className="flex-1 btn-no py-4 rounded-xl font-bold text-base tracking-wide transition-all active:scale-95"
-            >
-              NO {noPercent}¢
-            </button>
+            <button onClick={() => { setBetSide("yes"); setBetOpen(true); }} className="flex-1 btn-yes py-4 rounded-xl font-bold text-base tracking-wide transition-all active:scale-95">YES {yesPercent}¢</button>
+            <button onClick={() => { setBetSide("no"); setBetOpen(true); }} className="flex-1 btn-no py-4 rounded-xl font-bold text-base tracking-wide transition-all active:scale-95">NO {noPercent}¢</button>
           </div>
         </div>
       )}
@@ -620,18 +417,14 @@ const MarketDetail = () => {
         open={betOpen}
         onClose={() => { setBetOpen(false); setSelectedOption(null); }}
         side={betSide}
-        price={selectedOption ? Math.round((market.options?.find(o => o.label === selectedOption)?.price ?? 0) * 100) : (betSide === "yes" ? yesPercent : noPercent)}
+        price={selectedOptionObj ? Math.round(selectedOptionObj.price * 100) : (betSide === "yes" ? yesPercent : noPercent)}
         marketTitle={selectedOption ? `${market.title} — ${selectedOption}` : market.title}
+        marketId={market.id}
+        optionId={selectedOptionObj?.id}
         optionLabel={selectedOption ?? undefined}
       />
 
-      <BoostMarketModal
-        open={boostOpen}
-        onClose={() => setBoostOpen(false)}
-        marketId={market.id}
-        marketTitle={market.title}
-      />
-
+      <BoostMarketModal open={boostOpen} onClose={() => setBoostOpen(false)} marketId={market.id} marketTitle={market.title} />
       <BottomNav />
     </div>
   );
