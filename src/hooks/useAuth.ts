@@ -50,14 +50,23 @@ export const useAuth = () => {
   };
 
   const signUp = async (email: string, password: string, displayName?: string) => {
+    // Check for referral ID in localStorage
+    const referredBy = localStorage.getItem("referral_id");
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { display_name: displayName },
+        data: {
+          display_name: displayName,
+          ...(referredBy ? { referred_by: referredBy } : {}),
+        },
         emailRedirectTo: window.location.origin,
       },
     });
+    if (!error) {
+      // Clean up referral storage
+      localStorage.removeItem("referral_id");
+    }
     return { error };
   };
 
