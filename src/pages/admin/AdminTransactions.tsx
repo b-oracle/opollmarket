@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ArrowUpRight, ArrowDownLeft, BarChart3 } from "lucide-react";
+import { Loader2, ArrowUpRight, ArrowDownLeft, BarChart3, Download } from "lucide-react";
 
 interface TxRow {
   id: string;
@@ -81,11 +81,42 @@ const AdminTransactions = () => {
     bets: txns.filter((t) => t.type === "bet").reduce((s, t) => s + Number(t.amount), 0),
   };
 
+  const exportCSV = () => {
+    const headers = ["Date", "Type", "User", "Amount", "Side", "Market", "Status"];
+    const rows = txns.map((t) => [
+      new Date(t.created_at).toISOString(),
+      t.type,
+      t.user_email || "",
+      Number(t.amount),
+      t.side || "",
+      t.market_title || "",
+      t.status,
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>;
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold">Transactions ({txns.length})</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Transactions ({txns.length})</h2>
+        <button
+          onClick={exportCSV}
+          disabled={txns.length === 0}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50"
+        >
+          <Download className="w-3.5 h-3.5" />
+          Export CSV
+        </button>
+      </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-3">
