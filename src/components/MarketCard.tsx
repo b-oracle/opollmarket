@@ -331,9 +331,9 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                         onClick={() => setBetModal({ open: true, side: "yes", optionLabel: opt.label, optionPrice: pct })}
                         className="w-full relative rounded-xl px-4 py-3 flex items-center justify-between transition-all active:scale-[0.98] overflow-hidden border backdrop-blur-md"
                         style={{
-                          background: `linear-gradient(135deg, ${color}20 0%, ${color}12 60%, ${color}08 100%)`,
-                          borderColor: `${color}25`,
-                          boxShadow: `inset 0 1px 0 ${color}15, 0 2px 12px ${color}08`,
+                          background: `linear-gradient(135deg, ${color}30 0%, ${color}22 60%, ${color}18 100%)`,
+                          borderColor: `${color}40`,
+                          boxShadow: `inset 0 1px 0 ${color}30, 0 2px 12px ${color}15`,
                         }}
                       >
                         {/* Fill bar background */}
