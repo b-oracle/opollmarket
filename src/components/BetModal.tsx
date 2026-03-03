@@ -117,9 +117,9 @@ const BetModal = ({ open, onClose, side, price, marketTitle, optionLabel }: BetM
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${isYes ? "bg-primary" : "bg-destructive"}`} />
+                  <div className={`w-3 h-3 rounded-full ${optionLabel ? "bg-primary" : isYes ? "bg-primary" : "bg-destructive"}`} />
                   <h2 className="text-lg font-bold">
-                    Buy <span className={sideTextClass}>{side.toUpperCase()}</span>
+                    Buy <span className={optionLabel ? "neon-yes" : sideTextClass}>{optionLabel || side.toUpperCase()}</span>
                   </h2>
                 </div>
                 <button
