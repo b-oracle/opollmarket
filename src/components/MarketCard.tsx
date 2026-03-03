@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from "react";
+import watermarkLogo from "@/assets/watermark-logo.png";
 import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Market, categoryIcons } from "@/data/markets";
@@ -240,6 +241,10 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                 <Clock className="w-2.5 h-2.5" /> {getTimeRemaining(market.endDate)} · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
+          </div>
+          {/* Watermark */}
+          <div className="absolute bottom-2 right-3 z-20 opacity-40">
+            <img src={watermarkLogo} alt="" className="h-6 w-auto" />
           </div>
         </div>
 

@@ -355,6 +355,10 @@ const MarketDetail = () => {
             </span>
           </div>
         </div>
+        {/* Watermark */}
+        <div className="absolute bottom-2 right-3 z-20 opacity-40">
+          <img src={watermarkLogo} alt="" className="h-6 w-auto" />
+        </div>
       </div>
 
       {/* Visible banner */}
