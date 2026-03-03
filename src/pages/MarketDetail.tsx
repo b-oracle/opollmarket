@@ -259,6 +259,13 @@ const MarketDetail = () => {
   const [betSide, setBetSide] = useState<"yes" | "no">("yes");
   const [betOpen, setBetOpen] = useState(false);
   const [boostOpen, setBoostOpen] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    const onScroll = () => setScrollY(window.scrollY);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   if (isLoading) return <div className="h-dvh flex items-center justify-center"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>;
   if (!market) return <div className="h-dvh flex items-center justify-center text-muted-foreground">Market not found</div>;
@@ -294,7 +301,8 @@ const MarketDetail = () => {
             <img
               src={market.imageUrl}
               alt={market.title}
-              className="w-full h-full object-cover blur-[2px] opacity-70"
+              className="w-full h-full object-cover blur-[2px] opacity-70 scale-110 will-change-transform"
+              style={{ transform: `scale(1.1) translateY(${scrollY * 0.15}px)` }}
             />
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
