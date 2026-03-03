@@ -340,7 +340,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                         <div
                           className="absolute inset-0 rounded-xl transition-all"
                           style={{
-                            background: `linear-gradient(90deg, ${color}25 0%, ${color}10 ${pct}%, transparent ${pct}%)`,
+                            background: `linear-gradient(90deg, ${color}35 0%, ${color}18 ${pct}%, transparent ${pct}%)`,
                           }}
                         />
                         {/* Glass shine */}
