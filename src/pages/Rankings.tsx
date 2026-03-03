@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
-import { Trophy, TrendingUp, TrendingDown, Medal, Crown, Award, Users, Loader2, Star, Calendar } from "lucide-react";
+import { Trophy, TrendingUp, TrendingDown, Medal, Crown, Award, Users, Loader2, Star, Calendar, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 interface Referrer {
   userId: string;
@@ -85,6 +86,7 @@ const YourRankCard = ({
   valueLine,
   valuePositive,
   totalCount,
+  onShare,
 }: {
   rank: number;
   name: string;
@@ -93,6 +95,7 @@ const YourRankCard = ({
   valueLine: string;
   valuePositive: boolean;
   totalCount: number;
+  onShare?: () => void;
 }) => (
   <motion.div
     initial={{ opacity: 0, y: -8 }}
@@ -115,11 +118,16 @@ const YourRankCard = ({
         <span>Top {Math.round((rank / totalCount) * 100)}%</span>
       </div>
     </div>
-    <div className="text-right shrink-0">
-      <p className={`text-sm font-bold flex items-center gap-1 justify-end ${valuePositive ? "text-primary" : "text-destructive"}`}>
+    <div className="flex items-center gap-2 shrink-0">
+      <p className={`text-sm font-bold flex items-center gap-1 ${valuePositive ? "text-primary" : "text-destructive"}`}>
         {valuePositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
         {valueLine}
       </p>
+      {onShare && (
+        <button onClick={onShare} className="w-8 h-8 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+          <Share2 className="w-4 h-4 text-primary" />
+        </button>
+      )}
     </div>
   </motion.div>
 );
@@ -314,6 +322,17 @@ const Rankings = () => {
   const { user } = useAuth();
   const currentUserId = user?.id;
 
+  const shareRank = useCallback((rank: number, valueLine: string, category: string) => {
+    const url = window.location.href;
+    const text = `🏆 I'm ranked #${rank} on the ${category} leaderboard with ${valueLine}! Can you beat me?\n\n${url}`;
+    if (navigator.share) {
+      navigator.share({ title: "My Leaderboard Rank", text }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text);
+      toast.success("Rank copied to clipboard!");
+    }
+  }, []);
+
   const { referrers, loading: refLoading } = useReferralLeaderboard(timePeriod);
   const { traders, loading: tradeLoading } = useTradingLeaderboard(timePeriod);
 
@@ -409,6 +428,7 @@ const Rankings = () => {
                           valueLine={`${me.pnl >= 0 ? "+" : "-"}${formatDollar(me.pnl)}`}
                           valuePositive={me.pnl >= 0}
                           totalCount={sortedTraders.length}
+                          onShare={() => shareRank(idx + 1, `${me.pnl >= 0 ? "+" : "-"}${formatDollar(me.pnl)} PnL`, "Trading")}
                         />
                       );
                     })()}
@@ -436,11 +456,16 @@ const Rankings = () => {
                                 <span>{formatDollar(trader.volume)} vol</span>
                               </div>
                             </div>
-                            <div className="text-right shrink-0">
-                              <p className={`text-sm font-bold flex items-center gap-1 justify-end ${trader.pnl >= 0 ? "text-primary" : "text-destructive"}`}>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <p className={`text-sm font-bold flex items-center gap-1 ${trader.pnl >= 0 ? "text-primary" : "text-destructive"}`}>
                                 {trader.pnl >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
                                 {trader.pnl >= 0 ? "+" : "-"}{formatDollar(trader.pnl)}
                               </p>
+                              {isMe && (
+                                <button onClick={() => shareRank(i + 1, `${trader.pnl >= 0 ? "+" : "-"}${formatDollar(trader.pnl)} PnL`, "Trading")} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+                                  <Share2 className="w-3.5 h-3.5 text-primary" />
+                                </button>
+                              )}
                             </div>
                           </motion.div>
                         );
@@ -497,6 +522,7 @@ const Rankings = () => {
                           valueLine={`+${formatDollar(me.totalEarned)}`}
                           valuePositive={true}
                           totalCount={sortedReferrers.length}
+                          onShare={() => shareRank(idx + 1, `+${formatDollar(me.totalEarned)} earned`, "Referrals")}
                         />
                       );
                     })()}
@@ -522,10 +548,15 @@ const Rankings = () => {
                                 {ref.totalReferrals} referral{ref.totalReferrals !== 1 ? "s" : ""}
                               </div>
                             </div>
-                            <div className="text-right shrink-0">
-                              <p className="text-sm font-bold text-primary flex items-center gap-1 justify-end">
+                            <div className="flex items-center gap-2 shrink-0">
+                              <p className="text-sm font-bold text-primary flex items-center gap-1">
                                 <TrendingUp className="w-3.5 h-3.5" />+{ref.totalEarned.toFixed(0)}
                               </p>
+                              {isMe && (
+                                <button onClick={() => shareRank(i + 1, `+${formatDollar(ref.totalEarned)} earned`, "Referrals")} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+                                  <Share2 className="w-3.5 h-3.5 text-primary" />
+                                </button>
+                              )}
                             </div>
                           </motion.div>
                         );
