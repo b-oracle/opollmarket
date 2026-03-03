@@ -93,7 +93,7 @@ const Index = () => {
           <h2 className="text-2xl sm:text-3xl font-bold leading-tight mb-2">
             Predict the <span className="text-primary">future</span>,<br />earn from it.
           </h2>
-          <p className="text-xs sm:text-sm text-muted-foreground">Swipe through markets. Place your bets. Win big.</p>
+          <p className="text-xs sm:text-sm text-muted-foreground">Swipe through markets. Predict. Win big.</p>
         </motion.div>
 
         {/* Stats */}
