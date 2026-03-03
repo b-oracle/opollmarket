@@ -161,46 +161,52 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             </motion.div>
           </>
         )}
-        {/* Background image */}
-        {market.imageUrl && (
-          <div className="absolute inset-0">
-            <img src={market.imageUrl} alt="" className="w-full h-full object-cover opacity-20" />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/40" />
-          </div>
-        )}
-
-        <div className={`absolute inset-0 ${isBoosted ? 'bg-gradient-to-br from-primary/15 via-primary/5 to-transparent' : ''}`} />
-
-        {isBoosted && (
-          <>
-            <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-primary/10 blur-3xl animate-pulse pointer-events-none" />
-            <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-primary/8 blur-2xl animate-pulse pointer-events-none" style={{ animationDelay: '1s' }} />
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-          </>
-        )}
-
-        {/* Probability ring or multi-option indicator */}
-        <div className="absolute top-8 right-4 z-10">
-          {isMulti ? (
-            <div className="glass rounded-xl px-3 py-2 flex flex-col items-center gap-1">
-              <BarChart3 className="w-5 h-5 text-primary" />
-              <span className="text-[10px] font-bold text-primary uppercase">
-                {market.options?.length} options
-              </span>
-            </div>
-          ) : (
-            <div className="relative w-20 h-20">
-              <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
-                <circle cx="40" cy="40" r="34" fill="none" stroke="hsl(var(--muted))" strokeWidth="4" />
-                <circle cx="40" cy="40" r="34" fill="none" stroke="hsl(var(--neon-yes))" strokeWidth="4" strokeDasharray={`${yesPercent * 2.136} ${213.6 - yesPercent * 2.136}`} strokeLinecap="round" />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-lg font-bold neon-yes">{yesPercent}%</span>
-                <span className="text-[10px] text-muted-foreground">YES</span>
-              </div>
+        {/* Capturable content for share screenshot */}
+        <div ref={captureContentRef} className="absolute inset-0">
+          {/* Background image */}
+          {market.imageUrl && (
+            <div className="absolute inset-0">
+              <img src={market.imageUrl} alt="" className="w-full h-full object-cover opacity-20" />
+              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/40" />
             </div>
           )}
+
+          <div className={`absolute inset-0 ${isBoosted ? 'bg-gradient-to-br from-primary/15 via-primary/5 to-transparent' : ''}`} />
+
+          {/* Probability ring or multi-option indicator */}
+          <div className="absolute top-8 right-4 z-10">
+            {isMulti ? (
+              <div className="glass rounded-xl px-3 py-2 flex flex-col items-center gap-1">
+                <BarChart3 className="w-5 h-5 text-primary" />
+                <span className="text-[10px] font-bold text-primary uppercase">
+                  {market.options?.length} options
+                </span>
+              </div>
+            ) : (
+              <div className="relative w-20 h-20">
+                <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
+                  <circle cx="40" cy="40" r="34" fill="none" stroke="hsl(var(--muted))" strokeWidth="4" />
+                  <circle cx="40" cy="40" r="34" fill="none" stroke="hsl(var(--neon-yes))" strokeWidth="4" strokeDasharray={`${yesPercent * 2.136} ${213.6 - yesPercent * 2.136}`} strokeLinecap="round" />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-lg font-bold neon-yes">{yesPercent}%</span>
+                  <span className="text-[10px] text-muted-foreground">YES</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Category badge */}
+          <div className="absolute top-8 left-4 z-10 flex items-center gap-2">
+            <span className="glass px-3 py-1.5 rounded-full text-xs font-medium text-foreground/80">
+              {categoryIcons[market.category]} {market.category}
+            </span>
+            {isMulti && (
+              <span className="glass px-2 py-1.5 rounded-full text-[10px] font-bold text-primary">
+                {market.marketType === "range" ? "📊 Range" : "🎯 Multi"}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Category badge */}
