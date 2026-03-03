@@ -24,10 +24,8 @@ const MarketDetail = () => {
   const navigate = useNavigate();
   const market = mockMarkets.find((m) => m.id === id);
 
-  if (!market) return <div className="h-dvh flex items-center justify-center text-muted-foreground">Market not found</div>;
-
-  const yesPercent = Math.round(market.yesPrice * 100);
-  const noPercent = Math.round(market.noPrice * 100);
+  const yesPercent = market ? Math.round(market.yesPrice * 100) : 0;
+  const noPercent = market ? Math.round(market.noPrice * 100) : 0;
 
   // Generate realistic chart data
   const chartData = useMemo(() => {
@@ -44,6 +42,8 @@ const MarketDetail = () => {
       };
     });
   }, [yesPercent, noPercent]);
+
+  if (!market) return <div className="h-dvh flex items-center justify-center text-muted-foreground">Market not found</div>;
 
   return (
     <div className="h-dvh bg-background overflow-y-auto pb-20">
