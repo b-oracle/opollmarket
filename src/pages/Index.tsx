@@ -145,7 +145,12 @@ const Index = () => {
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1.5 py-0.5 rounded bg-muted/80 border border-border">
                       {market.category}
                     </span>
-                    <span className="text-[10px] text-muted-foreground font-mono">
+                    {isBoosted && (
+                      <span className="text-[10px] font-bold text-primary flex items-center gap-0.5 animate-pulse">
+                        <Zap className="w-3 h-3" /> Boosted
+                      </span>
+                    )}
+                    <span className="text-[10px] text-muted-foreground font-mono ml-auto">
                       {formatVolume(market.volume)} Vol
                     </span>
                   </div>
