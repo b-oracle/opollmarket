@@ -30,7 +30,18 @@ const AdminTransactions = () => {
   const [filter, setFilter] = useState<"all" | "deposit" | "withdrawal" | "bet" | "payout">("all");
   const [page, setPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const PAGE_SIZE = 25;
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(0);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   useEffect(() => {
     const fetchData = async () => {
