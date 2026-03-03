@@ -499,44 +499,41 @@ const MarketDetail = () => {
           <div className="space-y-2 mb-4">
             {market.options.map((opt, i) => {
               const pct = Math.round(opt.price * 100);
+              const color = optionColors[i % optionColors.length];
               return (
-                <motion.div
+                <motion.button
                   key={opt.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="glass rounded-xl p-3.5 flex items-center gap-3"
+                  onClick={() => { setSelectedOption(opt.label); setBetSide("yes"); setBetOpen(true); }}
+                  className="w-full relative rounded-xl px-4 py-3.5 flex items-center justify-between transition-all active:scale-[0.98] overflow-hidden border border-white/10 backdrop-blur-md cursor-pointer"
+                  style={{
+                    background: `linear-gradient(135deg, ${color}15 0%, ${color}08 50%, transparent 100%)`,
+                    boxShadow: `inset 0 1px 0 ${color}20, 0 2px 8px ${color}10`,
+                  }}
                 >
+                  {/* Fill bar background */}
                   <div
-                    className="w-3 h-3 rounded-full shrink-0"
-                    style={{ backgroundColor: optionColors[i % optionColors.length] }}
+                    className="absolute inset-0 rounded-xl transition-all"
+                    style={{
+                      background: `linear-gradient(90deg, ${color}25 0%, ${color}10 ${pct}%, transparent ${pct}%)`,
+                    }}
                   />
-                  <span className="text-sm font-semibold flex-1">{opt.label}</span>
-                  <div className="flex items-center gap-3">
-                    <div className="w-20 h-2 rounded-full bg-muted overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{ duration: 0.8, delay: i * 0.1 }}
-                        className="h-full rounded-full"
-                        style={{ backgroundColor: optionColors[i % optionColors.length] }}
-                      />
-                    </div>
-                    <span className="text-sm font-bold w-10 text-right" style={{ color: optionColors[i % optionColors.length] }}>
-                      {pct}¢
-                    </span>
-                    <button
-                      onClick={() => { setBetSide("yes"); setBetOpen(true); }}
-                      className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95"
-                      style={{
-                        backgroundColor: `${optionColors[i % optionColors.length]}20`,
-                        color: optionColors[i % optionColors.length],
-                      }}
-                    >
-                      Buy
-                    </button>
+                  {/* Glass shine */}
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+
+                  <div className="flex items-center gap-2.5 relative z-10">
+                    <div
+                      className="w-3 h-3 rounded-full shrink-0 shadow-sm"
+                      style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}80` }}
+                    />
+                    <span className="text-sm font-semibold">{opt.label}</span>
                   </div>
-                </motion.div>
+                  <span className="text-sm font-bold relative z-10" style={{ color }}>
+                    {pct}¢
+                  </span>
+                </motion.button>
               );
             })}
           </div>
