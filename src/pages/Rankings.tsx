@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
-import { Trophy, TrendingUp, TrendingDown, Medal, Crown, Award, Users, Loader2 } from "lucide-react";
+import { Trophy, TrendingUp, TrendingDown, Medal, Crown, Award, Users, Loader2, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Referrer {
   userId: string;
@@ -170,9 +171,11 @@ const useTradingLeaderboard = () => {
 const Podium = <T extends { userId: string; name: string; avatar: string | null }>({
   items,
   valueLabel,
+  currentUserId,
 }: {
   items: T[];
   valueLabel: (item: T) => { text: string; positive: boolean };
+  currentUserId?: string;
 }) => {
   if (items.length < 3) return null;
   const order = [items[1], items[0], items[2]];
@@ -184,6 +187,7 @@ const Podium = <T extends { userId: string; name: string; avatar: string | null 
     <div className="flex items-end justify-center gap-3 mb-6">
       {order.map((item, i) => {
         const v = valueLabel(item);
+        const isMe = currentUserId === item.userId;
         return (
           <motion.div
             key={item.userId}
@@ -192,12 +196,19 @@ const Podium = <T extends { userId: string; name: string; avatar: string | null 
             transition={{ delay: i * 0.1 }}
             className="flex flex-col items-center"
           >
-            <div className={`${sizes[i]} rounded-full glass border-2 ${i === 1 ? "border-primary" : "border-border"} flex items-center justify-center overflow-hidden`}>
-              <AvatarCircle avatar={item.avatar} name={item.name} size={sizes[i]} />
+            <div className="relative">
+              <div className={`${sizes[i]} rounded-full glass border-2 ${isMe ? "border-primary ring-2 ring-primary/30" : i === 1 ? "border-primary" : "border-border"} flex items-center justify-center overflow-hidden`}>
+                <AvatarCircle avatar={item.avatar} name={item.name} size={sizes[i]} />
+              </div>
+              {isMe && (
+                <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                  <Star className="w-3 h-3 text-primary-foreground fill-primary-foreground" />
+                </div>
+              )}
             </div>
-            <p className="text-xs font-bold mb-0.5 truncate max-w-[80px] mt-2">{item.name}</p>
+            <p className={`text-xs font-bold mb-0.5 truncate max-w-[80px] mt-2 ${isMe ? "text-primary" : ""}`}>{isMe ? "You" : item.name}</p>
             <p className={`text-[11px] font-bold ${v.positive ? "text-primary" : "text-destructive"}`}>{v.text}</p>
-            <div className={`${heights[i]} w-20 glass rounded-t-xl mt-2 flex items-center justify-center`}>
+            <div className={`${heights[i]} w-20 glass rounded-t-xl mt-2 flex items-center justify-center ${isMe ? "ring-1 ring-primary/20" : ""}`}>
               {rankBadge(ranks[i])}
             </div>
           </motion.div>
