@@ -1,15 +1,18 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import ThemeToggle from "@/components/ThemeToggle";
 import logo from "@/assets/logo.png";
-import { User, LogOut, Settings, Shield } from "lucide-react";
+import { User, LogOut, Shield, ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const TopBar = () => {
   const { user, isAdmin, signOut, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showMenu, setShowMenu] = useState(false);
+
+  const isAdminRoute = location.pathname.startsWith("/admin");
 
   const displayName =
     user?.user_metadata?.display_name ||
@@ -25,6 +28,29 @@ const TopBar = () => {
           <span className="text-2xl font-bold tracking-tight text-primary leading-none">Poll</span>
         </div>
         <div className="flex items-center gap-2">
+          {/* Admin mode toggle for admin users */}
+          {isAdmin && user && (
+            <button
+              onClick={() => navigate(isAdminRoute ? "/" : "/admin")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all active:scale-95 ${
+                isAdminRoute
+                  ? "bg-primary/20 text-primary border border-primary/30"
+                  : "bg-muted/50 text-muted-foreground border border-border hover:border-primary/30 hover:text-primary"
+              }`}
+            >
+              {isAdminRoute ? (
+                <>
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  User Mode
+                </>
+              ) : (
+                <>
+                  <Shield className="w-3.5 h-3.5" />
+                  Admin
+                </>
+              )}
+            </button>
+          )}
           <ThemeToggle />
           {loading ? null : user ? (
             <div className="relative">
@@ -52,14 +78,6 @@ const TopBar = () => {
                     >
                       <User className="w-4 h-4" /> Profile
                     </button>
-                    {isAdmin && (
-                      <button
-                        onClick={() => { navigate("/admin"); setShowMenu(false); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent/50 transition-colors text-sm"
-                      >
-                        <Shield className="w-4 h-4" /> Admin Panel
-                      </button>
-                    )}
                     <button
                       onClick={async () => { await signOut(); setShowMenu(false); }}
                       className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-destructive/10 transition-colors text-sm text-destructive"
