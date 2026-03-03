@@ -4,8 +4,6 @@ import { useAccount, useDisconnect, useBalance, useConnect } from "wagmi";
 import { formatUnits } from "viem";
 import { bsc } from "wagmi/chains";
 import { motion, AnimatePresence } from "framer-motion";
-import { bsc } from "wagmi/chains";
-import { motion, AnimatePresence } from "framer-motion";
 
 const truncateAddress = (addr: string) =>
   `${addr.slice(0, 6)}...${addr.slice(-4)}`;
