@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Wallet, Gift, ArrowDownToLine, ArrowUpFromLine, ArrowUpRight, ArrowDownLeft,
   Repeat, LogIn, Send, MessageCircle, ExternalLink, ChevronRight,
-  Video, FileText, HelpCircle, Shield, ClipboardCheck, Lock,
+  Video, FileText, HelpCircle, Shield, ClipboardCheck, Lock, Trophy,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -145,6 +145,11 @@ const Profile = () => {
           <button onClick={openWithdraw} className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
             <ArrowUpFromLine className="w-5 h-5 text-primary" />
             <span className="text-sm font-medium">Withdraw</span>
+          </button>
+          <button onClick={() => navigate("/rankings")} className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
+            <Trophy className="w-5 h-5 text-primary" />
+            <span className="text-sm font-medium flex-1 text-left">Leaderboard</span>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
           <button className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
             <Gift className="w-5 h-5 text-primary" />
