@@ -2,8 +2,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Share2, Heart, TrendingUp, Users, Clock, Droplets } from "lucide-react";
 import { mockMarkets, categoryIcons } from "@/data/markets";
 import BottomNav from "@/components/BottomNav";
+import BetModal from "@/components/BetModal";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 const formatVolume = (v: number) => {
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
