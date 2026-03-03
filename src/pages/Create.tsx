@@ -48,6 +48,7 @@ interface GateCheck {
 const Create = () => {
   const { address, isConnected } = useAccount();
   const { connect, connectors, isPending } = useConnect();
+  const navigate = useNavigate();
 
   // Gate state
   const [gateChecks, setGateChecks] = useState<GateCheck[]>([]);
@@ -62,6 +63,54 @@ const Create = () => {
   const [resolutionSource, setResolutionSource] = useState("");
   const [initialLiquidity, setInitialLiquidity] = useState("");
   const [step, setStep] = useState(1);
+
+  // Submission state
+  type SubmitStep = "idle" | "deploying" | "saving" | "success" | "error";
+  const [submitStep, setSubmitStep] = useState<SubmitStep>("idle");
+  const [txHash, setTxHash] = useState("");
+  const [newMarketId, setNewMarketId] = useState("");
+
+  const handleCreateMarket = useCallback(async () => {
+    if (!address) return;
+    setSubmitStep("deploying");
+
+    // Simulate on-chain contract deployment
+    await new Promise((r) => setTimeout(r, 2500));
+    const mockTxHash = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`;
+    const mockContractAddr = `0x${Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`;
+    setTxHash(mockTxHash);
+
+    setSubmitStep("saving");
+
+    // Save to database
+    const { data, error } = await supabase
+      .from("markets")
+      .insert({
+        creator_wallet: address,
+        title: title.trim(),
+        description: description.trim(),
+        category,
+        end_date: endDate,
+        resolution_source: resolutionSource.trim(),
+        initial_liquidity: parseFloat(initialLiquidity),
+        liquidity: parseFloat(initialLiquidity),
+        tx_hash: mockTxHash,
+        contract_address: mockContractAddr,
+      })
+      .select("id")
+      .maybeSingle();
+
+    if (error) {
+      console.error("Failed to save market:", error);
+      setSubmitStep("error");
+      toast.error("Failed to save market to database");
+      return;
+    }
+
+    setNewMarketId(data?.id || "");
+    setSubmitStep("success");
+    toast.success("Market created successfully!");
+  }, [address, title, description, category, endDate, resolutionSource, initialLiquidity]);
 
   // Simulate token-gate verification
   const runGateCheck = () => {
