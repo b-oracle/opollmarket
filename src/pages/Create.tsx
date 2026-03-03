@@ -19,6 +19,10 @@ import {
   AlertTriangle,
   Loader2,
   Sparkles,
+  Plus,
+  X,
+  BarChart3,
+  Target,
 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
