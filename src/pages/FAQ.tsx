@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BackToTop from "@/components/BackToTop";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const faqItems = [
   {
@@ -67,13 +68,19 @@ const FAQ = () => {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 pt-6 space-y-4">
-        {faqItems.map((item, i) => (
-          <div key={i} className="glass rounded-xl p-4 space-y-2">
-            <h3 className="font-semibold text-foreground">{item.question}</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">{item.answer}</p>
-          </div>
-        ))}
+      <div className="max-w-lg mx-auto px-4 pt-6">
+        <Accordion type="single" collapsible className="space-y-2">
+          {faqItems.map((item, i) => (
+            <AccordionItem key={i} value={`faq-${i}`} className="glass rounded-xl border-none px-4">
+              <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline py-4">
+                {item.question}
+              </AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-4">
+                {item.answer}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
       </div>
       <BackToTop />
     </div>
