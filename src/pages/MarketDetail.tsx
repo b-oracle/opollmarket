@@ -305,14 +305,17 @@ const MarketDetail = () => {
               style={{ transform: `scale(1.1) translateY(${scrollY * 0.15}px)` }}
             />
           </div>
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-          <h1 className="absolute bottom-4 left-4 right-4 text-2xl font-bold text-white leading-tight drop-shadow-lg">{market.title}</h1>
+          <div className="absolute inset-0 bg-black/50" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+            <h1 className="text-2xl font-bold text-white leading-tight drop-shadow-lg">{market.title}</h1>
+            <p className="text-sm text-white/80 mt-2 drop-shadow-md line-clamp-2">{market.description}</p>
+          </div>
         </div>
       )}
 
-      <div className={`max-w-lg mx-auto px-4 ${market.imageUrl ? 'pt-2' : 'pt-4'}`}>
+      <div className={`max-w-lg mx-auto px-4 ${market.imageUrl ? 'pt-4' : 'pt-4'}`}>
         {!market.imageUrl && <h1 className="text-2xl font-bold leading-tight mb-2">{market.title}</h1>}
-        <p className="text-sm text-muted-foreground mb-6">{market.description}</p>
+        {!market.imageUrl && <p className="text-sm text-muted-foreground mb-6">{market.description}</p>}
 
         {/* Chart */}
         <div className="glass rounded-2xl p-4 mb-4">
