@@ -4,6 +4,7 @@ import { X, Send, ChevronDown, Heart, CornerDownRight, Loader2 } from "lucide-re
 import { supabase } from "@/integrations/supabase/client";
 import { useAccount } from "wagmi";
 import { toast } from "sonner";
+import { useRateLimit } from "@/hooks/useRateLimit";
 
 interface Comment {
   id: string;
@@ -121,6 +122,8 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
   const [replyTo, setReplyTo] = useState<{ id: string; author: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { checkLimit: checkCommentLimit } = useRateLimit(3, 30000); // 3 comments per 30s
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const walletId = address || `anon-${Math.random().toString(36).slice(2, 10)}`;
 
@@ -213,7 +216,10 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
   const handleSend = async () => {
     const text = inputValue.trim();
     if (!text || submitting) return;
-
+    if (!checkCommentLimit()) {
+      toast.error("Slow down! Wait a moment before commenting again.");
+      return;
+    }
     // Strip @mention prefix if replying
     const cleanText = replyTo ? text.replace(new RegExp(`^@${replyTo.author}\\s*`), "").trim() || text : text;
 

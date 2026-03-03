@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserBalance, usePlaceBet } from "@/hooks/useUserBalance";
+import { useRateLimit } from "@/hooks/useRateLimit";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import { useNavigate } from "react-router-dom";
 import {
@@ -45,6 +46,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
   const { data: commission } = useCommissionSettings();
   const placeBet = usePlaceBet();
   const navigate = useNavigate();
+  const { checkLimit: checkBetLimit } = useRateLimit(5, 60000); // 5 bets per minute
   const [amount, setAmount] = useState("");
   const [step, setStep] = useState<ModalStep>("input");
   const [errorMsg, setErrorMsg] = useState("");
@@ -77,6 +79,11 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
 
   const handleConfirm = useCallback(async () => {
     if (!marketId) return;
+    if (!checkBetLimit()) {
+      setErrorMsg("Too many predictions. Please wait a moment.");
+      setStep("error");
+      return;
+    }
     setStep("executing");
     setErrorMsg("");
     try {
