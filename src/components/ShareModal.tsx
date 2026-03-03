@@ -130,6 +130,17 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, "_blank");
   };
 
+  const handleWhatsApp = () => {
+    const text = encodeURIComponent(`🔥 "${title}" - Make your prediction now!\n\n${referralLink}`);
+    window.open(`https://wa.me/?text=${text}`, "_blank");
+  };
+
+  const handleTelegram = () => {
+    const text = encodeURIComponent(`🔥 "${title}" - Make your prediction now!`);
+    const url = encodeURIComponent(referralLink);
+    window.open(`https://t.me/share/url?url=${url}&text=${text}`, "_blank");
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm p-0 gap-0 glass border-border/50 rounded-2xl overflow-hidden [&>button]:hidden">
