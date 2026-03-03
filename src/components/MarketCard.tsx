@@ -369,7 +369,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             </motion.div>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* Bet Modal */}
       <BetModal
