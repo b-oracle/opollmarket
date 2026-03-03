@@ -56,13 +56,13 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
           logo.src = watermarkLogo;
           await new Promise<void>((resolve) => {
             logo.onload = () => {
-              const logoSize = Math.min(canvas.width, canvas.height) * 0.15;
+              const logoSize = Math.min(canvas.width, canvas.height) * 0.2;
               const aspect = logo.naturalWidth / logo.naturalHeight;
               const w = logoSize * aspect;
               const h = logoSize;
-              const x = canvas.width - w - 20;
-              const y = canvas.height - h - 20;
-              ctx.globalAlpha = 0.4;
+              const x = (canvas.width - w) / 2;
+              const y = canvas.height - h - 40;
+              ctx.globalAlpha = 0.7;
               ctx.drawImage(logo, x, y, w, h);
               ctx.globalAlpha = 1;
               resolve();

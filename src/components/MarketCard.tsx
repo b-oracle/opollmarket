@@ -209,9 +209,11 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           </div>
 
           {/* Text overlay for share screenshot */}
-          <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-            <h3 className="text-xl font-bold text-white mb-1 line-clamp-2">{market.title}</h3>
-            <p className="text-sm text-white/70 line-clamp-2">{market.description}</p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-8 bg-black/40">
+            <h3 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-primary to-white mb-2 line-clamp-2 drop-shadow-lg">
+              {market.title}
+            </h3>
+            <p className="text-sm text-white/80 line-clamp-2 max-w-[80%] drop-shadow-md">{market.description}</p>
           </div>
         </div>
 
