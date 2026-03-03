@@ -372,20 +372,6 @@ const MarketDetail = () => {
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
             <h1 className="text-lg font-bold text-white leading-snug drop-shadow-lg">{market.title}</h1>
             <p className="text-xs text-white/70 mt-1.5 drop-shadow-md line-clamp-2">{market.description}</p>
-            <div className="flex flex-wrap justify-center gap-2 mt-3">
-              {isMulti && market.options ? (
-                market.options.slice(0, 4).map((opt, i) => (
-                  <span key={opt.id} className="px-2.5 py-1 rounded-full text-[11px] font-bold text-white" style={{ backgroundColor: optionColors[i % optionColors.length] + '99' }}>
-                    {opt.label} {Math.round(opt.price * 100)}%
-                  </span>
-                ))
-              ) : (
-                <>
-                  <span className="px-3 py-1 rounded-full text-xs font-bold text-white" style={{ backgroundColor: 'hsl(145, 80%, 42%, 0.85)' }}>YES {yesPercent}%</span>
-                  <span className="px-3 py-1 rounded-full text-xs font-bold text-white" style={{ backgroundColor: 'hsl(0, 85%, 55%, 0.85)' }}>NO {noPercent}%</span>
-                </>
-              )}
-            </div>
             <span className="text-[10px] text-white/50 font-mono mt-2 flex items-center gap-1">
               <Clock className="w-2.5 h-2.5" /> {getTimeRemaining(market.endDate)} · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
             </span>
