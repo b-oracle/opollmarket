@@ -172,17 +172,17 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
 
         {/* The share card to be screenshotted */}
         <div className="px-4 py-3">
-          <div ref={cardRef} className="rounded-2xl overflow-hidden bg-gradient-to-br from-card via-card to-primary/10 border border-border/30 p-5">
+          <div ref={cardRef} className={`rounded-2xl overflow-hidden bg-gradient-to-br ${rankTheme.gradient} border ${rankTheme.border} p-5`}>
             {/* Top section */}
             <div className="flex items-center gap-2 mb-4">
-              <Trophy className="w-5 h-5 text-primary" />
+              <Trophy className="w-5 h-5" style={{ color: rankTheme.accent }} />
               <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{category} Leaderboard</span>
             </div>
 
             {/* Rank display */}
             <div className="flex items-center gap-4 mb-4">
               {/* Avatar */}
-              <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-2xl shrink-0 overflow-hidden border-2 border-primary">
+              <div className={`w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-2xl shrink-0 overflow-hidden border-2 ${rankTheme.ring}`} style={{ borderColor: rankTheme.accent }}>
                 {avatar ? (
                   <img src={avatar} alt={name} className="w-full h-full object-cover" />
                 ) : (
@@ -194,7 +194,7 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
                 <p className="text-lg font-bold truncate">{name}</p>
                 <div className="flex items-center gap-2 mt-1">
                   {rankBadge(rank)}
-                  <span className="text-3xl font-black text-primary">#{rank}</span>
+                  <span className="text-3xl font-black" style={{ color: rankTheme.accent }}>#{rank}</span>
                 </div>
               </div>
             </div>
