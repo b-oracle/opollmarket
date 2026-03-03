@@ -40,9 +40,9 @@ type Tab = "traders" | "markets";
 type SortBy = "winRate" | "pnl" | "volume";
 
 const rankBadge = (rank: number) => {
-  if (rank === 1) return <Crown className="w-5 h-5 text-yellow-400" />;
-  if (rank === 2) return <Medal className="w-5 h-5 text-gray-300" />;
-  if (rank === 3) return <Award className="w-5 h-5 text-amber-600" />;
+  if (rank === 1) return <Crown className="w-5 h-5" style={{ color: "hsl(45, 93%, 58%)" }} />;
+  if (rank === 2) return <Medal className="w-5 h-5" style={{ color: "hsl(0, 0%, 78%)" }} />;
+  if (rank === 3) return <Award className="w-5 h-5" style={{ color: "hsl(30, 75%, 40%)" }} />;
   return <span className="text-sm font-bold text-muted-foreground w-5 text-center">#{rank}</span>;
 };
 
