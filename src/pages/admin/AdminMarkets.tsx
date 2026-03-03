@@ -202,139 +202,172 @@ const AdminMarkets = () => {
             <tbody>
               {markets.map((m) => {
                 const isEditing = editState?.id === m.id;
+                const isExpanded = expandedId === m.id;
                 return (
-                  <tr key={m.id} className={`border-b border-border/50 ${isEditing ? "bg-primary/5" : "hover:bg-muted/30"}`}>
-                    {/* Title */}
-                    <td className="p-3 max-w-[220px]">
-                      {isEditing ? (
-                        <input
-                          ref={titleInputRef}
-                          value={editState.title}
-                          onChange={(e) => setEditState({ ...editState, title: e.target.value })}
-                          onKeyDown={handleKeyDown}
-                          className="w-full bg-muted/50 border border-border rounded-lg px-2 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
-                        />
-                      ) : (
-                        <span className="font-medium truncate block">{m.title}</span>
-                      )}
-                    </td>
-                    {/* Category */}
-                    <td className="p-3">
-                      {isEditing ? (
-                        <select
-                          value={editState.category}
-                          onChange={(e) => setEditState({ ...editState, category: e.target.value })}
-                          className="bg-muted/50 border border-border rounded-lg px-2 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
-                        >
-                          {CATEGORIES.map((c) => (
-                            <option key={c} value={c}>{c}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">{m.category}</span>
-                      )}
-                    </td>
-                    {/* Type */}
-                    <td className="p-3">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary">
-                        {m.market_type}
-                      </span>
-                    </td>
-                    {/* Status */}
-                    <td className="p-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        m.status === "active" ? "bg-green-500/10 text-green-500" :
-                        m.status === "resolved" ? "bg-blue-500/10 text-blue-500" :
-                        "bg-yellow-500/10 text-yellow-500"
-                      }`}>
-                        {m.status}
-                      </span>
-                    </td>
-                    {/* Volume */}
-                    <td className="p-3 text-muted-foreground">${Number(m.volume).toLocaleString()}</td>
-                    {/* End Date */}
-                    <td className="p-3">
-                      {isEditing ? (
-                        <input
-                          type="date"
-                          value={editState.end_date}
-                          onChange={(e) => setEditState({ ...editState, end_date: e.target.value })}
-                          onKeyDown={handleKeyDown}
-                          className="bg-muted/50 border border-border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
-                        />
-                      ) : (
-                        <span className="text-muted-foreground text-xs">{new Date(m.end_date).toLocaleDateString()}</span>
-                      )}
-                    </td>
-                    {/* Actions */}
-                    <td className="p-3">
-                      <div className="flex items-center gap-1">
+                  <React.Fragment key={m.id}>
+                    <tr className={`border-b border-border/50 ${isEditing ? "bg-primary/5" : "hover:bg-muted/30"}`}>
+                      {/* Title + expand toggle */}
+                      <td className="p-3 max-w-[220px]">
                         {isEditing ? (
-                          <>
-                            <button
-                              onClick={saveEdit}
-                              disabled={saving}
-                              className="p-1.5 rounded-lg hover:bg-green-500/10 text-green-500 transition-colors"
-                              title="Save"
-                            >
-                              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                            </button>
-                            <button
-                              onClick={cancelEdit}
-                              className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
-                              title="Cancel"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </>
+                          <input
+                            ref={titleInputRef}
+                            value={editState.title}
+                            onChange={(e) => setEditState({ ...editState, title: e.target.value })}
+                            onKeyDown={handleKeyDown}
+                            className="w-full bg-muted/50 border border-border rounded-lg px-2 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          />
                         ) : (
-                          <>
+                          <div className="flex items-center gap-1.5">
                             <button
-                              onClick={() => startEdit(m)}
-                              className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
-                              title="Edit"
+                              onClick={() => setExpandedId(isExpanded ? null : m.id)}
+                              className="p-0.5 rounded hover:bg-muted text-muted-foreground shrink-0"
+                              title="Toggle description"
                             >
-                              <Pencil className="w-4 h-4" />
+                              {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                             </button>
-                            {m.status === "active" && (
-                              <>
-                                <button
-                                  onClick={() => openResolveModal(m)}
-                                  className="p-1.5 rounded-lg hover:bg-green-500/10 text-green-500 transition-colors"
-                                  title="Resolve Market"
-                                >
-                                  <Gavel className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleCancel(m.id)}
-                                  className="p-1.5 rounded-lg hover:bg-yellow-500/10 text-yellow-500 transition-colors"
-                                  title="Cancel Market"
-                                >
-                                  <XCircle className="w-4 h-4" />
-                                </button>
-                              </>
-                            )}
-                            {(m.status === "resolved" || m.status === "cancelled") && (
-                              <button
-                                onClick={() => handleReactivate(m.id)}
-                                className="p-1.5 rounded-lg hover:bg-blue-500/10 text-blue-500 transition-colors"
-                                title="Reactivate"
-                              >
-                                <CheckCircle className="w-4 h-4" />
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleDelete(m.id)}
-                              className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </>
+                            <span className="font-medium truncate block">{m.title}</span>
+                          </div>
                         )}
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
+                      {/* Category */}
+                      <td className="p-3">
+                        {isEditing ? (
+                          <select
+                            value={editState.category}
+                            onChange={(e) => setEditState({ ...editState, category: e.target.value })}
+                            className="bg-muted/50 border border-border rounded-lg px-2 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          >
+                            {CATEGORIES.map((c) => (
+                              <option key={c} value={c}>{c}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">{m.category}</span>
+                        )}
+                      </td>
+                      {/* Type */}
+                      <td className="p-3">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary">
+                          {m.market_type}
+                        </span>
+                      </td>
+                      {/* Status */}
+                      <td className="p-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          m.status === "active" ? "bg-green-500/10 text-green-500" :
+                          m.status === "resolved" ? "bg-blue-500/10 text-blue-500" :
+                          "bg-yellow-500/10 text-yellow-500"
+                        }`}>
+                          {m.status}
+                        </span>
+                      </td>
+                      {/* Volume */}
+                      <td className="p-3 text-muted-foreground">${Number(m.volume).toLocaleString()}</td>
+                      {/* End Date */}
+                      <td className="p-3">
+                        {isEditing ? (
+                          <input
+                            type="date"
+                            value={editState.end_date}
+                            onChange={(e) => setEditState({ ...editState, end_date: e.target.value })}
+                            onKeyDown={handleKeyDown}
+                            className="bg-muted/50 border border-border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          />
+                        ) : (
+                          <span className="text-muted-foreground text-xs">{new Date(m.end_date).toLocaleDateString()}</span>
+                        )}
+                      </td>
+                      {/* Actions */}
+                      <td className="p-3">
+                        <div className="flex items-center gap-1">
+                          {isEditing ? (
+                            <>
+                              <button
+                                onClick={saveEdit}
+                                disabled={saving}
+                                className="p-1.5 rounded-lg hover:bg-green-500/10 text-green-500 transition-colors"
+                                title="Save"
+                              >
+                                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                              </button>
+                              <button
+                                onClick={cancelEdit}
+                                className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
+                                title="Cancel"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => startEdit(m)}
+                                className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+                                title="Edit"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              {m.status === "active" && (
+                                <>
+                                  <button
+                                    onClick={() => openResolveModal(m)}
+                                    className="p-1.5 rounded-lg hover:bg-green-500/10 text-green-500 transition-colors"
+                                    title="Resolve Market"
+                                  >
+                                    <Gavel className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleCancel(m.id)}
+                                    className="p-1.5 rounded-lg hover:bg-yellow-500/10 text-yellow-500 transition-colors"
+                                    title="Cancel Market"
+                                  >
+                                    <XCircle className="w-4 h-4" />
+                                  </button>
+                                </>
+                              )}
+                              {(m.status === "resolved" || m.status === "cancelled") && (
+                                <button
+                                  onClick={() => handleReactivate(m.id)}
+                                  className="p-1.5 rounded-lg hover:bg-blue-500/10 text-blue-500 transition-colors"
+                                  title="Reactivate"
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleDelete(m.id)}
+                                className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    {/* Expandable description row */}
+                    {isExpanded && (
+                      <tr className={`border-b border-border/50 ${isEditing ? "bg-primary/5" : "bg-muted/20"}`}>
+                        <td colSpan={7} className="px-3 py-3">
+                          <div className="pl-6">
+                            <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1 block">Description</label>
+                            {isEditing ? (
+                              <textarea
+                                value={editState.description}
+                                onChange={(e) => setEditState({ ...editState, description: e.target.value })}
+                                rows={3}
+                                className="w-full bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                                placeholder="Market description..."
+                              />
+                            ) : (
+                              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{m.description || "No description"}</p>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 );
               })}
               {markets.length === 0 && (
