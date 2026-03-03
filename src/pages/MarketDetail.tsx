@@ -12,6 +12,7 @@ import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useBookmark } from "@/hooks/useBookmark";
 import { toast } from "sonner";
 
 const formatVolume = (v: number) => {
@@ -220,7 +221,7 @@ const MarketDetail = () => {
 
   const [timePeriod, setTimePeriod] = useState<"1D" | "1W" | "1M" | "All">("1M");
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [liked, setLiked] = useState(false);
+  const { bookmarked, toggleBookmark } = useBookmark(id);
   const [shareOpen, setShareOpen] = useState(false);
   const pageRef = useRef<HTMLDivElement>(null);
 
@@ -276,8 +277,8 @@ const MarketDetail = () => {
             <button onClick={() => setBoostOpen(true)} className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors" title="Boost Market">
               <Zap className="w-5 h-5 text-primary" />
             </button>
-            <button onClick={() => { setLiked(p => !p); toast.success(liked ? "Removed from favorites" : "Added to favorites"); }} className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
-              <Heart className={`w-5 h-5 transition-colors ${liked ? "text-destructive fill-destructive" : ""}`} />
+            <button onClick={toggleBookmark} className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+              <Bookmark className={`w-5 h-5 transition-colors ${bookmarked ? "text-primary fill-primary" : ""}`} />
             </button>
             <button onClick={() => setShareOpen(true)} className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors"><Share2 className="w-5 h-5" /></button>
           </div>
