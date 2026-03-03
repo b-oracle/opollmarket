@@ -129,7 +129,7 @@ const MarketDetail = () => {
             {!isMulti && (
               <div className="flex items-center gap-3">
                 <span className="text-xs font-medium text-destructive">NO {noPercent}¢</span>
-                <span className="text-2xl font-bold text-primary">YES {yesPercent}¢</span>
+                <span className="text-2xl font-bold neon-yes">YES {yesPercent}¢</span>
               </div>
             )}
           </div>
