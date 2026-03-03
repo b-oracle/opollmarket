@@ -169,6 +169,15 @@
     scroll-snap-stop: always;
   }
 
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   .gradient-overlay {
     background: linear-gradient(0deg, hsl(var(--background)) 0%, transparent 50%, transparent 70%, hsl(var(--background) / 0.5) 100%);
   }
