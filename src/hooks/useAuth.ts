@@ -28,14 +28,15 @@ export const useAuth = () => {
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        supabase.rpc("has_role", {
+        const { data } = await supabase.rpc("has_role", {
           _user_id: session.user.id,
           _role: "admin",
-        }).then(({ data }) => setIsAdmin(!!data));
+        });
+        setIsAdmin(!!data);
       }
       setLoading(false);
     });
