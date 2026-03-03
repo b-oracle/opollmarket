@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import BulkCSVImport from "@/components/admin/BulkCSVImport";
 
 const CATEGORIES = ["Crypto", "AI & Tech", "Science", "Economy", "Entertainment", "Sports", "Politics", "Other"];
 
@@ -155,6 +156,7 @@ const AdminMarkets = () => {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Markets ({markets.length})</h2>
         <div className="flex items-center gap-2">
+          <BulkCSVImport onComplete={fetchMarkets} />
           <button
             onClick={() => navigate("/admin/create-market")}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all active:scale-95"
