@@ -1,0 +1,176 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: corsHeaders,
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } =
+      await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: corsHeaders,
+      });
+    }
+
+    const adminId = claimsData.claims.sub;
+
+    // Verify admin role
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const { data: isAdmin } = await adminClient.rpc("has_role", {
+      _user_id: adminId,
+      _role: "admin",
+    });
+
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: "Admin access required" }), {
+        status: 403,
+        headers: corsHeaders,
+      });
+    }
+
+    const { withdrawal_id, action, admin_note, tx_hash } = await req.json();
+
+    if (!withdrawal_id || !["approve", "reject"].includes(action)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid request" }),
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    // Fetch withdrawal request
+    const { data: withdrawal, error: wErr } = await adminClient
+      .from("withdrawal_requests")
+      .select("*")
+      .eq("id", withdrawal_id)
+      .single();
+
+    if (wErr || !withdrawal) {
+      return new Response(
+        JSON.stringify({ error: "Withdrawal not found" }),
+        { status: 404, headers: corsHeaders }
+      );
+    }
+
+    if (withdrawal.status !== "pending") {
+      return new Response(
+        JSON.stringify({ error: "Withdrawal already processed" }),
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    if (action === "approve") {
+      await adminClient
+        .from("withdrawal_requests")
+        .update({
+          status: "completed",
+          admin_note: admin_note || null,
+          tx_hash: tx_hash || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", withdrawal_id);
+
+      // Update transaction
+      await adminClient
+        .from("transactions")
+        .update({ status: "confirmed", tx_hash: tx_hash || null })
+        .eq("user_id", withdrawal.user_id)
+        .eq("type", "withdrawal")
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      // Notify user
+      await adminClient.from("notifications").insert({
+        user_id: withdrawal.user_id,
+        title: "Withdrawal Approved",
+        message: `Your withdrawal of $${Number(withdrawal.amount).toFixed(2)} has been processed.`,
+        type: "withdrawal",
+      });
+    } else {
+      // Reject: refund balance
+      const { data: balance } = await adminClient
+        .from("balances")
+        .select("amount")
+        .eq("user_id", withdrawal.user_id)
+        .eq("currency", "USDT")
+        .single();
+
+      if (balance) {
+        await adminClient
+          .from("balances")
+          .update({
+            amount: Number(balance.amount) + Number(withdrawal.amount),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("user_id", withdrawal.user_id)
+          .eq("currency", "USDT");
+      }
+
+      await adminClient
+        .from("withdrawal_requests")
+        .update({
+          status: "rejected",
+          admin_note: admin_note || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", withdrawal_id);
+
+      // Update transaction
+      await adminClient
+        .from("transactions")
+        .update({ status: "failed" })
+        .eq("user_id", withdrawal.user_id)
+        .eq("type", "withdrawal")
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      // Notify user
+      await adminClient.from("notifications").insert({
+        user_id: withdrawal.user_id,
+        title: "Withdrawal Rejected",
+        message: `Your withdrawal of $${Number(withdrawal.amount).toFixed(2)} was rejected.${admin_note ? " Reason: " + admin_note : ""} Funds have been refunded.`,
+        type: "withdrawal",
+      });
+    }
+
+    return new Response(
+      JSON.stringify({ success: true }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (err) {
+    console.error("process-withdrawal error:", err);
+    return new Response(
+      JSON.stringify({ error: "Internal server error" }),
+      { status: 500, headers: corsHeaders }
+    );
+  }
+});

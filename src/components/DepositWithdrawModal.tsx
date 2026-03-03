@@ -1,11 +1,10 @@
 import { useState, useCallback, useEffect } from "react";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAccount, useBalance } from "wagmi";
-import { formatUnits } from "viem";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserBalance } from "@/hooks/useUserBalance";
 import {
   X,
   ArrowDownToLine,
@@ -13,15 +12,15 @@ import {
   CheckCircle2,
   Loader2,
   AlertTriangle,
-  Shield,
-  Wallet,
   Info,
   Minus,
   Plus,
+  ExternalLink,
+  Clock,
 } from "lucide-react";
 
 type Tab = "deposit" | "withdraw";
-type FlowStep = "input" | "approve" | "confirm" | "executing" | "success" | "error";
+type FlowStep = "input" | "confirm" | "executing" | "success" | "error";
 
 interface DepositWithdrawModalProps {
   open: boolean;
@@ -33,32 +32,28 @@ const PRESET_AMOUNTS = [25, 50, 100, 250];
 const MIN_AMOUNT = 1;
 const MAX_AMOUNT = 50000;
 
-// Mock platform balance
-const MOCK_PLATFORM_BALANCE = 340.5;
-const MOCK_USDT_WALLET_BALANCE = 1280.42;
-
 const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: DepositWithdrawModalProps) => {
-  const { isConnected, address } = useAccount();
-  const { data: nativeBalance } = useBalance({ address });
   const { user } = useAuth();
+  const { balance, bonusBalance, totalBalance } = useUserBalance();
 
   const [tab, setTab] = useState<Tab>(initialTab);
+  const [amount, setAmount] = useState("");
+  const [walletAddress, setWalletAddress] = useState("");
+  const [step, setStep] = useState<FlowStep>("input");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [invoiceUrl, setInvoiceUrl] = useState("");
 
-  // Sync tab when initialTab changes (e.g. profile page deposit vs withdraw buttons)
   useEffect(() => {
     if (open) {
       setTab(initialTab);
       setAmount("");
+      setWalletAddress("");
       setStep("input");
-      setApproved(false);
+      setErrorMsg("");
+      setInvoiceUrl("");
     }
   }, [initialTab, open]);
 
-  const [amount, setAmount] = useState("");
-  const [step, setStep] = useState<FlowStep>("input");
-  const [approved, setApproved] = useState(false);
-
-  // Check if user has made at least one deposit
   const { data: hasDeposit = false } = useQuery({
     queryKey: ["has_deposit", user?.id],
     queryFn: async () => {
@@ -75,8 +70,9 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
 
   const numAmount = parseFloat(amount) || 0;
   const isDeposit = tab === "deposit";
-  const maxAvailable = isDeposit ? MOCK_USDT_WALLET_BALANCE : MOCK_PLATFORM_BALANCE;
+  const maxAvailable = isDeposit ? MAX_AMOUNT : balance;
   const isValid = numAmount >= MIN_AMOUNT && numAmount <= Math.min(MAX_AMOUNT, maxAvailable);
+  const isWithdrawValid = isValid && walletAddress.trim().length >= 10;
 
   const handleAmountChange = (val: string) => {
     const cleaned = val.replace(/[^0-9.]/g, "");
@@ -96,37 +92,62 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
     setAmount(Math.min(maxAvailable, MAX_AMOUNT).toString());
   };
 
-  const handleApprove = useCallback(() => {
+  const handleDeposit = useCallback(async () => {
     setStep("executing");
-    setTimeout(() => {
-      setApproved(true);
-      setStep("confirm");
-    }, 2000);
-  }, []);
-
-  const handleExecute = useCallback(() => {
-    setStep("executing");
-    setTimeout(() => {
-      if (Math.random() > 0.1) {
-        setStep("success");
-      } else {
-        setStep("error");
+    setErrorMsg("");
+    try {
+      const { data, error } = await supabase.functions.invoke("create-deposit", {
+        body: { amount: numAmount },
+      });
+      if (error || data?.error) {
+        throw new Error(data?.error || error?.message || "Failed to create deposit");
       }
-    }, 2500);
-  }, []);
+      setInvoiceUrl(data.invoice_url);
+      setStep("success");
+      // Open invoice in new tab
+      window.open(data.invoice_url, "_blank");
+    } catch (err: any) {
+      setErrorMsg(err.message || "Something went wrong");
+      setStep("error");
+    }
+  }, [numAmount]);
+
+  const handleWithdraw = useCallback(async () => {
+    setStep("executing");
+    setErrorMsg("");
+    try {
+      const { data, error } = await supabase.functions.invoke("request-withdrawal", {
+        body: {
+          amount: numAmount,
+          wallet_address: walletAddress.trim(),
+          crypto_currency: "usdtbsc",
+        },
+      });
+      if (error || data?.error) {
+        throw new Error(data?.error || error?.message || "Failed to request withdrawal");
+      }
+      setStep("success");
+    } catch (err: any) {
+      setErrorMsg(err.message || "Something went wrong");
+      setStep("error");
+    }
+  }, [numAmount, walletAddress]);
 
   const handleClose = () => {
     setAmount("");
+    setWalletAddress("");
     setStep("input");
-    setApproved(false);
+    setErrorMsg("");
+    setInvoiceUrl("");
     onClose();
   };
 
   const switchTab = (newTab: Tab) => {
     setTab(newTab);
     setAmount("");
+    setWalletAddress("");
     setStep("input");
-    setApproved(false);
+    setErrorMsg("");
   };
 
   if (!open) return null;
@@ -151,10 +172,8 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
             className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto"
           >
             <div className="glass-strong rounded-t-3xl p-5 pb-24 max-h-[85dvh] overflow-y-auto">
-              {/* Handle */}
               <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-4" />
 
-              {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold">
                   {isDeposit ? "Deposit" : "Withdraw"} USDT
@@ -164,7 +183,6 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                 </button>
               </div>
 
-              {/* Tabs */}
               {step === "input" && (
                 <div className="flex gap-1 p-1 rounded-xl bg-muted/50 mb-5">
                   <button
@@ -193,7 +211,6 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
               )}
 
               <AnimatePresence mode="wait">
-                {/* STEP: Input */}
                 {step === "input" && (
                   <motion.div
                     key="input"
@@ -201,34 +218,31 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
                   >
-                    {!isConnected && (
+                    {!user && (
                       <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 mb-4">
-                        <Wallet className="w-4 h-4 text-destructive shrink-0" />
-                        <p className="text-xs text-destructive">Connect your wallet first.</p>
+                        <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+                        <p className="text-xs text-destructive">Sign in to continue.</p>
                       </div>
                     )}
 
-                    {/* Balances */}
-                    <div className="grid grid-cols-2 gap-3 mb-5">
-                      <div className={`rounded-xl p-3 border ${isDeposit ? "bg-primary/5 border-primary/20" : "bg-muted/50 border-border"}`}>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Wallet USDT</p>
-                        <p className="text-lg font-bold">${MOCK_USDT_WALLET_BALANCE.toFixed(2)}</p>
-                        <p className="text-[10px] text-muted-foreground">BEP-20</p>
-                      </div>
-                      <div className={`rounded-xl p-3 border ${!isDeposit ? "bg-primary/5 border-primary/20" : "bg-muted/50 border-border"}`}>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Platform</p>
-                        <p className="text-lg font-bold">${MOCK_PLATFORM_BALANCE.toFixed(2)}</p>
-                        <p className="text-[10px] text-muted-foreground">Available</p>
-                      </div>
+                    {/* Balance */}
+                    <div className="rounded-xl p-3 border bg-primary/5 border-primary/20 mb-5">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Platform Balance</p>
+                      <p className="text-lg font-bold">${balance.toFixed(2)}</p>
+                      {bonusBalance > 0 && (
+                        <p className="text-[10px] text-muted-foreground">+ ${bonusBalance.toFixed(2)} bonus (non-withdrawable)</p>
+                      )}
                     </div>
 
                     {/* Amount input */}
                     <div className="mb-3">
                       <div className="flex items-center justify-between mb-1.5">
                         <label className="text-xs text-muted-foreground">Amount</label>
-                        <button onClick={setMax} className="text-[10px] text-primary font-semibold">
-                          MAX
-                        </button>
+                        {!isDeposit && (
+                          <button onClick={setMax} className="text-[10px] text-primary font-semibold">
+                            MAX
+                          </button>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         <button
@@ -255,8 +269,8 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                           <Plus className="w-4 h-4" />
                         </button>
                       </div>
-                      {numAmount > maxAvailable && (
-                        <p className="text-[10px] text-destructive mt-1">Insufficient balance</p>
+                      {!isDeposit && numAmount > balance && (
+                        <p className="text-[10px] text-destructive mt-1">Insufficient balance (bonus cannot be withdrawn)</p>
                       )}
                     </div>
 
@@ -277,12 +291,26 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                       ))}
                     </div>
 
-                    {/* Info for deposit */}
+                    {/* Wallet address for withdrawals */}
+                    {!isDeposit && (
+                      <div className="mb-5">
+                        <label className="text-xs text-muted-foreground mb-1.5 block">Wallet Address (BSC / BEP-20)</label>
+                        <input
+                          type="text"
+                          value={walletAddress}
+                          onChange={(e) => setWalletAddress(e.target.value)}
+                          placeholder="0x..."
+                          className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all font-mono"
+                        />
+                      </div>
+                    )}
+
+                    {/* Info */}
                     {isDeposit && (
                       <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border mb-5">
                         <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                         <p className="text-[10px] text-muted-foreground">
-                          Depositing requires two transactions: first <strong>approve</strong> USDT spending, then <strong>deposit</strong> to the platform contract. Gas fees apply on BSC.
+                          You'll be redirected to a secure payment page where you can pay with any supported cryptocurrency. Your balance will be credited automatically once payment is confirmed.
                         </p>
                       </div>
                     )}
@@ -300,84 +328,22 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                       <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border mb-5">
                         <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                         <p className="text-[10px] text-muted-foreground">
-                          Withdrawals send USDT (BEP-20) back to your connected wallet. Processing is instant on-chain. Bonus balance cannot be withdrawn.
+                          Withdrawals are reviewed by our team and typically processed within 24 hours. Bonus balance cannot be withdrawn.
                         </p>
                       </div>
                     )}
 
                     <button
-                      onClick={() => setStep(isDeposit && !approved ? "approve" : "confirm")}
-                      disabled={!isValid || !isConnected || (!isDeposit && !hasDeposit)}
+                      onClick={() => setStep("confirm")}
+                      disabled={!user || (isDeposit ? !isValid : !isWithdrawValid || !hasDeposit)}
                       className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold text-base transition-all active:scale-95 disabled:opacity-40 disabled:active:scale-100 flex items-center justify-center gap-2"
                     >
-                      {isDeposit ? "Continue to Approve" : "Review Withdrawal"}
+                      {isDeposit ? "Continue to Payment" : "Review Withdrawal"}
                     </button>
                   </motion.div>
                 )}
 
-                {/* STEP: Approve (deposit only) */}
-                {step === "approve" && (
-                  <motion.div
-                    key="approve"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                  >
-                    <div className="glass rounded-xl p-4 mb-4">
-                      <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
-                        <Shield className="w-4 h-4 text-primary" />
-                        Step 1: Approve USDT
-                      </h3>
-                      <p className="text-xs text-muted-foreground mb-4">
-                        Allow the OPOLL platform contract to spend <strong>${numAmount.toFixed(2)} USDT</strong> from your wallet. This does not transfer funds yet.
-                      </p>
-
-                      {/* Visual steps */}
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-xs font-bold text-primary">1</div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">Approve Spending</p>
-                            <p className="text-[10px] text-muted-foreground">Sign approval in your wallet</p>
-                          </div>
-                          <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                        </div>
-                        <div className="flex items-center gap-3 opacity-40">
-                          <div className="w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center text-xs font-bold text-muted-foreground">2</div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">Deposit Funds</p>
-                            <p className="text-[10px] text-muted-foreground">Transfer to platform</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border mb-5">
-                      <AlertTriangle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                      <p className="text-[10px] text-muted-foreground">
-                        Approval is a standard ERC-20 operation. You only approve the exact amount needed. The contract address is verified on BscScan.
-                      </p>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => setStep("input")}
-                        className="flex-1 glass py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-95"
-                      >
-                        Back
-                      </button>
-                      <button
-                        onClick={handleApprove}
-                        className="flex-1 bg-primary text-primary-foreground py-3.5 rounded-xl font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
-                      >
-                        <Shield className="w-4 h-4" />
-                        Approve USDT
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* STEP: Confirm */}
+                {/* Confirm */}
                 {step === "confirm" && (
                   <motion.div
                     key="confirm"
@@ -387,78 +353,40 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                   >
                     <div className="glass rounded-xl p-4 mb-4">
                       <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
-                        <Shield className="w-4 h-4 text-primary" />
-                        {isDeposit ? "Step 2: Confirm Deposit" : "Confirm Withdrawal"}
+                        {isDeposit ? "Confirm Deposit" : "Confirm Withdrawal"}
                       </h3>
-
                       <div className="space-y-2.5">
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Action</span>
                           <span className="font-semibold">{isDeposit ? "Deposit" : "Withdraw"}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Token</span>
-                          <span className="font-semibold">USDT (BEP-20)</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Amount</span>
                           <span className="font-bold text-lg">${numAmount.toFixed(2)}</span>
                         </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Network</span>
-                          <span className="font-semibold">BNB Smart Chain</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Est. Gas</span>
-                          <span className="font-semibold text-muted-foreground">~$0.05</span>
-                        </div>
-                        {isDeposit && approved && (
+                        {!isDeposit && (
                           <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Approval</span>
-                            <span className="text-primary font-semibold flex items-center gap-1">
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Approved
-                            </span>
+                            <span className="text-muted-foreground">To Wallet</span>
+                            <span className="font-mono text-xs truncate max-w-[180px]">{walletAddress}</span>
+                          </div>
+                        )}
+                        {isDeposit && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Method</span>
+                            <span className="font-semibold">Crypto Payment</span>
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {/* Visual flow */}
-                    <div className="glass rounded-xl p-4 mb-4">
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="text-center">
-                          <div className="w-10 h-10 rounded-full bg-muted border border-border flex items-center justify-center mx-auto mb-1">
-                            <Wallet className="w-4 h-4" />
-                          </div>
-                          <p className="text-muted-foreground">{isDeposit ? "Your Wallet" : "Platform"}</p>
-                        </div>
-                        <div className="flex-1 px-3">
-                          <motion.div
-                            className="h-0.5 bg-primary rounded-full"
-                            initial={{ scaleX: 0 }}
-                            animate={{ scaleX: 1 }}
-                            transition={{ duration: 0.8, delay: 0.3 }}
-                            style={{ transformOrigin: "left" }}
-                          />
-                          <p className="text-center text-primary font-bold mt-1">${numAmount.toFixed(2)}</p>
-                        </div>
-                        <div className="text-center">
-                          <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center mx-auto mb-1">
-                            {isDeposit ? <ArrowDownToLine className="w-4 h-4 text-primary" /> : <ArrowUpFromLine className="w-4 h-4 text-primary" />}
-                          </div>
-                          <p className="text-muted-foreground">{isDeposit ? "Platform" : "Your Wallet"}</p>
-                        </div>
-                      </div>
-                    </div>
-
                     <div className="space-y-3">
                       <SlideToConfirm
-                        onConfirm={handleExecute}
+                        onConfirm={isDeposit ? handleDeposit : handleWithdraw}
                         label={isDeposit ? "Slide to Deposit" : "Slide to Withdraw"}
                         color="yes"
                       />
                       <button
-                        onClick={() => setStep(isDeposit && !approved ? "approve" : "input")}
+                        onClick={() => setStep("input")}
                         className="w-full glass py-3 rounded-xl font-semibold text-sm text-muted-foreground transition-all active:scale-95"
                       >
                         Back
@@ -467,7 +395,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                   </motion.div>
                 )}
 
-                {/* STEP: Executing */}
+                {/* Executing */}
                 {step === "executing" && (
                   <motion.div
                     key="executing"
@@ -481,33 +409,14 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                     >
                       <Loader2 className="w-12 h-12 text-primary" />
                     </motion.div>
-                    <h3 className="text-lg font-bold mt-4 mb-1">
-                      {approved ? "Processing..." : "Approving USDT..."}
-                    </h3>
+                    <h3 className="text-lg font-bold mt-4 mb-1">Processing...</h3>
                     <p className="text-sm text-muted-foreground text-center">
-                      Please confirm in your wallet
+                      {isDeposit ? "Creating payment invoice..." : "Submitting withdrawal request..."}
                     </p>
-                    <div className="mt-4 space-y-2 w-full max-w-xs">
-                      {(approved
-                        ? ["Preparing transaction", "Awaiting signature", "Confirming on-chain..."]
-                        : ["Preparing approval", "Awaiting signature", "Confirming on-chain..."]
-                      ).map((label, i) => (
-                        <motion.div
-                          key={label}
-                          initial={{ opacity: 0.3 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: i * 0.7, duration: 0.4 }}
-                          className="flex items-center gap-2 text-xs text-muted-foreground"
-                        >
-                          <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                          {label}
-                        </motion.div>
-                      ))}
-                    </div>
                   </motion.div>
                 )}
 
-                {/* STEP: Success */}
+                {/* Success */}
                 {step === "success" && (
                   <motion.div
                     key="success"
@@ -521,34 +430,32 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                       transition={{ type: "spring", damping: 10 }}
                       className="w-16 h-16 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center mb-4"
                     >
-                      <CheckCircle2 className="w-8 h-8 text-primary" />
+                      {isDeposit ? (
+                        <ExternalLink className="w-8 h-8 text-primary" />
+                      ) : (
+                        <Clock className="w-8 h-8 text-primary" />
+                      )}
                     </motion.div>
                     <h3 className="text-lg font-bold mb-1">
-                      {isDeposit ? "Deposit Successful!" : "Withdrawal Successful!"}
+                      {isDeposit ? "Payment Page Opened!" : "Withdrawal Submitted!"}
                     </h3>
                     <p className="text-sm text-muted-foreground text-center mb-4">
-                      <strong>${numAmount.toFixed(2)} USDT</strong> {isDeposit ? "deposited to" : "withdrawn from"} the platform
+                      {isDeposit
+                        ? "Complete your payment in the new tab. Your balance will be credited automatically once confirmed."
+                        : `Your withdrawal of $${numAmount.toFixed(2)} is pending review and will be processed within 24 hours.`}
                     </p>
 
-                    <div className="glass rounded-xl p-3 w-full space-y-1.5 mb-5">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Amount</span>
-                        <span className="font-semibold">${numAmount.toFixed(2)} USDT</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">New Platform Balance</span>
-                        <span className="font-bold text-primary">
-                          ${isDeposit
-                            ? (MOCK_PLATFORM_BALANCE + numAmount).toFixed(2)
-                            : (MOCK_PLATFORM_BALANCE - numAmount).toFixed(2)
-                          }
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Tx Hash</span>
-                        <span className="font-mono text-primary">0x7b2e...a91f</span>
-                      </div>
-                    </div>
+                    {isDeposit && invoiceUrl && (
+                      <a
+                        href={invoiceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full glass py-3 rounded-xl font-semibold text-sm text-primary text-center flex items-center justify-center gap-2 mb-3 transition-all active:scale-95"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Open Payment Page Again
+                      </a>
+                    )}
 
                     <button
                       onClick={handleClose}
@@ -559,7 +466,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                   </motion.div>
                 )}
 
-                {/* STEP: Error */}
+                {/* Error */}
                 {step === "error" && (
                   <motion.div
                     key="error"
@@ -570,9 +477,9 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                     <div className="w-16 h-16 rounded-full bg-destructive/20 border border-destructive/40 flex items-center justify-center mb-4">
                       <AlertTriangle className="w-8 h-8 text-destructive" />
                     </div>
-                    <h3 className="text-lg font-bold mb-1">Transaction Failed</h3>
+                    <h3 className="text-lg font-bold mb-1">Request Failed</h3>
                     <p className="text-sm text-muted-foreground text-center mb-5">
-                      The transaction was rejected or failed. No funds were moved.
+                      {errorMsg || "Something went wrong. Please try again."}
                     </p>
                     <div className="flex gap-3 w-full">
                       <button

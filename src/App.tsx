@@ -22,6 +22,7 @@ import AdminComments from "./pages/admin/AdminComments";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminCreateMarket from "./pages/admin/AdminCreateMarket";
 import AdminTransactions from "./pages/admin/AdminTransactions";
+import AdminWithdrawals from "./pages/admin/AdminWithdrawals";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminCommissions from "./pages/admin/AdminCommissions";
 import Referrals from "./pages/Referrals";
@@ -62,6 +63,7 @@ const App = () => (
                 <Route path="create-market" element={<AdminCreateMarket />} />
                 <Route path="comments" element={<AdminComments />} />
                 <Route path="transactions" element={<AdminTransactions />} />
+                <Route path="withdrawals" element={<AdminWithdrawals />} />
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="commissions" element={<AdminCommissions />} />
                 <Route path="settings" element={<AdminSettings />} />
