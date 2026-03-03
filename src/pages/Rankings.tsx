@@ -1,16 +1,9 @@
 import { useState, useEffect } from "react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
-import { mockMarkets } from "@/data/markets";
-import { Trophy, TrendingUp, Medal, Crown, Award, Users, Loader2 } from "lucide-react";
+import { Trophy, TrendingUp, TrendingDown, Medal, Crown, Award, Users, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-
-const formatVolume = (v: number) => {
-  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`;
-  return `$${v.toFixed(0)}`;
-};
 
 interface Referrer {
   userId: string;
@@ -20,8 +13,18 @@ interface Referrer {
   totalEarned: number;
 }
 
-type Tab = "referrers" | "markets";
-type SortBy = "totalEarned" | "totalReferrals";
+interface Trader {
+  userId: string;
+  name: string;
+  avatar: string | null;
+  pnl: number;
+  trades: number;
+  volume: number;
+}
+
+type Tab = "referrers" | "traders";
+type ReferralSort = "totalEarned" | "totalReferrals";
+type TraderSort = "pnl" | "volume" | "trades";
 
 const rankBadge = (rank: number) => {
   if (rank === 1) return <Crown className="w-5 h-5" style={{ color: "hsl(45, 93%, 58%)" }} />;
@@ -30,15 +33,38 @@ const rankBadge = (rank: number) => {
   return <span className="text-sm font-bold text-muted-foreground w-5 text-center">#{rank}</span>;
 };
 
-const Rankings = () => {
-  const [tab, setTab] = useState<Tab>("referrers");
-  const [sortBy, setSortBy] = useState<SortBy>("totalEarned");
+const formatDollar = (v: number) => {
+  const abs = Math.abs(v);
+  if (abs >= 1_000_000) return `$${(abs / 1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000) return `$${(abs / 1_000).toFixed(0)}K`;
+  return `$${abs.toFixed(0)}`;
+};
+
+const AvatarCircle = ({ avatar, name, size = "w-10 h-10" }: { avatar: string | null; name: string; size?: string }) => (
+  <div className={`${size} rounded-full bg-secondary flex items-center justify-center text-lg shrink-0 overflow-hidden`}>
+    {avatar ? (
+      <img src={avatar} alt={name} className="w-full h-full object-cover" />
+    ) : (
+      <span>👤</span>
+    )}
+  </div>
+);
+
+const EmptyState = ({ message, sub }: { message: string; sub: string }) => (
+  <div className="text-center py-16">
+    <Users className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+    <p className="text-sm text-muted-foreground">{message}</p>
+    <p className="text-xs text-muted-foreground mt-1">{sub}</p>
+  </div>
+);
+
+// ── Referral Leaderboard ──────────────────────────────────────────────
+const useReferralLeaderboard = () => {
   const [referrers, setReferrers] = useState<Referrer[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchLeaderboard = async () => {
-      setLoading(true);
+    (async () => {
       const { data: rewards } = await supabase
         .from("referral_rewards")
         .select("referrer_id, amount");
@@ -49,53 +75,158 @@ const Rankings = () => {
         return;
       }
 
-      // Aggregate by referrer
       const map = new Map<string, { total: number; count: number }>();
       for (const r of rewards) {
-        const existing = map.get(r.referrer_id) || { total: 0, count: 0 };
-        existing.total += Number(r.amount);
-        existing.count += 1;
-        map.set(r.referrer_id, existing);
+        const e = map.get(r.referrer_id) || { total: 0, count: 0 };
+        e.total += Number(r.amount);
+        e.count += 1;
+        map.set(r.referrer_id, e);
       }
 
-      const referrerIds = Array.from(map.keys());
-
-      // Fetch profiles for these referrers
+      const ids = Array.from(map.keys());
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, display_name, avatar_url")
-        .in("id", referrerIds);
+        .in("id", ids);
 
-      const profileMap = new Map(
-        (profiles || []).map((p) => [p.id, p])
+      const pMap = new Map((profiles || []).map((p) => [p.id, p]));
+
+      setReferrers(
+        ids.map((id) => {
+          const s = map.get(id)!;
+          const p = pMap.get(id);
+          return { userId: id, name: p?.display_name || "Anonymous", avatar: p?.avatar_url || null, totalReferrals: s.count, totalEarned: s.total };
+        })
       );
-
-      const result: Referrer[] = referrerIds.map((id) => {
-        const stats = map.get(id)!;
-        const profile = profileMap.get(id);
-        return {
-          userId: id,
-          name: profile?.display_name || "Anonymous",
-          avatar: profile?.avatar_url || null,
-          totalReferrals: stats.count,
-          totalEarned: stats.total,
-        };
-      });
-
-      setReferrers(result);
       setLoading(false);
-    };
-
-    fetchLeaderboard();
+    })();
   }, []);
 
-  const sorted = [...referrers].sort((a, b) =>
-    sortBy === "totalEarned"
-      ? b.totalEarned - a.totalEarned
-      : b.totalReferrals - a.totalReferrals
+  return { referrers, loading };
+};
+
+// ── Trading Leaderboard ───────────────────────────────────────────────
+const useTradingLeaderboard = () => {
+  const [traders, setTraders] = useState<Trader[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      // Fetch positions with market prices
+      const { data: positions } = await supabase
+        .from("positions")
+        .select("user_id, side, shares, avg_price, market_id");
+
+      const { data: markets } = await supabase
+        .from("markets")
+        .select("id, yes_price, no_price");
+
+      if (!positions || positions.length === 0) {
+        setTraders([]);
+        setLoading(false);
+        return;
+      }
+
+      const mMap = new Map((markets || []).map((m) => [m.id, m]));
+
+      const userMap = new Map<string, { pnl: number; trades: number; volume: number }>();
+      for (const pos of positions) {
+        const market = mMap.get(pos.market_id);
+        if (!market) continue;
+        const currentPrice = pos.side === "yes" ? market.yes_price : market.no_price;
+        const pnl = pos.shares * (currentPrice - pos.avg_price);
+        const volume = pos.shares * pos.avg_price;
+
+        const e = userMap.get(pos.user_id) || { pnl: 0, trades: 0, volume: 0 };
+        e.pnl += pnl;
+        e.trades += 1;
+        e.volume += volume;
+        userMap.set(pos.user_id, e);
+      }
+
+      const ids = Array.from(userMap.keys());
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .in("id", ids);
+
+      const pMap = new Map((profiles || []).map((p) => [p.id, p]));
+
+      setTraders(
+        ids.map((id) => {
+          const s = userMap.get(id)!;
+          const p = pMap.get(id);
+          return { userId: id, name: p?.display_name || "Anonymous", avatar: p?.avatar_url || null, ...s };
+        })
+      );
+      setLoading(false);
+    })();
+  }, []);
+
+  return { traders, loading };
+};
+
+// ── Podium Component ──────────────────────────────────────────────────
+const Podium = <T extends { userId: string; name: string; avatar: string | null }>({
+  items,
+  valueLabel,
+}: {
+  items: T[];
+  valueLabel: (item: T) => { text: string; positive: boolean };
+}) => {
+  if (items.length < 3) return null;
+  const order = [items[1], items[0], items[2]];
+  const heights = ["h-24", "h-32", "h-20"];
+  const sizes = ["w-12 h-12", "w-16 h-16", "w-12 h-12"];
+  const ranks = [2, 1, 3];
+
+  return (
+    <div className="flex items-end justify-center gap-3 mb-6">
+      {order.map((item, i) => {
+        const v = valueLabel(item);
+        return (
+          <motion.div
+            key={item.userId}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="flex flex-col items-center"
+          >
+            <div className={`${sizes[i]} rounded-full glass border-2 ${i === 1 ? "border-primary" : "border-border"} flex items-center justify-center overflow-hidden`}>
+              <AvatarCircle avatar={item.avatar} name={item.name} size={sizes[i]} />
+            </div>
+            <p className="text-xs font-bold mb-0.5 truncate max-w-[80px] mt-2">{item.name}</p>
+            <p className={`text-[11px] font-bold ${v.positive ? "text-primary" : "text-destructive"}`}>{v.text}</p>
+            <div className={`${heights[i]} w-20 glass rounded-t-xl mt-2 flex items-center justify-center`}>
+              {rankBadge(ranks[i])}
+            </div>
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+};
+
+// ── Main Component ────────────────────────────────────────────────────
+const Rankings = () => {
+  const [tab, setTab] = useState<Tab>("traders");
+  const [referralSort, setReferralSort] = useState<ReferralSort>("totalEarned");
+  const [traderSort, setTraderSort] = useState<TraderSort>("pnl");
+
+  const { referrers, loading: refLoading } = useReferralLeaderboard();
+  const { traders, loading: tradeLoading } = useTradingLeaderboard();
+
+  const sortedReferrers = [...referrers].sort((a, b) =>
+    referralSort === "totalEarned" ? b.totalEarned - a.totalEarned : b.totalReferrals - a.totalReferrals
   );
 
-  const sortedMarkets = [...mockMarkets].sort((a, b) => b.volume - a.volume);
+  const sortedTraders = [...traders].sort((a, b) => {
+    if (traderSort === "pnl") return b.pnl - a.pnl;
+    if (traderSort === "volume") return b.volume - a.volume;
+    return b.trades - a.trades;
+  });
+
+  const loading = tab === "referrers" ? refLoading : tradeLoading;
 
   return (
     <div className="min-h-dvh bg-background pb-20">
@@ -108,7 +239,7 @@ const Rankings = () => {
 
         {/* Tabs */}
         <div className="flex gap-2 mb-4">
-          {(["referrers", "markets"] as Tab[]).map((t) => (
+          {(["traders", "referrers"] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -116,150 +247,143 @@ const Rankings = () => {
                 tab === t ? "bg-primary text-primary-foreground" : "glass text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t}
+              {t === "traders" ? "Trading" : "Referrals"}
             </button>
           ))}
         </div>
 
-        {tab === "referrers" && (
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
           <>
-            {/* Sort options */}
-            <div className="flex gap-2 mb-4">
-              {([
-                { key: "totalEarned" as SortBy, label: "Total Earned" },
-                { key: "totalReferrals" as SortBy, label: "Referrals" },
-              ]).map(({ key, label }) => (
-                <button
-                  key={key}
-                  onClick={() => setSortBy(key)}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
-                    sortBy === key
-                      ? "bg-secondary text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            {loading ? (
-              <div className="flex justify-center py-16">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : sorted.length === 0 ? (
-              <div className="text-center py-16">
-                <Users className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-                <p className="text-sm text-muted-foreground">No referral data yet</p>
-                <p className="text-xs text-muted-foreground mt-1">Invite friends to climb the leaderboard!</p>
-              </div>
-            ) : (
+            {/* ── Trading Tab ── */}
+            {tab === "traders" && (
               <>
-                {/* Top 3 Podium */}
-                {sorted.length >= 3 && (
-                  <div className="flex items-end justify-center gap-3 mb-6">
-                    {[sorted[1], sorted[0], sorted[2]].map((ref, i) => {
-                      const heights = ["h-24", "h-32", "h-20"];
-                      const sizes = ["w-12 h-12", "w-16 h-16", "w-12 h-12"];
-                      const podiumRank = [2, 1, 3][i];
-                      return (
-                        <motion.div
-                          key={ref.userId}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: i * 0.1 }}
-                          className="flex flex-col items-center"
-                        >
-                          <div className={`${sizes[i]} rounded-full glass border-2 ${i === 1 ? "border-primary" : "border-border"} flex items-center justify-center text-xl mb-2 overflow-hidden`}>
-                            {ref.avatar ? (
-                              <img src={ref.avatar} alt={ref.name} className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="text-lg">👤</span>
-                            )}
-                          </div>
-                          <p className="text-xs font-bold mb-0.5 truncate max-w-[80px]">{ref.name}</p>
-                          <p className="text-[11px] font-bold text-primary">
-                            +${ref.totalEarned.toFixed(0)}
-                          </p>
-                          <div className={`${heights[i]} w-20 glass rounded-t-xl mt-2 flex items-center justify-center`}>
-                            {rankBadge(podiumRank)}
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Full list */}
-                <div className="space-y-2">
-                  {sorted.map((ref, i) => (
-                    <motion.div
-                      key={ref.userId}
-                      initial={{ opacity: 0, x: -12 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.04 }}
-                      className="glass rounded-xl p-3.5 flex items-center gap-3"
+                <div className="flex gap-2 mb-4">
+                  {([
+                    { key: "pnl" as TraderSort, label: "PnL" },
+                    { key: "volume" as TraderSort, label: "Volume" },
+                    { key: "trades" as TraderSort, label: "Trades" },
+                  ]).map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setTraderSort(key)}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
+                        traderSort === key ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
+                      }`}
                     >
-                      <div className="w-8 flex justify-center shrink-0">
-                        {rankBadge(i + 1)}
-                      </div>
-
-                      <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-lg shrink-0 overflow-hidden">
-                        {ref.avatar ? (
-                          <img src={ref.avatar} alt={ref.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <span>👤</span>
-                        )}
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <span className="text-sm font-bold truncate block">{ref.name}</span>
-                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
-                          <span>{ref.totalReferrals} referral{ref.totalReferrals !== 1 ? "s" : ""}</span>
-                        </div>
-                      </div>
-
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-bold text-primary flex items-center gap-1 justify-end">
-                          <TrendingUp className="w-3.5 h-3.5" />
-                          +${ref.totalEarned.toFixed(0)}
-                        </p>
-                      </div>
-                    </motion.div>
+                      {label}
+                    </button>
                   ))}
                 </div>
+
+                {sortedTraders.length === 0 ? (
+                  <EmptyState message="No trading data yet" sub="Start predicting to appear on the leaderboard!" />
+                ) : (
+                  <>
+                    <Podium
+                      items={sortedTraders}
+                      valueLabel={(t) => ({
+                        text: `${t.pnl >= 0 ? "+" : "-"}${formatDollar(t.pnl)}`,
+                        positive: t.pnl >= 0,
+                      })}
+                    />
+                    <div className="space-y-2">
+                      {sortedTraders.map((trader, i) => (
+                        <motion.div
+                          key={trader.userId}
+                          initial={{ opacity: 0, x: -12 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.04 }}
+                          className="glass rounded-xl p-3.5 flex items-center gap-3"
+                        >
+                          <div className="w-8 flex justify-center shrink-0">{rankBadge(i + 1)}</div>
+                          <AvatarCircle avatar={trader.avatar} name={trader.name} />
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-bold truncate block">{trader.name}</span>
+                            <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                              <span>{trader.trades} trade{trader.trades !== 1 ? "s" : ""}</span>
+                              <span>·</span>
+                              <span>{formatDollar(trader.volume)} vol</span>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className={`text-sm font-bold flex items-center gap-1 justify-end ${trader.pnl >= 0 ? "text-primary" : "text-destructive"}`}>
+                              {trader.pnl >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                              {trader.pnl >= 0 ? "+" : "-"}{formatDollar(trader.pnl)}
+                            </p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+
+            {/* ── Referrals Tab ── */}
+            {tab === "referrers" && (
+              <>
+                <div className="flex gap-2 mb-4">
+                  {([
+                    { key: "totalEarned" as ReferralSort, label: "Total Earned" },
+                    { key: "totalReferrals" as ReferralSort, label: "Referrals" },
+                  ]).map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setReferralSort(key)}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
+                        referralSort === key ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {sortedReferrers.length === 0 ? (
+                  <EmptyState message="No referral data yet" sub="Invite friends to climb the leaderboard!" />
+                ) : (
+                  <>
+                    <Podium
+                      items={sortedReferrers}
+                      valueLabel={(r) => ({
+                        text: `+${formatDollar(r.totalEarned)}`,
+                        positive: true,
+                      })}
+                    />
+                    <div className="space-y-2">
+                      {sortedReferrers.map((ref, i) => (
+                        <motion.div
+                          key={ref.userId}
+                          initial={{ opacity: 0, x: -12 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.04 }}
+                          className="glass rounded-xl p-3.5 flex items-center gap-3"
+                        >
+                          <div className="w-8 flex justify-center shrink-0">{rankBadge(i + 1)}</div>
+                          <AvatarCircle avatar={ref.avatar} name={ref.name} />
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-bold truncate block">{ref.name}</span>
+                            <div className="text-[10px] text-muted-foreground mt-0.5">
+                              {ref.totalReferrals} referral{ref.totalReferrals !== 1 ? "s" : ""}
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-sm font-bold text-primary flex items-center gap-1 justify-end">
+                              <TrendingUp className="w-3.5 h-3.5" />+${ref.totalEarned.toFixed(0)}
+                            </p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </>
             )}
           </>
-        )}
-
-        {tab === "markets" && (
-          <div className="space-y-3">
-            {sortedMarkets.map((market, i) => (
-              <motion.div
-                key={market.id}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04 }}
-                className="glass rounded-xl p-4 flex items-center gap-4"
-              >
-                <span className={`text-lg font-bold w-8 text-center ${i < 3 ? "text-primary" : "text-muted-foreground"}`}>
-                  #{i + 1}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-semibold truncate">{market.title}</h4>
-                  <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
-                    <span>@{market.creatorName}</span>
-                    <span>•</span>
-                    <span className="flex items-center gap-0.5">
-                      <TrendingUp className="w-3 h-3" /> {formatVolume(market.volume)}
-                    </span>
-                  </div>
-                </div>
-                <span className="neon-yes text-lg font-bold">{Math.round(market.yesPrice * 100)}%</span>
-              </motion.div>
-            ))}
-          </div>
         )}
       </div>
       <BottomNav />
