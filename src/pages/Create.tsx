@@ -64,6 +64,44 @@ const Create = () => {
   const [initialLiquidity, setInitialLiquidity] = useState("");
   const [step, setStep] = useState(1);
 
+  // Validation state — track which fields have been "touched" or attempted
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [shakeField, setShakeField] = useState<string | null>(null);
+
+  const markTouched = (field: string) => setTouched((t) => ({ ...t, [field]: true }));
+
+  const shake = (field: string) => {
+    setShakeField(field);
+    setTimeout(() => setShakeField(null), 500);
+  };
+
+  // Validation rules
+  const errors: Record<string, string | null> = {
+    title: title.trim().length === 0 ? "Question is required" : title.trim().length < 10 ? "Must be at least 10 characters" : null,
+    description: description.trim().length === 0 ? "Description is required" : description.trim().length < 20 ? "Must be at least 20 characters" : null,
+    category: !category ? "Select a category" : null,
+    endDate: !endDate ? "Resolution date is required" : null,
+    resolutionSource: resolutionSource.trim().length === 0 ? "Resolution source is required" : resolutionSource.trim().length < 10 ? "Must be at least 10 characters" : null,
+    initialLiquidity: !initialLiquidity ? "Initial liquidity is required" : parseFloat(initialLiquidity) < 10 ? "Minimum 10 USDT" : null,
+  };
+
+  const shakeClass = (field: string) => shakeField === field ? "animate-[shake_0.4s_ease-in-out]" : "";
+
+  const tryAdvanceStep1 = () => {
+    setTouched((t) => ({ ...t, title: true, description: true }));
+    if (errors.title) { shake("title"); return; }
+    if (errors.description) { shake("description"); return; }
+    setStep(2);
+  };
+
+  const tryAdvanceStep2 = () => {
+    setTouched((t) => ({ ...t, category: true, endDate: true, resolutionSource: true }));
+    if (errors.category) { shake("category"); return; }
+    if (errors.endDate) { shake("endDate"); return; }
+    if (errors.resolutionSource) { shake("resolutionSource"); return; }
+    setStep(3);
+  };
+
   // Submission state
   type SubmitStep = "idle" | "deploying" | "saving" | "success" | "error";
   const [submitStep, setSubmitStep] = useState<SubmitStep>("idle");
@@ -360,7 +398,7 @@ const Create = () => {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-4"
             >
-              <div className="glass rounded-xl p-4">
+              <div className={`glass rounded-xl p-4 ${shakeClass("title")} ${touched.title && errors.title ? "border-destructive/50" : ""}`}>
                 <label className="flex items-center gap-2 text-sm font-semibold mb-2">
                   <FileText className="w-4 h-4 text-primary" />
                   Market Question
@@ -369,16 +407,22 @@ const Create = () => {
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
+                  onBlur={() => markTouched("title")}
                   placeholder="Will Bitcoin hit $150K before July 2026?"
-                  className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                  className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 transition-all ${
+                    touched.title && errors.title ? "border-destructive focus:ring-destructive/30" : "border-border focus:ring-primary/30"
+                  }`}
                   maxLength={120}
                 />
-                <p className="text-[10px] text-muted-foreground mt-1.5 text-right">
-                  {title.length}/120
-                </p>
+                <div className="flex justify-between mt-1.5">
+                  {touched.title && errors.title ? (
+                    <p className="text-[10px] text-destructive">{errors.title}</p>
+                  ) : <span />}
+                  <p className="text-[10px] text-muted-foreground">{title.length}/120</p>
+                </div>
               </div>
 
-              <div className="glass rounded-xl p-4">
+              <div className={`glass rounded-xl p-4 ${shakeClass("description")} ${touched.description && errors.description ? "border-destructive/50" : ""}`}>
                 <label className="flex items-center gap-2 text-sm font-semibold mb-2">
                   <FileText className="w-4 h-4 text-primary" />
                   Description
@@ -386,20 +430,25 @@ const Create = () => {
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
+                  onBlur={() => markTouched("description")}
                   placeholder="Describe how this market resolves. Be specific about conditions, data sources, and edge cases."
                   rows={4}
-                  className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none"
+                  className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 transition-all resize-none ${
+                    touched.description && errors.description ? "border-destructive focus:ring-destructive/30" : "border-border focus:ring-primary/30"
+                  }`}
                   maxLength={500}
                 />
-                <p className="text-[10px] text-muted-foreground mt-1.5 text-right">
-                  {description.length}/500
-                </p>
+                <div className="flex justify-between mt-1.5">
+                  {touched.description && errors.description ? (
+                    <p className="text-[10px] text-destructive">{errors.description}</p>
+                  ) : <span />}
+                  <p className="text-[10px] text-muted-foreground">{description.length}/500</p>
+                </div>
               </div>
 
               <button
-                onClick={() => setStep(2)}
-                disabled={title.trim().length < 10 || description.trim().length < 20}
-                className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl font-semibold transition-all active:scale-95 disabled:opacity-40 disabled:active:scale-100 flex items-center justify-center gap-2"
+                onClick={tryAdvanceStep1}
+                className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
               >
                 Continue
                 <ArrowRight className="w-4 h-4" />
@@ -416,7 +465,7 @@ const Create = () => {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-4"
             >
-              <div className="glass rounded-xl p-4">
+              <div className={`glass rounded-xl p-4 ${shakeClass("category")} ${touched.category && errors.category ? "border-destructive/50" : ""}`}>
                 <label className="flex items-center gap-2 text-sm font-semibold mb-3">
                   <Tag className="w-4 h-4 text-primary" />
                   Category
@@ -425,7 +474,7 @@ const Create = () => {
                   {CATEGORIES.map((cat) => (
                     <button
                       key={cat.label}
-                      onClick={() => setCategory(cat.label)}
+                      onClick={() => { setCategory(cat.label); markTouched("category"); }}
                       className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95 ${
                         category === cat.label
                           ? "bg-primary/15 border border-primary/40 text-primary"
@@ -437,9 +486,12 @@ const Create = () => {
                     </button>
                   ))}
                 </div>
+                {touched.category && errors.category && (
+                  <p className="text-[10px] text-destructive mt-2">{errors.category}</p>
+                )}
               </div>
 
-              <div className="glass rounded-xl p-4">
+              <div className={`glass rounded-xl p-4 ${shakeClass("endDate")} ${touched.endDate && errors.endDate ? "border-destructive/50" : ""}`}>
                 <label className="flex items-center gap-2 text-sm font-semibold mb-2">
                   <Calendar className="w-4 h-4 text-primary" />
                   Resolution Date
@@ -447,13 +499,18 @@ const Create = () => {
                 <input
                   type="date"
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  onChange={(e) => { setEndDate(e.target.value); markTouched("endDate"); }}
                   min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
-                  className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                  className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-all ${
+                    touched.endDate && errors.endDate ? "border-destructive focus:ring-destructive/30" : "border-border focus:ring-primary/30"
+                  }`}
                 />
+                {touched.endDate && errors.endDate && (
+                  <p className="text-[10px] text-destructive mt-1.5">{errors.endDate}</p>
+                )}
               </div>
 
-              <div className="glass rounded-xl p-4">
+              <div className={`glass rounded-xl p-4 ${shakeClass("resolutionSource")} ${touched.resolutionSource && errors.resolutionSource ? "border-destructive/50" : ""}`}>
                 <label className="flex items-center gap-2 text-sm font-semibold mb-2">
                   <FileText className="w-4 h-4 text-primary" />
                   Resolution Source
@@ -462,9 +519,15 @@ const Create = () => {
                   type="text"
                   value={resolutionSource}
                   onChange={(e) => setResolutionSource(e.target.value)}
+                  onBlur={() => markTouched("resolutionSource")}
                   placeholder="e.g. CoinGecko BTC/USD price feed"
-                  className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                  className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 transition-all ${
+                    touched.resolutionSource && errors.resolutionSource ? "border-destructive focus:ring-destructive/30" : "border-border focus:ring-primary/30"
+                  }`}
                 />
+                {touched.resolutionSource && errors.resolutionSource && (
+                  <p className="text-[10px] text-destructive mt-1.5">{errors.resolutionSource}</p>
+                )}
               </div>
 
               <div className="flex gap-3">
@@ -475,9 +538,8 @@ const Create = () => {
                   Back
                 </button>
                 <button
-                  onClick={() => setStep(3)}
-                  disabled={!category || !endDate || resolutionSource.trim().length < 10}
-                  className="flex-1 bg-primary text-primary-foreground py-3.5 rounded-xl font-semibold transition-all active:scale-95 disabled:opacity-40 disabled:active:scale-100 flex items-center justify-center gap-2"
+                  onClick={tryAdvanceStep2}
+                  className="flex-1 bg-primary text-primary-foreground py-3.5 rounded-xl font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
                   Continue
                   <ArrowRight className="w-4 h-4" />
@@ -495,7 +557,7 @@ const Create = () => {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-4"
             >
-              <div className="glass rounded-xl p-4">
+              <div className={`glass rounded-xl p-4 ${shakeClass("initialLiquidity")} ${touched.initialLiquidity && errors.initialLiquidity ? "border-destructive/50" : ""}`}>
                 <label className="flex items-center gap-2 text-sm font-semibold mb-2">
                   <DollarSign className="w-4 h-4 text-primary" />
                   Initial Liquidity (USDT)
@@ -504,13 +566,20 @@ const Create = () => {
                   type="number"
                   value={initialLiquidity}
                   onChange={(e) => setInitialLiquidity(e.target.value)}
+                  onBlur={() => markTouched("initialLiquidity")}
                   placeholder="100"
                   min="10"
-                  className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                  className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 transition-all ${
+                    touched.initialLiquidity && errors.initialLiquidity ? "border-destructive focus:ring-destructive/30" : "border-border focus:ring-primary/30"
+                  }`}
                 />
-                <p className="text-[10px] text-muted-foreground mt-1.5">
-                  Minimum 10 USDT. Higher liquidity attracts more traders.
-                </p>
+                {touched.initialLiquidity && errors.initialLiquidity ? (
+                  <p className="text-[10px] text-destructive mt-1.5">{errors.initialLiquidity}</p>
+                ) : (
+                  <p className="text-[10px] text-muted-foreground mt-1.5">
+                    Minimum 10 USDT. Higher liquidity attracts more traders.
+                  </p>
+                )}
               </div>
 
               {/* Review card */}
@@ -564,8 +633,12 @@ const Create = () => {
                     Back
                   </button>
                   <button
-                    onClick={handleCreateMarket}
-                    disabled={!isFormValid || !initialLiquidity}
+                    onClick={() => {
+                      setTouched((t) => ({ ...t, initialLiquidity: true }));
+                      if (errors.initialLiquidity) { shake("initialLiquidity"); return; }
+                      handleCreateMarket();
+                    }}
+                    disabled={!isFormValid || !!errors.initialLiquidity}
                     className="flex-1 btn-yes py-3.5 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-40 disabled:active:scale-100 flex items-center justify-center gap-2"
                   >
                     <Sparkles className="w-4 h-4" />
