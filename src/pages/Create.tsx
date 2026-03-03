@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { bsc } from "wagmi/chains";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  TrendingUp,
   Lock,
   Unlock,
   CheckCircle2,
@@ -19,6 +20,10 @@ import {
   AlertTriangle,
   Loader2,
   Sparkles,
+  Plus,
+  X,
+  BarChart3,
+  Target,
 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
@@ -63,6 +68,18 @@ const Create = () => {
   const [resolutionSource, setResolutionSource] = useState("");
   const [initialLiquidity, setInitialLiquidity] = useState("");
   const [step, setStep] = useState(1);
+  const [marketType, setMarketType] = useState<"binary" | "multi" | "range">("binary");
+  const [options, setOptions] = useState<string[]>(["", ""]);
+
+  const addOption = () => {
+    if (options.length < 6) setOptions([...options, ""]);
+  };
+  const removeOption = (idx: number) => {
+    if (options.length > 2) setOptions(options.filter((_, i) => i !== idx));
+  };
+  const updateOption = (idx: number, val: string) => {
+    setOptions(options.map((o, i) => (i === idx ? val : o)));
+  };
 
   // Validation state — track which fields have been "touched" or attempted
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -83,14 +100,16 @@ const Create = () => {
     endDate: !endDate ? "Resolution date is required" : null,
     resolutionSource: resolutionSource.trim().length === 0 ? "Resolution source is required" : resolutionSource.trim().length < 10 ? "Must be at least 10 characters" : null,
     initialLiquidity: !initialLiquidity ? "Initial liquidity is required" : parseFloat(initialLiquidity) < 10 ? "Minimum 10 USDT" : null,
+    options: marketType !== "binary" && options.filter(o => o.trim()).length < 2 ? "At least 2 options required" : null,
   };
 
   const shakeClass = (field: string) => shakeField === field ? "animate-[shake_0.4s_ease-in-out]" : "";
 
   const tryAdvanceStep1 = () => {
-    setTouched((t) => ({ ...t, title: true, description: true }));
+    setTouched((t) => ({ ...t, title: true, description: true, options: true }));
     if (errors.title) { shake("title"); return; }
     if (errors.description) { shake("description"); return; }
+    if (marketType !== "binary" && errors.options) { shake("options"); return; }
     setStep(2);
   };
 
@@ -134,6 +153,7 @@ const Create = () => {
         liquidity: parseFloat(initialLiquidity),
         tx_hash: mockTxHash,
         contract_address: mockContractAddr,
+        market_type: marketType,
       })
       .select("id")
       .maybeSingle();
@@ -145,10 +165,29 @@ const Create = () => {
       return;
     }
 
+    // Save options for multi/range markets
+    if (marketType !== "binary" && data?.id) {
+      const validOptions = options.filter(o => o.trim());
+      const equalPrice = Math.round((1 / validOptions.length) * 100) / 100;
+      const { error: optError } = await supabase
+        .from("market_options")
+        .insert(
+          validOptions.map((label, i) => ({
+            market_id: data.id,
+            label: label.trim(),
+            price: equalPrice,
+            sort_order: i,
+          }))
+        );
+      if (optError) {
+        console.error("Failed to save options:", optError);
+      }
+    }
+
     setNewMarketId(data?.id || "");
     setSubmitStep("success");
     toast.success("Market created successfully!");
-  }, [address, title, description, category, endDate, resolutionSource, initialLiquidity]);
+  }, [address, title, description, category, endDate, resolutionSource, initialLiquidity, marketType, options]);
 
   // Simulate token-gate verification
   const runGateCheck = () => {
@@ -208,7 +247,8 @@ const Create = () => {
     description.trim().length >= 20 &&
     category &&
     endDate &&
-    resolutionSource.trim().length >= 10;
+    resolutionSource.trim().length >= 10 &&
+    (marketType === "binary" || options.filter(o => o.trim()).length >= 2);
 
   const statusIcon = (status: GateStatus) => {
     switch (status) {
@@ -446,6 +486,91 @@ const Create = () => {
                 </div>
               </div>
 
+              {/* Market Type */}
+              <div className="glass rounded-xl p-4">
+                <label className="flex items-center gap-2 text-sm font-semibold mb-3">
+                  <BarChart3 className="w-4 h-4 text-primary" />
+                  Market Type
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { key: "binary" as const, label: "Yes / No", icon: <Target className="w-4 h-4" />, desc: "Two outcomes" },
+                    { key: "multi" as const, label: "Multiple", icon: <BarChart3 className="w-4 h-4" />, desc: "2-6 choices" },
+                    { key: "range" as const, label: "Range", icon: <TrendingUp className="w-4 h-4" />, desc: "Price brackets" },
+                  ]).map((t) => (
+                    <button
+                      key={t.key}
+                      onClick={() => {
+                        setMarketType(t.key);
+                        if (t.key === "binary") setOptions(["", ""]);
+                      }}
+                      className={`flex flex-col items-center gap-1.5 p-3 rounded-xl text-center transition-all active:scale-95 ${
+                        marketType === t.key
+                          ? "bg-primary/15 border border-primary/40 text-primary"
+                          : "bg-muted/50 border border-border text-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {t.icon}
+                      <span className="text-xs font-semibold">{t.label}</span>
+                      <span className="text-[9px] text-muted-foreground">{t.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Options builder for multi/range */}
+              {marketType !== "binary" && (
+                <div className={`glass rounded-xl p-4 ${shakeClass("options")} ${touched.options && errors.options ? "border-destructive/50" : ""}`}>
+                  <label className="flex items-center gap-2 text-sm font-semibold mb-3">
+                    <Plus className="w-4 h-4 text-primary" />
+                    {marketType === "range" ? "Price Brackets" : "Answer Options"}
+                  </label>
+                  <div className="space-y-2">
+                    {options.map((opt, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full shrink-0"
+                          style={{ backgroundColor: [
+                            "hsl(var(--primary))", "hsl(var(--destructive))", "hsl(45, 93%, 58%)",
+                            "hsl(280, 70%, 60%)", "hsl(30, 80%, 55%)", "hsl(var(--muted-foreground))"
+                          ][i] }}
+                        />
+                        <input
+                          type="text"
+                          value={opt}
+                          onChange={(e) => updateOption(i, e.target.value)}
+                          placeholder={marketType === "range" ? `e.g. $50K – $100K` : `Option ${i + 1}`}
+                          className="flex-1 bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          maxLength={50}
+                        />
+                        {options.length > 2 && (
+                          <button
+                            onClick={() => removeOption(i)}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {options.length < 6 && (
+                    <button
+                      onClick={addOption}
+                      className="mt-2 w-full py-2 rounded-lg border border-dashed border-border text-xs font-semibold text-muted-foreground hover:text-primary hover:border-primary/30 transition-all"
+                    >
+                      + Add Option
+                    </button>
+                  )}
+                  {touched.options && errors.options && (
+                    <p className="text-[10px] text-destructive mt-2">{errors.options}</p>
+                  )}
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    Prices will be distributed equally at launch. {options.filter(o => o.trim()).length}/6 options.
+                  </p>
+                </div>
+              )}
+
               <button
                 onClick={tryAdvanceStep1}
                 className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
@@ -597,7 +722,11 @@ const Create = () => {
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Description</p>
                     <p className="text-muted-foreground text-xs">{description || "—"}</p>
                   </div>
-                  <div className="flex gap-4">
+                  <div className="flex gap-4 flex-wrap">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Type</p>
+                      <p className="font-medium capitalize">{marketType}</p>
+                    </div>
                     <div>
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Category</p>
                       <p className="font-medium">
@@ -613,6 +742,16 @@ const Create = () => {
                       <p className="font-medium">{initialLiquidity ? `$${initialLiquidity}` : "—"}</p>
                     </div>
                   </div>
+                  {marketType !== "binary" && (
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Options</p>
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {options.filter(o => o.trim()).map((o, i) => (
+                          <span key={i} className="text-xs bg-muted px-2 py-1 rounded-lg">{o}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

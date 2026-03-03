@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      market_options: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          market_id: string
+          price: number
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          market_id: string
+          price?: number
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          market_id?: string
+          price?: number
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_options_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       markets: {
         Row: {
           category: string
@@ -25,6 +60,7 @@ export type Database = {
           id: string
           initial_liquidity: number
           liquidity: number
+          market_type: string
           no_price: number
           participants: number
           resolution_source: string
@@ -45,6 +81,7 @@ export type Database = {
           id?: string
           initial_liquidity?: number
           liquidity?: number
+          market_type?: string
           no_price?: number
           participants?: number
           resolution_source: string
@@ -65,6 +102,7 @@ export type Database = {
           id?: string
           initial_liquidity?: number
           liquidity?: number
+          market_type?: string
           no_price?: number
           participants?: number
           resolution_source?: string
