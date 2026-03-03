@@ -84,12 +84,28 @@ const MarketDetail = () => {
 
         {/* Probability Chart */}
         <div className="glass rounded-2xl p-4 mb-4">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-muted-foreground">Probability</span>
             <div className="flex items-center gap-3">
               <span className="text-xs font-medium" style={{ color: "hsl(0, 80%, 60%)" }}>NO {noPercent}¢</span>
               <span className="text-2xl font-bold" style={{ color: "hsl(142, 70%, 50%)" }}>YES {yesPercent}¢</span>
             </div>
+          </div>
+          {/* Time period toggles */}
+          <div className="flex gap-1 p-0.5 rounded-lg bg-muted/50 mb-3 w-fit">
+            {(["1D", "1W", "1M", "All"] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setTimePeriod(p)}
+                className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                  timePeriod === p
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
           </div>
           <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
