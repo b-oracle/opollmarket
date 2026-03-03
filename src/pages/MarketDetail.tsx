@@ -3,6 +3,7 @@ import { ArrowLeft, Share2, Heart, TrendingUp, Users, Clock, Droplets } from "lu
 import { mockMarkets, categoryIcons } from "@/data/markets";
 import BottomNav from "@/components/BottomNav";
 import BetModal from "@/components/BetModal";
+import OrderBook from "@/components/OrderBook";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useMemo, useState } from "react";
 
@@ -186,6 +187,9 @@ const MarketDetail = () => {
             <span className="text-lg font-bold">{getTimeRemaining(market.endDate)}</span>
           </div>
         </div>
+
+        {/* Order Book */}
+        <OrderBook yesPrice={yesPercent} noPrice={noPercent} liquidity={market.liquidity} />
 
         {/* Creator */}
         <div className="glass rounded-xl p-4 mb-4 flex items-center gap-3">
