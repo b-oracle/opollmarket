@@ -108,11 +108,15 @@ const Index = () => {
 
         {/* Boosted carousel */}
         {boostedMarkets.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 text-primary" /> Boosted Markets
-            </h3>
-            <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide">
+          <BoostedCarousel
+            markets={boostedMarkets}
+            boostDetails={boostDetails}
+            navigate={navigate}
+            formatVolume={formatVolume}
+            getMarketImage={getMarketImage}
+            onBoost={(market) => setBoostModalMarket({ id: market.id, title: market.title })}
+          />
+        )}
               {boostedMarkets.map((market) => {
                 const boost = boostDetails.get(market.id);
                 const isMulti = market.marketType !== "binary";
