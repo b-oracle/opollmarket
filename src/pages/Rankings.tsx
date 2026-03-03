@@ -298,38 +298,45 @@ const Rankings = () => {
                   <>
                     <Podium
                       items={sortedTraders}
+                      currentUserId={currentUserId}
                       valueLabel={(t) => ({
                         text: `${t.pnl >= 0 ? "+" : "-"}${formatDollar(t.pnl)}`,
                         positive: t.pnl >= 0,
                       })}
                     />
                     <div className="space-y-2">
-                      {sortedTraders.map((trader, i) => (
-                        <motion.div
-                          key={trader.userId}
-                          initial={{ opacity: 0, x: -12 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.04 }}
-                          className="glass rounded-xl p-3.5 flex items-center gap-3"
-                        >
-                          <div className="w-8 flex justify-center shrink-0">{rankBadge(i + 1)}</div>
-                          <AvatarCircle avatar={trader.avatar} name={trader.name} />
-                          <div className="flex-1 min-w-0">
-                            <span className="text-sm font-bold truncate block">{trader.name}</span>
-                            <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
-                              <span>{trader.trades} trade{trader.trades !== 1 ? "s" : ""}</span>
-                              <span>·</span>
-                              <span>{formatDollar(trader.volume)} vol</span>
+                      {sortedTraders.map((trader, i) => {
+                        const isMe = currentUserId === trader.userId;
+                        return (
+                          <motion.div
+                            key={trader.userId}
+                            initial={{ opacity: 0, x: -12 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.04 }}
+                            className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : ""}`}
+                          >
+                            <div className="w-8 flex justify-center shrink-0">{rankBadge(i + 1)}</div>
+                            <AvatarCircle avatar={trader.avatar} name={trader.name} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className={`text-sm font-bold truncate ${isMe ? "text-primary" : ""}`}>{isMe ? "You" : trader.name}</span>
+                                {isMe && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
+                              </div>
+                              <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                                <span>{trader.trades} trade{trader.trades !== 1 ? "s" : ""}</span>
+                                <span>·</span>
+                                <span>{formatDollar(trader.volume)} vol</span>
+                              </div>
                             </div>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p className={`text-sm font-bold flex items-center gap-1 justify-end ${trader.pnl >= 0 ? "text-primary" : "text-destructive"}`}>
-                              {trader.pnl >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                              {trader.pnl >= 0 ? "+" : "-"}{formatDollar(trader.pnl)}
-                            </p>
-                          </div>
-                        </motion.div>
-                      ))}
+                            <div className="text-right shrink-0">
+                              <p className={`text-sm font-bold flex items-center gap-1 justify-end ${trader.pnl >= 0 ? "text-primary" : "text-destructive"}`}>
+                                {trader.pnl >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                                {trader.pnl >= 0 ? "+" : "-"}{formatDollar(trader.pnl)}
+                              </p>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
                     </div>
                   </>
                 )}
@@ -362,35 +369,42 @@ const Rankings = () => {
                   <>
                     <Podium
                       items={sortedReferrers}
+                      currentUserId={currentUserId}
                       valueLabel={(r) => ({
                         text: `+${formatDollar(r.totalEarned)}`,
                         positive: true,
                       })}
                     />
                     <div className="space-y-2">
-                      {sortedReferrers.map((ref, i) => (
-                        <motion.div
-                          key={ref.userId}
-                          initial={{ opacity: 0, x: -12 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.04 }}
-                          className="glass rounded-xl p-3.5 flex items-center gap-3"
-                        >
-                          <div className="w-8 flex justify-center shrink-0">{rankBadge(i + 1)}</div>
-                          <AvatarCircle avatar={ref.avatar} name={ref.name} />
-                          <div className="flex-1 min-w-0">
-                            <span className="text-sm font-bold truncate block">{ref.name}</span>
-                            <div className="text-[10px] text-muted-foreground mt-0.5">
-                              {ref.totalReferrals} referral{ref.totalReferrals !== 1 ? "s" : ""}
+                      {sortedReferrers.map((ref, i) => {
+                        const isMe = currentUserId === ref.userId;
+                        return (
+                          <motion.div
+                            key={ref.userId}
+                            initial={{ opacity: 0, x: -12 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.04 }}
+                            className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : ""}`}
+                          >
+                            <div className="w-8 flex justify-center shrink-0">{rankBadge(i + 1)}</div>
+                            <AvatarCircle avatar={ref.avatar} name={ref.name} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className={`text-sm font-bold truncate ${isMe ? "text-primary" : ""}`}>{isMe ? "You" : ref.name}</span>
+                                {isMe && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
+                              </div>
+                              <div className="text-[10px] text-muted-foreground mt-0.5">
+                                {ref.totalReferrals} referral{ref.totalReferrals !== 1 ? "s" : ""}
+                              </div>
                             </div>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p className="text-sm font-bold text-primary flex items-center gap-1 justify-end">
-                              <TrendingUp className="w-3.5 h-3.5" />+${ref.totalEarned.toFixed(0)}
-                            </p>
-                          </div>
-                        </motion.div>
-                      ))}
+                            <div className="text-right shrink-0">
+                              <p className="text-sm font-bold text-primary flex items-center gap-1 justify-end">
+                                <TrendingUp className="w-3.5 h-3.5" />+${ref.totalEarned.toFixed(0)}
+                              </p>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
                     </div>
                   </>
                 )}
