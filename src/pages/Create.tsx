@@ -99,6 +99,7 @@ const Create = () => {
     endDate: !endDate ? "Resolution date is required" : null,
     resolutionSource: resolutionSource.trim().length === 0 ? "Resolution source is required" : resolutionSource.trim().length < 10 ? "Must be at least 10 characters" : null,
     initialLiquidity: !initialLiquidity ? "Initial liquidity is required" : parseFloat(initialLiquidity) < 10 ? "Minimum 10 USDT" : null,
+    options: marketType !== "binary" && options.filter(o => o.trim()).length < 2 ? "At least 2 options required" : null,
   };
 
   const shakeClass = (field: string) => shakeField === field ? "animate-[shake_0.4s_ease-in-out]" : "";
