@@ -516,16 +516,16 @@ const MarketDetail = () => {
                   onClick={() => { setSelectedOption(opt.label); setBetSide("yes"); setBetOpen(true); }}
                   className="w-full relative rounded-xl px-4 py-3.5 flex items-center justify-between transition-all active:scale-[0.98] overflow-hidden border backdrop-blur-md cursor-pointer"
                   style={{
-                    background: `linear-gradient(135deg, ${color}30 0%, ${color}22 60%, ${color}18 100%)`,
-                    borderColor: `${color}40`,
-                    boxShadow: `inset 0 1px 0 ${color}30, 0 2px 12px ${color}15`,
+                    background: `linear-gradient(135deg, ${colorAlpha(color, 0.18)} 0%, ${colorAlpha(color, 0.12)} 60%, ${colorAlpha(color, 0.08)} 100%)`,
+                    borderColor: colorAlpha(color, 0.25),
+                    boxShadow: `inset 0 1px 0 ${colorAlpha(color, 0.2)}, 0 2px 12px ${colorAlpha(color, 0.1)}`,
                   }}
                 >
                   {/* Fill bar background */}
                   <div
                     className="absolute inset-0 rounded-xl transition-all"
                     style={{
-                      background: `linear-gradient(90deg, ${color}35 0%, ${color}18 ${pct}%, transparent ${pct}%)`,
+                      background: `linear-gradient(90deg, ${colorAlpha(color, 0.22)} 0%, ${colorAlpha(color, 0.1)} ${pct}%, transparent ${pct}%)`,
                     }}
                   />
                   {/* Glass shine */}
@@ -534,7 +534,7 @@ const MarketDetail = () => {
                   <div className="flex items-center gap-2.5 relative z-10">
                     <div
                       className="w-3 h-3 rounded-full shrink-0 shadow-sm"
-                      style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}80` }}
+                      style={{ backgroundColor: color, boxShadow: `0 0 6px ${colorAlpha(color, 0.5)}` }}
                     />
                     <span className="text-sm font-semibold">{opt.label}</span>
                   </div>
