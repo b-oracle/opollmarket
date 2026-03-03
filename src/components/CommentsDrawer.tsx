@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import BottomSheet from "@/components/BottomSheet";
 import { X, Send, ChevronDown, Heart, CornerDownRight, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccount } from "wagmi";
@@ -286,24 +287,8 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
   if (!open) return null;
 
   return (
-    <AnimatePresence>
-      {open && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-background/60 backdrop-blur-sm z-[60]"
-          />
-          <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 28, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-[60] max-w-lg mx-auto"
-          >
-            <div className="glass-strong rounded-t-3xl flex flex-col" style={{ maxHeight: "70dvh", paddingBottom: "calc(env(safe-area-inset-bottom) + 0.5rem)" }}>
+    <BottomSheet open={open} onClose={onClose} maxHeight="70dvh">
+            <div className="flex flex-col" style={{ maxHeight: "70dvh" }}>
               {/* Handle */}
               <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mt-3 mb-2" />
 
@@ -394,10 +379,7 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
                 </div>
               </div>
             </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+    </BottomSheet>
   );
 };
 
