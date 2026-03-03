@@ -376,7 +376,7 @@ const MarketDetail = () => {
                 )}
               </AreaChart>
             </ResponsiveContainer>
-            <img src={watermarkLogo} alt="" className="absolute bottom-1 right-1 w-8 h-8 opacity-20 pointer-events-none" />
+            <img src={watermarkLogo} alt="" className="absolute inset-0 m-auto opacity-30 pointer-events-none" />
           </div>
           {isMulti && market.options && (
             <div className="flex flex-wrap gap-2 mt-3">
