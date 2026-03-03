@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import SlideToConfirm from "@/components/SlideToConfirm";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAccount, useBalance } from "wagmi";
 import { formatUnits } from "viem";
