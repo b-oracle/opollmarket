@@ -273,8 +273,10 @@ const MarketDetail = () => {
             <button onClick={() => setBoostOpen(true)} className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors" title="Boost Market">
               <Zap className="w-5 h-5 text-primary" />
             </button>
-            <button className="w-10 h-10 rounded-full glass flex items-center justify-center"><Heart className="w-5 h-5" /></button>
-            <button className="w-10 h-10 rounded-full glass flex items-center justify-center"><Share2 className="w-5 h-5" /></button>
+            <button onClick={() => { setLiked(p => !p); toast.success(liked ? "Removed from favorites" : "Added to favorites"); }} className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+              <Heart className={`w-5 h-5 transition-colors ${liked ? "text-destructive fill-destructive" : ""}`} />
+            </button>
+            <button onClick={() => { if (navigator.share) navigator.share({ title: market?.title, url: window.location.href }); else { navigator.clipboard.writeText(window.location.href); toast.success("Link copied!"); } }} className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors"><Share2 className="w-5 h-5" /></button>
           </div>
         </div>
       </div>
