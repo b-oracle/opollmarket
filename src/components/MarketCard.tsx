@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Market, categoryIcons } from "@/data/markets";
 import { useNavigate } from "react-router-dom";
@@ -51,6 +51,33 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const [likeCount, setLikeCount] = useState(Math.floor(Math.random() * 5000) + 500);
   const [bookmarked, setBookmarked] = useState(false);
   const [betModal, setBetModal] = useState<{ open: boolean; side: "yes" | "no" }>({ open: false, side: "yes" });
+  const [dragX, setDragX] = useState(0);
+  const [swiping, setSwiping] = useState(false);
+
+  const SWIPE_THRESHOLD = 80;
+
+  const handleDrag = useCallback((_: any, info: { offset: { x: number } }) => {
+    if (isMulti) return; // Don't allow swipe on multi-option markets
+    setDragX(info.offset.x);
+    if (!swiping && Math.abs(info.offset.x) > 10) setSwiping(true);
+  }, [isMulti, swiping]);
+
+  const handleDragEnd = useCallback((_: any, info: { offset: { x: number }; velocity: { x: number } }) => {
+    if (isMulti) { setDragX(0); setSwiping(false); return; }
+    const swipeDistance = info.offset.x;
+    const velocity = Math.abs(info.velocity.x);
+    const triggered = Math.abs(swipeDistance) > SWIPE_THRESHOLD || (velocity > 300 && Math.abs(swipeDistance) > 30);
+
+    if (triggered) {
+      const side = swipeDistance > 0 ? "yes" : "no";
+      setBetModal({ open: true, side });
+    }
+    setDragX(0);
+    setSwiping(false);
+  }, [isMulti]);
+
+  const swipeProgress = Math.min(Math.abs(dragX) / SWIPE_THRESHOLD, 1);
+  const swipeSide = dragX > 0 ? "yes" : dragX < 0 ? "no" : null;
 
   const handleLike = () => {
     setLiked((prev) => !prev);
@@ -83,7 +110,53 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
   return (
     <>
-      <div className={`snap-item relative h-[calc(100dvh-5rem)] w-full flex items-end pb-6 px-4 overflow-hidden ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}>
+      <motion.div
+        drag={isMulti ? false : "x"}
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.3}
+        onDrag={handleDrag}
+        onDragEnd={handleDragEnd}
+        className={`snap-item relative h-[calc(100dvh-5rem)] w-full flex items-end pb-6 px-4 overflow-hidden ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}
+        style={{ touchAction: "pan-y" }}
+      >
+        {/* Swipe overlay indicators */}
+        {!isMulti && swiping && (
+          <>
+            {/* YES indicator (right swipe) */}
+            <motion.div
+              className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
+              style={{ opacity: swipeSide === "yes" ? swipeProgress * 0.8 : 0 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-primary/25" />
+              <motion.div
+                className="flex flex-col items-center gap-2"
+                style={{ scale: 0.8 + swipeProgress * 0.4, opacity: swipeSide === "yes" ? swipeProgress : 0 }}
+              >
+                <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center backdrop-blur-sm">
+                  <ThumbsUp className="w-10 h-10 text-primary" />
+                </div>
+                <span className="text-lg font-bold neon-yes">YES {yesPercent}¢</span>
+              </motion.div>
+            </motion.div>
+
+            {/* NO indicator (left swipe) */}
+            <motion.div
+              className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
+              style={{ opacity: swipeSide === "no" ? swipeProgress * 0.8 : 0 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-l from-transparent via-destructive/10 to-destructive/25" />
+              <motion.div
+                className="flex flex-col items-center gap-2"
+                style={{ scale: 0.8 + swipeProgress * 0.4, opacity: swipeSide === "no" ? swipeProgress : 0 }}
+              >
+                <div className="w-20 h-20 rounded-full bg-destructive/20 border-2 border-destructive flex items-center justify-center backdrop-blur-sm">
+                  <ThumbsDown className="w-10 h-10 text-destructive" />
+                </div>
+                <span className="text-lg font-bold neon-no">NO {noPercent}¢</span>
+              </motion.div>
+            </motion.div>
+          </>
+        )}
         {/* Background image */}
         {market.imageUrl && (
           <div className="absolute inset-0">
@@ -295,8 +368,20 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
               )}
             </motion.div>
           )}
+
+          {/* Swipe hint for binary markets */}
+          {isActive && !isMulti && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8 }}
+              className="text-[10px] text-muted-foreground/50 text-center mt-3"
+            >
+              ← Swipe left for NO · Swipe right for YES →
+            </motion.p>
+          )}
         </div>
-      </div>
+      </motion.div>
 
       {/* Bet Modal */}
       <BetModal
