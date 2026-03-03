@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
-import { Trophy, TrendingUp, TrendingDown, Medal, Crown, Award, Users, Loader2, Star, Calendar } from "lucide-react";
+import { Trophy, TrendingUp, TrendingDown, Medal, Crown, Award, Users, Loader2, Star, Calendar, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 interface Referrer {
   userId: string;
@@ -85,6 +86,7 @@ const YourRankCard = ({
   valueLine,
   valuePositive,
   totalCount,
+  onShare,
 }: {
   rank: number;
   name: string;
@@ -93,6 +95,7 @@ const YourRankCard = ({
   valueLine: string;
   valuePositive: boolean;
   totalCount: number;
+  onShare?: () => void;
 }) => (
   <motion.div
     initial={{ opacity: 0, y: -8 }}
@@ -115,11 +118,16 @@ const YourRankCard = ({
         <span>Top {Math.round((rank / totalCount) * 100)}%</span>
       </div>
     </div>
-    <div className="text-right shrink-0">
-      <p className={`text-sm font-bold flex items-center gap-1 justify-end ${valuePositive ? "text-primary" : "text-destructive"}`}>
+    <div className="flex items-center gap-2 shrink-0">
+      <p className={`text-sm font-bold flex items-center gap-1 ${valuePositive ? "text-primary" : "text-destructive"}`}>
         {valuePositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
         {valueLine}
       </p>
+      {onShare && (
+        <button onClick={onShare} className="w-8 h-8 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+          <Share2 className="w-4 h-4 text-primary" />
+        </button>
+      )}
     </div>
   </motion.div>
 );
