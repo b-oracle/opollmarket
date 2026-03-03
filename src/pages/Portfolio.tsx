@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   TrendingUp,
   TrendingDown,
@@ -9,14 +9,20 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Clock,
-  Filter,
   BarChart3,
   DollarSign,
   Target,
   Percent,
+  X,
+  Loader2,
+  CheckCircle2,
+  AlertTriangle,
+  LogOut,
+  Shield,
 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
+import { toast } from "sonner";
 
 interface Position {
   id: string;
