@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
 import { useMemo, useState } from "react";
 import BoostCountdown from "@/components/BoostCountdown";
+import BoostMarketModal from "@/components/BoostMarketModal";
 
 const formatVolume = (v: number) => {
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(2)}M`;
