@@ -14,6 +14,76 @@ export type Database = {
   }
   public: {
     Tables: {
+      comment_likes: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          wallet_address: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          wallet_address: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          wallet_address?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_likes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comments: {
+        Row: {
+          author_name: string
+          author_wallet: string | null
+          content: string
+          created_at: string
+          id: string
+          likes_count: number
+          market_id: string
+          parent_id: string | null
+        }
+        Insert: {
+          author_name?: string
+          author_wallet?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          likes_count?: number
+          market_id: string
+          parent_id?: string | null
+        }
+        Update: {
+          author_name?: string
+          author_wallet?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          likes_count?: number
+          market_id?: string
+          parent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       market_boosts: {
         Row: {
           amount: number
