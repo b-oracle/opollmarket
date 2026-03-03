@@ -152,6 +152,7 @@ const Create = () => {
         liquidity: parseFloat(initialLiquidity),
         tx_hash: mockTxHash,
         contract_address: mockContractAddr,
+        market_type: marketType,
       })
       .select("id")
       .maybeSingle();
@@ -163,10 +164,29 @@ const Create = () => {
       return;
     }
 
+    // Save options for multi/range markets
+    if (marketType !== "binary" && data?.id) {
+      const validOptions = options.filter(o => o.trim());
+      const equalPrice = Math.round((1 / validOptions.length) * 100) / 100;
+      const { error: optError } = await supabase
+        .from("market_options")
+        .insert(
+          validOptions.map((label, i) => ({
+            market_id: data.id,
+            label: label.trim(),
+            price: equalPrice,
+            sort_order: i,
+          }))
+        );
+      if (optError) {
+        console.error("Failed to save options:", optError);
+      }
+    }
+
     setNewMarketId(data?.id || "");
     setSubmitStep("success");
     toast.success("Market created successfully!");
-  }, [address, title, description, category, endDate, resolutionSource, initialLiquidity]);
+  }, [address, title, description, category, endDate, resolutionSource, initialLiquidity, marketType, options]);
 
   // Simulate token-gate verification
   const runGateCheck = () => {
