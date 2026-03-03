@@ -4,12 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Percent } from "lucide-react";
+import { Loader2, Save, Percent, Gift } from "lucide-react";
 import { toast } from "sonner";
 
 const AdminSettings = () => {
   const [adminFee, setAdminFee] = useState("");
   const [creatorFee, setCreatorFee] = useState("");
+  const [referralReward, setReferralReward] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
@@ -24,6 +25,7 @@ const AdminSettings = () => {
       if (data) {
         setAdminFee(String(data.admin_fee_percent));
         setCreatorFee(String(data.creator_fee_percent));
+        setReferralReward(String(data.referral_reward_amount ?? 5));
         setSettingsId(data.id);
       }
       if (error) console.error(error);
@@ -34,9 +36,10 @@ const AdminSettings = () => {
 
   const adminNum = parseFloat(adminFee) || 0;
   const creatorNum = parseFloat(creatorFee) || 0;
+  const referralNum = parseFloat(referralReward) || 0;
   const totalFee = adminNum + creatorNum;
   const poolPercent = 100 - totalFee;
-  const isValid = adminNum >= 0 && creatorNum >= 0 && totalFee <= 100;
+  const isValid = adminNum >= 0 && creatorNum >= 0 && totalFee <= 100 && referralNum >= 0;
 
   const handleSave = async () => {
     if (!isValid || !settingsId) return;
@@ -46,6 +49,7 @@ const AdminSettings = () => {
       .update({
         admin_fee_percent: adminNum,
         creator_fee_percent: creatorNum,
+        referral_reward_amount: referralNum,
         updated_at: new Date().toISOString(),
       })
       .eq("id", settingsId);
@@ -104,6 +108,31 @@ const AdminSettings = () => {
               placeholder="3"
             />
           </div>
+
+          <Card className="border-dashed">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Gift className="w-4 h-4" /> Referral Reward
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Fixed amount credited to referrer's bonus balance when their referral places their first prediction. Non-withdrawable.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label htmlFor="referralReward">Reward Amount ($)</Label>
+                <Input
+                  id="referralReward"
+                  type="number"
+                  min={0}
+                  step={0.5}
+                  value={referralReward}
+                  onChange={(e) => setReferralReward(e.target.value)}
+                  placeholder="5"
+                />
+              </div>
+            </CardContent>
+          </Card>
 
           <div className="rounded-lg border border-border p-3 space-y-1.5 bg-muted/50">
             <div className="flex justify-between text-sm">
