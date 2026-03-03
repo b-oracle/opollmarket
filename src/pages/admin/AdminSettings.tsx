@@ -154,6 +154,9 @@ const AdminSettings = () => {
           {totalFee > 100 && (
             <p className="text-xs text-destructive">Total fees cannot exceed 100%.</p>
           )}
+          {referralNum < 0 && (
+            <p className="text-xs text-destructive">Referral reward amount cannot be negative.</p>
+          )}
 
           <Button onClick={handleSave} disabled={!isValid || saving} className="w-full">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
