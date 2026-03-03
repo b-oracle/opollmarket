@@ -64,6 +64,44 @@ const Create = () => {
   const [initialLiquidity, setInitialLiquidity] = useState("");
   const [step, setStep] = useState(1);
 
+  // Validation state — track which fields have been "touched" or attempted
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [shakeField, setShakeField] = useState<string | null>(null);
+
+  const markTouched = (field: string) => setTouched((t) => ({ ...t, [field]: true }));
+
+  const shake = (field: string) => {
+    setShakeField(field);
+    setTimeout(() => setShakeField(null), 500);
+  };
+
+  // Validation rules
+  const errors: Record<string, string | null> = {
+    title: title.trim().length === 0 ? "Question is required" : title.trim().length < 10 ? "Must be at least 10 characters" : null,
+    description: description.trim().length === 0 ? "Description is required" : description.trim().length < 20 ? "Must be at least 20 characters" : null,
+    category: !category ? "Select a category" : null,
+    endDate: !endDate ? "Resolution date is required" : null,
+    resolutionSource: resolutionSource.trim().length === 0 ? "Resolution source is required" : resolutionSource.trim().length < 10 ? "Must be at least 10 characters" : null,
+    initialLiquidity: !initialLiquidity ? "Initial liquidity is required" : parseFloat(initialLiquidity) < 10 ? "Minimum 10 USDT" : null,
+  };
+
+  const shakeClass = (field: string) => shakeField === field ? "animate-[shake_0.4s_ease-in-out]" : "";
+
+  const tryAdvanceStep1 = () => {
+    setTouched((t) => ({ ...t, title: true, description: true }));
+    if (errors.title) { shake("title"); return; }
+    if (errors.description) { shake("description"); return; }
+    setStep(2);
+  };
+
+  const tryAdvanceStep2 = () => {
+    setTouched((t) => ({ ...t, category: true, endDate: true, resolutionSource: true }));
+    if (errors.category) { shake("category"); return; }
+    if (errors.endDate) { shake("endDate"); return; }
+    if (errors.resolutionSource) { shake("resolutionSource"); return; }
+    setStep(3);
+  };
+
   // Submission state
   type SubmitStep = "idle" | "deploying" | "saving" | "success" | "error";
   const [submitStep, setSubmitStep] = useState<SubmitStep>("idle");
