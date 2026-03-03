@@ -67,6 +67,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const [dragX, setDragX] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
   const [swiping, setSwiping] = useState(false);
+  const captureContentRef = useRef<HTMLDivElement>(null);
 
   const SWIPE_THRESHOLD = 80;
 
