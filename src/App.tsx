@@ -22,6 +22,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminCreateMarket from "./pages/admin/AdminCreateMarket";
 import AdminTransactions from "./pages/admin/AdminTransactions";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminCommissions from "./pages/admin/AdminCommissions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,7 @@ const App = () => (
                 <Route path="comments" element={<AdminComments />} />
                 <Route path="transactions" element={<AdminTransactions />} />
                 <Route path="users" element={<AdminUsers />} />
+                <Route path="commissions" element={<AdminCommissions />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
               <Route path="*" element={<NotFound />} />
