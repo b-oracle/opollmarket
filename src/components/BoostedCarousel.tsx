@@ -18,6 +18,9 @@ interface BoostedCarouselProps {
   onBoost: (market: Market) => void;
 }
 
+const hasAnyBoost = (markets: Market[], boostDetails: Map<string, ActiveBoost>) =>
+  markets.some((m) => boostDetails.has(m.id));
+
 const BoostedCarousel = ({
   markets,
   boostDetails,
@@ -69,10 +72,12 @@ const BoostedCarousel = ({
     setActiveIndex(index);
   };
 
+  const showingBoosts = hasAnyBoost(markets, boostDetails);
+
   return (
     <div className="mb-6">
       <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
-        <Zap className="w-3.5 h-3.5 text-primary" /> Boosted Markets
+        <Zap className="w-3.5 h-3.5 text-primary" /> {showingBoosts ? "Boosted Markets" : "Trending Markets"}
       </h3>
 
       <div
