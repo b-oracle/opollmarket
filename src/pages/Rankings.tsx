@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
-import { Trophy, TrendingUp, TrendingDown, Medal, Crown, Award, Users, Loader2, Star } from "lucide-react";
+import { Trophy, TrendingUp, TrendingDown, Medal, Crown, Award, Users, Loader2, Star, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,6 +26,21 @@ interface Trader {
 type Tab = "referrers" | "traders";
 type ReferralSort = "totalEarned" | "totalReferrals";
 type TraderSort = "pnl" | "volume" | "trades";
+type TimePeriod = "week" | "month" | "all";
+
+const TIME_PERIODS: { key: TimePeriod; label: string }[] = [
+  { key: "week", label: "Weekly" },
+  { key: "month", label: "Monthly" },
+  { key: "all", label: "All Time" },
+];
+
+const getCutoffDate = (period: TimePeriod): string | null => {
+  if (period === "all") return null;
+  const d = new Date();
+  if (period === "week") d.setDate(d.getDate() - 7);
+  else d.setMonth(d.getMonth() - 1);
+  return d.toISOString();
+};
 
 const rankBadge = (rank: number) => {
   if (rank === 1) return <Crown className="w-5 h-5" style={{ color: "hsl(45, 93%, 58%)" }} />;
@@ -60,15 +75,18 @@ const EmptyState = ({ message, sub }: { message: string; sub: string }) => (
 );
 
 // ── Referral Leaderboard ──────────────────────────────────────────────
-const useReferralLeaderboard = () => {
+const useReferralLeaderboard = (period: TimePeriod) => {
   const [referrers, setReferrers] = useState<Referrer[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     (async () => {
-      const { data: rewards } = await supabase
-        .from("referral_rewards")
-        .select("referrer_id, amount");
+      let query = supabase.from("referral_rewards").select("referrer_id, amount, created_at");
+      const cutoff = getCutoffDate(period);
+      if (cutoff) query = query.gte("created_at", cutoff);
+
+      const { data: rewards } = await query;
 
       if (!rewards || rewards.length === 0) {
         setReferrers([]);
@@ -101,26 +119,25 @@ const useReferralLeaderboard = () => {
       );
       setLoading(false);
     })();
-  }, []);
+  }, [period]);
 
   return { referrers, loading };
 };
 
 // ── Trading Leaderboard ───────────────────────────────────────────────
-const useTradingLeaderboard = () => {
+const useTradingLeaderboard = (period: TimePeriod) => {
   const [traders, setTraders] = useState<Trader[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     (async () => {
-      // Fetch positions with market prices
-      const { data: positions } = await supabase
-        .from("positions")
-        .select("user_id, side, shares, avg_price, market_id");
+      let query = supabase.from("positions").select("user_id, side, shares, avg_price, market_id, created_at");
+      const cutoff = getCutoffDate(period);
+      if (cutoff) query = query.gte("created_at", cutoff);
 
-      const { data: markets } = await supabase
-        .from("markets")
-        .select("id, yes_price, no_price");
+      const { data: positions } = await query;
+      const { data: markets } = await supabase.from("markets").select("id, yes_price, no_price");
 
       if (!positions || positions.length === 0) {
         setTraders([]);
@@ -162,7 +179,7 @@ const useTradingLeaderboard = () => {
       );
       setLoading(false);
     })();
-  }, []);
+  }, [period]);
 
   return { traders, loading };
 };
@@ -218,16 +235,37 @@ const Podium = <T extends { userId: string; name: string; avatar: string | null 
   );
 };
 
+// ── Time Period Selector ──────────────────────────────────────────────
+const TimePeriodSelector = ({ value, onChange }: { value: TimePeriod; onChange: (v: TimePeriod) => void }) => (
+  <div className="flex items-center gap-1 p-1 rounded-xl bg-muted/50 mb-4">
+    {TIME_PERIODS.map(({ key, label }) => (
+      <button
+        key={key}
+        onClick={() => onChange(key)}
+        className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] font-semibold transition-all ${
+          value === key
+            ? "bg-background text-foreground shadow-sm"
+            : "text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        {value === key && <Calendar className="w-3 h-3" />}
+        {label}
+      </button>
+    ))}
+  </div>
+);
+
 // ── Main Component ────────────────────────────────────────────────────
 const Rankings = () => {
   const [tab, setTab] = useState<Tab>("traders");
   const [referralSort, setReferralSort] = useState<ReferralSort>("totalEarned");
   const [traderSort, setTraderSort] = useState<TraderSort>("pnl");
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>("all");
   const { user } = useAuth();
   const currentUserId = user?.id;
 
-  const { referrers, loading: refLoading } = useReferralLeaderboard();
-  const { traders, loading: tradeLoading } = useTradingLeaderboard();
+  const { referrers, loading: refLoading } = useReferralLeaderboard(timePeriod);
+  const { traders, loading: tradeLoading } = useTradingLeaderboard(timePeriod);
 
   const sortedReferrers = [...referrers].sort((a, b) =>
     referralSort === "totalEarned" ? b.totalEarned - a.totalEarned : b.totalReferrals - a.totalReferrals
@@ -264,6 +302,9 @@ const Rankings = () => {
             </button>
           ))}
         </div>
+
+        {/* Time Period Filter */}
+        <TimePeriodSelector value={timePeriod} onChange={setTimePeriod} />
 
         {loading ? (
           <div className="flex justify-center py-16">
@@ -399,7 +440,7 @@ const Rankings = () => {
                             </div>
                             <div className="text-right shrink-0">
                               <p className="text-sm font-bold text-primary flex items-center gap-1 justify-end">
-                                <TrendingUp className="w-3.5 h-3.5" />+${ref.totalEarned.toFixed(0)}
+                                <TrendingUp className="w-3.5 h-3.5" />+{ref.totalEarned.toFixed(0)}
                               </p>
                             </div>
                           </motion.div>
