@@ -6,7 +6,7 @@ import { TrendingUp, Users, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import BoostCountdown from "@/components/BoostCountdown";
 import BoostMarketModal from "@/components/BoostMarketModal";
 
