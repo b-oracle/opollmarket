@@ -115,6 +115,7 @@ const BulkCSVImport = ({ onComplete }: BulkCSVImportProps) => {
   const [parsed, setParsed] = useState<ParsedMarket[]>([]);
   const [importing, setImporting] = useState(false);
   const [results, setResults] = useState<{ success: number; failed: number } | null>(null);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [dragging, setDragging] = useState(false);
 
   const processFile = (file: File) => {
@@ -184,6 +185,7 @@ const BulkCSVImport = ({ onComplete }: BulkCSVImportProps) => {
       return;
     }
     setImporting(true);
+    setProgress({ current: 0, total: valid.length });
     let success = 0;
     let failed = 0;
 
@@ -225,6 +227,7 @@ const BulkCSVImport = ({ onComplete }: BulkCSVImportProps) => {
       } catch {
         failed++;
       }
+      setProgress({ current: success + failed, total: valid.length });
     }
 
     setResults({ success, failed });
