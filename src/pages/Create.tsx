@@ -67,6 +67,18 @@ const Create = () => {
   const [resolutionSource, setResolutionSource] = useState("");
   const [initialLiquidity, setInitialLiquidity] = useState("");
   const [step, setStep] = useState(1);
+  const [marketType, setMarketType] = useState<"binary" | "multi" | "range">("binary");
+  const [options, setOptions] = useState<string[]>(["", ""]);
+
+  const addOption = () => {
+    if (options.length < 6) setOptions([...options, ""]);
+  };
+  const removeOption = (idx: number) => {
+    if (options.length > 2) setOptions(options.filter((_, i) => i !== idx));
+  };
+  const updateOption = (idx: number, val: string) => {
+    setOptions(options.map((o, i) => (i === idx ? val : o)));
+  };
 
   // Validation state — track which fields have been "touched" or attempted
   const [touched, setTouched] = useState<Record<string, boolean>>({});
