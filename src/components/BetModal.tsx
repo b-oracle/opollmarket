@@ -38,7 +38,7 @@ const MAX_AMOUNT = 10000;
 
 const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId, optionLabel }: BetModalProps) => {
   const { user } = useAuth();
-  const { balance } = useUserBalance();
+  const { balance, totalBalance } = useUserBalance();
   const { data: commission } = useCommissionSettings();
   const placeBet = usePlaceBet();
   const navigate = useNavigate();
@@ -56,7 +56,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
   const profit = potentialPayout - totalCost;
   const roi = numAmount > 0 ? (profit / totalCost) * 100 : 0;
 
-  const isValid = numAmount >= MIN_AMOUNT && numAmount <= MAX_AMOUNT && totalCost <= balance;
+  const isValid = numAmount >= MIN_AMOUNT && numAmount <= MAX_AMOUNT && totalCost <= totalBalance;
 
   const handleAmountChange = (val: string) => {
     const cleaned = val.replace(/[^0-9.]/g, "");
@@ -156,8 +156,8 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
 
                     {user && (
                       <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border mb-4">
-                        <span className="text-xs text-muted-foreground">Your Balance</span>
-                        <span className="text-sm font-bold">${balance.toFixed(2)}</span>
+                      <span className="text-xs text-muted-foreground">Your Balance</span>
+                        <span className="text-sm font-bold">${totalBalance.toFixed(2)}</span>
                       </div>
                     )}
 
@@ -188,8 +188,8 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                       </div>
                     </div>
 
-                    {totalCost > balance && numAmount > 0 && user && (
-                      <p className="text-xs text-destructive mb-2">Insufficient balance. You need ${(totalCost - balance).toFixed(2)} more.</p>
+                    {totalCost > totalBalance && numAmount > 0 && user && (
+                      <p className="text-xs text-destructive mb-2">Insufficient balance. You need ${(totalCost - totalBalance).toFixed(2)} more.</p>
                     )}
 
                     <div className="flex gap-2 mb-5">
