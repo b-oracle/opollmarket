@@ -115,6 +115,7 @@ const BulkCSVImport = ({ onComplete }: BulkCSVImportProps) => {
   const [parsed, setParsed] = useState<ParsedMarket[]>([]);
   const [importing, setImporting] = useState(false);
   const [results, setResults] = useState<{ success: number; failed: number } | null>(null);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [dragging, setDragging] = useState(false);
 
   const processFile = (file: File) => {
@@ -184,6 +185,7 @@ const BulkCSVImport = ({ onComplete }: BulkCSVImportProps) => {
       return;
     }
     setImporting(true);
+    setProgress({ current: 0, total: valid.length });
     let success = 0;
     let failed = 0;
 
@@ -225,6 +227,7 @@ const BulkCSVImport = ({ onComplete }: BulkCSVImportProps) => {
       } catch {
         failed++;
       }
+      setProgress({ current: success + failed, total: valid.length });
     }
 
     setResults({ success, failed });
@@ -354,10 +357,27 @@ const BulkCSVImport = ({ onComplete }: BulkCSVImportProps) => {
                     ))}
                   </div>
 
+                  {/* Progress bar */}
+                  {importing && progress.total > 0 && (
+                    <div className="pt-2">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+                        <span>Creating markets...</span>
+                        <span>{progress.current} / {progress.total}</span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-primary transition-all duration-300 ease-out"
+                          style={{ width: `${(progress.current / progress.total) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex gap-3 pt-2">
                     <button
                       onClick={() => { setParsed([]); }}
-                      className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors"
+                      disabled={importing}
+                      className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
                     >
                       Clear
                     </button>
@@ -369,7 +389,7 @@ const BulkCSVImport = ({ onComplete }: BulkCSVImportProps) => {
                       {importing ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          Importing...
+                          {progress.current} / {progress.total}
                         </>
                       ) : (
                         <>
