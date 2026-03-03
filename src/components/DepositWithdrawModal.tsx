@@ -625,7 +625,6 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
     </BottomSheet>
   );
 };

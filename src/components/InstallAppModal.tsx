@@ -195,7 +195,6 @@ const InstallAppModal = ({ open, onClose }: InstallAppModalProps) => {
                   )}
                 </>
               )}
-            </div>
     </BottomSheet>
   );
 };

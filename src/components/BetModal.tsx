@@ -367,7 +367,6 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                     </div>
                   </motion.div>
               </AnimatePresence>
-            </div>
     </BottomSheet>
   );
 };
