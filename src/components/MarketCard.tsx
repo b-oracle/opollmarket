@@ -227,7 +227,9 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                   <span className="px-3 py-1 rounded-full text-xs font-bold text-white" style={{ backgroundColor: 'hsl(0, 85%, 55%, 0.85)' }}>NO {noPercent}%</span>
                 </div>
               )}
-              <span className="text-[10px] text-white/50 font-mono shrink-0 ml-2">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+              <span className="text-[10px] text-white/50 font-mono shrink-0 ml-2 flex items-center gap-1">
+                <Clock className="w-2.5 h-2.5" /> {getTimeRemaining(market.endDate)} · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+              </span>
             </div>
           </div>
         </div>
