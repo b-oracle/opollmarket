@@ -115,10 +115,9 @@ const BulkCSVImport = ({ onComplete }: BulkCSVImportProps) => {
   const [parsed, setParsed] = useState<ParsedMarket[]>([]);
   const [importing, setImporting] = useState(false);
   const [results, setResults] = useState<{ success: number; failed: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const processFile = (file: File) => {
     if (!file.name.endsWith(".csv")) {
       toast.error("Please upload a .csv file");
       return;
@@ -142,7 +141,29 @@ const BulkCSVImport = ({ onComplete }: BulkCSVImportProps) => {
       setResults(null);
     };
     reader.readAsText(file);
+  };
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
   };
 
   const downloadTemplate = () => {
@@ -269,10 +290,19 @@ const BulkCSVImport = ({ onComplete }: BulkCSVImportProps) => {
               {parsed.length === 0 && !results && (
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full h-36 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer"
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  className={`w-full h-36 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-2 transition-all cursor-pointer ${
+                    dragging
+                      ? "border-primary bg-primary/10 scale-[1.02]"
+                      : "border-border hover:border-primary/40 hover:bg-primary/5"
+                  }`}
                 >
-                  <Upload className="w-8 h-8 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Click to upload CSV file</p>
+                  <Upload className={`w-8 h-8 ${dragging ? "text-primary" : "text-muted-foreground"}`} />
+                  <p className="text-sm text-muted-foreground">
+                    {dragging ? "Drop CSV file here" : "Drag & drop or click to upload CSV"}
+                  </p>
                   <p className="text-[10px] text-muted-foreground">
                     Required: title, description, category, end_date, resolution_source
                   </p>
