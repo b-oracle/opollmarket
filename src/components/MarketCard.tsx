@@ -220,8 +220,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
           {/* Bottom text overlay */}
           <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/85 via-black/50 to-transparent">
-            <h3 className="text-2xl font-bold text-white mb-2 leading-tight line-clamp-2">{market.title}</h3>
-            <p className="text-sm text-white/70 line-clamp-2 mb-4">{market.description}</p>
+            <h3 className="text-2xl font-bold text-white mb-2 leading-tight">{market.title}</h3>
+            <p className="text-sm text-white/70 mb-4">{market.description}</p>
             <div className="flex items-center justify-between">
               {isMulti && market.options ? (
                 <div className="flex flex-wrap gap-2">
