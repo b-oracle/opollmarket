@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAccount, useConnect } from "wagmi";
+import { useNavigate } from "react-router-dom";
 import { bsc } from "wagmi/chains";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -21,6 +22,8 @@ import {
 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const CATEGORIES = [
   { label: "Crypto", icon: "₿" },
@@ -45,6 +48,7 @@ interface GateCheck {
 const Create = () => {
   const { address, isConnected } = useAccount();
   const { connect, connectors, isPending } = useConnect();
+  const navigate = useNavigate();
 
   // Gate state
   const [gateChecks, setGateChecks] = useState<GateCheck[]>([]);
@@ -59,6 +63,54 @@ const Create = () => {
   const [resolutionSource, setResolutionSource] = useState("");
   const [initialLiquidity, setInitialLiquidity] = useState("");
   const [step, setStep] = useState(1);
+
+  // Submission state
+  type SubmitStep = "idle" | "deploying" | "saving" | "success" | "error";
+  const [submitStep, setSubmitStep] = useState<SubmitStep>("idle");
+  const [txHash, setTxHash] = useState("");
+  const [newMarketId, setNewMarketId] = useState("");
+
+  const handleCreateMarket = useCallback(async () => {
+    if (!address) return;
+    setSubmitStep("deploying");
+
+    // Simulate on-chain contract deployment
+    await new Promise((r) => setTimeout(r, 2500));
+    const mockTxHash = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`;
+    const mockContractAddr = `0x${Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`;
+    setTxHash(mockTxHash);
+
+    setSubmitStep("saving");
+
+    // Save to database
+    const { data, error } = await supabase
+      .from("markets")
+      .insert({
+        creator_wallet: address,
+        title: title.trim(),
+        description: description.trim(),
+        category,
+        end_date: endDate,
+        resolution_source: resolutionSource.trim(),
+        initial_liquidity: parseFloat(initialLiquidity),
+        liquidity: parseFloat(initialLiquidity),
+        tx_hash: mockTxHash,
+        contract_address: mockContractAddr,
+      })
+      .select("id")
+      .maybeSingle();
+
+    if (error) {
+      console.error("Failed to save market:", error);
+      setSubmitStep("error");
+      toast.error("Failed to save market to database");
+      return;
+    }
+
+    setNewMarketId(data?.id || "");
+    setSubmitStep("success");
+    toast.success("Market created successfully!");
+  }, [address, title, description, category, endDate, resolutionSource, initialLiquidity]);
 
   // Simulate token-gate verification
   const runGateCheck = () => {
@@ -503,20 +555,141 @@ const Create = () => {
                 </p>
               </div>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setStep(2)}
-                  className="flex-1 glass py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-95"
+              {submitStep === "idle" && (
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setStep(2)}
+                    className="flex-1 glass py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-95"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={handleCreateMarket}
+                    disabled={!isFormValid || !initialLiquidity}
+                    className="flex-1 btn-yes py-3.5 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-40 disabled:active:scale-100 flex items-center justify-center gap-2"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Create Market
+                  </button>
+                </div>
+              )}
+
+              {(submitStep === "deploying" || submitStep === "saving") && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="glass rounded-xl p-6 flex flex-col items-center"
                 >
-                  Back
-                </button>
-                <button
-                  disabled={!isFormValid || !initialLiquidity}
-                  className="flex-1 btn-yes py-3.5 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-40 disabled:active:scale-100"
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+                  >
+                    <Loader2 className="w-10 h-10 text-primary" />
+                  </motion.div>
+                  <h3 className="text-base font-bold mt-3 mb-1">
+                    {submitStep === "deploying" ? "Deploying Contract..." : "Saving to Database..."}
+                  </h3>
+                  <p className="text-xs text-muted-foreground text-center">
+                    {submitStep === "deploying"
+                      ? "Deploying your prediction market contract on BSC. Please confirm in your wallet."
+                      : "Storing market data and linking contract address..."}
+                  </p>
+                  <div className="mt-4 space-y-2 w-full max-w-xs">
+                    {[
+                      { label: "Preparing contract", done: true },
+                      { label: "Awaiting wallet signature", done: submitStep === "saving" },
+                      { label: "Broadcasting transaction", done: submitStep === "saving" },
+                      { label: "Saving market data", done: false },
+                    ].map((s, i) => (
+                      <motion.div
+                        key={s.label}
+                        initial={{ opacity: 0.3 }}
+                        animate={{ opacity: s.done ? 1 : submitStep === "saving" && i === 3 ? 1 : 0.3 }}
+                        transition={{ delay: i * 0.3 }}
+                        className="flex items-center gap-2 text-xs"
+                      >
+                        {s.done ? (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                        ) : (
+                          <div className="w-3.5 h-3.5 rounded-full border border-muted-foreground/30" />
+                        )}
+                        <span className={s.done ? "text-foreground" : "text-muted-foreground"}>{s.label}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
+              {submitStep === "success" && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="glass rounded-xl p-6 flex flex-col items-center"
                 >
-                  Create Market
-                </button>
-              </div>
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", damping: 10 }}
+                    className="w-14 h-14 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center mb-3"
+                  >
+                    <CheckCircle2 className="w-7 h-7 text-primary" />
+                  </motion.div>
+                  <h3 className="text-base font-bold mb-1">Market Created!</h3>
+                  <p className="text-xs text-muted-foreground text-center mb-4">
+                    Your prediction market is now live on BSC.
+                  </p>
+                  <div className="w-full space-y-1.5 mb-4">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Tx Hash</span>
+                      <span className="font-mono text-primary">{txHash.slice(0, 10)}...{txHash.slice(-6)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Liquidity</span>
+                      <span className="font-semibold">${initialLiquidity} USDT</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 w-full">
+                    <button
+                      onClick={() => navigate("/")}
+                      className="flex-1 glass py-3 rounded-xl font-semibold text-sm transition-all active:scale-95"
+                    >
+                      Home
+                    </button>
+                    <a
+                      href={`https://bscscan.com/tx/${txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      View on BscScan
+                    </a>
+                  </div>
+                </motion.div>
+              )}
+
+              {submitStep === "error" && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="glass rounded-xl p-6 flex flex-col items-center"
+                >
+                  <div className="w-14 h-14 rounded-full bg-destructive/20 border border-destructive/40 flex items-center justify-center mb-3">
+                    <AlertTriangle className="w-7 h-7 text-destructive" />
+                  </div>
+                  <h3 className="text-base font-bold mb-1">Creation Failed</h3>
+                  <p className="text-xs text-muted-foreground text-center mb-4">
+                    Something went wrong. No funds were deducted.
+                  </p>
+                  <div className="flex gap-3 w-full">
+                    <button
+                      onClick={() => setSubmitStep("idle")}
+                      className="flex-1 glass py-3 rounded-xl font-semibold text-sm transition-all active:scale-95"
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                </motion.div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
