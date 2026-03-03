@@ -14,6 +14,7 @@ import Rankings from "./pages/Rankings";
 import Profile from "./pages/Profile";
 import Portfolio from "./pages/Portfolio";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminMarkets from "./pages/admin/AdminMarkets";
@@ -49,6 +50,7 @@ const App = () => (
               <Route path="/portfolio" element={<Portfolio />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/referrals" element={<Referrals />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/disclaimer" element={<Disclaimer />} />

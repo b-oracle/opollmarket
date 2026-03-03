@@ -38,7 +38,7 @@ const Auth = () => {
       } else {
         const { error } = await signUp(email, password, displayName);
         if (error) { toast.error(error.message); }
-        else { toast.success("Account created! Logging you in..."); navigate("/"); return; }
+        else { toast.success("Account created! Please check your email to verify your account."); setMode("login"); return; }
       }
     } catch (err: any) {
       console.error("Auth error:", err);
@@ -110,7 +110,26 @@ const Auth = () => {
           ))}
         </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-6">
+        {mode === "login" && (
+          <div className="text-center mt-4">
+            <button
+              type="button"
+              onClick={async () => {
+                if (!email) { toast.error("Enter your email first"); return; }
+                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                  redirectTo: `${window.location.origin}/reset-password`,
+                });
+                if (error) toast.error(error.message);
+                else toast.success("Password reset email sent! Check your inbox.");
+              }}
+              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              Forgot your password?
+            </button>
+          </div>
+        )}
+
+        <p className="text-center text-xs text-muted-foreground mt-4">
           {mode === "login" ? "Don't have an account?" : "Already have an account?"}{" "}
           <button onClick={() => setMode(mode === "login" ? "signup" : "login")} className="text-primary font-semibold hover:underline">
             {mode === "login" ? "Sign Up" : "Sign In"}
