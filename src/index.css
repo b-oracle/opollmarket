@@ -27,7 +27,7 @@
     --accent: 210 12% 88%;
     --accent-foreground: 220 15% 10%;
 
-    --destructive: 345 100% 50%;
+    --destructive: 0 85% 55%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 210 12% 88%;
@@ -36,10 +36,10 @@
 
     --radius: 0.75rem;
 
-    --neon-yes: 193 98% 50%;
-    --neon-no: 345 100% 50%;
-    --neon-yes-glow: 193 98% 50%;
-    --neon-no-glow: 345 100% 50%;
+    --neon-yes: 145 80% 42%;
+    --neon-no: 0 85% 55%;
+    --neon-yes-glow: 145 80% 42%;
+    --neon-no-glow: 0 85% 55%;
     --glass: 210 15% 94%;
     --glass-border: 210 12% 85%;
 
@@ -75,17 +75,17 @@
     --accent: 220 12% 16%;
     --accent-foreground: 0 0% 95%;
 
-    --destructive: 345 100% 60%;
+    --destructive: 0 85% 55%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 220 12% 16%;
     --input: 220 12% 16%;
     --ring: 193 98% 50%;
 
-    --neon-yes: 193 98% 50%;
-    --neon-no: 345 100% 60%;
-    --neon-yes-glow: 193 98% 50%;
-    --neon-no-glow: 345 100% 60%;
+    --neon-yes: 145 80% 45%;
+    --neon-no: 0 85% 58%;
+    --neon-yes-glow: 145 80% 45%;
+    --neon-no-glow: 0 85% 58%;
     --glass: 220 15% 10%;
     --glass-border: 220 12% 18%;
 
