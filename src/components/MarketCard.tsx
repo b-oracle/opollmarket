@@ -161,20 +161,29 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             </motion.div>
           </>
         )}
-        {/* Capturable content for share screenshot */}
-        <div ref={captureContentRef} className="absolute inset-0">
-          {/* Background image */}
+        {/* Visible banner: background image + gradient only */}
+        <div className="absolute inset-0">
           {market.imageUrl && (
             <div className="absolute inset-0">
               <img src={market.imageUrl} alt="" className="w-full h-full object-cover opacity-20" />
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/40" />
             </div>
           )}
+          <div className={`absolute inset-0 ${isBoosted ? 'bg-gradient-to-br from-primary/15 via-primary/5 to-transparent' : ''}`} />
+        </div>
 
+        {/* Hidden capture div for share screenshot */}
+        <div ref={captureContentRef} className="absolute -left-[9999px] w-[400px] aspect-video overflow-hidden rounded-xl bg-background">
+          {market.imageUrl && (
+            <div className="absolute inset-0">
+              <img src={market.imageUrl} alt="" className="w-full h-full object-cover opacity-20" />
+              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/40" />
+            </div>
+          )}
           <div className={`absolute inset-0 ${isBoosted ? 'bg-gradient-to-br from-primary/15 via-primary/5 to-transparent' : ''}`} />
 
           {/* Probability ring or multi-option indicator */}
-          <div className="absolute top-8 right-4 z-10">
+          <div className="absolute top-4 right-4 z-10">
             {isMulti ? (
               <div className="glass rounded-xl px-3 py-2 flex flex-col items-center gap-1">
                 <BarChart3 className="w-5 h-5 text-primary" />
@@ -197,7 +206,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           </div>
 
           {/* Category badge */}
-          <div className="absolute top-8 left-4 z-10 flex items-center gap-2">
+          <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
             <span className="glass px-3 py-1.5 rounded-full text-xs font-medium text-foreground/80">
               {categoryIcons[market.category]} {market.category}
             </span>
@@ -208,7 +217,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             )}
           </div>
 
-          {/* Text overlay for share screenshot */}
+          {/* Bottom text overlay */}
           <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
             <h3 className="text-xl font-bold text-white mb-1 line-clamp-2">{market.title}</h3>
             <p className="text-sm text-white/70 line-clamp-2 mb-3">{market.description}</p>
