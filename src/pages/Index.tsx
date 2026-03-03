@@ -6,7 +6,7 @@ import { TrendingUp, Users, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 const formatVolume = (v: number) => {
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(2)}M`;
@@ -26,19 +26,24 @@ const getMarketImage = (id: string, category: string) => {
 const Index = () => {
   const navigate = useNavigate();
   const { boostedMarketIds, boostDetails } = useActiveBoosts();
+  const [filter, setFilter] = useState<"trending" | "boosted" | "all">("trending");
   
-  // Merge boosted status: DB boosts + mock trending
-  const trending = useMemo(() => {
-    const allTrending = mockMarkets.filter(
-      (m) => m.trending || boostedMarketIds.has(m.id)
-    );
+  const filteredMarkets = useMemo(() => {
+    let filtered: typeof mockMarkets;
+    if (filter === "boosted") {
+      filtered = mockMarkets.filter((m) => boostedMarketIds.has(m.id));
+    } else if (filter === "trending") {
+      filtered = mockMarkets.filter((m) => m.trending || boostedMarketIds.has(m.id));
+    } else {
+      filtered = [...mockMarkets];
+    }
     // Sort boosted first
-    return allTrending.sort((a, b) => {
+    return filtered.sort((a, b) => {
       const aBoost = boostedMarketIds.has(a.id) ? 1 : 0;
       const bBoost = boostedMarketIds.has(b.id) ? 1 : 0;
       return bBoost - aBoost;
     });
-  }, [boostedMarketIds]);
+  }, [boostedMarketIds, filter]);
   
   const totalVolume = mockMarkets.reduce((s, m) => s + m.volume, 0);
   const totalTraders = mockMarkets.reduce((s, m) => s + m.participants, 0);
@@ -95,12 +100,34 @@ const Index = () => {
           🔥 Start Swiping
         </motion.button>
 
-        {/* Trending */}
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-          🔥 Trending Markets
-        </h3>
+        {/* Filter tabs */}
+        <div className="flex gap-1.5 p-1 rounded-xl bg-muted/50 mb-4">
+          {([
+            { key: "trending" as const, label: "🔥 Trending" },
+            { key: "boosted" as const, label: "⚡ Boosted" },
+            { key: "all" as const, label: "All" },
+          ]).map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                filter === tab.key
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         <div className="space-y-3">
-          {trending.map((market, i) => {
+          {filteredMarkets.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground text-sm">
+              No boosted markets right now. Be the first to boost one!
+            </div>
+          )}
+          {filteredMarkets.map((market, i) => {
             const yesPercent = Math.round(market.yesPrice * 100);
             const noPercent = 100 - yesPercent;
             const isMulti = market.marketType !== "binary";
