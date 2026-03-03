@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAccount, useBalance } from "wagmi";
 import { formatUnits } from "viem";
@@ -42,6 +42,17 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
   const { user } = useAuth();
 
   const [tab, setTab] = useState<Tab>(initialTab);
+
+  // Sync tab when initialTab changes (e.g. profile page deposit vs withdraw buttons)
+  useEffect(() => {
+    if (open) {
+      setTab(initialTab);
+      setAmount("");
+      setStep("input");
+      setApproved(false);
+    }
+  }, [initialTab, open]);
+
   const [amount, setAmount] = useState("");
   const [step, setStep] = useState<FlowStep>("input");
   const [approved, setApproved] = useState(false);
@@ -138,7 +149,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto"
           >
-            <div className="glass-strong rounded-t-3xl p-5 pb-8 max-h-[85dvh] overflow-y-auto">
+            <div className="glass-strong rounded-t-3xl p-5 pb-24 max-h-[85dvh] overflow-y-auto">
               {/* Handle */}
               <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-4" />
 
