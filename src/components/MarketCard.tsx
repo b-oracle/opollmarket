@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import BoostCountdown from "@/components/BoostCountdown";
 import BetModal from "@/components/BetModal";
 import CommentsDrawer from "@/components/CommentsDrawer";
+import { useCommentCount } from "@/hooks/useCommentCount";
 import { toast } from "sonner";
 
 interface MarketCardProps {
@@ -53,7 +54,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const [bookmarked, setBookmarked] = useState(false);
   const [betModal, setBetModal] = useState<{ open: boolean; side: "yes" | "no"; optionLabel?: string; optionPrice?: number }>({ open: false, side: "yes" });
   const [commentsOpen, setCommentsOpen] = useState(false);
-  const [commentCount] = useState(Math.floor(Math.random() * 200) + 20);
+  const commentCount = useCommentCount(market.id);
   const [dragX, setDragX] = useState(0);
   const [swiping, setSwiping] = useState(false);
 
