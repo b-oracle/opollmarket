@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Eye, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
