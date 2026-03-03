@@ -2,7 +2,7 @@ import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { mockMarkets } from "@/data/markets";
 import { categoryIcons } from "@/data/markets";
-import { TrendingUp, Users, Zap } from "lucide-react";
+import { TrendingUp, Users, Zap, MessageCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
@@ -10,6 +10,7 @@ import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import BoostCountdown from "@/components/BoostCountdown";
 import BoostedCarousel from "@/components/BoostedCarousel";
 import BoostMarketModal from "@/components/BoostMarketModal";
+import { useCommentCount } from "@/hooks/useCommentCount";
 
 const formatVolume = (v: number) => {
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(2)}M`;
@@ -24,6 +25,17 @@ const getMarketImage = (id: string, category: string) => {
     Entertainment: "🎵", Sports: "⚽", Politics: "🏛️", Other: "💡",
   };
   return icons[category] || "💡";
+};
+
+const CommentBadge = ({ marketId }: { marketId: string }) => {
+  const count = useCommentCount(marketId);
+  if (count === 0) return null;
+  return (
+    <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+      <MessageCircle className="w-3 h-3" />
+      {count}
+    </span>
+  );
 };
 
 const Index = () => {
@@ -121,7 +133,6 @@ const Index = () => {
         />
 
 
-
         {/* Filter tabs */}
         <div className="flex gap-1.5 p-1 rounded-xl bg-muted/50 mb-4">
           {([
@@ -207,6 +218,7 @@ const Index = () => {
                         <Zap className="w-3 h-3" /> Trending
                       </span>
                     )}
+                    <CommentBadge marketId={market.id} />
                     <span className="text-[10px] text-muted-foreground font-mono ml-auto">
                       {formatVolume(market.volume)} Vol
                     </span>
