@@ -25,6 +25,7 @@ import AdminTransactions from "./pages/admin/AdminTransactions";
 import AdminWithdrawals from "./pages/admin/AdminWithdrawals";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminCommissions from "./pages/admin/AdminCommissions";
+import AdminBoosts from "./pages/admin/AdminBoosts";
 import Referrals from "./pages/Referrals";
 import FAQ from "./pages/FAQ";
 import Disclaimer from "./pages/Disclaimer";
@@ -66,6 +67,7 @@ const App = () => (
                 <Route path="comments" element={<AdminComments />} />
                 <Route path="transactions" element={<AdminTransactions />} />
                 <Route path="withdrawals" element={<AdminWithdrawals />} />
+                <Route path="boosts" element={<AdminBoosts />} />
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="commissions" element={<AdminCommissions />} />
                 <Route path="settings" element={<AdminSettings />} />
