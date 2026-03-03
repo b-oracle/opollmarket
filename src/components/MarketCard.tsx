@@ -403,6 +403,14 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         price={betModal.side === "yes" ? yesPercent : noPercent}
         marketTitle={market.title}
       />
+
+      {/* Comments Drawer */}
+      <CommentsDrawer
+        open={commentsOpen}
+        onClose={() => setCommentsOpen(false)}
+        marketId={market.id}
+        marketTitle={market.title}
+      />
     </>
   );
 };
