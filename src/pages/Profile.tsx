@@ -35,7 +35,7 @@ const formatTimeAgo = (date: string) => {
 type FilterType = "all" | "trades" | "deposits";
 
 const Profile = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const { balance } = useUserBalance();
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
@@ -112,7 +112,15 @@ const Profile = () => {
           <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center mb-3">
             <span className="text-2xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
           </div>
-          <h2 className="text-lg font-bold">{displayName}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold">{displayName}</h2>
+            {isAdmin && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/15 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20">
+                <Shield className="w-3 h-3" />
+                Admin
+              </span>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground">{user?.email}</p>
         </div>
 
