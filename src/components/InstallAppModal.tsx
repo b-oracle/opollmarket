@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import BottomSheet from "@/components/BottomSheet";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import {

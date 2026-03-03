@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import BottomSheet from "@/components/BottomSheet";
+import SlideToConfirm from "@/components/SlideToConfirm";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";

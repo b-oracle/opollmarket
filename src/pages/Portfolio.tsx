@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { useAuth } from "@/hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
+import BottomSheet from "@/components/BottomSheet";
 import {
   TrendingUp,
   TrendingDown,
