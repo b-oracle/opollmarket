@@ -314,7 +314,7 @@ const MarketDetail = () => {
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
             <h1 className="text-lg font-bold text-white leading-snug drop-shadow-lg">{market.title}</h1>
             <p className="text-xs text-white/70 mt-1.5 drop-shadow-md line-clamp-2">{market.description}</p>
-            <div className="flex gap-2 mt-3">
+            <div className="flex flex-wrap justify-center gap-2 mt-3">
               {isMulti && market.options ? (
                 market.options.slice(0, 4).map((opt, i) => (
                   <span key={opt.id} className="px-2.5 py-1 rounded-full text-[11px] font-bold text-white" style={{ backgroundColor: optionColors[i % optionColors.length] + '99' }}>
@@ -328,6 +328,7 @@ const MarketDetail = () => {
                 </>
               )}
             </div>
+            <span className="text-[10px] text-white/50 font-mono mt-2">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
           </div>
         </div>
       )}
