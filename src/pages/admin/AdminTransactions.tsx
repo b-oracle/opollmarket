@@ -161,7 +161,7 @@ const AdminTransactions = () => {
         {(["all", "deposit", "withdrawal", "bet", "payout"] as const).map((f) => (
           <button
             key={f}
-            onClick={() => setFilter(f)}
+            onClick={() => { setPage(0); setFilter(f); }}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors capitalize ${
               filter === f ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             }`}
