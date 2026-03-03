@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Eye, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -32,6 +33,7 @@ interface ResolveState {
 }
 
 const AdminMarkets = () => {
+  const navigate = useNavigate();
   const [markets, setMarkets] = useState<MarketRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "active" | "resolved" | "cancelled">("all");
@@ -132,7 +134,15 @@ const AdminMarkets = () => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Markets ({markets.length})</h2>
-        <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate("/admin/create-market")}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all active:scale-95"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Create Market
+          </button>
+          <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
           {(["all", "active", "resolved", "cancelled"] as const).map((f) => (
             <button
               key={f}
@@ -144,6 +154,7 @@ const AdminMarkets = () => {
               {f}
             </button>
           ))}
+          </div>
         </div>
       </div>
 
