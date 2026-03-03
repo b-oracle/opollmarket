@@ -20,6 +20,7 @@ import AdminMarkets from "./pages/admin/AdminMarkets";
 import AdminComments from "./pages/admin/AdminComments";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminCreateMarket from "./pages/admin/AdminCreateMarket";
+import AdminTransactions from "./pages/admin/AdminTransactions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ const App = () => (
                 <Route path="markets" element={<AdminMarkets />} />
                 <Route path="create-market" element={<AdminCreateMarket />} />
                 <Route path="comments" element={<AdminComments />} />
+                <Route path="transactions" element={<AdminTransactions />} />
                 <Route path="users" element={<AdminUsers />} />
               </Route>
               <Route path="*" element={<NotFound />} />
