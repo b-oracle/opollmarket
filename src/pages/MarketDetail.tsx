@@ -2,6 +2,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2 } from "lucide-react";
 import { useMarket } from "@/hooks/useMarkets";
+import { useActiveBoosts } from "@/hooks/useActiveBoosts";
+import BoostCountdown from "@/components/BoostCountdown";
 import { categoryIcons } from "@/data/markets";
 import BottomNav from "@/components/BottomNav";
 import BetModal from "@/components/BetModal";
@@ -215,6 +217,8 @@ const MarketDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: market, isLoading } = useMarket(id);
+  const { boostDetails } = useActiveBoosts();
+  const activeBoost = id ? boostDetails.get(id) : undefined;
 
   const isMulti = market?.marketType === "multi" || market?.marketType === "range";
   const yesPercent = market ? Math.round(market.yesPrice * 100) : 0;
@@ -401,6 +405,12 @@ const MarketDetail = () => {
       <div className={`${market.imageUrl ? 'pt-4' : 'pt-4'}`}>
         {!market.imageUrl && <h1 className="text-2xl font-bold leading-tight mb-2">{market.title}</h1>}
         {!market.imageUrl && <p className="text-sm text-muted-foreground mb-6">{market.description}</p>}
+
+        {activeBoost && (
+          <div className="mb-4">
+            <BoostCountdown endsAt={activeBoost.ends_at} tier={activeBoost.tier} />
+          </div>
+        )}
 
         {/* Chart */}
         <div className="glass rounded-2xl p-4 mb-4">
