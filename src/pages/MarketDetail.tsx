@@ -219,6 +219,7 @@ const MarketDetail = () => {
 
   const [timePeriod, setTimePeriod] = useState<"1D" | "1W" | "1M" | "All">("1M");
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [liked, setLiked] = useState(false);
 
   const pointsMap = { "1D": 24, "1W": 7, "1M": 30, "All": 90 };
 
