@@ -188,6 +188,9 @@ const MarketDetail = () => {
           </div>
         </div>
 
+        {/* Order Book */}
+        <OrderBook yesPrice={yesPercent} noPrice={noPercent} liquidity={market.liquidity} />
+
         {/* Creator */}
         <div className="glass rounded-xl p-4 mb-4 flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
