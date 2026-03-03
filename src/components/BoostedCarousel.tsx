@@ -127,6 +127,10 @@ const BoostedCarousel = ({
                     {displayPercent}%
                   </span>
                 </div>
+                {/* Pulsing bolt overlay */}
+                <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-tl-lg rounded-br-2xl bg-primary/90 flex items-center justify-center animate-pulse shadow-[0_0_10px_hsl(var(--primary)/0.6)]">
+                  <Zap className="w-3.5 h-3.5 text-primary-foreground" fill="currentColor" />
+                </div>
               </div>
 
               {/* Content */}
