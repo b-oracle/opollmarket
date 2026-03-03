@@ -144,7 +144,6 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             <BoostCountdown endsAt={boostEndsAt} tier={boostTier} />
           </div>
         )}
-        </div>
 
         <h2
           className="text-xl font-bold leading-tight mb-3 cursor-pointer hover:text-primary transition-colors"
