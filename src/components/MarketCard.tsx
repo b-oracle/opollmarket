@@ -1,8 +1,11 @@
-import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap } from "lucide-react";
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Market, categoryIcons } from "@/data/markets";
 import { useNavigate } from "react-router-dom";
 import BoostCountdown from "@/components/BoostCountdown";
+import BetModal from "@/components/BetModal";
+import { toast } from "sonner";
 
 interface MarketCardProps {
   market: Market;
@@ -23,6 +26,7 @@ const getTimeRemaining = (endDate: string) => {
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   if (days > 365) return `${Math.floor(days / 365)}y left`;
   if (days > 30) return `${Math.floor(days / 30)}mo left`;
+  if (days <= 0) return "Ended";
   return `${days}d left`;
 };
 
@@ -42,192 +46,267 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const isMulti = market.marketType === "multi" || market.marketType === "range";
   const showBoosted = isBoosted || market.trending;
 
+  // Interactive state
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(Math.floor(Math.random() * 5000) + 500);
+  const [bookmarked, setBookmarked] = useState(false);
+  const [betModal, setBetModal] = useState<{ open: boolean; side: "yes" | "no" }>({ open: false, side: "yes" });
+
+  const handleLike = () => {
+    setLiked((prev) => !prev);
+    setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
+  };
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/market/${market.id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: market.title, url });
+      } catch {
+        // user cancelled
+      }
+    } else {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied to clipboard!");
+    }
+  };
+
+  const handleBookmark = () => {
+    setBookmarked((prev) => !prev);
+    toast.success(bookmarked ? "Removed from watchlist" : "Added to watchlist");
+  };
+
+  const formatCount = (n: number) => {
+    if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+    return n.toString();
+  };
+
   return (
-    <div className={`snap-item relative h-[calc(100dvh-5rem)] w-full flex items-end pb-6 px-4 overflow-hidden ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}>
-      <div className={`absolute inset-0 ${isBoosted ? 'bg-gradient-to-br from-primary/15 via-primary/5 to-background' : 'bg-gradient-to-br from-secondary/50 via-background to-background'}`} />
-      
-      {/* Boosted glow effects */}
-      {isBoosted && (
-        <>
-          <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-primary/10 blur-3xl animate-pulse pointer-events-none" />
-          <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-primary/8 blur-2xl animate-pulse pointer-events-none" style={{ animationDelay: '1s' }} />
-          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-        </>
-      )}
-
-      {/* Probability ring or multi-option indicator */}
-      <div className="absolute top-8 right-4 z-10">
-        {isMulti ? (
-          <div className="glass rounded-xl px-3 py-2 flex flex-col items-center gap-1">
-            <BarChart3 className="w-5 h-5 text-primary" />
-            <span className="text-[10px] font-bold text-primary uppercase">
-              {market.options?.length} options
-            </span>
+    <>
+      <div className={`snap-item relative h-[calc(100dvh-5rem)] w-full flex items-end pb-6 px-4 overflow-hidden ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}>
+        {/* Background image */}
+        {market.imageUrl && (
+          <div className="absolute inset-0">
+            <img
+              src={market.imageUrl}
+              alt=""
+              className="w-full h-full object-cover opacity-20"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/40" />
           </div>
-        ) : (
-          <div className="relative w-20 h-20">
-            <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
-              <circle cx="40" cy="40" r="34" fill="none" stroke="hsl(var(--muted))" strokeWidth="4" />
-              <circle
-                cx="40" cy="40" r="34"
-                fill="none"
-                stroke="hsl(var(--neon-yes))"
-                strokeWidth="4"
-                strokeDasharray={`${yesPercent * 2.136} ${213.6 - yesPercent * 2.136}`}
-                strokeLinecap="round"
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-lg font-bold neon-yes">{yesPercent}%</span>
-              <span className="text-[10px] text-muted-foreground">YES</span>
+        )}
+
+        <div className={`absolute inset-0 ${isBoosted ? 'bg-gradient-to-br from-primary/15 via-primary/5 to-transparent' : ''}`} />
+
+        {/* Boosted glow effects */}
+        {isBoosted && (
+          <>
+            <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-primary/10 blur-3xl animate-pulse pointer-events-none" />
+            <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-primary/8 blur-2xl animate-pulse pointer-events-none" style={{ animationDelay: '1s' }} />
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+          </>
+        )}
+
+        {/* Probability ring or multi-option indicator */}
+        <div className="absolute top-8 right-4 z-10">
+          {isMulti ? (
+            <div className="glass rounded-xl px-3 py-2 flex flex-col items-center gap-1">
+              <BarChart3 className="w-5 h-5 text-primary" />
+              <span className="text-[10px] font-bold text-primary uppercase">
+                {market.options?.length} options
+              </span>
             </div>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="relative w-20 h-20">
+              <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
+                <circle cx="40" cy="40" r="34" fill="none" stroke="hsl(var(--muted))" strokeWidth="4" />
+                <circle
+                  cx="40" cy="40" r="34"
+                  fill="none"
+                  stroke="hsl(var(--neon-yes))"
+                  strokeWidth="4"
+                  strokeDasharray={`${yesPercent * 2.136} ${213.6 - yesPercent * 2.136}`}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-lg font-bold neon-yes">{yesPercent}%</span>
+                <span className="text-[10px] text-muted-foreground">YES</span>
+              </div>
+            </div>
+          )}
+        </div>
 
-      {/* Category badge */}
-      <div className="absolute top-8 left-4 z-10 flex items-center gap-2">
-        <span className="glass px-3 py-1.5 rounded-full text-xs font-medium text-foreground/80">
-          {categoryIcons[market.category]} {market.category}
-        </span>
-        {isMulti && (
-          <span className="glass px-2 py-1.5 rounded-full text-[10px] font-bold text-primary">
-            {market.marketType === "range" ? "📊 Range" : "🎯 Multi"}
+        {/* Category badge */}
+        <div className="absolute top-8 left-4 z-10 flex items-center gap-2">
+          <span className="glass px-3 py-1.5 rounded-full text-xs font-medium text-foreground/80">
+            {categoryIcons[market.category]} {market.category}
           </span>
-        )}
-      </div>
-
-      {/* Side actions */}
-      <div className="absolute right-4 bottom-40 z-10 flex flex-col items-center gap-6">
-        <button className="flex flex-col items-center gap-1 group">
-          <div className="w-10 h-10 rounded-full glass flex items-center justify-center group-hover:bg-destructive/20 transition-colors">
-            <Heart className="w-5 h-5 text-foreground/70 group-hover:text-destructive transition-colors" />
-          </div>
-          <span className="text-[10px] text-muted-foreground">2.4K</span>
-        </button>
-        <button className="flex flex-col items-center gap-1 group">
-          <div className="w-10 h-10 rounded-full glass flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-            <MessageCircle className="w-5 h-5 text-foreground/70 group-hover:text-primary transition-colors" />
-          </div>
-          <span className="text-[10px] text-muted-foreground">482</span>
-        </button>
-        <button className="flex flex-col items-center gap-1 group">
-          <div className="w-10 h-10 rounded-full glass flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-            <Share2 className="w-5 h-5 text-foreground/70 group-hover:text-primary transition-colors" />
-          </div>
-          <span className="text-[10px] text-muted-foreground">Share</span>
-        </button>
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10 w-full max-w-[calc(100%-4rem)]">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
-            <span className="text-xs font-bold text-primary">{market.creatorName.charAt(0)}</span>
-          </div>
-          <span className="text-sm font-medium text-foreground/80">@{market.creatorName}</span>
-          {showBoosted && (
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 ${
-              isBoosted 
-                ? 'bg-primary/20 text-primary animate-pulse' 
-                : 'bg-primary/10 text-primary'
-            }`}>
-              <Zap className="w-3 h-3" /> {isBoosted ? 'Boosted 🔥' : 'Trending'}
+          {isMulti && (
+            <span className="glass px-2 py-1.5 rounded-full text-[10px] font-bold text-primary">
+              {market.marketType === "range" ? "📊 Range" : "🎯 Multi"}
             </span>
           )}
         </div>
 
-        {/* Boost countdown */}
-        {isBoosted && boostEndsAt && (
-          <div className="mb-2">
-            <BoostCountdown endsAt={boostEndsAt} tier={boostTier} />
-          </div>
-        )}
-
-        <h2
-          className="text-xl font-bold leading-tight mb-3 cursor-pointer hover:text-primary transition-colors"
-          onClick={() => navigate(`/market/${market.id}`)}
-        >
-          {market.title}
-        </h2>
-
-        <div className="flex items-center gap-4 mb-4 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <TrendingUp className="w-3.5 h-3.5" /> {formatVolume(market.volume)} vol
-          </span>
-          <span className="flex items-center gap-1">
-            <Users className="w-3.5 h-3.5" /> {market.participants.toLocaleString()}
-          </span>
-          <span className="flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5" /> {getTimeRemaining(market.endDate)}
-          </span>
+        {/* Side actions */}
+        <div className="absolute right-4 bottom-40 z-10 flex flex-col items-center gap-5">
+          <button onClick={handleLike} className="flex flex-col items-center gap-1 group">
+            <div className={`w-10 h-10 rounded-full glass flex items-center justify-center transition-colors ${liked ? 'bg-destructive/20' : 'group-hover:bg-destructive/20'}`}>
+              <Heart className={`w-5 h-5 transition-colors ${liked ? 'text-destructive fill-destructive' : 'text-foreground/70 group-hover:text-destructive'}`} />
+            </div>
+            <span className="text-[10px] text-muted-foreground">{formatCount(likeCount)}</span>
+          </button>
+          <button
+            onClick={() => navigate(`/market/${market.id}`)}
+            className="flex flex-col items-center gap-1 group"
+          >
+            <div className="w-10 h-10 rounded-full glass flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+              <MessageCircle className="w-5 h-5 text-foreground/70 group-hover:text-primary transition-colors" />
+            </div>
+            <span className="text-[10px] text-muted-foreground">Details</span>
+          </button>
+          <button onClick={handleBookmark} className="flex flex-col items-center gap-1 group">
+            <div className={`w-10 h-10 rounded-full glass flex items-center justify-center transition-colors ${bookmarked ? 'bg-primary/20' : 'group-hover:bg-primary/20'}`}>
+              <Bookmark className={`w-5 h-5 transition-colors ${bookmarked ? 'text-primary fill-primary' : 'text-foreground/70 group-hover:text-primary'}`} />
+            </div>
+            <span className="text-[10px] text-muted-foreground">{bookmarked ? "Saved" : "Save"}</span>
+          </button>
+          <button onClick={handleShare} className="flex flex-col items-center gap-1 group">
+            <div className="w-10 h-10 rounded-full glass flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+              <Share2 className="w-5 h-5 text-foreground/70 group-hover:text-primary transition-colors" />
+            </div>
+            <span className="text-[10px] text-muted-foreground">Share</span>
+          </button>
         </div>
 
-        {/* Prediction buttons */}
-        {isActive && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.4 }}
-          >
-            {isMulti && market.options ? (
-              <div className="space-y-2">
-                {market.options.slice(0, 4).map((opt, i) => {
-                  const pct = Math.round(opt.price * 100);
-                  return (
-                    <button
-                      key={opt.id}
-                      onClick={() => navigate(`/market/${market.id}`)}
-                      className="w-full glass rounded-xl px-4 py-2.5 flex items-center justify-between transition-all active:scale-[0.98] hover:bg-accent/50"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-2.5 h-2.5 rounded-full shrink-0"
-                          style={{ backgroundColor: optionColors[i % optionColors.length] }}
-                        />
-                        <span className="text-sm font-medium">{opt.label}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all"
-                            style={{
-                              width: `${pct}%`,
-                              backgroundColor: optionColors[i % optionColors.length],
-                            }}
-                          />
-                        </div>
-                        <span className="text-sm font-bold" style={{ color: optionColors[i % optionColors.length] }}>
-                          {pct}¢
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-                {market.options.length > 4 && (
-                  <button
-                    onClick={() => navigate(`/market/${market.id}`)}
-                    className="w-full text-center text-xs text-primary font-semibold py-1"
-                  >
-                    +{market.options.length - 4} more options →
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="flex gap-3">
-                <button className="flex-1 btn-yes py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all active:scale-95">
-                  YES {yesPercent}¢
-                </button>
-                <button className="flex-1 btn-no py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all active:scale-95">
-                  NO {noPercent}¢
-                </button>
-              </div>
+        {/* Content */}
+        <div className="relative z-10 w-full max-w-[calc(100%-4rem)]">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
+              <span className="text-xs font-bold text-primary">{market.creatorName.charAt(0)}</span>
+            </div>
+            <span className="text-sm font-medium text-foreground/80">@{market.creatorName}</span>
+            {showBoosted && (
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 ${
+                isBoosted 
+                  ? 'bg-primary/20 text-primary animate-pulse' 
+                  : 'bg-primary/10 text-primary'
+              }`}>
+                <Zap className="w-3 h-3" /> {isBoosted ? 'Boosted 🔥' : 'Trending'}
+              </span>
             )}
-          </motion.div>
-        )}
+          </div>
+
+          {/* Boost countdown */}
+          {isBoosted && boostEndsAt && (
+            <div className="mb-2">
+              <BoostCountdown endsAt={boostEndsAt} tier={boostTier} />
+            </div>
+          )}
+
+          <h2
+            className="text-xl font-bold leading-tight mb-3 cursor-pointer hover:text-primary transition-colors"
+            onClick={() => navigate(`/market/${market.id}`)}
+          >
+            {market.title}
+          </h2>
+
+          <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{market.description}</p>
+
+          <div className="flex items-center gap-4 mb-4 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <TrendingUp className="w-3.5 h-3.5" /> {formatVolume(market.volume)} vol
+            </span>
+            <span className="flex items-center gap-1">
+              <Users className="w-3.5 h-3.5" /> {market.participants.toLocaleString()}
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5" /> {getTimeRemaining(market.endDate)}
+            </span>
+          </div>
+
+          {/* Prediction buttons */}
+          {isActive && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+            >
+              {isMulti && market.options ? (
+                <div className="space-y-2">
+                  {market.options.slice(0, 4).map((opt, i) => {
+                    const pct = Math.round(opt.price * 100);
+                    return (
+                      <button
+                        key={opt.id}
+                        onClick={() => navigate(`/market/${market.id}`)}
+                        className="w-full glass rounded-xl px-4 py-2.5 flex items-center justify-between transition-all active:scale-[0.98] hover:bg-accent/50"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: optionColors[i % optionColors.length] }}
+                          />
+                          <span className="text-sm font-medium">{opt.label}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all"
+                              style={{
+                                width: `${pct}%`,
+                                backgroundColor: optionColors[i % optionColors.length],
+                              }}
+                            />
+                          </div>
+                          <span className="text-sm font-bold" style={{ color: optionColors[i % optionColors.length] }}>
+                            {pct}¢
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                  {market.options.length > 4 && (
+                    <button
+                      onClick={() => navigate(`/market/${market.id}`)}
+                      className="w-full text-center text-xs text-primary font-semibold py-1"
+                    >
+                      +{market.options.length - 4} more options →
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setBetModal({ open: true, side: "yes" })}
+                    className="flex-1 btn-yes py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all active:scale-95"
+                  >
+                    YES {yesPercent}¢
+                  </button>
+                  <button
+                    onClick={() => setBetModal({ open: true, side: "no" })}
+                    className="flex-1 btn-no py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all active:scale-95"
+                  >
+                    NO {noPercent}¢
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Bet Modal */}
+      <BetModal
+        open={betModal.open}
+        onClose={() => setBetModal({ open: false, side: "yes" })}
+        side={betModal.side}
+        price={betModal.side === "yes" ? yesPercent : noPercent}
+        marketTitle={market.title}
+      />
+    </>
   );
 };
 
