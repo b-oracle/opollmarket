@@ -223,6 +223,8 @@ const Rankings = () => {
   const [tab, setTab] = useState<Tab>("traders");
   const [referralSort, setReferralSort] = useState<ReferralSort>("totalEarned");
   const [traderSort, setTraderSort] = useState<TraderSort>("pnl");
+  const { user } = useAuth();
+  const currentUserId = user?.id;
 
   const { referrers, loading: refLoading } = useReferralLeaderboard();
   const { traders, loading: tradeLoading } = useTradingLeaderboard();
