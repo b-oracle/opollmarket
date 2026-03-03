@@ -123,19 +123,28 @@ const BoostedCarousel = ({
                   </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-card/90 to-transparent" />
-                <div className="absolute top-2 left-2 flex items-center gap-1 glass rounded-full px-2 py-0.5">
-                  <Zap className="w-3 h-3 text-primary" />
-                  <span className="text-[10px] font-bold text-primary">Boosted</span>
-                </div>
+                {boost && (
+                  <div className="absolute top-2 left-2 flex items-center gap-1 glass rounded-full px-2 py-0.5">
+                    <Zap className="w-3 h-3 text-primary" />
+                    <span className="text-[10px] font-bold text-primary">Boosted</span>
+                  </div>
+                )}
+                {!boost && (
+                  <div className="absolute top-2 left-2 flex items-center gap-1 glass rounded-full px-2 py-0.5">
+                    <Zap className="w-3 h-3 text-primary" />
+                    <span className="text-[10px] font-bold text-primary">Trending</span>
+                  </div>
+                )}
                 <div className="absolute top-2 right-2 glass rounded-full px-2 py-0.5">
                   <span className="text-[10px] font-bold neon-yes">
                     {displayPercent}%
                   </span>
                 </div>
-                {/* Pulsing bolt overlay */}
-                <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-tl-lg rounded-br-2xl bg-primary/90 flex items-center justify-center animate-pulse shadow-[0_0_10px_hsl(var(--primary)/0.6)]">
-                  <Zap className="w-3.5 h-3.5 text-primary-foreground" fill="currentColor" />
-                </div>
+                {boost && (
+                  <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-tl-lg rounded-br-2xl bg-primary/90 flex items-center justify-center animate-pulse shadow-[0_0_10px_hsl(var(--primary)/0.6)]">
+                    <Zap className="w-3.5 h-3.5 text-primary-foreground" fill="currentColor" />
+                  </div>
+                )}
               </div>
 
               {/* Content */}
@@ -162,7 +171,7 @@ const BoostedCarousel = ({
                   className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-semibold transition-all active:scale-95 hover:bg-primary/20"
                 >
                   <Zap className="w-3.5 h-3.5" />
-                  Boost Again
+                  {boost ? "Boost Again" : "Boost"}
                 </button>
               </div>
             </motion.div>
