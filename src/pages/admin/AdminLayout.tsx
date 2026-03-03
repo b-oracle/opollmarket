@@ -1,12 +1,13 @@
 import { useEffect } from "react";
 import { useNavigate, Outlet, NavLink } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { LayoutDashboard, ShoppingBag, MessageSquare, Users, LogOut, Loader2, ArrowLeft, PlusCircle } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, MessageSquare, Users, LogOut, Loader2, ArrowLeft, PlusCircle, Receipt } from "lucide-react";
 
 const navItems = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/admin/markets", label: "Markets", icon: ShoppingBag },
   { to: "/admin/create-market", label: "Create Market", icon: PlusCircle },
+  { to: "/admin/transactions", label: "Transactions", icon: Receipt },
   { to: "/admin/comments", label: "Comments", icon: MessageSquare },
   { to: "/admin/users", label: "Users", icon: Users },
 ];
