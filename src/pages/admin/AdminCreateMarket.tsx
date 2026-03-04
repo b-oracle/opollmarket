@@ -306,16 +306,16 @@ const AdminCreateMarket = () => {
           <div className="grid grid-cols-4 gap-2">
             {CATEGORIES.map((cat) => (
               <button
-                key={cat.label}
-                onClick={() => setCategory(cat.label)}
+                key={cat}
+                onClick={() => setCategory(cat)}
                 className={`p-2 rounded-xl border text-center text-xs font-medium transition-all ${
-                  category === cat.label
+                  category === cat
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border hover:border-primary/30 text-muted-foreground"
                 }`}
               >
-                <span className="text-base block mb-0.5">{cat.icon}</span>
-                {cat.label}
+                <span className="block mb-0.5"><CategoryIcon category={cat} className="w-4 h-4 mx-auto" /></span>
+                {cat}
               </button>
             ))}
           </div>

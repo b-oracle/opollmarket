@@ -136,7 +136,7 @@ const Index = () => {
           boostDetails={boostDetails}
           navigate={navigate}
           formatVolume={formatVolume}
-          getMarketImage={getMarketImage}
+          CategoryIcon={CategoryIcon}
           onBoost={(market) => setBoostModalMarket({ id: market.id, title: market.title })}
         />
 
@@ -243,7 +243,7 @@ const Index = () => {
                     <img src={market.imageUrl} alt={market.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <span className="text-2xl md:text-3xl transition-transform duration-300 group-hover:scale-110">{getMarketImage(market.id, market.category)}</span>
+                      <CategoryIcon category={market.category} className="w-6 h-6 md:w-7 md:h-7 text-muted-foreground transition-transform duration-300 group-hover:scale-110" />
                     </div>
                   )}
                   {isBoosted && (

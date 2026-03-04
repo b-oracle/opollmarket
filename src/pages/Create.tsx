@@ -709,16 +709,16 @@ const Create = () => {
                 <div className="grid grid-cols-2 gap-2">
                   {CATEGORIES.map((cat) => (
                     <button
-                      key={cat.label}
-                      onClick={() => { setCategory(cat.label); markTouched("category"); }}
+                      key={cat}
+                      onClick={() => { setCategory(cat); markTouched("category"); }}
                       className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95 ${
-                        category === cat.label
+                        category === cat
                           ? "bg-primary/15 border border-primary/40 text-primary"
                           : "bg-muted/50 border border-border text-foreground hover:bg-muted"
                       }`}
                     >
-                      <span>{cat.icon}</span>
-                      {cat.label}
+                      <CategoryIcon category={cat} className="w-4 h-4" />
+                      {cat}
                     </button>
                   ))}
                 </div>
@@ -840,8 +840,8 @@ const Create = () => {
                     </div>
                     <div>
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Category</p>
-                      <p className="font-medium">
-                        {CATEGORIES.find((c) => c.label === category)?.icon} {category || "—"}
+                      <p className="font-medium inline-flex items-center gap-1.5">
+                        {category && <CategoryIcon category={category} className="w-3.5 h-3.5" />} {category || "—"}
                       </p>
                     </div>
                     <div>
