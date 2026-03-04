@@ -1,43 +1,70 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 const countCache = new Map<string, number>();
+const pendingFetches = new Map<string, Promise<number | null>>();
+
+const fetchLikeCount = (marketId: string): Promise<number | null> => {
+  const existing = pendingFetches.get(marketId);
+  if (existing) return existing;
+
+  const promise = supabase
+    .from("market_likes")
+    .select("*", { count: "exact", head: true })
+    .eq("market_id", marketId)
+    .then(({ count: c }) => {
+      pendingFetches.delete(marketId);
+      if (c !== null) {
+        countCache.set(marketId, c);
+        return c;
+      }
+      return null;
+    });
+
+  pendingFetches.set(marketId, promise);
+  return promise;
+};
 
 export const useMarketLike = (marketId: string) => {
   const { user } = useAuth();
   const [liked, setLiked] = useState(false);
   const [count, setCount] = useState(countCache.get(marketId) ?? 0);
+  const isMounted = useRef(true);
 
   useEffect(() => {
-    const fetchData = async () => {
-      // Get count
-      const { count: c } = await supabase
-        .from("market_likes")
-        .select("*", { count: "exact", head: true })
-        .eq("market_id", marketId);
+    isMounted.current = true;
 
-      if (c !== null) {
-        countCache.set(marketId, c);
+    if (countCache.has(marketId)) {
+      setCount(countCache.get(marketId)!);
+    }
+
+    const timer = setTimeout(async () => {
+      const c = await fetchLikeCount(marketId);
+      if (c !== null && isMounted.current) {
         setCount(c);
       }
 
       // Check if user liked
-      if (user?.id) {
+      if (user?.id && isMounted.current) {
         const { data } = await supabase
           .from("market_likes")
           .select("id")
           .eq("market_id", marketId)
           .eq("user_id", user.id)
           .maybeSingle();
-        setLiked(!!data);
+        if (isMounted.current) setLiked(!!data);
       }
+    }, Math.random() * 200);
+
+    return () => {
+      isMounted.current = false;
+      clearTimeout(timer);
     };
-    fetchData();
   }, [marketId, user?.id]);
 
   const toggleLike = useCallback(async () => {
-    if (!user?.id) return false; // not signed in
+    if (!user?.id) return false;
     const prev = liked;
     const prevCount = count;
     setLiked(!prev);

@@ -1,31 +1,54 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const cache = new Map<string, number>();
+const pendingFetches = new Map<string, Promise<number | null>>();
+
+const fetchCount = (marketId: string): Promise<number | null> => {
+  const existing = pendingFetches.get(marketId);
+  if (existing) return existing;
+
+  const promise = supabase
+    .from("comments")
+    .select("*", { count: "exact", head: true })
+    .eq("market_id", marketId)
+    .then(({ count: c, error }) => {
+      pendingFetches.delete(marketId);
+      if (!error && c !== null) {
+        cache.set(marketId, c);
+        return c;
+      }
+      return null;
+    });
+
+  pendingFetches.set(marketId, promise);
+  return promise;
+};
 
 export const useCommentCount = (marketId: string) => {
   const [count, setCount] = useState(cache.get(marketId) ?? 0);
+  const isMounted = useRef(true);
 
   useEffect(() => {
-    const fetch = async () => {
-      const { count: c, error } = await supabase
-        .from("comments")
-        .select("*", { count: "exact", head: true })
-        .eq("market_id", marketId);
+    isMounted.current = true;
 
-      if (!error && c !== null) {
-        cache.set(marketId, c);
+    // Use cached value if available, skip network request
+    if (cache.has(marketId)) {
+      setCount(cache.get(marketId)!);
+    }
+
+    // Debounce the fetch slightly to avoid flooding
+    const timer = setTimeout(async () => {
+      const c = await fetchCount(marketId);
+      if (c !== null && isMounted.current) {
         setCount(c);
       }
+    }, Math.random() * 200); // Stagger requests
+
+    return () => {
+      isMounted.current = false;
+      clearTimeout(timer);
     };
-    fetch();
-
-    const channel = supabase
-      .channel(`comment-count-${marketId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "comments", filter: `market_id=eq.${marketId}` }, () => fetch())
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
   }, [marketId]);
 
   return count;
