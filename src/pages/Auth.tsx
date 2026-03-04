@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Eye, EyeOff, LogIn, UserPlus, Gift } from "lucide-react";
+import { Eye, EyeOff, LogIn, UserPlus, Gift, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 
@@ -12,6 +12,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [referralCode, setReferralCode] = useState("");
+  const [referralFromLink, setReferralFromLink] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
@@ -25,6 +26,8 @@ const Auth = () => {
     if (ref) {
       localStorage.setItem("referral_id", ref);
       setReferralCode(ref);
+      setReferralFromLink(true);
+      setMode("signup");
     } else {
       const stored = localStorage.getItem("referral_id");
       if (stored) setReferralCode(stored);
