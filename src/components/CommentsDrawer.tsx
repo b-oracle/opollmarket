@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import BottomSheet from "@/components/BottomSheet";
 import { X, Send, ChevronDown, Heart, CornerDownRight, Loader2 } from "lucide-react";
+import NftBadge, { isNftAvatar } from "@/components/NftBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccount } from "wagmi";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,6 +20,7 @@ interface Comment {
   created_at: string;
   liked?: boolean;
   replies?: Comment[];
+  avatar_url?: string | null;
 }
 
 interface CommentsDrawerProps {
@@ -56,10 +58,17 @@ const CommentItem = ({
   return (
     <div className={`${isReply ? "ml-8 border-l border-border/30 pl-3" : ""}`}>
       <div className="flex gap-2.5 py-2.5">
-        <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0">
-          <span className="text-xs font-bold text-primary">
-            {comment.author_name.charAt(0).toUpperCase()}
-          </span>
+        <div className="relative shrink-0">
+          <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center overflow-hidden">
+            {comment.avatar_url ? (
+              <img src={comment.avatar_url} alt={comment.author_name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-xs font-bold text-primary">
+                {comment.author_name.charAt(0).toUpperCase()}
+              </span>
+            )}
+          </div>
+          {isNftAvatar(comment.avatar_url) && <NftBadge className="absolute -bottom-0.5 -right-0.5" />}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
@@ -151,6 +160,19 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
 
       const likedIds = new Set(userLikes?.map((l) => l.comment_id) || []);
 
+      // Fetch avatar URLs for comment authors
+      const authorIds = [...new Set((allComments || []).map(c => c.author_wallet).filter(Boolean))] as string[];
+      const avatarMap = new Map<string, string | null>();
+      if (authorIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, avatar_url")
+          .in("id", authorIds);
+        for (const p of profiles || []) {
+          avatarMap.set(p.id, p.avatar_url);
+        }
+      }
+
       // Build threaded structure
       const commentMap = new Map<string, Comment>();
       const topLevel: Comment[] = [];
@@ -160,6 +182,7 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
           ...c,
           liked: likedIds.has(c.id),
           replies: [],
+          avatar_url: c.author_wallet ? avatarMap.get(c.author_wallet) || null : null,
         };
         commentMap.set(c.id, comment);
       }

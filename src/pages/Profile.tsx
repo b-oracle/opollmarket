@@ -14,8 +14,9 @@ import { bsc } from "wagmi/chains";
 import {
   Wallet, Gift, ArrowDownToLine, ArrowUpFromLine, ArrowUpRight, ArrowDownLeft,
   Repeat, LogIn, Send, MessageCircle, ExternalLink, ChevronRight,
-  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image, Hexagon,
+  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image,
 } from "lucide-react";
+import NftBadge, { isNftAvatar } from "@/components/NftBadge";
 import { AnimatePresence, motion } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -237,11 +238,7 @@ const Profile = () => {
                 <span className="text-2xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
               )}
             </div>
-            {profile?.avatar_url && !profile.avatar_url.includes('/storage/v1/') && (
-              <div className="absolute -bottom-0.5 -right-0.5 bg-primary text-primary-foreground rounded-full p-1 border-2 border-background" title="NFT Avatar">
-                <Hexagon className="w-3 h-3" />
-              </div>
-            )}
+            {isNftAvatar(profile?.avatar_url) && <NftBadge className="absolute -bottom-0.5 -right-0.5" />}
           </div>
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-bold">{displayName}</h2>
