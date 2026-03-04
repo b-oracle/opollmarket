@@ -160,6 +160,19 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
 
       const likedIds = new Set(userLikes?.map((l) => l.comment_id) || []);
 
+      // Fetch avatar URLs for comment authors
+      const authorIds = [...new Set((allComments || []).map(c => c.author_wallet).filter(Boolean))] as string[];
+      const avatarMap = new Map<string, string | null>();
+      if (authorIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, avatar_url")
+          .in("id", authorIds);
+        for (const p of profiles || []) {
+          avatarMap.set(p.id, p.avatar_url);
+        }
+      }
+
       // Build threaded structure
       const commentMap = new Map<string, Comment>();
       const topLevel: Comment[] = [];
@@ -169,6 +182,7 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
           ...c,
           liked: likedIds.has(c.id),
           replies: [],
+          avatar_url: c.author_wallet ? avatarMap.get(c.author_wallet) || null : null,
         };
         commentMap.set(c.id, comment);
       }
