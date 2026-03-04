@@ -195,8 +195,8 @@ const Create = () => {
     setGateRunning(true);
     setGateChecks([
       { label: "Wallet Connected", icon: <Wallet className="w-4 h-4" />, status: "checking" },
-      { label: "OPOLL Token Balance", icon: <Coins className="w-4 h-4" />, status: "idle" },
-      { label: "Creator NFT", icon: <ImageIcon className="w-4 h-4" />, status: "idle" },
+      { label: "BC400 Token Balance", icon: <Coins className="w-4 h-4" />, status: "idle" },
+      { label: "BC400 NFT", icon: <ImageIcon className="w-4 h-4" />, status: "idle" },
     ]);
 
     // Step 1: Wallet
@@ -217,7 +217,7 @@ const Create = () => {
       setGateChecks((prev) =>
         prev.map((c, i) =>
           i === 1
-            ? { ...c, status: "passed", detail: "1,250 OPOLL" }
+            ? { ...c, status: "passed", detail: "1,250 BC400" }
             : i === 2
             ? { ...c, status: "checking" }
             : c
@@ -229,7 +229,7 @@ const Create = () => {
     setTimeout(() => {
       setGateChecks((prev) =>
         prev.map((c, i) =>
-          i === 2 ? { ...c, status: "passed", detail: "Creator Pass #847" } : c
+          i === 2 ? { ...c, status: "passed", detail: "BC400 NFT #847" } : c
         )
       );
       setGatePassed(true);
@@ -357,15 +357,15 @@ const Create = () => {
               <ul className="space-y-1.5 text-xs text-muted-foreground">
                 <li className="flex items-center gap-2">
                   <Coins className="w-3 h-3 text-primary" />
-                  Hold ≥ 100 OPOLL tokens
+                  Hold ≥ 100 BC400 tokens
                 </li>
                 <li className="flex items-center gap-2">
                   <ImageIcon className="w-3 h-3 text-primary" />
-                  Own a Creator Pass NFT
+                  Own a BC400 NFT
                 </li>
                 <li className="flex items-center gap-2">
                   <Sparkles className="w-3 h-3 text-primary" />
-                  Staked ≥ 500 OPOLL in governance
+                  Staked ≥ 500 BC400 in governance
                 </li>
               </ul>
             </div>
