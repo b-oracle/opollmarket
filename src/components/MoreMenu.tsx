@@ -55,7 +55,7 @@ const MoreMenu = ({ open, onOpenChange }: MoreMenuProps) => {
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange} modal={false}>
-        <SheetContent side="bottom" className="rounded-t-2xl px-4 pt-2 border-t border-border bg-background" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 5.5rem)', zIndex: 60, maxHeight: '80dvh' }}
+        <SheetContent side="bottom" className="rounded-t-2xl px-4 pt-2 border-t border-border bg-background" style={{ zIndex: 60, maxHeight: '85dvh' }}
           onInteractOutside={() => { onOpenChange(false); }}
           onEscapeKeyDown={() => onOpenChange(false)}
         >
@@ -66,7 +66,7 @@ const MoreMenu = ({ open, onOpenChange }: MoreMenuProps) => {
 
           <motion.div
             className="space-y-5 overflow-y-auto"
-            style={{ maxHeight: 'calc(80dvh - 6rem)' }}
+            style={{ maxHeight: 'calc(85dvh - 5rem)', paddingBottom: 'calc(env(safe-area-inset-bottom) + 6rem)' }}
             variants={staggerContainer}
             initial="hidden"
             animate="show"
