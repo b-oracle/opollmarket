@@ -281,11 +281,22 @@ const Profile = () => {
                         if (!editName.trim()) { toast.error("Name cannot be empty"); return; }
                         setSavingProfile(true);
                         try {
+                          let avatarUrl: string | null = null;
+                          if (avatarFile) {
+                            avatarUrl = await uploadAvatar();
+                            if (!avatarUrl && avatarFile) return; // upload failed
+                          }
                           const { error: authError } = await supabase.auth.updateUser({
-                            data: { display_name: editName.trim() },
+                            data: { display_name: editName.trim(), ...(avatarUrl ? { avatar_url: avatarUrl } : {}) },
                           });
                           if (authError) { toast.error("Failed to update: " + authError.message); return; }
-                          await supabase.from("profiles").update({ display_name: editName.trim() }).eq("id", user!.id);
+                          await supabase.from("profiles").update({
+                            display_name: editName.trim(),
+                            ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+                          }).eq("id", user!.id);
+                          queryClient.invalidateQueries({ queryKey: ["profile", user!.id] });
+                          setAvatarFile(null);
+                          setAvatarPreview(null);
                           toast.success("Profile updated!");
                           setEditingProfile(false);
                         } finally {
