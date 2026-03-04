@@ -7,6 +7,7 @@ import { useMarkets } from "@/hooks/useMarkets";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
 import { Loader2 } from "lucide-react";
 import { motion, useAnimation } from "framer-motion";
+import useAnalytics from "@/hooks/useAnalytics";
 
 const PULL_THRESHOLD = 80;
 
@@ -15,6 +16,9 @@ const Feed = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const { data: markets = [], isLoading, refetch } = useMarkets();
   const { boostedMarketIds, boostDetails } = useActiveBoosts();
+  const { track } = useAnalytics();
+
+  useEffect(() => { track("page_view", { page: "feed" }); }, []);
 
   const [pulling, setPulling] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);

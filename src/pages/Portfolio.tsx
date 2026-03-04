@@ -30,6 +30,7 @@ import WinCelebrationModal from "@/components/WinCelebrationModal";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import useAnalytics from "@/hooks/useAnalytics";
 
 interface PositionRow {
   id: string;
@@ -128,6 +129,9 @@ const Portfolio = () => {
   const [winModal, setWinModal] = useState<{ open: boolean; market: string; side: "YES" | "NO"; payout: number; profit: number }>({
     open: false, market: "", side: "YES", payout: 0, profit: 0,
   });
+  const { track } = useAnalytics();
+
+  useEffect(() => { track("page_view", { page: "portfolio" }); }, []);
 
   // Fetch real positions
   const { data: rawPositions = [], isLoading } = useQuery({
