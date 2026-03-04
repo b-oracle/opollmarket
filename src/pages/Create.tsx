@@ -375,15 +375,15 @@ const Create = () => {
               <ul className="space-y-1.5 text-xs text-muted-foreground">
                 <li className="flex items-center gap-2">
                   <Coins className="w-3 h-3 text-primary" />
-                  Hold ≥ 100 BC400 tokens
+                  Hold ≥ {minTokenBalance.toLocaleString()} BC400 tokens
                 </li>
                 <li className="flex items-center gap-2">
                   <ImageIcon className="w-3 h-3 text-primary" />
-                  Own a BC400 NFT
+                  Own ≥ {minNftBalance} BC400 NFT{minNftBalance !== 1 ? "s" : ""}
                 </li>
                 <li className="flex items-center gap-2">
                   <Sparkles className="w-3 h-3 text-primary" />
-                  Staked ≥ 500 BC400 in governance
+                  Staked ≥ {Math.round(minTokenBalance * 0.05).toLocaleString()} BC400 in governance
                 </li>
               </ul>
             </div>
