@@ -384,6 +384,8 @@ const Profile = () => {
                           queryClient.invalidateQueries({ queryKey: ["profile", user!.id] });
                           setAvatarFile(null);
                           setAvatarPreview(null);
+                          setSelectedNftUrl(null);
+                          setShowNftPicker(false);
                           toast.success("Profile updated!");
                           setEditingProfile(false);
                         } finally {
