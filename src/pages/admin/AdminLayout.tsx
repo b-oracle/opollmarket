@@ -81,7 +81,7 @@ const AdminLayout = () => {
           </button>
         </div>
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {navItems.map((item) => (
+          {filteredNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
