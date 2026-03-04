@@ -53,15 +53,15 @@ const AdminUsers = () => {
 
   useEffect(() => { fetchUsers(); }, []);
 
-  const toggleAdmin = async (userId: string, isCurrentlyAdmin: boolean) => {
-    if (isCurrentlyAdmin) {
-      const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", "admin");
-      if (error) toast.error("Failed to remove admin role");
-      else { toast.success("Admin role removed"); fetchUsers(); }
+  const toggleRole = async (userId: string, role: "admin" | "moderator", hasRole: boolean) => {
+    if (hasRole) {
+      const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role);
+      if (error) toast.error(`Failed to remove ${role} role`);
+      else { toast.success(`${role.charAt(0).toUpperCase() + role.slice(1)} role removed`); fetchUsers(); }
     } else {
-      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: "admin" });
-      if (error) toast.error("Failed to add admin role");
-      else { toast.success("Admin role added"); fetchUsers(); }
+      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role });
+      if (error) toast.error(`Failed to add ${role} role`);
+      else { toast.success(`${role.charAt(0).toUpperCase() + role.slice(1)} role added`); fetchUsers(); }
     }
   };
 
