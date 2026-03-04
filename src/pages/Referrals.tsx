@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
@@ -10,11 +10,15 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import useAnalytics from "@/hooks/useAnalytics";
 
 const Referrals = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const { track } = useAnalytics();
+
+  useEffect(() => { track("page_view", { page: "referrals" }); }, []);
 
   const referralLink = user ? `${window.location.origin}/?ref=${user.id}` : "";
 
