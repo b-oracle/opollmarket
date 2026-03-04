@@ -52,7 +52,7 @@ const TopBar = () => {
         <div className="hidden md:block" />
         <div className="flex items-center gap-2">
           {/* Admin mode toggle for admin users */}
-          {isAdmin && user && (
+          {hasAdminAccess && user && (
             <button
               onClick={() => navigate(isAdminRoute ? "/" : "/admin")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all active:scale-95 ${
