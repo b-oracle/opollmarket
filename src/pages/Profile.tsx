@@ -393,10 +393,18 @@ const Profile = () => {
                             data: { display_name: editName.trim(), ...(avatarUrl ? { avatar_url: avatarUrl } : {}) },
                           });
                           if (authError) { toast.error("Failed to update: " + authError.message); return; }
-                          await supabase.from("profiles").update({
+                          const { error: profileError } = await supabase.from("profiles").update({
                             display_name: editName.trim(),
                             ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
                           }).eq("id", user!.id);
+                          if (profileError) {
+                            if (profileError.message?.includes("unique_display_name") || profileError.code === "23505") {
+                              toast.error("This username is already taken. Please choose a different one.");
+                            } else {
+                              toast.error("Failed to update profile");
+                            }
+                            return;
+                          }
                           queryClient.invalidateQueries({ queryKey: ["profile", user!.id] });
                           setAvatarFile(null);
                           setAvatarPreview(null);
