@@ -268,7 +268,7 @@ const Create = () => {
     return (
       <div className="min-h-dvh bg-background pb-20">
         <TopBar />
-        <div className="max-w-lg mx-auto px-4 pt-20 flex flex-col items-center justify-center min-h-[70dvh]">
+        <div className="max-w-lg md:max-w-2xl mx-auto px-4 pt-20 flex flex-col items-center justify-center min-h-[70dvh]">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -385,7 +385,7 @@ const Create = () => {
   return (
     <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
       <TopBar />
-      <div className="max-w-lg mx-auto px-3 sm:px-4 pt-20">
+      <div className="max-w-lg md:max-w-2xl mx-auto px-3 sm:px-4 pt-20">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}

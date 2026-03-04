@@ -101,7 +101,7 @@ const Index = () => {
   return (
     <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
       <TopBar />
-      <div className="max-w-lg mx-auto px-3 sm:px-4 pt-20">
+      <div className="max-w-lg md:max-w-4xl xl:max-w-6xl mx-auto px-3 sm:px-4 pt-20">
         {/* Hero */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-8">
           <h2 className="text-2xl sm:text-3xl font-bold leading-tight mb-2">
@@ -195,7 +195,7 @@ const Index = () => {
           ))}
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 md:grid md:grid-cols-2 xl:grid-cols-3 md:gap-4 md:space-y-0">
           {filteredMarkets.length === 0 && (
             <div className="text-center py-8 text-muted-foreground text-sm">No markets found.</div>
           )}
