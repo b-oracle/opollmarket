@@ -64,6 +64,8 @@ export const useMarkets = () => {
       return (data as unknown as DbMarket[]).map(mapDbToMarket);
     },
     staleTime: 30_000,
+    retry: 2,
+    retryDelay: 1000,
   });
 };
 

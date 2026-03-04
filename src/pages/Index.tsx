@@ -43,7 +43,7 @@ const CommentBadge = ({ marketId }: { marketId: string }) => {
 const Index = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { data: markets = [], isLoading } = useMarkets();
+  const { data: markets = [], isLoading, isError } = useMarkets();
   const { boostedMarketIds, boostDetails } = useActiveBoosts();
   const [filter, setFilter] = useState<"trending" | "boosted" | "all">("trending");
   const [boostModalMarket, setBoostModalMarket] = useState<{ id: string; title: string } | null>(null);
@@ -93,7 +93,14 @@ const Index = () => {
   const totalVolume = markets.reduce((s, m) => s + m.volume, 0);
   const totalTraders = markets.reduce((s, m) => s + m.participants, 0);
 
-  if (isLoading) {
+  // Only show full-page loader briefly, then show page even if still loading
+  const [showLoader, setShowLoader] = useState(true);
+  useEffect(() => {
+    const timer = setTimeout(() => setShowLoader(false), 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading && showLoader && !isError) {
     return (
       <div className="min-h-dvh bg-background flex items-center justify-center">
         <LogoLoader size="lg" />
