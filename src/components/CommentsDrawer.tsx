@@ -127,9 +127,9 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
   const scrollRef = useRef<HTMLDivElement>(null);
   const { checkLimit: checkCommentLimit } = useRateLimit(3, 30000);
 
-  // Use user ID or wallet or anon
-  const identityId = user?.id || address || `anon-${Math.random().toString(36).slice(2, 10)}`;
-  const isSignedIn = !!user || !!address;
+  // Use user ID for identity (requires supabase auth)
+  const identityId = user?.id || "";
+  const isSignedIn = !!user;
 
   const fetchComments = useCallback(async () => {
     setLoading(true);
