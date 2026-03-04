@@ -4,6 +4,7 @@ import BottomSheet from "@/components/BottomSheet";
 import { X, Send, ChevronDown, Heart, CornerDownRight, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccount } from "wagmi";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useRateLimit } from "@/hooks/useRateLimit";
 
@@ -116,6 +117,7 @@ const CommentItem = ({
 
 const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawerProps) => {
   const { address } = useAccount();
+  const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -123,9 +125,11 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
   const [replyTo, setReplyTo] = useState<{ id: string; author: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { checkLimit: checkCommentLimit } = useRateLimit(3, 30000); // 3 comments per 30s
+  const { checkLimit: checkCommentLimit } = useRateLimit(3, 30000);
 
-  const walletId = address || `anon-${Math.random().toString(36).slice(2, 10)}`;
+  // Use user ID or wallet or anon
+  const identityId = user?.id || address || `anon-${Math.random().toString(36).slice(2, 10)}`;
+  const isSignedIn = !!user || !!address;
 
   const fetchComments = useCallback(async () => {
     setLoading(true);
@@ -143,7 +147,7 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
       const { data: userLikes } = await supabase
         .from("comment_likes")
         .select("comment_id")
-        .eq("wallet_address", walletId);
+        .eq("wallet_address", identityId);
 
       const likedIds = new Set(userLikes?.map((l) => l.comment_id) || []);
 
@@ -180,7 +184,7 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
     } finally {
       setLoading(false);
     }
-  }, [marketId, walletId]);
+  }, [marketId, identityId]);
 
   useEffect(() => {
     if (!open) return;
@@ -225,13 +229,18 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
 
     setSubmitting(true);
     try {
-      const authorName = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "Anonymous";
+      // Derive author name from auth user or wallet
+      const authorName = user?.email
+        ? user.email.split("@")[0]
+        : address
+        ? `${address.slice(0, 6)}...${address.slice(-4)}`
+        : "Anonymous";
 
       const { error } = await supabase.from("comments").insert({
         market_id: marketId,
         parent_id: replyTo?.id || null,
         author_name: authorName,
-        author_wallet: address || null,
+        author_wallet: address || user?.id || null,
         content: cleanText,
       });
 
@@ -258,11 +267,11 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
           .from("comment_likes")
           .delete()
           .eq("comment_id", commentId)
-          .eq("wallet_address", walletId);
+          .eq("wallet_address", identityId);
       } else {
         await supabase.from("comment_likes").insert({
           comment_id: commentId,
-          wallet_address: walletId,
+          wallet_address: identityId,
         });
       }
       // Optimistic update
@@ -352,7 +361,7 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0">
                     <span className="text-xs font-bold text-primary">
-                      {address ? address.charAt(2).toUpperCase() : "A"}
+                      {user?.email ? user.email.charAt(0).toUpperCase() : address ? address.charAt(2).toUpperCase() : "A"}
                     </span>
                   </div>
                   <input
