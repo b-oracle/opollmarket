@@ -16,9 +16,11 @@ import {
   BarChart3,
   Target,
   CheckCircle2,
+  Video,
 } from "lucide-react";
 
 import CategoryIcon from "@/components/CategoryIcon";
+import { isYouTubeUrl, getYouTubeId } from "@/components/YouTubeEmbed";
 
 const CATEGORIES = [
   "Crypto", "AI & Tech", "Science", "Economy",
@@ -40,6 +42,8 @@ const AdminCreateMarket = () => {
   const [marketType, setMarketType] = useState<"binary" | "multi">("binary");
   const [options, setOptions] = useState<string[]>(["", ""]);
   const [trending, setTrending] = useState(false);
+  const [videoUrl, setVideoUrl] = useState("");
+  const [mediaType, setMediaType] = useState<"image" | "video">("image");
 
   // Image state
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -130,6 +134,7 @@ const AdminCreateMarket = () => {
           liquidity: parseFloat(initialLiquidity) || 100,
           market_type: marketType,
           image_url: imageUrl,
+          video_url: mediaType === "video" && videoUrl.trim() && isYouTubeUrl(videoUrl.trim()) ? videoUrl.trim() : null,
           trending,
           status: "active",
         })
