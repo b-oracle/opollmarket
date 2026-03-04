@@ -95,8 +95,23 @@ const Feed = () => {
 
   if (isLoading) {
     return (
-      <div className="h-dvh flex flex-col bg-background items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      <div className="h-dvh flex flex-col bg-background">
+        <TopBar />
+        <div className="flex-1 flex items-center justify-center px-4">
+          <div className="w-full max-w-lg space-y-4 animate-pulse">
+            <div className="glass rounded-2xl p-5 space-y-4">
+              <div className="h-5 bg-muted/60 rounded-lg w-3/4" />
+              <div className="h-3 bg-muted/40 rounded-lg w-full" />
+              <div className="h-3 bg-muted/40 rounded-lg w-2/3" />
+              <div className="h-48 bg-muted/30 rounded-xl" />
+              <div className="flex gap-3">
+                <div className="flex-1 h-12 bg-muted/50 rounded-xl" />
+                <div className="flex-1 h-12 bg-muted/50 rounded-xl" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <BottomNav />
       </div>
     );
   }
