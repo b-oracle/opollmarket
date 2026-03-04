@@ -499,6 +499,16 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                         Send exactly the amount shown below. Your balance will be credited automatically.
                       </p>
 
+                      {/* QR Code */}
+                      <div className="rounded-xl bg-white p-3 mb-3 inline-block mx-auto">
+                        <img
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(paymentInfo.pay_address)}`}
+                          alt="Deposit QR Code"
+                          className="w-[180px] h-[180px]"
+                          loading="eager"
+                        />
+                      </div>
+
                       {/* Amount to send */}
                       <div className="rounded-xl bg-muted/50 border border-border p-3 mb-3">
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Amount to Send</p>
