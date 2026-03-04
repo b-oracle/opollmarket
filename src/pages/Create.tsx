@@ -25,9 +25,12 @@ import {
   X,
   BarChart3,
   Target,
+  LogIn,
+  User,
 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
+import { useAuth } from "@/hooks/useAuth";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -55,6 +58,7 @@ interface GateCheck {
 const Create = () => {
   const { address, isConnected } = useAccount();
   const { connect, connectors, isPending } = useConnect();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   // Gate thresholds from DB
@@ -147,8 +151,27 @@ const Create = () => {
   const [txHash, setTxHash] = useState("");
   const [newMarketId, setNewMarketId] = useState("");
 
+  // Save wallet address to profile when connected
+  useEffect(() => {
+    if (user && isConnected && address) {
+      (async () => {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("wallet_address")
+          .eq("id", user.id)
+          .single();
+        if (profile && !profile.wallet_address) {
+          await supabase
+            .from("profiles")
+            .update({ wallet_address: address })
+            .eq("id", user.id);
+        }
+      })();
+    }
+  }, [user, isConnected, address]);
+
   const handleCreateMarket = useCallback(async () => {
-    if (!address) return;
+    if (!user || !address) return;
     setSubmitStep("deploying");
 
     // Simulate on-chain contract deployment
@@ -159,11 +182,12 @@ const Create = () => {
 
     setSubmitStep("saving");
 
-    // Save to database
+    // Save to database — use user.id as creator_wallet for RLS compliance
     const { data, error } = await supabase
       .from("markets")
       .insert({
-        creator_wallet: address,
+        creator_wallet: user.id,
+        creator_name: user.user_metadata?.display_name || user.email?.split("@")[0] || "Anonymous",
         title: title.trim(),
         description: description.trim(),
         category,
@@ -207,7 +231,7 @@ const Create = () => {
     setNewMarketId(data?.id || "");
     setSubmitStep("success");
     toast.success("Market created successfully!");
-  }, [address, title, description, category, endDate, resolutionSource, initialLiquidity, marketType, options]);
+  }, [user, address, title, description, category, endDate, resolutionSource, initialLiquidity, marketType, options]);
 
   // Simulate token-gate verification
   const runGateCheck = () => {
@@ -283,7 +307,82 @@ const Create = () => {
     }
   };
 
-  // --- Token Gate Screen ---
+  // --- Auth Loading ---
+  if (authLoading) {
+    return (
+      <div className="min-h-dvh bg-background pb-20">
+        <TopBar />
+        <div className="max-w-lg mx-auto px-4 pt-20 flex items-center justify-center min-h-[70dvh]">
+          <LogoLoader size="lg" />
+        </div>
+        <BottomNav />
+      </div>
+    );
+  }
+
+  // --- Auth Gate: Must be signed in ---
+  if (!user) {
+    return (
+      <div className="min-h-dvh bg-background pb-20">
+        <TopBar />
+        <div className="max-w-lg md:max-w-2xl mx-auto px-4 pt-20 flex flex-col items-center justify-center min-h-[70dvh]">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass rounded-2xl p-6 w-full max-w-sm"
+          >
+            <div className="flex justify-center mb-5">
+              <div className="w-16 h-16 rounded-full bg-muted border border-border flex items-center justify-center">
+                <User className="w-7 h-7 text-muted-foreground" />
+              </div>
+            </div>
+
+            <h2 className="text-xl font-bold text-center mb-1">Sign In Required</h2>
+            <p className="text-sm text-muted-foreground text-center mb-6">
+              You need an account to create prediction markets. Sign in or create an account to get started.
+            </p>
+
+            {/* Steps preview */}
+            <div className="space-y-2.5 mb-6">
+              {[
+                { step: "1", label: "Sign in to your account", icon: <User className="w-4 h-4" />, active: true },
+                { step: "2", label: "Connect your BSC wallet", icon: <Wallet className="w-4 h-4" />, active: false },
+                { step: "3", label: "Verify token holdings", icon: <Coins className="w-4 h-4" />, active: false },
+              ].map((s) => (
+                <div
+                  key={s.step}
+                  className={`flex items-center gap-3 p-3 rounded-xl ${
+                    s.active
+                      ? "bg-primary/10 border border-primary/30"
+                      : "bg-muted/50 border border-border opacity-50"
+                  }`}
+                >
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    s.active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  }`}>
+                    {s.step}
+                  </div>
+                  <span className="text-sm font-medium flex-1">{s.label}</span>
+                  {s.icon}
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => navigate("/auth")}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold transition-all active:scale-95"
+            >
+              <LogIn className="w-4 h-4" />
+              Sign In to Create
+            </button>
+          </motion.div>
+        </div>
+        <BottomNav />
+      </div>
+    );
+  }
+
+  // --- Token Gate Screen (user is signed in, check wallet + tokens) ---
   if (!isConnected || !gatePassed) {
     return (
       <div className="min-h-dvh bg-background pb-20">
