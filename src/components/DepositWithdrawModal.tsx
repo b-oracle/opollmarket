@@ -450,12 +450,11 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                     </div>
 
                     <div className="space-y-3">
-                      <button
-                        onClick={isDeposit ? handleDeposit : handleWithdraw}
-                        className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold text-base transition-all active:scale-95 flex items-center justify-center gap-2"
-                      >
-                        {isDeposit ? "Confirm Deposit" : "Confirm Withdrawal"}
-                      </button>
+                      <HoldToConfirmButton
+                        onConfirm={isDeposit ? handleDeposit : handleWithdraw}
+                        label={isDeposit ? "Hold to Confirm Deposit" : "Hold to Confirm Withdrawal"}
+                      />
+                      <p className="text-[10px] text-center text-muted-foreground">Press and hold the button for 1.5s to confirm</p>
                       <button
                         onClick={() => setStep("input")}
                         className="w-full glass py-3 rounded-xl font-semibold text-sm text-muted-foreground transition-all active:scale-95"
