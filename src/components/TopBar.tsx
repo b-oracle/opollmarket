@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import ThemeToggle from "@/components/ThemeToggle";
 import NotificationBell from "@/components/NotificationBell";
+import SignOutConfirmDialog from "@/components/SignOutConfirmDialog";
 import logo from "@/assets/logo.png";
 import { User, LogOut, Shield, ArrowLeft } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
@@ -13,6 +14,7 @@ const TopBar = () => {
   const location = useLocation();
   const [showMenu, setShowMenu] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -103,7 +105,7 @@ const TopBar = () => {
                       <User className="w-4 h-4" /> Profile
                     </button>
                     <button
-                      onClick={async () => { await signOut(); setShowMenu(false); }}
+                      onClick={() => { setShowMenu(false); setSignOutOpen(true); }}
                       className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-destructive/10 transition-colors text-sm text-destructive"
                     >
                       <LogOut className="w-4 h-4" /> Sign Out
