@@ -380,7 +380,7 @@ const Rankings = () => {
                 tab === t ? "bg-primary text-primary-foreground" : "glass text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t === "traders" ? "Trading" : "Referrals"}
+              {t === "traders" ? "Predictions" : "Referrals"}
             </button>
           ))}
         </div>
@@ -416,7 +416,7 @@ const Rankings = () => {
                 </div>
 
                 {sortedTraders.length === 0 ? (
-                  <EmptyState message="No trading data yet" sub="Start predicting to appear on the leaderboard!" />
+                  <EmptyState message="No prediction data yet" sub="Start predicting to appear on the leaderboard!" />
                 ) : (
                   <>
                     <Podium
@@ -437,11 +437,11 @@ const Rankings = () => {
                           rank={idx + 1}
                           name={me.name}
                           avatar={me.avatar}
-                          statLine={`${me.trades} trade${me.trades !== 1 ? "s" : ""} · ${formatDollar(me.volume)} vol`}
+                          statLine={`${me.trades} prediction${me.trades !== 1 ? "s" : ""} · ${formatDollar(me.volume)} vol`}
                           valueLine={`${me.pnl >= 0 ? "+" : "-"}${formatDollar(me.pnl)}`}
                           valuePositive={me.pnl >= 0}
                           totalCount={sortedTraders.length}
-                          onShare={() => shareRank(idx + 1, me.name, me.avatar, `${me.pnl >= 0 ? "+" : "-"}${formatDollar(me.pnl)}`, me.pnl >= 0, `${me.trades} trade${me.trades !== 1 ? "s" : ""} · ${formatDollar(me.volume)} vol`, "Trading", sortedTraders.length)}
+                          onShare={() => shareRank(idx + 1, me.name, me.avatar, `${me.pnl >= 0 ? "+" : "-"}${formatDollar(me.pnl)}`, me.pnl >= 0, `${me.trades} prediction${me.trades !== 1 ? "s" : ""} · ${formatDollar(me.volume)} vol`, "Predictions", sortedTraders.length)}
                         />
                       );
                     })()}
@@ -475,7 +475,7 @@ const Rankings = () => {
                                 {trader.pnl >= 0 ? "+" : "-"}{formatDollar(trader.pnl)}
                               </p>
                               {isMe && (
-                                <button onClick={() => shareRank(i + 1, trader.name, trader.avatar, `${trader.pnl >= 0 ? "+" : "-"}${formatDollar(trader.pnl)}`, trader.pnl >= 0, `${trader.trades} trade${trader.trades !== 1 ? "s" : ""} · ${formatDollar(trader.volume)} vol`, "Trading", sortedTraders.length)} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+                                <button onClick={() => shareRank(i + 1, trader.name, trader.avatar, `${trader.pnl >= 0 ? "+" : "-"}${formatDollar(trader.pnl)}`, trader.pnl >= 0, `${trader.trades} prediction${trader.trades !== 1 ? "s" : ""} · ${formatDollar(trader.volume)} vol`, "Predictions", sortedTraders.length)} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
                                   <Share2 className="w-3.5 h-3.5 text-primary" />
                                 </button>
                               )}
