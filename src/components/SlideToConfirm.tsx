@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, animate } from "framer-motion";
 import { ArrowRight, Check } from "lucide-react";
 
