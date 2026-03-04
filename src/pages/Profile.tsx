@@ -198,8 +198,12 @@ const Profile = () => {
       <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4 pt-20">
         {/* Avatar & Profile Edit */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center mb-3">
-            <span className="text-2xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
+          <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center mb-3 overflow-hidden">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-2xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-bold">{displayName}</h2>
@@ -234,6 +238,25 @@ const Profile = () => {
               >
                 <h3 className="text-sm font-bold mb-4">Edit Profile</h3>
                 <div className="space-y-3">
+                  {/* Avatar Upload */}
+                  <div className="flex flex-col items-center gap-2">
+                    <label htmlFor="avatar-upload" className="relative cursor-pointer group">
+                      <div className="w-16 h-16 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center overflow-hidden">
+                        {avatarPreview ? (
+                          <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
+                        ) : profile?.avatar_url ? (
+                          <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
+                        )}
+                      </div>
+                      <div className="absolute inset-0 rounded-full bg-background/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Camera className="w-5 h-5 text-foreground" />
+                      </div>
+                    </label>
+                    <input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={handleAvatarSelect} />
+                    <span className="text-[10px] text-muted-foreground">Tap to change photo</span>
+                  </div>
                   <div>
                     <label className="text-xs font-medium text-muted-foreground mb-1 block">Display Name</label>
                     <input
