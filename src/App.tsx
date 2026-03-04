@@ -41,6 +41,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 
 import DesktopSidebar from "./components/DesktopSidebar";
 import DesktopFooter from "./components/DesktopFooter";
+import PWAUpdatePrompt from "./components/PWAUpdatePrompt";
 const queryClient = new QueryClient();
 
 const isFooterHidden = (pathname: string) => pathname.startsWith("/admin");
@@ -59,7 +60,7 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            
+            <PWAUpdatePrompt />
             <BrowserRouter>
             <DesktopSidebar />
             <div className="md:ml-60 min-h-screen flex flex-col">
