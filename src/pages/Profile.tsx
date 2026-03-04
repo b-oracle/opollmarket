@@ -40,7 +40,7 @@ const formatTimeAgo = (date: string) => {
 type FilterType = "all" | "trades" | "deposits";
 
 const Profile = () => {
-  const { toast } = useToast();
+  
   const { user, loading: authLoading, isAdmin } = useAuth();
   const { balance, bonusBalance } = useUserBalance();
   const navigate = useNavigate();
