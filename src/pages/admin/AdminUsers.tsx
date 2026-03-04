@@ -20,6 +20,7 @@ const AdminUsers = () => {
   const [balanceModal, setBalanceModal] = useState<{ userId: string; name: string; current: number } | null>(null);
   const [creditAmount, setCreditAmount] = useState("");
   const [crediting, setCrediting] = useState(false);
+  const [roleConfirm, setRoleConfirm] = useState<{ userId: string; name: string; role: "admin" | "moderator"; hasRole: boolean } | null>(null);
 
   const fetchUsers = async () => {
     const { data: profiles, error } = await supabase
