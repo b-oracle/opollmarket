@@ -1,0 +1,1 @@
+ALTER TABLE public.markets ADD COLUMN IF NOT EXISTS video_url text DEFAULT NULL;
