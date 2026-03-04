@@ -21,7 +21,7 @@ import {
   Plus,
   LogIn,
 } from "lucide-react";
-import SlideToConfirm from "@/components/SlideToConfirm";
+
 
 type BetSide = "yes" | "no";
 type ModalStep = "input" | "confirm" | "executing" | "success" | "error";
