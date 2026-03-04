@@ -221,7 +221,9 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
     const text = inputValue.trim();
     if (!text || submitting) return;
     if (!user) {
-      toast.error("Please sign in to comment.");
+      toast.error("Sign in to comment", {
+        action: { label: "Sign In", onClick: () => window.location.href = "/auth" },
+      });
       return;
     }
     if (!checkCommentLimit()) {
@@ -264,7 +266,9 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
 
   const handleLike = async (commentId: string, alreadyLiked: boolean) => {
     if (!user) {
-      toast.error("Sign in to like comments");
+      toast.error("Sign in to like comments", {
+        action: { label: "Sign In", onClick: () => window.location.href = "/auth" },
+      });
       return;
     }
     try {
@@ -296,7 +300,9 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
 
   const handleReply = (commentId: string, author: string) => {
     if (!user) {
-      toast.error("Sign in to reply to comments");
+      toast.error("Sign in to reply to comments", {
+        action: { label: "Sign In", onClick: () => window.location.href = "/auth" },
+      });
       return;
     }
     setReplyTo({ id: commentId, author });

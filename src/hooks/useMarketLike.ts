@@ -67,7 +67,9 @@ export const useMarketLike = (marketId: string) => {
   const toggleLike = useCallback(async () => {
     if (!user?.id) {
       const { toast } = await import("sonner");
-      toast.error("Sign in to like markets");
+      toast.error("Sign in to like markets", {
+        action: { label: "Sign In", onClick: () => window.location.href = "/auth" },
+      });
       return false;
     }
     const prev = liked;

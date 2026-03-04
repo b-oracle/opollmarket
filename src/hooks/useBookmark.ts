@@ -27,7 +27,9 @@ export const useBookmark = (marketId: string | undefined) => {
 
   const toggleBookmark = useCallback(async () => {
     if (!user) {
-      toast.error("Sign in to bookmark markets");
+      toast.error("Sign in to bookmark markets", {
+        action: { label: "Sign In", onClick: () => window.location.href = "/auth" },
+      });
       return;
     }
     if (!marketId) return;
