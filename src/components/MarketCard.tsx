@@ -183,7 +183,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
     <>
       <div
         ref={cardRef}
-        className={`snap-item relative h-[calc(100dvh-5rem-env(safe-area-inset-bottom))] w-full flex items-end pb-6 px-3 sm:px-4 overflow-hidden ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}
+        className={`snap-item relative h-[calc(100dvh-7.5rem-env(safe-area-inset-bottom))] w-full flex items-end pb-6 px-3 sm:px-4 overflow-hidden ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}
         style={{ 
           touchAction: "pan-y",
           transform: dragX !== 0 ? `translateX(${dragX * 0.5}px)` : undefined,
