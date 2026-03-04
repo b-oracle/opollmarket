@@ -210,7 +210,7 @@ const Profile = () => {
     return (
       <div className="min-h-dvh bg-background pb-20">
         <TopBar />
-        <div className="max-w-lg md:max-w-4xl mx-auto px-4 pt-20 flex flex-col items-center justify-center" style={{ minHeight: "60vh" }}>
+        <div className="max-w-lg md:max-w-4xl mx-auto px-4 flex flex-col items-center justify-center" style={{ minHeight: "60vh", paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
           <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-4">
             <Wallet className="w-8 h-8 text-muted-foreground" />
           </div>
@@ -231,7 +231,7 @@ const Profile = () => {
   return (
     <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
       <TopBar />
-      <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4 pt-20">
+      <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
         {/* Avatar & Profile Edit */}
         <div className="flex flex-col items-center mb-8">
           <div className="relative">
@@ -273,7 +273,7 @@ const Profile = () => {
               />
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-                className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-sm mx-auto glass-strong rounded-2xl p-5 z-50"
+                className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-sm mx-auto glass-strong rounded-2xl p-5 z-50 max-h-[85vh] overflow-y-auto"
               >
                 <h3 className="text-sm font-bold mb-4">Edit Profile</h3>
                 <div className="space-y-3">
