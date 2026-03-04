@@ -148,7 +148,7 @@ const AdminUsers = () => {
                           <DollarSign className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => toggleRole(u.id, "moderator", isMod)}
+                          onClick={() => setRoleConfirm({ userId: u.id, name: u.display_name || u.email || "User", role: "moderator", hasRole: isMod })}
                           className={`p-1.5 rounded-lg transition-colors ${
                             isMod ? "hover:bg-destructive/10 text-amber-500" : "hover:bg-amber-500/10 text-muted-foreground"
                           }`}
@@ -157,7 +157,7 @@ const AdminUsers = () => {
                           {isMod ? <ShieldMinus className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
                         </button>
                         <button
-                          onClick={() => toggleRole(u.id, "admin", isAdmin)}
+                          onClick={() => setRoleConfirm({ userId: u.id, name: u.display_name || u.email || "User", role: "admin", hasRole: isAdmin })}
                           className={`p-1.5 rounded-lg transition-colors ${
                             isAdmin ? "hover:bg-destructive/10 text-destructive" : "hover:bg-primary/10 text-primary"
                           }`}
