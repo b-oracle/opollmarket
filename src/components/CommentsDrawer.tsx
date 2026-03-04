@@ -263,7 +263,10 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
   };
 
   const handleLike = async (commentId: string, alreadyLiked: boolean) => {
-    try {
+    if (!user) {
+      toast.error("Sign in to like comments");
+      return;
+    }
       if (alreadyLiked) {
         await supabase
           .from("comment_likes")
@@ -291,6 +294,10 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
   };
 
   const handleReply = (commentId: string, author: string) => {
+    if (!user) {
+      toast.error("Sign in to reply to comments");
+      return;
+    }
     setReplyTo({ id: commentId, author });
     setInputValue(`@${author} `);
   };

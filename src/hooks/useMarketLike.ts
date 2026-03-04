@@ -65,7 +65,11 @@ export const useMarketLike = (marketId: string) => {
   }, [marketId, user?.id]);
 
   const toggleLike = useCallback(async () => {
-    if (!user?.id) return false;
+    if (!user?.id) {
+      const { toast } = await import("sonner");
+      toast.error("Sign in to like markets");
+      return false;
+    }
     const prev = liked;
     const prevCount = count;
     setLiked(!prev);
