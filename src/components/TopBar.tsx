@@ -22,7 +22,7 @@ const TopBar = () => {
   const initial = displayName.charAt(0).toUpperCase();
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 glass-strong border-0 md:left-60" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+    <header className="fixed top-0 left-0 right-0 z-50 glass-strong border-0 shadow-[0_1px_8px_-2px_hsl(var(--foreground)/0.08)] md:left-60" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="flex items-center justify-between h-14 max-w-lg md:max-w-full mx-auto px-4">
         <div className="flex items-center gap-1.5 cursor-pointer md:hidden" onClick={() => navigate("/")}>
           <img src={logo} alt="OPOLL" className="h-8 w-8" />
