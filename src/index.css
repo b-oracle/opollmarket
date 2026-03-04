@@ -111,6 +111,7 @@
     height: -webkit-fill-available;
     touch-action: manipulation;
     -webkit-text-size-adjust: 100%;
+    background-color: hsl(var(--background));
   }
 
   body {
