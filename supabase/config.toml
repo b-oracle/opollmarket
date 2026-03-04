@@ -3,3 +3,21 @@ project_id = "dqtjuhqndncanfwgjwva"
 [functions]
   [functions.auth-email-hook]
     verify_jwt = false
+  [functions.create-boost-payment]
+    verify_jwt = false
+  [functions.create-deposit]
+    verify_jwt = false
+  [functions.nowpayments-webhook]
+    verify_jwt = false
+  [functions.resolve-market]
+    verify_jwt = false
+  [functions.cancel-market]
+    verify_jwt = false
+  [functions.request-withdrawal]
+    verify_jwt = false
+  [functions.process-withdrawal]
+    verify_jwt = false
+  [functions.fetch-wallet-nfts]
+    verify_jwt = false
+  [functions.og-image]
+    verify_jwt = false
