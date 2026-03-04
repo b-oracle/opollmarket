@@ -176,16 +176,14 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
   return (
     <>
-      <motion.div
+      <div
         ref={cardRef}
-        drag={isMulti ? false : "x"}
-        dragConstraints={{ left: -200, right: 200 }}
-        dragSnapToOrigin
-        dragElastic={0.7}
-        onDrag={handleDrag}
-        onDragEnd={handleDragEnd}
         className={`snap-item relative h-[calc(100dvh-5rem-env(safe-area-inset-bottom))] w-full flex items-end pb-6 px-3 sm:px-4 overflow-hidden ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}
-        style={{ touchAction: "pan-y" }}
+        style={{ 
+          touchAction: "pan-y",
+          transform: dragX !== 0 ? `translateX(${dragX * 0.5}px)` : undefined,
+          transition: dragX === 0 ? 'transform 0.25s ease-out' : 'none',
+        }}
       >
         {/* Swipe overlay indicators */}
         {!isMulti && swiping && (
