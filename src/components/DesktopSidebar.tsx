@@ -11,7 +11,7 @@ const navItems = [
   { icon: PlusCircle, label: "Create", path: "/create" },
   { icon: BarChart3, label: "Portfolio", path: "/portfolio" },
   { icon: User, label: "Profile", path: "/profile" },
-  { icon: Trophy, label: "Rankings", path: "/rankings" },
+  { icon: Trophy, label: "Leaderboard", path: "/rankings" },
   { icon: Gift, label: "Referrals", path: "/referrals" },
   { icon: HelpCircle, label: "FAQ", path: "/faq" },
 ];
