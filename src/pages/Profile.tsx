@@ -112,6 +112,32 @@ const Profile = () => {
     }
   }, [user, isConnected, address, profile]);
 
+  const fetchWalletNfts = async () => {
+    const walletAddr = savedWallet || address;
+    if (!walletAddr) { toast.error("Connect a wallet first"); return; }
+    setLoadingNfts(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("fetch-wallet-nfts", {
+        body: { wallet_address: walletAddr },
+      });
+      if (error) throw error;
+      setWalletNfts(data.nfts || []);
+      if ((data.nfts || []).length === 0) toast.info("No NFTs found in this wallet");
+    } catch (err: any) {
+      console.error("NFT fetch error:", err);
+      toast.error("Failed to load NFTs");
+    } finally {
+      setLoadingNfts(false);
+    }
+  };
+
+  const handleSelectNft = (imageUrl: string) => {
+    setSelectedNftUrl(imageUrl);
+    setAvatarPreview(imageUrl);
+    setAvatarFile(null); // clear file upload if NFT selected
+    setShowNftPicker(false);
+  };
+
   const savedWallet = profile?.wallet_address;
 
   const handleDisconnectWallet = async () => {
