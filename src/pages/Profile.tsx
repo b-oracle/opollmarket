@@ -299,7 +299,81 @@ const Profile = () => {
           </button>
         </div>
 
-        {/* Transaction History */}
+        {/* Wallet Management */}
+        <div className="mb-6">
+          <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">BSC Wallet</h3>
+          <div className="glass rounded-xl p-4">
+            {isConnected || savedWallet ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Wallet className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold flex items-center gap-1.5">
+                      {isConnected && <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />}
+                      {isConnected ? "Connected" : "Linked"}
+                    </p>
+                    <p className="text-xs text-muted-foreground font-mono truncate">
+                      {(savedWallet || address)?.slice(0, 6)}...{(savedWallet || address)?.slice(-4)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={copyWalletAddress}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-muted/50 border border-border text-xs font-semibold hover:bg-accent/50 transition-colors"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    {walletCopied ? "Copied!" : "Copy"}
+                  </button>
+                  <a
+                    href={`https://bscscan.com/address/${savedWallet || address}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-muted/50 border border-border text-xs font-semibold hover:bg-accent/50 transition-colors"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    BscScan
+                  </a>
+                  <button
+                    onClick={handleDisconnectWallet}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-destructive/10 border border-destructive/20 text-xs font-semibold text-destructive hover:bg-destructive/20 transition-colors"
+                  >
+                    <Unlink className="w-3.5 h-3.5" />
+                    Disconnect
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0">
+                    <Link2 className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold">No wallet linked</p>
+                    <p className="text-xs text-muted-foreground">Connect a BSC wallet to create markets</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {connectors.map((c) => (
+                    <button
+                      key={c.uid}
+                      onClick={() => connect({ connector: c, chainId: bsc.id })}
+                      disabled={isPending}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      <Wallet className="w-4 h-4" />
+                      {isPending ? "Connecting..." : `Connect ${c.name}`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Transaction History</h3>
