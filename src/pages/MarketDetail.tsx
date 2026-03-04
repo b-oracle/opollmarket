@@ -6,7 +6,7 @@ import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets,
 import { useMarket } from "@/hooks/useMarkets";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
 import BoostCountdown from "@/components/BoostCountdown";
-import { categoryIcons } from "@/data/markets";
+import CategoryIcon from "@/components/CategoryIcon";
 import BottomNav from "@/components/BottomNav";
 
 import BetModal from "@/components/BetModal";
@@ -328,7 +328,7 @@ const MarketDetail = () => {
         <div className="flex items-center justify-between h-14 px-4 max-w-lg md:max-w-4xl mx-auto">
           <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full glass flex items-center justify-center"><ArrowLeft className="w-5 h-5" /></button>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-muted-foreground">{categoryIcons[market.category]} {market.category}</span>
+            <span className="text-sm font-medium text-muted-foreground inline-flex items-center gap-1.5"><CategoryIcon category={market.category} className="w-3.5 h-3.5" /> {market.category}</span>
             {isMulti && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/15 text-primary">{market.marketType === "range" ? "Range" : "Multi"}</span>}
           </div>
           <div className="flex gap-2">
@@ -374,8 +374,8 @@ const MarketDetail = () => {
         </div>
         {/* Category badge */}
         <div className="absolute top-6 left-6 z-10">
-          <span className="glass px-4 py-2 rounded-full text-sm font-medium text-foreground/80">
-            {categoryIcons[market.category]} {market.category}
+          <span className="glass px-4 py-2 rounded-full text-sm font-medium text-foreground/80 inline-flex items-center gap-1.5">
+            <CategoryIcon category={market.category} className="w-3.5 h-3.5" /> {market.category}
           </span>
         </div>
         {/* Bottom overlay */}

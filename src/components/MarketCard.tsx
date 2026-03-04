@@ -2,7 +2,8 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Market, categoryIcons } from "@/data/markets";
+import { Market } from "@/data/markets";
+import CategoryIcon from "@/components/CategoryIcon";
 import { useNavigate } from "react-router-dom";
 import BoostCountdown from "@/components/BoostCountdown";
 import BetModal from "@/components/BetModal";
@@ -271,8 +272,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
           {/* Category badge */}
           <div className="absolute top-6 left-6 z-10 flex items-center gap-2">
-            <span className="glass px-4 py-2 rounded-full text-sm font-medium text-foreground/80">
-              {categoryIcons[market.category]} {market.category}
+            <span className="glass px-4 py-2 rounded-full text-sm font-medium text-foreground/80 inline-flex items-center gap-1.5">
+              <CategoryIcon category={market.category} className="w-3.5 h-3.5" /> {market.category}
             </span>
             {isMulti && (
               <span className="glass px-3 py-2 rounded-full text-xs font-bold text-primary">

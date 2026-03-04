@@ -3,8 +3,8 @@ import SEOHead from "@/components/SEOHead";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { useMarkets } from "@/hooks/useMarkets";
-import { categoryIcons } from "@/data/markets";
 import { TrendingUp, Users, Zap, MessageCircle, Search, X } from "lucide-react";
+import CategoryIcon from "@/components/CategoryIcon";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
@@ -22,13 +22,7 @@ const formatVolume = (v: number) => {
   return `$${v.toFixed(2)}`;
 };
 
-const getMarketImage = (id: string, category: string) => {
-  const icons: Record<string, string> = {
-    Crypto: "₿", "AI & Tech": "🤖", Science: "🚀", Economy: "📈",
-    Entertainment: "🎵", Sports: "⚽", Politics: "🏛️", Other: "💡",
-  };
-  return icons[category] || "💡";
-};
+// getMarketImage replaced by CategoryIcon component
 
 const CommentBadge = ({ marketId }: { marketId: string }) => {
   const count = useCommentCount(marketId);
@@ -142,7 +136,7 @@ const Index = () => {
           boostDetails={boostDetails}
           navigate={navigate}
           formatVolume={formatVolume}
-          getMarketImage={getMarketImage}
+          CategoryIcon={CategoryIcon}
           onBoost={(market) => setBoostModalMarket({ id: market.id, title: market.title })}
         />
 
@@ -249,7 +243,7 @@ const Index = () => {
                     <img src={market.imageUrl} alt={market.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <span className="text-2xl md:text-3xl transition-transform duration-300 group-hover:scale-110">{getMarketImage(market.id, market.category)}</span>
+                      <CategoryIcon category={market.category} className="w-6 h-6 md:w-7 md:h-7 text-muted-foreground transition-transform duration-300 group-hover:scale-110" />
                     </div>
                   )}
                   {isBoosted && (
