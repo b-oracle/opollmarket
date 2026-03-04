@@ -17,6 +17,7 @@ interface DbMarket {
   creator_wallet: string;
   creator_name: string;
   image_url: string | null;
+  video_url: string | null;
   trending: boolean;
   status: string;
   created_at: string;
@@ -38,6 +39,7 @@ const mapDbToMarket = (db: DbMarket): Market => ({
   creatorAddress: db.creator_wallet,
   creatorName: db.creator_name,
   imageUrl: db.image_url || "",
+  videoUrl: db.video_url || undefined,
   trending: db.trending,
   createdAt: db.created_at,
   options: db.market_options?.length

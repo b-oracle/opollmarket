@@ -327,6 +327,7 @@ export type Database = {
           trending: boolean
           tx_hash: string | null
           updated_at: string
+          video_url: string | null
           volume: number
           winning_option_id: string | null
           yes_price: number
@@ -354,6 +355,7 @@ export type Database = {
           trending?: boolean
           tx_hash?: string | null
           updated_at?: string
+          video_url?: string | null
           volume?: number
           winning_option_id?: string | null
           yes_price?: number
@@ -381,6 +383,7 @@ export type Database = {
           trending?: boolean
           tx_hash?: string | null
           updated_at?: string
+          video_url?: string | null
           volume?: number
           winning_option_id?: string | null
           yes_price?: number
