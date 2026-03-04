@@ -3,7 +3,7 @@ import SEOHead from "@/components/SEOHead";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { useMarkets } from "@/hooks/useMarkets";
-import { TrendingUp, Users, Zap, MessageCircle, Search, X } from "lucide-react";
+import { TrendingUp, Users, Zap, MessageCircle, Search, X, Heart } from "lucide-react";
 import CategoryIcon from "@/components/CategoryIcon";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -14,6 +14,7 @@ import BoostedCarousel from "@/components/BoostedCarousel";
 import BoostMarketModal from "@/components/BoostMarketModal";
 import { useCommentCount } from "@/hooks/useCommentCount";
 import useAnalytics from "@/hooks/useAnalytics";
+import { useLikeCount } from "@/hooks/useLikeCount";
 
 
 const formatVolume = (v: number) => {
@@ -30,6 +31,17 @@ const CommentBadge = ({ marketId }: { marketId: string }) => {
   return (
     <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
       <MessageCircle className="w-3 h-3" />
+      {count}
+    </span>
+  );
+};
+
+const LikeBadge = ({ marketId }: { marketId: string }) => {
+  const count = useLikeCount(marketId);
+  if (count === 0) return null;
+  return (
+    <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+      <Heart className="w-3 h-3" />
       {count}
     </span>
   );
@@ -268,6 +280,7 @@ const Index = () => {
                       <span className="text-[10px] font-bold text-primary flex items-center gap-0.5"><Zap className="w-3 h-3" /> Trending</span>
                     )}
                     <CommentBadge marketId={market.id} />
+                    <LikeBadge marketId={market.id} />
                     <span className="text-[10px] text-muted-foreground font-mono ml-auto">{formatVolume(market.volume)} Vol</span>
                   </div>
                   <h4 className="text-sm font-bold leading-snug truncate mb-1.5 group-hover:text-primary transition-colors">{market.title}</h4>
