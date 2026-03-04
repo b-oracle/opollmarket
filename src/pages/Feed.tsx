@@ -65,6 +65,10 @@ const Feed = () => {
       const dampened = Math.min(deltaY * 0.45, 120);
       setPulling(true);
       setPullDistance(dampened);
+      if (dampened >= PULL_THRESHOLD && !hapticFired.current) {
+        navigator.vibrate?.(15);
+        hapticFired.current = true;
+      }
     }
   }, [refreshing]);
 
