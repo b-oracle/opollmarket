@@ -169,6 +169,31 @@ const Referrals = () => {
           </motion.div>
         </div>
 
+        {/* Referral Code */}
+        <div className="glass rounded-xl p-5 mb-4">
+          <h3 className="text-sm font-semibold mb-3">Your Referral Code</h3>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 bg-muted/50 rounded-lg px-3 py-2.5 text-xs text-muted-foreground truncate font-mono select-all">
+              {user?.id}
+            </div>
+            <button
+              onClick={async () => {
+                if (!user) return;
+                try {
+                  await navigator.clipboard.writeText(user.id);
+                  toast.success("Referral code copied!");
+                } catch { toast.error("Failed to copy"); }
+              }}
+              className="shrink-0 p-2.5 rounded-lg bg-primary text-primary-foreground transition-all active:scale-95"
+            >
+              <Copy className="w-4 h-4" />
+            </button>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-2">
+            Friends can paste this code during sign-up in the referral code field.
+          </p>
+        </div>
+
         {/* Referral Link */}
         <div className="glass rounded-xl p-5 mb-6">
           <h3 className="text-sm font-semibold mb-3">Your Referral Link</h3>
