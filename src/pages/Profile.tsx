@@ -14,7 +14,7 @@ import { bsc } from "wagmi/chains";
 import {
   Wallet, Gift, ArrowDownToLine, ArrowUpFromLine, ArrowUpRight, ArrowDownLeft,
   Repeat, LogIn, Send, MessageCircle, ExternalLink, ChevronRight,
-  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera,
+  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -58,6 +58,10 @@ const Profile = () => {
   const [savingProfile, setSavingProfile] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [showNftPicker, setShowNftPicker] = useState(false);
+  const [loadingNfts, setLoadingNfts] = useState(false);
+  const [walletNfts, setWalletNfts] = useState<Array<{ token_address: string; token_id: string; name: string; image_url: string; collection_name: string }>>([]);
+  const [selectedNftUrl, setSelectedNftUrl] = useState<string | null>(null);
 
   // Fetch profile data
   const { data: profile } = useQuery({
@@ -107,6 +111,32 @@ const Profile = () => {
       })();
     }
   }, [user, isConnected, address, profile]);
+
+  const fetchWalletNfts = async () => {
+    const walletAddr = savedWallet || address;
+    if (!walletAddr) { toast.error("Connect a wallet first"); return; }
+    setLoadingNfts(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("fetch-wallet-nfts", {
+        body: { wallet_address: walletAddr },
+      });
+      if (error) throw error;
+      setWalletNfts(data.nfts || []);
+      if ((data.nfts || []).length === 0) toast.info("No NFTs found in this wallet");
+    } catch (err: any) {
+      console.error("NFT fetch error:", err);
+      toast.error("Failed to load NFTs");
+    } finally {
+      setLoadingNfts(false);
+    }
+  };
+
+  const handleSelectNft = (imageUrl: string) => {
+    setSelectedNftUrl(imageUrl);
+    setAvatarPreview(imageUrl);
+    setAvatarFile(null); // clear file upload if NFT selected
+    setShowNftPicker(false);
+  };
 
   const savedWallet = profile?.wallet_address;
 
@@ -254,9 +284,64 @@ const Profile = () => {
                         <Camera className="w-5 h-5 text-foreground" />
                       </div>
                     </label>
-                    <input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={handleAvatarSelect} />
-                    <span className="text-[10px] text-muted-foreground">Tap to change photo</span>
+                    <input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={(e) => { handleAvatarSelect(e); setSelectedNftUrl(null); }} />
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-muted-foreground">Tap to upload photo</span>
+                      {(isConnected || savedWallet) && (
+                        <>
+                          <span className="text-[10px] text-muted-foreground">or</span>
+                          <button
+                            type="button"
+                            onClick={() => { setShowNftPicker(true); fetchWalletNfts(); }}
+                            className="text-[10px] font-semibold text-primary hover:underline flex items-center gap-1"
+                          >
+                            <Image className="w-3 h-3" /> Use NFT
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
+
+                  {/* NFT Picker */}
+                  <AnimatePresence>
+                    {showNftPicker && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="border border-border rounded-xl p-3 bg-muted/30">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-semibold">Your NFTs</span>
+                            <button type="button" onClick={() => setShowNftPicker(false)} className="text-[10px] text-muted-foreground hover:text-foreground">Close</button>
+                          </div>
+                          {loadingNfts ? (
+                            <div className="flex items-center justify-center py-6">
+                              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                            </div>
+                          ) : walletNfts.length === 0 ? (
+                            <p className="text-xs text-muted-foreground text-center py-4">No NFTs found</p>
+                          ) : (
+                            <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto">
+                              {walletNfts.map((nft) => (
+                                <button
+                                  key={`${nft.token_address}-${nft.token_id}`}
+                                  type="button"
+                                  onClick={() => handleSelectNft(nft.image_url)}
+                                  className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
+                                    selectedNftUrl === nft.image_url ? "border-primary ring-2 ring-primary/30" : "border-border"
+                                  }`}
+                                >
+                                  <img src={nft.image_url} alt={nft.name} className="w-full h-full object-cover" loading="lazy" />
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                   <div>
                     <label className="text-xs font-medium text-muted-foreground mb-1 block">Display Name</label>
                     <input
@@ -282,9 +367,11 @@ const Profile = () => {
                         setSavingProfile(true);
                         try {
                           let avatarUrl: string | null = null;
-                          if (avatarFile) {
+                          if (selectedNftUrl) {
+                            avatarUrl = selectedNftUrl;
+                          } else if (avatarFile) {
                             avatarUrl = await uploadAvatar();
-                            if (!avatarUrl && avatarFile) return; // upload failed
+                            if (!avatarUrl && avatarFile) return;
                           }
                           const { error: authError } = await supabase.auth.updateUser({
                             data: { display_name: editName.trim(), ...(avatarUrl ? { avatar_url: avatarUrl } : {}) },
@@ -297,6 +384,8 @@ const Profile = () => {
                           queryClient.invalidateQueries({ queryKey: ["profile", user!.id] });
                           setAvatarFile(null);
                           setAvatarPreview(null);
+                          setSelectedNftUrl(null);
+                          setShowNftPicker(false);
                           toast.success("Profile updated!");
                           setEditingProfile(false);
                         } finally {
