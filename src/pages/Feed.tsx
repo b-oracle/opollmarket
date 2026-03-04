@@ -21,6 +21,7 @@ const Feed = () => {
   const [refreshing, setRefreshing] = useState(false);
   const touchStartY = useRef(0);
   const isPulling = useRef(false);
+  const hapticFired = useRef(false);
   const spinControls = useAnimation();
 
   const sortedMarkets = useMemo(() => {
