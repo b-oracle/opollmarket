@@ -38,13 +38,21 @@ import DesktopSidebar from "./components/DesktopSidebar";
 import DesktopFooter from "./components/DesktopFooter";
 const queryClient = new QueryClient();
 
+const isFooterHidden = (pathname: string) =>
+  ["/", "/feed", "/profile", "/referrals"].includes(pathname) ||
+  pathname.startsWith("/market/") ||
+  pathname.startsWith("/admin");
+
 const ConditionalFooter = () => {
   const location = useLocation();
-  const hidden = ["/", "/feed", "/profile", "/referrals"].includes(location.pathname) ||
-    location.pathname.startsWith("/market/") ||
-    location.pathname.startsWith("/admin");
-  if (hidden) return null;
+  if (isFooterHidden(location.pathname)) return null;
   return <DesktopFooter />;
+};
+
+const ConditionalPadding = () => {
+  const location = useLocation();
+  if (isFooterHidden(location.pathname)) return null;
+  return <div className="hidden md:block pb-44" />;
 };
 
 const App = () => (
@@ -57,7 +65,7 @@ const App = () => (
           
           <BrowserRouter>
             <DesktopSidebar />
-            <div className="md:ml-60 min-h-screen flex flex-col md:pb-44">
+            <div className="md:ml-60 min-h-screen flex flex-col">
               <div className="flex-1">
                 <Routes>
                   <Route path="/" element={<Index />} />
