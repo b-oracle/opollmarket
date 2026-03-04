@@ -341,7 +341,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           </div>
 
           {/* Prediction buttons */}
-          {isActive && (
+          {(
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
