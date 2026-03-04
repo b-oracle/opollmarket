@@ -284,9 +284,64 @@ const Profile = () => {
                         <Camera className="w-5 h-5 text-foreground" />
                       </div>
                     </label>
-                    <input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={handleAvatarSelect} />
-                    <span className="text-[10px] text-muted-foreground">Tap to change photo</span>
+                    <input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={(e) => { handleAvatarSelect(e); setSelectedNftUrl(null); }} />
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-muted-foreground">Tap to upload photo</span>
+                      {(isConnected || savedWallet) && (
+                        <>
+                          <span className="text-[10px] text-muted-foreground">or</span>
+                          <button
+                            type="button"
+                            onClick={() => { setShowNftPicker(true); fetchWalletNfts(); }}
+                            className="text-[10px] font-semibold text-primary hover:underline flex items-center gap-1"
+                          >
+                            <Image className="w-3 h-3" /> Use NFT
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
+
+                  {/* NFT Picker */}
+                  <AnimatePresence>
+                    {showNftPicker && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="border border-border rounded-xl p-3 bg-muted/30">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-semibold">Your NFTs</span>
+                            <button type="button" onClick={() => setShowNftPicker(false)} className="text-[10px] text-muted-foreground hover:text-foreground">Close</button>
+                          </div>
+                          {loadingNfts ? (
+                            <div className="flex items-center justify-center py-6">
+                              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                            </div>
+                          ) : walletNfts.length === 0 ? (
+                            <p className="text-xs text-muted-foreground text-center py-4">No NFTs found</p>
+                          ) : (
+                            <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto">
+                              {walletNfts.map((nft) => (
+                                <button
+                                  key={`${nft.token_address}-${nft.token_id}`}
+                                  type="button"
+                                  onClick={() => handleSelectNft(nft.image_url)}
+                                  className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
+                                    selectedNftUrl === nft.image_url ? "border-primary ring-2 ring-primary/30" : "border-border"
+                                  }`}
+                                >
+                                  <img src={nft.image_url} alt={nft.name} className="w-full h-full object-cover" loading="lazy" />
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                   <div>
                     <label className="text-xs font-medium text-muted-foreground mb-1 block">Display Name</label>
                     <input
