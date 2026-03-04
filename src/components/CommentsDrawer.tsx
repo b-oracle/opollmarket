@@ -267,6 +267,7 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
       toast.error("Sign in to like comments");
       return;
     }
+    try {
       if (alreadyLiked) {
         await supabase
           .from("comment_likes")
