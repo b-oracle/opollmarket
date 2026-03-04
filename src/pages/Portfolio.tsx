@@ -432,6 +432,7 @@ const Portfolio = () => {
       </div>
 
       {/* Sell Confirmation Modal */}
+      {sellTarget && (
       <BottomSheet open={!!sellTarget} onClose={closeSell} className="p-5">
                 <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-4" />
 
@@ -555,6 +556,7 @@ const Portfolio = () => {
                   )}
                 </AnimatePresence>
       </BottomSheet>
+      )}
 
       <WinCelebrationModal
         open={winModal.open}
