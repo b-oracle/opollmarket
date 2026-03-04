@@ -14,7 +14,7 @@ import { bsc } from "wagmi/chains";
 import {
   Wallet, Gift, ArrowDownToLine, ArrowUpFromLine, ArrowUpRight, ArrowDownLeft,
   Repeat, LogIn, Send, MessageCircle, ExternalLink, ChevronRight,
-  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image,
+  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image, Hexagon,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -228,11 +228,18 @@ const Profile = () => {
       <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4 pt-20">
         {/* Avatar & Profile Edit */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center mb-3 overflow-hidden">
-            {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-2xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
+          <div className="relative">
+            <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center mb-3 overflow-hidden">
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-2xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
+              )}
+            </div>
+            {profile?.avatar_url && !profile.avatar_url.includes('/storage/v1/') && (
+              <div className="absolute -bottom-0.5 -right-0.5 bg-primary text-primary-foreground rounded-full p-1 border-2 border-background" title="NFT Avatar">
+                <Hexagon className="w-3 h-3" />
+              </div>
             )}
           </div>
           <div className="flex items-center gap-2">
