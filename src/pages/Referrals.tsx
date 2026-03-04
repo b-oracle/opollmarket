@@ -112,7 +112,7 @@ const Referrals = () => {
     return (
       <div className="min-h-dvh bg-background pb-20">
         <TopBar />
-        <div className="max-w-lg mx-auto px-4 pt-20 flex flex-col items-center justify-center" style={{ minHeight: "60vh" }}>
+        <div className="max-w-lg mx-auto px-4 flex flex-col items-center justify-center" style={{ minHeight: "60vh", paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
           <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-4">
             <Gift className="w-8 h-8 text-muted-foreground" />
           </div>
@@ -135,7 +135,7 @@ const Referrals = () => {
   return (
     <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
       <TopBar />
-      <div className="max-w-lg mx-auto px-3 sm:px-4 pt-20">
+      <div className="max-w-lg mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <button onClick={() => navigate("/profile")} className="p-2 rounded-lg glass hover:bg-accent/50 transition-colors">
