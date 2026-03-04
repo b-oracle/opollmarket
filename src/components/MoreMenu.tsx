@@ -41,8 +41,11 @@ const MoreMenu = ({ open, onOpenChange }: MoreMenuProps) => {
 
   return (
     <>
-      <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="rounded-t-2xl px-4 pt-2 border-border bg-background" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 5.5rem)' }}>
+      <Sheet open={open} onOpenChange={onOpenChange} modal={false}>
+        <SheetContent side="bottom" className="rounded-t-2xl px-4 pt-2 border-border bg-background" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 5.5rem)', zIndex: 60 }}
+          onInteractOutside={(e) => { onOpenChange(false); }}
+          onEscapeKeyDown={() => onOpenChange(false)}
+        >
           <div className="mx-auto mt-2 mb-4 h-1.5 w-12 rounded-full bg-muted" />
           <SheetHeader className="pb-2">
             <SheetTitle className="text-left text-lg">More</SheetTitle>
