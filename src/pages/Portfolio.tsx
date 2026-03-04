@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,112 +20,65 @@ import {
   CheckCircle2,
   AlertTriangle,
   LogOut,
-  Shield,
   Trophy,
 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import WinCelebrationModal from "@/components/WinCelebrationModal";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-interface Position {
+interface PositionRow {
+  id: string;
+  market_id: string;
+  side: string;
+  option_id: string | null;
+  shares: number;
+  avg_price: number;
+  markets: {
+    title: string;
+    yes_price: number;
+    no_price: number;
+    category: string;
+    end_date: string;
+    status: string;
+    market_type: string;
+  } | null;
+}
+
+interface EnrichedPosition {
   id: string;
   marketId: string;
   marketTitle: string;
   side: "yes" | "no";
+  optionId: string | null;
   shares: number;
-  avgPrice: number; // cents
-  currentPrice: number; // cents
+  avgPrice: number;
+  currentPrice: number;
   invested: number;
+  currentValue: number;
+  unrealizedPnl: number;
+  pnlPercent: number;
+  maxPayout: number;
   category: string;
   endDate: string;
-  status: "active" | "won" | "lost";
+  status: string;
 }
-
-const MOCK_POSITIONS: Position[] = [
-  {
-    id: "p1",
-    marketId: "1",
-    marketTitle: "Will Bitcoin hit $150K before July 2026?",
-    side: "yes",
-    shares: 120,
-    avgPrice: 55,
-    currentPrice: 62,
-    invested: 66,
-    category: "Crypto",
-    endDate: "2026-07-01",
-    status: "active",
-  },
-  {
-    id: "p2",
-    marketId: "4",
-    marketTitle: "Will the US enter a recession in 2026?",
-    side: "no",
-    shares: 80,
-    avgPrice: 60,
-    currentPrice: 66,
-    invested: 48,
-    category: "Economy",
-    endDate: "2027-03-01",
-    status: "active",
-  },
-  {
-    id: "p3",
-    marketId: "2",
-    marketTitle: "Will AI pass the Turing Test by end of 2026?",
-    side: "yes",
-    shares: 200,
-    avgPrice: 40,
-    currentPrice: 45,
-    invested: 80,
-    category: "AI & Tech",
-    endDate: "2026-12-31",
-    status: "active",
-  },
-  {
-    id: "p4",
-    marketId: "5",
-    marketTitle: "Will Taylor Swift announce a new album before September?",
-    side: "yes",
-    shares: 50,
-    avgPrice: 72,
-    currentPrice: 78,
-    invested: 36,
-    category: "Entertainment",
-    endDate: "2026-09-01",
-    status: "active",
-  },
-  {
-    id: "p5",
-    marketId: "6",
-    marketTitle: "Will Ethereum flip Bitcoin in market cap by 2027?",
-    side: "no",
-    shares: 150,
-    avgPrice: 82,
-    currentPrice: 88,
-    invested: 123,
-    category: "Crypto",
-    endDate: "2027-01-01",
-    status: "active",
-  },
-];
 
 type FilterType = "all" | "profit" | "loss";
 
-const Sparkline = ({ avgPrice, currentPrice, side, seed }: { avgPrice: number; currentPrice: number; side: string; seed: string }) => {
-  const points = useMemo(() => {
-    const count = 20;
-    const seedNum = seed.charCodeAt(seed.length - 1);
-    const pts: number[] = [];
-    for (let i = 0; i < count; i++) {
-      const progress = i / (count - 1);
-      const base = avgPrice + (currentPrice - avgPrice) * progress;
-      const noise = Math.sin(i * 1.3 + seedNum) * 3 + Math.cos(i * 0.7 + seedNum * 2) * 2;
-      pts.push(base + noise);
-    }
-    pts[pts.length - 1] = currentPrice;
-    return pts;
-  }, [avgPrice, currentPrice, seed]);
+const Sparkline = ({ avgPrice, currentPrice, seed }: { avgPrice: number; currentPrice: number; seed: string }) => {
+  const count = 20;
+  const seedNum = seed.charCodeAt(seed.length - 1) + seed.charCodeAt(0);
+  const points: number[] = [];
+  for (let i = 0; i < count; i++) {
+    const progress = i / (count - 1);
+    const base = avgPrice + (currentPrice - avgPrice) * progress;
+    const noise = Math.sin(i * 1.3 + seedNum) * 3 + Math.cos(i * 0.7 + seedNum * 2) * 2;
+    points.push(base + noise);
+  }
+  points[points.length - 1] = currentPrice;
 
   const min = Math.min(...points) - 1;
   const max = Math.max(...points) + 1;
@@ -161,19 +114,92 @@ const Sparkline = ({ avgPrice, currentPrice, side, seed }: { avgPrice: number; c
   );
 };
 
-type EnrichedPosition = Position & { currentValue: number; unrealizedPnl: number; pnlPercent: number; maxPayout: number };
-
 const Portfolio = () => {
   const { isConnected } = useAccount();
   const { user } = useAuth();
   const isAuthenticated = !!user || isConnected;
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [filter, setFilter] = useState<FilterType>("all");
   const [sellTarget, setSellTarget] = useState<EnrichedPosition | null>(null);
   const [sellStep, setSellStep] = useState<"confirm" | "executing" | "success" | "error">("confirm");
   const [winModal, setWinModal] = useState<{ open: boolean; market: string; side: "YES" | "NO"; payout: number; profit: number }>({
     open: false, market: "", side: "YES", payout: 0, profit: 0,
   });
+
+  // Fetch real positions
+  const { data: rawPositions = [], isLoading } = useQuery({
+    queryKey: ["portfolio-positions", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("positions")
+        .select("id, market_id, side, option_id, shares, avg_price, markets(title, yes_price, no_price, category, end_date, status, market_type)")
+        .eq("user_id", user.id)
+        .gt("shares", 0)
+        .order("created_at", { ascending: false });
+      if (error) {
+        console.error("Failed to fetch positions:", error);
+        return [];
+      }
+      return (data || []) as unknown as PositionRow[];
+    },
+    enabled: !!user?.id,
+  });
+
+  // Enrich positions with P&L
+  const enriched: EnrichedPosition[] = rawPositions.map((p) => {
+    const market = p.markets;
+    const avgPriceCents = Math.round(p.avg_price * 100);
+    const currentPriceCents = market
+      ? Math.round((p.side === "yes" ? market.yes_price : market.no_price) * 100)
+      : avgPriceCents;
+    const invested = p.shares * p.avg_price;
+    const currentValue = p.shares * (currentPriceCents / 100);
+    const unrealizedPnl = currentValue - invested;
+    const pnlPercent = invested > 0 ? (unrealizedPnl / invested) * 100 : 0;
+    const maxPayout = p.shares; // $1 per share if correct
+
+    return {
+      id: p.id,
+      marketId: p.market_id,
+      marketTitle: market?.title || "Unknown Market",
+      side: p.side as "yes" | "no",
+      optionId: p.option_id,
+      shares: p.shares,
+      avgPrice: avgPriceCents,
+      currentPrice: currentPriceCents,
+      invested,
+      currentValue,
+      unrealizedPnl,
+      pnlPercent,
+      maxPayout,
+      category: market?.category || "",
+      endDate: market?.end_date || "",
+      status: market?.status || "active",
+    };
+  });
+
+  const filtered = enriched.filter((p) => {
+    if (filter === "profit") return p.unrealizedPnl > 0;
+    if (filter === "loss") return p.unrealizedPnl < 0;
+    return true;
+  });
+
+  const totalInvested = enriched.reduce((s, p) => s + p.invested, 0);
+  const totalValue = enriched.reduce((s, p) => s + p.currentValue, 0);
+  const totalPnl = totalValue - totalInvested;
+  const totalPnlPercent = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : 0;
+  const totalMaxPayout = enriched.reduce((s, p) => s + p.maxPayout, 0);
+
+  const getTimeRemaining = (endDate: string) => {
+    if (!endDate) return "—";
+    const diff = new Date(endDate).getTime() - Date.now();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    if (days < 0) return "Ended";
+    if (days > 30) return `${Math.floor(days / 30)}mo`;
+    return `${days}d`;
+  };
 
   const openSell = (pos: EnrichedPosition, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -186,60 +212,73 @@ const Portfolio = () => {
     setSellStep("confirm");
   };
 
-  const executeSell = useCallback(() => {
+  const executeSell = useCallback(async () => {
+    if (!sellTarget || !user?.id) return;
     setSellStep("executing");
-    setTimeout(() => {
-      if (Math.random() > 0.1) {
-        setSellStep("success");
-        toast.success("Position closed successfully!");
-        // Trigger win celebration if profitable
-        if (sellTarget && sellTarget.unrealizedPnl > 0) {
-          setTimeout(() => {
-            setWinModal({
-              open: true,
-              market: sellTarget.marketTitle,
-              side: sellTarget.side.toUpperCase() as "YES" | "NO",
-              payout: sellTarget.currentValue,
-              profit: sellTarget.unrealizedPnl,
-            });
-          }, 600);
-        }
-      } else {
-        setSellStep("error");
+
+    try {
+      const proceeds = sellTarget.currentValue;
+
+      // 1. Set shares to 0 on the position
+      const { error: posError } = await supabase
+        .from("positions")
+        .update({ shares: 0, updated_at: new Date().toISOString() })
+        .eq("id", sellTarget.id)
+        .eq("user_id", user.id);
+
+      if (posError) throw posError;
+
+      // 2. Credit balance
+      const { data: balanceRow } = await supabase
+        .from("balances")
+        .select("amount")
+        .eq("user_id", user.id)
+        .single();
+
+      const currentBalance = balanceRow?.amount || 0;
+      const { error: balError } = await supabase
+        .from("balances")
+        .update({ amount: currentBalance + proceeds, updated_at: new Date().toISOString() })
+        .eq("user_id", user.id);
+
+      if (balError) throw balError;
+
+      // 3. Record sell transaction
+      await supabase.from("transactions").insert({
+        user_id: user.id,
+        market_id: sellTarget.marketId,
+        type: "sell",
+        side: sellTarget.side,
+        amount: proceeds,
+        price: sellTarget.currentPrice / 100,
+        shares: sellTarget.shares,
+        status: "confirmed",
+        option_id: sellTarget.optionId,
+      });
+
+      setSellStep("success");
+      toast.success("Position closed successfully!");
+
+      // Invalidate queries
+      queryClient.invalidateQueries({ queryKey: ["portfolio-positions"] });
+      queryClient.invalidateQueries({ queryKey: ["user-balance"] });
+
+      if (sellTarget.unrealizedPnl > 0) {
+        setTimeout(() => {
+          setWinModal({
+            open: true,
+            market: sellTarget.marketTitle,
+            side: sellTarget.side.toUpperCase() as "YES" | "NO",
+            payout: sellTarget.currentValue,
+            profit: sellTarget.unrealizedPnl,
+          });
+        }, 600);
       }
-    }, 2500);
-  }, [sellTarget]);
-
-  const positions = MOCK_POSITIONS;
-
-  // Calculate P&L for each position
-  const enriched = positions.map((p) => {
-    const currentValue = p.shares * (p.currentPrice / 100);
-    const unrealizedPnl = currentValue - p.invested;
-    const pnlPercent = (unrealizedPnl / p.invested) * 100;
-    const maxPayout = p.shares; // $1 per share if correct
-    return { ...p, currentValue, unrealizedPnl, pnlPercent, maxPayout };
-  });
-
-  const filtered = enriched.filter((p) => {
-    if (filter === "profit") return p.unrealizedPnl > 0;
-    if (filter === "loss") return p.unrealizedPnl < 0;
-    return true;
-  });
-
-  // Portfolio totals
-  const totalInvested = enriched.reduce((s, p) => s + p.invested, 0);
-  const totalValue = enriched.reduce((s, p) => s + p.currentValue, 0);
-  const totalPnl = totalValue - totalInvested;
-  const totalPnlPercent = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : 0;
-  const totalMaxPayout = enriched.reduce((s, p) => s + p.maxPayout, 0);
-
-  const getTimeRemaining = (endDate: string) => {
-    const diff = new Date(endDate).getTime() - Date.now();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    if (days > 30) return `${Math.floor(days / 30)}mo`;
-    return `${days}d`;
-  };
+    } catch (err) {
+      console.error("Sell failed:", err);
+      setSellStep("error");
+    }
+  }, [sellTarget, user?.id, queryClient]);
 
   if (!isAuthenticated) {
     return (
@@ -274,7 +313,9 @@ const Portfolio = () => {
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-5">
           <h1 className="text-2xl font-bold mb-1">Portfolio</h1>
-          <p className="text-sm text-muted-foreground">{enriched.length} active positions</p>
+          <p className="text-sm text-muted-foreground">
+            {isLoading ? "Loading..." : `${enriched.length} active position${enriched.length !== 1 ? "s" : ""}`}
+          </p>
         </motion.div>
 
         {/* Summary cards */}
@@ -347,215 +388,233 @@ const Portfolio = () => {
           ))}
         </div>
 
-        {/* Positions list */}
-        <div className="space-y-3">
-          {filtered.map((pos, i) => (
-            <motion.div
-              key={pos.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              onClick={() => navigate(`/market/${pos.marketId}`)}
-              className="w-full glass rounded-xl p-4 text-left transition-all active:scale-[0.98] hover:bg-accent/30 cursor-pointer"
+        {/* Loading state */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!isLoading && enriched.length === 0 && (
+          <div className="glass rounded-xl p-8 text-center">
+            <BarChart3 className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+            <h3 className="text-base font-bold mb-1">No Positions Yet</h3>
+            <p className="text-sm text-muted-foreground mb-4">Start predicting on markets to build your portfolio.</p>
+            <button
+              onClick={() => navigate("/")}
+              className="px-5 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
             >
-              {/* Top row: title + side badge */}
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <p className="text-sm font-semibold leading-tight flex-1 line-clamp-2">{pos.marketTitle}</p>
-                <span
-                  className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
-                    pos.side === "yes"
-                      ? "bg-primary/15 text-primary border border-primary/30"
-                      : "bg-destructive/15 text-destructive border border-destructive/30"
-                  }`}
-                >
-                  {pos.side}
-                </span>
-              </div>
+              Browse Markets
+            </button>
+          </div>
+        )}
 
-              {/* Stats row */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
-                <div>
-                  <p className="text-[9px] text-muted-foreground uppercase">Shares</p>
-                  <p className="text-xs font-bold">{pos.shares}</p>
+        {/* Positions list */}
+        {!isLoading && (
+          <div className="space-y-3">
+            {filtered.map((pos, i) => (
+              <motion.div
+                key={pos.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                onClick={() => navigate(`/market/${pos.marketId}`)}
+                className="w-full glass rounded-xl p-4 text-left transition-all active:scale-[0.98] hover:bg-accent/30 cursor-pointer"
+              >
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <p className="text-sm font-semibold leading-tight flex-1 line-clamp-2">{pos.marketTitle}</p>
+                  <span
+                    className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
+                      pos.side === "yes"
+                        ? "bg-primary/15 text-primary border border-primary/30"
+                        : "bg-destructive/15 text-destructive border border-destructive/30"
+                    }`}
+                  >
+                    {pos.side}
+                  </span>
                 </div>
-                <div>
-                  <p className="text-[9px] text-muted-foreground uppercase">Avg Price</p>
-                  <p className="text-xs font-bold">{pos.avgPrice}¢</p>
-                </div>
-                <div>
-                  <p className="text-[9px] text-muted-foreground uppercase">Current</p>
-                  <p className={`text-xs font-bold ${pos.currentPrice > pos.avgPrice ? "neon-yes" : pos.currentPrice < pos.avgPrice ? "neon-no" : ""}`}>
-                    {pos.currentPrice}¢
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[9px] text-muted-foreground uppercase">Expires</p>
-                  <p className="text-xs font-bold flex items-center gap-0.5">
-                    <Clock className="w-2.5 h-2.5" />
-                    {getTimeRemaining(pos.endDate)}
-                  </p>
-                </div>
-              </div>
 
-              {/* Sparkline */}
-              <Sparkline avgPrice={pos.avgPrice} currentPrice={pos.currentPrice} side={pos.side} seed={pos.id} />
-
-              {/* P&L bar + Sell button */}
-              <div className="flex items-center justify-between pt-2 border-t border-border">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-muted-foreground">P&L:</span>
-                    <span className={`text-xs font-bold flex items-center gap-0.5 ${pos.unrealizedPnl >= 0 ? "neon-yes" : "neon-no"}`}>
-                      {pos.unrealizedPnl >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                      ${Math.abs(pos.unrealizedPnl).toFixed(2)}
-                    </span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+                  <div>
+                    <p className="text-[9px] text-muted-foreground uppercase">Shares</p>
+                    <p className="text-xs font-bold">{pos.shares}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] text-muted-foreground uppercase">Avg Price</p>
+                    <p className="text-xs font-bold">{pos.avgPrice}¢</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] text-muted-foreground uppercase">Current</p>
+                    <p className={`text-xs font-bold ${pos.currentPrice > pos.avgPrice ? "neon-yes" : pos.currentPrice < pos.avgPrice ? "neon-no" : ""}`}>
+                      {pos.currentPrice}¢
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] text-muted-foreground uppercase">Expires</p>
+                    <p className="text-xs font-bold flex items-center gap-0.5">
+                      <Clock className="w-2.5 h-2.5" />
+                      {getTimeRemaining(pos.endDate)}
+                    </p>
                   </div>
                 </div>
-                <button
-                  onClick={(e) => openSell(pos, e)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-[10px] font-bold uppercase tracking-wider hover:bg-destructive/20 transition-all active:scale-95"
-                >
-                  <LogOut className="w-3 h-3" />
-                  Sell
-                </button>
-              </div>
-            </motion.div>
-          ))}
 
-          {filtered.length === 0 && (
-            <div className="glass rounded-xl p-8 text-center">
-              <BarChart3 className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">No positions match this filter.</p>
-            </div>
-          )}
-        </div>
+                <Sparkline avgPrice={pos.avgPrice} currentPrice={pos.currentPrice} seed={pos.id} />
+
+                <div className="flex items-center justify-between pt-2 border-t border-border">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-muted-foreground">P&L:</span>
+                      <span className={`text-xs font-bold flex items-center gap-0.5 ${pos.unrealizedPnl >= 0 ? "neon-yes" : "neon-no"}`}>
+                        {pos.unrealizedPnl >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                        ${Math.abs(pos.unrealizedPnl).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                  {pos.status === "active" && (
+                    <button
+                      onClick={(e) => openSell(pos, e)}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-[10px] font-bold uppercase tracking-wider hover:bg-destructive/20 transition-all active:scale-95"
+                    >
+                      <LogOut className="w-3 h-3" />
+                      Sell
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+
+            {filtered.length === 0 && enriched.length > 0 && (
+              <div className="glass rounded-xl p-8 text-center">
+                <BarChart3 className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">No positions match this filter.</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Sell Confirmation Modal */}
       {sellTarget && (
-      <BottomSheet open={!!sellTarget} onClose={closeSell} className="p-5">
-                <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-4" />
+        <BottomSheet open={!!sellTarget} onClose={closeSell} className="p-5">
+          <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-4" />
 
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-bold">Close Position</h2>
-                  <button onClick={closeSell} className="w-8 h-8 rounded-full glass flex items-center justify-center">
-                    <X className="w-4 h-4" />
-                  </button>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold">Close Position</h2>
+            <button onClick={closeSell} className="w-8 h-8 rounded-full glass flex items-center justify-center">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <AnimatePresence mode="wait">
+            {sellStep === "confirm" && (
+              <motion.div key="confirm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <p className="text-xs text-muted-foreground mb-4 line-clamp-2">{sellTarget.marketTitle}</p>
+
+                <div className="glass rounded-xl p-4 mb-4 space-y-2.5">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Side</span>
+                    <span className={`font-bold uppercase ${sellTarget.side === "yes" ? "neon-yes" : "neon-no"}`}>{sellTarget.side}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Shares</span>
+                    <span className="font-semibold">{sellTarget.shares}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Avg Entry</span>
+                    <span className="font-semibold">{sellTarget.avgPrice}¢</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Current Price</span>
+                    <span className={`font-semibold ${sellTarget.currentPrice > sellTarget.avgPrice ? "neon-yes" : "neon-no"}`}>
+                      {sellTarget.currentPrice}¢
+                    </span>
+                  </div>
+                  <div className="border-t border-border pt-2 flex justify-between text-sm">
+                    <span className="text-muted-foreground">Sale Proceeds</span>
+                    <span className="font-bold text-lg">${sellTarget.currentValue.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Realized P&L</span>
+                    <span className={`font-bold ${sellTarget.unrealizedPnl >= 0 ? "neon-yes" : "neon-no"}`}>
+                      {sellTarget.unrealizedPnl >= 0 ? "+" : ""}${sellTarget.unrealizedPnl.toFixed(2)} ({sellTarget.pnlPercent >= 0 ? "+" : ""}{sellTarget.pnlPercent.toFixed(1)}%)
+                    </span>
+                  </div>
                 </div>
 
-                <AnimatePresence mode="wait">
-                  {sellStep === "confirm" && (
-                    <motion.div key="confirm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                      <p className="text-xs text-muted-foreground mb-4 line-clamp-2">{sellTarget.marketTitle}</p>
+                <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border mb-5">
+                  <AlertTriangle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-muted-foreground">
+                    Selling will close your entire position. Proceeds will be credited to your platform balance instantly.
+                  </p>
+                </div>
 
-                      <div className="glass rounded-xl p-4 mb-4 space-y-2.5">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Side</span>
-                          <span className={`font-bold uppercase ${sellTarget.side === "yes" ? "neon-yes" : "neon-no"}`}>{sellTarget.side}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Shares</span>
-                          <span className="font-semibold">{sellTarget.shares}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Avg Entry</span>
-                          <span className="font-semibold">{sellTarget.avgPrice}¢</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Current Price</span>
-                          <span className={`font-semibold ${sellTarget.currentPrice > sellTarget.avgPrice ? "neon-yes" : "neon-no"}`}>
-                            {sellTarget.currentPrice}¢
-                          </span>
-                        </div>
-                        <div className="border-t border-border pt-2 flex justify-between text-sm">
-                          <span className="text-muted-foreground">Sale Proceeds</span>
-                          <span className="font-bold text-lg">${sellTarget.currentValue.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Realized P&L</span>
-                          <span className={`font-bold ${sellTarget.unrealizedPnl >= 0 ? "neon-yes" : "neon-no"}`}>
-                            {sellTarget.unrealizedPnl >= 0 ? "+" : ""}${sellTarget.unrealizedPnl.toFixed(2)} ({sellTarget.pnlPercent >= 0 ? "+" : ""}{sellTarget.pnlPercent.toFixed(1)}%)
-                          </span>
-                        </div>
-                      </div>
+                <div className="flex gap-3">
+                  <button onClick={closeSell} className="flex-1 glass py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-95">
+                    Cancel
+                  </button>
+                  <button
+                    onClick={executeSell}
+                    className="flex-1 bg-destructive text-destructive-foreground py-3.5 rounded-xl font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Confirm Sell
+                  </button>
+                </div>
+              </motion.div>
+            )}
 
-                      <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border mb-5">
-                        <AlertTriangle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                        <p className="text-[10px] text-muted-foreground">
-                          Selling will close your entire position. Proceeds will be credited to your platform balance instantly.
-                        </p>
-                      </div>
+            {sellStep === "executing" && (
+              <motion.div key="executing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-8">
+                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}>
+                  <Loader2 className="w-12 h-12 text-primary" />
+                </motion.div>
+                <h3 className="text-lg font-bold mt-4 mb-1">Selling Position...</h3>
+                <p className="text-sm text-muted-foreground">Processing your sell order</p>
+              </motion.div>
+            )}
 
-                      <div className="flex gap-3">
-                        <button onClick={closeSell} className="flex-1 glass py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-95">
-                          Cancel
-                        </button>
-                        <button
-                          onClick={executeSell}
-                          className="flex-1 bg-destructive text-destructive-foreground py-3.5 rounded-xl font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          Confirm Sell
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
+            {sellStep === "success" && (
+              <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center py-6">
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", damping: 10 }}
+                  className="w-16 h-16 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center mb-4"
+                >
+                  <CheckCircle2 className="w-8 h-8 text-primary" />
+                </motion.div>
+                <h3 className="text-lg font-bold mb-1">Position Closed!</h3>
+                <p className="text-sm text-muted-foreground text-center mb-2">
+                  Sold {sellTarget.shares} {sellTarget.side.toUpperCase()} shares
+                </p>
+                <p className={`text-xl font-bold mb-4 ${sellTarget.unrealizedPnl >= 0 ? "neon-yes" : "neon-no"}`}>
+                  {sellTarget.unrealizedPnl >= 0 ? "+" : ""}${sellTarget.unrealizedPnl.toFixed(2)}
+                </p>
+                <div className="glass rounded-xl p-3 w-full space-y-1.5 mb-5">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Proceeds</span>
+                    <span className="font-semibold">${sellTarget.currentValue.toFixed(2)}</span>
+                  </div>
+                </div>
+                <button onClick={closeSell} className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm transition-all active:scale-95">
+                  Done
+                </button>
+              </motion.div>
+            )}
 
-                  {sellStep === "executing" && (
-                    <motion.div key="executing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-8">
-                      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}>
-                        <Loader2 className="w-12 h-12 text-primary" />
-                      </motion.div>
-                      <h3 className="text-lg font-bold mt-4 mb-1">Selling Position...</h3>
-                      <p className="text-sm text-muted-foreground">Executing trade on-chain</p>
-                    </motion.div>
-                  )}
-
-                  {sellStep === "success" && (
-                    <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center py-6">
-                      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", damping: 10 }}
-                        className="w-16 h-16 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center mb-4"
-                      >
-                        <CheckCircle2 className="w-8 h-8 text-primary" />
-                      </motion.div>
-                      <h3 className="text-lg font-bold mb-1">Position Closed!</h3>
-                      <p className="text-sm text-muted-foreground text-center mb-2">
-                        Sold {sellTarget.shares} {sellTarget.side.toUpperCase()} shares
-                      </p>
-                      <p className={`text-xl font-bold mb-4 ${sellTarget.unrealizedPnl >= 0 ? "neon-yes" : "neon-no"}`}>
-                        {sellTarget.unrealizedPnl >= 0 ? "+" : ""}${sellTarget.unrealizedPnl.toFixed(2)}
-                      </p>
-                      <div className="glass rounded-xl p-3 w-full space-y-1.5 mb-5">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">Proceeds</span>
-                          <span className="font-semibold">${sellTarget.currentValue.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">Tx Hash</span>
-                          <span className="font-mono text-primary">0x4f8c...b72a</span>
-                        </div>
-                      </div>
-                      <button onClick={closeSell} className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm transition-all active:scale-95">
-                        Done
-                      </button>
-                    </motion.div>
-                  )}
-
-                  {sellStep === "error" && (
-                    <motion.div key="error" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center py-6">
-                      <div className="w-16 h-16 rounded-full bg-destructive/20 border border-destructive/40 flex items-center justify-center mb-4">
-                        <AlertTriangle className="w-8 h-8 text-destructive" />
-                      </div>
-                      <h3 className="text-lg font-bold mb-1">Sale Failed</h3>
-                      <p className="text-sm text-muted-foreground text-center mb-5">Transaction rejected or failed. No shares were sold.</p>
-                      <div className="flex gap-3 w-full">
-                        <button onClick={closeSell} className="flex-1 glass py-3 rounded-xl font-semibold text-sm transition-all active:scale-95">Cancel</button>
-                        <button onClick={() => setSellStep("confirm")} className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm transition-all active:scale-95">Try Again</button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-      </BottomSheet>
+            {sellStep === "error" && (
+              <motion.div key="error" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center py-6">
+                <div className="w-16 h-16 rounded-full bg-destructive/20 border border-destructive/40 flex items-center justify-center mb-4">
+                  <AlertTriangle className="w-8 h-8 text-destructive" />
+                </div>
+                <h3 className="text-lg font-bold mb-1">Sale Failed</h3>
+                <p className="text-sm text-muted-foreground text-center mb-5">Transaction failed. No shares were sold. Please try again.</p>
+                <div className="flex gap-3 w-full">
+                  <button onClick={closeSell} className="flex-1 glass py-3 rounded-xl font-semibold text-sm transition-all active:scale-95">Cancel</button>
+                  <button onClick={() => setSellStep("confirm")} className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm transition-all active:scale-95">Try Again</button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </BottomSheet>
       )}
 
       <WinCelebrationModal
