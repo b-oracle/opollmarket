@@ -104,7 +104,7 @@ const Index = () => {
     <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
       <SEOHead title="Home" description="Swipe through markets. Predict. Win big. Trade on real-world events with OPOLL." path="/" />
       <TopBar />
-      <div className="max-w-lg md:max-w-4xl xl:max-w-6xl mx-auto px-3 sm:px-4 pt-20">
+      <div className="max-w-lg md:max-w-4xl xl:max-w-6xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
         {/* Hero */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-8">
           <h2 className="text-2xl sm:text-3xl font-bold leading-tight mb-2">
