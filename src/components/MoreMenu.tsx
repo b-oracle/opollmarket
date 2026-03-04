@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { FileText, Shield, AlertTriangle, HelpCircle, ChevronRight, LogIn, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
 import InstallAppModal from "@/components/InstallAppModal";
 
 interface MoreMenuProps {
@@ -26,6 +27,18 @@ const socialLinks = [
   { icon: "✈", label: "Join Telegram", href: "https://t.me" },
 ];
 
+const staggerContainer = {
+  hidden: {},
+  show: {
+    transition: { staggerChildren: 0.06, delayChildren: 0.1 },
+  },
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.25, ease: "easeOut" } },
+};
+
 const MoreMenu = ({ open, onOpenChange }: MoreMenuProps) => {
   const navigate = useNavigate();
   const [installOpen, setInstallOpen] = useState(false);
@@ -43,7 +56,7 @@ const MoreMenu = ({ open, onOpenChange }: MoreMenuProps) => {
     <>
       <Sheet open={open} onOpenChange={onOpenChange} modal={false}>
         <SheetContent side="bottom" className="rounded-t-2xl px-4 pt-2 border-t border-border bg-background" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 5.5rem)', zIndex: 60, maxHeight: '80dvh' }}
-          onInteractOutside={(e) => { onOpenChange(false); }}
+          onInteractOutside={() => { onOpenChange(false); }}
           onEscapeKeyDown={() => onOpenChange(false)}
         >
           <div className="mx-auto mt-2 mb-4 h-1.5 w-12 rounded-full bg-muted" />
@@ -51,16 +64,25 @@ const MoreMenu = ({ open, onOpenChange }: MoreMenuProps) => {
             <SheetTitle className="text-left text-lg">More</SheetTitle>
           </SheetHeader>
 
-          <div className="space-y-5 overflow-y-auto" style={{ maxHeight: 'calc(80dvh - 6rem)' }}>
-            <Button
-              className="w-full h-12 text-base font-semibold"
-              onClick={() => handleNavigate("/auth")}
-            >
-              <LogIn className="w-5 h-5 mr-2" />
-              Sign In / Sign Up
-            </Button>
+          <motion.div
+            className="space-y-5 overflow-y-auto"
+            style={{ maxHeight: 'calc(80dvh - 6rem)' }}
+            variants={staggerContainer}
+            initial="hidden"
+            animate="show"
+            key={open ? "open" : "closed"}
+          >
+            <motion.div variants={fadeUp}>
+              <Button
+                className="w-full h-12 text-base font-semibold"
+                onClick={() => handleNavigate("/auth")}
+              >
+                <LogIn className="w-5 h-5 mr-2" />
+                Sign In / Sign Up
+              </Button>
+            </motion.div>
 
-            <div>
+            <motion.div variants={fadeUp}>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Legal</p>
               <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
                 {legalLinks.map(({ icon: Icon, label, path }) => (
@@ -77,9 +99,9 @@ const MoreMenu = ({ open, onOpenChange }: MoreMenuProps) => {
                   </button>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
-            <div>
+            <motion.div variants={fadeUp}>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Resources</p>
               <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
                 {resourceLinks.map(({ icon: Icon, label, path }) => (
@@ -96,9 +118,9 @@ const MoreMenu = ({ open, onOpenChange }: MoreMenuProps) => {
                   </button>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
-            <div>
+            <motion.div variants={fadeUp}>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Social</p>
               <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
                 {socialLinks.map(({ icon, label, href }) => (
@@ -117,8 +139,8 @@ const MoreMenu = ({ open, onOpenChange }: MoreMenuProps) => {
                   </a>
                 ))}
               </div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </SheetContent>
       </Sheet>
 
