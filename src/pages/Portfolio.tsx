@@ -1,5 +1,5 @@
 // Loader2 imported from lucide below
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { useAuth } from "@/hooks/useAuth";
