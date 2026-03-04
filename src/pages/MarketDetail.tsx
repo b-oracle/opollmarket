@@ -462,7 +462,7 @@ const MarketDetail = () => {
                 <XAxis dataKey="day" hide />
                 <YAxis domain={[0, 100]} hide />
                 <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "0.75rem", fontSize: "12px" }}
-                  formatter={(value: number, name: string) => [`${value}¢`, name]} labelFormatter={(label) => `Day ${label}`} />
+                  formatter={(value: number, name: string) => [`${value}¢`, name]} labelFormatter={(_: any, payload: any[]) => payload?.[0]?.payload?.label || ""} />
                 {isMulti && market.options ? (
                   market.options.map((opt, i) => (
                     <Area key={opt.id} type="monotone" dataKey={opt.label} stroke={optionColors[i % optionColors.length]}
