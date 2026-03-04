@@ -315,7 +315,7 @@ const Create = () => {
       <div className="min-h-dvh bg-background pb-20">
         <TopBar />
         <div className="max-w-lg mx-auto px-4 pt-20 flex items-center justify-center min-h-[70dvh]">
-          <LogoLoader size="lg" />
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
         <BottomNav />
       </div>

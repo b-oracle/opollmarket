@@ -5,7 +5,7 @@ import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { useMarkets } from "@/hooks/useMarkets";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
-import LogoLoader from "@/components/LogoLoader";
+import { Loader2 } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { motion, useAnimation } from "framer-motion";
 
@@ -97,7 +97,7 @@ const Feed = () => {
   if (isLoading) {
     return (
       <div className="h-dvh flex flex-col bg-background items-center justify-center">
-        <LogoLoader size="lg" />
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
   }

@@ -1,4 +1,4 @@
-import LogoLoader from "@/components/LogoLoader";
+import { Loader2 } from "lucide-react";
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
@@ -393,7 +393,7 @@ const Portfolio = () => {
         {/* Loading state */}
         {isLoading && (
           <div className="flex items-center justify-center py-16">
-            <LogoLoader size="lg" />
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
         )}
 

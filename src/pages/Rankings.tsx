@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { Trophy, TrendingUp, TrendingDown, Medal, Crown, Award, Users, Star, Calendar, Share2, ArrowLeft } from "lucide-react";
-import LogoLoader from "@/components/LogoLoader";
+import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -386,7 +386,7 @@ const Rankings = () => {
 
         {loading ? (
           <div className="flex justify-center py-16">
-            <LogoLoader size="md" />
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
         ) : (
           <>
