@@ -25,9 +25,12 @@ import {
   X,
   BarChart3,
   Target,
+  LogIn,
+  User,
 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
+import { useAuth } from "@/hooks/useAuth";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
