@@ -467,7 +467,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             </p>
           )}
         </div>
-      </motion.div>
+      </div>
 
       <BetModal
         open={betModal.open}
