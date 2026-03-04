@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import BottomSheet from "@/components/BottomSheet";
 import { X, Send, ChevronDown, Heart, CornerDownRight, Loader2 } from "lucide-react";
+import NftBadge, { isNftAvatar } from "@/components/NftBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccount } from "wagmi";
 import { useAuth } from "@/hooks/useAuth";

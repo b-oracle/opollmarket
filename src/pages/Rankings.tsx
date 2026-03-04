@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import RankShareModal from "@/components/RankShareModal";
+import NftBadge, { isNftAvatar } from "@/components/NftBadge";
 
 
 interface Referrer {
@@ -62,12 +63,16 @@ const formatDollar = (v: number) => {
 };
 
 const AvatarCircle = ({ avatar, name, size = "w-10 h-10" }: { avatar: string | null; name: string; size?: string }) => (
-  <div className={`${size} rounded-full bg-secondary flex items-center justify-center text-lg shrink-0 overflow-hidden`}>
-    {avatar ? (
-      <img src={avatar} alt={name} className="w-full h-full object-cover" />
-    ) : (
-      <span>👤</span>
-    )}
+  <div className="relative shrink-0">
+    <div className={`${size} rounded-full bg-secondary flex items-center justify-center text-lg overflow-hidden`}>
+      {avatar ? (
+        <img src={avatar} alt={name} className="w-full h-full object-cover" />
+      ) : (
+        <span>👤</span>
+      )}
+    </div>
+    {isNftAvatar(avatar) && <NftBadge className="absolute -bottom-0.5 -right-0.5" />}
+  </div>
   </div>
 );
 
