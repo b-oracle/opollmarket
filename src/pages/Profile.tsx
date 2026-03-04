@@ -17,6 +17,7 @@ import {
   Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image, Hexagon,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 type TxType = "buy" | "sell" | "deposit" | "withdraw";
