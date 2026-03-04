@@ -11,7 +11,8 @@ import BoostMarketModal from "@/components/BoostMarketModal";
 import ShareModal from "@/components/ShareModal";
 import OrderBook from "@/components/OrderBook";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { useMemo, useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { usePriceHistory } from "@/hooks/usePriceHistory";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -250,35 +251,9 @@ const MarketDetail = () => {
     return () => { document.title = "OPOLL — Social Prediction Market"; };
   }, [market, id]);
 
-  const pointsMap = { "1D": 24, "1W": 7, "1M": 30, "All": 90 };
-
-  const chartData = useMemo(() => {
-    if (!market) return [];
-    const points = pointsMap[timePeriod];
-    if (isMulti && market.options) {
-      return Array.from({ length: points }, (_, i) => {
-        const entry: Record<string, number> = { day: i + 1 };
-        market.options!.forEach((opt, oi) => {
-          const volatility = { "1D": 2, "1W": 4, "1M": 5, "All": 8 }[timePeriod];
-          const base = opt.price * 100 - volatility;
-          const seed = i * 0.8 + points + oi * 7;
-          const noise = Math.sin(seed) * volatility + Math.cos(seed * 0.3) * (volatility * 0.4);
-          const trend = ((opt.price * 100 - base) / points) * i;
-          entry[opt.label] = i === points - 1 ? Math.round(opt.price * 100) : Math.max(1, Math.min(95, Math.round(base + trend + noise)));
-        });
-        return entry;
-      });
-    }
-    const volatility = { "1D": 3, "1W": 6, "1M": 8, "All": 12 }[timePeriod];
-    const base = yesPercent - volatility * 1.5;
-    return Array.from({ length: points }, (_, i) => {
-      const seed = i * 0.8 + points;
-      const noise = Math.sin(seed) * volatility + Math.cos(seed * 0.3) * (volatility * 0.6);
-      const trend = ((yesPercent - base) / points) * i;
-      const value = Math.max(5, Math.min(95, Math.round(base + trend + noise)));
-      return { day: i + 1, yes: i === points - 1 ? yesPercent : value, no: i === points - 1 ? noPercent : 100 - value };
-    });
-  }, [market, yesPercent, noPercent, timePeriod, isMulti]);
+  const chartData = usePriceHistory(
+    id, timePeriod, yesPercent, noPercent, isMulti, market?.options
+  );
 
   const [betSide, setBetSide] = useState<"yes" | "no">("yes");
   const [betOpen, setBetOpen] = useState(false);
@@ -487,7 +462,7 @@ const MarketDetail = () => {
                 <XAxis dataKey="day" hide />
                 <YAxis domain={[0, 100]} hide />
                 <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "0.75rem", fontSize: "12px" }}
-                  formatter={(value: number, name: string) => [`${value}¢`, name]} labelFormatter={(label) => `Day ${label}`} />
+                  formatter={(value: number, name: string) => [`${value}¢`, name]} labelFormatter={(_: any, payload: any[]) => payload?.[0]?.payload?.label || ""} />
                 {isMulti && market.options ? (
                   market.options.map((opt, i) => (
                     <Area key={opt.id} type="monotone" dataKey={opt.label} stroke={optionColors[i % optionColors.length]}
