@@ -91,6 +91,7 @@ const Feed = () => {
     setPulling(false);
     setPullDistance(0);
     hapticFired.current = false;
+  }, [pullDistance, refreshing, refetch, spinControls]);
 
   if (isLoading) {
     return (
