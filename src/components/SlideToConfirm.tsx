@@ -12,6 +12,7 @@ interface SlideToConfirmProps {
 const SlideToConfirm = ({ onConfirm, label = "Slide to Confirm", className = "", color = "yes" }: SlideToConfirmProps) => {
   const [confirmed, setConfirmed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const hapticFired = useRef(false);
   const x = useMotionValue(0);
 
   const thumbSize = 52;
