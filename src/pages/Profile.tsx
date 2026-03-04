@@ -55,6 +55,7 @@ const Profile = () => {
   const [editName, setEditName] = useState(user?.user_metadata?.display_name || "");
   const [installOpen, setInstallOpen] = useState(false);
   const [walletCopied, setWalletCopied] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
 
   // Fetch profile wallet address
   const { data: profile } = useQuery({
@@ -229,19 +230,26 @@ const Profile = () => {
                       Cancel
                     </button>
                     <button
+                      disabled={savingProfile}
                       onClick={async () => {
                         if (!editName.trim()) { toast.error("Name cannot be empty"); return; }
-                        const { error: authError } = await supabase.auth.updateUser({
-                          data: { display_name: editName.trim() },
-                        });
-                        if (authError) { toast.error("Failed to update: " + authError.message); return; }
-                        await supabase.from("profiles").update({ display_name: editName.trim() }).eq("id", user!.id);
-                        toast.success("Profile updated!");
-                        setEditingProfile(false);
+                        setSavingProfile(true);
+                        try {
+                          const { error: authError } = await supabase.auth.updateUser({
+                            data: { display_name: editName.trim() },
+                          });
+                          if (authError) { toast.error("Failed to update: " + authError.message); return; }
+                          await supabase.from("profiles").update({ display_name: editName.trim() }).eq("id", user!.id);
+                          toast.success("Profile updated!");
+                          setEditingProfile(false);
+                        } finally {
+                          setSavingProfile(false);
+                        }
                       }}
-                      className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-xl font-semibold text-sm"
+                      className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-xl font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                      Save
+                      {savingProfile && <Loader2 className="w-4 h-4 animate-spin" />}
+                      {savingProfile ? "Saving..." : "Save"}
                     </button>
                   </div>
                 </div>
