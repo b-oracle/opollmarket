@@ -43,8 +43,17 @@ const Auth = () => {
         if (error) { toast.error(error.message); }
         else { toast.success("Logged in successfully!"); navigate("/"); return; }
       } else {
-        // Save referral code to localStorage before signup so useAuth picks it up
+        // Validate referral code if provided
         if (referralCode.trim()) {
+          const { data: referrer } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("id", referralCode.trim())
+            .maybeSingle();
+          if (!referrer) {
+            toast.error("Invalid referral code. Please check and try again.");
+            return;
+          }
           localStorage.setItem("referral_id", referralCode.trim());
         }
         const { error } = await signUp(email, password, displayName);
