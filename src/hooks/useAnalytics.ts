@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 type EventName =
   | "page_view"
@@ -20,12 +21,16 @@ interface EventProperties {
 }
 
 const useAnalytics = () => {
-  const track = useCallback((event: EventName, properties?: EventProperties) => {
+  const track = useCallback(async (event: EventName, properties?: EventProperties) => {
     try {
-      console.log(`[Analytics] ${event}`, properties || {});
-      // Future: send to analytics endpoint
-      // e.g. supabase.from('analytics_events').insert({ event, properties, timestamp: new Date().toISOString() })
-    } catch (err) {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      await supabase.from("analytics_events" as any).insert({
+        event_name: event,
+        properties: properties || {},
+        user_id: user?.id || null,
+      } as any);
+    } catch {
       // Silent fail — analytics should never break the app
     }
   }, []);
