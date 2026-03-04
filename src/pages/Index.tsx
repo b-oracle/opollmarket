@@ -13,6 +13,7 @@ import BoostCountdown from "@/components/BoostCountdown";
 import BoostedCarousel from "@/components/BoostedCarousel";
 import BoostMarketModal from "@/components/BoostMarketModal";
 import { useCommentCount } from "@/hooks/useCommentCount";
+import useAnalytics from "@/hooks/useAnalytics";
 
 
 const formatVolume = (v: number) => {
@@ -48,6 +49,9 @@ const Index = () => {
   const [filter, setFilter] = useState<"trending" | "boosted" | "all">("trending");
   const [boostModalMarket, setBoostModalMarket] = useState<{ id: string; title: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const { track } = useAnalytics();
+
+  useEffect(() => { track("page_view", { page: "home" }); }, []);
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
 
   // Capture referral param on landing

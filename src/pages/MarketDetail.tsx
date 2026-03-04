@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useBookmark } from "@/hooks/useBookmark";
 import { toast } from "sonner";
+import useAnalytics from "@/hooks/useAnalytics";
 
 const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
@@ -280,6 +281,9 @@ const MarketDetail = () => {
   const { data: market, isLoading } = useMarket(id);
   const { boostDetails } = useActiveBoosts();
   const activeBoost = id ? boostDetails.get(id) : undefined;
+  const { track } = useAnalytics();
+
+  useEffect(() => { if (id) track("page_view", { page: "market_detail", marketId: id }); }, [id]);
 
   const isMulti = market?.marketType === "multi" || market?.marketType === "range";
   const yesPercent = market ? Math.round(market.yesPrice * 100) : 0;
