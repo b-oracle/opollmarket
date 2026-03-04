@@ -43,6 +43,7 @@ const Feed = () => {
 
   return (
     <div className="h-dvh flex flex-col bg-background">
+      <SEOHead title="Feed" description="Swipe through prediction markets like TikTok. Vote YES or NO on real-world events." path="/feed" />
       <TopBar />
       <div ref={containerRef} className="flex-1 snap-feed pt-14 md:max-w-2xl md:mx-auto" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         {sortedMarkets.map((market, i) => {

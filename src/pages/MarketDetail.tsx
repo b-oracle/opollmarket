@@ -234,24 +234,8 @@ const MarketDetail = () => {
   const pageRef = useRef<HTMLDivElement>(null);
   const shareRef = useRef<HTMLDivElement>(null);
 
-  // Dynamic OG meta tags
-  useEffect(() => {
-    if (!market) return;
-    document.title = `${market.title} — OPOLL`;
-    const ogUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-image?id=${id}`;
-    const setMeta = (property: string, content: string) => {
-      let el = document.querySelector(`meta[property="${property}"]`) || document.querySelector(`meta[name="${property}"]`);
-      if (!el) { el = document.createElement("meta"); el.setAttribute("property", property); document.head.appendChild(el); }
-      el.setAttribute("content", content);
-    };
-    setMeta("og:title", market.title);
-    setMeta("og:description", market.description);
-    setMeta("og:image", ogUrl);
-    setMeta("twitter:image", ogUrl);
-    setMeta("twitter:title", market.title);
-    setMeta("twitter:description", market.description);
-    return () => { document.title = "OPOLL — Social Prediction Market"; };
-  }, [market, id]);
+  // Dynamic SEO via SEOHead
+  const ogImageUrl = id ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-image?id=${id}` : undefined;
 
   const chartData = usePriceHistory(
     id, timePeriod, yesPercent, noPercent, isMulti, market?.options
