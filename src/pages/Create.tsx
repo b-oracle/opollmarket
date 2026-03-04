@@ -151,8 +151,27 @@ const Create = () => {
   const [txHash, setTxHash] = useState("");
   const [newMarketId, setNewMarketId] = useState("");
 
+  // Save wallet address to profile when connected
+  useEffect(() => {
+    if (user && isConnected && address) {
+      (async () => {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("wallet_address")
+          .eq("id", user.id)
+          .single();
+        if (profile && !profile.wallet_address) {
+          await supabase
+            .from("profiles")
+            .update({ wallet_address: address })
+            .eq("id", user.id);
+        }
+      })();
+    }
+  }, [user, isConnected, address]);
+
   const handleCreateMarket = useCallback(async () => {
-    if (!address) return;
+    if (!user || !address) return;
     setSubmitStep("deploying");
 
     // Simulate on-chain contract deployment
@@ -163,11 +182,12 @@ const Create = () => {
 
     setSubmitStep("saving");
 
-    // Save to database
+    // Save to database — use user.id as creator_wallet for RLS compliance
     const { data, error } = await supabase
       .from("markets")
       .insert({
-        creator_wallet: address,
+        creator_wallet: user.id,
+        creator_name: user.user_metadata?.display_name || user.email?.split("@")[0] || "Anonymous",
         title: title.trim(),
         description: description.trim(),
         category,
@@ -211,7 +231,7 @@ const Create = () => {
     setNewMarketId(data?.id || "");
     setSubmitStep("success");
     toast.success("Market created successfully!");
-  }, [address, title, description, category, endDate, resolutionSource, initialLiquidity, marketType, options]);
+  }, [user, address, title, description, category, endDate, resolutionSource, initialLiquidity, marketType, options]);
 
   // Simulate token-gate verification
   const runGateCheck = () => {
