@@ -73,7 +73,6 @@ const AvatarCircle = ({ avatar, name, size = "w-10 h-10" }: { avatar: string | n
     </div>
     {isNftAvatar(avatar) && <NftBadge className="absolute -bottom-0.5 -right-0.5" />}
   </div>
-  </div>
 );
 
 const EmptyState = ({ message, sub }: { message: string; sub: string }) => (
