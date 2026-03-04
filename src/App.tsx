@@ -33,7 +33,7 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 import InstallBanner from "./components/InstallBanner";
-
+import DesktopSidebar from "./components/DesktopSidebar";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -45,6 +45,8 @@ const App = () => (
           <Sonner />
           <InstallBanner />
           <BrowserRouter>
+            <DesktopSidebar />
+            <div className="md:ml-60">
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/feed" element={<Feed />} />
@@ -74,6 +76,7 @@ const App = () => (
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </div>
           </BrowserRouter>
         </TooltipProvider>
       </QueryClientProvider>
