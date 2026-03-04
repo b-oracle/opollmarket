@@ -90,7 +90,7 @@ const Feed = () => {
 
     setPulling(false);
     setPullDistance(0);
-  }, [pullDistance, refreshing, refetch, spinControls]);
+    hapticFired.current = false;
 
   if (isLoading) {
     return (
