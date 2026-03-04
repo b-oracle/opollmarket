@@ -677,6 +677,7 @@ export type Database = {
         Returns: boolean
       }
       is_valid_referral_code: { Args: { _code: string }; Returns: boolean }
+      update_trending_markets: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
