@@ -36,7 +36,7 @@ const DesktopFooter = () => {
   const navigate = useNavigate();
 
   return (
-    <footer className="hidden md:block fixed bottom-0 right-0 left-60 z-40 border-t border-border bg-background/95 backdrop-blur-sm">
+    <footer className="hidden md:block border-t border-border bg-background/95">
       <div className="max-w-4xl xl:max-w-6xl mx-auto px-6 py-10">
         <div className="grid grid-cols-3 gap-8 mb-8">
           {/* Brand */}
