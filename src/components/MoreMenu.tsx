@@ -23,7 +23,7 @@ const resourceLinks = [
 ];
 
 const socialLinks = [
-  { icon: "𝕏", label: "Follow on X", href: "https://x.com" },
+  { icon: "𝕏", label: "Follow on X", href: "https://x.com/opollmarket" },
   { icon: "✈", label: "Join Telegram", href: "https://t.me" },
 ];
 
