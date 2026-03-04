@@ -1,3 +1,4 @@
+import SEOHead from "@/components/SEOHead";
 import { useState, useRef, useEffect, useMemo } from "react";
 import MarketCard from "@/components/MarketCard";
 import TopBar from "@/components/TopBar";

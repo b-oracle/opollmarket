@@ -1,3 +1,4 @@
+import SEOHead from "@/components/SEOHead";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { useMarkets } from "@/hooks/useMarkets";
