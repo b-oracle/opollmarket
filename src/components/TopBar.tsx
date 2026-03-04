@@ -4,7 +4,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import NotificationBell from "@/components/NotificationBell";
 import logo from "@/assets/logo.png";
 import { User, LogOut, Shield, ArrowLeft } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const TopBar = () => {
@@ -12,6 +12,14 @@ const TopBar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showMenu, setShowMenu] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const isAdminRoute = location.pathname.startsWith("/admin");
 
@@ -22,7 +30,20 @@ const TopBar = () => {
   const initial = displayName.charAt(0).toUpperCase();
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 glass-strong border-0 shadow-[0_1px_8px_-2px_hsl(var(--foreground)/0.08)] md:left-60" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+    <header
+      ref={headerRef}
+      className={`fixed top-0 left-0 right-0 z-50 border-0 md:left-60 transition-all duration-300 ${
+        scrolled
+          ? "shadow-[0_2px_12px_-3px_hsl(var(--foreground)/0.12)]"
+          : "shadow-[0_1px_8px_-2px_hsl(var(--foreground)/0.08)]"
+      }`}
+      style={{
+        paddingTop: 'env(safe-area-inset-top)',
+        background: scrolled ? 'hsl(var(--glass) / 0.9)' : 'hsl(var(--glass) / 0.8)',
+        backdropFilter: scrolled ? 'blur(48px) saturate(1.4)' : 'blur(30px) saturate(1.2)',
+        WebkitBackdropFilter: scrolled ? 'blur(48px) saturate(1.4)' : 'blur(30px) saturate(1.2)',
+      }}
+    >
       <div className="flex items-center justify-between h-14 max-w-lg md:max-w-full mx-auto px-4">
         <div className="flex items-center gap-1.5 cursor-pointer md:hidden" onClick={() => navigate("/")}>
           <img src={logo} alt="OPOLL" className="h-8 w-8" />
