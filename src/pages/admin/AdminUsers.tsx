@@ -117,6 +117,7 @@ const AdminUsers = () => {
             <tbody>
               {users.map((u) => {
                 const isAdmin = u.roles.includes("admin");
+                const isMod = u.roles.includes("moderator");
                 return (
                   <tr key={u.id} className="border-b border-border/50 hover:bg-muted/30">
                     <td className="p-3 font-medium">{u.display_name || "—"}</td>
@@ -127,7 +128,7 @@ const AdminUsers = () => {
                     <td className="p-3">
                       {u.roles.length > 0 ? u.roles.map((r) => (
                         <span key={r} className={`px-2 py-0.5 rounded-full text-[10px] font-bold mr-1 ${
-                          r === "admin" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                          r === "admin" ? "bg-primary/10 text-primary" : r === "moderator" ? "bg-amber-500/10 text-amber-500" : "bg-muted text-muted-foreground"
                         }`}>
                           {r}
                         </span>
@@ -140,13 +141,22 @@ const AdminUsers = () => {
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => setBalanceModal({ userId: u.id, name: u.display_name || u.email || "User", current: u.balance })}
-                          className="p-1.5 rounded-lg hover:bg-green-500/10 text-green-500 transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
                           title="Manage Balance"
                         >
                           <DollarSign className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => toggleAdmin(u.id, isAdmin)}
+                          onClick={() => toggleRole(u.id, "moderator", isMod)}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            isMod ? "hover:bg-destructive/10 text-amber-500" : "hover:bg-amber-500/10 text-muted-foreground"
+                          }`}
+                          title={isMod ? "Remove Moderator" : "Make Moderator"}
+                        >
+                          {isMod ? <ShieldMinus className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={() => toggleRole(u.id, "admin", isAdmin)}
                           className={`p-1.5 rounded-lg transition-colors ${
                             isAdmin ? "hover:bg-destructive/10 text-destructive" : "hover:bg-primary/10 text-primary"
                           }`}
