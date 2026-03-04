@@ -445,6 +445,48 @@ const AdminMarkets = () => {
                                 </span>
                               )}
                             </div>
+
+                            {/* Trending Score Breakdown */}
+                            {(() => {
+                              const score = trendingScores.get(m.id);
+                              if (!score) return null;
+                              const bars = [
+                                { label: "Volume", value: score.volume_score, max: 40, color: "bg-primary" },
+                                { label: "Participants", value: score.participant_score, max: 20, color: "bg-primary/80" },
+                                { label: "Recent Bets (48h)", value: score.recent_bets_score, max: 20, color: "bg-primary/60" },
+                                { label: "Comments (48h)", value: score.comments_score, max: 10, color: "bg-primary/50" },
+                                { label: "Likes (48h)", value: score.likes_score, max: 10, color: "bg-primary/40" },
+                              ];
+                              return (
+                                <div>
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                                    <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+                                      Trending Score
+                                    </label>
+                                    <span className="text-sm font-bold text-primary ml-auto">
+                                      {Number(score.total_score).toFixed(1)} / 100
+                                    </span>
+                                  </div>
+                                  <div className="space-y-1.5">
+                                    {bars.map((bar) => (
+                                      <div key={bar.label} className="flex items-center gap-2">
+                                        <span className="text-[10px] text-muted-foreground w-28 shrink-0">{bar.label}</span>
+                                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                                          <div
+                                            className={`h-full rounded-full ${bar.color} transition-all`}
+                                            style={{ width: `${(Number(bar.value) / bar.max) * 100}%` }}
+                                          />
+                                        </div>
+                                        <span className="text-[10px] font-mono text-muted-foreground w-10 text-right">
+                                          {Number(bar.value).toFixed(1)}/{bar.max}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </div>
                         </td>
                       </tr>
