@@ -974,12 +974,12 @@ const Create = () => {
                   {/* Share buttons */}
                   <div className="w-full mb-4">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 text-center font-semibold">Share your market</p>
-                    <div className="flex gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                       <a
                         href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`I just created a prediction market: "${title}" 🔮\n\nPredict now on OPoll 👇`)}&url=${encodeURIComponent(`${window.location.origin}/market/${newMarketId}`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-muted/50 border border-border text-xs font-semibold hover:bg-accent/50 transition-colors"
+                        className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-muted/50 border border-border text-xs font-semibold hover:bg-accent/50 transition-colors"
                       >
                         <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                         Post on X
@@ -988,17 +988,26 @@ const Create = () => {
                         href={`https://t.me/share/url?url=${encodeURIComponent(`${window.location.origin}/market/${newMarketId}`)}&text=${encodeURIComponent(`I just created a prediction market: "${title}" 🔮 Predict now on OPoll!`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-muted/50 border border-border text-xs font-semibold hover:bg-accent/50 transition-colors"
+                        className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-muted/50 border border-border text-xs font-semibold hover:bg-accent/50 transition-colors"
                       >
                         <Share2 className="w-3.5 h-3.5" />
                         Telegram
+                      </a>
+                      <a
+                        href={`https://wa.me/?text=${encodeURIComponent(`I just created a prediction market: "${title}" 🔮 Predict now on OPoll! ${window.location.origin}/market/${newMarketId}`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-muted/50 border border-border text-xs font-semibold hover:bg-accent/50 transition-colors"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        WhatsApp
                       </a>
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(`${window.location.origin}/market/${newMarketId}`);
                           toast.success("Link copied!");
                         }}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-muted/50 border border-border text-xs font-semibold hover:bg-accent/50 transition-colors"
+                        className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-muted/50 border border-border text-xs font-semibold hover:bg-accent/50 transition-colors"
                       >
                         <Share2 className="w-3.5 h-3.5" />
                         Copy Link
