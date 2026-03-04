@@ -128,8 +128,9 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
       <motion.div
         ref={cardRef}
         drag={isMulti ? false : "x"}
-        dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.3}
+        dragConstraints={{ left: -200, right: 200 }}
+        dragSnapToOrigin
+        dragElastic={0.7}
         onDrag={handleDrag}
         onDragEnd={handleDragEnd}
         className={`snap-item relative h-[calc(100dvh-5rem-env(safe-area-inset-bottom))] w-full flex items-end pb-6 px-3 sm:px-4 overflow-hidden ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}
