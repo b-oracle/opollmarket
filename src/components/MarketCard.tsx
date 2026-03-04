@@ -413,14 +413,9 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           )}
 
           {!isMulti && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.8 }}
-              className="text-[10px] text-muted-foreground/50 text-center mt-3"
-            >
+            <p className="text-[10px] text-muted-foreground/50 text-center mt-3 animate-fade-in">
               ← Swipe left for NO · Swipe right for YES →
-            </motion.p>
+            </p>
           )}
         </div>
       </motion.div>
