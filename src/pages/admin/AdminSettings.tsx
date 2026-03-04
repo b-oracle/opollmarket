@@ -4,13 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Percent, Gift } from "lucide-react";
+import { Loader2, Save, Percent, Gift, Coins, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
 const AdminSettings = () => {
   const [adminFee, setAdminFee] = useState("");
   const [creatorFee, setCreatorFee] = useState("");
   const [referralReward, setReferralReward] = useState("");
+  const [minTokenBalance, setMinTokenBalance] = useState("");
+  const [minNftBalance, setMinNftBalance] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
@@ -26,6 +28,8 @@ const AdminSettings = () => {
         setAdminFee(String(data.admin_fee_percent));
         setCreatorFee(String(data.creator_fee_percent));
         setReferralReward(String(data.referral_reward_amount ?? 5));
+        setMinTokenBalance(String((data as any).min_token_balance ?? 10000000));
+        setMinNftBalance(String((data as any).min_nft_balance ?? 1));
         setSettingsId(data.id);
       }
       if (error) console.error(error);
@@ -37,9 +41,11 @@ const AdminSettings = () => {
   const adminNum = parseFloat(adminFee) || 0;
   const creatorNum = parseFloat(creatorFee) || 0;
   const referralNum = parseFloat(referralReward) || 0;
+  const tokenNum = parseFloat(minTokenBalance) || 0;
+  const nftNum = parseInt(minNftBalance) || 0;
   const totalFee = adminNum + creatorNum;
   const poolPercent = 100 - totalFee;
-  const isValid = adminNum >= 0 && creatorNum >= 0 && totalFee <= 100 && referralNum >= 0;
+  const isValid = adminNum >= 0 && creatorNum >= 0 && totalFee <= 100 && referralNum >= 0 && tokenNum >= 0 && nftNum >= 0;
 
   const handleSave = async () => {
     if (!isValid || !settingsId) return;
@@ -50,8 +56,10 @@ const AdminSettings = () => {
         admin_fee_percent: adminNum,
         creator_fee_percent: creatorNum,
         referral_reward_amount: referralNum,
+        min_token_balance: tokenNum,
+        min_nft_balance: nftNum,
         updated_at: new Date().toISOString(),
-      })
+      } as any)
       .eq("id", settingsId);
     setSaving(false);
     if (error) {
@@ -129,6 +137,46 @@ const AdminSettings = () => {
                   value={referralReward}
                   onChange={(e) => setReferralReward(e.target.value)}
                   placeholder="5"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-dashed">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Coins className="w-4 h-4" /> Creator Gate Thresholds
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Minimum BC400 token and NFT holdings required to create markets.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="minTokenBalance">Min BC400 Token Balance</Label>
+                <Input
+                  id="minTokenBalance"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={minTokenBalance}
+                  onChange={(e) => setMinTokenBalance(e.target.value)}
+                  placeholder="10000000"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Current: {Number(tokenNum).toLocaleString()} BC400
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="minNftBalance">Min BC400 NFT Count</Label>
+                <Input
+                  id="minNftBalance"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={minNftBalance}
+                  onChange={(e) => setMinNftBalance(e.target.value)}
+                  placeholder="1"
                 />
               </div>
             </CardContent>

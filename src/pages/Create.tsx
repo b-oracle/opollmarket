@@ -56,6 +56,24 @@ const Create = () => {
   const { connect, connectors, isPending } = useConnect();
   const navigate = useNavigate();
 
+  // Gate thresholds from DB
+  const [minTokenBalance, setMinTokenBalance] = useState(10_000_000);
+  const [minNftBalance, setMinNftBalance] = useState(1);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("commission_settings")
+        .select("*")
+        .limit(1)
+        .single();
+      if (data) {
+        setMinTokenBalance(Number((data as any).min_token_balance) || 10_000_000);
+        setMinNftBalance(Number((data as any).min_nft_balance) || 1);
+      }
+    })();
+  }, []);
+
   // Gate state
   const [gateChecks, setGateChecks] = useState<GateCheck[]>([]);
   const [gatePassed, setGatePassed] = useState(false);
@@ -357,15 +375,15 @@ const Create = () => {
               <ul className="space-y-1.5 text-xs text-muted-foreground">
                 <li className="flex items-center gap-2">
                   <Coins className="w-3 h-3 text-primary" />
-                  Hold ≥ 100 BC400 tokens
+                  Hold ≥ {minTokenBalance.toLocaleString()} BC400 tokens
                 </li>
                 <li className="flex items-center gap-2">
                   <ImageIcon className="w-3 h-3 text-primary" />
-                  Own a BC400 NFT
+                  Own ≥ {minNftBalance} BC400 NFT{minNftBalance !== 1 ? "s" : ""}
                 </li>
                 <li className="flex items-center gap-2">
                   <Sparkles className="w-3 h-3 text-primary" />
-                  Staked ≥ 500 BC400 in governance
+                  Staked ≥ {Math.round(minTokenBalance * 0.05).toLocaleString()} BC400 in governance
                 </li>
               </ul>
             </div>
