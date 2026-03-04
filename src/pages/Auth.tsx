@@ -2,9 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Eye, EyeOff, LogIn, UserPlus, Wallet } from "lucide-react";
-import { useConnect } from "wagmi";
-import { bsc } from "wagmi/chains";
+import { Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 
@@ -18,7 +16,7 @@ const Auth = () => {
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { connect, connectors, isPending } = useConnect();
+  
 
   // Capture referral param
   useEffect(() => {
@@ -112,22 +110,6 @@ const Auth = () => {
           </button>
         </div>
 
-        {/* Wallet Connect */}
-        <div className="space-y-2">
-          {connectors.map((c) => (
-            <button
-              key={c.uid}
-              onClick={() => connect({ connector: c, chainId: bsc.id })}
-              disabled={isPending}
-              className="w-full glass rounded-xl p-3 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98] disabled:opacity-50"
-            >
-              <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                {c.name.includes("MetaMask") ? "🦊" : c.name.includes("WalletConnect") ? "🔗" : <Wallet className="w-4 h-4" />}
-              </div>
-              <span className="text-sm font-medium">{c.name}</span>
-            </button>
-          ))}
-        </div>
 
         {mode === "login" && (
           <div className="text-center mt-4">
