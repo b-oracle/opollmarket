@@ -1,3 +1,4 @@
+import LogoLoader from "@/components/LogoLoader";
 import { useState, useCallback } from "react";
 import BottomSheet from "@/components/BottomSheet";
 import { motion, AnimatePresence } from "framer-motion";

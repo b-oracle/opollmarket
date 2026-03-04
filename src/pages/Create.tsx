@@ -1,3 +1,4 @@
+import LogoLoader from "@/components/LogoLoader";
 import { useState, useEffect, useCallback } from "react";
 import { useAccount, useConnect } from "wagmi";
 import { useNavigate } from "react-router-dom";
