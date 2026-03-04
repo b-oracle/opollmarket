@@ -1,4 +1,4 @@
-import { Loader2 } from "lucide-react";
+import { Loader2, Clock } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
@@ -40,7 +40,7 @@ const Index = () => {
   const [searchParams] = useSearchParams();
   const { data: markets = [], isLoading, isError } = useMarkets();
   const { boostedMarketIds, boostDetails } = useActiveBoosts();
-  const [filter, setFilter] = useState<"trending" | "boosted" | "all">("trending");
+  const [filter, setFilter] = useState<"trending" | "boosted" | "new" | "all">("trending");
   const [boostModalMarket, setBoostModalMarket] = useState<{ id: string; title: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const { track } = useAnalytics();
@@ -73,6 +73,9 @@ const Index = () => {
       filtered = markets.filter((m) => boostedMarketIds.has(m.id));
     } else if (filter === "trending") {
       filtered = markets.filter((m) => m.trending || boostedMarketIds.has(m.id));
+    } else if (filter === "new") {
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      filtered = markets.filter((m) => m.createdAt >= oneDayAgo);
     }
     if (categoryFilter !== "All") {
       filtered = filtered.filter((m) => m.category === categoryFilter);
@@ -80,6 +83,9 @@ const Index = () => {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter((m) => m.title.toLowerCase().includes(q) || m.category.toLowerCase().includes(q));
+    }
+    if (filter === "new") {
+      return filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
     return filtered.sort((a, b) => {
       const aBoost = boostedMarketIds.has(a.id) ? 1 : 0;
@@ -177,15 +183,17 @@ const Index = () => {
           {([
             { key: "trending" as const, label: "🔥 Trending" },
             { key: "boosted" as const, label: "⚡ Boosted" },
+            { key: "new" as const, label: "New", icon: true },
             { key: "all" as const, label: "All" },
           ]).map((tab) => (
             <button
               key={tab.key}
               onClick={() => setFilter(tab.key)}
-              className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1 ${
                 filter === tab.key ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
               }`}
             >
+              {'icon' in tab && tab.icon && <Clock className="w-3.5 h-3.5" />}
               {tab.label}
             </button>
           ))}
