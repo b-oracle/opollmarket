@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import watermarkLogo from "@/assets/watermark-logo.png";
-import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown, ExternalLink } from "lucide-react";
+import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown, ExternalLink, Flame } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Market } from "@/data/markets";
 import CategoryIcon from "@/components/CategoryIcon";
@@ -316,7 +316,15 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
 
         {/* Side actions */}
-        <div className="absolute right-4 bottom-40 z-10 flex flex-col items-center gap-4">
+        <div className="absolute right-4 bottom-48 z-10 flex flex-col items-center gap-4">
+          {isBoosted && (
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-10 h-10 rounded-full glass flex items-center justify-center bg-orange-500/20 animate-pulse">
+                <Flame className="w-5 h-5 text-orange-400" />
+              </div>
+              <span className="text-[10px] text-orange-400 font-semibold">Hot</span>
+            </div>
+          )}
           <button onClick={handleLike} className="flex flex-col items-center gap-1 group">
             <div className={`w-10 h-10 rounded-full glass flex items-center justify-center transition-colors ${liked ? 'bg-destructive/20' : 'group-hover:bg-destructive/20'}`}>
               <Heart className={`w-5 h-5 transition-colors ${liked ? 'text-destructive fill-destructive' : 'text-foreground/70 group-hover:text-destructive'}`} />
