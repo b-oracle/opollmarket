@@ -17,6 +17,7 @@ import {
   Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image, Hexagon,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 type TxType = "buy" | "sell" | "deposit" | "withdraw";
@@ -332,16 +333,23 @@ const Profile = () => {
                           ) : (
                             <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto">
                               {walletNfts.map((nft) => (
-                                <button
-                                  key={`${nft.token_address}-${nft.token_id}`}
-                                  type="button"
-                                  onClick={() => handleSelectNft(nft.image_url)}
-                                  className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
-                                    selectedNftUrl === nft.image_url ? "border-primary ring-2 ring-primary/30" : "border-border"
-                                  }`}
-                                >
-                                  <img src={nft.image_url} alt={nft.name} className="w-full h-full object-cover" loading="lazy" />
-                                </button>
+                                <Tooltip key={`${nft.token_address}-${nft.token_id}`}>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSelectNft(nft.image_url)}
+                                      className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
+                                        selectedNftUrl === nft.image_url ? "border-primary ring-2 ring-primary/30" : "border-border"
+                                      }`}
+                                    >
+                                      <img src={nft.image_url} alt={nft.name} className="w-full h-full object-cover" loading="lazy" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="max-w-[180px] text-center">
+                                    <p className="text-xs font-semibold truncate">{nft.name}</p>
+                                    <p className="text-[10px] text-muted-foreground truncate">{nft.collection_name}</p>
+                                  </TooltipContent>
+                                </Tooltip>
                               ))}
                             </div>
                           )}
