@@ -54,7 +54,7 @@ const App = () => (
           <InstallBanner />
           <BrowserRouter>
             <DesktopSidebar />
-            <div className="md:ml-60 min-h-screen flex flex-col">
+            <div className="md:ml-60 min-h-screen flex flex-col md:pb-44">
               <div className="flex-1">
                 <Routes>
                   <Route path="/" element={<Index />} />
