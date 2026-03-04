@@ -24,6 +24,44 @@ import { useBookmark } from "@/hooks/useBookmark";
 import { toast } from "sonner";
 
 const formatVolume = (v: number) => {
+
+const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+
+const CreatorCard = ({ creatorName, creatorUserId }: { creatorName: string; creatorUserId: string }) => {
+  const { data: profile } = useQuery({
+    queryKey: ["creator-profile", creatorUserId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("wallet_address, display_name")
+        .eq("id", creatorUserId)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!creatorUserId,
+  });
+
+  const walletAddr = profile?.wallet_address;
+
+  return (
+    <div className="glass rounded-xl p-4 mb-4 flex items-center gap-3">
+      <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
+        <span className="font-bold text-primary">{creatorName.charAt(0)}</span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold">@{creatorName}</p>
+        {walletAddr && (
+          <p className="text-xs text-muted-foreground font-mono flex items-center gap-1">
+            <Wallet className="w-3 h-3" />
+            {truncateAddr(walletAddr)}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const formatVolume2 = (v: number) => {
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
   if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`;
   return `$${v}`;
