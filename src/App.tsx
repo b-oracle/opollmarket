@@ -34,6 +34,7 @@ import Disclaimer from "./pages/Disclaimer";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
+import Maintenance from "./pages/Maintenance";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 import DesktopSidebar from "./components/DesktopSidebar";
@@ -76,6 +77,7 @@ const App = () => (
                   <Route path="/disclaimer" element={<Disclaimer />} />
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/maintenance" element={<Maintenance />} />
                   <Route path="/admin" element={<AdminLayout />}>
                     <Route index element={<AdminDashboard />} />
                     <Route path="markets" element={<AdminMarkets />} />
