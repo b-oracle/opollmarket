@@ -412,7 +412,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             </motion.div>
           )}
 
-          {isActive && !isMulti && (
+          {!isMulti && (
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
