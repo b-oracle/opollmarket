@@ -8,7 +8,7 @@ const fetchCount = (marketId: string): Promise<number | null> => {
   const existing = pendingFetches.get(marketId);
   if (existing) return existing;
 
-  const promise = supabase
+  const promise: Promise<number | null> = supabase
     .from("comments")
     .select("*", { count: "exact", head: true })
     .eq("market_id", marketId)

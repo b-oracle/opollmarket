@@ -9,7 +9,7 @@ const fetchLikeCount = (marketId: string): Promise<number | null> => {
   const existing = pendingFetches.get(marketId);
   if (existing) return existing;
 
-  const promise = supabase
+  const promise: Promise<number | null> = supabase
     .from("market_likes")
     .select("*", { count: "exact", head: true })
     .eq("market_id", marketId)
