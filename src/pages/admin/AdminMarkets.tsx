@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import BulkCSVImport from "@/components/admin/BulkCSVImport";
@@ -22,6 +22,7 @@ interface MarketRow {
   created_at: string;
   resolution_source: string;
   trending: boolean;
+  pinned_trending: boolean;
 }
 
 interface MarketOption {
@@ -74,7 +75,7 @@ const AdminMarkets = () => {
   const fetchMarkets = async () => {
     let query = supabase
       .from("markets")
-      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending")
+      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending")
       .order("created_at", { ascending: false });
     if (filter !== "all") query = query.eq("status", filter);
     const { data, error } = await query;
@@ -424,26 +425,35 @@ const AdminMarkets = () => {
                             {/* Trending */}
                             <div className="flex items-center justify-between">
                               <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Trending</label>
-                              {isEditing ? (
-                                <button
-                                  onClick={() => setEditState({ ...editState, trending: !editState.trending })}
-                                  className={`w-11 h-6 rounded-full transition-colors relative ${
-                                    editState.trending ? "bg-primary" : "bg-muted"
-                                  }`}
-                                >
-                                  <div
-                                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                                      editState.trending ? "translate-x-[22px]" : "translate-x-0.5"
-                                    }`}
-                                  />
-                                </button>
-                              ) : (
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                  m.trending ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                                }`}>
-                                  {m.trending ? "Yes" : "No"}
-                                </span>
-                              )}
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                m.trending ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                              }`}>
+                                {m.trending ? "Yes" : "No"}
+                              </span>
+                            </div>
+
+                            {/* Pin as Trending */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5">
+                                <Pin className="w-3 h-3 text-muted-foreground" />
+                                <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Pin as Trending</label>
+                              </div>
+                              <button
+                                onClick={async () => {
+                                  const newVal = !m.pinned_trending;
+                                  const { error } = await supabase.from("markets").update({ pinned_trending: newVal, trending: newVal || m.trending }).eq("id", m.id);
+                                  if (error) { toast.error("Failed to update"); return; }
+                                  toast.success(newVal ? "Market pinned as trending" : "Market unpinned");
+                                  fetchMarkets();
+                                }}
+                                className={`px-3 py-1 rounded-lg text-[10px] font-bold transition-all active:scale-95 ${
+                                  m.pinned_trending
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                                }`}
+                              >
+                                {m.pinned_trending ? "📌 Pinned" : "Pin"}
+                              </button>
                             </div>
 
                             {/* Trending Score Breakdown */}

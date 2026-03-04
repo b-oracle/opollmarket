@@ -319,6 +319,7 @@ export type Database = {
           market_type: string
           no_price: number
           participants: number
+          pinned_trending: boolean
           resolution_source: string
           resolved_side: string | null
           status: string
@@ -345,6 +346,7 @@ export type Database = {
           market_type?: string
           no_price?: number
           participants?: number
+          pinned_trending?: boolean
           resolution_source: string
           resolved_side?: string | null
           status?: string
@@ -371,6 +373,7 @@ export type Database = {
           market_type?: string
           no_price?: number
           participants?: number
+          pinned_trending?: boolean
           resolution_source?: string
           resolved_side?: string | null
           status?: string
