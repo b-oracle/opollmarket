@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Eye, EyeOff, LogIn, UserPlus, Gift } from "lucide-react";
+import { Eye, EyeOff, LogIn, UserPlus, Gift, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 
@@ -12,6 +12,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [referralCode, setReferralCode] = useState("");
+  const [referralFromLink, setReferralFromLink] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
@@ -25,6 +26,8 @@ const Auth = () => {
     if (ref) {
       localStorage.setItem("referral_id", ref);
       setReferralCode(ref);
+      setReferralFromLink(true);
+      setMode("signup");
     } else {
       const stored = localStorage.getItem("referral_id");
       if (stored) setReferralCode(stored);
@@ -62,6 +65,12 @@ const Auth = () => {
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold mb-2">{mode === "login" ? "Welcome Back" : "Create Account"}</h1>
           <p className="text-sm text-muted-foreground">{mode === "login" ? "Sign in to access your account" : "Sign up to get started"}</p>
+          {referralFromLink && mode === "signup" && (
+            <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+              <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+              <span className="text-xs font-semibold text-primary">Referral code applied!</span>
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
