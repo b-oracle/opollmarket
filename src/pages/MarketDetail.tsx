@@ -191,7 +191,15 @@ const InlineComments = ({ marketId }: { marketId: string }) => {
     } catch (err) { console.error("Failed to toggle like:", err); }
   };
 
-  const handleReply = (commentId: string, author: string) => { setReplyTo({ id: commentId, author }); setInputValue(`@${author} `); };
+  const handleReply = (commentId: string, author: string) => {
+    if (!user) {
+      toast.error("Sign in to reply", {
+        action: { label: "Sign In", onClick: () => window.location.href = "/auth" },
+      });
+      return;
+    }
+    setReplyTo({ id: commentId, author }); setInputValue(`@${author} `);
+  };
   const totalComments = comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0);
 
   return (
