@@ -42,6 +42,7 @@ export const mockMarkets: Market[] = [
     creatorName: "CryptoOracle",
     imageUrl: "/images/market-btc.jpg",
     trending: true,
+    createdAt: "2026-03-03T12:00:00Z",
   },
   {
     id: "2",
@@ -59,6 +60,7 @@ export const mockMarkets: Market[] = [
     creatorName: "TechFuturist",
     imageUrl: "/images/market-ai.jpg",
     trending: true,
+    createdAt: "2026-03-02T08:00:00Z",
   },
   {
     id: "7",
@@ -84,6 +86,7 @@ export const mockMarkets: Market[] = [
     creatorName: "SportsBet",
     imageUrl: "/images/market-worldcup.jpg",
     trending: true,
+    createdAt: "2026-02-28T10:00:00Z",
   },
   {
     id: "3",
@@ -101,6 +104,7 @@ export const mockMarkets: Market[] = [
     creatorName: "SpaceWatcher",
     imageUrl: "/images/market-spacex.jpg",
     trending: false,
+    createdAt: "2026-01-15T06:00:00Z",
   },
   {
     id: "8",
@@ -125,6 +129,7 @@ export const mockMarkets: Market[] = [
     creatorName: "RangeTrader",
     imageUrl: "/images/market-btcprice.jpg",
     trending: true,
+    createdAt: "2026-03-01T14:00:00Z",
   },
   {
     id: "4",
@@ -142,6 +147,7 @@ export const mockMarkets: Market[] = [
     creatorName: "MacroTrader",
     imageUrl: "/images/market-economy.jpg",
     trending: true,
+    createdAt: "2026-02-20T09:00:00Z",
   },
   {
     id: "9",
@@ -165,6 +171,7 @@ export const mockMarkets: Market[] = [
     creatorName: "PollWatcher",
     imageUrl: "/images/market-politics.jpg",
     trending: true,
+    createdAt: "2026-02-25T16:00:00Z",
   },
   {
     id: "5",
@@ -182,6 +189,7 @@ export const mockMarkets: Market[] = [
     creatorName: "PopCulture",
     imageUrl: "/images/market-taylor.jpg",
     trending: false,
+    createdAt: "2026-02-10T11:00:00Z",
   },
   {
     id: "6",
@@ -199,6 +207,7 @@ export const mockMarkets: Market[] = [
     creatorName: "DeFiDegen",
     imageUrl: "/images/market-eth.jpg",
     trending: true,
+    createdAt: "2026-03-04T07:00:00Z",
   },
 ];
 
