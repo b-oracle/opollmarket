@@ -1,4 +1,6 @@
-import { Home, Compass, PlusCircle, BarChart3, User, Trophy, Gift, HelpCircle } from "lucide-react";
+import { Home, Compass, PlusCircle, BarChart3, User, Trophy, Gift, HelpCircle, LogIn, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.png";
@@ -56,16 +58,29 @@ const DesktopSidebar = () => {
       </nav>
 
       {/* Auth button at bottom */}
-      {!user && (
-        <div className="p-3 border-t border-border">
+      <div className="p-3 border-t border-border">
+        {user ? (
+          <button
+            onClick={async () => {
+              await supabase.auth.signOut();
+              toast.success("Signed out successfully");
+              navigate("/");
+            }}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-destructive/10 text-destructive border border-destructive/20 transition-all hover:bg-destructive/20 active:scale-95"
+          >
+            <LogOut className="w-4 h-4" />
+            Sign Out
+          </button>
+        ) : (
           <button
             onClick={() => navigate("/auth")}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground transition-all active:scale-95"
           >
+            <LogIn className="w-4 h-4" />
             Sign In
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </aside>
   );
 };
