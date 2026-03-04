@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
-import DesktopFooter from "@/components/DesktopFooter";
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -919,7 +919,7 @@ const Create = () => {
           )}
         </AnimatePresence>
       </div>
-      <DesktopFooter />
+      
       <BottomNav />
     </div>
   );
