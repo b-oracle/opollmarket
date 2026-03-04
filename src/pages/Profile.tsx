@@ -17,6 +17,7 @@ import {
   Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import DesktopFooter from "@/components/DesktopFooter";
 
 type TxType = "buy" | "sell" | "deposit" | "withdraw";
 
@@ -397,6 +398,7 @@ const Profile = () => {
 
       <DepositWithdrawModal open={modalOpen} onClose={() => setModalOpen(false)} initialTab={modalTab} />
       <InstallAppModal open={installOpen} onClose={() => setInstallOpen(false)} />
+      <DesktopFooter />
       <BottomNav />
     </div>
   );
