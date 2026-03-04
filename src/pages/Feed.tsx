@@ -21,6 +21,7 @@ const Feed = () => {
   const [refreshing, setRefreshing] = useState(false);
   const touchStartY = useRef(0);
   const isPulling = useRef(false);
+  const hapticFired = useRef(false);
   const spinControls = useAnimation();
 
   const sortedMarkets = useMemo(() => {
@@ -64,6 +65,10 @@ const Feed = () => {
       const dampened = Math.min(deltaY * 0.45, 120);
       setPulling(true);
       setPullDistance(dampened);
+      if (dampened >= PULL_THRESHOLD && !hapticFired.current) {
+        navigator.vibrate?.(15);
+        hapticFired.current = true;
+      }
     }
   }, [refreshing]);
 
@@ -85,6 +90,7 @@ const Feed = () => {
 
     setPulling(false);
     setPullDistance(0);
+    hapticFired.current = false;
   }, [pullDistance, refreshing, refetch, spinControls]);
 
   if (isLoading) {
