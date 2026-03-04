@@ -125,8 +125,8 @@ const AdminChecklist = () => {
       )}
 
       {progress > 0 && progress < 50 && (
-        <div className="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center gap-3">
-          <AlertTriangle className="w-4 h-4 text-orange-400 shrink-0" />
+        <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-3">
+          <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
           <p className="text-xs text-muted-foreground">Several critical items remain. Complete them before launching.</p>
         </div>
       )}
