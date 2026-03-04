@@ -303,7 +303,9 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                       <button onClick={() => setStep("input")} className="w-full glass py-3 rounded-xl font-semibold text-sm transition-all active:scale-95">
                         ← Back to Edit
                       </button>
-                      <SlideToConfirm onConfirm={handleConfirm} label="Slide to Confirm" color={isYes ? "yes" : "no"} />
+                      <button onClick={handleConfirm} className={`w-full ${sideBtnClass} py-3 rounded-xl font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2`}>
+                        Confirm Prediction
+                      </button>
                     </div>
                   </motion.div>
                 )}
