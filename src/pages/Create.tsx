@@ -22,6 +22,7 @@ import {
   Loader2,
   Sparkles,
   Share2,
+  MessageSquare,
   Plus,
   X,
   BarChart3,
