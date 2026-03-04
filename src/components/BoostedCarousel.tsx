@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState, useCallback, ComponentType } from "react";
 import { motion } from "framer-motion";
 import { Zap } from "lucide-react";
 import { Market } from "@/data/markets";
@@ -13,7 +13,7 @@ interface BoostedCarouselProps {
   boostDetails: Map<string, ActiveBoost>;
   navigate: (path: string) => void;
   formatVolume: (v: number) => string;
-  getMarketImage: (id: string, category: string) => string;
+  CategoryIcon: ComponentType<{ category: string; className?: string }>;
   onBoost: (market: Market) => void;
 }
 
@@ -25,7 +25,7 @@ const BoostedCarousel = ({
   boostDetails,
   navigate,
   formatVolume,
-  getMarketImage,
+  CategoryIcon,
   onBoost,
 }: BoostedCarouselProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -119,8 +119,8 @@ const BoostedCarousel = ({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-3xl">
-                    {getMarketImage(market.id, market.category)}
+                  <div className="w-full h-full flex items-center justify-center">
+                    <CategoryIcon category={market.category} className="w-8 h-8 text-muted-foreground" />
                   </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-card/90 to-transparent" />
