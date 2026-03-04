@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import TopBar from "@/components/TopBar";
@@ -7,12 +7,14 @@ import DepositWithdrawModal from "@/components/DepositWithdrawModal";
 import InstallAppModal from "@/components/InstallAppModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserBalance } from "@/hooks/useUserBalance";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { bsc } from "wagmi/chains";
 import {
   Wallet, Gift, ArrowDownToLine, ArrowUpFromLine, ArrowUpRight, ArrowDownLeft,
   Repeat, LogIn, Send, MessageCircle, ExternalLink, ChevronRight,
-  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download,
+  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
