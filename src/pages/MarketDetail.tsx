@@ -1,7 +1,7 @@
 import SEOHead from "@/components/SEOHead";
 import { useParams, useNavigate } from "react-router-dom";
 import watermarkLogo from "@/assets/watermark-logo.png";
-import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2 } from "lucide-react";
+import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2, Wallet } from "lucide-react";
 import LogoLoader from "@/components/LogoLoader";
 import { useMarket } from "@/hooks/useMarkets";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
@@ -14,13 +14,50 @@ import BoostMarketModal from "@/components/BoostMarketModal";
 import ShareModal from "@/components/ShareModal";
 import OrderBook from "@/components/OrderBook";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { usePriceHistory } from "@/hooks/usePriceHistory";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useBookmark } from "@/hooks/useBookmark";
 import { toast } from "sonner";
+
+const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+
+const CreatorCard = ({ creatorName, creatorUserId }: { creatorName: string; creatorUserId: string }) => {
+  const { data: profile } = useQuery({
+    queryKey: ["creator-profile", creatorUserId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("wallet_address, display_name")
+        .eq("id", creatorUserId)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!creatorUserId,
+  });
+
+  const walletAddr = profile?.wallet_address;
+
+  return (
+    <div className="glass rounded-xl p-4 mb-4 flex items-center gap-3">
+      <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
+        <span className="font-bold text-primary">{creatorName.charAt(0)}</span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold">@{creatorName}</p>
+        {walletAddr && (
+          <p className="text-xs text-muted-foreground font-mono flex items-center gap-1">
+            <Wallet className="w-3 h-3" />
+            {truncateAddr(walletAddr)}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const formatVolume = (v: number) => {
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
@@ -535,15 +572,7 @@ const MarketDetail = () => {
 
         {!isMulti && <OrderBook yesPrice={yesPercent} noPrice={noPercent} liquidity={market.liquidity} marketId={market.id} />}
 
-        <div className="glass rounded-xl p-4 mb-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
-            <span className="font-bold text-primary">{market.creatorName.charAt(0)}</span>
-          </div>
-          <div>
-            <p className="text-sm font-semibold">@{market.creatorName}</p>
-            <p className="text-xs text-muted-foreground">{market.creatorAddress}</p>
-          </div>
-        </div>
+        <CreatorCard creatorName={market.creatorName} creatorUserId={market.creatorAddress} />
 
         <InlineComments marketId={market.id} />
       </div>
