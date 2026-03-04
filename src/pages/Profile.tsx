@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
+import useAnalytics from "@/hooks/useAnalytics";
 import { useNavigate } from "react-router-dom";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
@@ -46,6 +47,9 @@ const Profile = () => {
   const { user, loading: authLoading, isAdmin } = useAuth();
   const { balance, bonusBalance } = useUserBalance();
   const navigate = useNavigate();
+  const { track } = useAnalytics();
+
+  useEffect(() => { track("page_view", { page: "profile" }); }, []);
   const queryClient = useQueryClient();
   const { address, isConnected } = useAccount();
   const { connect, connectors, isPending } = useConnect();

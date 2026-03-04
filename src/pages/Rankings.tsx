@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import useAnalytics from "@/hooks/useAnalytics";
 import RankShareModal from "@/components/RankShareModal";
 import NftBadge, { isNftAvatar } from "@/components/NftBadge";
 
@@ -330,6 +331,9 @@ const Rankings = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const currentUserId = user?.id;
+  const { track } = useAnalytics();
+
+  useEffect(() => { track("page_view", { page: "rankings" }); }, []);
 
   const [shareModal, setShareModal] = useState<{
     rank: number; name: string; avatar: string | null;
