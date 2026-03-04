@@ -367,9 +367,11 @@ const Profile = () => {
                         setSavingProfile(true);
                         try {
                           let avatarUrl: string | null = null;
-                          if (avatarFile) {
+                          if (selectedNftUrl) {
+                            avatarUrl = selectedNftUrl;
+                          } else if (avatarFile) {
                             avatarUrl = await uploadAvatar();
-                            if (!avatarUrl && avatarFile) return; // upload failed
+                            if (!avatarUrl && avatarFile) return;
                           }
                           const { error: authError } = await supabase.auth.updateUser({
                             data: { display_name: editName.trim(), ...(avatarUrl ? { avatar_url: avatarUrl } : {}) },
