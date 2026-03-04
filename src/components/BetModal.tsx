@@ -257,12 +257,30 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                     )}
 
                     <button
-                      onClick={() => setStep("confirm")}
+                      onClick={() => {
+                        if (!hasAcceptedTerms()) {
+                          setShowTerms(true);
+                          return;
+                        }
+                        track("bet_placed", { marketId, side, amount: numAmount });
+                        setStep("confirm");
+                      }}
                       disabled={!isValid || !user || !isEmailVerified}
                       className={`w-full ${sideBtnClass} py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-40 disabled:active:scale-100 flex items-center justify-center gap-2`}
                     >
                       Review Order <ArrowRight className="w-4 h-4" />
                     </button>
+
+                    <TermsAcceptanceModal
+                      open={showTerms}
+                      onAccept={() => {
+                        setShowTerms(false);
+                        track("terms_accepted", {});
+                        track("bet_placed", { marketId, side, amount: numAmount });
+                        setStep("confirm");
+                      }}
+                      onClose={() => setShowTerms(false)}
+                    />
                   </motion.div>
                 )}
 
