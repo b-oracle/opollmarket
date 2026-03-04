@@ -215,15 +215,16 @@ const Index = () => {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.6 + i * 0.08 }}
+                whileHover={{ y: -4, boxShadow: "0 8px 30px -8px hsl(var(--primary) / 0.15)" }}
                 onClick={() => navigate(`/market/${market.id}`)}
-                className={`glass rounded-xl p-3 cursor-pointer hover:bg-accent/30 transition-all active:scale-[0.98] flex items-center gap-3 ${isBoosted ? 'ring-1 ring-primary/30 bg-primary/5' : ''}`}
+                className={`glass rounded-xl p-3 cursor-pointer transition-all active:scale-[0.98] flex items-center gap-3 group md:p-4 md:rounded-2xl hover:border-primary/20 hover:bg-accent/20 ${isBoosted ? 'ring-1 ring-primary/30 bg-primary/5' : ''}`}
               >
-                <div className="w-14 h-14 rounded-xl bg-secondary/80 border border-border shrink-0 relative overflow-hidden">
+                <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-secondary/80 border border-border shrink-0 relative overflow-hidden transition-transform duration-300 group-hover:scale-105 group-hover:shadow-md">
                   {market.imageUrl ? (
-                    <img src={market.imageUrl} alt={market.title} className="w-full h-full object-cover" />
+                    <img src={market.imageUrl} alt={market.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <span className="text-2xl">{getMarketImage(market.id, market.category)}</span>
+                      <span className="text-2xl md:text-3xl transition-transform duration-300 group-hover:scale-110">{getMarketImage(market.id, market.category)}</span>
                     </div>
                   )}
                   {isBoosted && (
@@ -242,7 +243,7 @@ const Index = () => {
                     <CommentBadge marketId={market.id} />
                     <span className="text-[10px] text-muted-foreground font-mono ml-auto">{formatVolume(market.volume)} Vol</span>
                   </div>
-                  <h4 className="text-sm font-bold leading-snug truncate mb-1.5">{market.title}</h4>
+                  <h4 className="text-sm font-bold leading-snug truncate mb-1.5 group-hover:text-primary transition-colors">{market.title}</h4>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-2 rounded-full overflow-hidden flex bg-muted">
                       {isMulti && market.options ? (
@@ -264,12 +265,12 @@ const Index = () => {
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); setBoostModalMarket({ id: market.id, title: market.title }); }}
-                  className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-90 ${
-                    isBoosted ? 'bg-primary/20 text-primary' : 'glass hover:bg-primary/10 text-muted-foreground hover:text-primary'
+                  className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-90 md:opacity-0 md:group-hover:opacity-100 ${
+                    isBoosted ? 'bg-primary/20 text-primary md:opacity-100' : 'glass hover:bg-primary/10 text-muted-foreground hover:text-primary'
                   }`}
                   title="Boost this market"
                 >
-                  <Zap className="w-4 h-4" />
+                  <Zap className="w-4 h-4 transition-transform group-hover:scale-110" />
                 </button>
               </motion.div>
             );
