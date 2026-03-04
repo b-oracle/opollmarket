@@ -1,3 +1,4 @@
+// App root
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { useLocation } from "react-router-dom";
