@@ -137,6 +137,8 @@ export type Database = {
           admin_fee_percent: number
           creator_fee_percent: number
           id: string
+          min_nft_balance: number
+          min_token_balance: number
           referral_reward_amount: number
           updated_at: string
           updated_by: string | null
@@ -145,6 +147,8 @@ export type Database = {
           admin_fee_percent?: number
           creator_fee_percent?: number
           id?: string
+          min_nft_balance?: number
+          min_token_balance?: number
           referral_reward_amount?: number
           updated_at?: string
           updated_by?: string | null
@@ -153,6 +157,8 @@ export type Database = {
           admin_fee_percent?: number
           creator_fee_percent?: number
           id?: string
+          min_nft_balance?: number
+          min_token_balance?: number
           referral_reward_amount?: number
           updated_at?: string
           updated_by?: string | null
