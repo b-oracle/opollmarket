@@ -34,6 +34,7 @@ import Disclaimer from "./pages/Disclaimer";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 import DesktopSidebar from "./components/DesktopSidebar";
 import DesktopFooter from "./components/DesktopFooter";
@@ -48,14 +49,15 @@ const ConditionalFooter = () => {
 };
 
 const App = () => (
-  <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          
-          <BrowserRouter>
+  <ErrorBoundary>
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+      <WagmiProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            
+            <BrowserRouter>
             <DesktopSidebar />
             <div className="md:ml-60 min-h-screen flex flex-col">
               <div className="flex-1">
@@ -92,11 +94,12 @@ const App = () => (
               
               <ConditionalFooter />
             </div>
-          </BrowserRouter>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
-  </ThemeProvider>
+            </BrowserRouter>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </WagmiProvider>
+    </ThemeProvider>
+  </ErrorBoundary>
 );
 
 export default App;
