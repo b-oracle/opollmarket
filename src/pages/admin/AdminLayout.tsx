@@ -6,37 +6,41 @@ import {
   ArrowLeft, PlusCircle, Receipt, Settings, Coins, Menu, X, ArrowUpFromLine, Zap, BarChart3, Rocket,
 } from "lucide-react";
 
-const navItems = [
+type NavItem = { to: string; label: string; icon: any; end?: boolean; adminOnly?: boolean };
+
+const navItems: NavItem[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/admin/markets", label: "Markets", icon: ShoppingBag },
   { to: "/admin/create-market", label: "Create Market", icon: PlusCircle },
-  { to: "/admin/transactions", label: "Transactions", icon: Receipt },
-  { to: "/admin/withdrawals", label: "Withdrawals", icon: ArrowUpFromLine },
+  { to: "/admin/transactions", label: "Transactions", icon: Receipt, adminOnly: true },
+  { to: "/admin/withdrawals", label: "Withdrawals", icon: ArrowUpFromLine, adminOnly: true },
   { to: "/admin/boosts", label: "Boosts", icon: Zap },
   { to: "/admin/comments", label: "Comments", icon: MessageSquare },
-  { to: "/admin/users", label: "Users", icon: Users },
-  { to: "/admin/commissions", label: "Commissions", icon: Coins },
-  { to: "/admin/settings", label: "Settings", icon: Settings },
-  { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
-  { to: "/admin/checklist", label: "Launch Checklist", icon: Rocket },
+  { to: "/admin/users", label: "Users", icon: Users, adminOnly: true },
+  { to: "/admin/commissions", label: "Commissions", icon: Coins, adminOnly: true },
+  { to: "/admin/settings", label: "Settings", icon: Settings, adminOnly: true },
+  { to: "/admin/analytics", label: "Analytics", icon: BarChart3, adminOnly: true },
+  { to: "/admin/checklist", label: "Launch Checklist", icon: Rocket, adminOnly: true },
 ];
 
 const AdminLayout = () => {
-  const { user, loading, isAdmin, signOut } = useAuth();
+  const { user, loading, isAdmin, hasAdminAccess, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (!loading && (!user || !isAdmin)) {
+    if (!loading && (!user || !hasAdminAccess)) {
       navigate("/auth");
     }
-  }, [user, loading, isAdmin, navigate]);
+  }, [user, loading, hasAdminAccess, navigate]);
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
+
+  const filteredNavItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   if (loading) {
     return (
@@ -46,7 +50,7 @@ const AdminLayout = () => {
     );
   }
 
-  if (!user || !isAdmin) return null;
+  if (!user || !hasAdminAccess) return null;
 
   return (
     <div className="min-h-dvh bg-background flex">
