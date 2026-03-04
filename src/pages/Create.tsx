@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   Loader2,
   Sparkles,
+  Share2,
   Plus,
   X,
   BarChart3,
