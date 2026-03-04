@@ -93,7 +93,7 @@ const Profile = () => {
     return (
       <div className="min-h-dvh bg-background pb-20">
         <TopBar />
-        <div className="max-w-lg mx-auto px-4 pt-20 flex flex-col items-center justify-center" style={{ minHeight: "60vh" }}>
+        <div className="max-w-lg md:max-w-4xl mx-auto px-4 pt-20 flex flex-col items-center justify-center" style={{ minHeight: "60vh" }}>
           <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-4">
             <Wallet className="w-8 h-8 text-muted-foreground" />
           </div>
@@ -114,7 +114,7 @@ const Profile = () => {
   return (
     <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
       <TopBar />
-      <div className="max-w-lg mx-auto px-3 sm:px-4 pt-20">
+      <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4 pt-20">
         {/* Avatar & Profile Edit */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center mb-3">

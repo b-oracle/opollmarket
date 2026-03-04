@@ -276,7 +276,7 @@ const MarketDetail = () => {
   return (
     <div ref={pageRef} className="h-dvh bg-background overflow-y-auto" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
       <div className="sticky top-0 z-20 glass-strong">
-        <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto">
+        <div className="flex items-center justify-between h-14 px-4 max-w-lg md:max-w-4xl mx-auto">
           <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full glass flex items-center justify-center"><ArrowLeft className="w-5 h-5" /></button>
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-muted-foreground">{categoryIcons[market.category]} {market.category}</span>
@@ -294,7 +294,7 @@ const MarketDetail = () => {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-3 sm:px-4">
+      <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4">
       {/* Hidden share capture overlay - matches MarketCard style */}
       <div ref={shareRef} className="absolute -left-[9999px] w-[600px] overflow-hidden rounded-xl bg-background" style={{ height: '400px' }}>
         {market.imageUrl && (
