@@ -1,5 +1,6 @@
 import LogoLoader from "@/components/LogoLoader";
 import { useState, useCallback, useEffect } from "react";
+import HoldToConfirmButton from "@/components/HoldToConfirmButton";
 import BottomSheet from "@/components/BottomSheet";
 
 import { motion, AnimatePresence } from "framer-motion";
