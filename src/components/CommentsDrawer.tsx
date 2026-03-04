@@ -147,7 +147,7 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
       const { data: userLikes } = await supabase
         .from("comment_likes")
         .select("comment_id")
-        .eq("wallet_address", walletId);
+        .eq("wallet_address", identityId);
 
       const likedIds = new Set(userLikes?.map((l) => l.comment_id) || []);
 
@@ -184,7 +184,7 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
     } finally {
       setLoading(false);
     }
-  }, [marketId, walletId]);
+  }, [marketId, identityId]);
 
   useEffect(() => {
     if (!open) return;
@@ -229,13 +229,18 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
 
     setSubmitting(true);
     try {
-      const authorName = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "Anonymous";
+      // Derive author name from auth user or wallet
+      const authorName = user?.email
+        ? user.email.split("@")[0]
+        : address
+        ? `${address.slice(0, 6)}...${address.slice(-4)}`
+        : "Anonymous";
 
       const { error } = await supabase.from("comments").insert({
         market_id: marketId,
         parent_id: replyTo?.id || null,
         author_name: authorName,
-        author_wallet: address || null,
+        author_wallet: address || user?.id || null,
         content: cleanText,
       });
 
@@ -262,11 +267,11 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
           .from("comment_likes")
           .delete()
           .eq("comment_id", commentId)
-          .eq("wallet_address", walletId);
+          .eq("wallet_address", identityId);
       } else {
         await supabase.from("comment_likes").insert({
           comment_id: commentId,
-          wallet_address: walletId,
+          wallet_address: identityId,
         });
       }
       // Optimistic update
