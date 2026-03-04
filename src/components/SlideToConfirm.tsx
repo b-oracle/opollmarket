@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion";
+import { motion, useMotionValue, useTransform, PanInfo, animate } from "framer-motion";
 import { ArrowRight, Check } from "lucide-react";
 
 interface SlideToConfirmProps {
@@ -34,8 +34,10 @@ const SlideToConfirm = ({ onConfirm, label = "Slide to Confirm", className = "",
     const currentX = x.get();
     if (currentX >= maxX * 0.85) {
       setConfirmed(true);
-      x.set(maxX);
+      animate(x, maxX, { type: "spring", stiffness: 300, damping: 30 });
       setTimeout(() => onConfirm(), 300);
+    } else {
+      animate(x, 0, { type: "spring", stiffness: 400, damping: 30 });
     }
   }, [onConfirm, x]);
 
