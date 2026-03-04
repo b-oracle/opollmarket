@@ -462,9 +462,9 @@ const MarketDetail = () => {
         );
       })() : null}
 
-      <div className={`${market.imageUrl ? 'pt-4' : 'pt-4'}`}>
-        {!market.imageUrl && <h1 className="text-2xl font-bold leading-tight mb-2">{market.title}</h1>}
-        {!market.imageUrl && <p className="text-sm text-muted-foreground mb-6">{market.description}</p>}
+      <div className={`${(market.imageUrl || market.videoUrl) ? 'pt-4' : 'pt-4'}`}>
+        {!market.imageUrl && !market.videoUrl && <h1 className="text-2xl font-bold leading-tight mb-2">{market.title}</h1>}
+        {!market.imageUrl && !market.videoUrl && <p className="text-sm text-muted-foreground mb-6">{market.description}</p>}
 
         {activeBoost && (
           <div className="mb-4">
