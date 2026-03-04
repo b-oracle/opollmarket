@@ -21,6 +21,7 @@ export interface Market {
   creatorAddress: string;
   creatorName: string;
   imageUrl: string;
+  videoUrl?: string;
   trending: boolean;
   createdAt: string;
 }
