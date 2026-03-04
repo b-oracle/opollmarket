@@ -40,7 +40,7 @@ import DesktopFooter from "./components/DesktopFooter";
 const queryClient = new QueryClient();
 
 const isFooterHidden = (pathname: string) =>
-  ["/", "/feed", "/profile", "/referrals"].includes(pathname) ||
+  ["/", "/feed", "/profile", "/referrals", "/create"].includes(pathname) ||
   pathname.startsWith("/market/") ||
   pathname.startsWith("/admin");
 
