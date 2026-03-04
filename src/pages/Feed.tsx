@@ -6,7 +6,6 @@ import BottomNav from "@/components/BottomNav";
 import { useMarkets } from "@/hooks/useMarkets";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
 import { Loader2 } from "lucide-react";
-import { Loader2 } from "lucide-react";
 import { motion, useAnimation } from "framer-motion";
 
 const PULL_THRESHOLD = 80;

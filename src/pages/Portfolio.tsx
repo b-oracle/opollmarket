@@ -1,4 +1,4 @@
-import { Loader2 } from "lucide-react";
+// Loader2 imported from lucide below
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
@@ -568,7 +568,7 @@ const Portfolio = () => {
 
             {sellStep === "executing" && (
               <motion.div key="executing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-8">
-                <LogoLoader size="lg" />
+                <Loader2 className="w-10 h-10 animate-spin text-primary" />
                 <h3 className="text-lg font-bold mt-4 mb-1">Selling Position...</h3>
                 <p className="text-sm text-muted-foreground">Processing your sell order</p>
               </motion.div>
