@@ -153,8 +153,7 @@ const Feed = () => {
 
       <div
         ref={containerRef}
-        className="flex-1 snap-feed pt-14 md:max-w-2xl md:mx-auto"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        className="h-[calc(100dvh-3.5rem)] snap-feed md:max-w-2xl md:mx-auto"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
