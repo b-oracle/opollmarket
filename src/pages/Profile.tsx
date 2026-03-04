@@ -14,7 +14,7 @@ import { bsc } from "wagmi/chains";
 import {
   Wallet, Gift, ArrowDownToLine, ArrowUpFromLine, ArrowUpRight, ArrowDownLeft,
   Repeat, LogIn, Send, MessageCircle, ExternalLink, ChevronRight,
-  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2,
+  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -56,21 +56,44 @@ const Profile = () => {
   const [installOpen, setInstallOpen] = useState(false);
   const [walletCopied, setWalletCopied] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
-  // Fetch profile wallet address
+  // Fetch profile data
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
       if (!user) return null;
       const { data } = await supabase
         .from("profiles")
-        .select("wallet_address")
+        .select("wallet_address, avatar_url")
         .eq("id", user.id)
         .single();
       return data;
     },
     enabled: !!user,
   });
+
+  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be under 2MB");
+      return;
+    }
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
+
+  const uploadAvatar = async (): Promise<string | null> => {
+    if (!avatarFile || !user) return null;
+    const ext = avatarFile.name.split(".").pop();
+    const path = `${user.id}/avatar.${ext}`;
+    const { error } = await supabase.storage.from("avatars").upload(path, avatarFile, { upsert: true });
+    if (error) { toast.error("Avatar upload failed"); return null; }
+    const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+    return `${urlData.publicUrl}?t=${Date.now()}`;
+  };
 
   // Save wallet to profile when connected
   useEffect(() => {
@@ -175,8 +198,12 @@ const Profile = () => {
       <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4 pt-20">
         {/* Avatar & Profile Edit */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center mb-3">
-            <span className="text-2xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
+          <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center mb-3 overflow-hidden">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-2xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-bold">{displayName}</h2>
@@ -211,6 +238,25 @@ const Profile = () => {
               >
                 <h3 className="text-sm font-bold mb-4">Edit Profile</h3>
                 <div className="space-y-3">
+                  {/* Avatar Upload */}
+                  <div className="flex flex-col items-center gap-2">
+                    <label htmlFor="avatar-upload" className="relative cursor-pointer group">
+                      <div className="w-16 h-16 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center overflow-hidden">
+                        {avatarPreview ? (
+                          <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
+                        ) : profile?.avatar_url ? (
+                          <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
+                        )}
+                      </div>
+                      <div className="absolute inset-0 rounded-full bg-background/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Camera className="w-5 h-5 text-foreground" />
+                      </div>
+                    </label>
+                    <input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={handleAvatarSelect} />
+                    <span className="text-[10px] text-muted-foreground">Tap to change photo</span>
+                  </div>
                   <div>
                     <label className="text-xs font-medium text-muted-foreground mb-1 block">Display Name</label>
                     <input
@@ -235,11 +281,22 @@ const Profile = () => {
                         if (!editName.trim()) { toast.error("Name cannot be empty"); return; }
                         setSavingProfile(true);
                         try {
+                          let avatarUrl: string | null = null;
+                          if (avatarFile) {
+                            avatarUrl = await uploadAvatar();
+                            if (!avatarUrl && avatarFile) return; // upload failed
+                          }
                           const { error: authError } = await supabase.auth.updateUser({
-                            data: { display_name: editName.trim() },
+                            data: { display_name: editName.trim(), ...(avatarUrl ? { avatar_url: avatarUrl } : {}) },
                           });
                           if (authError) { toast.error("Failed to update: " + authError.message); return; }
-                          await supabase.from("profiles").update({ display_name: editName.trim() }).eq("id", user!.id);
+                          await supabase.from("profiles").update({
+                            display_name: editName.trim(),
+                            ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+                          }).eq("id", user!.id);
+                          queryClient.invalidateQueries({ queryKey: ["profile", user!.id] });
+                          setAvatarFile(null);
+                          setAvatarPreview(null);
                           toast.success("Profile updated!");
                           setEditingProfile(false);
                         } finally {
