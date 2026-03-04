@@ -9,6 +9,9 @@ import BetModal from "@/components/BetModal";
 import CommentsDrawer from "@/components/CommentsDrawer";
 import ShareModal from "@/components/ShareModal";
 import { useCommentCount } from "@/hooks/useCommentCount";
+import { useMarketLike } from "@/hooks/useMarketLike";
+import { useBookmark } from "@/hooks/useBookmark";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 interface MarketCardProps {
@@ -57,10 +60,10 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const isMulti = market.marketType === "multi" || market.marketType === "range";
   const showBoosted = isBoosted || market.trending;
 
-  // Interactive state
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(Math.floor(Math.random() * 5000) + 500);
-  const [bookmarked, setBookmarked] = useState(false);
+  // Real hooks for like, bookmark, comments
+  const { user } = useAuth();
+  const { liked, likeCount, toggleLike } = useMarketLike(market.id);
+  const { bookmarked, toggleBookmark } = useBookmark(market.id);
   const [betModal, setBetModal] = useState<{ open: boolean; side: "yes" | "no"; optionLabel?: string; optionPrice?: number; optionColor?: string }>({ open: false, side: "yes" });
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -96,8 +99,11 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const swipeSide = dragX > 0 ? "yes" : dragX < 0 ? "no" : null;
 
   const handleLike = () => {
-    setLiked((prev) => !prev);
-    setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
+    if (!user) {
+      toast.error("Sign in to like markets");
+      return;
+    }
+    toggleLike();
   };
 
   const handleShare = () => {
@@ -105,8 +111,11 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   };
 
   const handleBookmark = () => {
-    setBookmarked((prev) => !prev);
-    toast.success(bookmarked ? "Removed from watchlist" : "Added to watchlist");
+    if (!user) {
+      toast.error("Sign in to save to watchlist");
+      return;
+    }
+    toggleBookmark();
   };
 
   const formatCount = (n: number) => {
