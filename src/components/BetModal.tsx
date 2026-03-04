@@ -9,6 +9,8 @@ import { useUserBalance, usePlaceBet } from "@/hooks/useUserBalance";
 import { useRateLimit } from "@/hooks/useRateLimit";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import { useNavigate } from "react-router-dom";
+import TermsAcceptanceModal, { hasAcceptedTerms } from "@/components/TermsAcceptanceModal";
+import useAnalytics from "@/hooks/useAnalytics";
 import {
   X,
   AlertTriangle,
@@ -48,10 +50,12 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
   const { data: commission } = useCommissionSettings();
   const placeBet = usePlaceBet();
   const navigate = useNavigate();
-  const { checkLimit: checkBetLimit } = useRateLimit(5, 60000); // 5 bets per minute
+  const { checkLimit: checkBetLimit } = useRateLimit(5, 60000);
+  const { track } = useAnalytics();
   const [amount, setAmount] = useState("");
   const [step, setStep] = useState<ModalStep>("input");
   const [errorMsg, setErrorMsg] = useState("");
+  const [showTerms, setShowTerms] = useState(false);
 
   const numAmount = parseFloat(amount) || 0;
   const totalFeePercent = (commission?.admin_fee_percent ?? 2) + (commission?.creator_fee_percent ?? 3);
