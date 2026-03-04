@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import BulkCSVImport from "@/components/admin/BulkCSVImport";
@@ -38,6 +38,16 @@ interface ResolveState {
   winningOptionId: string | null;
 }
 
+interface TrendingScore {
+  market_id: string;
+  volume_score: number;
+  participant_score: number;
+  recent_bets_score: number;
+  comments_score: number;
+  likes_score: number;
+  total_score: number;
+}
+
 interface EditState {
   id: string;
   title: string;
@@ -58,6 +68,7 @@ const AdminMarkets = () => {
   const [editState, setEditState] = useState<EditState | null>(null);
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [trendingScores, setTrendingScores] = useState<Map<string, TrendingScore>>(new Map());
   const titleInputRef = useRef<HTMLInputElement>(null);
 
   const fetchMarkets = async () => {
@@ -71,7 +82,16 @@ const AdminMarkets = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchMarkets(); }, [filter]);
+  useEffect(() => { fetchMarkets(); fetchTrendingScores(); }, [filter]);
+
+  const fetchTrendingScores = async () => {
+    const { data, error } = await supabase.rpc("get_trending_scores");
+    if (!error && data) {
+      const map = new Map<string, TrendingScore>();
+      (data as TrendingScore[]).forEach((s) => map.set(s.market_id, s));
+      setTrendingScores(map);
+    }
+  };
 
   useEffect(() => {
     if (editState && titleInputRef.current) titleInputRef.current.focus();
@@ -425,6 +445,48 @@ const AdminMarkets = () => {
                                 </span>
                               )}
                             </div>
+
+                            {/* Trending Score Breakdown */}
+                            {(() => {
+                              const score = trendingScores.get(m.id);
+                              if (!score) return null;
+                              const bars = [
+                                { label: "Volume", value: score.volume_score, max: 40, color: "bg-primary" },
+                                { label: "Participants", value: score.participant_score, max: 20, color: "bg-primary/80" },
+                                { label: "Recent Bets (48h)", value: score.recent_bets_score, max: 20, color: "bg-primary/60" },
+                                { label: "Comments (48h)", value: score.comments_score, max: 10, color: "bg-primary/50" },
+                                { label: "Likes (48h)", value: score.likes_score, max: 10, color: "bg-primary/40" },
+                              ];
+                              return (
+                                <div>
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                                    <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+                                      Trending Score
+                                    </label>
+                                    <span className="text-sm font-bold text-primary ml-auto">
+                                      {Number(score.total_score).toFixed(1)} / 100
+                                    </span>
+                                  </div>
+                                  <div className="space-y-1.5">
+                                    {bars.map((bar) => (
+                                      <div key={bar.label} className="flex items-center gap-2">
+                                        <span className="text-[10px] text-muted-foreground w-28 shrink-0">{bar.label}</span>
+                                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                                          <div
+                                            className={`h-full rounded-full ${bar.color} transition-all`}
+                                            style={{ width: `${(Number(bar.value) / bar.max) * 100}%` }}
+                                          />
+                                        </div>
+                                        <span className="text-[10px] font-mono text-muted-foreground w-10 text-right">
+                                          {Number(bar.value).toFixed(1)}/{bar.max}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </div>
                         </td>
                       </tr>

@@ -669,6 +669,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_trending_scores: {
+        Args: never
+        Returns: {
+          comments_score: number
+          likes_score: number
+          market_id: string
+          participant_score: number
+          recent_bets_score: number
+          total_score: number
+          volume_score: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
