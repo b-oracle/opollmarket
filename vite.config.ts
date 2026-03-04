@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
       includeAssets: ["favicon.ico", "logo.png", "icon-512.png", "robots.txt"],
       manifest: {
         name: "OPOLL — Social Prediction Market",
