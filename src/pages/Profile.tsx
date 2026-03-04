@@ -44,12 +44,68 @@ const Profile = () => {
   const { user, loading: authLoading, isAdmin } = useAuth();
   const { balance, bonusBalance } = useUserBalance();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { address, isConnected } = useAccount();
+  const { connect, connectors, isPending } = useConnect();
+  const { disconnect } = useDisconnect();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<"deposit" | "withdraw">("deposit");
   const [txFilter, setTxFilter] = useState<FilterType>("all");
   const [editingProfile, setEditingProfile] = useState(false);
   const [editName, setEditName] = useState(user?.user_metadata?.display_name || "");
   const [installOpen, setInstallOpen] = useState(false);
+  const [walletCopied, setWalletCopied] = useState(false);
+
+  // Fetch profile wallet address
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("wallet_address")
+        .eq("id", user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Save wallet to profile when connected
+  useEffect(() => {
+    if (user && isConnected && address && profile && !profile.wallet_address) {
+      (async () => {
+        await supabase
+          .from("profiles")
+          .update({ wallet_address: address })
+          .eq("id", user.id);
+        queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
+      })();
+    }
+  }, [user, isConnected, address, profile]);
+
+  const savedWallet = profile?.wallet_address;
+
+  const handleDisconnectWallet = async () => {
+    disconnect();
+    if (user) {
+      await supabase
+        .from("profiles")
+        .update({ wallet_address: null })
+        .eq("id", user.id);
+      queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
+    }
+    toast({ title: "Wallet disconnected" });
+  };
+
+  const copyWalletAddress = () => {
+    const addr = savedWallet || address;
+    if (addr) {
+      navigator.clipboard.writeText(addr);
+      setWalletCopied(true);
+      setTimeout(() => setWalletCopied(false), 2000);
+    }
+  };
 
   const { data: transactions = [] } = useQuery({
     queryKey: ["transactions", user?.id],
