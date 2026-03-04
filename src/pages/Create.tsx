@@ -956,13 +956,9 @@ const Create = () => {
                   </motion.div>
                   <h3 className="text-base font-bold mb-1">Market Created!</h3>
                   <p className="text-xs text-muted-foreground text-center mb-4">
-                    Your prediction market is now live on BSC.
+                    Your prediction market is now live. Share it and start earning from trades!
                   </p>
                   <div className="w-full space-y-1.5 mb-4">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Tx Hash</span>
-                      <span className="font-mono text-primary">{txHash.slice(0, 10)}...{txHash.slice(-6)}</span>
-                    </div>
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">Liquidity</span>
                       <span className="font-semibold">${initialLiquidity} USDT</span>
@@ -975,14 +971,12 @@ const Create = () => {
                     >
                       Home
                     </button>
-                    <a
-                      href={`https://bscscan.com/tx/${txHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => navigate(`/market/${newMarketId}`)}
                       className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
                     >
-                      View on BscScan
-                    </a>
+                      View Market
+                    </button>
                   </div>
                 </motion.div>
               )}
