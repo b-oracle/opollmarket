@@ -303,8 +303,8 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                       <button onClick={() => setStep("input")} className="w-full glass py-3 rounded-xl font-semibold text-sm transition-all active:scale-95">
                         ← Back to Edit
                       </button>
-                      <button onClick={handleConfirm} className={`w-full ${sideBtnClass} py-3 rounded-xl font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2`}>
-                        Confirm Prediction
+                      <button onClick={handleConfirm} disabled={placeBet.isPending} className={`w-full ${sideBtnClass} py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2`}>
+                        {placeBet.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Placing...</> : "Confirm Prediction"}
                       </button>
                     </div>
                   </motion.div>
