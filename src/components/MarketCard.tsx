@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -72,28 +72,79 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const cardRef = useRef<HTMLDivElement>(null);
   const [swiping, setSwiping] = useState(false);
   const captureContentRef = useRef<HTMLDivElement>(null);
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const touchLockedRef = useRef<"horizontal" | "vertical" | null>(null);
 
-  const SWIPE_THRESHOLD = 80;
+  const SWIPE_THRESHOLD = 60;
+  const LOCK_ANGLE_THRESHOLD = 20; // pixels before locking direction
 
-  const handleDrag = useCallback((_: any, info: { offset: { x: number } }) => {
-    if (isMulti) return;
-    setDragX(info.offset.x);
-    if (!swiping && Math.abs(info.offset.x) > 10) setSwiping(true);
-  }, [isMulti, swiping]);
+  // Manual touch handling for responsive swipe
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el || isMulti) return;
 
-  const handleDragEnd = useCallback((_: any, info: { offset: { x: number }; velocity: { x: number } }) => {
-    if (isMulti) { setDragX(0); setSwiping(false); return; }
-    const swipeDistance = info.offset.x;
-    const velocity = Math.abs(info.velocity.x);
-    const triggered = Math.abs(swipeDistance) > SWIPE_THRESHOLD || (velocity > 300 && Math.abs(swipeDistance) > 30);
+    const onTouchStart = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+      touchLockedRef.current = null;
+    };
 
-    if (triggered) {
-      const side = swipeDistance > 0 ? "yes" : "no";
-      setBetModal({ open: true, side });
-    }
-    setDragX(0);
-    setSwiping(false);
-  }, [isMulti]);
+    const onTouchMove = (e: TouchEvent) => {
+      if (!touchStartRef.current) return;
+      const touch = e.touches[0];
+      const dx = touch.clientX - touchStartRef.current.x;
+      const dy = touch.clientY - touchStartRef.current.y;
+
+      // Determine direction lock
+      if (!touchLockedRef.current) {
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+        if (absDx > LOCK_ANGLE_THRESHOLD || absDy > LOCK_ANGLE_THRESHOLD) {
+          touchLockedRef.current = absDx > absDy ? "horizontal" : "vertical";
+        }
+      }
+
+      if (touchLockedRef.current === "horizontal") {
+        e.preventDefault(); // prevent scroll
+        setDragX(dx);
+        if (!swiping && Math.abs(dx) > 10) setSwiping(true);
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (!touchStartRef.current || touchLockedRef.current !== "horizontal") {
+        setDragX(0);
+        setSwiping(false);
+        touchStartRef.current = null;
+        touchLockedRef.current = null;
+        return;
+      }
+
+      const dx = dragX;
+      const elapsed = Date.now() - touchStartRef.current.time;
+      const velocity = Math.abs(dx) / (elapsed || 1) * 1000; // px/s
+      const triggered = Math.abs(dx) > SWIPE_THRESHOLD || (velocity > 400 && Math.abs(dx) > 25);
+
+      if (triggered) {
+        const side = dx > 0 ? "yes" : "no";
+        setBetModal({ open: true, side });
+      }
+      setDragX(0);
+      setSwiping(false);
+      touchStartRef.current = null;
+      touchLockedRef.current = null;
+    };
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
+
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [isMulti, swiping, dragX]);
 
   const swipeProgress = Math.min(Math.abs(dragX) / SWIPE_THRESHOLD, 1);
   const swipeSide = dragX > 0 ? "yes" : dragX < 0 ? "no" : null;
@@ -125,16 +176,14 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
   return (
     <>
-      <motion.div
+      <div
         ref={cardRef}
-        drag={isMulti ? false : "x"}
-        dragConstraints={{ left: -200, right: 200 }}
-        dragSnapToOrigin
-        dragElastic={0.7}
-        onDrag={handleDrag}
-        onDragEnd={handleDragEnd}
         className={`snap-item relative h-[calc(100dvh-5rem-env(safe-area-inset-bottom))] w-full flex items-end pb-6 px-3 sm:px-4 overflow-hidden ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}
-        style={{ touchAction: "pan-y" }}
+        style={{ 
+          touchAction: "pan-y",
+          transform: dragX !== 0 ? `translateX(${dragX * 0.5}px)` : undefined,
+          transition: dragX === 0 ? 'transform 0.25s ease-out' : 'none',
+        }}
       >
         {/* Swipe overlay indicators */}
         {!isMulti && swiping && (
@@ -418,7 +467,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             </p>
           )}
         </div>
-      </motion.div>
+      </div>
 
       <BetModal
         open={betModal.open}
