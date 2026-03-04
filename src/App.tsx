@@ -1,5 +1,6 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { useLocation } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -36,6 +37,12 @@ import InstallBanner from "./components/InstallBanner";
 import DesktopSidebar from "./components/DesktopSidebar";
 import DesktopFooter from "./components/DesktopFooter";
 const queryClient = new QueryClient();
+
+const ConditionalFooter = () => {
+  const location = useLocation();
+  if (location.pathname.startsWith("/admin")) return null;
+  return <DesktopFooter />;
+};
 
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
@@ -79,7 +86,7 @@ const App = () => (
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </div>
-              <DesktopFooter />
+              <ConditionalFooter />
             </div>
           </BrowserRouter>
         </TooltipProvider>
