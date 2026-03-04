@@ -1,4 +1,5 @@
 import SEOHead from "@/components/SEOHead";
+import YouTubeEmbed, { isYouTubeUrl } from "@/components/YouTubeEmbed";
 import { useParams, useNavigate } from "react-router-dom";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2, Wallet } from "lucide-react";
@@ -409,7 +410,13 @@ const MarketDetail = () => {
       </div>
 
       {/* Visible banner */}
-      {market.imageUrl && (() => {
+      {(market.videoUrl && isYouTubeUrl(market.videoUrl)) ? (
+        <div className="relative w-full rounded-xl overflow-hidden mt-4">
+          <div className="aspect-video w-full">
+            <YouTubeEmbed url={market.videoUrl} className="w-full h-full rounded-xl" />
+          </div>
+        </div>
+      ) : market.imageUrl ? (() => {
         const boostGlowColor = activeBoost
           ? activeBoost.tier === "whale" ? "hsla(45, 93%, 58%, 0.6)"
             : activeBoost.tier === "standard" ? "hsla(280, 70%, 60%, 0.6)"
@@ -453,7 +460,7 @@ const MarketDetail = () => {
           </div>
         </div>
         );
-      })()}
+      })() : null}
 
       <div className={`${market.imageUrl ? 'pt-4' : 'pt-4'}`}>
         {!market.imageUrl && <h1 className="text-2xl font-bold leading-tight mb-2">{market.title}</h1>}
