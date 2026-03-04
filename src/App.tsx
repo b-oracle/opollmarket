@@ -97,6 +97,7 @@ const App = () => (
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </div>
+              <ConditionalPadding />
               <ConditionalFooter />
             </div>
           </BrowserRouter>
