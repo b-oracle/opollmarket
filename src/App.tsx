@@ -40,7 +40,10 @@ const queryClient = new QueryClient();
 
 const ConditionalFooter = () => {
   const location = useLocation();
-  if (location.pathname.startsWith("/admin")) return null;
+  const hidden = ["/", "/feed"].includes(location.pathname) ||
+    location.pathname.startsWith("/market/") ||
+    location.pathname.startsWith("/admin");
+  if (hidden) return null;
   return <DesktopFooter />;
 };
 
