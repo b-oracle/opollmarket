@@ -1,3 +1,4 @@
+import SEOHead from "@/components/SEOHead";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BackToTop from "@/components/BackToTop";
@@ -59,6 +60,7 @@ const FAQ = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24">
+      <SEOHead title="FAQ" description="Frequently asked questions about OPOLL prediction markets, trading, fees, and more." path="/faq" />
       <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-muted transition">

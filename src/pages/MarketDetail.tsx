@@ -1,3 +1,4 @@
+import SEOHead from "@/components/SEOHead";
 import { useParams, useNavigate } from "react-router-dom";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2 } from "lucide-react";
@@ -233,24 +234,8 @@ const MarketDetail = () => {
   const pageRef = useRef<HTMLDivElement>(null);
   const shareRef = useRef<HTMLDivElement>(null);
 
-  // Dynamic OG meta tags
-  useEffect(() => {
-    if (!market) return;
-    document.title = `${market.title} — OPOLL`;
-    const ogUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-image?id=${id}`;
-    const setMeta = (property: string, content: string) => {
-      let el = document.querySelector(`meta[property="${property}"]`) || document.querySelector(`meta[name="${property}"]`);
-      if (!el) { el = document.createElement("meta"); el.setAttribute("property", property); document.head.appendChild(el); }
-      el.setAttribute("content", content);
-    };
-    setMeta("og:title", market.title);
-    setMeta("og:description", market.description);
-    setMeta("og:image", ogUrl);
-    setMeta("twitter:image", ogUrl);
-    setMeta("twitter:title", market.title);
-    setMeta("twitter:description", market.description);
-    return () => { document.title = "OPOLL — Social Prediction Market"; };
-  }, [market, id]);
+  // Dynamic SEO via SEOHead
+  const ogImageUrl = id ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-image?id=${id}` : undefined;
 
   const chartData = usePriceHistory(
     id, timePeriod, yesPercent, noPercent, isMulti, market?.options
@@ -276,6 +261,7 @@ const MarketDetail = () => {
 
   return (
     <div ref={pageRef} className="h-dvh bg-background overflow-y-auto" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+      {market && <SEOHead title={market.title} description={market.description} path={`/market/${id}`} image={ogImageUrl} type="article" />}
       <div className="sticky top-0 z-20 glass-strong">
         <div className="flex items-center justify-between h-14 px-4 max-w-lg md:max-w-4xl mx-auto">
           <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full glass flex items-center justify-center"><ArrowLeft className="w-5 h-5" /></button>

@@ -1,3 +1,4 @@
+import SEOHead from "@/components/SEOHead";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { useMarkets } from "@/hooks/useMarkets";
@@ -101,6 +102,7 @@ const Index = () => {
 
   return (
     <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+      <SEOHead title="Home" description="Swipe through markets. Predict. Win big. Trade on real-world events with OPOLL." path="/" />
       <TopBar />
       <div className="max-w-lg md:max-w-4xl xl:max-w-6xl mx-auto px-3 sm:px-4 pt-20">
         {/* Hero */}
