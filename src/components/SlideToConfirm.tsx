@@ -22,6 +22,20 @@ const SlideToConfirm = ({ onConfirm, label = "Slide to Confirm", className = "",
     return containerRef.current.offsetWidth - thumbSize - 8; // 8 for padding
   };
 
+  // Fire haptic when crossing the 85% threshold during drag
+  useEffect(() => {
+    const unsubscribe = x.on("change", (latest) => {
+      const maxX = getMaxX();
+      if (latest >= maxX * 0.85 && !hapticFired.current && !confirmed) {
+        navigator.vibrate?.(15);
+        hapticFired.current = true;
+      } else if (latest < maxX * 0.85) {
+        hapticFired.current = false;
+      }
+    });
+    return unsubscribe;
+  }, [x, confirmed]);
+
   const bgOpacity = useTransform(x, [0, 150], [0.15, 0.4]);
   const textOpacity = useTransform(x, [0, 100], [1, 0]);
 
@@ -35,6 +49,7 @@ const SlideToConfirm = ({ onConfirm, label = "Slide to Confirm", className = "",
     const currentX = x.get();
     if (currentX >= maxX * 0.85) {
       setConfirmed(true);
+      navigator.vibrate?.(30);
       animate(x, maxX, { type: "spring", stiffness: 300, damping: 30 });
       setTimeout(() => onConfirm(), 300);
     } else {
