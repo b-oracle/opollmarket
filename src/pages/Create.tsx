@@ -56,6 +56,24 @@ const Create = () => {
   const { connect, connectors, isPending } = useConnect();
   const navigate = useNavigate();
 
+  // Gate thresholds from DB
+  const [minTokenBalance, setMinTokenBalance] = useState(10_000_000);
+  const [minNftBalance, setMinNftBalance] = useState(1);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("commission_settings")
+        .select("*")
+        .limit(1)
+        .single();
+      if (data) {
+        setMinTokenBalance(Number((data as any).min_token_balance) || 10_000_000);
+        setMinNftBalance(Number((data as any).min_nft_balance) || 1);
+      }
+    })();
+  }, []);
+
   // Gate state
   const [gateChecks, setGateChecks] = useState<GateCheck[]>([]);
   const [gatePassed, setGatePassed] = useState(false);
