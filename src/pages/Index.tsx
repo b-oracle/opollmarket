@@ -1,3 +1,4 @@
+import LogoLoader from "@/components/LogoLoader";
 import SEOHead from "@/components/SEOHead";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
