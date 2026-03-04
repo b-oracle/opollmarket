@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import BulkCSVImport from "@/components/admin/BulkCSVImport";
@@ -38,6 +38,16 @@ interface ResolveState {
   winningOptionId: string | null;
 }
 
+interface TrendingScore {
+  market_id: string;
+  volume_score: number;
+  participant_score: number;
+  recent_bets_score: number;
+  comments_score: number;
+  likes_score: number;
+  total_score: number;
+}
+
 interface EditState {
   id: string;
   title: string;
@@ -58,6 +68,7 @@ const AdminMarkets = () => {
   const [editState, setEditState] = useState<EditState | null>(null);
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [trendingScores, setTrendingScores] = useState<Map<string, TrendingScore>>(new Map());
   const titleInputRef = useRef<HTMLInputElement>(null);
 
   const fetchMarkets = async () => {
@@ -71,7 +82,16 @@ const AdminMarkets = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchMarkets(); }, [filter]);
+  useEffect(() => { fetchMarkets(); fetchTrendingScores(); }, [filter]);
+
+  const fetchTrendingScores = async () => {
+    const { data, error } = await supabase.rpc("get_trending_scores");
+    if (!error && data) {
+      const map = new Map<string, TrendingScore>();
+      (data as TrendingScore[]).forEach((s) => map.set(s.market_id, s));
+      setTrendingScores(map);
+    }
+  };
 
   useEffect(() => {
     if (editState && titleInputRef.current) titleInputRef.current.focus();
