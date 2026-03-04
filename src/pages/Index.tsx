@@ -1,9 +1,10 @@
+import LogoLoader from "@/components/LogoLoader";
 import SEOHead from "@/components/SEOHead";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { useMarkets } from "@/hooks/useMarkets";
 import { categoryIcons } from "@/data/markets";
-import { TrendingUp, Users, Zap, MessageCircle, Loader2, Search, X } from "lucide-react";
+import { TrendingUp, Users, Zap, MessageCircle, Search, X } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
@@ -95,7 +96,7 @@ const Index = () => {
   if (isLoading) {
     return (
       <div className="min-h-dvh bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <LogoLoader size="lg" />
       </div>
     );
   }

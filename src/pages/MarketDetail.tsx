@@ -2,6 +2,7 @@ import SEOHead from "@/components/SEOHead";
 import { useParams, useNavigate } from "react-router-dom";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2 } from "lucide-react";
+import LogoLoader from "@/components/LogoLoader";
 import { useMarket } from "@/hooks/useMarkets";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
 import BoostCountdown from "@/components/BoostCountdown";
@@ -272,7 +273,7 @@ const MarketDetail = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  if (isLoading) return <div className="h-dvh flex items-center justify-center"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>;
+  if (isLoading) return <div className="h-dvh flex items-center justify-center"><LogoLoader size="lg" /></div>;
   if (!market) return <div className="h-dvh flex items-center justify-center text-muted-foreground">Market not found</div>;
 
   const selectedOptionIdx = selectedOption ? market.options?.findIndex(o => o.label === selectedOption) ?? -1 : -1;

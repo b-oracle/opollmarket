@@ -1,3 +1,4 @@
+import LogoLoader from "@/components/LogoLoader";
 import { useState, useEffect, useCallback } from "react";
 import { useAccount, useConnect } from "wagmi";
 import { useNavigate } from "react-router-dom";
@@ -805,12 +806,7 @@ const Create = () => {
                   animate={{ opacity: 1 }}
                   className="glass rounded-xl p-6 flex flex-col items-center"
                 >
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
-                  >
-                    <Loader2 className="w-10 h-10 text-primary" />
-                  </motion.div>
+                  <LogoLoader size="lg" />
                   <h3 className="text-base font-bold mt-3 mb-1">
                     {submitStep === "deploying" ? "Deploying Contract..." : "Saving to Database..."}
                   </h3>
