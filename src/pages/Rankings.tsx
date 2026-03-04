@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import RankShareModal from "@/components/RankShareModal";
+import DesktopFooter from "@/components/DesktopFooter";
 
 interface Referrer {
   userId: string;
@@ -584,6 +585,7 @@ const Rankings = () => {
           {...shareModal}
         />
       )}
+      <DesktopFooter />
     </div>
   );
 };

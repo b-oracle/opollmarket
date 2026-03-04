@@ -25,6 +25,7 @@ import {
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import WinCelebrationModal from "@/components/WinCelebrationModal";
+import DesktopFooter from "@/components/DesktopFooter";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -626,6 +627,7 @@ const Portfolio = () => {
         profit={winModal.profit}
       />
 
+      <DesktopFooter />
       <BottomNav />
     </div>
   );
