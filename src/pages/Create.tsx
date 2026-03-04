@@ -964,6 +964,12 @@ const Create = () => {
                       <span className="text-muted-foreground">Liquidity</span>
                       <span className="font-semibold">${initialLiquidity} USDT</span>
                     </div>
+                    {address && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Wallet</span>
+                        <span className="font-mono text-muted-foreground">{address.slice(0, 6)}...{address.slice(-4)}</span>
+                      </div>
+                    )}
                   </div>
                   {/* Share buttons */}
                   <div className="w-full mb-4">

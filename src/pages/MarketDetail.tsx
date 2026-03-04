@@ -535,15 +535,7 @@ const MarketDetail = () => {
 
         {!isMulti && <OrderBook yesPrice={yesPercent} noPrice={noPercent} liquidity={market.liquidity} marketId={market.id} />}
 
-        <div className="glass rounded-xl p-4 mb-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
-            <span className="font-bold text-primary">{market.creatorName.charAt(0)}</span>
-          </div>
-          <div>
-            <p className="text-sm font-semibold">@{market.creatorName}</p>
-            <p className="text-xs text-muted-foreground">{market.creatorAddress}</p>
-          </div>
-        </div>
+        <CreatorCard creatorName={market.creatorName} creatorUserId={market.creatorAddress} />
 
         <InlineComments marketId={market.id} />
       </div>
