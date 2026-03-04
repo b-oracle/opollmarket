@@ -40,7 +40,7 @@ const queryClient = new QueryClient();
 
 const ConditionalFooter = () => {
   const location = useLocation();
-  const hidden = ["/", "/feed", "/profile"].includes(location.pathname) ||
+  const hidden = ["/", "/feed", "/profile", "/referrals"].includes(location.pathname) ||
     location.pathname.startsWith("/market/") ||
     location.pathname.startsWith("/admin");
   if (hidden) return null;
