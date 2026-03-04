@@ -1,4 +1,3 @@
-// SlideToConfirm - swipe gesture confirmation
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, animate } from "framer-motion";
 import { ArrowRight, Check } from "lucide-react";
@@ -15,18 +14,26 @@ const SlideToConfirm = ({ onConfirm, label = "Slide to Confirm", className = "",
   const containerRef = useRef<HTMLDivElement>(null);
   const hapticFired = useRef(false);
   const x = useMotionValue(0);
+  const [maxX, setMaxX] = useState(200);
 
   const thumbSize = 52;
+  const padding = 8;
 
-  const getMaxX = () => {
-    if (!containerRef.current) return 200;
-    return containerRef.current.offsetWidth - thumbSize - 8; // 8 for padding
-  };
+  // Measure container after mount and on resize
+  useEffect(() => {
+    const measure = () => {
+      if (containerRef.current) {
+        setMaxX(containerRef.current.offsetWidth - thumbSize - padding);
+      }
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
 
   // Fire haptic when crossing the 85% threshold during drag
   useEffect(() => {
     const unsubscribe = x.on("change", (latest) => {
-      const maxX = getMaxX();
       if (latest >= maxX * 0.85 && !hapticFired.current && !confirmed) {
         navigator.vibrate?.(15);
         hapticFired.current = true;
@@ -35,18 +42,16 @@ const SlideToConfirm = ({ onConfirm, label = "Slide to Confirm", className = "",
       }
     });
     return unsubscribe;
-  }, [x, confirmed]);
+  }, [x, confirmed, maxX]);
 
-  const bgOpacity = useTransform(x, [0, 150], [0.15, 0.4]);
-  const textOpacity = useTransform(x, [0, 100], [1, 0]);
+  const bgOpacity = useTransform(x, [0, maxX * 0.6], [0.15, 0.4]);
+  const textOpacity = useTransform(x, [0, maxX * 0.4], [1, 0]);
 
   const bgColor = color === "yes" ? "hsl(var(--neon-yes))" : "hsl(var(--neon-no))";
-  const bgClass = color === "yes" ? "bg-[hsl(var(--neon-yes))]" : "bg-[hsl(var(--neon-no))]";
 
   const handleDragEnd = useCallback((_: unknown, info: PanInfo) => {
-    const maxX = getMaxX();
     if (info.point.x === 0 && info.offset.x === 0) return;
-    
+
     const currentX = x.get();
     if (currentX >= maxX * 0.85) {
       setConfirmed(true);
@@ -56,7 +61,7 @@ const SlideToConfirm = ({ onConfirm, label = "Slide to Confirm", className = "",
     } else {
       animate(x, 0, { type: "spring", stiffness: 400, damping: 30 });
     }
-  }, [onConfirm, x]);
+  }, [onConfirm, x, maxX]);
 
   return (
     <div
@@ -68,7 +73,7 @@ const SlideToConfirm = ({ onConfirm, label = "Slide to Confirm", className = "",
       <motion.div
         className="absolute inset-y-0 left-0 rounded-2xl"
         style={{
-          width: useTransform(x, (v) => `${v + thumbSize + 8}px`),
+          width: useTransform(x, (v) => `${v + thumbSize + padding}px`),
           backgroundColor: bgColor,
           opacity: bgOpacity,
         }}
@@ -88,11 +93,11 @@ const SlideToConfirm = ({ onConfirm, label = "Slide to Confirm", className = "",
       {/* Thumb */}
       <motion.div
         drag="x"
-        dragConstraints={{ left: 0, right: getMaxX() }}
+        dragConstraints={{ left: 0, right: maxX }}
         dragElastic={0}
         dragMomentum={false}
         onDragEnd={handleDragEnd}
-        style={{ x }}
+        style={{ x, touchAction: "none" }}
         className={`absolute top-1 left-1 w-12 h-12 rounded-xl flex items-center justify-center cursor-grab active:cursor-grabbing shadow-lg ${
           confirmed ? "bg-primary" : ""
         }`}
