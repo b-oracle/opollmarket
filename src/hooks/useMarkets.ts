@@ -19,6 +19,7 @@ interface DbMarket {
   image_url: string | null;
   trending: boolean;
   status: string;
+  created_at: string;
   market_options: { id: string; label: string; price: number; sort_order: number }[];
 }
 
@@ -38,6 +39,7 @@ const mapDbToMarket = (db: DbMarket): Market => ({
   creatorName: db.creator_name,
   imageUrl: db.image_url || "",
   trending: db.trending,
+  createdAt: db.created_at,
   options: db.market_options?.length
     ? db.market_options
         .sort((a, b) => a.sort_order - b.sort_order)

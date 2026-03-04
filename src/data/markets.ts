@@ -22,6 +22,7 @@ export interface Market {
   creatorName: string;
   imageUrl: string;
   trending: boolean;
+  createdAt: string;
 }
 
 export const mockMarkets: Market[] = [
