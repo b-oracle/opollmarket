@@ -473,12 +473,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                     animate={{ opacity: 1, scale: 1 }}
                     className="flex flex-col items-center py-8"
                   >
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
-                    >
-                      <Loader2 className="w-12 h-12 text-primary" />
-                    </motion.div>
+                    <LogoLoader size="lg" />
                     <h3 className="text-lg font-bold mt-4 mb-1">Processing...</h3>
                     <p className="text-sm text-muted-foreground text-center">
                       {isDeposit ? "Generating payment address..." : "Submitting withdrawal request..."}

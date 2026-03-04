@@ -312,9 +312,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
 
                 {step === "executing" && (
                   <motion.div key="executing" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center py-8">
-                    <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}>
-                      <Loader2 className="w-12 h-12 text-primary" />
-                    </motion.div>
+                    <LogoLoader size="lg" />
                     <h3 className="text-lg font-bold mt-4 mb-1">Processing Prediction</h3>
                     <p className="text-sm text-muted-foreground text-center">Placing your prediction...</p>
                   </motion.div>
