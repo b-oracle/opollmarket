@@ -4,6 +4,7 @@ import BottomSheet from "@/components/BottomSheet";
 import { X, Send, ChevronDown, Heart, CornerDownRight, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccount } from "wagmi";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useRateLimit } from "@/hooks/useRateLimit";
 
@@ -116,6 +117,7 @@ const CommentItem = ({
 
 const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawerProps) => {
   const { address } = useAccount();
+  const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -123,9 +125,11 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
   const [replyTo, setReplyTo] = useState<{ id: string; author: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { checkLimit: checkCommentLimit } = useRateLimit(3, 30000); // 3 comments per 30s
+  const { checkLimit: checkCommentLimit } = useRateLimit(3, 30000);
 
-  const walletId = address || `anon-${Math.random().toString(36).slice(2, 10)}`;
+  // Use user ID or wallet or anon
+  const identityId = user?.id || address || `anon-${Math.random().toString(36).slice(2, 10)}`;
+  const isSignedIn = !!user || !!address;
 
   const fetchComments = useCallback(async () => {
     setLoading(true);
