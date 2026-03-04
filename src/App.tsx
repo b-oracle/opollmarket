@@ -33,7 +33,7 @@ import Disclaimer from "./pages/Disclaimer";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
-import InstallBanner from "./components/InstallBanner";
+
 import DesktopSidebar from "./components/DesktopSidebar";
 import DesktopFooter from "./components/DesktopFooter";
 const queryClient = new QueryClient();
@@ -51,7 +51,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <InstallBanner />
+          
           <BrowserRouter>
             <DesktopSidebar />
             <div className="md:ml-60 min-h-screen flex flex-col md:pb-44">
