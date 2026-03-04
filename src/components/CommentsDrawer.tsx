@@ -220,6 +220,10 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
   const handleSend = async () => {
     const text = inputValue.trim();
     if (!text || submitting) return;
+    if (!user) {
+      toast.error("Please sign in to comment.");
+      return;
+    }
     if (!checkCommentLimit()) {
       toast.error("Slow down! Wait a moment before commenting again.");
       return;
@@ -229,18 +233,16 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
 
     setSubmitting(true);
     try {
-      // Derive author name from auth user or wallet
-      const authorName = user?.email
+      // Derive author name from auth user
+      const authorName = user.email
         ? user.email.split("@")[0]
-        : address
-        ? `${address.slice(0, 6)}...${address.slice(-4)}`
         : "Anonymous";
 
       const { error } = await supabase.from("comments").insert({
         market_id: marketId,
         parent_id: replyTo?.id || null,
         author_name: authorName,
-        author_wallet: address || user?.id || null,
+        author_wallet: user.id,
         content: cleanText,
       });
 
