@@ -23,8 +23,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useBookmark } from "@/hooks/useBookmark";
 import { toast } from "sonner";
 
-const formatVolume = (v: number) => {
-
 const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
 const CreatorCard = ({ creatorName, creatorUserId }: { creatorName: string; creatorUserId: string }) => {
@@ -61,7 +59,7 @@ const CreatorCard = ({ creatorName, creatorUserId }: { creatorName: string; crea
   );
 };
 
-const formatVolume2 = (v: number) => {
+const formatVolume = (v: number) => {
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
   if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`;
   return `$${v}`;
