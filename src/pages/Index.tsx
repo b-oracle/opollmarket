@@ -195,9 +195,27 @@ const Index = () => {
 
         <div className="space-y-3 md:grid md:grid-cols-2 xl:grid-cols-3 md:gap-4 md:space-y-0">
           {isLoading && (
-            <div className="col-span-full flex justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            </div>
+            <>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="glass rounded-2xl p-4 animate-pulse">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-muted/60 shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-muted/60 rounded-lg w-3/4" />
+                      <div className="h-3 bg-muted/40 rounded-lg w-1/2" />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mb-3">
+                    <div className="flex-1 h-9 bg-muted/50 rounded-xl" />
+                    <div className="flex-1 h-9 bg-muted/50 rounded-xl" />
+                  </div>
+                  <div className="flex justify-between">
+                    <div className="h-3 bg-muted/40 rounded w-16" />
+                    <div className="h-3 bg-muted/40 rounded w-20" />
+                  </div>
+                </div>
+              ))}
+            </>
           )}
           {!isLoading && filteredMarkets.length === 0 && (
             <div className="text-center py-8 text-muted-foreground text-sm">No markets found.</div>
