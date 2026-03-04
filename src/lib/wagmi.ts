@@ -2,11 +2,13 @@ import { http, createConfig } from 'wagmi';
 import { bsc } from 'wagmi/chains';
 import { walletConnect } from '@wagmi/connectors';
 
-// WalletConnect project ID - replace with your own from https://cloud.walletconnect.com
 const WALLETCONNECT_PROJECT_ID = '0b0a3d32982bfe46483fee3e58e1528f';
 
-const connectors = WALLETCONNECT_PROJECT_ID
-  ? [
+let connectors: any[] = [];
+
+try {
+  if (WALLETCONNECT_PROJECT_ID) {
+    connectors = [
       walletConnect({
         projectId: WALLETCONNECT_PROJECT_ID,
         showQrModal: true,
@@ -17,8 +19,12 @@ const connectors = WALLETCONNECT_PROJECT_ID
           icons: [typeof window !== 'undefined' ? `${window.location.origin}/favicon.ico` : ''],
         },
       }),
-    ]
-  : [];
+    ];
+  }
+} catch (e) {
+  console.warn('WalletConnect initialization failed, wallet features disabled:', e);
+  connectors = [];
+}
 
 export const config = createConfig({
   chains: [bsc],
