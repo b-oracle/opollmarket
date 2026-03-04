@@ -65,6 +65,12 @@ const Auth = () => {
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold mb-2">{mode === "login" ? "Welcome Back" : "Create Account"}</h1>
           <p className="text-sm text-muted-foreground">{mode === "login" ? "Sign in to access your account" : "Sign up to get started"}</p>
+          {referralFromLink && mode === "signup" && (
+            <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+              <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+              <span className="text-xs font-semibold text-primary">Referral code applied!</span>
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
