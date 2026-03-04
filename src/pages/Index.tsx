@@ -1,4 +1,4 @@
-import LogoLoader from "@/components/LogoLoader";
+import { Loader2 } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
@@ -93,20 +93,7 @@ const Index = () => {
   const totalVolume = markets.reduce((s, m) => s + m.volume, 0);
   const totalTraders = markets.reduce((s, m) => s + m.participants, 0);
 
-  // Only show full-page loader briefly, then show page even if still loading
-  const [showLoader, setShowLoader] = useState(true);
-  useEffect(() => {
-    const timer = setTimeout(() => setShowLoader(false), 3000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (isLoading && showLoader && !isError) {
-    return (
-      <div className="min-h-dvh bg-background flex items-center justify-center">
-        <LogoLoader size="lg" />
-      </div>
-    );
-  }
+  // No blocking loader — render page immediately, show inline spinner in content area
 
   return (
     <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
