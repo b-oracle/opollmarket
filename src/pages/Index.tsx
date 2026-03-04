@@ -3,8 +3,8 @@ import SEOHead from "@/components/SEOHead";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { useMarkets } from "@/hooks/useMarkets";
-import { categoryIcons } from "@/data/markets";
 import { TrendingUp, Users, Zap, MessageCircle, Search, X } from "lucide-react";
+import CategoryIcon from "@/components/CategoryIcon";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
@@ -22,13 +22,7 @@ const formatVolume = (v: number) => {
   return `$${v.toFixed(2)}`;
 };
 
-const getMarketImage = (id: string, category: string) => {
-  const icons: Record<string, string> = {
-    Crypto: "₿", "AI & Tech": "🤖", Science: "🚀", Economy: "📈",
-    Entertainment: "🎵", Sports: "⚽", Politics: "🏛️", Other: "💡",
-  };
-  return icons[category] || "💡";
-};
+// getMarketImage replaced by CategoryIcon component
 
 const CommentBadge = ({ marketId }: { marketId: string }) => {
   const count = useCommentCount(marketId);

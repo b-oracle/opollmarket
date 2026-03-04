@@ -18,15 +18,11 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
+import CategoryIcon from "@/components/CategoryIcon";
+
 const CATEGORIES = [
-  { label: "Crypto", icon: "₿" },
-  { label: "AI & Tech", icon: "🤖" },
-  { label: "Science", icon: "🚀" },
-  { label: "Economy", icon: "📈" },
-  { label: "Entertainment", icon: "🎵" },
-  { label: "Sports", icon: "⚽" },
-  { label: "Politics", icon: "🏛️" },
-  { label: "Other", icon: "💡" },
+  "Crypto", "AI & Tech", "Science", "Economy",
+  "Entertainment", "Sports", "Politics", "Other",
 ];
 
 const AdminCreateMarket = () => {

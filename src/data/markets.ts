@@ -211,13 +211,4 @@ export const categoryColors: Record<string, string> = {
   Politics: "from-indigo-500/20 to-violet-500/20",
 };
 
-export const categoryIcons: Record<string, string> = {
-  Crypto: "₿",
-  "AI & Tech": "🤖",
-  Science: "🚀",
-  Economy: "📈",
-  Entertainment: "🎵",
-  Sports: "⚽",
-  Politics: "🏛️",
-  Other: "💡",
-};
+// categoryIcons moved to src/components/CategoryIcon.tsx as Lucide components
