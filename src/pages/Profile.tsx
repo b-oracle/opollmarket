@@ -14,7 +14,7 @@ import { bsc } from "wagmi/chains";
 import {
   Wallet, Gift, ArrowDownToLine, ArrowUpFromLine, ArrowUpRight, ArrowDownLeft,
   Repeat, LogIn, Send, MessageCircle, ExternalLink, ChevronRight,
-  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera,
+  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -58,6 +58,10 @@ const Profile = () => {
   const [savingProfile, setSavingProfile] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [showNftPicker, setShowNftPicker] = useState(false);
+  const [loadingNfts, setLoadingNfts] = useState(false);
+  const [walletNfts, setWalletNfts] = useState<Array<{ token_address: string; token_id: string; name: string; image_url: string; collection_name: string }>>([]);
+  const [selectedNftUrl, setSelectedNftUrl] = useState<string | null>(null);
 
   // Fetch profile data
   const { data: profile } = useQuery({
