@@ -58,6 +58,7 @@ interface GateCheck {
 const Create = () => {
   const { address, isConnected } = useAccount();
   const { connect, connectors, isPending } = useConnect();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   // Gate thresholds from DB
