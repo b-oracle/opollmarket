@@ -361,7 +361,7 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0">
                     <span className="text-xs font-bold text-primary">
-                      {address ? address.charAt(2).toUpperCase() : "A"}
+                      {user?.email ? user.email.charAt(0).toUpperCase() : address ? address.charAt(2).toUpperCase() : "A"}
                     </span>
                   </div>
                   <input
