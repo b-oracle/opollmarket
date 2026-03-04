@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion";
+import { motion, useMotionValue, useTransform, PanInfo, animate } from "framer-motion";
 import { ArrowRight, Check } from "lucide-react";
 
 interface SlideToConfirmProps {
