@@ -205,7 +205,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                 <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center backdrop-blur-sm">
                   <ThumbsUp className="w-10 h-10 text-primary" />
                 </div>
-                <span className="text-lg font-bold neon-yes">YES {yesPercent}¢</span>
+                <span className="text-lg font-bold neon-yes">Buy Yes {yesPercent}¢</span>
               </motion.div>
             </motion.div>
 
@@ -221,7 +221,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                 <div className="w-20 h-20 rounded-full bg-destructive/20 border-2 border-destructive flex items-center justify-center backdrop-blur-sm">
                   <ThumbsDown className="w-10 h-10 text-destructive" />
                 </div>
-                <span className="text-lg font-bold neon-no">NO {noPercent}¢</span>
+                <span className="text-lg font-bold neon-no">Buy No {noPercent}¢</span>
               </motion.div>
             </motion.div>
           </>
@@ -297,8 +297,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                 </div>
               ) : (
                 <div className="flex gap-3">
-                  <span className="px-4 py-1.5 rounded-full text-sm font-bold text-white" style={{ backgroundColor: 'hsl(145, 80%, 42%, 0.85)' }}>YES {yesPercent}%</span>
-                  <span className="px-4 py-1.5 rounded-full text-sm font-bold text-white" style={{ backgroundColor: 'hsl(0, 85%, 55%, 0.85)' }}>NO {noPercent}%</span>
+                  <span className="px-4 py-1.5 rounded-full text-sm font-bold text-white" style={{ backgroundColor: 'hsl(145, 80%, 42%, 0.85)' }}>Buy Yes {yesPercent}%</span>
+                  <span className="px-4 py-1.5 rounded-full text-sm font-bold text-white" style={{ backgroundColor: 'hsl(0, 85%, 55%, 0.85)' }}>Buy No {noPercent}%</span>
                 </div>
               )}
               <span className="text-[11px] text-white/50 font-mono shrink-0 ml-3 flex items-center gap-1">
@@ -461,13 +461,13 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                     onClick={() => setBetModal({ open: true, side: "yes" })}
                     className="flex-1 btn-yes py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all active:scale-95"
                   >
-                    YES {yesPercent}¢
+                    Buy Yes {yesPercent}¢
                   </button>
                   <button
                     onClick={() => setBetModal({ open: true, side: "no" })}
                     className="flex-1 btn-no py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all active:scale-95"
                   >
-                    NO {noPercent}¢
+                    Buy No {noPercent}¢
                   </button>
                 </div>
               )}
