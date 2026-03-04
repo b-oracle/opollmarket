@@ -12,7 +12,7 @@ interface SEOHeadProps {
 const BASE_URL = "https://opollmarket.lovable.app";
 const DEFAULT_TITLE = "OPOLL — Social Prediction Market";
 const DEFAULT_DESC = "Swipe through markets. Predict. Win big. The TikTok-style prediction market platform for real-world events.";
-const DEFAULT_IMAGE = "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3ad5da2e-b2b7-45c9-8f18-e725eba6acbb/id-preview-d19aaf91--fbc135e2-c42c-4d3f-bb3e-e7385ced809f.lovable.app-1772571562655.png";
+const DEFAULT_IMAGE = "https://opollmarket.lovable.app/og-image.png";
 
 const SEOHead = ({
   title,
