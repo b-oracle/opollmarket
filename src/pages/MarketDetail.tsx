@@ -471,8 +471,8 @@ const MarketDetail = () => {
             <span className="text-sm font-medium text-muted-foreground">{isMulti ? "Option Probabilities" : "Probability"}</span>
             {!isMulti && (
               <div className="flex items-center gap-3">
-                <span className="text-xs font-medium text-destructive">NO {noPercent}¢</span>
-                <span className="text-2xl font-bold neon-yes">YES {yesPercent}¢</span>
+                <span className="text-xs font-medium text-destructive">Buy No {noPercent}¢</span>
+                <span className="text-2xl font-bold neon-yes">Buy Yes {yesPercent}¢</span>
               </div>
             )}
           </div>
@@ -584,8 +584,8 @@ const MarketDetail = () => {
       {!isMulti && (
         <div className="fixed bottom-16 left-0 right-0 md:left-60 z-30 px-4 pb-3 pt-2 bg-gradient-to-t from-background via-background/95 to-transparent" style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}>
           <div className="max-w-lg md:max-w-2xl mx-auto flex gap-3">
-            <button onClick={() => { setBetSide("yes"); setBetOpen(true); }} className="flex-1 btn-yes py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">YES {yesPercent}¢</button>
-            <button onClick={() => { setBetSide("no"); setBetOpen(true); }} className="flex-1 btn-no py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">NO {noPercent}¢</button>
+            <button onClick={() => { setBetSide("yes"); setBetOpen(true); }} className="flex-1 btn-yes py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy Yes {yesPercent}¢</button>
+            <button onClick={() => { setBetSide("no"); setBetOpen(true); }} className="flex-1 btn-no py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy No {noPercent}¢</button>
           </div>
         </div>
       )}
