@@ -273,32 +273,85 @@ const AdminCreateMarket = () => {
         )}
       </AnimatePresence>
 
-      {/* Image Upload */}
+      {/* Media Upload */}
       <div className="bg-card border border-border rounded-xl p-5">
         <label className="flex items-center gap-2 text-sm font-semibold mb-3">
-          <ImageIcon className="w-4 h-4 text-primary" />
-          Cover Image
+          {mediaType === "video" ? <Video className="w-4 h-4 text-primary" /> : <ImageIcon className="w-4 h-4 text-primary" />}
+          Cover Media
         </label>
-        {imagePreview ? (
-          <div className="relative rounded-xl overflow-hidden">
-            <img src={imagePreview} alt="Preview" className="w-full h-40 object-cover rounded-xl" />
-            <button
-              onClick={removeImage}
-              className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        ) : (
+        <div className="grid grid-cols-2 gap-3 mb-4">
           <button
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full h-32 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/40 hover:bg-primary/5 transition-all"
+            onClick={() => setMediaType("image")}
+            className={`p-2.5 rounded-xl border-2 text-center text-xs font-medium transition-all ${
+              mediaType === "image"
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border hover:border-primary/30 text-muted-foreground"
+            }`}
           >
-            <Upload className="w-6 h-6 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Click to upload (max 5MB)</span>
+            <ImageIcon className="w-4 h-4 mx-auto mb-0.5" />
+            Image
           </button>
+          <button
+            onClick={() => setMediaType("video")}
+            className={`p-2.5 rounded-xl border-2 text-center text-xs font-medium transition-all ${
+              mediaType === "video"
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border hover:border-primary/30 text-muted-foreground"
+            }`}
+          >
+            <Video className="w-4 h-4 mx-auto mb-0.5" />
+            YouTube Video
+          </button>
+        </div>
+
+        {mediaType === "image" ? (
+          <>
+            {imagePreview ? (
+              <div className="relative rounded-xl overflow-hidden">
+                <img src={imagePreview} alt="Preview" className="w-full h-40 object-cover rounded-xl" />
+                <button
+                  onClick={removeImage}
+                  className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full h-32 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/40 hover:bg-primary/5 transition-all"
+              >
+                <Upload className="w-6 h-6 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Click to upload (max 5MB)</span>
+              </button>
+            )}
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
+          </>
+        ) : (
+          <div className="space-y-3">
+            <input
+              type="url"
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              placeholder="https://www.youtube.com/watch?v=..."
+              className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            {videoUrl && isYouTubeUrl(videoUrl) && (
+              <div className="rounded-xl overflow-hidden aspect-video">
+                <iframe
+                  src={`https://www.youtube.com/embed/${getYouTubeId(videoUrl)}?rel=0`}
+                  className="w-full h-full"
+                  title="YouTube preview"
+                  allowFullScreen
+                  loading="lazy"
+                />
+              </div>
+            )}
+            {videoUrl && !isYouTubeUrl(videoUrl) && (
+              <p className="text-xs text-destructive">Please enter a valid YouTube URL</p>
+            )}
+          </div>
         )}
-        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
       </div>
 
       {/* Category & Settings */}
