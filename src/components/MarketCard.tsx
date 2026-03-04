@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
