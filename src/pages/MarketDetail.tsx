@@ -6,6 +6,7 @@ import { useActiveBoosts } from "@/hooks/useActiveBoosts";
 import BoostCountdown from "@/components/BoostCountdown";
 import { categoryIcons } from "@/data/markets";
 import BottomNav from "@/components/BottomNav";
+import DesktopFooter from "@/components/DesktopFooter";
 import BetModal from "@/components/BetModal";
 import BoostMarketModal from "@/components/BoostMarketModal";
 import ShareModal from "@/components/ShareModal";
@@ -570,6 +571,7 @@ const MarketDetail = () => {
         marketUrl={window.location.href}
         captureRef={shareRef}
       />
+      <DesktopFooter />
       <BottomNav />
     </div>
   );
