@@ -556,6 +556,7 @@ const Portfolio = () => {
                   )}
                 </AnimatePresence>
       </BottomSheet>
+      )}
 
       <WinCelebrationModal
         open={winModal.open}
