@@ -91,7 +91,7 @@ const AdminSettings = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="adminFee">Admin Fee (%)</Label>
+            <Label htmlFor="adminFee">Pool Reserve (%)</Label>
             <Input
               id="adminFee"
               type="number"
@@ -184,7 +184,7 @@ const AdminSettings = () => {
 
           <div className="rounded-lg border border-border p-3 space-y-1.5 bg-muted/50">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Admin Commission</span>
+              <span className="text-muted-foreground">Pool Reserve</span>
               <span className="font-medium">{adminNum}%</span>
             </div>
             <div className="flex justify-between text-sm">
