@@ -39,20 +39,17 @@ import DesktopSidebar from "./components/DesktopSidebar";
 import DesktopFooter from "./components/DesktopFooter";
 const queryClient = new QueryClient();
 
-const isFooterHidden = (pathname: string) =>
-  ["/", "/feed", "/profile", "/referrals", "/create"].includes(pathname) ||
-  pathname.startsWith("/market/") ||
-  pathname.startsWith("/admin");
+const isFooterShown = (pathname: string) => pathname === "/";
 
 const ConditionalFooter = () => {
   const location = useLocation();
-  if (isFooterHidden(location.pathname)) return null;
+  if (!isFooterShown(location.pathname)) return null;
   return <DesktopFooter />;
 };
 
 const ConditionalPadding = () => {
   const location = useLocation();
-  if (isFooterHidden(location.pathname)) return null;
+  if (!isFooterShown(location.pathname)) return null;
   return <div className="hidden md:block pb-44" />;
 };
 
