@@ -194,7 +194,12 @@ const Index = () => {
         </div>
 
         <div className="space-y-3 md:grid md:grid-cols-2 xl:grid-cols-3 md:gap-4 md:space-y-0">
-          {filteredMarkets.length === 0 && (
+          {isLoading && (
+            <div className="col-span-full flex justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          )}
+          {!isLoading && filteredMarkets.length === 0 && (
             <div className="text-center py-8 text-muted-foreground text-sm">No markets found.</div>
           )}
           {filteredMarkets.map((market, i) => {
