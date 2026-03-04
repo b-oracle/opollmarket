@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
+import { Eye, EyeOff, LogIn, UserPlus, Gift } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 
@@ -11,6 +11,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
@@ -23,6 +24,10 @@ const Auth = () => {
     const ref = searchParams.get("ref");
     if (ref) {
       localStorage.setItem("referral_id", ref);
+      setReferralCode(ref);
+    } else {
+      const stored = localStorage.getItem("referral_id");
+      if (stored) setReferralCode(stored);
     }
   }, [searchParams]);
 
@@ -35,6 +40,10 @@ const Auth = () => {
         if (error) { toast.error(error.message); }
         else { toast.success("Logged in successfully!"); navigate("/"); return; }
       } else {
+        // Save referral code to localStorage before signup so useAuth picks it up
+        if (referralCode.trim()) {
+          localStorage.setItem("referral_id", referralCode.trim());
+        }
         const { error } = await signUp(email, password, displayName);
         if (error) { toast.error(error.message); }
         else { toast.success("Account created! Please check your email to verify your account."); setMode("login"); return; }
@@ -57,11 +66,20 @@ const Auth = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === "signup" && (
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Display Name</label>
-              <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your name"
-                className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
-            </div>
+            <>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Display Name</label>
+                <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your name"
+                  className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                  <span className="flex items-center gap-1"><Gift className="w-3 h-3" /> Referral Code <span className="text-muted-foreground/60">(optional)</span></span>
+                </label>
+                <input type="text" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} placeholder="Enter referral code"
+                  className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              </div>
+            </>
           )}
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Email</label>
