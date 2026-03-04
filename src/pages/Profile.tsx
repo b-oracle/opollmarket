@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
@@ -40,7 +40,7 @@ const formatTimeAgo = (date: string) => {
 type FilterType = "all" | "trades" | "deposits";
 
 const Profile = () => {
-  const { toast } = useToast();
+  
   const { user, loading: authLoading, isAdmin } = useAuth();
   const { balance, bonusBalance } = useUserBalance();
   const navigate = useNavigate();
@@ -95,7 +95,7 @@ const Profile = () => {
         .eq("id", user.id);
       queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
     }
-    toast({ title: "Wallet disconnected" });
+    toast.success("Wallet disconnected");
   };
 
   const copyWalletAddress = () => {
@@ -230,13 +230,13 @@ const Profile = () => {
                     </button>
                     <button
                       onClick={async () => {
-                        if (!editName.trim()) { toast({ title: "Name cannot be empty" }); return; }
+                        if (!editName.trim()) { toast.error("Name cannot be empty"); return; }
                         const { error: authError } = await supabase.auth.updateUser({
                           data: { display_name: editName.trim() },
                         });
-                        if (authError) { toast({ title: "Failed to update", description: authError.message }); return; }
+                        if (authError) { toast.error("Failed to update: " + authError.message); return; }
                         await supabase.from("profiles").update({ display_name: editName.trim() }).eq("id", user!.id);
-                        toast({ title: "Profile updated!" });
+                        toast.success("Profile updated!");
                         setEditingProfile(false);
                       }}
                       className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-xl font-semibold text-sm"
@@ -440,7 +440,7 @@ const Profile = () => {
               <span className="text-sm font-medium flex-1">Predict via Telegram</span>
               <ExternalLink className="w-4 h-4 text-muted-foreground" />
             </a>
-            <button onClick={() => toast({ title: "Coming Soon", description: "Predict via WhatsApp will be available soon!" })} className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98] text-left">
+            <button onClick={() => toast.info("Predict via WhatsApp will be available soon!")} className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98] text-left">
               <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0 text-green-500">
                 <MessageCircle className="w-5 h-5" />
               </div>
@@ -473,7 +473,7 @@ const Profile = () => {
                     if (item.href === "__install__") {
                       setInstallOpen(true);
                     } else {
-                      toast({ title: "Coming Soon", description: `${item.label} will be available soon!` });
+                      toast.info(`${item.label} — Coming Soon!`);
                     }
                   }}
                   className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98] text-left"
