@@ -9,18 +9,19 @@ const fetchLikeCount = (marketId: string): Promise<number | null> => {
   const existing = pendingFetches.get(marketId);
   if (existing) return existing;
 
-  const promise: Promise<number | null> = supabase
-    .from("market_likes")
-    .select("*", { count: "exact", head: true })
-    .eq("market_id", marketId)
-    .then(({ count: c }) => {
-      pendingFetches.delete(marketId);
-      if (c !== null) {
-        countCache.set(marketId, c);
-        return c;
-      }
-      return null;
-    });
+  const promise = Promise.resolve(
+    supabase
+      .from("market_likes")
+      .select("*", { count: "exact", head: true })
+      .eq("market_id", marketId)
+  ).then(({ count: c }) => {
+    pendingFetches.delete(marketId);
+    if (c !== null) {
+      countCache.set(marketId, c);
+      return c;
+    }
+    return null;
+  });
 
   pendingFetches.set(marketId, promise);
   return promise;

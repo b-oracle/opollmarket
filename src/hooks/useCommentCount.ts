@@ -8,18 +8,19 @@ const fetchCount = (marketId: string): Promise<number | null> => {
   const existing = pendingFetches.get(marketId);
   if (existing) return existing;
 
-  const promise: Promise<number | null> = supabase
-    .from("comments")
-    .select("*", { count: "exact", head: true })
-    .eq("market_id", marketId)
-    .then(({ count: c, error }) => {
-      pendingFetches.delete(marketId);
-      if (!error && c !== null) {
-        cache.set(marketId, c);
-        return c;
-      }
-      return null;
-    });
+  const promise = Promise.resolve(
+    supabase
+      .from("comments")
+      .select("*", { count: "exact", head: true })
+      .eq("market_id", marketId)
+  ).then(({ count: c, error }) => {
+    pendingFetches.delete(marketId);
+    if (!error && c !== null) {
+      cache.set(marketId, c);
+      return c;
+    }
+    return null;
+  });
 
   pendingFetches.set(marketId, promise);
   return promise;
