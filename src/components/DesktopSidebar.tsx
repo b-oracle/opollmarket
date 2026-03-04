@@ -1,8 +1,8 @@
+import { useState } from "react";
 import { Home, Compass, PlusCircle, BarChart3, User, Trophy, Gift, HelpCircle, LogIn, LogOut } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import SignOutConfirmDialog from "@/components/SignOutConfirmDialog";
 import logo from "@/assets/logo.png";
 
 const navItems = [
@@ -20,6 +20,7 @@ const DesktopSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [signOutOpen, setSignOutOpen] = useState(false);
 
   return (
     <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-60 z-40 flex-col border-r border-border bg-background/95 backdrop-blur-md">
@@ -61,11 +62,7 @@ const DesktopSidebar = () => {
       <div className="p-3 border-t border-border">
         {user ? (
           <button
-            onClick={async () => {
-              await supabase.auth.signOut();
-              toast.success("Signed out successfully");
-              navigate("/");
-            }}
+            onClick={() => setSignOutOpen(true)}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-destructive/10 text-destructive border border-destructive/20 transition-all hover:bg-destructive/20 active:scale-95"
           >
             <LogOut className="w-4 h-4" />
@@ -81,6 +78,7 @@ const DesktopSidebar = () => {
           </button>
         )}
       </div>
+      <SignOutConfirmDialog open={signOutOpen} onClose={() => setSignOutOpen(false)} />
     </aside>
   );
 };
