@@ -34,6 +34,7 @@ import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 import InstallBanner from "./components/InstallBanner";
 import DesktopSidebar from "./components/DesktopSidebar";
+import DesktopFooter from "./components/DesktopFooter";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -46,36 +47,39 @@ const App = () => (
           <InstallBanner />
           <BrowserRouter>
             <DesktopSidebar />
-            <div className="md:ml-60">
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/feed" element={<Feed />} />
-              <Route path="/market/:id" element={<MarketDetail />} />
-              <Route path="/create" element={<Create />} />
-              <Route path="/rankings" element={<Rankings />} />
-              <Route path="/portfolio" element={<Portfolio />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/referrals" element={<Referrals />} />
-              <Route path="/faq" element={<FAQ />} />
-              <Route path="/disclaimer" element={<Disclaimer />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<AdminDashboard />} />
-                <Route path="markets" element={<AdminMarkets />} />
-                <Route path="create-market" element={<AdminCreateMarket />} />
-                <Route path="comments" element={<AdminComments />} />
-                <Route path="transactions" element={<AdminTransactions />} />
-                <Route path="withdrawals" element={<AdminWithdrawals />} />
-                <Route path="boosts" element={<AdminBoosts />} />
-                <Route path="users" element={<AdminUsers />} />
-                <Route path="commissions" element={<AdminCommissions />} />
-                <Route path="settings" element={<AdminSettings />} />
-              </Route>
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <div className="md:ml-60 min-h-screen flex flex-col">
+              <div className="flex-1">
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/feed" element={<Feed />} />
+                  <Route path="/market/:id" element={<MarketDetail />} />
+                  <Route path="/create" element={<Create />} />
+                  <Route path="/rankings" element={<Rankings />} />
+                  <Route path="/portfolio" element={<Portfolio />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/referrals" element={<Referrals />} />
+                  <Route path="/faq" element={<FAQ />} />
+                  <Route path="/disclaimer" element={<Disclaimer />} />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/admin" element={<AdminLayout />}>
+                    <Route index element={<AdminDashboard />} />
+                    <Route path="markets" element={<AdminMarkets />} />
+                    <Route path="create-market" element={<AdminCreateMarket />} />
+                    <Route path="comments" element={<AdminComments />} />
+                    <Route path="transactions" element={<AdminTransactions />} />
+                    <Route path="withdrawals" element={<AdminWithdrawals />} />
+                    <Route path="boosts" element={<AdminBoosts />} />
+                    <Route path="users" element={<AdminUsers />} />
+                    <Route path="commissions" element={<AdminCommissions />} />
+                    <Route path="settings" element={<AdminSettings />} />
+                  </Route>
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </div>
+              <DesktopFooter />
             </div>
           </BrowserRouter>
         </TooltipProvider>
