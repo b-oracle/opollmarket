@@ -155,6 +155,12 @@ const InlineComments = ({ marketId }: { marketId: string }) => {
   const handleSend = async () => {
     const text = inputValue.trim();
     if (!text || submitting) return;
+    if (!user) {
+      toast.error("Sign in to comment", {
+        action: { label: "Sign In", onClick: () => window.location.href = "/auth" },
+      });
+      return;
+    }
     const cleanText = replyTo ? text.replace(new RegExp(`^@${replyTo.author}\\s*`), "").trim() || text : text;
     setSubmitting(true);
     try {
@@ -170,6 +176,12 @@ const InlineComments = ({ marketId }: { marketId: string }) => {
   };
 
   const handleLike = async (commentId: string, alreadyLiked: boolean) => {
+    if (!user) {
+      toast.error("Sign in to like comments", {
+        action: { label: "Sign In", onClick: () => window.location.href = "/auth" },
+      });
+      return;
+    }
     try {
       if (alreadyLiked) { await supabase.from("comment_likes").delete().eq("comment_id", commentId).eq("wallet_address", walletId); }
       else { await supabase.from("comment_likes").insert({ comment_id: commentId, wallet_address: walletId }); }

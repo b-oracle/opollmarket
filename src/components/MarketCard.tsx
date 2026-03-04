@@ -151,7 +151,9 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
   const handleLike = () => {
     if (!user) {
-      toast.error("Sign in to like markets");
+      toast.error("Sign in to like markets", {
+        action: { label: "Sign In", onClick: () => window.location.href = "/auth" },
+      });
       return;
     }
     toggleLike();
@@ -163,7 +165,9 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
   const handleBookmark = () => {
     if (!user) {
-      toast.error("Sign in to save to watchlist");
+      toast.error("Sign in to save to watchlist", {
+        action: { label: "Sign In", onClick: () => window.location.href = "/auth" },
+      });
       return;
     }
     toggleBookmark();
