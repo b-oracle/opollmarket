@@ -9,6 +9,8 @@ import { useUserBalance, usePlaceBet } from "@/hooks/useUserBalance";
 import { useRateLimit } from "@/hooks/useRateLimit";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import { useNavigate } from "react-router-dom";
+import TermsAcceptanceModal, { hasAcceptedTerms } from "@/components/TermsAcceptanceModal";
+import useAnalytics from "@/hooks/useAnalytics";
 import {
   X,
   AlertTriangle,
@@ -48,10 +50,12 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
   const { data: commission } = useCommissionSettings();
   const placeBet = usePlaceBet();
   const navigate = useNavigate();
-  const { checkLimit: checkBetLimit } = useRateLimit(5, 60000); // 5 bets per minute
+  const { checkLimit: checkBetLimit } = useRateLimit(5, 60000);
+  const { track } = useAnalytics();
   const [amount, setAmount] = useState("");
   const [step, setStep] = useState<ModalStep>("input");
   const [errorMsg, setErrorMsg] = useState("");
+  const [showTerms, setShowTerms] = useState(false);
 
   const numAmount = parseFloat(amount) || 0;
   const totalFeePercent = (commission?.admin_fee_percent ?? 2) + (commission?.creator_fee_percent ?? 3);
@@ -97,6 +101,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
         price,
         shares,
       });
+      track("bet_confirmed", { marketId, side, amount: numAmount });
       setStep("success");
     } catch (err: any) {
       setErrorMsg(err?.message || "Transaction failed");
@@ -252,12 +257,30 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                     )}
 
                     <button
-                      onClick={() => setStep("confirm")}
+                      onClick={() => {
+                        if (!hasAcceptedTerms()) {
+                          setShowTerms(true);
+                          return;
+                        }
+                        track("bet_placed", { marketId, side, amount: numAmount });
+                        setStep("confirm");
+                      }}
                       disabled={!isValid || !user || !isEmailVerified}
                       className={`w-full ${sideBtnClass} py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-40 disabled:active:scale-100 flex items-center justify-center gap-2`}
                     >
                       Review Order <ArrowRight className="w-4 h-4" />
                     </button>
+
+                    <TermsAcceptanceModal
+                      open={showTerms}
+                      onAccept={() => {
+                        setShowTerms(false);
+                        track("terms_accepted", {});
+                        track("bet_placed", { marketId, side, amount: numAmount });
+                        setStep("confirm");
+                      }}
+                      onClose={() => setShowTerms(false)}
+                    />
                   </motion.div>
                 )}
 
