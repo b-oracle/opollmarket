@@ -14,7 +14,7 @@ export const useCommissionSettings = () => {
         .from("commission_settings")
         .select("admin_fee_percent, creator_fee_percent")
         .limit(1)
-        .single();
+        .maybeSingle();
       if (error || !data) return { admin_fee_percent: 2, creator_fee_percent: 3 };
       return { admin_fee_percent: Number(data.admin_fee_percent), creator_fee_percent: Number(data.creator_fee_percent) };
     },
