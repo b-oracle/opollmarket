@@ -32,6 +32,7 @@ const TopBar = () => {
   const initial = displayName.charAt(0).toUpperCase();
 
   return (
+    <>
     <header
       ref={headerRef}
       className={`fixed top-0 left-0 right-0 z-50 border-0 md:left-60 transition-all duration-300 ${
@@ -125,6 +126,8 @@ const TopBar = () => {
         </div>
       </div>
     </header>
+    <SignOutConfirmDialog open={signOutOpen} onClose={() => setSignOutOpen(false)} />
+    </>
   );
 };
 
