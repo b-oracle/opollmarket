@@ -341,15 +341,9 @@ const Create = () => {
                     key={c.uid}
                     onClick={() => connect({ connector: c, chainId: bsc.id })}
                     disabled={isPending}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold transition-all active:scale-95 disabled:opacity-50"
+                    className="w-full flex items-center justify-center px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold transition-all active:scale-95 disabled:opacity-50"
                   >
-                    <span className="text-lg">
-                      {c.name.includes("MetaMask") ? "🦊" : c.name.includes("WalletConnect") ? "🔗" : "💰"}
-                    </span>
-                    <span className="flex-1 text-left">
-                      {isPending ? "Connecting..." : `Connect ${c.name}`}
-                    </span>
-                    <ArrowRight className="w-4 h-4" />
+                    {isPending ? "Connecting..." : `Connect ${c.name}`}
                   </button>
                 ))}
               </div>
