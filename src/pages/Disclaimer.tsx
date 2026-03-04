@@ -1,3 +1,4 @@
+import SEOHead from "@/components/SEOHead";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BackToTop from "@/components/BackToTop";
@@ -7,6 +8,7 @@ const Disclaimer = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24">
+      <SEOHead title="Disclaimer" description="Important disclaimers about using OPOLL prediction markets. No financial advice." path="/disclaimer" />
       <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-muted transition">
