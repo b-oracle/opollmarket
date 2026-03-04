@@ -203,6 +203,18 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
             </div>
 
             <div className="glass rounded-xl p-4 space-y-3">
+              {/* QR Code */}
+              <div className="flex justify-center">
+                <div className="rounded-xl bg-white p-3 inline-block">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(paymentInfo.pay_address)}`}
+                    alt="Payment QR Code"
+                    className="w-[160px] h-[160px]"
+                    loading="eager"
+                  />
+                </div>
+              </div>
+
               <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
                 <code className="text-xs flex-1 break-all text-foreground/80">{paymentInfo.pay_address}</code>
                 <button
