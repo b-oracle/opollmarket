@@ -239,6 +239,60 @@ const AdminUsers = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Role Confirmation Dialog */}
+      <AnimatePresence>
+        {roleConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60"
+              onClick={() => setRoleConfirm(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative bg-card border border-border rounded-2xl p-6 w-full max-w-sm mx-4 z-10"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                {roleConfirm.hasRole
+                  ? <ShieldOff className="w-5 h-5 text-destructive" />
+                  : <ShieldCheck className="w-5 h-5 text-primary" />}
+                <h3 className="text-lg font-bold">
+                  {roleConfirm.hasRole ? "Remove" : "Assign"} {roleConfirm.role.charAt(0).toUpperCase() + roleConfirm.role.slice(1)} Role
+                </h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-6">
+                Are you sure you want to {roleConfirm.hasRole ? "remove" : "assign"} the <strong className="text-foreground">{roleConfirm.role}</strong> role {roleConfirm.hasRole ? "from" : "to"} <strong className="text-foreground">{roleConfirm.name}</strong>?
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setRoleConfirm(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-muted text-sm font-semibold hover:bg-muted/80 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    await toggleRole(roleConfirm.userId, roleConfirm.role, roleConfirm.hasRole);
+                    setRoleConfirm(null);
+                  }}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                    roleConfirm.hasRole
+                      ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      : "bg-primary text-primary-foreground hover:bg-primary/90"
+                  }`}
+                >
+                  {roleConfirm.hasRole ? "Remove Role" : "Assign Role"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
