@@ -7,19 +7,26 @@ export const useAuth = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isModerator, setIsModerator] = useState(false);
 
   useEffect(() => {
     let mounted = true;
 
-    const checkAdmin = async (userId: string) => {
+    const checkRoles = async (userId: string) => {
       try {
-        const { data } = await supabase.rpc("has_role", {
-          _user_id: userId,
-          _role: "admin",
-        });
-        if (mounted) setIsAdmin(!!data);
+        const [{ data: adminData }, { data: modData }] = await Promise.all([
+          supabase.rpc("has_role", { _user_id: userId, _role: "admin" }),
+          supabase.rpc("has_role", { _user_id: userId, _role: "moderator" }),
+        ]);
+        if (mounted) {
+          setIsAdmin(!!adminData);
+          setIsModerator(!!modData);
+        }
       } catch {
-        if (mounted) setIsAdmin(false);
+        if (mounted) {
+          setIsAdmin(false);
+          setIsModerator(false);
+        }
       }
     };
 
@@ -29,7 +36,7 @@ export const useAuth = () => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        await checkAdmin(session.user.id);
+        await checkRoles(session.user.id);
       }
       if (mounted) setLoading(false);
     });
@@ -42,9 +49,10 @@ export const useAuth = () => {
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          await checkAdmin(session.user.id);
+          await checkRoles(session.user.id);
         } else {
           setIsAdmin(false);
+          setIsModerator(false);
         }
         if (mounted) setLoading(false);
       }
@@ -62,7 +70,6 @@ export const useAuth = () => {
   };
 
   const signUp = async (email: string, password: string, displayName?: string) => {
-    // Check for referral ID in localStorage
     const referredBy = localStorage.getItem("referral_id");
     const { error } = await supabase.auth.signUp({
       email,
@@ -76,7 +83,6 @@ export const useAuth = () => {
       },
     });
     if (!error) {
-      // Clean up referral storage
       localStorage.removeItem("referral_id");
     }
     return { error };
@@ -87,6 +93,7 @@ export const useAuth = () => {
   };
 
   const isEmailVerified = !!user?.email_confirmed_at;
+  const hasAdminAccess = isAdmin || isModerator;
 
-  return { user, session, loading, isAdmin, isEmailVerified, signIn, signUp, signOut };
+  return { user, session, loading, isAdmin, isModerator, hasAdminAccess, isEmailVerified, signIn, signUp, signOut };
 };
