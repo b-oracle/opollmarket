@@ -14,7 +14,7 @@ import { bsc } from "wagmi/chains";
 import {
   Wallet, Gift, ArrowDownToLine, ArrowUpFromLine, ArrowUpRight, ArrowDownLeft,
   Repeat, LogIn, Send, MessageCircle, ExternalLink, ChevronRight,
-  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2,
+  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -56,21 +56,44 @@ const Profile = () => {
   const [installOpen, setInstallOpen] = useState(false);
   const [walletCopied, setWalletCopied] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
-  // Fetch profile wallet address
+  // Fetch profile data
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
       if (!user) return null;
       const { data } = await supabase
         .from("profiles")
-        .select("wallet_address")
+        .select("wallet_address, avatar_url")
         .eq("id", user.id)
         .single();
       return data;
     },
     enabled: !!user,
   });
+
+  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be under 2MB");
+      return;
+    }
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
+
+  const uploadAvatar = async (): Promise<string | null> => {
+    if (!avatarFile || !user) return null;
+    const ext = avatarFile.name.split(".").pop();
+    const path = `${user.id}/avatar.${ext}`;
+    const { error } = await supabase.storage.from("avatars").upload(path, avatarFile, { upsert: true });
+    if (error) { toast.error("Avatar upload failed"); return null; }
+    const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+    return `${urlData.publicUrl}?t=${Date.now()}`;
+  };
 
   // Save wallet to profile when connected
   useEffect(() => {
