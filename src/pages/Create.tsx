@@ -775,7 +775,7 @@ const Create = () => {
                 </li>
                 <li className="flex items-center gap-2">
                   <DollarSign className="w-3 h-3 text-primary" />
-                  Pay ${marketCreationFee} USDT from your balance
+                  No NFT or BC400? No Problem!
                 </li>
               </ul>
             </div>
