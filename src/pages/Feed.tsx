@@ -1,5 +1,6 @@
 import SEOHead from "@/components/SEOHead";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { toast } from "sonner";
 import MarketCard from "@/components/MarketCard";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
