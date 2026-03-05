@@ -43,20 +43,13 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
-        navigateFallbackDenylist: [/^\/~oauth/],
+        navigateFallbackDenylist: [/^\/~oauth/, /^\/auth/],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp}"],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/auth\/.*/i,
-            handler: "NetworkOnly",
-          },
-          {
+            // ALL Supabase requests must bypass SW cache to prevent stale tokens
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "supabase-cache",
-              expiration: { maxEntries: 50, maxAgeSeconds: 300 },
-            },
+            handler: "NetworkOnly",
           },
         ],
       },

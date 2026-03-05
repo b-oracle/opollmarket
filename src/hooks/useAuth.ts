@@ -126,22 +126,21 @@ export const useAuth = () => {
       }
     };
 
-    // Also refresh session periodically to prevent token expiry
+    // Proactively refresh token every 2 minutes to prevent expiry
     const refreshInterval = setInterval(async () => {
       if (!mounted.current || !lastSessionRef.current) return;
       try {
-        const { data: { session: current } } = await supabase.auth.getSession();
-        if (current) {
-          const expiresAt = current.expires_at;
-          const tenMinutesFromNow = Math.floor(Date.now() / 1000) + 600;
-          if (expiresAt && expiresAt < tenMinutesFromNow) {
-            await supabase.auth.refreshSession();
-          }
+        // Always refresh proactively — don't wait for near-expiry
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        if (refreshed.session && mounted.current) {
+          lastSessionRef.current = refreshed.session;
+          setSession(refreshed.session);
+          setUser(refreshed.session.user);
         }
       } catch {
         // Silently ignore — don't disrupt user
       }
-    }, 4 * 60 * 1000); // Every 4 minutes
+    }, 2 * 60 * 1000); // Every 2 minutes
 
     document.addEventListener("visibilitychange", handleVisibility);
 
