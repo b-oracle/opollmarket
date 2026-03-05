@@ -94,9 +94,9 @@ const Create = () => {
   const [gatePassed, setGatePassed] = useState(false);
   const [gateRunning, setGateRunning] = useState(false);
   const [gateFinished, setGateFinished] = useState(false);
-  const [payingToCreate, setPayingToCreate] = useState(false);
   const [swapModalOpen, setSwapModalOpen] = useState(false);
   const [showConnectors, setShowConnectors] = useState(false);
+  const [feeBypass, setFeeBypass] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -190,6 +190,7 @@ const Create = () => {
   const handleCreateMarket = useCallback(async () => {
     if (!user || !address) return;
     const liquidityAmount = parseFloat(initialLiquidity);
+    const totalDeduction = feeBypass ? liquidityAmount + marketCreationFee : liquidityAmount;
     setSimilarMarkets([]);
     setCreatedAsPending(false);
     setModerationReason("");
@@ -243,16 +244,16 @@ const Create = () => {
       return;
     }
 
-    if (bal.amount < liquidityAmount) {
+    if (bal.amount < totalDeduction) {
       setSubmitStep("error");
-      toast.error(`Insufficient balance. You need $${liquidityAmount} USDT but have $${bal.amount.toFixed(2)}.`);
+      toast.error(`Insufficient balance. You need $${totalDeduction} USDT but have $${bal.amount.toFixed(2)}.`);
       return;
     }
 
-    // Deduct initial liquidity from creator's balance
+    // Deduct total (liquidity + fee if bypass) from creator's balance
     const { error: deductError } = await supabase
       .from("balances")
-      .update({ amount: bal.amount - liquidityAmount, updated_at: new Date().toISOString() })
+      .update({ amount: bal.amount - totalDeduction, updated_at: new Date().toISOString() })
       .eq("user_id", user.id);
 
     if (deductError) {
@@ -269,8 +270,8 @@ const Create = () => {
 
     setSubmitStep("saving");
 
-    // If similar or flagged by moderation, create as pending for admin review
-    const needsReview = isSimilar || isFlagged;
+    // If similar, flagged, or fee bypass — needs admin review
+    const needsReview = isSimilar || isFlagged || feeBypass;
     const marketStatus = needsReview ? "pending" : "active";
 
     // Save to database
@@ -315,6 +316,18 @@ const Create = () => {
       side: "initial_liquidity",
     });
 
+    // Record the creation fee transaction if fee bypass
+    if (feeBypass) {
+      await supabase.from("transactions").insert({
+        user_id: user.id,
+        type: "buy",
+        amount: marketCreationFee,
+        market_id: data?.id,
+        status: "confirmed",
+        side: "market_creation_fee",
+      });
+    }
+
     // Save options for multi/range markets
     if (marketType !== "binary" && data?.id) {
       const validOptions = options.filter(o => o.trim());
@@ -338,14 +351,16 @@ const Create = () => {
     setCreatedAsPending(needsReview);
     setSubmitStep("success");
 
-    if (isFlagged) {
+    if (feeBypass) {
+      toast.info("Your market requires admin approval. The creation fee ($" + marketCreationFee + ") is non-refundable.");
+    } else if (isFlagged) {
       toast.warning("Your market was flagged for inappropriate content and is pending admin review.");
     } else if (isSimilar) {
       toast.info("Your market was flagged as similar to an existing one and is pending admin review.");
     } else {
       toast.success("Market created successfully!");
     }
-  }, [user, address, title, description, category, endDate, resolutionSource, initialLiquidity, marketType, options]);
+  }, [user, address, title, description, category, endDate, resolutionSource, initialLiquidity, marketType, options, feeBypass, marketCreationFee]);
 
   // Token-gate verification using wallet NFTs
   const runGateCheck = async () => {
@@ -453,46 +468,10 @@ const Create = () => {
     }
   }, [isConnected]);
 
-  // Pay to create market — deduct fee from balance
-  const handlePayToCreate = async () => {
-    if (!user) return;
-    setPayingToCreate(true);
-    try {
-      const { data: bal } = await supabase
-        .from("balances")
-        .select("amount")
-        .eq("user_id", user.id)
-        .single();
-
-      if (!bal || bal.amount < marketCreationFee) {
-        toast.error(`Insufficient balance. You need $${marketCreationFee} USDT.`);
-        setPayingToCreate(false);
-        return;
-      }
-
-      const { error } = await supabase
-        .from("balances")
-        .update({ amount: bal.amount - marketCreationFee, updated_at: new Date().toISOString() })
-        .eq("user_id", user.id);
-
-      if (error) throw error;
-
-      // Record the transaction
-      await supabase.from("transactions").insert({
-        user_id: user.id,
-        type: "buy",
-        amount: marketCreationFee,
-        status: "confirmed",
-        side: "market_creation_fee",
-      });
-
-      toast.success("Payment successful! You can now create a market.");
-      setGatePassed(true);
-    } catch (err: any) {
-      toast.error(err.message || "Payment failed");
-    } finally {
-      setPayingToCreate(false);
-    }
+  // Fee bypass — skip gate and proceed to form, fee added at checkout
+  const handleFeeBypass = () => {
+    setFeeBypass(true);
+    setGatePassed(true);
   };
 
   const pancakeSwapUrl = tokenContractAddress
@@ -759,18 +738,13 @@ const Create = () => {
                   </a>
                 )}
 
-                {/* Pay to Create */}
+                {/* No NFT or Token? Proceed with fee */}
                 <button
-                  onClick={handlePayToCreate}
-                  disabled={payingToCreate}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-border text-foreground font-semibold transition-all active:scale-95 hover:bg-muted/50 disabled:opacity-50"
+                  onClick={handleFeeBypass}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-border text-foreground font-semibold transition-all active:scale-95 hover:bg-muted/50"
                 >
-                  {payingToCreate ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <DollarSign className="w-4 h-4" />
-                  )}
-                  Pay ${marketCreationFee} to Create Market
+                  <DollarSign className="w-4 h-4" />
+                  No NFT or BC400? No problem.
                 </button>
 
                 {/* Retry check */}
@@ -836,10 +810,12 @@ const Create = () => {
           className="mb-6"
         >
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-              <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center ${feeBypass ? "bg-accent" : "bg-primary/20"}`}>
+              {feeBypass ? <DollarSign className="w-3.5 h-3.5 text-accent-foreground" /> : <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
             </div>
-            <span className="text-xs text-primary font-semibold">Verified Creator</span>
+            <span className={`text-xs font-semibold ${feeBypass ? "text-accent-foreground" : "text-primary"}`}>
+              {feeBypass ? "Fee-Based Creator" : "Verified Creator"}
+            </span>
           </div>
           <h1 className="text-2xl font-bold">Create Market</h1>
           <p className="text-sm text-muted-foreground">
@@ -1185,11 +1161,14 @@ const Create = () => {
                     );
                   })}
                 </div>
-                {parseFloat(initialLiquidity) > balance && balance > 0 && (
-                  <p className="text-[10px] text-destructive mt-1.5 flex items-center gap-1">
-                    ⚠️ Amount exceeds your balance by ${(parseFloat(initialLiquidity) - balance).toFixed(2)}
-                  </p>
-                )}
+                {(() => {
+                  const totalNeeded = parseFloat(initialLiquidity) + (feeBypass ? marketCreationFee : 0);
+                  return totalNeeded > balance && balance > 0 ? (
+                    <p className="text-[10px] text-destructive mt-1.5 flex items-center gap-1">
+                      ⚠️ Total cost (${totalNeeded.toFixed(2)}) exceeds your balance by ${(totalNeeded - balance).toFixed(2)}
+                    </p>
+                  ) : null;
+                })()}
               </div>
 
               {/* Review card */}
@@ -1240,11 +1219,37 @@ const Create = () => {
                 </div>
               </div>
 
+              {/* Fee breakdown */}
+              {feeBypass && initialLiquidity && (
+                <div className="glass rounded-xl p-4">
+                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-primary" />
+                    Cost Breakdown
+                  </h3>
+                  <div className="space-y-1.5 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Initial Liquidity</span>
+                      <span className="font-medium">${initialLiquidity} USDT</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Creation Fee <span className="text-[10px]">(non-refundable)</span></span>
+                      <span className="font-medium">${marketCreationFee} USDT</span>
+                    </div>
+                    <div className="border-t border-border pt-1.5 flex justify-between">
+                      <span className="font-semibold">Total</span>
+                      <span className="font-bold text-primary">${(parseFloat(initialLiquidity) + marketCreationFee).toFixed(2)} USDT</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Fee info */}
               <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border">
                 <AlertTriangle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                 <p className="text-xs text-muted-foreground">
-                  A 2% platform fee applies. Creators earn 1% of all trade volume. Initial liquidity will be locked until market resolution.
+                  {feeBypass
+                    ? `A $${marketCreationFee} creation fee applies since you don't hold NFT/BC400. This fee is non-refundable (unless admin cancels the market). Your market will require admin approval before going live.`
+                    : "A 2% platform fee applies. Creators earn 1% of all trade volume. Initial liquidity will be locked until market resolution."}
                 </p>
               </div>
 
@@ -1350,11 +1355,13 @@ const Create = () => {
                     {createdAsPending ? "Market Pending Review" : "Market Created!"}
                   </h3>
                   <p className="text-xs text-muted-foreground text-center mb-4">
-                    {createdAsPending
-                      ? moderationReason
-                        ? "Your market was flagged for inappropriate content and needs admin approval before going live."
-                        : "Your market was flagged as similar to an existing one and needs admin approval before going live."
-                      : "Your prediction market is now live. Share it and start earning from trades!"}
+                    {feeBypass && createdAsPending
+                      ? `Your market requires admin approval before going live. The $${marketCreationFee} creation fee is non-refundable unless the admin cancels your market.`
+                      : createdAsPending
+                        ? moderationReason
+                          ? "Your market was flagged for inappropriate content and needs admin approval before going live."
+                          : "Your market was flagged as similar to an existing one and needs admin approval before going live."
+                        : "Your prediction market is now live. Share it and start earning from trades!"}
                   </p>
 
                   {/* Moderation reason */}
@@ -1389,6 +1396,18 @@ const Create = () => {
                       <span className="text-muted-foreground">Liquidity</span>
                       <span className="font-semibold">${initialLiquidity} USDT</span>
                     </div>
+                    {feeBypass && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Creation Fee</span>
+                        <span className="font-semibold">${marketCreationFee} USDT</span>
+                      </div>
+                    )}
+                    {feeBypass && (
+                      <div className="flex justify-between text-xs border-t border-border pt-1.5">
+                        <span className="text-muted-foreground font-semibold">Total Charged</span>
+                        <span className="font-bold">${(parseFloat(initialLiquidity) + marketCreationFee).toFixed(2)} USDT</span>
+                      </div>
+                    )}
                     {address && (
                       <div className="flex justify-between text-xs">
                         <span className="text-muted-foreground">Wallet</span>
