@@ -651,65 +651,30 @@ const Create = () => {
               </div>
             )}
 
-            {/* Connect wallet button — when wallet not connected */}
+            {/* Connect wallet instruction — when wallet not connected */}
             {!isConnected && (
-              <div className="space-y-2">
-                <button
-                  onClick={() => setShowConnectors((v) => !v)}
-                  disabled={isPending}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold transition-all active:scale-95 disabled:opacity-60"
-                >
-                  {isPending ? (
-                    <>
-                      <LogoLoader size="sm" />
-                      Connecting...
-                    </>
-                  ) : (
-                    <>
-                      <Wallet className="w-4 h-4" />
-                      Connect Wallet
-                    </>
-                  )}
-                </button>
-
-                <AnimatePresence>
-                  {showConnectors && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden rounded-xl border border-border bg-card"
-                    >
-                      <p className="text-[10px] text-muted-foreground px-4 pt-3 uppercase tracking-wider">
-                        Select Wallet
-                      </p>
-                      {connectors.length === 0 ? (
-                        <div className="px-4 py-6 text-center">
-                          <p className="text-sm text-muted-foreground">No wallets available.</p>
-                        </div>
-                      ) : connectors.map((c) => (
-                        <button
-                          key={c.uid}
-                          onClick={() => {
-                            connect({ connector: c, chainId: bsc.id });
-                            setShowConnectors(false);
-                          }}
-                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors text-left"
-                        >
-                          <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0 text-base">
-                            {c.type === 'injected' ? "🦊" : "🔗"}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">{c.type === 'injected' ? 'Browser Wallet' : 'WalletConnect'}</p>
-                            <p className="text-[10px] text-muted-foreground">
-                              {c.type === 'injected' ? 'MetaMask, Brave, etc.' : '300+ wallets via QR code'}
-                            </p>
-                          </div>
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+              <div className="glass rounded-xl p-5 text-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                  <Wallet className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-sm font-bold">Wallet Connection Required</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  To connect your wallet, please open this page in a{" "}
+                  <span className="font-semibold text-foreground">wallet browser</span> (MetaMask, Trust Wallet, SafePal, Coinbase Wallet) or use a{" "}
+                  <span className="font-semibold text-foreground">desktop browser</span> with a Web3 wallet extension installed.
+                </p>
+                <div className="flex flex-wrap justify-center gap-2 pt-1">
+                  {[
+                    { name: "MetaMask", emoji: "🦊" },
+                    { name: "Trust Wallet", emoji: "🛡️" },
+                    { name: "SafePal", emoji: "🔐" },
+                    { name: "Coinbase", emoji: "🔵" },
+                  ].map((w) => (
+                    <span key={w.name} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-muted/50 border border-border text-[10px] font-medium text-muted-foreground">
+                      <span>{w.emoji}</span> {w.name}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
 
