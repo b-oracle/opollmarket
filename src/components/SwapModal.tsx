@@ -44,6 +44,10 @@ interface SwapModalProps {
 const SwapModal = ({ open, onClose, tokenContractAddress }: SwapModalProps) => {
   const { address, isConnected } = useAccount();
   const { data: bnbBalance } = useBalance({ address });
+  const { data: bc400Balance } = useBalance({
+    address,
+    token: tokenContractAddress as Address,
+  });
 
   const [bnbAmount, setBnbAmount] = useState("");
   const [estimatedTokens, setEstimatedTokens] = useState("");
@@ -310,7 +314,12 @@ const SwapModal = ({ open, onClose, tokenContractAddress }: SwapModalProps) => {
                   <div className="rounded-xl border border-border bg-muted/30 p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs text-muted-foreground">You Receive (estimated)</span>
-                      {quoteLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+                      <div className="flex items-center gap-2">
+                        {quoteLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+                        <span className="text-[10px] text-muted-foreground font-semibold">
+                          Balance: {bc400Balance ? parseFloat(formatUnits(bc400Balance.value, bc400Balance.decimals)).toLocaleString(undefined, { maximumFractionDigits: 2 }) : "0"} BC400
+                        </span>
+                      </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="flex-1 text-2xl font-bold text-foreground">
