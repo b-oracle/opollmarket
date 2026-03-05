@@ -810,10 +810,12 @@ const Create = () => {
           className="mb-6"
         >
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-              <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center ${feeBypass ? "bg-accent" : "bg-primary/20"}`}>
+              {feeBypass ? <DollarSign className="w-3.5 h-3.5 text-accent-foreground" /> : <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
             </div>
-            <span className="text-xs text-primary font-semibold">Verified Creator</span>
+            <span className={`text-xs font-semibold ${feeBypass ? "text-accent-foreground" : "text-primary"}`}>
+              {feeBypass ? "Fee-Based Creator" : "Verified Creator"}
+            </span>
           </div>
           <h1 className="text-2xl font-bold">Create Market</h1>
           <p className="text-sm text-muted-foreground">
