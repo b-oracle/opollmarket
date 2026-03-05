@@ -92,7 +92,7 @@ const Privacy = () => {
           <h2 className="text-base font-semibold text-foreground">4. AI & Automated Processing</h2>
           <p>The Platform employs AI-powered automated systems for the following purposes:</p>
           <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Content Moderation:</strong> Market submissions, comments, display names, and uploaded images are screened by AI models (Google Gemini) for policy compliance. Flagged content is logged for administrative review.</li>
+            <li><strong>Content Moderation:</strong> Market submissions, comments, display names, and uploaded images are screened by AI models (Google Gemini) for policy compliance. Flagged content is logged for review by the System-Mod Engine.</li>
             <li><strong>Market Similarity Detection:</strong> New market proposals are compared against existing markets using AI to identify potential duplicates.</li>
             <li><strong>Trending Calculation:</strong> Automated scoring algorithms analyze volume, participation, recent activity, comments, and likes to identify trending markets.</li>
           </ul>
@@ -130,7 +130,7 @@ const Privacy = () => {
             <li>Encryption of data in transit (TLS/SSL) and at rest.</li>
             <li>Secure authentication protocols with password hashing and session management.</li>
             <li>Row-Level Security (RLS) policies ensuring users can only access their own data.</li>
-            <li>Role-based access controls for administrative functions.</li>
+            <li>Role-based access controls for system-mod functions.</li>
             <li>Regular security reviews and vulnerability assessments.</li>
             <li>Secure storage of uploaded files in isolated, access-controlled storage buckets.</li>
           </ul>
