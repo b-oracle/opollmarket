@@ -8,8 +8,9 @@ const corsHeaders = {
 
 const BSC_RPC = "https://bsc-dataseed1.binance.org";
 
-// ERC-20 balanceOf(address) selector
-const BALANCE_OF_SELECTOR = "0x70a08231";
+// ERC-20 function selectors
+const BALANCE_OF_SELECTOR = "0x70a08231"; // balanceOf(address)
+const DECIMALS_SELECTOR = "0x313ce567";   // decimals()
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -58,41 +59,54 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Encode balanceOf call: selector + address padded to 32 bytes
+    // Make both RPC calls in parallel: balanceOf + decimals
     const paddedAddress = wallet_address.slice(2).toLowerCase().padStart(64, "0");
-    const callData = BALANCE_OF_SELECTOR + paddedAddress;
+    const balanceCallData = BALANCE_OF_SELECTOR + paddedAddress;
 
-    // Query BSC RPC
-    const rpcResponse = await fetch(BSC_RPC, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        method: "eth_call",
-        params: [
-          { to: token_contract_address, data: callData },
-          "latest",
-        ],
-        id: 1,
+    const [balanceRes, decimalsRes] = await Promise.all([
+      fetch(BSC_RPC, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0", method: "eth_call",
+          params: [{ to: token_contract_address, data: balanceCallData }, "latest"],
+          id: 1,
+        }),
       }),
-    });
+      fetch(BSC_RPC, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0", method: "eth_call",
+          params: [{ to: token_contract_address, data: DECIMALS_SELECTOR }, "latest"],
+          id: 2,
+        }),
+      }),
+    ]);
 
-    const rpcData = await rpcResponse.json();
+    const [balanceData, decimalsData] = await Promise.all([
+      balanceRes.json(),
+      decimalsRes.json(),
+    ]);
 
-    if (rpcData.error) {
-      console.error("BSC RPC error:", rpcData.error);
+    if (balanceData.error) {
+      console.error("BSC RPC balance error:", balanceData.error);
       return new Response(
-        JSON.stringify({ error: "RPC call failed", detail: rpcData.error.message }),
+        JSON.stringify({ error: "RPC call failed", detail: balanceData.error.message }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Parse the hex result — raw balance in smallest unit
-    const rawHex = rpcData.result;
-    const rawBalance = BigInt(rawHex || "0x0");
+    // Auto-detect decimals from on-chain, fall back to passed value or 18
+    let decimals = Number(token_decimals) || 18;
+    if (decimalsData.result && !decimalsData.error) {
+      const onChainDecimals = Number(BigInt(decimalsData.result));
+      if (onChainDecimals >= 0 && onChainDecimals <= 18) {
+        decimals = onChainDecimals;
+      }
+    }
 
-    // Use configurable decimals
-    const decimals = Math.min(Math.max(Number(token_decimals) || 18, 0), 18);
+    const rawBalance = BigInt(balanceData.result || "0x0");
     const divisor = BigInt(10 ** decimals);
     const wholeUnits = rawBalance / divisor;
     const formatted = Number(wholeUnits);
