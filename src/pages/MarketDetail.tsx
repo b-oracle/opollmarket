@@ -47,15 +47,18 @@ const CreatorCard = ({ creatorName, creatorUserId }: { creatorName: string; crea
   return (
     <div className="glass rounded-xl p-4 mb-4 flex items-center gap-3">
       <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
-        <span className="font-bold text-primary">{creatorName.charAt(0)}</span>
+        <span className="font-bold text-primary">{(profile?.display_name || creatorName).charAt(0)}</span>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold">@{creatorName}</p>
-        {walletAddr && (
-          <p className="text-xs text-muted-foreground font-mono flex items-center gap-1">
-            <Wallet className="w-3 h-3" />
-            {truncateAddr(walletAddr)}
-          </p>
+        {walletAddr ? (
+          <>
+            <p className="text-sm font-semibold font-mono">{truncateAddr(walletAddr)}</p>
+            {profile?.display_name && (
+              <p className="text-xs text-muted-foreground">@{profile.display_name}</p>
+            )}
+          </>
+        ) : (
+          <p className="text-sm font-semibold">@{profile?.display_name || creatorName}</p>
         )}
       </div>
     </div>

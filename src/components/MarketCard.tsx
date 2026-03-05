@@ -1,4 +1,6 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import YouTubeEmbed, { isYouTubeUrl } from "@/components/YouTubeEmbed";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown, ExternalLink, Flame } from "lucide-react";
@@ -23,6 +25,8 @@ interface MarketCardProps {
   boostEndsAt?: string;
   boostTier?: string;
 }
+
+const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
 const formatVolume = (v: number) => {
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
@@ -64,6 +68,22 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
   // Real hooks for like, bookmark, comments
   const { user } = useAuth();
+  const { data: creatorProfile } = useQuery({
+    queryKey: ["creator-wallet", market.creatorAddress],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("wallet_address")
+        .eq("id", market.creatorAddress)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!market.creatorAddress,
+    staleTime: 5 * 60 * 1000,
+  });
+  const creatorLabel = creatorProfile?.wallet_address
+    ? truncateAddr(creatorProfile.wallet_address)
+    : `@${market.creatorName}`;
   const { liked, likeCount, toggleLike } = useMarketLike(market.id);
   const { bookmarked, toggleBookmark } = useBookmark(market.id);
   const [betModal, setBetModal] = useState<{ open: boolean; side: "yes" | "no"; optionLabel?: string; optionPrice?: number; optionColor?: string }>({ open: false, side: "yes" });
@@ -369,7 +389,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
               <span className="text-xs font-bold text-primary">{market.creatorName.charAt(0)}</span>
             </div>
-            <span className="text-sm font-medium text-foreground/80">@{market.creatorName}</span>
+            <span className={`text-sm font-medium text-foreground/80 ${creatorProfile?.wallet_address ? 'font-mono' : ''}`}>{creatorLabel}</span>
             {showBoosted && (
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 ${
                 isBoosted 
