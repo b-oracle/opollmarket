@@ -304,8 +304,13 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
           {/* Bottom text overlay */}
           <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/85 via-black/50 to-transparent">
+            {isMulti && market.options?.length ? (() => {
+              const leading = market.options!.reduce((a, b) => b.price > a.price ? b : a);
+              return <p className="text-lg font-bold neon-yes mb-1">{Math.round(leading.price * 100)}% chance · {leading.label}</p>;
+            })() : (
+              <p className="text-lg font-bold neon-yes mb-1">{yesPercent}% chance</p>
+            )}
             <h3 className="text-2xl font-bold text-white mb-2 leading-tight">{market.title}</h3>
-            <p className="text-sm text-white/70 mb-4">{market.description}</p>
             <div className="flex items-center justify-between">
               {isMulti && market.options ? (
                 <div className="flex flex-wrap gap-2">
