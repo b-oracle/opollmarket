@@ -1,4 +1,6 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import YouTubeEmbed, { isYouTubeUrl } from "@/components/YouTubeEmbed";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown, ExternalLink, Flame } from "lucide-react";
@@ -23,6 +25,8 @@ interface MarketCardProps {
   boostEndsAt?: string;
   boostTier?: string;
 }
+
+const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
 const formatVolume = (v: number) => {
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
