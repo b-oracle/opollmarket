@@ -497,18 +497,7 @@ const AdminCreateMarket = () => {
         </div>
       </div>
 
-      {/* Validation hints */}
-      {!isValid && (
-        <div className="text-xs text-muted-foreground bg-muted/30 border border-border rounded-xl p-3 space-y-1">
-          <p className="font-semibold text-foreground mb-1">Required to submit:</p>
-          {title.trim().length < 10 && <p>• Market question (min 10 characters)</p>}
-          {description.trim().length < 10 && <p>• Description (min 10 characters)</p>}
-          {!category && <p>• Select a category</p>}
-          {!endDate && <p>• Set an end date</p>}
-          {resolutionSource.trim().length < 5 && <p>• Resolution source (min 5 characters)</p>}
-          {marketType === "multi" && options.filter((o) => o.trim()).length < 2 && <p>• At least 2 options for multi-choice</p>}
-        </div>
-      )}
+
 
       {/* Submit */}
       <div className="flex gap-3">
