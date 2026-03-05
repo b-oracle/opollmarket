@@ -257,8 +257,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           <div className={`absolute inset-0 ${isBoosted ? 'bg-gradient-to-br from-primary/15 via-primary/5 to-transparent' : ''}`} />
         </div>
 
-        {/* Chance badge — top right */}
-        <div className="absolute top-4 right-16 z-10">
+        {/* Chance badge — top left */}
+        <div className="absolute top-4 left-4 z-10">
           {isMulti && market.options?.length ? (() => {
             const leading = market.options!.reduce((a, b) => b.price > a.price ? b : a);
             return <span className="px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm text-sm font-bold neon-yes">{Math.round(leading.price * 100)}% chance · {leading.label}</span>;
