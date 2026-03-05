@@ -87,6 +87,7 @@ const AdminWithdrawals = () => {
     w.status?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const paginatedWd = useMemo(() => filtered.slice((wdPage - 1) * WD_PAGE_SIZE, wdPage * WD_PAGE_SIZE), [filtered, wdPage]);
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -124,7 +125,7 @@ const AdminWithdrawals = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((w: any) => (
+              {paginatedWd.map((w: any) => (
                 <TableRow key={w.id}>
                   <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                     {format(new Date(w.created_at), "MMM d, yyyy HH:mm")}
@@ -183,6 +184,7 @@ const AdminWithdrawals = () => {
             </TableBody>
           </Table>
         </div>
+        <AdminPagination page={wdPage} totalItems={filtered.length} pageSize={WD_PAGE_SIZE} onPageChange={setWdPage} />
       )}
 
       {/* Action modal */}
