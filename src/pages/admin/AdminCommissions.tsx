@@ -153,7 +153,7 @@ const AdminCommissions = () => {
 
   const grandTotal = totalAdmin + totalCreator;
   const pieData = [
-    { name: "Admin", value: totalAdmin },
+    { name: "System-Mod", value: totalAdmin },
     { name: "Creators", value: totalCreator },
   ].filter((d) => d.value > 0);
 
@@ -161,7 +161,7 @@ const AdminCommissions = () => {
 
   const cards = [
     { label: "Total Commissions", value: `$${grandTotal.toFixed(2)}`, icon: DollarSign, color: "text-primary" },
-    { label: "Admin Earned", value: `$${totalAdmin.toFixed(2)}`, icon: TrendingUp, color: "text-primary" },
+    { label: "System-Mod Earned", value: `$${totalAdmin.toFixed(2)}`, icon: TrendingUp, color: "text-primary" },
     { label: "Creators Earned", value: `$${totalCreator.toFixed(2)}`, icon: Users, color: "text-primary" },
     { label: "Top Creators", value: topCreators.length, icon: PieChartIcon, color: "text-primary" },
   ];
@@ -233,7 +233,7 @@ const AdminCommissions = () => {
                       fontSize: "12px",
                     }}
                   />
-                  <Area type="monotone" dataKey="admin" name="Admin" stroke="hsl(var(--primary))" fill="url(#fillAdmin)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="admin" name="System-Mod" stroke="hsl(var(--primary))" fill="url(#fillAdmin)" strokeWidth={2} />
                   <Area type="monotone" dataKey="creator" name="Creators" stroke="hsl(var(--chart-2))" fill="url(#fillCreator)" strokeWidth={2} />
                 </AreaChart>
               </ResponsiveContainer>
@@ -241,7 +241,7 @@ const AdminCommissions = () => {
             <div className="flex items-center gap-4 mt-2">
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-full bg-primary" />
-                <span className="text-[10px] text-muted-foreground">Admin</span>
+                <span className="text-[10px] text-muted-foreground">System-Mod</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "hsl(var(--chart-2))" }} />
