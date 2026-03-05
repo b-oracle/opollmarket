@@ -39,7 +39,7 @@ const AdminAnalytics = () => {
         .order("created_at", { ascending: false })
         .limit(1000);
 
-      setEvents(data || []);
+      setEvents((data || []) as EventRow[]);
       setLoading(false);
     };
     fetch();
