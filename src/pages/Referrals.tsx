@@ -184,22 +184,42 @@ const Referrals = () => {
           </motion.div>
         </div>
 
+        {/* Username Warning */}
+        {!profileName && (
+          <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4 mb-4 flex items-start gap-3">
+            <Gift className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-yellow-500">Set a display name first</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Your referral link and code use your display name. Set one in your profile to start sharing.
+              </p>
+              <button
+                onClick={() => navigate("/profile")}
+                className="mt-2 text-xs font-semibold text-primary hover:underline"
+              >
+                Go to Profile →
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Referral Code */}
         <div className="glass rounded-xl p-5 mb-4">
           <h3 className="text-sm font-semibold mb-3">Your Referral Code</h3>
           <div className="flex items-center gap-2">
             <div className="flex-1 bg-muted/50 rounded-lg px-3 py-2.5 text-xs text-muted-foreground truncate font-mono select-all">
-              {user?.id}
+              {profileName || "—"}
             </div>
             <button
+              disabled={!profileName}
               onClick={async () => {
-                if (!user) return;
+                if (!profileName) return;
                 try {
-                  await navigator.clipboard.writeText(user.id);
+                  await navigator.clipboard.writeText(profileName);
                   toast.success("Referral code copied!");
                 } catch { toast.error("Failed to copy"); }
               }}
-              className="shrink-0 p-2.5 rounded-lg bg-primary text-primary-foreground transition-all active:scale-95"
+              className="shrink-0 p-2.5 rounded-lg bg-primary text-primary-foreground transition-all active:scale-95 disabled:opacity-50"
             >
               <Copy className="w-4 h-4" />
             </button>
@@ -214,9 +234,10 @@ const Referrals = () => {
           <h3 className="text-sm font-semibold mb-3">Your Referral Link</h3>
           <div className="flex items-center gap-2">
             <div className="flex-1 bg-muted/50 rounded-lg px-3 py-2.5 text-xs text-muted-foreground truncate font-mono">
-              {referralLink}
+              {referralLink || "Set a display name to generate your link"}
             </div>
             <button
+              disabled={!referralLink}
               onClick={handleCopy}
               className="shrink-0 p-2.5 rounded-lg bg-primary text-primary-foreground transition-all active:scale-95"
             >
