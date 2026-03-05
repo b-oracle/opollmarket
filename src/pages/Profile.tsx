@@ -59,6 +59,8 @@ const Profile = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<"deposit" | "withdraw">("deposit");
   const [txFilter, setTxFilter] = useState<FilterType>("all");
+  const [txPage, setTxPage] = useState(1);
+  const TX_PER_PAGE = 10;
   const [editingProfile, setEditingProfile] = useState(false);
   const [editName, setEditName] = useState(user?.user_metadata?.display_name || "");
   const [installOpen, setInstallOpen] = useState(false);
