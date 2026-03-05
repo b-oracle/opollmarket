@@ -30,11 +30,11 @@ const AdminContracts = () => {
       if (error) throw error;
       if (data) {
         setSettingsId(data.id);
-        setTokenContract((data as any).token_contract_address || "");
-        setNftContract((data as any).nft_contract_address || "");
-        setNftBuyUrl((data as any).nft_buy_url || "");
-        setMarketCreationFee(String((data as any).market_creation_fee ?? 50));
-        setTokenDecimals(String((data as any).token_decimals ?? 18));
+        setTokenContract(data.token_contract_address || "");
+        setNftContract(data.nft_contract_address || "");
+        setNftBuyUrl(data.nft_buy_url || "");
+        setMarketCreationFee(String(data.market_creation_fee ?? 50));
+        setTokenDecimals(String(data.token_decimals ?? 18));
       }
     } catch (err) {
       console.error("Failed to fetch contract settings:", err);
@@ -90,7 +90,7 @@ const AdminContracts = () => {
       
       const { error, data, status, statusText } = await supabase
         .from("commission_settings")
-        .update(updatePayload as any)
+        .update(updatePayload)
         .eq("id", settingsId)
         .select();
 
@@ -111,12 +111,14 @@ const AdminContracts = () => {
     }
   };
 
+  const feeNum = parseFloat(marketCreationFee);
   const canSave =
     !saving &&
+    !!settingsId &&
     (tokenContract === "" || isValidAddress(tokenContract)) &&
     (nftContract === "" || isValidAddress(nftContract)) &&
     (nftBuyUrl === "" || isValidUrl(nftBuyUrl)) &&
-    parseFloat(marketCreationFee) > 0;
+    !isNaN(feeNum) && feeNum >= 0;
 
   if (loading) {
     return (
