@@ -115,6 +115,14 @@ const OrderBook = ({ yesPrice, noPrice, liquidity, marketId }: OrderBookProps) =
     return vol;
   }, [recentTrades]);
 
+  const maxTradeVol = useMemo(() => {
+    let max = 0;
+    Object.values(tradeVolume).forEach((v) => {
+      max = Math.max(max, v.buyVol, v.sellVol);
+    });
+    return max;
+  }, [tradeVolume]);
+
   const maxTotal = Math.max(
     bids[bids.length - 1]?.total || 0,
     asks[0]?.total || 0
