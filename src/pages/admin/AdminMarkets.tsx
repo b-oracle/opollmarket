@@ -346,15 +346,31 @@ const AdminMarkets = () => {
                               >
                                 <Pencil className="w-4 h-4" />
                               </button>
-                              {m.status === "active" && (
+                              {m.status === "pending" && (
+                                <button
+                                  onClick={async () => {
+                                    const { error } = await supabase.from("markets").update({ status: "active" }).eq("id", m.id);
+                                    if (error) { toast.error("Failed to approve"); return; }
+                                    toast.success("Market approved and now live!");
+                                    fetchMarkets();
+                                  }}
+                                  className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+                                  title="Approve Market"
+                                >
+                                  <Check className="w-4 h-4" />
+                                </button>
+                              )}
+                              {(m.status === "active" || m.status === "pending") && (
                                 <>
-                                  <button
-                                    onClick={() => openResolveModal(m)}
-                                    className="p-1.5 rounded-lg hover:bg-green-500/10 text-green-500 transition-colors"
-                                    title="Resolve Market"
-                                  >
-                                    <Gavel className="w-4 h-4" />
-                                  </button>
+                                  {m.status === "active" && (
+                                    <button
+                                      onClick={() => openResolveModal(m)}
+                                      className="p-1.5 rounded-lg hover:bg-green-500/10 text-green-500 transition-colors"
+                                      title="Resolve Market"
+                                    >
+                                      <Gavel className="w-4 h-4" />
+                                    </button>
+                                  )}
                                   <button
                                     onClick={() => handleCancel(m.id)}
                                     className="p-1.5 rounded-lg hover:bg-yellow-500/10 text-yellow-500 transition-colors"
