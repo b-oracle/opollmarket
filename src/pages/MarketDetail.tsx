@@ -204,6 +204,16 @@ const InlineComments = ({ marketId }: { marketId: string }) => {
     const cleanText = replyTo ? text.replace(new RegExp(`^@${replyTo.author}\\s*`), "").trim() || text : text;
     setSubmitting(true);
     try {
+      // AI moderation check
+      const { data: modData } = await supabase.functions.invoke("moderate-comment", {
+        body: { content: cleanText },
+      });
+      if (modData?.flagged) {
+        toast.error(modData.reason || "Your comment contains inappropriate content. Please revise it.");
+        setSubmitting(false);
+        return;
+      }
+
       const authorName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Anonymous";
       const { error } = await supabase.from("comments").insert({
         market_id: marketId, parent_id: replyTo?.id || null,
