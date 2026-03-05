@@ -7,7 +7,7 @@ const Privacy = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24">
+    <div className="min-h-screen bg-background text-foreground" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
       <SEOHead title="Privacy Policy – OPollMarket" description="Learn how OPollMarket collects, uses, and protects your personal data. Our privacy policy covers data security, cookies, and your rights." path="/privacy" />
       <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">

@@ -7,7 +7,7 @@ const Terms = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24">
+    <div className="min-h-screen bg-background text-foreground" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
       <SEOHead title="Terms & Conditions – OPollMarket" description="Read the Terms & Conditions governing your use of OPollMarket prediction markets, trading rules, fees, and user responsibilities." path="/terms" />
       <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
