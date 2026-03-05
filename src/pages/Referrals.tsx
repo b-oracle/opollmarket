@@ -30,7 +30,8 @@ const Referrals = () => {
         .select("display_name")
         .eq("id", user.id)
         .single();
-      return data?.display_name || null;
+      // Fall back to auth metadata if profiles table doesn't have it yet
+      return data?.display_name || user.user_metadata?.display_name || null;
     },
     enabled: !!user,
   });
