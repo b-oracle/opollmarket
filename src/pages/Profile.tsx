@@ -1,7 +1,7 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import useAnalytics from "@/hooks/useAnalytics";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import DepositWithdrawModal from "@/components/DepositWithdrawModal";
@@ -47,7 +47,9 @@ const Profile = () => {
   const { user, loading: authLoading, isAdmin } = useAuth();
   const { balance, bonusBalance } = useUserBalance();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { track } = useAnalytics();
+  const walletSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { track("page_view", { page: "profile" }); }, []);
   const queryClient = useQueryClient();
@@ -117,6 +119,15 @@ const Profile = () => {
       })();
     }
   }, [user, isConnected, address, profile]);
+
+  // Auto-scroll to wallet section when coming from /create
+  useEffect(() => {
+    if (searchParams.get("section") === "wallet" && walletSectionRef.current) {
+      setTimeout(() => {
+        walletSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 500);
+    }
+  }, [searchParams, profile]);
 
   const fetchWalletNfts = async () => {
     const walletAddr = savedWallet || address;
@@ -478,7 +489,7 @@ const Profile = () => {
         </div>
 
         {/* Wallet Management */}
-        <div className="mb-6">
+        <div ref={walletSectionRef} className="mb-6">
           <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">BSC Wallet</h3>
           <div className="glass rounded-xl p-4">
             {isConnected || savedWallet ? (
