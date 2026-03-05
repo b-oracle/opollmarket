@@ -28,8 +28,8 @@ const AdminSettings = () => {
         setAdminFee(String(data.admin_fee_percent));
         setCreatorFee(String(data.creator_fee_percent));
         setReferralReward(String(data.referral_reward_amount ?? 5));
-        setMinTokenBalance(String((data as any).min_token_balance ?? 10000000));
-        setMinNftBalance(String((data as any).min_nft_balance ?? 1));
+        setMinTokenBalance(String(data.min_token_balance ?? 10000000));
+        setMinNftBalance(String(data.min_nft_balance ?? 1));
         setSettingsId(data.id);
       }
       if (error) console.error(error);
@@ -65,7 +65,7 @@ const AdminSettings = () => {
           min_nft_balance: nftNum,
           updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
-        } as any)
+        })
         .eq("id", settingsId);
       if (error) throw error;
       toast.success("Commission settings saved");
