@@ -348,8 +348,8 @@ const SwapModal = ({ open, onClose, tokenContractAddress }: SwapModalProps) => {
                       <span className="flex-1 text-2xl font-bold text-foreground">
                         {quoteLoading ? "..." : formattedEstimate}
                       </span>
-                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted shrink-0 min-w-[100px] justify-center">
-                        <img src={bc400Logo} alt="BC400" className="w-5 h-5 rounded-full object-cover" />
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted shrink-0 min-w-[90px] justify-center">
+                        <img src={bc400Logo} alt="BC400" className="w-5 h-5 rounded-full object-contain" />
                         <span className="text-sm font-bold text-foreground">BC400</span>
                       </div>
                     </div>
