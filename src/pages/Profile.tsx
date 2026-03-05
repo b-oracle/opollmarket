@@ -292,7 +292,8 @@ const Profile = () => {
               />
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-                className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-sm mx-auto glass-strong rounded-2xl p-5 z-50 max-h-[85vh] overflow-y-auto"
+                className="fixed inset-4 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md glass-strong rounded-2xl p-5 z-50 overflow-y-auto flex flex-col"
+                style={{ maxHeight: "calc(100dvh - 2rem)" }}
               >
                 <h3 className="text-sm font-bold mb-4">Edit Profile</h3>
                 <div className="space-y-3">
@@ -351,7 +352,7 @@ const Profile = () => {
                           ) : walletNfts.length === 0 ? (
                             <p className="text-xs text-muted-foreground text-center py-4">No NFTs found</p>
                           ) : (
-                            <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto">
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-36 overflow-y-auto">
                               {walletNfts.map((nft) => (
                                 <Tooltip key={`${nft.token_address}-${nft.token_id}`}>
                                   <TooltipTrigger asChild>
