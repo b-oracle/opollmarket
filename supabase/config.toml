@@ -21,3 +21,5 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.og-image]
     verify_jwt = false
+  [functions.faq-ai]
+    verify_jwt = false
