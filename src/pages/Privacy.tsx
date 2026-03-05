@@ -2,6 +2,24 @@ import SEOHead from "@/components/SEOHead";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BackToTop from "@/components/BackToTop";
+import LegalTableOfContents from "@/components/LegalTableOfContents";
+
+const tocItems = [
+  { id: "introduction", label: "Introduction" },
+  { id: "info-collect", label: "Information We Collect" },
+  { id: "how-use", label: "How We Use Your Information" },
+  { id: "ai-processing", label: "AI & Automated Processing" },
+  { id: "data-sharing", label: "Data Sharing & Disclosure" },
+  { id: "blockchain-data", label: "Blockchain Data & Public Information" },
+  { id: "data-security", label: "Data Security" },
+  { id: "cookies", label: "Cookies & Local Storage" },
+  { id: "your-rights", label: "Your Rights" },
+  { id: "data-retention", label: "Data Retention" },
+  { id: "international", label: "International Data Transfers" },
+  { id: "children", label: "Children's Privacy" },
+  { id: "changes", label: "Changes to This Policy" },
+  { id: "contact", label: "Contact Us" },
+];
 
 const Privacy = () => {
   const navigate = useNavigate();
@@ -19,13 +37,15 @@ const Privacy = () => {
       </div>
 
       <div className="max-w-lg mx-auto px-4 pt-6 space-y-6 text-sm text-muted-foreground leading-relaxed">
-        <section className="space-y-2">
+        <LegalTableOfContents items={tocItems} />
+
+        <section id="introduction" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">1. Introduction</h2>
           <p>OPollMarket ("we," "us," "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, share, and protect your personal information when you use the OPollMarket platform ("Platform"), including our website, mobile applications, and all related services.</p>
           <p>By using the Platform, you consent to the data practices described in this policy. If you do not agree with this policy, please do not use the Platform.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="info-collect" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">2. Information We Collect</h2>
           <p className="font-medium text-foreground">2.1 Information You Provide Directly</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -52,7 +72,7 @@ const Privacy = () => {
           </ul>
         </section>
 
-        <section className="space-y-2">
+        <section id="how-use" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">3. How We Use Your Information</h2>
           <p>We process your information for the following purposes:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -68,7 +88,7 @@ const Privacy = () => {
           </ul>
         </section>
 
-        <section className="space-y-2">
+        <section id="ai-processing" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">4. AI & Automated Processing</h2>
           <p>The Platform employs AI-powered automated systems for the following purposes:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -79,7 +99,7 @@ const Privacy = () => {
           <p>Automated moderation decisions that result in content rejection or account restrictions are subject to human review upon request. Moderation logs are retained for accountability and dispute resolution purposes.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="data-sharing" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">5. Data Sharing & Disclosure</h2>
           <p><strong>We do not sell, rent, or trade your personal data to third parties for marketing purposes.</strong></p>
           <p>We may share your information in the following circumstances:</p>
@@ -92,7 +112,7 @@ const Privacy = () => {
           </ul>
         </section>
 
-        <section className="space-y-2">
+        <section id="blockchain-data" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">6. Blockchain Data & Public Information</h2>
           <p>You acknowledge that:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -103,7 +123,7 @@ const Privacy = () => {
           </ul>
         </section>
 
-        <section className="space-y-2">
+        <section id="data-security" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">7. Data Security</h2>
           <p>We implement industry-standard technical and organizational measures to protect your information, including:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -117,7 +137,7 @@ const Privacy = () => {
           <p>Despite these measures, no system is 100% secure. We cannot guarantee absolute security of your data. You are responsible for maintaining the security of your account credentials and connected wallets.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="cookies" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">8. Cookies & Local Storage</h2>
           <p>The Platform uses the following browser storage technologies:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -128,7 +148,7 @@ const Privacy = () => {
           <p>You can control cookie settings through your browser. Disabling essential cookies may prevent you from using certain Platform features.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="your-rights" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">9. Your Rights</h2>
           <p>Depending on your jurisdiction (including under GDPR, CCPA, and similar regulations), you may have the following rights regarding your personal data:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -144,7 +164,7 @@ const Privacy = () => {
           <p>To exercise any of these rights, contact us through the Platform's support channels. We will respond within the timeframe required by applicable law (typically 30 days). Identity verification may be required before processing requests.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="data-retention" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">10. Data Retention</h2>
           <p>We retain your personal data according to the following principles:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -156,17 +176,17 @@ const Privacy = () => {
           </ul>
         </section>
 
-        <section className="space-y-2">
+        <section id="international" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">11. International Data Transfers</h2>
           <p>Your data may be processed and stored in jurisdictions outside your country of residence where our servers and service providers are located. We ensure appropriate safeguards are in place for international data transfers, including standard contractual clauses and data processing agreements that comply with applicable data protection regulations.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="children" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">12. Children's Privacy</h2>
           <p>The Platform is not intended for users under 18 years of age. We do not knowingly collect personal information from minors. If we become aware that a user under 18 has created an account or provided personal data, we will take prompt steps to delete the account and associated information. If you believe a minor has provided us with personal data, please contact us immediately.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="changes" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">13. Changes to This Policy</h2>
           <p>We may update this Privacy Policy periodically to reflect changes in our practices, legal requirements, or Platform features. Material changes will be communicated through:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -177,7 +197,7 @@ const Privacy = () => {
           <p>Your continued use of the Platform after changes take effect constitutes acceptance of the updated policy. We encourage you to review this policy periodically.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="contact" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">14. Contact Us</h2>
           <p>If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us through the Platform's support channels or via the contact information provided in the application. We aim to respond to all inquiries within 30 days.</p>
         </section>
