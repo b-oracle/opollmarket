@@ -7,7 +7,7 @@ interface EventRow {
   event_name: string;
   user_id: string | null;
   created_at: string;
-  properties: Record<string, any>;
+  properties: Record<string, any> | null;
 }
 
 const CHART_COLORS = [
