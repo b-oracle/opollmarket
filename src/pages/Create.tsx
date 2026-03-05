@@ -1214,11 +1214,37 @@ const Create = () => {
                 </div>
               </div>
 
+              {/* Fee breakdown */}
+              {feeBypass && initialLiquidity && (
+                <div className="glass rounded-xl p-4">
+                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-primary" />
+                    Cost Breakdown
+                  </h3>
+                  <div className="space-y-1.5 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Initial Liquidity</span>
+                      <span className="font-medium">${initialLiquidity} USDT</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Creation Fee <span className="text-[10px]">(non-refundable)</span></span>
+                      <span className="font-medium">${marketCreationFee} USDT</span>
+                    </div>
+                    <div className="border-t border-border pt-1.5 flex justify-between">
+                      <span className="font-semibold">Total</span>
+                      <span className="font-bold text-primary">${(parseFloat(initialLiquidity) + marketCreationFee).toFixed(2)} USDT</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Fee info */}
               <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border">
                 <AlertTriangle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                 <p className="text-xs text-muted-foreground">
-                  A 2% platform fee applies. Creators earn 1% of all trade volume. Initial liquidity will be locked until market resolution.
+                  {feeBypass
+                    ? `A $${marketCreationFee} creation fee applies since you don't hold NFT/BC400. This fee is non-refundable (unless admin cancels the market). Your market will require admin approval before going live.`
+                    : "A 2% platform fee applies. Creators earn 1% of all trade volume. Initial liquidity will be locked until market resolution."}
                 </p>
               </div>
 
