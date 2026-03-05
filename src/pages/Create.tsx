@@ -359,16 +359,21 @@ const Create = () => {
 
     setNewMarketId(data?.id || "");
     setCreatedAsPending(needsReview);
-    setSubmitStep("success");
 
-    if (feeBypass) {
-      toast.info("Your market requires admin approval. The creation fee ($" + marketCreationFee + ") is non-refundable.");
-    } else if (isFlagged) {
-      toast.warning("Your market was flagged for inappropriate content and is pending admin review.");
-    } else if (isSimilar) {
-      toast.info("Your market was flagged as similar to an existing one and is pending admin review.");
+    if (needsReview) {
+      // Pending markets go straight to success (no first prediction needed)
+      setSubmitStep("success");
+      if (feeBypass) {
+        toast.info("Your market requires admin approval. The creation fee ($" + marketCreationFee + ") is non-refundable.");
+      } else if (isFlagged) {
+        toast.warning("Your market was flagged for inappropriate content and is pending admin review.");
+      } else if (isSimilar) {
+        toast.info("Your market was flagged as similar to an existing one and is pending admin review.");
+      }
     } else {
-      toast.success("Market created successfully!");
+      // Active markets require first prediction
+      setSubmitStep("first_prediction");
+      toast.success("Market created! Now place your first prediction to make it official.");
     }
   }, [user, address, title, description, category, endDate, resolutionSource, initialLiquidity, marketType, options, feeBypass, marketCreationFee]);
 
