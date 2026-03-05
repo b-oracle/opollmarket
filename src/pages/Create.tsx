@@ -1218,7 +1218,7 @@ const Create = () => {
                 </div>
               )}
 
-              {(submitStep === "checking_similarity" || submitStep === "deploying" || submitStep === "saving") && (
+              {(submitStep === "checking_similarity" || submitStep === "moderating" || submitStep === "deploying" || submitStep === "saving") && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -1228,6 +1228,8 @@ const Create = () => {
                   <h3 className="text-base font-bold mt-3 mb-1">
                     {submitStep === "checking_similarity"
                       ? "Checking for Duplicates..."
+                      : submitStep === "moderating"
+                      ? "Moderating Content..."
                       : submitStep === "deploying"
                       ? "Deploying Contract..."
                       : "Saving to Database..."}
@@ -1235,6 +1237,8 @@ const Create = () => {
                   <p className="text-xs text-muted-foreground text-center">
                     {submitStep === "checking_similarity"
                       ? "Using AI to verify your market is unique..."
+                      : submitStep === "moderating"
+                      ? "Checking content for policy compliance..."
                       : submitStep === "deploying"
                       ? "Deploying your prediction market contract on BSC. Please confirm in your wallet."
                       : "Storing market data and linking contract address..."}
@@ -1242,6 +1246,7 @@ const Create = () => {
                   <div className="mt-4 space-y-2 w-full max-w-xs">
                     {[
                       { label: "Checking for similar markets", done: submitStep !== "checking_similarity" },
+                      { label: "Content moderation", done: submitStep !== "checking_similarity" && submitStep !== "moderating" },
                       { label: "Preparing contract", done: submitStep === "saving" },
                       { label: "Awaiting wallet signature", done: submitStep === "saving" },
                       { label: "Broadcasting transaction", done: submitStep === "saving" },
@@ -1250,7 +1255,7 @@ const Create = () => {
                       <motion.div
                         key={s.label}
                         initial={{ opacity: 0.3 }}
-                        animate={{ opacity: s.done ? 1 : submitStep === "saving" && i === 3 ? 1 : 0.3 }}
+                        animate={{ opacity: s.done ? 1 : 0.3 }}
                         transition={{ delay: i * 0.3 }}
                         className="flex items-center gap-2 text-xs"
                       >
