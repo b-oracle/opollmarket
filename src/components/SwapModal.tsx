@@ -5,6 +5,7 @@ import { useAccount, useBalance, useSendTransaction, useWaitForTransactionReceip
 import { parseEther, formatEther, formatUnits, encodeFunctionData, type Address } from "viem";
 import { toast } from "sonner";
 import bc400Logo from "@/assets/bc400-logo.jpeg";
+import bnbLogo from "@/assets/bnb-logo.png";
 
 // PancakeSwap Router V2 on BSC
 const PANCAKE_ROUTER_V2 = "0x10ED43C718714eb63d5aA57B78B54704E256024E" as Address;
@@ -317,7 +318,7 @@ const SwapModal = ({ open, onClose, tokenContractAddress }: SwapModalProps) => {
                       />
                       <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted shrink-0 min-w-[90px] justify-center">
                         <img
-                          src="https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png"
+                          src={bnbLogo}
                           alt="BNB"
                           className="w-5 h-5 rounded-full object-contain"
                         />
