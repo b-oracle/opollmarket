@@ -59,9 +59,12 @@ const Create = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  // Gate thresholds from DB
+  // Gate thresholds & settings from DB
   const [minTokenBalance, setMinTokenBalance] = useState(10_000_000);
   const [minNftBalance, setMinNftBalance] = useState(1);
+  const [tokenContractAddress, setTokenContractAddress] = useState("");
+  const [nftBuyUrl, setNftBuyUrl] = useState("");
+  const [marketCreationFee, setMarketCreationFee] = useState(50);
 
   useEffect(() => {
     (async () => {
@@ -73,6 +76,9 @@ const Create = () => {
       if (data) {
         setMinTokenBalance(Number((data as any).min_token_balance) || 10_000_000);
         setMinNftBalance(Number((data as any).min_nft_balance) || 1);
+        setTokenContractAddress((data as any).token_contract_address || "");
+        setNftBuyUrl((data as any).nft_buy_url || "");
+        setMarketCreationFee(Number((data as any).market_creation_fee) || 50);
       }
     })();
   }, []);
@@ -81,6 +87,8 @@ const Create = () => {
   const [gateChecks, setGateChecks] = useState<GateCheck[]>([]);
   const [gatePassed, setGatePassed] = useState(false);
   const [gateRunning, setGateRunning] = useState(false);
+  const [gateFinished, setGateFinished] = useState(false);
+  const [payingToCreate, setPayingToCreate] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -231,51 +239,67 @@ const Create = () => {
     toast.success("Market created successfully!");
   }, [user, address, title, description, category, endDate, resolutionSource, initialLiquidity, marketType, options]);
 
-  // Simulate token-gate verification
-  const runGateCheck = () => {
+  // Token-gate verification using wallet NFTs
+  const runGateCheck = async () => {
     setGateRunning(true);
+    setGateFinished(false);
     setGateChecks([
       { label: "Wallet Connected", icon: <Wallet className="w-4 h-4" />, status: "checking" },
       { label: "BC400 Token Balance", icon: <Coins className="w-4 h-4" />, status: "idle" },
       { label: "BC400 NFT", icon: <ImageIcon className="w-4 h-4" />, status: "idle" },
     ]);
 
-    // Step 1: Wallet
-    setTimeout(() => {
-      setGateChecks((prev) =>
-        prev.map((c, i) =>
-          i === 0
-            ? { ...c, status: "passed", detail: `${address?.slice(0, 6)}...${address?.slice(-4)}` }
-            : i === 1
-            ? { ...c, status: "checking" }
-            : c
-        )
-      );
-    }, 600);
+    // Step 1: Wallet — always passes if connected
+    await new Promise((r) => setTimeout(r, 600));
+    setGateChecks((prev) =>
+      prev.map((c, i) =>
+        i === 0
+          ? { ...c, status: "passed", detail: `${address?.slice(0, 6)}...${address?.slice(-4)}` }
+          : i === 1
+          ? { ...c, status: "checking" }
+          : c
+      )
+    );
 
-    // Step 2: Token check
-    setTimeout(() => {
-      setGateChecks((prev) =>
-        prev.map((c, i) =>
-          i === 1
-            ? { ...c, status: "passed", detail: "1,250 BC400" }
-            : i === 2
-            ? { ...c, status: "checking" }
-            : c
-        )
-      );
-    }, 1500);
+    // Step 2: Token balance check (on-chain — currently simulated as failed)
+    await new Promise((r) => setTimeout(r, 900));
+    const tokenPassed = false; // TODO: real on-chain balance check
+    setGateChecks((prev) =>
+      prev.map((c, i) =>
+        i === 1
+          ? { ...c, status: tokenPassed ? "passed" : "failed", detail: tokenPassed ? `≥ ${minTokenBalance.toLocaleString()} BC400` : "Insufficient balance" }
+          : i === 2
+          ? { ...c, status: "checking" }
+          : c
+      )
+    );
 
-    // Step 3: NFT check
-    setTimeout(() => {
-      setGateChecks((prev) =>
-        prev.map((c, i) =>
-          i === 2 ? { ...c, status: "passed", detail: "BC400 NFT #847" } : c
-        )
-      );
-      setGatePassed(true);
-      setGateRunning(false);
-    }, 2400);
+    // Step 3: NFT check via edge function
+    await new Promise((r) => setTimeout(r, 900));
+    let nftPassed = false;
+    try {
+      const { data, error } = await supabase.functions.invoke("fetch-wallet-nfts", {
+        body: { wallet_address: address },
+      });
+      if (!error && data?.nfts?.length >= minNftBalance) {
+        nftPassed = true;
+      }
+    } catch {
+      // NFT check failed
+    }
+
+    setGateChecks((prev) =>
+      prev.map((c, i) =>
+        i === 2
+          ? { ...c, status: nftPassed ? "passed" : "failed", detail: nftPassed ? `≥ ${minNftBalance} NFT found` : "No qualifying NFTs" }
+          : c
+      )
+    );
+
+    const passed = tokenPassed || nftPassed;
+    setGatePassed(passed);
+    setGateFinished(true);
+    setGateRunning(false);
   };
 
   useEffect(() => {
@@ -283,6 +307,52 @@ const Create = () => {
       runGateCheck();
     }
   }, [isConnected]);
+
+  // Pay to create market — deduct fee from balance
+  const handlePayToCreate = async () => {
+    if (!user) return;
+    setPayingToCreate(true);
+    try {
+      const { data: bal } = await supabase
+        .from("balances")
+        .select("amount")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!bal || bal.amount < marketCreationFee) {
+        toast.error(`Insufficient balance. You need $${marketCreationFee} USDT.`);
+        setPayingToCreate(false);
+        return;
+      }
+
+      const { error } = await supabase
+        .from("balances")
+        .update({ amount: bal.amount - marketCreationFee, updated_at: new Date().toISOString() })
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      // Record the transaction
+      await supabase.from("transactions").insert({
+        user_id: user.id,
+        type: "buy",
+        amount: marketCreationFee,
+        status: "confirmed",
+        side: "market_creation_fee",
+      });
+
+      toast.success("Payment successful! You can now create a market.");
+      setGatePassed(true);
+    } catch (err: any) {
+      toast.error(err.message || "Payment failed");
+    } finally {
+      setPayingToCreate(false);
+    }
+  };
+
+  const pancakeSwapUrl = tokenContractAddress
+    ? `https://pancakeswap.finance/swap?outputCurrency=${tokenContractAddress}&chain=bsc`
+    : "https://pancakeswap.finance/swap";
 
   const isFormValid =
     title.trim().length >= 10 &&
@@ -449,7 +519,7 @@ const Create = () => {
               </div>
             )}
 
-            {/* Connect wallet button */}
+            {/* Connect wallet button — when wallet not connected */}
             {!isConnected && (
               <button
                 onClick={() => navigate("/profile?section=wallet")}
@@ -458,6 +528,67 @@ const Create = () => {
                 <Wallet className="w-4 h-4" />
                 Connect Wallet in Profile Settings
               </button>
+            )}
+
+            {/* Action buttons — when gate finished but failed */}
+            {isConnected && gateFinished && !gatePassed && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-2.5 mt-2"
+              >
+                <p className="text-xs text-muted-foreground text-center mb-3">
+                  You don't meet the requirements yet. Choose an option below:
+                </p>
+
+                {/* Buy Token */}
+                <a
+                  href={pancakeSwapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold transition-all active:scale-95"
+                >
+                  <Coins className="w-4 h-4" />
+                  Buy BC400 Token
+                </a>
+
+                {/* Buy/Mint NFT */}
+                {nftBuyUrl && (
+                  <a
+                    href={nftBuyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-primary text-primary font-semibold transition-all active:scale-95 hover:bg-primary/5"
+                  >
+                    <ImageIcon className="w-4 h-4" />
+                    Mint / Buy NFT
+                  </a>
+                )}
+
+                {/* Pay to Create */}
+                <button
+                  onClick={handlePayToCreate}
+                  disabled={payingToCreate}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-border text-foreground font-semibold transition-all active:scale-95 hover:bg-muted/50 disabled:opacity-50"
+                >
+                  {payingToCreate ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <DollarSign className="w-4 h-4" />
+                  )}
+                  Pay ${marketCreationFee} to Create Market
+                </button>
+
+                {/* Retry check */}
+                <button
+                  onClick={() => { setGateChecks([]); setGateFinished(false); runGateCheck(); }}
+                  disabled={gateRunning}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ArrowRight className="w-3.5 h-3.5" />
+                  Re-check eligibility
+                </button>
+              </motion.div>
             )}
 
             {/* Requirements info */}
@@ -475,8 +606,8 @@ const Create = () => {
                   Own ≥ {minNftBalance} BC400 NFT{minNftBalance !== 1 ? "s" : ""}
                 </li>
                 <li className="flex items-center gap-2">
-                  <Sparkles className="w-3 h-3 text-primary" />
-                  Staked ≥ {Math.round(minTokenBalance * 0.05).toLocaleString()} BC400 in governance
+                  <DollarSign className="w-3 h-3 text-primary" />
+                  Pay ${marketCreationFee} USDT from your balance
                 </li>
               </ul>
             </div>
