@@ -452,7 +452,7 @@ const Create = () => {
             {/* Connect wallet button */}
             {!isConnected && (
               <button
-                onClick={() => navigate("/profile")}
+                onClick={() => navigate("/profile?section=wallet")}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold transition-all active:scale-95"
               >
                 <Wallet className="w-4 h-4" />
