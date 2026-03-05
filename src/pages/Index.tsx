@@ -52,7 +52,7 @@ const Index = () => {
   const [searchParams] = useSearchParams();
   const { data: markets = [], isLoading, isError } = useMarkets();
   const { boostedMarketIds, boostDetails } = useActiveBoosts();
-  const [filter, setFilter] = useState<"trending" | "boosted" | "new" | "all">("trending");
+  const [filter, setFilter] = useState<"trending" | "boosted" | "new" | "all">("all");
   const [boostModalMarket, setBoostModalMarket] = useState<{ id: string; title: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const { track } = useAnalytics();
@@ -99,10 +99,15 @@ const Index = () => {
     if (filter === "new") {
       return filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
+    // "all" tab: boosted first, then trending, then new (by date)
     return filtered.sort((a, b) => {
-      const aBoost = boostedMarketIds.has(a.id) ? 1 : 0;
-      const bBoost = boostedMarketIds.has(b.id) ? 1 : 0;
-      return bBoost - aBoost;
+      const aBoost = boostedMarketIds.has(a.id) ? 2 : 0;
+      const bBoost = boostedMarketIds.has(b.id) ? 2 : 0;
+      const aTrend = a.trending ? 1 : 0;
+      const bTrend = b.trending ? 1 : 0;
+      const scoreDiff = (bBoost + bTrend) - (aBoost + aTrend);
+      if (scoreDiff !== 0) return scoreDiff;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
   }, [markets, boostedMarketIds, filter, searchQuery, categoryFilter]);
 
@@ -193,10 +198,10 @@ const Index = () => {
         {/* Filter tabs */}
         <div className="flex gap-1.5 p-1 rounded-xl bg-muted/50 mb-4">
           {([
-            { key: "trending" as const, label: "🔥 Trending" },
-            { key: "boosted" as const, label: "⚡ Boosted" },
-            { key: "new" as const, label: "New", icon: true },
             { key: "all" as const, label: "All" },
+            { key: "new" as const, label: "New", icon: true },
+            { key: "boosted" as const, label: "⚡ Boosted" },
+            { key: "trending" as const, label: "🔥 Trending" },
           ]).map((tab) => (
             <button
               key={tab.key}
