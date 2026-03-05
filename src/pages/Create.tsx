@@ -158,12 +158,13 @@ const Create = () => {
   };
 
   // Submission state
-  type SubmitStep = "idle" | "checking_similarity" | "deploying" | "saving" | "success" | "error";
+  type SubmitStep = "idle" | "checking_similarity" | "moderating" | "deploying" | "saving" | "success" | "error";
   const [submitStep, setSubmitStep] = useState<SubmitStep>("idle");
   const [txHash, setTxHash] = useState("");
   const [newMarketId, setNewMarketId] = useState("");
   const [similarMarkets, setSimilarMarkets] = useState<Array<{ id: string; title: string; category: string }>>([]);
   const [createdAsPending, setCreatedAsPending] = useState(false);
+  const [moderationReason, setModerationReason] = useState("");
 
   // Save wallet address to profile when connected
   useEffect(() => {
@@ -189,8 +190,9 @@ const Create = () => {
     const liquidityAmount = parseFloat(initialLiquidity);
     setSimilarMarkets([]);
     setCreatedAsPending(false);
+    setModerationReason("");
 
-    // Step 0: AI similarity check
+    // Step 0a: AI similarity check
     setSubmitStep("checking_similarity");
     let isSimilar = false;
     try {
@@ -203,6 +205,25 @@ const Create = () => {
       }
     } catch (err) {
       console.error("Similarity check failed, proceeding:", err);
+    }
+
+    // Step 0b: AI content moderation
+    setSubmitStep("moderating");
+    let isFlagged = false;
+    try {
+      const { data: modData, error: modError } = await supabase.functions.invoke("moderate-market-content", {
+        body: {
+          title: title.trim(),
+          description: description.trim(),
+          options: marketType !== "binary" ? options.filter(o => o.trim()) : undefined,
+        },
+      });
+      if (!modError && modData?.flagged) {
+        isFlagged = true;
+        setModerationReason(modData.reason || "Content flagged by AI moderation");
+      }
+    } catch (err) {
+      console.error("Moderation check failed, proceeding:", err);
     }
 
     // Step 1: Check and deduct balance
@@ -246,8 +267,9 @@ const Create = () => {
 
     setSubmitStep("saving");
 
-    // If similar, create as pending for admin review
-    const marketStatus = isSimilar ? "pending" : "active";
+    // If similar or flagged by moderation, create as pending for admin review
+    const needsReview = isSimilar || isFlagged;
+    const marketStatus = needsReview ? "pending" : "active";
 
     // Save to database
     const { data, error } = await supabase
@@ -311,10 +333,12 @@ const Create = () => {
     }
 
     setNewMarketId(data?.id || "");
-    setCreatedAsPending(isSimilar);
+    setCreatedAsPending(needsReview);
     setSubmitStep("success");
 
-    if (isSimilar) {
+    if (isFlagged) {
+      toast.warning("Your market was flagged for inappropriate content and is pending admin review.");
+    } else if (isSimilar) {
       toast.info("Your market was flagged as similar to an existing one and is pending admin review.");
     } else {
       toast.success("Market created successfully!");
@@ -1194,7 +1218,7 @@ const Create = () => {
                 </div>
               )}
 
-              {(submitStep === "checking_similarity" || submitStep === "deploying" || submitStep === "saving") && (
+              {(submitStep === "checking_similarity" || submitStep === "moderating" || submitStep === "deploying" || submitStep === "saving") && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -1204,6 +1228,8 @@ const Create = () => {
                   <h3 className="text-base font-bold mt-3 mb-1">
                     {submitStep === "checking_similarity"
                       ? "Checking for Duplicates..."
+                      : submitStep === "moderating"
+                      ? "Moderating Content..."
                       : submitStep === "deploying"
                       ? "Deploying Contract..."
                       : "Saving to Database..."}
@@ -1211,6 +1237,8 @@ const Create = () => {
                   <p className="text-xs text-muted-foreground text-center">
                     {submitStep === "checking_similarity"
                       ? "Using AI to verify your market is unique..."
+                      : submitStep === "moderating"
+                      ? "Checking content for policy compliance..."
                       : submitStep === "deploying"
                       ? "Deploying your prediction market contract on BSC. Please confirm in your wallet."
                       : "Storing market data and linking contract address..."}
@@ -1218,6 +1246,7 @@ const Create = () => {
                   <div className="mt-4 space-y-2 w-full max-w-xs">
                     {[
                       { label: "Checking for similar markets", done: submitStep !== "checking_similarity" },
+                      { label: "Content moderation", done: submitStep !== "checking_similarity" && submitStep !== "moderating" },
                       { label: "Preparing contract", done: submitStep === "saving" },
                       { label: "Awaiting wallet signature", done: submitStep === "saving" },
                       { label: "Broadcasting transaction", done: submitStep === "saving" },
@@ -1226,7 +1255,7 @@ const Create = () => {
                       <motion.div
                         key={s.label}
                         initial={{ opacity: 0.3 }}
-                        animate={{ opacity: s.done ? 1 : submitStep === "saving" && i === 3 ? 1 : 0.3 }}
+                        animate={{ opacity: s.done ? 1 : 0.3 }}
                         transition={{ delay: i * 0.3 }}
                         className="flex items-center gap-2 text-xs"
                       >
@@ -1269,9 +1298,19 @@ const Create = () => {
                   </h3>
                   <p className="text-xs text-muted-foreground text-center mb-4">
                     {createdAsPending
-                      ? "Your market was flagged as similar to an existing one and needs admin approval before going live."
+                      ? moderationReason
+                        ? "Your market was flagged for inappropriate content and needs admin approval before going live."
+                        : "Your market was flagged as similar to an existing one and needs admin approval before going live."
                       : "Your prediction market is now live. Share it and start earning from trades!"}
                   </p>
+
+                  {/* Moderation reason */}
+                  {createdAsPending && moderationReason && (
+                    <div className="w-full mb-4 p-3 rounded-xl bg-destructive/5 border border-destructive/20">
+                      <p className="text-[10px] text-destructive uppercase tracking-wider mb-1 font-semibold">Moderation Note</p>
+                      <p className="text-xs text-muted-foreground">{moderationReason}</p>
+                    </div>
+                  )}
 
                   {/* Similar markets warning */}
                   {createdAsPending && similarMarkets.length > 0 && (
