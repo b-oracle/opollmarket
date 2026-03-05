@@ -209,7 +209,18 @@ const InlineComments = ({ marketId }: { marketId: string }) => {
         body: { content: cleanText },
       });
       if (modData?.flagged) {
-        toast.error(modData.reason || "Your comment contains inappropriate content. Please revise it.");
+        await supabase.from("moderation_logs").insert({
+          content_type: "comment",
+          content_id: marketId,
+          user_id: user.id,
+          flagged_content: cleanText,
+          reason: modData.reason || "Flagged by AI",
+          category: "profanity",
+        });
+        toast.error("Comment blocked", {
+          description: modData.reason || "Your comment contains inappropriate content. Please revise it.",
+          duration: 6000,
+        });
         setSubmitting(false);
         return;
       }
