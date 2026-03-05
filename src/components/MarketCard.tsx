@@ -266,7 +266,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             const leading = market.options!.reduce((a, b) => b.price > a.price ? b : a);
             return <span className="px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm text-sm font-bold neon-yes">{Math.round(leading.price * 100)}% Chance · {leading.label}</span>;
           })() : (
-            <span className="px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm text-sm font-bold neon-yes">{yesPercent}% chance</span>
+            <span className="px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm text-sm font-bold neon-yes">{yesPercent}% Chance</span>
           )}
         </div>
 
@@ -321,7 +321,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
               const leading = market.options!.reduce((a, b) => b.price > a.price ? b : a);
               return <span className="inline-block px-3 py-1 rounded-full bg-black/40 backdrop-blur-sm text-lg font-bold neon-yes mb-2">{Math.round(leading.price * 100)}% Chance · {leading.label}</span>;
             })() : (
-              <span className="inline-block px-3 py-1 rounded-full bg-black/40 backdrop-blur-sm text-lg font-bold neon-yes mb-2">{yesPercent}% chance</span>
+              <span className="inline-block px-3 py-1 rounded-full bg-black/40 backdrop-blur-sm text-lg font-bold neon-yes mb-2">{yesPercent}% Chance</span>
             )}
             <h3 className="text-2xl font-bold text-white mb-2 leading-tight">{market.title}</h3>
             <div className="flex items-center justify-between">
