@@ -171,6 +171,18 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Notify creator if creation fee was refunded
+    if (creationFeeRefunded > 0 && feeTxns && feeTxns.length > 0) {
+      const creatorUserId = feeTxns[0].user_id;
+      await adminClient.from("notifications").insert({
+        user_id: creatorUserId,
+        title: "Market Cancelled — Fee Refunded 💰",
+        message: `Your market "${market.title}" was cancelled by an admin. Your $${creationFeeRefunded} creation fee has been refunded to your balance.`,
+        type: "refund",
+        market_id: market_id,
+      });
+    }
+
     // Update market status
     await adminClient
       .from("markets")
