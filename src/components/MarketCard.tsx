@@ -236,8 +236,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             </div>
           ) : market.imageUrl ? (
             <div className="absolute inset-0">
-              <img src={market.imageUrl} alt="" className="w-full h-full object-cover opacity-20" />
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/40" />
+              <img src={market.imageUrl} alt="" className="w-full h-full object-cover opacity-50" />
+              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/20" />
             </div>
           ) : null}
           <div className={`absolute inset-0 ${isBoosted ? 'bg-gradient-to-br from-primary/15 via-primary/5 to-transparent' : ''}`} />
