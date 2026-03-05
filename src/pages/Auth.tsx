@@ -46,12 +46,16 @@ const Auth = () => {
         if (result.error && result.error.message?.toLowerCase().includes("load failed")) {
           result = await signIn(email, password);
         }
-        else {
-          // Remember display name for personalized greeting
-          const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", (await supabase.auth.getUser()).data.user?.id ?? "").single();
-          if (profile?.display_name) localStorage.setItem("remembered_display_name", profile.display_name);
-          toast.success("Logged in successfully!"); navigate("/"); return;
+        if (result.error) {
+          toast.error(result.error.message);
+          return;
         }
+        // Remember display name for personalized greeting
+        const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", (await supabase.auth.getUser()).data.user?.id ?? "").single();
+        if (profile?.display_name) localStorage.setItem("remembered_display_name", profile.display_name);
+        toast.success("Logged in successfully!");
+        navigate("/");
+        return;
       } else {
         // Validate referral code if provided
         if (referralCode.trim()) {
