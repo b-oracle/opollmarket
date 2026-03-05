@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin, ShieldAlert, ShieldCheck, Ban } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import BulkCSVImport from "@/components/admin/BulkCSVImport";
@@ -63,6 +63,7 @@ interface EditState {
 const AdminMarkets = () => {
   const navigate = useNavigate();
   const [markets, setMarkets] = useState<MarketRow[]>([]);
+  const [pendingMarkets, setPendingMarkets] = useState<MarketRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "active" | "resolved" | "cancelled">("all");
   const [resolveState, setResolveState] = useState<ResolveState | null>(null);
@@ -74,6 +75,8 @@ const AdminMarkets = () => {
   const titleInputRef = useRef<HTMLInputElement>(null);
   const [mktPage, setMktPage] = useState(1);
   const MKT_PAGE_SIZE = 20;
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
 
   const fetchMarkets = async () => {
     let query = supabase
@@ -86,9 +89,44 @@ const AdminMarkets = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchMarkets(); fetchTrendingScores(); setMktPage(1); }, [filter]);
+  const fetchPendingMarkets = async () => {
+    const { data } = await supabase
+      .from("markets")
+      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+    if (data) setPendingMarkets(data);
+  };
+
+  useEffect(() => { fetchMarkets(); fetchTrendingScores(); fetchPendingMarkets(); setMktPage(1); }, [filter]);
 
   const paginatedMarkets = useMemo(() => markets.slice((mktPage - 1) * MKT_PAGE_SIZE, mktPage * MKT_PAGE_SIZE), [markets, mktPage]);
+
+  const handleApprove = async (id: string) => {
+    setApprovingId(id);
+    const { error } = await supabase.from("markets").update({ status: "active" }).eq("id", id);
+    if (error) { toast.error("Failed to approve"); }
+    else { toast.success("Market approved and now live!"); fetchMarkets(); fetchPendingMarkets(); }
+    setApprovingId(null);
+  };
+
+  const handleReject = async (id: string) => {
+    if (!confirm("Reject and delete this market? The creator's liquidity will NOT be refunded automatically.")) return;
+    setRejectingId(id);
+    try {
+      const { data, error } = await supabase.functions.invoke("cancel-market", {
+        body: { market_id: id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Market rejected and refunded.`);
+      fetchMarkets();
+      fetchPendingMarkets();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to reject market");
+    }
+    setRejectingId(null);
+  };
 
   const fetchTrendingScores = async () => {
     const { data, error } = await supabase.rpc("get_trending_scores");
@@ -228,6 +266,54 @@ const AdminMarkets = () => {
           </div>
         </div>
       </div>
+
+      {/* Pending Review Section */}
+      {pendingMarkets.length > 0 && filter !== "pending" && (
+        <div className="bg-card border border-yellow-500/30 rounded-xl overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 bg-yellow-500/5 border-b border-yellow-500/20">
+            <ShieldAlert className="w-4 h-4 text-yellow-500" />
+            <h3 className="text-sm font-bold text-yellow-500">Pending Review ({pendingMarkets.length})</h3>
+            <span className="text-xs text-muted-foreground ml-2">Markets awaiting moderation approval</span>
+          </div>
+          <div className="divide-y divide-border/50">
+            {pendingMarkets.map((m) => (
+              <div key={m.id} className="p-4 flex items-start gap-4 hover:bg-muted/20 transition-colors">
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-semibold truncate">{m.title}</h4>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{m.description}</p>
+                  <div className="flex items-center gap-3 mt-2">
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{m.category}</span>
+                    <span className="text-[10px] text-muted-foreground">•</span>
+                    <span className="text-[10px] text-muted-foreground">{m.market_type}</span>
+                    <span className="text-[10px] text-muted-foreground">•</span>
+                    <span className="text-[10px] text-muted-foreground">Ends {new Date(m.end_date).toLocaleDateString()}</span>
+                    <span className="text-[10px] text-muted-foreground">•</span>
+                    <span className="text-[10px] text-muted-foreground">Created {new Date(m.created_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => handleApprove(m.id)}
+                    disabled={approvingId === m.id}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {approvingId === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handleReject(m.id)}
+                    disabled={rejectingId === m.id}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-semibold hover:bg-destructive/20 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {rejectingId === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
