@@ -1240,7 +1240,7 @@ const Create = () => {
                         ))}
                       </ul>
                     </div>
-                  )
+                  )}
                   <div className="w-full space-y-1.5 mb-4">
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">Liquidity</span>
