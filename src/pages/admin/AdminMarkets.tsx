@@ -24,6 +24,7 @@ interface MarketRow {
   resolution_source: string;
   trending: boolean;
   pinned_trending: boolean;
+  creator_wallet: string;
 }
 
 interface MarketOption {
@@ -82,7 +83,7 @@ const AdminMarkets = () => {
   const fetchMarkets = async () => {
     let query = supabase
       .from("markets")
-      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending")
+      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending, creator_wallet")
       .order("created_at", { ascending: false });
     if (filter !== "all") query = query.eq("status", filter);
     const { data, error } = await query;
@@ -95,7 +96,7 @@ const AdminMarkets = () => {
   const fetchPendingMarkets = async () => {
     const { data } = await supabase
       .from("markets")
-      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending")
+      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending, creator_wallet")
       .eq("status", "pending")
       .order("created_at", { ascending: false });
     if (data) {
@@ -122,9 +123,23 @@ const AdminMarkets = () => {
 
   const handleApprove = async (id: string) => {
     setApprovingId(id);
+    const market = pendingMarkets.find(m => m.id === id) || markets.find(m => m.id === id);
     const { error } = await supabase.from("markets").update({ status: "active" }).eq("id", id);
     if (error) { toast.error("Failed to approve"); }
-    else { toast.success("Market approved and now live!"); fetchMarkets(); fetchPendingMarkets(); }
+    else {
+      toast.success("Market approved and now live!");
+      // Notify creator to place their first prediction
+      if (market?.creator_wallet) {
+        await supabase.from("notifications").insert({
+          user_id: market.creator_wallet,
+          title: "Market Approved! 🎉",
+          message: `Your market "${market.title}" has been approved! Place your first prediction (min $5) to make it visible to everyone.`,
+          type: "info",
+          market_id: id,
+        });
+      }
+      fetchMarkets(); fetchPendingMarkets();
+    }
     setApprovingId(null);
   };
 
@@ -503,6 +518,15 @@ const AdminMarkets = () => {
                                     const { error } = await supabase.from("markets").update({ status: "active" }).eq("id", m.id);
                                     if (error) { toast.error("Failed to approve"); return; }
                                     toast.success("Market approved and now live!");
+                                    if (m.creator_wallet) {
+                                      await supabase.from("notifications").insert({
+                                        user_id: m.creator_wallet,
+                                        title: "Market Approved! 🎉",
+                                        message: `Your market "${m.title}" has been approved! Place your first prediction (min $5) to make it visible to everyone.`,
+                                        type: "info",
+                                        market_id: m.id,
+                                      });
+                                    }
                                     fetchMarkets();
                                   }}
                                   className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
