@@ -314,11 +314,11 @@ const SwapModal = ({ open, onClose, tokenContractAddress }: SwapModalProps) => {
                         className="flex-1 bg-transparent text-2xl font-bold text-foreground outline-none placeholder:text-muted-foreground/40 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                         disabled={!isConnected || swapStep !== "idle"}
                       />
-                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted shrink-0">
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted shrink-0 min-w-[90px] justify-center">
                         <img
                           src="https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png"
                           alt="BNB"
-                          className="w-5 h-5 rounded-full"
+                          className="w-5 h-5 rounded-full object-contain"
                         />
                         <span className="text-sm font-bold text-foreground">BNB</span>
                       </div>
