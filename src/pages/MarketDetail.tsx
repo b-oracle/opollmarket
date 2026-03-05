@@ -300,10 +300,14 @@ const InlineComments = ({ marketId }: { marketId: string }) => {
 const MarketDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: market, isLoading } = useMarket(id);
   const { boostDetails } = useActiveBoosts();
   const activeBoost = id ? boostDetails.get(id) : undefined;
   const { track } = useAnalytics();
+
+  const isCreator = !!(user && market && market.creatorAddress === user.id);
+  const needsFirstPrediction = isCreator && market && market.participants === 0;
 
   useEffect(() => { if (id) track("page_view", { page: "market_detail", marketId: id }); }, [id]);
 
@@ -488,6 +492,24 @@ const MarketDetail = () => {
           <div className="mb-4">
             <BoostCountdown endsAt={activeBoost.ends_at} tier={activeBoost.tier} />
           </div>
+        )}
+
+        {needsFirstPrediction && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 rounded-xl border border-primary/40 bg-primary/10 p-4 flex items-start gap-3"
+          >
+            <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+              <TrendingUp className="w-4.5 h-4.5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground">Your market is almost live!</p>
+              <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                Place your first prediction (min $5) to make this market publicly visible on the feed.
+              </p>
+            </div>
+          </motion.div>
         )}
 
         {/* Chart */}
