@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAccount, useBalance, useSendTransaction, useWaitForTransactionReceipt } from "wagmi";
 import { parseEther, formatEther, formatUnits, encodeFunctionData, type Address } from "viem";
 import { toast } from "sonner";
+import bc400Logo from "@/assets/bc400-logo.jpeg";
 
 // PancakeSwap Router V2 on BSC
 const PANCAKE_ROUTER_V2 = "0x10ED43C718714eb63d5aA57B78B54704E256024E" as Address;
@@ -347,10 +348,8 @@ const SwapModal = ({ open, onClose, tokenContractAddress }: SwapModalProps) => {
                       <span className="flex-1 text-2xl font-bold text-foreground">
                         {quoteLoading ? "..." : formattedEstimate}
                       </span>
-                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted shrink-0">
-                        <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                          <span className="text-[8px] font-bold text-primary">BC</span>
-                        </div>
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted shrink-0 min-w-[100px] justify-center">
+                        <img src={bc400Logo} alt="BC400" className="w-5 h-5 rounded-full object-cover" />
                         <span className="text-sm font-bold text-foreground">BC400</span>
                       </div>
                     </div>
