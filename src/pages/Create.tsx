@@ -156,10 +156,12 @@ const Create = () => {
   };
 
   // Submission state
-  type SubmitStep = "idle" | "deploying" | "saving" | "success" | "error";
+  type SubmitStep = "idle" | "checking_similarity" | "deploying" | "saving" | "success" | "error";
   const [submitStep, setSubmitStep] = useState<SubmitStep>("idle");
   const [txHash, setTxHash] = useState("");
   const [newMarketId, setNewMarketId] = useState("");
+  const [similarMarkets, setSimilarMarkets] = useState<Array<{ id: string; title: string; category: string }>>([]);
+  const [createdAsPending, setCreatedAsPending] = useState(false);
 
   // Save wallet address to profile when connected
   useEffect(() => {
@@ -183,6 +185,23 @@ const Create = () => {
   const handleCreateMarket = useCallback(async () => {
     if (!user || !address) return;
     const liquidityAmount = parseFloat(initialLiquidity);
+    setSimilarMarkets([]);
+    setCreatedAsPending(false);
+
+    // Step 0: AI similarity check
+    setSubmitStep("checking_similarity");
+    let isSimilar = false;
+    try {
+      const { data: simData, error: simError } = await supabase.functions.invoke("check-market-similarity", {
+        body: { title: title.trim(), description: description.trim() },
+      });
+      if (!simError && simData?.similar && simData.matches?.length > 0) {
+        isSimilar = true;
+        setSimilarMarkets(simData.matches);
+      }
+    } catch (err) {
+      console.error("Similarity check failed, proceeding:", err);
+    }
 
     // Step 1: Check and deduct balance
     setSubmitStep("deploying");
@@ -225,6 +244,9 @@ const Create = () => {
 
     setSubmitStep("saving");
 
+    // If similar, create as pending for admin review
+    const marketStatus = isSimilar ? "pending" : "active";
+
     // Save to database
     const { data, error } = await supabase
       .from("markets")
@@ -241,13 +263,13 @@ const Create = () => {
         tx_hash: mockTxHash,
         contract_address: mockContractAddr,
         market_type: marketType,
+        status: marketStatus,
       })
       .select("id")
       .maybeSingle();
 
     if (error) {
       console.error("Failed to save market:", error);
-      // Refund the deducted amount on failure
       await supabase
         .from("balances")
         .update({ amount: bal.amount, updated_at: new Date().toISOString() })
@@ -287,8 +309,14 @@ const Create = () => {
     }
 
     setNewMarketId(data?.id || "");
+    setCreatedAsPending(isSimilar);
     setSubmitStep("success");
-    toast.success("Market created successfully!");
+
+    if (isSimilar) {
+      toast.info("Your market was flagged as similar to an existing one and is pending admin review.");
+    } else {
+      toast.success("Market created successfully!");
+    }
   }, [user, address, title, description, category, endDate, resolutionSource, initialLiquidity, marketType, options]);
 
   // Token-gate verification using wallet NFTs
@@ -1122,7 +1150,7 @@ const Create = () => {
                 </div>
               )}
 
-              {(submitStep === "deploying" || submitStep === "saving") && (
+              {(submitStep === "checking_similarity" || submitStep === "deploying" || submitStep === "saving") && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -1130,16 +1158,23 @@ const Create = () => {
                 >
                   <LogoLoader size="lg" />
                   <h3 className="text-base font-bold mt-3 mb-1">
-                    {submitStep === "deploying" ? "Deploying Contract..." : "Saving to Database..."}
+                    {submitStep === "checking_similarity"
+                      ? "Checking for Duplicates..."
+                      : submitStep === "deploying"
+                      ? "Deploying Contract..."
+                      : "Saving to Database..."}
                   </h3>
                   <p className="text-xs text-muted-foreground text-center">
-                    {submitStep === "deploying"
+                    {submitStep === "checking_similarity"
+                      ? "Using AI to verify your market is unique..."
+                      : submitStep === "deploying"
                       ? "Deploying your prediction market contract on BSC. Please confirm in your wallet."
                       : "Storing market data and linking contract address..."}
                   </p>
                   <div className="mt-4 space-y-2 w-full max-w-xs">
                     {[
-                      { label: "Preparing contract", done: true },
+                      { label: "Checking for similar markets", done: submitStep !== "checking_similarity" },
+                      { label: "Preparing contract", done: submitStep === "saving" },
                       { label: "Awaiting wallet signature", done: submitStep === "saving" },
                       { label: "Broadcasting transaction", done: submitStep === "saving" },
                       { label: "Saving market data", done: false },
@@ -1173,14 +1208,46 @@ const Create = () => {
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ type: "spring", damping: 10 }}
-                    className="w-14 h-14 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center mb-3"
+                    className={`w-14 h-14 rounded-full flex items-center justify-center mb-3 ${
+                      createdAsPending
+                        ? "bg-yellow-500/20 border border-yellow-500/40"
+                        : "bg-primary/20 border border-primary/40"
+                    }`}
                   >
-                    <CheckCircle2 className="w-7 h-7 text-primary" />
+                    {createdAsPending ? (
+                      <AlertTriangle className="w-7 h-7 text-yellow-500" />
+                    ) : (
+                      <CheckCircle2 className="w-7 h-7 text-primary" />
+                    )}
                   </motion.div>
-                  <h3 className="text-base font-bold mb-1">Market Created!</h3>
+                  <h3 className="text-base font-bold mb-1">
+                    {createdAsPending ? "Market Pending Review" : "Market Created!"}
+                  </h3>
                   <p className="text-xs text-muted-foreground text-center mb-4">
-                    Your prediction market is now live. Share it and start earning from trades!
+                    {createdAsPending
+                      ? "Your market was flagged as similar to an existing one and needs admin approval before going live."
+                      : "Your prediction market is now live. Share it and start earning from trades!"}
                   </p>
+
+                  {/* Similar markets warning */}
+                  {createdAsPending && similarMarkets.length > 0 && (
+                    <div className="w-full mb-4 p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/20">
+                      <p className="text-[10px] text-yellow-600 dark:text-yellow-400 uppercase tracking-wider mb-2 font-semibold">Similar existing markets</p>
+                      <ul className="space-y-1.5">
+                        {similarMarkets.map((m) => (
+                          <li key={m.id} className="text-xs text-muted-foreground flex items-start gap-2">
+                            <span className="text-yellow-500 mt-0.5">•</span>
+                            <button
+                              onClick={() => navigate(`/market/${m.id}`)}
+                              className="text-left hover:text-foreground transition-colors"
+                            >
+                              {m.title}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   <div className="w-full space-y-1.5 mb-4">
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">Liquidity</span>

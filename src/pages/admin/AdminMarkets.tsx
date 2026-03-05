@@ -63,7 +63,7 @@ const AdminMarkets = () => {
   const navigate = useNavigate();
   const [markets, setMarkets] = useState<MarketRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "active" | "resolved" | "cancelled">("all");
+  const [filter, setFilter] = useState<"all" | "pending" | "active" | "resolved" | "cancelled">("all");
   const [resolveState, setResolveState] = useState<ResolveState | null>(null);
   const [resolving, setResolving] = useState(false);
   const [editState, setEditState] = useState<EditState | null>(null);
@@ -209,7 +209,7 @@ const AdminMarkets = () => {
             Create Market
           </button>
           <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
-            {(["all", "active", "resolved", "cancelled"] as const).map((f) => (
+            {(["all", "pending", "active", "resolved", "cancelled"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => { setLoading(true); setFilter(f); }}
@@ -346,15 +346,31 @@ const AdminMarkets = () => {
                               >
                                 <Pencil className="w-4 h-4" />
                               </button>
-                              {m.status === "active" && (
+                              {m.status === "pending" && (
+                                <button
+                                  onClick={async () => {
+                                    const { error } = await supabase.from("markets").update({ status: "active" }).eq("id", m.id);
+                                    if (error) { toast.error("Failed to approve"); return; }
+                                    toast.success("Market approved and now live!");
+                                    fetchMarkets();
+                                  }}
+                                  className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+                                  title="Approve Market"
+                                >
+                                  <Check className="w-4 h-4" />
+                                </button>
+                              )}
+                              {(m.status === "active" || m.status === "pending") && (
                                 <>
-                                  <button
-                                    onClick={() => openResolveModal(m)}
-                                    className="p-1.5 rounded-lg hover:bg-green-500/10 text-green-500 transition-colors"
-                                    title="Resolve Market"
-                                  >
-                                    <Gavel className="w-4 h-4" />
-                                  </button>
+                                  {m.status === "active" && (
+                                    <button
+                                      onClick={() => openResolveModal(m)}
+                                      className="p-1.5 rounded-lg hover:bg-green-500/10 text-green-500 transition-colors"
+                                      title="Resolve Market"
+                                    >
+                                      <Gavel className="w-4 h-4" />
+                                    </button>
+                                  )}
                                   <button
                                     onClick={() => handleCancel(m.id)}
                                     className="p-1.5 rounded-lg hover:bg-yellow-500/10 text-yellow-500 transition-colors"
