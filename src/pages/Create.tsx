@@ -1298,9 +1298,19 @@ const Create = () => {
                   </h3>
                   <p className="text-xs text-muted-foreground text-center mb-4">
                     {createdAsPending
-                      ? "Your market was flagged as similar to an existing one and needs admin approval before going live."
+                      ? moderationReason
+                        ? "Your market was flagged for inappropriate content and needs admin approval before going live."
+                        : "Your market was flagged as similar to an existing one and needs admin approval before going live."
                       : "Your prediction market is now live. Share it and start earning from trades!"}
                   </p>
+
+                  {/* Moderation reason */}
+                  {createdAsPending && moderationReason && (
+                    <div className="w-full mb-4 p-3 rounded-xl bg-destructive/5 border border-destructive/20">
+                      <p className="text-[10px] text-destructive uppercase tracking-wider mb-1 font-semibold">Moderation Note</p>
+                      <p className="text-xs text-muted-foreground">{moderationReason}</p>
+                    </div>
+                  )}
 
                   {/* Similar markets warning */}
                   {createdAsPending && similarMarkets.length > 0 && (
