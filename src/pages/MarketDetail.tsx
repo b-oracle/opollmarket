@@ -512,7 +512,7 @@ const MarketDetail = () => {
           } : undefined}
         >
           <div className="h-40 md:h-52 w-full overflow-hidden">
-            <img src={market.imageUrl} alt={market.title} className="w-full h-full object-cover opacity-60 md:opacity-40 scale-110 will-change-transform" style={{ transform: `scale(1.1) translateY(${scrollY * 0.15}px)` }} />
+            <img src={market.imageUrl} alt={market.title} className="w-full h-full object-cover opacity-30 md:opacity-20 scale-110 will-change-transform" style={{ transform: `scale(1.1) translateY(${scrollY * 0.15}px)` }} />
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-black/40 md:from-black/90 md:via-black/70 md:to-black/50" />
           <div className="absolute inset-0 pointer-events-none banner-shimmer" />
