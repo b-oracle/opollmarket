@@ -114,19 +114,24 @@ const FAQ = () => {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 pt-6">
-        <Accordion type="single" collapsible className="space-y-2">
-          {faqItems.map((item, i) => (
-            <AccordionItem key={i} value={`faq-${i}`} className="glass rounded-xl border-none px-4">
-              <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline py-4">
-                {item.question}
-              </AccordionTrigger>
-              <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-4">
-                {item.answer}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+      <div className="max-w-lg mx-auto px-4 pt-6 space-y-6">
+        {faqSections.map((section, si) => (
+          <div key={si}>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 px-1">{section.title}</h2>
+            <Accordion type="single" collapsible className="space-y-2">
+              {section.items.map((item, i) => (
+                <AccordionItem key={i} value={`faq-${si}-${i}`} className="glass rounded-xl border-none px-4">
+                  <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline py-4">
+                    {item.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-4 whitespace-pre-line">
+                    {item.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+        ))}
       </div>
       <BackToTop />
     </div>
