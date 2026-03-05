@@ -1,14 +1,15 @@
 import { http, createConfig } from 'wagmi';
 import { bsc } from 'wagmi/chains';
-import { injected } from 'wagmi/connectors';
+import { injected, walletConnect } from 'wagmi/connectors';
 
-// WalletConnect is disabled until a valid project ID is configured.
-// To enable, get a project ID from https://cloud.walletconnect.com
-// and set it here or as a secret.
+const walletConnectProjectId = '6c625cc1764d2b59af4ebb27a7253cc7';
 
 export const config = createConfig({
   chains: [bsc],
-  connectors: [injected()],
+  connectors: [
+    injected(),
+    walletConnect({ projectId: walletConnectProjectId }),
+  ],
   transports: {
     [bsc.id]: http(),
   },
