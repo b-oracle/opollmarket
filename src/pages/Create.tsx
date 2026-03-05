@@ -182,7 +182,40 @@ const Create = () => {
 
   const handleCreateMarket = useCallback(async () => {
     if (!user || !address) return;
+    const liquidityAmount = parseFloat(initialLiquidity);
+
+    // Step 1: Check and deduct balance
     setSubmitStep("deploying");
+
+    const { data: bal, error: balError } = await supabase
+      .from("balances")
+      .select("amount")
+      .eq("user_id", user.id)
+      .single();
+
+    if (balError || !bal) {
+      setSubmitStep("error");
+      toast.error("Could not fetch your balance");
+      return;
+    }
+
+    if (bal.amount < liquidityAmount) {
+      setSubmitStep("error");
+      toast.error(`Insufficient balance. You need $${liquidityAmount} USDT but have $${bal.amount.toFixed(2)}.`);
+      return;
+    }
+
+    // Deduct initial liquidity from creator's balance
+    const { error: deductError } = await supabase
+      .from("balances")
+      .update({ amount: bal.amount - liquidityAmount, updated_at: new Date().toISOString() })
+      .eq("user_id", user.id);
+
+    if (deductError) {
+      setSubmitStep("error");
+      toast.error("Failed to deduct liquidity from your balance");
+      return;
+    }
 
     // Simulate on-chain contract deployment
     await new Promise((r) => setTimeout(r, 2500));
@@ -192,7 +225,7 @@ const Create = () => {
 
     setSubmitStep("saving");
 
-    // Save to database — use user.id as creator_wallet for RLS compliance
+    // Save to database
     const { data, error } = await supabase
       .from("markets")
       .insert({
@@ -203,8 +236,8 @@ const Create = () => {
         category,
         end_date: endDate,
         resolution_source: resolutionSource.trim(),
-        initial_liquidity: parseFloat(initialLiquidity),
-        liquidity: parseFloat(initialLiquidity),
+        initial_liquidity: liquidityAmount,
+        liquidity: liquidityAmount,
         tx_hash: mockTxHash,
         contract_address: mockContractAddr,
         market_type: marketType,
@@ -214,10 +247,25 @@ const Create = () => {
 
     if (error) {
       console.error("Failed to save market:", error);
+      // Refund the deducted amount on failure
+      await supabase
+        .from("balances")
+        .update({ amount: bal.amount, updated_at: new Date().toISOString() })
+        .eq("user_id", user.id);
       setSubmitStep("error");
-      toast.error("Failed to save market to database");
+      toast.error("Failed to save market. Your balance has been refunded.");
       return;
     }
+
+    // Record the liquidity transaction
+    await supabase.from("transactions").insert({
+      user_id: user.id,
+      type: "buy",
+      amount: liquidityAmount,
+      market_id: data?.id,
+      status: "confirmed",
+      side: "initial_liquidity",
+    });
 
     // Save options for multi/range markets
     if (marketType !== "binary" && data?.id) {
