@@ -413,6 +413,51 @@ export type Database = {
           },
         ]
       }
+      moderation_logs: {
+        Row: {
+          admin_note: string | null
+          category: string | null
+          content_id: string | null
+          content_type: string
+          created_at: string
+          flagged_content: string | null
+          id: string
+          reason: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          admin_note?: string | null
+          category?: string | null
+          content_id?: string | null
+          content_type: string
+          created_at?: string
+          flagged_content?: string | null
+          id?: string
+          reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          admin_note?: string | null
+          category?: string | null
+          content_id?: string | null
+          content_type?: string
+          created_at?: string
+          flagged_content?: string | null
+          id?: string
+          reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
