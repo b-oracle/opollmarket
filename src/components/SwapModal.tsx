@@ -318,7 +318,7 @@ const SwapModal = ({ open, onClose, tokenContractAddress }: SwapModalProps) => {
                       />
                       <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted shrink-0 min-w-[90px] justify-center">
                         <img
-                          src="https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png"
+                          src={bnbLogo}
                           alt="BNB"
                           className="w-5 h-5 rounded-full object-contain"
                         />
