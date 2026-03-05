@@ -68,6 +68,22 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
   // Real hooks for like, bookmark, comments
   const { user } = useAuth();
+  const { data: creatorProfile } = useQuery({
+    queryKey: ["creator-wallet", market.creatorAddress],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("wallet_address")
+        .eq("id", market.creatorAddress)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!market.creatorAddress,
+    staleTime: 5 * 60 * 1000,
+  });
+  const creatorLabel = creatorProfile?.wallet_address
+    ? truncateAddr(creatorProfile.wallet_address)
+    : `@${market.creatorName}`;
   const { liked, likeCount, toggleLike } = useMarketLike(market.id);
   const { bookmarked, toggleBookmark } = useBookmark(market.id);
   const [betModal, setBetModal] = useState<{ open: boolean; side: "yes" | "no"; optionLabel?: string; optionPrice?: number; optionColor?: string }>({ open: false, side: "yes" });
