@@ -239,51 +239,67 @@ const Create = () => {
     toast.success("Market created successfully!");
   }, [user, address, title, description, category, endDate, resolutionSource, initialLiquidity, marketType, options]);
 
-  // Simulate token-gate verification
-  const runGateCheck = () => {
+  // Token-gate verification using wallet NFTs
+  const runGateCheck = async () => {
     setGateRunning(true);
+    setGateFinished(false);
     setGateChecks([
       { label: "Wallet Connected", icon: <Wallet className="w-4 h-4" />, status: "checking" },
       { label: "BC400 Token Balance", icon: <Coins className="w-4 h-4" />, status: "idle" },
       { label: "BC400 NFT", icon: <ImageIcon className="w-4 h-4" />, status: "idle" },
     ]);
 
-    // Step 1: Wallet
-    setTimeout(() => {
-      setGateChecks((prev) =>
-        prev.map((c, i) =>
-          i === 0
-            ? { ...c, status: "passed", detail: `${address?.slice(0, 6)}...${address?.slice(-4)}` }
-            : i === 1
-            ? { ...c, status: "checking" }
-            : c
-        )
-      );
-    }, 600);
+    // Step 1: Wallet — always passes if connected
+    await new Promise((r) => setTimeout(r, 600));
+    setGateChecks((prev) =>
+      prev.map((c, i) =>
+        i === 0
+          ? { ...c, status: "passed", detail: `${address?.slice(0, 6)}...${address?.slice(-4)}` }
+          : i === 1
+          ? { ...c, status: "checking" }
+          : c
+      )
+    );
 
-    // Step 2: Token check
-    setTimeout(() => {
-      setGateChecks((prev) =>
-        prev.map((c, i) =>
-          i === 1
-            ? { ...c, status: "passed", detail: "1,250 BC400" }
-            : i === 2
-            ? { ...c, status: "checking" }
-            : c
-        )
-      );
-    }, 1500);
+    // Step 2: Token balance check (on-chain — currently simulated as failed)
+    await new Promise((r) => setTimeout(r, 900));
+    const tokenPassed = false; // TODO: real on-chain balance check
+    setGateChecks((prev) =>
+      prev.map((c, i) =>
+        i === 1
+          ? { ...c, status: tokenPassed ? "passed" : "failed", detail: tokenPassed ? `≥ ${minTokenBalance.toLocaleString()} BC400` : "Insufficient balance" }
+          : i === 2
+          ? { ...c, status: "checking" }
+          : c
+      )
+    );
 
-    // Step 3: NFT check
-    setTimeout(() => {
-      setGateChecks((prev) =>
-        prev.map((c, i) =>
-          i === 2 ? { ...c, status: "passed", detail: "BC400 NFT #847" } : c
-        )
-      );
-      setGatePassed(true);
-      setGateRunning(false);
-    }, 2400);
+    // Step 3: NFT check via edge function
+    await new Promise((r) => setTimeout(r, 900));
+    let nftPassed = false;
+    try {
+      const { data, error } = await supabase.functions.invoke("fetch-wallet-nfts", {
+        body: { wallet_address: address },
+      });
+      if (!error && data?.nfts?.length >= minNftBalance) {
+        nftPassed = true;
+      }
+    } catch {
+      // NFT check failed
+    }
+
+    setGateChecks((prev) =>
+      prev.map((c, i) =>
+        i === 2
+          ? { ...c, status: nftPassed ? "passed" : "failed", detail: nftPassed ? `≥ ${minNftBalance} NFT found` : "No qualifying NFTs" }
+          : c
+      )
+    );
+
+    const passed = tokenPassed || nftPassed;
+    setGatePassed(passed);
+    setGateFinished(true);
+    setGateRunning(false);
   };
 
   useEffect(() => {
