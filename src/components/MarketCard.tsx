@@ -402,7 +402,12 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           )}
 
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-bold neon-yes">{yesPercent}% chance</span>
+            {isMulti && market.options?.length ? (() => {
+              const leading = market.options.reduce((a, b) => b.price > a.price ? b : a);
+              return <span className="text-sm font-bold neon-yes">{Math.round(leading.price * 100)}% chance · {leading.label}</span>;
+            })() : (
+              <span className="text-sm font-bold neon-yes">{yesPercent}% chance</span>
+            )}
           </div>
 
           <h2
