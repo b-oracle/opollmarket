@@ -660,20 +660,22 @@ const Create = () => {
                 <h3 className="text-sm font-bold">Wallet Connection Required</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   To connect your wallet, please open this page in a{" "}
-                  <span className="font-semibold text-foreground">wallet browser</span> (MetaMask, Trust Wallet, SafePal, Coinbase Wallet) or use a{" "}
-                  <span className="font-semibold text-foreground">desktop browser</span> with a Web3 wallet extension installed.
-                </p>
-                <div className="flex flex-wrap justify-center gap-2 pt-1">
-                  {[
-                    { name: "MetaMask", emoji: "🦊" },
-                    { name: "Trust Wallet", emoji: "🛡️" },
-                    { name: "SafePal", emoji: "🔐" },
-                    { name: "Coinbase", emoji: "🔵" },
-                  ].map((w) => (
-                    <span key={w.name} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-muted/50 border border-border text-[10px] font-medium text-muted-foreground">
-                      <span>{w.emoji}</span> {w.name}
-                    </span>
-                  ))}
+                   <span className="font-semibold text-foreground">wallet browser</span> (MetaMask, Trust Wallet, SafePal, Coinbase Wallet, Rabby, Binance Wallet) or use a{" "}
+                   <span className="font-semibold text-foreground">desktop browser</span> with a Web3 wallet extension installed.
+                 </p>
+                 <div className="flex flex-wrap justify-center gap-2 pt-1">
+                   {[
+                     { name: "MetaMask", emoji: "🦊" },
+                     { name: "Trust Wallet", emoji: "🛡️" },
+                     { name: "SafePal", emoji: "🔐" },
+                     { name: "Coinbase", emoji: "🔵" },
+                     { name: "Rabby", emoji: "🐰" },
+                     { name: "Binance", emoji: "🟡" },
+                   ].map((w) => (
+                     <span key={w.name} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-muted/50 border border-border text-[10px] font-medium text-muted-foreground">
+                       <span>{w.emoji}</span> {w.name}
+                     </span>
+                   ))}
                 </div>
               </div>
             )}
