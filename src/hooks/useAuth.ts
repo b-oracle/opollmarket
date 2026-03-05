@@ -7,6 +7,7 @@ interface AuthContextValue {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  displayName: string;
   isAdmin: boolean;
   isModerator: boolean;
   hasAdminAccess: boolean;
