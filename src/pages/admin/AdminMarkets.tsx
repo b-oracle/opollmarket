@@ -63,6 +63,7 @@ interface EditState {
 const AdminMarkets = () => {
   const navigate = useNavigate();
   const [markets, setMarkets] = useState<MarketRow[]>([]);
+  const [pendingMarkets, setPendingMarkets] = useState<MarketRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "active" | "resolved" | "cancelled">("all");
   const [resolveState, setResolveState] = useState<ResolveState | null>(null);
@@ -74,6 +75,8 @@ const AdminMarkets = () => {
   const titleInputRef = useRef<HTMLInputElement>(null);
   const [mktPage, setMktPage] = useState(1);
   const MKT_PAGE_SIZE = 20;
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
 
   const fetchMarkets = async () => {
     let query = supabase
