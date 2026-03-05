@@ -83,7 +83,7 @@ const Profile = () => {
       if (!user) return null;
       const { data } = await supabase
         .from("profiles")
-        .select("wallet_address, avatar_url")
+        .select("wallet_address, avatar_url, display_name")
         .eq("id", user.id)
         .single();
       return data;
@@ -285,7 +285,13 @@ const Profile = () => {
             {user?.email ? `${user.email.slice(0, 3)}***@${user.email.split("@")[1]}` : ""}
           </p>
           <button
-            onClick={() => setEditingProfile(true)}
+            onClick={() => {
+              setEditName(profile?.display_name || authDisplayName);
+              setAvatarPreview(null);
+              setAvatarFile(null);
+              setSelectedNftUrl(null);
+              setEditingProfile(true);
+            }}
             className="mt-2 text-xs text-primary font-semibold hover:underline flex items-center gap-1"
           >
             <Pencil className="w-3 h-3" /> Edit Profile
