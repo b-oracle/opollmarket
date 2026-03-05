@@ -832,7 +832,7 @@ const Create = () => {
                 {/* No NFT or Token? Proceed with fee */}
                 <button
                   onClick={handleFeeBypass}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-border text-foreground font-semibold transition-all active:scale-95 hover:bg-muted/50"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-neon-yes text-background font-semibold transition-all active:scale-95 hover:opacity-90"
                 >
                   <DollarSign className="w-4 h-4" />
                   No NFT or BC400? No problem.
