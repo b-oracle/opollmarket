@@ -108,15 +108,15 @@ const AdminModeration = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h2 className="text-2xl font-bold">Content Moderation</h2>
+          <h2 className="text-xl sm:text-2xl font-bold">Content Moderation</h2>
           <p className="text-sm text-muted-foreground mt-1">
             Review flagged content across the platform
           </p>
         </div>
         {pendingCount > 0 && (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/20">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/20 self-start sm:self-auto">
             <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
             <span className="text-xs font-semibold text-amber-400">{pendingCount} Pending</span>
           </div>

@@ -431,7 +431,7 @@ const AdminCreateMarket = () => {
             <Tag className="w-4 h-4 text-primary" />
             Category
           </label>
-          <div className={`grid grid-cols-4 gap-2 rounded-xl ${fieldError("category") ? "ring-1 ring-destructive p-1" : ""}`}>
+          <div className={`grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-xl ${fieldError("category") ? "ring-1 ring-destructive p-1" : ""}`}>
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}

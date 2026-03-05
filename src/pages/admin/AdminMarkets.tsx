@@ -259,31 +259,31 @@ const AdminMarkets = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Markets ({markets.length})</h2>
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h2 className="text-xl sm:text-2xl font-bold">Markets ({markets.length})</h2>
+        <div className="flex items-center gap-2 flex-wrap">
           <BulkCSVImport onComplete={fetchMarkets} />
           <button
             onClick={() => navigate("/admin/create-market")}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all active:scale-95"
           >
             <Plus className="w-3.5 h-3.5" />
-            Create Market
+            Create
           </button>
-          <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
-            {(["all", "pending", "active", "resolved", "cancelled"] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => { setLoading(true); setFilter(f); }}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors capitalize ${
-                  filter === f ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
         </div>
+      </div>
+      <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 overflow-x-auto scrollbar-hide">
+        {(["all", "pending", "active", "resolved", "cancelled"] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => { setLoading(true); setFilter(f); }}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors capitalize whitespace-nowrap ${
+              filter === f ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {f}
+          </button>
+        ))}
       </div>
 
       {/* Pending Review Section */}
@@ -296,18 +296,18 @@ const AdminMarkets = () => {
           </div>
           <div className="divide-y divide-border/50">
             {pendingMarkets.map((m) => (
-              <div key={m.id} className="p-4 flex items-start gap-4 hover:bg-muted/20 transition-colors">
+              <div key={m.id} className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-start gap-3 hover:bg-muted/20 transition-colors">
                 <div className="flex-1 min-w-0">
                   <h4 className="text-sm font-semibold truncate">{m.title}</h4>
                   <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{m.description}</p>
-                  <div className="flex items-center gap-3 mt-2">
+                  <div className="flex items-center gap-2 sm:gap-3 mt-2 flex-wrap">
                     <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{m.category}</span>
                     <span className="text-[10px] text-muted-foreground">•</span>
                     <span className="text-[10px] text-muted-foreground">{m.market_type}</span>
                     <span className="text-[10px] text-muted-foreground">•</span>
                     <span className="text-[10px] text-muted-foreground">Ends {new Date(m.end_date).toLocaleDateString()}</span>
-                    <span className="text-[10px] text-muted-foreground">•</span>
-                    <span className="text-[10px] text-muted-foreground">Created {new Date(m.created_at).toLocaleDateString()}</span>
+                    <span className="text-[10px] text-muted-foreground hidden sm:inline">•</span>
+                    <span className="text-[10px] text-muted-foreground hidden sm:inline">Created {new Date(m.created_at).toLocaleDateString()}</span>
                     {feeBasedMarketIds.has(m.id) && (
                       <>
                         <span className="text-[10px] text-muted-foreground">•</span>

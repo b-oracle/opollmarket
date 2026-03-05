@@ -142,7 +142,7 @@ const AdminDashboard = () => {
       <h2 className="text-2xl font-bold">Dashboard</h2>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
         {cards.map((card) => (
           <div key={card.label} className="bg-card border border-border rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">

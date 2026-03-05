@@ -170,12 +170,12 @@ const AdminTransactions = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Transactions ({txns.length})</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h2 className="text-xl sm:text-2xl font-bold">Transactions ({txns.length})</h2>
         <button
           onClick={exportCSV}
           disabled={txns.length === 0}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50 self-start sm:self-auto"
         >
           <Download className="w-3.5 h-3.5" />
           Export CSV
@@ -183,7 +183,7 @@ const AdminTransactions = () => {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-card border border-border rounded-xl p-4">
           <div className="flex items-center gap-2 mb-1">
             <ArrowDownLeft className="w-4 h-4 text-green-500" />
@@ -208,8 +208,8 @@ const AdminTransactions = () => {
       </div>
 
       {/* Search + Filter */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="relative flex-1 min-w-0 sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
@@ -224,12 +224,12 @@ const AdminTransactions = () => {
             </button>
           )}
         </div>
-        <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 w-fit">
+        <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 overflow-x-auto scrollbar-hide">
           {(["all", "deposit", "withdrawal", "bet", "payout"] as const).map((f) => (
             <button
               key={f}
               onClick={() => { setPage(0); setFilter(f); }}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors capitalize ${
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors capitalize whitespace-nowrap ${
                 filter === f ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -237,13 +237,13 @@ const AdminTransactions = () => {
             </button>
           ))}
         </div>
-        </div>
-        <div className="flex items-center gap-1.5">
+      </div>
+      <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1">
           {(["all", "confirmed", "pending", "failed"] as const).map((s) => (
             <button
               key={s}
               onClick={() => { setPage(0); setStatusFilter(s); }}
-              className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all capitalize ${
+              className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all capitalize whitespace-nowrap ${
                 statusFilter === s
                   ? s === "confirmed" ? "bg-green-500/20 text-green-500 ring-1 ring-green-500/30"
                   : s === "pending" ? "bg-yellow-500/20 text-yellow-500 ring-1 ring-yellow-500/30"
@@ -255,7 +255,7 @@ const AdminTransactions = () => {
               {s === "confirmed" ? "✓ Confirmed" : s === "pending" ? "⏳ Pending" : s === "failed" ? "✗ Failed" : "All Status"}
             </button>
           ))}
-        </div>
+      </div>
 
       {/* Table */}
       <div className="bg-card border border-border rounded-xl overflow-hidden">
