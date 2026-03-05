@@ -316,24 +316,6 @@ const Create = () => {
 
     if (isSimilar) {
       toast.info("Your market was flagged as similar to an existing one and is pending admin review.");
-
-      // Notify all admin users about the pending market
-      const serviceSupabase = supabase;
-      const { data: adminRoles } = await serviceSupabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "admin");
-
-      if (adminRoles && adminRoles.length > 0 && data?.id) {
-        const notifications = adminRoles.map((r) => ({
-          user_id: r.user_id,
-          title: "Market Pending Review 🔍",
-          message: `A new market "${title.trim()}" was flagged as similar to an existing one and needs your approval.`,
-          type: "pending_review",
-          market_id: data.id,
-        }));
-        await serviceSupabase.from("notifications").insert(notifications);
-      }
     } else {
       toast.success("Market created successfully!");
     }
