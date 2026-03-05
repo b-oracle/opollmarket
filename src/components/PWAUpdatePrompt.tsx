@@ -14,7 +14,7 @@ const PWAUpdatePrompt = () => {
           exit={{ opacity: 0, y: 80 }}
           className="fixed bottom-20 md:bottom-6 left-0 right-0 z-[200] flex justify-center px-4"
         >
-          <div className="bg-card border border-border rounded-2xl p-4 shadow-xl flex items-center gap-3">
+          <div className="w-full max-w-sm bg-card border border-border rounded-2xl p-4 shadow-xl flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
               <RefreshCw className="w-5 h-5 text-primary" />
             </div>
