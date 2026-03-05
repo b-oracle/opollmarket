@@ -89,13 +89,30 @@ const AdminMarkets = () => {
     setLoading(false);
   };
 
+  const [feeBasedMarketIds, setFeeBasedMarketIds] = useState<Set<string>>(new Set());
+
   const fetchPendingMarkets = async () => {
     const { data } = await supabase
       .from("markets")
       .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending")
       .eq("status", "pending")
       .order("created_at", { ascending: false });
-    if (data) setPendingMarkets(data);
+    if (data) {
+      setPendingMarkets(data);
+      // Check which pending markets were created via fee bypass
+      const ids = data.map(m => m.id);
+      if (ids.length > 0) {
+        const { data: feeTxns } = await supabase
+          .from("transactions")
+          .select("market_id")
+          .in("market_id", ids)
+          .eq("side", "market_creation_fee")
+          .eq("status", "confirmed");
+        if (feeTxns) {
+          setFeeBasedMarketIds(new Set(feeTxns.map(t => t.market_id!)));
+        }
+      }
+    }
   };
 
   useEffect(() => { fetchMarkets(); fetchTrendingScores(); fetchPendingMarkets(); setMktPage(1); }, [filter]);
