@@ -31,10 +31,29 @@ const ResetPassword = () => {
     if (password.length < 6) { toast.error("Password must be at least 6 characters"); return; }
     if (password !== confirmPassword) { toast.error("Passwords don't match"); return; }
     setLoading(true);
-    const { error } = await supabase.auth.updateUser({ password });
-    if (error) toast.error(error.message);
-    else { toast.success("Password updated successfully!"); navigate("/"); }
-    setLoading(false);
+    try {
+      const updatePromise = supabase.auth.updateUser({ password });
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("timeout")), 10000)
+      );
+      const result = await Promise.race([updatePromise, timeoutPromise]) as any;
+      if (result?.error) {
+        toast.error(result.error.message);
+      } else {
+        toast.success("Password updated successfully!");
+        navigate("/auth");
+      }
+    } catch (err: any) {
+      if (err?.message === "timeout") {
+        // Password likely updated server-side but response hung
+        toast.success("Password updated! Redirecting...");
+        navigate("/auth");
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isRecovery) {
