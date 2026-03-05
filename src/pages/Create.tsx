@@ -650,6 +650,11 @@ const Create = () => {
             </div>
           </motion.div>
         </div>
+        <SwapModal
+          open={swapModalOpen}
+          onClose={() => setSwapModalOpen(false)}
+          tokenContractAddress={tokenContractAddress}
+        />
         <BottomNav />
       </div>
     );
