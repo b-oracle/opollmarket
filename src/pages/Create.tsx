@@ -185,6 +185,23 @@ const Create = () => {
   const handleCreateMarket = useCallback(async () => {
     if (!user || !address) return;
     const liquidityAmount = parseFloat(initialLiquidity);
+    setSimilarMarkets([]);
+    setCreatedAsPending(false);
+
+    // Step 0: AI similarity check
+    setSubmitStep("checking_similarity");
+    let isSimilar = false;
+    try {
+      const { data: simData, error: simError } = await supabase.functions.invoke("check-market-similarity", {
+        body: { title: title.trim(), description: description.trim() },
+      });
+      if (!simError && simData?.similar && simData.matches?.length > 0) {
+        isSimilar = true;
+        setSimilarMarkets(simData.matches);
+      }
+    } catch (err) {
+      console.error("Similarity check failed, proceeding:", err);
+    }
 
     // Step 1: Check and deduct balance
     setSubmitStep("deploying");
@@ -227,6 +244,9 @@ const Create = () => {
 
     setSubmitStep("saving");
 
+    // If similar, create as pending for admin review
+    const marketStatus = isSimilar ? "pending" : "active";
+
     // Save to database
     const { data, error } = await supabase
       .from("markets")
@@ -243,13 +263,13 @@ const Create = () => {
         tx_hash: mockTxHash,
         contract_address: mockContractAddr,
         market_type: marketType,
+        status: marketStatus,
       })
       .select("id")
       .maybeSingle();
 
     if (error) {
       console.error("Failed to save market:", error);
-      // Refund the deducted amount on failure
       await supabase
         .from("balances")
         .update({ amount: bal.amount, updated_at: new Date().toISOString() })
@@ -289,8 +309,14 @@ const Create = () => {
     }
 
     setNewMarketId(data?.id || "");
+    setCreatedAsPending(isSimilar);
     setSubmitStep("success");
-    toast.success("Market created successfully!");
+
+    if (isSimilar) {
+      toast.info("Your market was flagged as similar to an existing one and is pending admin review.");
+    } else {
+      toast.success("Market created successfully!");
+    }
   }, [user, address, title, description, category, endDate, resolutionSource, initialLiquidity, marketType, options]);
 
   // Token-gate verification using wallet NFTs
