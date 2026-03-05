@@ -123,6 +123,8 @@ const AdminBoosts = () => {
     );
   }
 
+  const paginatedBoosts = useMemo(() => boosts.slice((bstPage - 1) * BST_PAGE_SIZE, bstPage * BST_PAGE_SIZE), [boosts, bstPage]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -139,7 +141,7 @@ const AdminBoosts = () => {
         </div>
       ) : (
         <div className="space-y-3">
-          {boosts.map((boost) => (
+          {paginatedBoosts.map((boost) => (
             <div
               key={boost.id}
               className="bg-card border border-border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3"
@@ -207,6 +209,7 @@ const AdminBoosts = () => {
           ))}
         </div>
       )}
+      <AdminPagination page={bstPage} totalItems={boosts.length} pageSize={BST_PAGE_SIZE} onPageChange={setBstPage} />
     </div>
   );
 };
