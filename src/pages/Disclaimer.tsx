@@ -21,40 +21,109 @@ const Disclaimer = () => {
       <div className="max-w-lg mx-auto px-4 pt-6 space-y-6 text-sm text-muted-foreground leading-relaxed">
         <section className="space-y-2">
           <h2 className="text-base font-semibold text-foreground">General Disclaimer</h2>
-          <p>The information provided on this platform is for general informational and entertainment purposes only. Prediction markets involve financial risk, and you should not trade with funds you cannot afford to lose.</p>
+          <p>The information, services, and content provided on the OPollMarket platform ("Platform") are for general informational and entertainment purposes only. Participation in prediction markets involves financial risk, including the potential loss of your entire invested capital. You should not trade with funds you cannot afford to lose.</p>
+          <p>The Platform is provided on an "AS IS" and "AS AVAILABLE" basis. We make no representations or warranties of any kind, express or implied, regarding the accuracy, completeness, reliability, suitability, or availability of the Platform or any information contained therein.</p>
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-semibold text-foreground">No Financial Advice</h2>
-          <p>Nothing on this platform constitutes financial, investment, legal, or tax advice. Market prices reflect the collective opinion of participants and should not be interpreted as guaranteed predictions of future events. Always conduct your own research and consult qualified professionals before making financial decisions.</p>
+          <h2 className="text-base font-semibold text-foreground">No Financial, Investment, or Legal Advice</h2>
+          <p>Nothing on this Platform constitutes financial, investment, legal, tax, or any other form of professional advice. Specifically:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Market prices reflect the collective opinion of participants and are determined by an Automated Market Maker (AMM) algorithm — they are not guaranteed predictions of future events.</li>
+            <li>Percentage probabilities displayed for market outcomes represent market sentiment, not objective likelihood assessments.</li>
+            <li>Historical price charts, trading volumes, and order book data are provided for informational purposes only and should not be interpreted as buy or sell signals.</li>
+            <li>Trending market rankings, boost promotions, and featured markets do not constitute endorsements or recommendations.</li>
+          </ul>
+          <p>Always conduct your own research and consult qualified financial, legal, or tax professionals before making any financial decisions.</p>
         </section>
 
         <section className="space-y-2">
           <h2 className="text-base font-semibold text-foreground">Risk of Loss</h2>
-          <p>Trading on prediction markets carries inherent risks. You may lose some or all of the funds you invest. Past performance of markets or positions does not guarantee future results. Market liquidity, volatility, and resolution outcomes are beyond the platform's control.</p>
+          <p>Trading on prediction markets carries significant inherent risks, including but not limited to:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Capital Loss:</strong> You may lose some or all of the funds you invest. Losing shares expire worthless with no payout upon market resolution.</li>
+            <li><strong>Price Volatility:</strong> Market prices can fluctuate rapidly and unpredictably based on participant activity and external events.</li>
+            <li><strong>Liquidity Risk:</strong> Markets with low liquidity may experience significant price slippage, and you may not be able to exit positions at your desired price.</li>
+            <li><strong>AMM Mechanics:</strong> The constant-product AMM formula means that larger trades result in greater price impact. Displayed prices may differ from execution prices.</li>
+            <li><strong>Resolution Risk:</strong> Market outcomes depend on real-world events and the interpretation of resolution criteria by Platform administrators. Resolution decisions are final.</li>
+            <li><strong>Counterparty Risk:</strong> While the Platform holds user funds in managed accounts, there is inherent risk in any centralized custody arrangement.</li>
+          </ul>
+          <p className="font-medium text-foreground">Past performance of any market, position, or trading strategy does not guarantee future results.</p>
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-semibold text-foreground">Market Resolution</h2>
-          <p>Markets are resolved based on publicly available information and the resolution criteria specified at the time of market creation. While we strive for accuracy and fairness, resolution decisions are final once confirmed. Disputed resolutions will be reviewed by the platform administration team.</p>
+          <h2 className="text-base font-semibold text-foreground">Cryptocurrency & Blockchain Risks</h2>
+          <p>The Platform involves interaction with cryptocurrency and blockchain technology, which carries additional risks:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Cryptocurrency Volatility:</strong> The value of cryptocurrencies used for deposits and withdrawals (including USDT, BNB, and others) can fluctuate significantly.</li>
+            <li><strong>Transaction Irreversibility:</strong> Blockchain transactions are final and irreversible once confirmed. Sending funds to an incorrect wallet address may result in permanent loss.</li>
+            <li><strong>Network Congestion:</strong> Blockchain network congestion may cause delays in deposit confirmations, withdrawal processing, or transaction failures.</li>
+            <li><strong>Smart Contract Risk:</strong> While the Platform references on-chain interactions, any smart contract code is subject to potential vulnerabilities, bugs, or exploits.</li>
+            <li><strong>Regulatory Uncertainty:</strong> The legal status of cryptocurrencies and prediction markets varies by jurisdiction and is subject to change.</li>
+            <li><strong>Private Key Security:</strong> If you lose access to your wallet's private keys or seed phrase, you may permanently lose access to your connected assets. The Platform cannot recover lost private keys.</li>
+          </ul>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">Market Creation & Resolution</h2>
+          <p>Markets on the Platform are created by users and administrators. You should be aware that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Resolution criteria are defined at the time of market creation and may be subject to interpretation.</li>
+            <li>Markets are resolved by Platform administrators based on publicly available information and the specified resolution source.</li>
+            <li>Resolution decisions are final once confirmed. While disputed resolutions are reviewed, the administrative team's determination is binding.</li>
+            <li>Markets may be cancelled by administrators at any time, in which case all confirmed positions are refunded.</li>
+            <li>Initial trading activity (volume, participant counts) on certain markets may reflect simulated data set during market creation.</li>
+          </ul>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">AI & Automated Systems</h2>
+          <p>The Platform uses AI-powered automated systems for content moderation, market similarity detection, and trending algorithms. These systems:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>May produce false positives or false negatives in content moderation.</li>
+            <li>Do not guarantee the accuracy, appropriateness, or safety of all user-generated content.</li>
+            <li>Are supplemented by human administrative review but may not catch all violations in real time.</li>
+          </ul>
         </section>
 
         <section className="space-y-2">
           <h2 className="text-base font-semibold text-foreground">Platform Availability</h2>
-          <p>We do not guarantee uninterrupted access to the platform. Services may be temporarily unavailable due to maintenance, updates, or circumstances beyond our control. We are not liable for any losses resulting from platform downtime or technical issues.</p>
+          <p>We do not guarantee uninterrupted, continuous, or error-free access to the Platform. Services may be temporarily or permanently unavailable due to:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Scheduled or emergency maintenance and updates.</li>
+            <li>Server outages, database failures, or infrastructure issues.</li>
+            <li>Blockchain network disruptions or third-party service provider failures.</li>
+            <li>Distributed denial-of-service attacks or other security incidents.</li>
+            <li>Force majeure events (natural disasters, government actions, pandemics).</li>
+          </ul>
+          <p>We are not liable for any losses, missed opportunities, or damages resulting from Platform downtime, delays, or technical issues.</p>
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-semibold text-foreground">Third-Party Content</h2>
-          <p>This platform may contain links to third-party websites or reference external sources. We do not endorse, control, or assume responsibility for the content, privacy policies, or practices of any third-party services.</p>
+          <h2 className="text-base font-semibold text-foreground">Third-Party Services & Content</h2>
+          <p>The Platform may integrate with, link to, or reference third-party services, including but not limited to:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Cryptocurrency payment processors (NOWPayments).</li>
+            <li>Blockchain networks and wallet providers.</li>
+            <li>Social media platforms (X/Twitter, Telegram, WhatsApp) for sharing functionality.</li>
+            <li>Decentralized exchange interfaces (PancakeSwap) for token acquisition.</li>
+            <li>YouTube for embedded video content in market descriptions.</li>
+          </ul>
+          <p>We do not endorse, control, or assume responsibility for the content, privacy practices, security, or availability of any third-party services. Your use of third-party services is governed by their respective terms and policies.</p>
         </section>
 
         <section className="space-y-2">
           <h2 className="text-base font-semibold text-foreground">Regulatory Compliance</h2>
-          <p>It is your responsibility to ensure that your use of this platform complies with all applicable laws and regulations in your jurisdiction. Prediction markets may be restricted or prohibited in certain regions. By using this platform, you confirm that you are legally permitted to do so in your location.</p>
+          <p>It is your sole responsibility to determine whether your participation in prediction markets complies with all applicable laws, regulations, and restrictions in your jurisdiction. Prediction markets may be restricted, regulated, or prohibited in certain countries, states, or territories.</p>
+          <p>By using this Platform, you represent and warrant that you are legally permitted to participate in prediction markets and cryptocurrency transactions in your jurisdiction. OPollMarket does not provide legal advice regarding jurisdictional compliance and is not responsible for any legal consequences arising from your use of the Platform in violation of local laws.</p>
         </section>
 
-        <p className="text-xs text-muted-foreground/60 pt-4">Last updated: March 2026</p>
+        <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">Limitation of Liability</h2>
+          <p>To the fullest extent permitted by law, OPollMarket and its operators, affiliates, employees, and agents disclaim all liability for any direct, indirect, incidental, special, consequential, or punitive damages — including loss of profits, data, digital assets, or goodwill — arising from your use of or inability to use the Platform, regardless of the cause of action or the theory of liability.</p>
+        </section>
+
+        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: March 5, 2026</p>
       </div>
       <BackToTop />
     </div>
