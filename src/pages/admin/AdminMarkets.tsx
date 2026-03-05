@@ -24,6 +24,7 @@ interface MarketRow {
   resolution_source: string;
   trending: boolean;
   pinned_trending: boolean;
+  creator_wallet: string;
 }
 
 interface MarketOption {
@@ -82,7 +83,7 @@ const AdminMarkets = () => {
   const fetchMarkets = async () => {
     let query = supabase
       .from("markets")
-      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending")
+      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending, creator_wallet")
       .order("created_at", { ascending: false });
     if (filter !== "all") query = query.eq("status", filter);
     const { data, error } = await query;
@@ -95,7 +96,7 @@ const AdminMarkets = () => {
   const fetchPendingMarkets = async () => {
     const { data } = await supabase
       .from("markets")
-      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending")
+      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending, creator_wallet")
       .eq("status", "pending")
       .order("created_at", { ascending: false });
     if (data) {
