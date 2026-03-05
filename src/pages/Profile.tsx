@@ -232,7 +232,7 @@ const Profile = () => {
     return filteredTx.slice(start, start + TX_PER_PAGE);
   }, [filteredTx, txPage]);
 
-  const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "User";
+  const displayName = profileDisplayName || user?.user_metadata?.display_name || user?.email?.split("@")[0] || "User";
 
   if (!authLoading && !user) {
     return (

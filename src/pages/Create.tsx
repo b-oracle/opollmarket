@@ -348,7 +348,7 @@ const Create = () => {
       .from("markets")
       .insert({
         creator_wallet: user.id,
-        creator_name: user.user_metadata?.display_name || user.email?.split("@")[0] || "Anonymous",
+        creator_name: profileDisplayName || user.user_metadata?.display_name || user.email?.split("@")[0] || "Anonymous",
         title: title.trim(),
         description: description.trim(),
         details: details.trim() || null,

@@ -203,7 +203,7 @@ const BulkCSVImport = ({ onComplete }: BulkCSVImportProps) => {
           .from("markets")
           .insert({
             creator_wallet: user.id,
-            creator_name: user.user_metadata?.display_name || user.email?.split("@")[0] || "Admin",
+            creator_name: displayName,
             title: m.title,
             description: m.description,
             category: m.category,

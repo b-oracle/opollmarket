@@ -9,7 +9,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const TopBar = () => {
-  const { user, isAdmin, hasAdminAccess, signOut, loading } = useAuth();
+  const { user, isAdmin, hasAdminAccess, signOut, loading, displayName } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [showMenu, setShowMenu] = useState(false);
@@ -25,10 +25,6 @@ const TopBar = () => {
 
   const isAdminRoute = location.pathname.startsWith("/admin");
 
-  const displayName =
-    user?.user_metadata?.display_name ||
-    user?.email?.split("@")[0] ||
-    "User";
   const initial = displayName.charAt(0).toUpperCase();
 
   return (

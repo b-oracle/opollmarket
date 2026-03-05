@@ -226,7 +226,7 @@ const InlineComments = ({ marketId }: { marketId: string }) => {
         return;
       }
 
-      const authorName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Anonymous";
+      const authorName = profileDisplayName || user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Anonymous";
       const { error } = await supabase.from("comments").insert({
         market_id: marketId, parent_id: replyTo?.id || null,
         author_name: authorName, author_wallet: user?.id || null, content: cleanText,
