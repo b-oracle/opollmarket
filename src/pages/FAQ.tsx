@@ -4,54 +4,98 @@ import { useNavigate } from "react-router-dom";
 import BackToTop from "@/components/BackToTop";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
-const faqItems = [
+const faqSections = [
   {
-    question: "What is this platform?",
-    answer: "This is a prediction market platform where you can trade on the outcomes of real-world events. You buy shares in outcomes you believe will happen, and earn returns if you're correct."
+    title: "General",
+    items: [
+      { question: "What is OPollMarket?", answer: "OPollMarket is a decentralized prediction market platform that allows users to create markets, participate in predictions, provide liquidity, and earn rewards based on real-world outcomes." },
+      { question: "Who is eligible to use OPollMarket?", answer: "Any individual with access to a supported wallet or verified email login may access OPollMarket, subject to applicable laws and regulations in their jurisdiction. Users must be legally permitted to hold and transact with digital assets." },
+      { question: "How does OPollMarket differ from other platforms?", answer: "OPollMarket integrates decentralized finance principles, community-driven prediction markets, and optional market boost mechanics to enhance engagement and transparency." },
+    ],
   },
   {
-    question: "How do prediction markets work?",
-    answer: "Prediction markets allow you to buy and sell shares in the outcome of events. Each share is priced between 0¢ and 100¢, representing the market's estimated probability of that outcome occurring. If the outcome you hold shares in is resolved as correct, each share pays out 100¢."
+    title: "Account & Wallet",
+    items: [
+      { question: "How can I connect?", answer: "Users may connect via:\n• Email login (OTP verification)\n• Supported wallets (e.g., Trust Wallet, MetaMask, Bitget Wallet)" },
+      { question: "Is prior experience with cryptocurrencies required?", answer: "No. OPollMarket is designed to be accessible to both novice and experienced users, though familiarity with basic wallet operations is recommended." },
+      { question: "Is a wallet mandatory?", answer: "Yes. A digital wallet is required to deposit funds, create or participate in markets, and withdraw rewards." },
+    ],
   },
   {
-    question: "How do I place a bet?",
-    answer: "Navigate to any market, choose YES or NO (or select an option in multi-choice markets), enter the amount you'd like to wager, and confirm your trade. Your position will appear in your Portfolio."
+    title: "Deposits & Withdrawals",
+    items: [
+      { question: "What digital assets are supported?", answer: "Currently, USDC, USDT, BNB, and BC400 are supported, subject to network availability and operational requirements." },
+      { question: "How do I deposit assets?", answer: "1. Copy the provided deposit address from OPollMarket.\n2. Send supported tokens to the address.\n3. Funds will be reflected in your portfolio after blockchain confirmation." },
+      { question: "How do withdrawals work?", answer: "1. Enter your external wallet address.\n2. Confirm the transaction.\n3. Funds are transferred directly to the specified wallet." },
+      { question: "Are there fees?", answer: "Network transaction fees (gas fees) may apply, depending on the blockchain used." },
+    ],
   },
   {
-    question: "What is the minimum trade amount?",
-    answer: "The minimum trade amount is $1. There is no maximum limit, though large trades may move the market price."
+    title: "Markets",
+    items: [
+      { question: "Who may create a market?", answer: "Users meeting eligibility requirements (e.g., NFT holders or holding 10,000,000+ BC400 tokens) may create markets." },
+      { question: "What types of markets are supported?", answer: "• Political events\n• Technology and innovation\n• Cryptocurrency prices\n• Sports outcomes\n• Community milestones\n• Custom event-based questions" },
+      { question: "Can a market be edited after creation?", answer: "No. Core parameters cannot be modified once a market is live, ensuring fairness and integrity." },
+    ],
   },
   {
-    question: "How are markets resolved?",
-    answer: "Each market has a specified resolution source and end date. Once the event outcome is known, the market creator or platform administrators resolve the market based on the stated resolution criteria."
+    title: "Boosts",
+    items: [
+      { question: "What is a Boost?", answer: "A Boost is an optional mechanism to increase market visibility, attract participants, and enhance liquidity." },
+      { question: "What Boost options are available?", answer: "• Flash Boost – 12 hours\n• Standard Boost – 24 hours\n• Whale Pin – 7 days" },
+      { question: "Does a Boost affect market outcomes?", answer: "No. A Boost only increases visibility and engagement; it does not alter probabilities or outcomes." },
+    ],
   },
   {
-    question: "How do I deposit or withdraw funds?",
-    answer: "You can deposit and withdraw funds through the wallet section in your profile. Supported methods include cryptocurrency transfers. Navigate to your profile and tap the wallet balance to access deposit and withdrawal options."
+    title: "Telegram Integration",
+    items: [
+      { question: "Can I place predictions through Telegram?", answer: "Yes. Integrated bot functionality allows predictions via Telegram, linked to your OPollMarket portfolio." },
+      { question: "How does Telegram integration work?", answer: "1. Launch the prediction function from Telegram via the web app.\n2. Connect your Telegram account.\n3. A wallet is automatically generated.\n4. Copy the wallet address and transfer supported tokens.\n5. Select a market and choose an outcome.\n6. Confirm the prediction.\n\nAll transactions are synchronized with your OPollMarket portfolio." },
+    ],
   },
   {
-    question: "What fees are charged?",
-    answer: "The platform charges a small commission on winning trades. The exact fee percentage is displayed before you confirm any trade. There are no fees on losing positions."
+    title: "WhatsApp Integration",
+    items: [
+      { question: "Can predictions be made through WhatsApp?", answer: "Yes. WhatsApp integration allows for seamless participation." },
+      { question: "How does WhatsApp integration work?", answer: "1. Launch the prediction function from WhatsApp via the web app.\n2. Connect your WhatsApp account.\n3. A wallet is automatically generated.\n4. Copy the wallet address and transfer supported tokens.\n5. Select a market and choose an outcome.\n6. Confirm the prediction.\n\nAll transactions are synchronized with your OPollMarket portfolio." },
+    ],
   },
   {
-    question: "Can I create my own market?",
-    answer: "Yes! Navigate to the Create page to propose a new prediction market. You'll need to provide a clear question, resolution criteria, end date, and initial liquidity. Markets are reviewed before going live."
+    title: "Liquidity",
+    items: [
+      { question: "What is liquidity in OPollMarket?", answer: "Liquidity represents the funds supporting each market outcome, influencing price movement and probability shifts." },
+      { question: "Why is liquidity important?", answer: "Higher liquidity improves price accuracy, reduces slippage, and enhances market stability." },
+    ],
   },
   {
-    question: "What happens if a market is cancelled?",
-    answer: "If a market is cancelled or deemed invalid, all shares are refunded at their original purchase price. You will receive a full refund to your account balance."
+    title: "Leaderboard & Rankings",
+    items: [
+      { question: "What is the Leaderboard?", answer: "The Leaderboard ranks users based on prediction accuracy and profitability." },
+      { question: "Are there rewards associated with the Leaderboard?", answer: "Leaderboard recognition may include future incentives and rewards, subject to OPollMarket discretion." },
+    ],
   },
   {
-    question: "How does the referral program work?",
-    answer: "Share your unique referral link with friends. When they sign up and place their first trade, both you and your friend receive a bonus reward credited to your account balance."
+    title: "Portfolio & Shares",
+    items: [
+      { question: "What does my Portfolio display?", answer: "• Total balance\n• Active predictions\n• Shares owned\n• Realized gains\n• Unrealized PnL" },
+      { question: "What are shares?", answer: "Shares reflect your position in a specific outcome." },
+    ],
   },
   {
-    question: "What is boosting a market?",
-    answer: "Boosting increases a market's visibility by featuring it in the promoted carousel on the homepage. You can boost markets for different durations and tiers, with higher tiers offering more prominent placement."
+    title: "Resolution",
+    items: [
+      { question: "How are markets resolved?", answer: "Markets are resolved using verified, publicly available data, based on predefined rules." },
+      { question: "Who determines outcomes?", answer: "Outcomes are determined according to OPollMarket resolution protocols and trusted data sources." },
+      { question: "What happens after resolution?", answer: "Winning shares are settled automatically, and funds are credited to users' balances." },
+    ],
   },
   {
-    question: "Is my data secure?",
-    answer: "Yes. We use industry-standard encryption and security practices to protect your personal information and funds. Please review our Privacy Policy for full details on data handling."
+    title: "Security & Privacy",
+    items: [
+      { question: "Is OPollMarket secure?", answer: "Yes. The platform implements secure wallet authentication, blockchain-based settlement, and standard cybersecurity measures." },
+      { question: "Are funds custodial?", answer: "No. Funds remain under the control of users via their wallets; OPollMarket does not hold custodial access." },
+      { question: "How is user data protected?", answer: "User data is safeguarded through authentication protocols, secure infrastructure, and compliance with applicable privacy standards." },
+    ],
   },
 ];
 
@@ -70,19 +114,24 @@ const FAQ = () => {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 pt-6">
-        <Accordion type="single" collapsible className="space-y-2">
-          {faqItems.map((item, i) => (
-            <AccordionItem key={i} value={`faq-${i}`} className="glass rounded-xl border-none px-4">
-              <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline py-4">
-                {item.question}
-              </AccordionTrigger>
-              <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-4">
-                {item.answer}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+      <div className="max-w-lg mx-auto px-4 pt-6 space-y-6">
+        {faqSections.map((section, si) => (
+          <div key={si}>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 px-1">{section.title}</h2>
+            <Accordion type="single" collapsible className="space-y-2">
+              {section.items.map((item, i) => (
+                <AccordionItem key={i} value={`faq-${si}-${i}`} className="glass rounded-xl border-none px-4">
+                  <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline py-4">
+                    {item.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-4 whitespace-pre-line">
+                    {item.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+        ))}
       </div>
       <BackToTop />
     </div>
