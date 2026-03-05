@@ -16,6 +16,8 @@ interface CommentRow {
 const AdminComments = () => {
   const [comments, setComments] = useState<CommentRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cmtPage, setCmtPage] = useState(1);
+  const CMT_PAGE_SIZE = 20;
 
   const fetchComments = async () => {
     const { data, error } = await supabase

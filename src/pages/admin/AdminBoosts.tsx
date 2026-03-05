@@ -37,6 +37,8 @@ const AdminBoosts = () => {
   const [boosts, setBoosts] = useState<BoostRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [bstPage, setBstPage] = useState(1);
+  const BST_PAGE_SIZE = 20;
 
   const fetchBoosts = async () => {
     const { data, error } = await supabase

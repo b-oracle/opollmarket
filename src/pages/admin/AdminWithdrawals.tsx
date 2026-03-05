@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
+import AdminPagination from "@/components/admin/AdminPagination";
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
@@ -23,6 +24,8 @@ const statusColors: Record<string, string> = {
 const AdminWithdrawals = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [wdPage, setWdPage] = useState(1);
+  const WD_PAGE_SIZE = 20;
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [noteInput, setNoteInput] = useState("");
   const [txHashInput, setTxHashInput] = useState("");
