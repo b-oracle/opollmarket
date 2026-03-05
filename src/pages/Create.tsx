@@ -190,8 +190,9 @@ const Create = () => {
     const liquidityAmount = parseFloat(initialLiquidity);
     setSimilarMarkets([]);
     setCreatedAsPending(false);
+    setModerationReason("");
 
-    // Step 0: AI similarity check
+    // Step 0a: AI similarity check
     setSubmitStep("checking_similarity");
     let isSimilar = false;
     try {
@@ -204,6 +205,25 @@ const Create = () => {
       }
     } catch (err) {
       console.error("Similarity check failed, proceeding:", err);
+    }
+
+    // Step 0b: AI content moderation
+    setSubmitStep("moderating");
+    let isFlagged = false;
+    try {
+      const { data: modData, error: modError } = await supabase.functions.invoke("moderate-market-content", {
+        body: {
+          title: title.trim(),
+          description: description.trim(),
+          options: marketType !== "binary" ? options.filter(o => o.trim()) : undefined,
+        },
+      });
+      if (!modError && modData?.flagged) {
+        isFlagged = true;
+        setModerationReason(modData.reason || "Content flagged by AI moderation");
+      }
+    } catch (err) {
+      console.error("Moderation check failed, proceeding:", err);
     }
 
     // Step 1: Check and deduct balance
