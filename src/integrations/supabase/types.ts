@@ -702,6 +702,7 @@ export type Database = {
           volume_score: number
         }[]
       }
+      get_user_id_by_username: { Args: { _username: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -709,7 +710,19 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_valid_referral_code: { Args: { _code: string }; Returns: boolean }
+      is_valid_referral_code:
+        | {
+            Args: { _code: string }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public.is_valid_referral_code(_code => text), public.is_valid_referral_code(_code => uuid). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+          }
+        | {
+            Args: { _code: string }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public.is_valid_referral_code(_code => text), public.is_valid_referral_code(_code => uuid). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+          }
       update_trending_markets: { Args: never; Returns: undefined }
     }
     Enums: {

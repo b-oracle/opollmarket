@@ -20,7 +20,22 @@ const Referrals = () => {
 
   useEffect(() => { track("page_view", { page: "referrals" }); }, []);
 
-  const referralLink = user ? `${window.location.origin}/?ref=${user.id}` : "";
+  // Fetch profile display_name for referral link
+  const { data: profileName } = useQuery({
+    queryKey: ["profile_display_name", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", user.id)
+        .single();
+      return data?.display_name || null;
+    },
+    enabled: !!user,
+  });
+
+  const referralLink = user && profileName ? `${window.location.origin}/?ref=${encodeURIComponent(profileName)}` : "";
 
   // Fetch referral rewards
   const { data: rewards = [] } = useQuery({
