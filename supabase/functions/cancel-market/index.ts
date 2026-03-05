@@ -206,7 +206,7 @@ Deno.serve(async (req) => {
         await adminClient.from("notifications").insert({
           user_id: creatorUserId,
           title: "Market Cancelled — Fee Refunded 💰",
-          message: `Your market "${market.title}" was cancelled by an admin. Your $${creationFeeRefunded} creation fee has been refunded to your balance.`,
+          message: `Your market "${market.title}" was cancelled by the System-Mod Engine. Your $${creationFeeRefunded} creation fee has been refunded to your balance.`,
           type: "refund",
           market_id: market_id,
         });
