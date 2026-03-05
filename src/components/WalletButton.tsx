@@ -84,28 +84,28 @@ const WalletButton = () => {
                   href={`https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}`}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/50 hover:bg-accent transition-colors text-xs font-medium text-foreground"
                 >
-                  <ExternalLink className="w-3.5 h-3.5 text-primary" />
+                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 40 40" fill="none"><path d="M37.5 2.5L22.2 13.8l2.8-6.7L37.5 2.5z" fill="#E2761B" stroke="#E2761B" strokeLinecap="round" strokeLinejoin="round"/><path d="M2.5 2.5l15.1 11.5-2.6-6.9L2.5 2.5zM32.1 28.6l-4.1 6.2 8.7 2.4 2.5-8.5-7.1-.1zM.9 28.7l2.5 8.5 8.7-2.4-4.1-6.2-7.1.1z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/><path d="M11.7 17.4l-2.4 3.7 8.6.4-.3-9.3-5.9 5.2zM28.3 17.4l-6-5.3-.2 9.4 8.6-.4-2.4-3.7zM12.1 34.8l5.2-2.5-4.5-3.5-.7 6zM22.7 32.3l5.2 2.5-.7-6-4.5 3.5z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/><path d="M27.9 34.8l-5.2-2.5.4 3.4v1.4l4.8-2.3zM12.1 34.8l4.8 2.3v-1.4l.4-3.4-5.2 2.5z" fill="#D7C1B3" stroke="#D7C1B3" strokeLinecap="round" strokeLinejoin="round"/><path d="M17 26.6l-4.3-1.3 3.1-1.4 1.2 2.7zM23 26.6l1.2-2.7 3.1 1.4-4.3 1.3z" fill="#233447" stroke="#233447" strokeLinecap="round" strokeLinejoin="round"/><path d="M12.1 34.8l.7-6.2-4.8.1 4.1 6.1zM27.2 28.6l.7 6.2 4.1-6.1-4.8-.1zM30.7 21.1l-8.6.4.8 4.1 1.2-2.7 3.1 1.4 3.5-3.2zM12.7 25.3l3.1-1.4 1.2 2.7.8-4.1-8.6-.4 3.5 3.2z" fill="#CD6116" stroke="#CD6116" strokeLinecap="round" strokeLinejoin="round"/><path d="M9.2 21.1l3.6 7-.1-3.8-3.5-3.2zM27.2 24.3l-.1 3.8 3.6-7-3.5 3.2zM17.8 21.5l-.8 4.1 1 5.2.2-6.9-.4-2.4zM22.1 21.5l-.4 2.4.2 6.9 1-5.2-.8-4.1z" fill="#E4751F" stroke="#E4751F" strokeLinecap="round" strokeLinejoin="round"/><path d="M22.9 25.6l-1 5.2.7.5 4.5-3.5.1-3.8-4.3 1.6zM12.7 24l.1 3.8 4.5 3.5.7-.5-1-5.2-4.3-1.6z" fill="#F6851B" stroke="#F6851B" strokeLinecap="round" strokeLinejoin="round"/><path d="M23 37.1v-1.4l-.4-.3h-5.2l-.4.3v1.4L12.1 34.8l1.7 1.4 3.4 2.4h5.3l3.4-2.4 1.7-1.4-4.6 2.3z" fill="#C0AD9E" stroke="#C0AD9E" strokeLinecap="round" strokeLinejoin="round"/><path d="M22.7 32.3l-.7-.5h-4l-.7.5-.4 3.4.4-.3h5.2l.4.3-.2-3.4z" fill="#161616" stroke="#161616" strokeLinecap="round" strokeLinejoin="round"/><path d="M38.1 14.5l1.3-6.3L37.5 2.5 22.7 13.4l5.6 4.7 7.9 2.3 1.7-2-.7-.5 1.2-1.1-.9-.7 1.2-.9-.8-.7zM.6 8.2l1.3 6.3-.8.6 1.2.9-.9.7 1.2 1.1-.7.5 1.7 2 7.9-2.3 5.6-4.7L2.5 2.5.6 8.2z" fill="#763D16" stroke="#763D16" strokeLinecap="round" strokeLinejoin="round"/><path d="M36.2 20.4l-7.9-2.3 2.4 3.7-3.6 7 4.7-.1h7.1l-2.7-8.3zM11.7 18.1l-7.9 2.3-2.6 8.3h7.1l4.7.1-3.6-7 2.3-3.7zM22.1 21.5l.5-8.8 2.3-6.2H15l2.3 6.2.5 8.8.2 2.4v6.9h4l.1-6.9.1-2.4z" fill="#F6851B" stroke="#F6851B" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   Open in MetaMask
                 </a>
                 <a
                   href={`https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(window.location.href)}`}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/50 hover:bg-accent transition-colors text-xs font-medium text-foreground"
                 >
-                  <ExternalLink className="w-3.5 h-3.5 text-primary" />
+                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 40 40" fill="none"><path d="M20 4C11.7 4 5 10.4 5 18.7c0 5.3 8 15.7 12.8 20.2a3.2 3.2 0 004.4 0C27 34.4 35 24 35 18.7 35 10.4 28.3 4 20 4z" fill="#3375BB"/><path d="M20 8.5c-5.3 0-9.5 4.2-9.5 9.5 0 3.5 5 10.5 8.2 13.8a1.8 1.8 0 002.6 0c3.2-3.3 8.2-10.3 8.2-13.8 0-5.3-4.2-9.5-9.5-9.5z" fill="white"/><path d="M20 12l-5.5 3v6.5c0 3.2 2.3 6.2 5.5 7 3.2-.8 5.5-3.8 5.5-7V15L20 12z" fill="#3375BB"/></svg>
                   Open in Trust Wallet
                 </a>
                 <a
                   href={`https://safepal.com/dapp?url=${encodeURIComponent(window.location.href)}`}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/50 hover:bg-accent transition-colors text-xs font-medium text-foreground"
                 >
-                  <ExternalLink className="w-3.5 h-3.5 text-primary" />
+                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="8" fill="#4A21EF"/><path d="M20 8l-9 5v9c0 5.5 3.8 10.6 9 12 5.2-1.4 9-6.5 9-12v-9l-9-5z" fill="white"/><path d="M20 12.5l-5.5 3v5.5c0 3.4 2.3 6.5 5.5 7.3 3.2-.8 5.5-3.9 5.5-7.3v-5.5l-5.5-3z" fill="#4A21EF"/></svg>
                   Open in SafePal
                 </a>
                 <a
                   href={`https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(window.location.href)}`}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/50 hover:bg-accent transition-colors text-xs font-medium text-foreground"
                 >
-                  <ExternalLink className="w-3.5 h-3.5 text-primary" />
+                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="20" fill="#0052FF"/><rect x="10" y="10" width="20" height="20" rx="6" fill="white"/><rect x="15" y="17" width="4" height="6" rx="1" fill="#0052FF"/><rect x="21" y="17" width="4" height="6" rx="1" fill="#0052FF"/></svg>
                   Open in Coinbase Wallet
                 </a>
               </div>
