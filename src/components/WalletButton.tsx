@@ -65,7 +65,7 @@ const WalletButton = () => {
               initial={{ opacity: 0, y: -8, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.95 }}
-              className="absolute right-0 top-12 w-72 z-50 rounded-xl border border-primary/20 bg-card p-3 shadow-lg"
+              className="absolute right-0 top-12 w-80 z-50 rounded-xl border border-primary/20 bg-card p-3 shadow-lg"
             >
               <button
                 onClick={() => setShowHint(false)}
@@ -73,13 +73,27 @@ const WalletButton = () => {
               >
                 <X className="w-3.5 h-3.5" />
               </button>
-              <div className="flex items-start gap-2.5 pr-4">
+              <div className="flex items-start gap-2.5 pr-4 mb-3">
                 <Smartphone className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  For the best experience, open this site in your wallet's built-in browser (
-                  <span className="font-semibold text-foreground">MetaMask</span>,{" "}
-                  <span className="font-semibold text-foreground">Trust Wallet</span>, or any dApp browser).
+                  For the best experience, open this site in your wallet's built-in browser.
                 </p>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <a
+                  href={`https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}`}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/50 hover:bg-accent transition-colors text-xs font-medium text-foreground"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-primary" />
+                  Open in MetaMask
+                </a>
+                <a
+                  href={`https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(window.location.href)}`}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/50 hover:bg-accent transition-colors text-xs font-medium text-foreground"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-primary" />
+                  Open in Trust Wallet
+                </a>
               </div>
             </motion.div>
           )}
