@@ -522,7 +522,12 @@ const MarketDetail = () => {
             />
           )}
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
-            <span className="text-sm md:text-base font-bold neon-yes mb-1" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>{yesPercent}% chance</span>
+            {isMulti && market.options?.length ? (() => {
+              const leading = market.options!.reduce((a, b) => b.price > a.price ? b : a);
+              return <span className="text-sm md:text-base font-bold neon-yes mb-1" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>{Math.round(leading.price * 100)}% chance · {leading.label}</span>;
+            })() : (
+              <span className="text-sm md:text-base font-bold neon-yes mb-1" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>{yesPercent}% chance</span>
+            )}
             <h1 className="text-lg md:text-2xl font-bold text-white leading-snug" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8), 0 1px 3px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.5)' }}>{market.title}</h1>
             <p className="text-xs md:text-sm text-white/90 mt-1.5 line-clamp-2" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8), 0 0 12px rgba(0,0,0,0.5)' }}>{market.description}</p>
             <span className="text-[10px] text-white/70 font-mono mt-2 flex items-center gap-1" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>
