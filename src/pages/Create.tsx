@@ -164,6 +164,7 @@ const Create = () => {
   const [newMarketId, setNewMarketId] = useState("");
   const [similarMarkets, setSimilarMarkets] = useState<Array<{ id: string; title: string; category: string }>>([]);
   const [createdAsPending, setCreatedAsPending] = useState(false);
+  const [moderationReason, setModerationReason] = useState("");
 
   // Save wallet address to profile when connected
   useEffect(() => {
