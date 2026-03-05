@@ -119,7 +119,7 @@ const Sparkline = ({ avgPrice, currentPrice, seed }: { avgPrice: number; current
 
 const Portfolio = () => {
   const { isConnected } = useAccount();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const isAuthenticated = !!user || isConnected;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
