@@ -2,6 +2,20 @@ import SEOHead from "@/components/SEOHead";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BackToTop from "@/components/BackToTop";
+import LegalTableOfContents from "@/components/LegalTableOfContents";
+
+const tocItems = [
+  { id: "general", label: "General Disclaimer" },
+  { id: "no-advice", label: "No Financial, Investment, or Legal Advice" },
+  { id: "risk", label: "Risk of Loss" },
+  { id: "crypto-risks", label: "Cryptocurrency & Blockchain Risks" },
+  { id: "market-resolution", label: "Market Creation & Resolution" },
+  { id: "ai-systems", label: "AI & Automated Systems" },
+  { id: "availability", label: "Platform Availability" },
+  { id: "third-party", label: "Third-Party Services & Content" },
+  { id: "regulatory", label: "Regulatory Compliance" },
+  { id: "liability", label: "Limitation of Liability" },
+];
 
 const Disclaimer = () => {
   const navigate = useNavigate();
@@ -19,13 +33,15 @@ const Disclaimer = () => {
       </div>
 
       <div className="max-w-lg mx-auto px-4 pt-6 space-y-6 text-sm text-muted-foreground leading-relaxed">
-        <section className="space-y-2">
+        <LegalTableOfContents items={tocItems} />
+
+        <section id="general" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">General Disclaimer</h2>
           <p>The information, services, and content provided on the OPollMarket platform ("Platform") are for general informational and entertainment purposes only. Participation in prediction markets involves financial risk, including the potential loss of your entire invested capital. You should not trade with funds you cannot afford to lose.</p>
           <p>The Platform is provided on an "AS IS" and "AS AVAILABLE" basis. We make no representations or warranties of any kind, express or implied, regarding the accuracy, completeness, reliability, suitability, or availability of the Platform or any information contained therein.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="no-advice" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">No Financial, Investment, or Legal Advice</h2>
           <p>Nothing on this Platform constitutes financial, investment, legal, tax, or any other form of professional advice. Specifically:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -37,7 +53,7 @@ const Disclaimer = () => {
           <p>Always conduct your own research and consult qualified financial, legal, or tax professionals before making any financial decisions.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="risk" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">Risk of Loss</h2>
           <p>Trading on prediction markets carries significant inherent risks, including but not limited to:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -51,7 +67,7 @@ const Disclaimer = () => {
           <p className="font-medium text-foreground">Past performance of any market, position, or trading strategy does not guarantee future results.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="crypto-risks" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">Cryptocurrency & Blockchain Risks</h2>
           <p>The Platform involves interaction with cryptocurrency and blockchain technology, which carries additional risks:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -64,7 +80,7 @@ const Disclaimer = () => {
           </ul>
         </section>
 
-        <section className="space-y-2">
+        <section id="market-resolution" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">Market Creation & Resolution</h2>
           <p>Markets on the Platform are created by users and administrators. You should be aware that:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -76,7 +92,7 @@ const Disclaimer = () => {
           </ul>
         </section>
 
-        <section className="space-y-2">
+        <section id="ai-systems" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">AI & Automated Systems</h2>
           <p>The Platform uses AI-powered automated systems for content moderation, market similarity detection, and trending algorithms. These systems:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -86,7 +102,7 @@ const Disclaimer = () => {
           </ul>
         </section>
 
-        <section className="space-y-2">
+        <section id="availability" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">Platform Availability</h2>
           <p>We do not guarantee uninterrupted, continuous, or error-free access to the Platform. Services may be temporarily or permanently unavailable due to:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -99,7 +115,7 @@ const Disclaimer = () => {
           <p>We are not liable for any losses, missed opportunities, or damages resulting from Platform downtime, delays, or technical issues.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="third-party" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">Third-Party Services & Content</h2>
           <p>The Platform may integrate with, link to, or reference third-party services, including but not limited to:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -112,13 +128,13 @@ const Disclaimer = () => {
           <p>We do not endorse, control, or assume responsibility for the content, privacy practices, security, or availability of any third-party services. Your use of third-party services is governed by their respective terms and policies.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="regulatory" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">Regulatory Compliance</h2>
           <p>It is your sole responsibility to determine whether your participation in prediction markets complies with all applicable laws, regulations, and restrictions in your jurisdiction. Prediction markets may be restricted, regulated, or prohibited in certain countries, states, or territories.</p>
           <p>By using this Platform, you represent and warrant that you are legally permitted to participate in prediction markets and cryptocurrency transactions in your jurisdiction. OPollMarket does not provide legal advice regarding jurisdictional compliance and is not responsible for any legal consequences arising from your use of the Platform in violation of local laws.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="liability" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">Limitation of Liability</h2>
           <p>To the fullest extent permitted by law, OPollMarket and its operators, affiliates, employees, and agents disclaim all liability for any direct, indirect, incidental, special, consequential, or punitive damages — including loss of profits, data, digital assets, or goodwill — arising from your use of or inability to use the Platform, regardless of the cause of action or the theory of liability.</p>
         </section>

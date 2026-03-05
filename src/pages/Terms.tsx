@@ -2,6 +2,31 @@ import SEOHead from "@/components/SEOHead";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BackToTop from "@/components/BackToTop";
+import LegalTableOfContents from "@/components/LegalTableOfContents";
+
+const tocItems = [
+  { id: "acceptance", label: "Acceptance of Terms" },
+  { id: "eligibility", label: "Eligibility" },
+  { id: "account", label: "Account Registration & Security" },
+  { id: "services", label: "Platform Services" },
+  { id: "trading", label: "Trading Rules & AMM Pricing" },
+  { id: "fees", label: "Fees & Commissions" },
+  { id: "deposits", label: "Deposits & Withdrawals" },
+  { id: "creation", label: "Market Creation & Token-Gating" },
+  { id: "moderation", label: "Content Moderation & Community Guidelines" },
+  { id: "resolution", label: "Market Resolution" },
+  { id: "boosting", label: "Market Boosting" },
+  { id: "referral", label: "Referral Program" },
+  { id: "conduct", label: "Prohibited Conduct" },
+  { id: "ip", label: "Intellectual Property" },
+  { id: "liability", label: "Limitation of Liability" },
+  { id: "indemnification", label: "Indemnification" },
+  { id: "termination", label: "Termination" },
+  { id: "disputes", label: "Dispute Resolution" },
+  { id: "law", label: "Governing Law" },
+  { id: "severability", label: "Severability" },
+  { id: "contact", label: "Contact Information" },
+];
 
 const Terms = () => {
   const navigate = useNavigate();
@@ -19,13 +44,15 @@ const Terms = () => {
       </div>
 
       <div className="max-w-lg mx-auto px-4 pt-6 space-y-6 text-sm text-muted-foreground leading-relaxed">
-        <section className="space-y-2">
+        <LegalTableOfContents items={tocItems} />
+
+        <section id="acceptance" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">1. Acceptance of Terms</h2>
           <p>By accessing, browsing, or using the OPollMarket platform ("Platform"), including all associated features, services, and applications, you acknowledge that you have read, understood, and agree to be bound by these Terms & Conditions ("Terms"). If you do not agree with any part of these Terms, you must immediately discontinue use of the Platform.</p>
           <p>We reserve the right to modify these Terms at any time. Material changes will be communicated via in-app notifications or email. Your continued use of the Platform after such changes constitutes acceptance of the revised Terms. We recommend reviewing these Terms periodically.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="eligibility" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">2. Eligibility</h2>
           <p>You must be at least 18 years of age (or the age of majority in your jurisdiction, whichever is greater) to use the Platform. By creating an account, you represent and warrant that:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -37,7 +64,7 @@ const Terms = () => {
           </ul>
         </section>
 
-        <section className="space-y-2">
+        <section id="account" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">3. Account Registration & Security</h2>
           <p>To access certain features, you must create an account using your email address or through a supported third-party authentication provider (Google, Apple). You may also connect an EVM-compatible cryptocurrency wallet (e.g., MetaMask, Trust Wallet, SafePal, Coinbase Wallet, Rabby, Binance Wallet, Bitget Wallet) for specific platform functions.</p>
           <p>You are solely responsible for:</p>
@@ -49,7 +76,7 @@ const Terms = () => {
           <p>We are not liable for losses resulting from unauthorized account access, compromised wallets, or failure to maintain adequate security measures. Creating multiple accounts to circumvent restrictions, manipulate markets, or abuse platform features is strictly prohibited.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="services" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">4. Platform Services</h2>
           <p>OPollMarket provides a peer-to-peer prediction market platform where users can:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -62,7 +89,7 @@ const Terms = () => {
           </ul>
         </section>
 
-        <section className="space-y-2">
+        <section id="trading" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">5. Trading Rules & AMM Pricing</h2>
           <p>All trades on the Platform are executed through an Automated Market Maker (AMM) using a constant-product formula. By placing a trade, you acknowledge and agree that:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -75,7 +102,7 @@ const Terms = () => {
           </ul>
         </section>
 
-        <section className="space-y-2">
+        <section id="fees" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">6. Fees & Commissions</h2>
           <p>The Platform charges the following fees, which are subject to change with notice:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -86,7 +113,7 @@ const Terms = () => {
           <p>All fee amounts and percentages are managed centrally and may be adjusted by administrators. Current rates are always visible within the Platform interface.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="deposits" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">7. Deposits & Withdrawals</h2>
           <p>The Platform supports cryptocurrency deposits and withdrawals processed through integrated payment providers (NOWPayments). By using these services, you agree that:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -98,7 +125,7 @@ const Terms = () => {
           </ul>
         </section>
 
-        <section className="space-y-2">
+        <section id="creation" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">8. Market Creation & Token-Gating</h2>
           <p>Market creation access is determined by a tiered verification system:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -109,7 +136,7 @@ const Terms = () => {
           <p>All market creators must provide clear, unambiguous resolution criteria and a resolution source. The Platform reserves the right to approve, reject, modify, or cancel any market at its sole discretion.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="moderation" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">9. Content Moderation & Community Guidelines</h2>
           <p>All user-generated content — including market titles, descriptions, answer options, cover images, comments, display names, and avatars — is subject to automated AI moderation and manual administrative review. Content that violates community guidelines will be removed or flagged.</p>
           <p className="font-medium text-foreground">Prohibited content includes but is not limited to:</p>
@@ -125,7 +152,7 @@ const Terms = () => {
           <p>If a market created via the fee-based pathway is <strong>rejected</strong> due to content moderation violations, the market creation fee is <strong>permanently forfeited and non-refundable</strong>. Only the initial liquidity deposit will be returned to the creator's balance. If a market is <strong>cancelled</strong> by an administrator (for reasons other than content violations), both the creation fee and initial liquidity are refunded. Repeated violations may result in temporary suspension or permanent ban from the Platform.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="resolution" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">10. Market Resolution</h2>
           <p>Markets are resolved by Platform administrators based on the resolution criteria and source specified at the time of market creation. Resolution follows these principles:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -137,12 +164,12 @@ const Terms = () => {
           </ul>
         </section>
 
-        <section className="space-y-2">
+        <section id="boosting" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">11. Market Boosting</h2>
           <p>Users may purchase promotional boosts to increase market visibility. Boost purchases are processed via cryptocurrency payment and are subject to administrator confirmation. Boost durations and pricing are determined by the selected tier. Boost fees are non-refundable once the boost period has commenced.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="referral" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">12. Referral Program</h2>
           <p>The Platform offers a referral program where existing users may invite new users. Upon a referred user's first qualifying trade, the referrer receives a bonus reward credited to their account balance. Referral rewards are subject to the following conditions:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -152,7 +179,7 @@ const Terms = () => {
           </ul>
         </section>
 
-        <section className="space-y-2">
+        <section id="conduct" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">13. Prohibited Conduct</h2>
           <p>You agree not to:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -168,13 +195,13 @@ const Terms = () => {
           </ul>
         </section>
 
-        <section className="space-y-2">
+        <section id="ip" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">14. Intellectual Property</h2>
           <p>All content, branding, trademarks, logos, software, and technology on the Platform (collectively, "Platform IP") are the exclusive property of OPollMarket or its licensors. You may not reproduce, distribute, modify, or create derivative works of Platform IP without explicit written permission.</p>
           <p>By submitting user-generated content (comments, market proposals, images), you grant OPollMarket a non-exclusive, worldwide, royalty-free, perpetual license to display, distribute, and use such content in connection with Platform operations.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="liability" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">15. Limitation of Liability</h2>
           <p>To the maximum extent permitted by applicable law:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -186,12 +213,12 @@ const Terms = () => {
           </ul>
         </section>
 
-        <section className="space-y-2">
+        <section id="indemnification" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">16. Indemnification</h2>
           <p>You agree to indemnify, defend, and hold harmless OPollMarket, its operators, affiliates, directors, officers, employees, and agents from any and all claims, liabilities, damages, losses, costs, and expenses (including reasonable legal fees) arising from: (a) your use of the Platform; (b) your violation of these Terms; (c) your violation of any third-party rights; or (d) any content you submit to the Platform.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="termination" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">17. Termination</h2>
           <p>We reserve the right to suspend or terminate your account at any time, with or without notice, for violation of these Terms, suspected fraudulent activity, or for any other reason at our sole discretion. Upon termination:</p>
           <ul className="list-disc pl-5 space-y-1">
@@ -201,22 +228,22 @@ const Terms = () => {
           </ul>
         </section>
 
-        <section className="space-y-2">
+        <section id="disputes" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">18. Dispute Resolution</h2>
           <p>Any dispute arising from or relating to these Terms or the Platform shall first be attempted to be resolved through good-faith negotiation between the parties. If negotiation fails, disputes shall be resolved through binding arbitration in accordance with the rules of the jurisdiction in which OPollMarket is incorporated, unless otherwise required by applicable consumer protection laws.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="law" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">19. Governing Law</h2>
           <p>These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which OPollMarket operates, without regard to conflict of law principles. You consent to the exclusive jurisdiction of the courts in that jurisdiction for any legal proceedings.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="severability" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">20. Severability</h2>
           <p>If any provision of these Terms is found to be invalid, illegal, or unenforceable by a court of competent jurisdiction, such provision shall be modified to the minimum extent necessary to make it enforceable, and the remaining provisions shall continue in full force and effect.</p>
         </section>
 
-        <section className="space-y-2">
+        <section id="contact" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">21. Contact Information</h2>
           <p>For questions, concerns, or requests relating to these Terms, please contact us through the Platform's support channels or via the contact information provided in the application.</p>
         </section>
