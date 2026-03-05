@@ -24,13 +24,9 @@ const Auth = () => {
   useEffect(() => {
     const ref = searchParams.get("ref");
     if (ref) {
-      localStorage.setItem("referral_id", ref);
       setReferralCode(ref);
       setReferralFromLink(true);
       setMode("signup");
-    } else {
-      const stored = localStorage.getItem("referral_id");
-      if (stored) setReferralCode(stored);
     }
   }, [searchParams]);
 
