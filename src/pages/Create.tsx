@@ -1201,14 +1201,46 @@ const Create = () => {
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ type: "spring", damping: 10 }}
-                    className="w-14 h-14 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center mb-3"
+                    className={`w-14 h-14 rounded-full flex items-center justify-center mb-3 ${
+                      createdAsPending
+                        ? "bg-yellow-500/20 border border-yellow-500/40"
+                        : "bg-primary/20 border border-primary/40"
+                    }`}
                   >
-                    <CheckCircle2 className="w-7 h-7 text-primary" />
+                    {createdAsPending ? (
+                      <AlertTriangle className="w-7 h-7 text-yellow-500" />
+                    ) : (
+                      <CheckCircle2 className="w-7 h-7 text-primary" />
+                    )}
                   </motion.div>
-                  <h3 className="text-base font-bold mb-1">Market Created!</h3>
+                  <h3 className="text-base font-bold mb-1">
+                    {createdAsPending ? "Market Pending Review" : "Market Created!"}
+                  </h3>
                   <p className="text-xs text-muted-foreground text-center mb-4">
-                    Your prediction market is now live. Share it and start earning from trades!
+                    {createdAsPending
+                      ? "Your market was flagged as similar to an existing one and needs admin approval before going live."
+                      : "Your prediction market is now live. Share it and start earning from trades!"}
                   </p>
+
+                  {/* Similar markets warning */}
+                  {createdAsPending && similarMarkets.length > 0 && (
+                    <div className="w-full mb-4 p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/20">
+                      <p className="text-[10px] text-yellow-600 dark:text-yellow-400 uppercase tracking-wider mb-2 font-semibold">Similar existing markets</p>
+                      <ul className="space-y-1.5">
+                        {similarMarkets.map((m) => (
+                          <li key={m.id} className="text-xs text-muted-foreground flex items-start gap-2">
+                            <span className="text-yellow-500 mt-0.5">•</span>
+                            <button
+                              onClick={() => navigate(`/market/${m.id}`)}
+                              className="text-left hover:text-foreground transition-colors"
+                            >
+                              {m.title}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )
                   <div className="w-full space-y-1.5 mb-4">
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">Liquidity</span>
