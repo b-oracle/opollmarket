@@ -585,7 +585,7 @@ const MarketDetail = () => {
         {/* Chart */}
         <div className="glass rounded-2xl p-4 mb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-muted-foreground">{isMulti ? "Option Probabilities" : "Probability"}</span>
+            <span className="text-sm font-medium text-muted-foreground">{isMulti && market.options?.length ? (() => { const leading = market.options!.reduce((a, b) => b.price > a.price ? b : a); return `${Math.round(leading.price * 100)}% chance · ${leading.label}`; })() : `${yesPercent}% chance`}</span>
             {!isMulti && (
               <div className="flex items-center gap-3">
                 <span className="text-xs font-medium text-destructive">Buy No {noPercent}¢</span>
