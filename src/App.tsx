@@ -25,6 +25,7 @@ const Profile = lazy(() => import("./pages/Profile"));
 const Portfolio = lazy(() => import("./pages/Portfolio"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminMarkets = lazy(() => import("./pages/admin/AdminMarkets"));
@@ -99,6 +100,7 @@ const App = () => (
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/referrals" element={<Referrals />} />
                     <Route path="/faq" element={<FAQ />} />
                     <Route path="/disclaimer" element={<Disclaimer />} />
