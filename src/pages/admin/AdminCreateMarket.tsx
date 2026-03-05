@@ -52,6 +52,31 @@ const AdminCreateMarket = () => {
 
   // Submit state
   const [submitting, setSubmitting] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [shakeField, setShakeField] = useState<string | null>(null);
+
+  const touch = (field: string) => setTouched((t) => ({ ...t, [field]: true }));
+  const shake = (field: string) => {
+    setShakeField(field);
+    setTimeout(() => setShakeField(null), 500);
+  };
+
+  // Field-level validation
+  const errors = {
+    title: title.trim().length > 0 && title.trim().length < 10 ? "Min 10 characters" : title.trim().length === 0 ? "Required" : "",
+    description: description.trim().length > 0 && description.trim().length < 10 ? "Min 10 characters" : description.trim().length === 0 ? "Required" : "",
+    category: !category ? "Select a category" : "",
+    endDate: !endDate ? "Required" : "",
+    resolutionSource: resolutionSource.trim().length > 0 && resolutionSource.trim().length < 5 ? "Min 5 characters" : resolutionSource.trim().length === 0 ? "Required" : "",
+    options: marketType === "multi" && options.filter((o) => o.trim()).length < 2 ? "At least 2 options required" : "",
+  };
+
+  const fieldError = (field: keyof typeof errors) => touched[field] ? errors[field] : "";
+  const inputBorder = (field: keyof typeof errors) =>
+    fieldError(field)
+      ? "border-destructive focus:ring-destructive/30"
+      : "border-border focus:ring-primary/30";
+  const shakeClass = (field: string) => shakeField === field ? "animate-shake" : "";
 
   const addOption = () => {
     if (options.length < 6) setOptions([...options, ""]);
