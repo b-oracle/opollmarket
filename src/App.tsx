@@ -46,10 +46,24 @@ const queryClient = new QueryClient();
 
 const isFooterHidden = (pathname: string) => pathname.startsWith("/admin");
 
+const isAdminRoute = (pathname: string) => pathname.startsWith("/admin");
+
 const ConditionalFooter = () => {
   const location = useLocation();
-  if (isFooterHidden(location.pathname)) return null;
+  if (isAdminRoute(location.pathname)) return null;
   return <DesktopFooter />;
+};
+
+const ConditionalSidebar = () => {
+  const location = useLocation();
+  if (isAdminRoute(location.pathname)) return null;
+  return <DesktopSidebar />;
+};
+
+const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
+  const location = useLocation();
+  const isAdmin = isAdminRoute(location.pathname);
+  return <div className={isAdmin ? "min-h-screen flex flex-col" : "md:ml-60 min-h-screen flex flex-col"}>{children}</div>;
 };
 
 const App = () => (
