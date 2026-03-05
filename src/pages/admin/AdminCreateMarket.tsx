@@ -277,16 +277,6 @@ const AdminCreateMarket = () => {
             <p className="text-[11px] text-destructive mt-1">{fieldError("description")}</p>
           )}
         </div>
-        <div>
-          <label className="text-sm font-semibold mb-2 block">Description</label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Provide context and resolution criteria..."
-            rows={3}
-            className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
-          />
-        </div>
       </div>
 
       {/* Options for multi */}
@@ -296,7 +286,7 @@ const AdminCreateMarket = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="bg-card border border-border rounded-xl p-5"
+            className={`bg-card border rounded-xl p-5 ${shakeClass("options")} ${fieldError("options") ? "border-destructive" : "border-border"}`}
           >
             <label className="text-sm font-semibold mb-3 block">Options (2–6)</label>
             <div className="space-y-2">
@@ -308,7 +298,8 @@ const AdminCreateMarket = () => {
                     value={opt}
                     onChange={(e) => updateOption(i, e.target.value)}
                     placeholder={`Option ${i + 1}`}
-                    className="flex-1 bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className={`flex-1 bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30`}
+                    onBlur={() => touch("options")}
                   />
                   {options.length > 2 && (
                     <button onClick={() => removeOption(i)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive">
@@ -322,6 +313,9 @@ const AdminCreateMarket = () => {
               <button onClick={addOption} className="mt-3 flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80">
                 <Plus className="w-3.5 h-3.5" /> Add Option
               </button>
+            )}
+            {fieldError("options") && (
+              <p className="text-[11px] text-destructive mt-2">{fieldError("options")}</p>
             )}
           </motion.div>
         )}
@@ -410,16 +404,16 @@ const AdminCreateMarket = () => {
 
       {/* Category & Settings */}
       <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-        <div>
+        <div className={shakeClass("category")}>
           <label className="flex items-center gap-2 text-sm font-semibold mb-3">
             <Tag className="w-4 h-4 text-primary" />
             Category
           </label>
-          <div className="grid grid-cols-4 gap-2">
+          <div className={`grid grid-cols-4 gap-2 rounded-xl ${fieldError("category") ? "ring-1 ring-destructive p-1" : ""}`}>
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
-                onClick={() => setCategory(cat)}
+                onClick={() => { setCategory(cat); touch("category"); }}
                 className={`p-2 rounded-xl border text-center text-xs font-medium transition-all ${
                   category === cat
                     ? "border-primary bg-primary/10 text-primary"
@@ -431,10 +425,13 @@ const AdminCreateMarket = () => {
               </button>
             ))}
           </div>
+          {fieldError("category") && (
+            <p className="text-[11px] text-destructive mt-1.5">{fieldError("category")}</p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div>
+          <div className={shakeClass("endDate")}>
             <label className="flex items-center gap-2 text-sm font-semibold mb-2">
               <Calendar className="w-4 h-4 text-primary" />
               End Date
@@ -443,9 +440,13 @@ const AdminCreateMarket = () => {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
+              onBlur={() => touch("endDate")}
               min={new Date().toISOString().split("T")[0]}
-              className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-colors ${inputBorder("endDate")}`}
             />
+            {fieldError("endDate") && (
+              <p className="text-[11px] text-destructive mt-1">{fieldError("endDate")}</p>
+            )}
           </div>
           <div>
             <label className="text-sm font-semibold mb-2 block">Initial Liquidity</label>
@@ -460,15 +461,19 @@ const AdminCreateMarket = () => {
           </div>
         </div>
 
-        <div>
+        <div className={shakeClass("resolutionSource")}>
           <label className="text-sm font-semibold mb-2 block">Resolution Source</label>
           <input
             type="text"
             value={resolutionSource}
             onChange={(e) => setResolutionSource(e.target.value)}
+            onBlur={() => touch("resolutionSource")}
             placeholder="e.g. CoinGecko price data, official announcement..."
-            className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-colors ${inputBorder("resolutionSource")}`}
           />
+          {fieldError("resolutionSource") && (
+            <p className="text-[11px] text-destructive mt-1">{fieldError("resolutionSource")}</p>
+          )}
         </div>
 
         {/* Trending toggle */}
