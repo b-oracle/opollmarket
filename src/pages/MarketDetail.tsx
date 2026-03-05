@@ -511,10 +511,11 @@ const MarketDetail = () => {
             border: `1px solid ${boostBorderColor}40`,
           } : undefined}
         >
-          <div className="h-40 w-full overflow-hidden">
-            <img src={market.imageUrl} alt={market.title} className="w-full h-full object-cover opacity-60 scale-110 will-change-transform" style={{ transform: `scale(1.1) translateY(${scrollY * 0.15}px)` }} />
+          <div className="h-40 md:h-52 w-full overflow-hidden">
+            <img src={market.imageUrl} alt={market.title} className="w-full h-full object-cover opacity-60 md:opacity-40 scale-110 will-change-transform" style={{ transform: `scale(1.1) translateY(${scrollY * 0.15}px)` }} />
           </div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-black/40" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-black/40 md:from-black/90 md:via-black/70 md:to-black/50" />
+          <div className="absolute inset-0 pointer-events-none banner-shimmer" />
           {activeBoost && (
             <div
               className="absolute inset-0 pointer-events-none animate-pulse"
@@ -524,8 +525,8 @@ const MarketDetail = () => {
             />
           )}
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
-            <h1 className="text-lg font-bold text-white leading-snug" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8), 0 1px 3px rgba(0,0,0,0.9)' }}>{market.title}</h1>
-            <p className="text-xs text-white/90 mt-1.5 line-clamp-2" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>{market.description}</p>
+            <h1 className="text-lg md:text-2xl font-bold text-white leading-snug" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8), 0 1px 3px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.5)' }}>{market.title}</h1>
+            <p className="text-xs md:text-sm text-white/90 mt-1.5 line-clamp-2" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8), 0 0 12px rgba(0,0,0,0.5)' }}>{market.description}</p>
             <span className="text-[10px] text-white/70 font-mono mt-2 flex items-center gap-1" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>
               <Clock className="w-2.5 h-2.5" /> {getTimeRemaining(market.endDate)} · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
             </span>

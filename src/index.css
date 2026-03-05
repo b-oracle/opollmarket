@@ -226,3 +226,16 @@
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
+
+.banner-shimmer {
+  background: linear-gradient(
+    110deg,
+    transparent 30%,
+    hsl(0 0% 100% / 0.04) 45%,
+    hsl(0 0% 100% / 0.08) 50%,
+    hsl(0 0% 100% / 0.04) 55%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: banner-shimmer 6s ease-in-out infinite;
+}
