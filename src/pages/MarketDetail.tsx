@@ -18,7 +18,7 @@ import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from "rec
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { usePriceHistory } from "@/hooks/usePriceHistory";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useBookmark } from "@/hooks/useBookmark";
