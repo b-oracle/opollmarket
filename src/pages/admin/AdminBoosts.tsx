@@ -115,6 +115,8 @@ const AdminBoosts = () => {
     setActionLoading(null);
   };
 
+  const paginatedBoosts = useMemo(() => boosts.slice((bstPage - 1) * BST_PAGE_SIZE, bstPage * BST_PAGE_SIZE), [boosts, bstPage]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -122,8 +124,6 @@ const AdminBoosts = () => {
       </div>
     );
   }
-
-  const paginatedBoosts = useMemo(() => boosts.slice((bstPage - 1) * BST_PAGE_SIZE, bstPage * BST_PAGE_SIZE), [boosts, bstPage]);
 
   return (
     <div className="space-y-6">
