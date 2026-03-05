@@ -208,7 +208,7 @@ const Referrals = () => {
         <div className="glass rounded-xl p-5 mb-4">
           <h3 className="text-sm font-semibold mb-3">Your Referral Code</h3>
           <div className="flex items-center gap-2">
-            <div className="flex-1 bg-muted/50 rounded-lg px-3 py-2.5 text-xs text-muted-foreground truncate font-mono select-all">
+            <div className="bg-muted/50 rounded-lg px-3 py-2.5 text-xs text-muted-foreground font-mono select-all w-fit max-w-full truncate">
               {profileName || "—"}
             </div>
             <button
