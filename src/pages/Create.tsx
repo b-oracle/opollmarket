@@ -1086,21 +1086,33 @@ const Create = () => {
                   </p>
                 )}
                 <div className="flex gap-2 mt-2">
-                  {[25, 50, 100, 250].map((amt) => (
-                    <button
-                      key={amt}
-                      type="button"
-                      onClick={() => { setInitialLiquidity(amt.toString()); markTouched("initialLiquidity"); }}
-                      className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
-                        initialLiquidity === amt.toString()
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-muted/50 text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
-                      }`}
-                    >
-                      ${amt}
-                    </button>
-                  ))}
+                  {[25, 50, 100, 250].map((amt) => {
+                    const exceedsBalance = amt > balance;
+                    return (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => { setInitialLiquidity(amt.toString()); markTouched("initialLiquidity"); }}
+                        className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border transition-colors relative ${
+                          initialLiquidity === amt.toString()
+                            ? exceedsBalance
+                              ? "bg-destructive/15 text-destructive border-destructive/50"
+                              : "bg-primary text-primary-foreground border-primary"
+                            : exceedsBalance
+                              ? "bg-muted/50 text-muted-foreground/50 border-border/50 line-through"
+                              : "bg-muted/50 text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
+                        }`}
+                      >
+                        ${amt}
+                      </button>
+                    );
+                  })}
                 </div>
+                {parseFloat(initialLiquidity) > balance && balance > 0 && (
+                  <p className="text-[10px] text-destructive mt-1.5 flex items-center gap-1">
+                    ⚠️ Amount exceeds your balance by ${(parseFloat(initialLiquidity) - balance).toFixed(2)}
+                  </p>
+                )}
               </div>
 
               {/* Review card */}
