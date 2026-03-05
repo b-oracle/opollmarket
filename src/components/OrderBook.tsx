@@ -160,6 +160,12 @@ const OrderBook = ({ yesPrice, noPrice, liquidity, marketId }: OrderBookProps) =
             <span className="w-2 h-2 rounded-sm" style={{ background: "hsl(var(--neon-no))" }} />
             Asks
           </span>
+          {maxTradeVol > 0 && (
+            <span className="flex items-center gap-1 text-muted-foreground">
+              <span className="w-2 h-2 rounded-sm border border-current opacity-50" />
+              Real Vol
+            </span>
+          )}
         </div>
       </div>
 
