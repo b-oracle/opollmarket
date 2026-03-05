@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import AdminPagination from "@/components/admin/AdminPagination";
 
 interface CommentRow {
   id: string;

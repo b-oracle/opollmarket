@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import BulkCSVImport from "@/components/admin/BulkCSVImport";
+import AdminPagination from "@/components/admin/AdminPagination";
 
 const CATEGORIES = ["Crypto", "AI & Tech", "Science", "Economy", "Entertainment", "Sports", "Politics", "Other"];
 
@@ -71,6 +72,8 @@ const AdminMarkets = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [trendingScores, setTrendingScores] = useState<Map<string, TrendingScore>>(new Map());
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const [mktPage, setMktPage] = useState(1);
+  const MKT_PAGE_SIZE = 20;
 
   const fetchMarkets = async () => {
     let query = supabase
