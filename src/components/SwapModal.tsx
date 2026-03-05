@@ -69,7 +69,7 @@ const SwapModal = ({ open, onClose, tokenContractAddress }: SwapModalProps) => {
       } catch { /* ignore */ }
     };
     fetchTokenBalance();
-  }, [address, tokenContractAddress, open, swapStep]);
+  }, [address, tokenContractAddress, open]);
 
   const [bnbAmount, setBnbAmount] = useState("");
   const [estimatedTokens, setEstimatedTokens] = useState("");
@@ -339,7 +339,7 @@ const SwapModal = ({ open, onClose, tokenContractAddress }: SwapModalProps) => {
                       <div className="flex items-center gap-2">
                         {quoteLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
                         <span className="text-[10px] text-muted-foreground font-semibold">
-                          Balance: {bc400Balance ? parseFloat(formatUnits(bc400Balance.value, bc400Balance.decimals)).toLocaleString(undefined, { maximumFractionDigits: 2 }) : "0"} BC400
+                          Balance: {parseFloat(bc400Balance).toLocaleString(undefined, { maximumFractionDigits: 2 })} BC400
                         </span>
                       </div>
                     </div>
