@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Eye, EyeOff, LogIn, UserPlus, Gift, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff, LogIn, UserPlus, Gift, CheckCircle2, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 
@@ -25,6 +25,8 @@ const Auth = () => {
     if (saved) setRememberedName(saved);
   }, []);
   
+
+  const resetSent = searchParams.get("reset_sent") === "1";
 
   // Capture referral param
   useEffect(() => {
