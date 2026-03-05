@@ -352,7 +352,7 @@ const Profile = () => {
                           ) : walletNfts.length === 0 ? (
                             <p className="text-xs text-muted-foreground text-center py-4">No NFTs found</p>
                           ) : (
-                            <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto">
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-36 overflow-y-auto">
                               {walletNfts.map((nft) => (
                                 <Tooltip key={`${nft.token_address}-${nft.token_id}`}>
                                   <TooltipTrigger asChild>
