@@ -151,6 +151,28 @@ const AdminCreateMarket = () => {
       let imageUrl: string | null = null;
       if (imageFile) {
         imageUrl = await uploadImage();
+        if (!imageUrl) { setSubmitting(false); return; }
+
+        // Moderate uploaded image
+        try {
+          const { data: imgModData } = await supabase.functions.invoke("moderate-image", {
+            body: { image_url: imageUrl },
+          });
+          if (imgModData?.flagged) {
+            await supabase.from("moderation_logs").insert({
+              content_type: "image",
+              user_id: user.id,
+              flagged_content: imageUrl,
+              reason: imgModData.reason || "Flagged by AI",
+              category: imgModData.category || "nsfw",
+            });
+            toast.error(imgModData.reason || "This image was flagged as inappropriate");
+            setSubmitting(false);
+            return;
+          }
+        } catch (err) {
+          console.error("Image moderation check failed, proceeding:", err);
+        }
       }
 
       // Create market
