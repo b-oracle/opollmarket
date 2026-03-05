@@ -89,13 +89,30 @@ const AdminMarkets = () => {
     setLoading(false);
   };
 
+  const [feeBasedMarketIds, setFeeBasedMarketIds] = useState<Set<string>>(new Set());
+
   const fetchPendingMarkets = async () => {
     const { data } = await supabase
       .from("markets")
       .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending")
       .eq("status", "pending")
       .order("created_at", { ascending: false });
-    if (data) setPendingMarkets(data);
+    if (data) {
+      setPendingMarkets(data);
+      // Check which pending markets were created via fee bypass
+      const ids = data.map(m => m.id);
+      if (ids.length > 0) {
+        const { data: feeTxns } = await supabase
+          .from("transactions")
+          .select("market_id")
+          .in("market_id", ids)
+          .eq("side", "market_creation_fee")
+          .eq("status", "confirmed");
+        if (feeTxns) {
+          setFeeBasedMarketIds(new Set(feeTxns.map(t => t.market_id!)));
+        }
+      }
+    }
   };
 
   useEffect(() => { fetchMarkets(); fetchTrendingScores(); fetchPendingMarkets(); setMktPage(1); }, [filter]);
@@ -289,6 +306,14 @@ const AdminMarkets = () => {
                     <span className="text-[10px] text-muted-foreground">Ends {new Date(m.end_date).toLocaleDateString()}</span>
                     <span className="text-[10px] text-muted-foreground">•</span>
                     <span className="text-[10px] text-muted-foreground">Created {new Date(m.created_at).toLocaleDateString()}</span>
+                    {feeBasedMarketIds.has(m.id) && (
+                      <>
+                        <span className="text-[10px] text-muted-foreground">•</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-primary/15 text-primary border border-primary/30">
+                          💰 Fee-Based
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -383,13 +408,20 @@ const AdminMarkets = () => {
                       </td>
                       {/* Status */}
                       <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          m.status === "active" ? "bg-green-500/10 text-green-500" :
-                          m.status === "resolved" ? "bg-blue-500/10 text-blue-500" :
-                          "bg-yellow-500/10 text-yellow-500"
-                        }`}>
-                          {m.status}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            m.status === "active" ? "bg-green-500/10 text-green-500" :
+                            m.status === "resolved" ? "bg-blue-500/10 text-blue-500" :
+                            "bg-yellow-500/10 text-yellow-500"
+                          }`}>
+                            {m.status}
+                          </span>
+                          {m.status === "pending" && feeBasedMarketIds.has(m.id) && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-primary/15 text-primary">
+                              💰
+                            </span>
+                          )}
+                        </div>
                       </td>
                       {/* Volume */}
                       <td className="p-3 text-muted-foreground">${Number(m.volume).toLocaleString()}</td>
