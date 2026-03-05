@@ -168,6 +168,7 @@ export type Database = {
           nft_contract_address: string | null
           referral_reward_amount: number
           token_contract_address: string | null
+          token_decimals: number | null
           updated_at: string
           updated_by: string | null
         }
@@ -182,6 +183,7 @@ export type Database = {
           nft_contract_address?: string | null
           referral_reward_amount?: number
           token_contract_address?: string | null
+          token_decimals?: number | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -196,6 +198,7 @@ export type Database = {
           nft_contract_address?: string | null
           referral_reward_amount?: number
           token_contract_address?: string | null
+          token_decimals?: number | null
           updated_at?: string
           updated_by?: string | null
         }

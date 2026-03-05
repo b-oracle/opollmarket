@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { wallet_address, token_contract_address } = await req.json();
+    const { wallet_address, token_contract_address, token_decimals = 18 } = await req.json();
 
     if (!wallet_address || !token_contract_address) {
       return new Response(
@@ -87,13 +87,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Parse the hex result — raw balance in smallest unit (wei)
+    // Parse the hex result — raw balance in smallest unit
     const rawHex = rpcData.result;
     const rawBalance = BigInt(rawHex || "0x0");
 
-    // Assume 18 decimals (standard BEP-20/ERC-20)
-    // Return both raw and formatted values
-    const decimals = 18;
+    // Use configurable decimals
+    const decimals = Math.min(Math.max(Number(token_decimals) || 18, 0), 18);
     const divisor = BigInt(10 ** decimals);
     const wholeUnits = rawBalance / divisor;
     const formatted = Number(wholeUnits);

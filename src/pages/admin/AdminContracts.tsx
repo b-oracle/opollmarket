@@ -10,6 +10,7 @@ const AdminContracts = () => {
   const [nftContract, setNftContract] = useState("");
   const [nftBuyUrl, setNftBuyUrl] = useState("");
   const [marketCreationFee, setMarketCreationFee] = useState("50");
+  const [tokenDecimals, setTokenDecimals] = useState("18");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState("");
@@ -33,6 +34,7 @@ const AdminContracts = () => {
         setNftContract((data as any).nft_contract_address || "");
         setNftBuyUrl((data as any).nft_buy_url || "");
         setMarketCreationFee(String((data as any).market_creation_fee ?? 50));
+        setTokenDecimals(String((data as any).token_decimals ?? 18));
       }
     } catch (err) {
       console.error("Failed to fetch contract settings:", err);
@@ -74,6 +76,7 @@ const AdminContracts = () => {
           nft_contract_address: nftContract,
           nft_buy_url: nftBuyUrl,
           market_creation_fee: parseFloat(marketCreationFee) || 50,
+          token_decimals: parseInt(tokenDecimals) || 18,
           updated_at: new Date().toISOString(),
         } as any)
         .eq("id", settingsId);
@@ -193,6 +196,26 @@ const AdminContracts = () => {
             onChange={(e) => setMarketCreationFee(e.target.value)}
             placeholder="50"
             min="1"
+            className="text-sm"
+          />
+        </div>
+
+        {/* Token Decimals */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <FileCode2 className="w-4 h-4 text-primary" />
+            Token Decimals
+          </label>
+          <p className="text-xs text-muted-foreground">
+            Number of decimal places for the token (most BEP-20/ERC-20 tokens use 18, some use 9 or 6).
+          </p>
+          <Input
+            type="number"
+            value={tokenDecimals}
+            onChange={(e) => setTokenDecimals(e.target.value)}
+            placeholder="18"
+            min="0"
+            max="18"
             className="text-sm"
           />
         </div>

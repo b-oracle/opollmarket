@@ -66,6 +66,7 @@ const Create = () => {
   const [tokenContractAddress, setTokenContractAddress] = useState("");
   const [nftBuyUrl, setNftBuyUrl] = useState("");
   const [marketCreationFee, setMarketCreationFee] = useState(50);
+  const [tokenDecimals, setTokenDecimals] = useState(18);
 
   useEffect(() => {
     (async () => {
@@ -80,6 +81,7 @@ const Create = () => {
         setTokenContractAddress((data as any).token_contract_address || "");
         setNftBuyUrl((data as any).nft_buy_url || "");
         setMarketCreationFee(Number((data as any).market_creation_fee) || 50);
+        setTokenDecimals(Number((data as any).token_decimals) ?? 18);
       }
     })();
   }, []);
@@ -268,7 +270,7 @@ const Create = () => {
     try {
       if (tokenContractAddress) {
         const { data, error } = await supabase.functions.invoke("check-token-balance", {
-          body: { wallet_address: address, token_contract_address: tokenContractAddress },
+          body: { wallet_address: address, token_contract_address: tokenContractAddress, token_decimals: tokenDecimals },
         });
         if (!error && data?.balance >= minTokenBalance) {
           tokenPassed = true;

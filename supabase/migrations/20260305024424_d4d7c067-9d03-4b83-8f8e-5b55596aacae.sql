@@ -1,0 +1,1 @@
+ALTER TABLE public.commission_settings ADD COLUMN IF NOT EXISTS token_decimals integer DEFAULT 18;
