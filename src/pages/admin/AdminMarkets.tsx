@@ -306,6 +306,14 @@ const AdminMarkets = () => {
                     <span className="text-[10px] text-muted-foreground">Ends {new Date(m.end_date).toLocaleDateString()}</span>
                     <span className="text-[10px] text-muted-foreground">•</span>
                     <span className="text-[10px] text-muted-foreground">Created {new Date(m.created_at).toLocaleDateString()}</span>
+                    {feeBasedMarketIds.has(m.id) && (
+                      <>
+                        <span className="text-[10px] text-muted-foreground">•</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-primary/15 text-primary border border-primary/30">
+                          💰 Fee-Based
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
