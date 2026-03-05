@@ -200,6 +200,26 @@ const AdminContracts = () => {
           />
         </div>
 
+        {/* Token Decimals */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <FileCode2 className="w-4 h-4 text-primary" />
+            Token Decimals
+          </label>
+          <p className="text-xs text-muted-foreground">
+            Number of decimal places for the token (most BEP-20/ERC-20 tokens use 18, some use 9 or 6).
+          </p>
+          <Input
+            type="number"
+            value={tokenDecimals}
+            onChange={(e) => setTokenDecimals(e.target.value)}
+            placeholder="18"
+            min="0"
+            max="18"
+            className="text-sm"
+          />
+        </div>
+
         <Button onClick={handleSave} disabled={!canSave} className="w-full sm:w-auto">
           {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
           Save Settings
