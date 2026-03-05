@@ -446,6 +446,7 @@ const Profile = () => {
                           }
 
                           queryClient.invalidateQueries({ queryKey: ["profile", user!.id] });
+                          queryClient.invalidateQueries({ queryKey: ["profile_display_name", user!.id] });
                           setAvatarFile(null);
                           setAvatarPreview(null);
                           setSelectedNftUrl(null);
