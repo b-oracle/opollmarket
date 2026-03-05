@@ -59,6 +59,8 @@ const Profile = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<"deposit" | "withdraw">("deposit");
   const [txFilter, setTxFilter] = useState<FilterType>("all");
+  const [txPage, setTxPage] = useState(1);
+  const TX_PER_PAGE = 10;
   const [editingProfile, setEditingProfile] = useState(false);
   const [editName, setEditName] = useState(user?.user_metadata?.display_name || "");
   const [installOpen, setInstallOpen] = useState(false);
@@ -214,6 +216,12 @@ const Profile = () => {
     if (txFilter === "trades") return transactions.filter((t: any) => t.type === "buy" || t.type === "sell");
     return transactions.filter((t: any) => t.type === "deposit" || t.type === "withdraw");
   }, [transactions, txFilter]);
+
+  const txTotalPages = Math.max(1, Math.ceil(filteredTx.length / TX_PER_PAGE));
+  const paginatedTx = useMemo(() => {
+    const start = (txPage - 1) * TX_PER_PAGE;
+    return filteredTx.slice(start, start + TX_PER_PAGE);
+  }, [filteredTx, txPage]);
 
   const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "User";
 
@@ -570,7 +578,7 @@ const Profile = () => {
           </div>
           <div className="flex gap-2 mb-4">
             {(["all", "trades", "deposits"] as FilterType[]).map((f) => (
-              <button key={f} onClick={() => setTxFilter(f)}
+              <button key={f} onClick={() => { setTxFilter(f); setTxPage(1); }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize ${txFilter === f ? "bg-primary text-primary-foreground" : "glass text-muted-foreground hover:text-foreground"}`}>
                 {f === "deposits" ? "Deposits & Withdrawals" : f}
               </button>
@@ -578,7 +586,7 @@ const Profile = () => {
           </div>
 
           <div className="space-y-2">
-            {filteredTx.map((tx: any, i: number) => {
+            {paginatedTx.map((tx: any, i: number) => {
               const cfg = txConfig[tx.type as TxType] || txConfig.buy;
               const Icon = cfg.icon;
               return (
@@ -610,6 +618,29 @@ const Profile = () => {
               );
             })}
           </div>
+
+          {/* Pagination controls */}
+          {filteredTx.length > TX_PER_PAGE && (
+            <div className="flex items-center justify-center gap-3 mt-4">
+              <button
+                onClick={() => setTxPage((p) => Math.max(1, p - 1))}
+                disabled={txPage === 1}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold glass text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Previous
+              </button>
+              <span className="text-xs text-muted-foreground">
+                Page {txPage} of {txTotalPages}
+              </span>
+              <button
+                onClick={() => setTxPage((p) => Math.min(txTotalPages, p + 1))}
+                disabled={txPage === txTotalPages}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold glass text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          )}
 
           {filteredTx.length === 0 && (
             <div className="glass rounded-xl p-8 text-center">
