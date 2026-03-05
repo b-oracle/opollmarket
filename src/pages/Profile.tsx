@@ -10,7 +10,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserBalance } from "@/hooks/useUserBalance";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { useAccount, useDisconnect } from "wagmi";
+import { useFilteredConnectors } from "@/hooks/useFilteredConnectors";
 import { bsc } from "wagmi/chains";
 import {
   Wallet, Gift, ArrowDownToLine, ArrowUpFromLine, ArrowUpRight, ArrowDownLeft,
@@ -54,7 +55,7 @@ const Profile = () => {
   useEffect(() => { track("page_view", { page: "profile" }); }, []);
   const queryClient = useQueryClient();
   const { address, isConnected } = useAccount();
-  const { connect, connectors, isPending } = useConnect();
+  const { connect, connectors, isPending } = useFilteredConnectors();
   const { disconnect } = useDisconnect();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<"deposit" | "withdraw">("deposit");
@@ -555,21 +556,17 @@ const Profile = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  {(() => {
-                    const hasInjected = typeof window !== 'undefined' && !!(window as any).ethereum;
-                    const filtered = connectors.filter((c) => c.type === 'walletConnect' || (c.type === 'injected' && hasInjected));
-                    return filtered.map((c) => (
-                      <button
-                        key={c.uid}
-                        onClick={() => connect({ connector: c, chainId: bsc.id })}
-                        disabled={isPending}
-                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm transition-all active:scale-95 disabled:opacity-50"
-                      >
-                        <span className="text-base">{c.type === 'injected' ? '🦊' : '🔗'}</span>
-                        {isPending ? "Connecting..." : c.type === 'injected' ? 'Browser Wallet' : 'WalletConnect'}
-                      </button>
-                    ));
-                  })()}
+                  {connectors.map((c) => (
+                    <button
+                      key={c.uid}
+                      onClick={() => connect({ connector: c, chainId: bsc.id })}
+                      disabled={isPending}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      <span className="text-base">{c.type === 'injected' ? '🦊' : '🔗'}</span>
+                      {isPending ? "Connecting..." : c.type === 'injected' ? 'Browser Wallet' : 'WalletConnect'}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}

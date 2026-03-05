@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Wallet, LogOut, ChevronDown, Copy, Check, ExternalLink } from "lucide-react";
-import { useAccount, useDisconnect, useBalance, useConnect } from "wagmi";
+import { useAccount, useDisconnect, useBalance } from "wagmi";
+import { useFilteredConnectors } from "@/hooks/useFilteredConnectors";
 import { formatUnits } from "viem";
 import { bsc } from "wagmi/chains";
 import { motion, AnimatePresence } from "framer-motion";
@@ -11,7 +12,7 @@ const truncateAddress = (addr: string) =>
 const WalletButton = () => {
   const { address, isConnected, connector } = useAccount();
   const { disconnect } = useDisconnect();
-  const { connect, connectors, isPending } = useConnect();
+  const { connect, connectors, isPending } = useFilteredConnectors();
   const { data: balance } = useBalance({ address });
   const [showDropdown, setShowDropdown] = useState(false);
   const [showConnectors, setShowConnectors] = useState(false);
@@ -48,30 +49,26 @@ const WalletButton = () => {
               <p className="text-[10px] text-muted-foreground px-3 py-1.5 uppercase tracking-wider">
                 Select Wallet
               </p>
-              {(() => {
-                const hasInjected = typeof window !== 'undefined' && !!(window as any).ethereum;
-                const filtered = connectors.filter((c) => c.type === 'walletConnect' || (c.type === 'injected' && hasInjected));
-                return filtered.map((c) => (
-                  <button
-                    key={c.uid}
-                    onClick={() => {
-                      connect({ connector: c, chainId: bsc.id });
-                      setShowConnectors(false);
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors text-left"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                      {c.type === 'injected' ? "🦊" : "🔗"}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{c.type === 'injected' ? 'Browser Wallet' : 'WalletConnect'}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {c.type === 'injected' ? 'MetaMask, Brave, etc.' : '300+ wallets via QR code'}
-                      </p>
-                    </div>
-                  </button>
-                ));
-              })()}
+              {connectors.map((c) => (
+                <button
+                  key={c.uid}
+                  onClick={() => {
+                    connect({ connector: c, chainId: bsc.id });
+                    setShowConnectors(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors text-left"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                    {c.type === 'injected' ? "🦊" : "🔗"}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{c.type === 'injected' ? 'Browser Wallet' : 'WalletConnect'}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {c.type === 'injected' ? 'MetaMask, Brave, etc.' : '300+ wallets via QR code'}
+                    </p>
+                  </div>
+                </button>
+              ))}
             </motion.div>
           )}
         </AnimatePresence>
