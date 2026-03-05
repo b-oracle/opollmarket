@@ -39,8 +39,12 @@ const Auth = () => {
     setLoading(true);
     try {
       if (mode === "login") {
-        const { error } = await signIn(email, password);
-        if (error) { toast.error(error.message); }
+        let result = await signIn(email, password);
+        // Retry once on network failure (common in preview iframe)
+        if (result.error && result.error.message?.toLowerCase().includes("load failed")) {
+          result = await signIn(email, password);
+        }
+        if (result.error) { toast.error(result.error.message); }
         else { toast.success("Logged in successfully!"); navigate("/"); return; }
       } else {
         // Validate referral code if provided
