@@ -48,26 +48,30 @@ const WalletButton = () => {
               <p className="text-[10px] text-muted-foreground px-3 py-1.5 uppercase tracking-wider">
                 Select Wallet
               </p>
-              {connectors.map((c) => (
-                <button
-                  key={c.uid}
-                  onClick={() => {
-                    connect({ connector: c, chainId: bsc.id });
-                    setShowConnectors(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors text-left"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                    {c.name.includes("MetaMask") ? "🦊" : c.name.includes("WalletConnect") ? "🔗" : "💰"}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">{c.name}</p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {c.name.includes("Injected") ? "Browser wallet" : c.type}
-                    </p>
-                  </div>
-                </button>
-              ))}
+              {(() => {
+                const hasInjected = typeof window !== 'undefined' && !!(window as any).ethereum;
+                const filtered = connectors.filter((c) => c.type === 'walletConnect' || (c.type === 'injected' && hasInjected));
+                return filtered.map((c) => (
+                  <button
+                    key={c.uid}
+                    onClick={() => {
+                      connect({ connector: c, chainId: bsc.id });
+                      setShowConnectors(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors text-left"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                      {c.type === 'injected' ? "🦊" : "🔗"}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{c.type === 'injected' ? 'Browser Wallet' : 'WalletConnect'}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {c.type === 'injected' ? 'MetaMask, Brave, etc.' : '300+ wallets via QR code'}
+                      </p>
+                    </div>
+                  </button>
+                ));
+              })()}
             </motion.div>
           )}
         </AnimatePresence>

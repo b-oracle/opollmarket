@@ -7,8 +7,8 @@ const walletConnectProjectId = '6c625cc1764d2b59af4ebb27a7253cc7';
 export const config = createConfig({
   chains: [bsc],
   connectors: [
-    injected(),
     walletConnect({ projectId: walletConnectProjectId }),
+    injected(),
   ],
   transports: {
     [bsc.id]: http(),
