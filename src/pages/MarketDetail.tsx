@@ -461,7 +461,7 @@ const MarketDetail = () => {
         <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/85 via-black/50 to-transparent">
           {isMulti && market.options?.length ? (() => {
             const leading = market.options!.reduce((a, b) => b.price > a.price ? b : a);
-            return <span className="inline-block px-3 py-1 rounded-full bg-black/40 backdrop-blur-sm text-lg font-bold neon-yes mb-2">{Math.round(leading.price * 100)}% chance · {leading.label}</span>;
+            return <span className="inline-block px-3 py-1 rounded-full bg-black/40 backdrop-blur-sm text-lg font-bold neon-yes mb-2">{Math.round(leading.price * 100)}% Chance · {leading.label}</span>;
           })() : (
             <span className="inline-block px-3 py-1 rounded-full bg-black/40 backdrop-blur-sm text-lg font-bold neon-yes mb-2">{yesPercent}% chance</span>
           )}
@@ -580,7 +580,7 @@ const MarketDetail = () => {
         <div className="glass rounded-2xl p-4 mb-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-muted-foreground">Price Chart</span>
-            <span className="text-sm font-bold text-green-500">{isMulti && market.options?.length ? (() => { const leading = market.options!.reduce((a, b) => b.price > a.price ? b : a); return `${Math.round(leading.price * 100)}% chance · ${leading.label}`; })() : `${yesPercent}% chance`}</span>
+            <span className="text-sm font-bold text-green-500">{isMulti && market.options?.length ? (() => { const leading = market.options!.reduce((a, b) => b.price > a.price ? b : a); return `${Math.round(leading.price * 100)}% Chance · ${leading.label}`; })() : `${yesPercent}% Chance`}</span>
           </div>
           <div className="flex gap-1 p-0.5 rounded-lg bg-muted/50 mb-3 w-fit">
             {(["1D", "1W", "1M", "All"] as const).map((p) => (
