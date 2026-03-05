@@ -94,9 +94,9 @@ const Create = () => {
   const [gatePassed, setGatePassed] = useState(false);
   const [gateRunning, setGateRunning] = useState(false);
   const [gateFinished, setGateFinished] = useState(false);
-  const [payingToCreate, setPayingToCreate] = useState(false);
   const [swapModalOpen, setSwapModalOpen] = useState(false);
   const [showConnectors, setShowConnectors] = useState(false);
+  const [feeBypass, setFeeBypass] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
