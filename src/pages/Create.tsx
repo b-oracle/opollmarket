@@ -270,7 +270,7 @@ const Create = () => {
     try {
       if (tokenContractAddress) {
         const { data, error } = await supabase.functions.invoke("check-token-balance", {
-          body: { wallet_address: address, token_contract_address: tokenContractAddress },
+          body: { wallet_address: address, token_contract_address: tokenContractAddress, token_decimals: tokenDecimals },
         });
         if (!error && data?.balance >= minTokenBalance) {
           tokenPassed = true;
