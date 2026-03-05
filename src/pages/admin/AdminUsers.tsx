@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Shield, ShieldOff, DollarSign, X, ShieldCheck, ShieldMinus } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import AdminPagination from "@/components/admin/AdminPagination";
 
 interface ProfileRow {
   id: string;
@@ -21,6 +22,8 @@ const AdminUsers = () => {
   const [creditAmount, setCreditAmount] = useState("");
   const [crediting, setCrediting] = useState(false);
   const [roleConfirm, setRoleConfirm] = useState<{ userId: string; name: string; role: "admin" | "moderator"; hasRole: boolean } | null>(null);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
 
   const fetchUsers = async () => {
     const { data: profiles, error } = await supabase
@@ -97,6 +100,8 @@ const AdminUsers = () => {
     setCrediting(false);
   };
 
+  const paginatedUsers = useMemo(() => users.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [users, page]);
+
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>;
 
   return (
@@ -116,7 +121,7 @@ const AdminUsers = () => {
               </tr>
             </thead>
             <tbody>
-              {users.map((u) => {
+              {paginatedUsers.map((u) => {
                 const isAdmin = u.roles.includes("admin");
                 const isMod = u.roles.includes("moderator");
                 return (
@@ -177,6 +182,7 @@ const AdminUsers = () => {
           </table>
         </div>
       </div>
+      <AdminPagination page={page} totalItems={users.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
 
       {/* Balance Modal */}
       <AnimatePresence>

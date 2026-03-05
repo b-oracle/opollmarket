@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import BulkCSVImport from "@/components/admin/BulkCSVImport";
+import AdminPagination from "@/components/admin/AdminPagination";
 
 const CATEGORIES = ["Crypto", "AI & Tech", "Science", "Economy", "Entertainment", "Sports", "Politics", "Other"];
 
@@ -71,6 +72,8 @@ const AdminMarkets = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [trendingScores, setTrendingScores] = useState<Map<string, TrendingScore>>(new Map());
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const [mktPage, setMktPage] = useState(1);
+  const MKT_PAGE_SIZE = 20;
 
   const fetchMarkets = async () => {
     let query = supabase
@@ -83,7 +86,9 @@ const AdminMarkets = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchMarkets(); fetchTrendingScores(); }, [filter]);
+  useEffect(() => { fetchMarkets(); fetchTrendingScores(); setMktPage(1); }, [filter]);
+
+  const paginatedMarkets = useMemo(() => markets.slice((mktPage - 1) * MKT_PAGE_SIZE, mktPage * MKT_PAGE_SIZE), [markets, mktPage]);
 
   const fetchTrendingScores = async () => {
     const { data, error } = await supabase.rpc("get_trending_scores");
@@ -239,7 +244,7 @@ const AdminMarkets = () => {
               </tr>
             </thead>
             <tbody>
-              {markets.map((m) => {
+              {paginatedMarkets.map((m) => {
                 const isEditing = editState?.id === m.id;
                 const isExpanded = expandedId === m.id;
                 return (
@@ -527,6 +532,7 @@ const AdminMarkets = () => {
           </table>
         </div>
       </div>
+      <AdminPagination page={mktPage} totalItems={markets.length} pageSize={MKT_PAGE_SIZE} onPageChange={setMktPage} />
 
       {/* Resolution Modal */}
       <AnimatePresence>

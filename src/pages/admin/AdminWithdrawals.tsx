@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CheckCircle2, XCircle, Clock, Search } from "lucide-react";
@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
+import AdminPagination from "@/components/admin/AdminPagination";
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
@@ -23,6 +24,8 @@ const statusColors: Record<string, string> = {
 const AdminWithdrawals = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [wdPage, setWdPage] = useState(1);
+  const WD_PAGE_SIZE = 20;
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [noteInput, setNoteInput] = useState("");
   const [txHashInput, setTxHashInput] = useState("");
@@ -84,6 +87,7 @@ const AdminWithdrawals = () => {
     w.status?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const paginatedWd = useMemo(() => filtered.slice((wdPage - 1) * WD_PAGE_SIZE, wdPage * WD_PAGE_SIZE), [filtered, wdPage]);
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -108,78 +112,81 @@ const AdminWithdrawals = () => {
           No withdrawal requests found.
         </div>
       ) : (
-        <div className="rounded-xl border border-border overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Wallet</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Note</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((w: any) => (
-                <TableRow key={w.id}>
-                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                    {format(new Date(w.created_at), "MMM d, yyyy HH:mm")}
-                  </TableCell>
-                  <TableCell className="font-bold">${Number(w.amount).toFixed(2)}</TableCell>
-                  <TableCell className="font-mono text-xs max-w-[140px] truncate">
-                    {w.wallet_address}
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${
-                        statusColors[w.status] || ""
-                      }`}
-                    >
-                      {w.status === "pending" && <Clock className="w-3 h-3" />}
-                      {w.status === "completed" && <CheckCircle2 className="w-3 h-3" />}
-                      {w.status === "rejected" && <XCircle className="w-3 h-3" />}
-                      {w.status}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-[120px] truncate">
-                    {w.admin_note || "—"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {w.status === "pending" && (
-                      <div className="flex gap-2 justify-end">
-                        <button
-                          onClick={() =>
-                            setShowActionModal({
-                              id: w.id,
-                              action: "approve",
-                              amount: w.amount,
-                            })
-                          }
-                          className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 transition-colors"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() =>
-                            setShowActionModal({
-                              id: w.id,
-                              action: "reject",
-                              amount: w.amount,
-                            })
-                          }
-                          className="px-3 py-1.5 bg-destructive text-destructive-foreground rounded-lg text-xs font-semibold hover:bg-destructive/90 transition-colors"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    )}
-                  </TableCell>
+        <>
+          <div className="rounded-xl border border-border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Wallet</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Note</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {paginatedWd.map((w: any) => (
+                  <TableRow key={w.id}>
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                      {format(new Date(w.created_at), "MMM d, yyyy HH:mm")}
+                    </TableCell>
+                    <TableCell className="font-bold">${Number(w.amount).toFixed(2)}</TableCell>
+                    <TableCell className="font-mono text-xs max-w-[140px] truncate">
+                      {w.wallet_address}
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${
+                          statusColors[w.status] || ""
+                        }`}
+                      >
+                        {w.status === "pending" && <Clock className="w-3 h-3" />}
+                        {w.status === "completed" && <CheckCircle2 className="w-3 h-3" />}
+                        {w.status === "rejected" && <XCircle className="w-3 h-3" />}
+                        {w.status}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-[120px] truncate">
+                      {w.admin_note || "—"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {w.status === "pending" && (
+                        <div className="flex gap-2 justify-end">
+                          <button
+                            onClick={() =>
+                              setShowActionModal({
+                                id: w.id,
+                                action: "approve",
+                                amount: w.amount,
+                              })
+                            }
+                            className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 transition-colors"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() =>
+                              setShowActionModal({
+                                id: w.id,
+                                action: "reject",
+                                amount: w.amount,
+                              })
+                            }
+                            className="px-3 py-1.5 bg-destructive text-destructive-foreground rounded-lg text-xs font-semibold hover:bg-destructive/90 transition-colors"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <AdminPagination page={wdPage} totalItems={filtered.length} pageSize={WD_PAGE_SIZE} onPageChange={setWdPage} />
+        </>
       )}
 
       {/* Action modal */}

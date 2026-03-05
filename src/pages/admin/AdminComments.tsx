@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import AdminPagination from "@/components/admin/AdminPagination";
 
 interface CommentRow {
   id: string;
@@ -15,6 +16,8 @@ interface CommentRow {
 const AdminComments = () => {
   const [comments, setComments] = useState<CommentRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cmtPage, setCmtPage] = useState(1);
+  const CMT_PAGE_SIZE = 20;
 
   const fetchComments = async () => {
     const { data, error } = await supabase
@@ -35,13 +38,15 @@ const AdminComments = () => {
     else { toast.success("Comment deleted"); fetchComments(); }
   };
 
+  const paginatedComments = useMemo(() => comments.slice((cmtPage - 1) * CMT_PAGE_SIZE, cmtPage * CMT_PAGE_SIZE), [comments, cmtPage]);
+
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>;
 
   return (
     <div>
       <h2 className="text-2xl font-bold mb-6">Comments ({comments.length})</h2>
       <div className="space-y-2">
-        {comments.map((c) => (
+        {paginatedComments.map((c) => (
           <div key={c.id} className="bg-card border border-border rounded-xl p-4 flex items-start gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
@@ -66,6 +71,7 @@ const AdminComments = () => {
           <div className="text-center py-10 text-muted-foreground text-sm">No comments found</div>
         )}
       </div>
+      <AdminPagination page={cmtPage} totalItems={comments.length} pageSize={CMT_PAGE_SIZE} onPageChange={setCmtPage} />
     </div>
   );
 };

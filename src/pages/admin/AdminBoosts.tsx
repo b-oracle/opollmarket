@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Zap, CheckCircle, XCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import AdminPagination from "@/components/admin/AdminPagination";
 
 interface BoostRow {
   id: string;
@@ -36,6 +37,8 @@ const AdminBoosts = () => {
   const [boosts, setBoosts] = useState<BoostRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [bstPage, setBstPage] = useState(1);
+  const BST_PAGE_SIZE = 20;
 
   const fetchBoosts = async () => {
     const { data, error } = await supabase
@@ -112,6 +115,8 @@ const AdminBoosts = () => {
     setActionLoading(null);
   };
 
+  const paginatedBoosts = useMemo(() => boosts.slice((bstPage - 1) * BST_PAGE_SIZE, bstPage * BST_PAGE_SIZE), [boosts, bstPage]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -136,7 +141,7 @@ const AdminBoosts = () => {
         </div>
       ) : (
         <div className="space-y-3">
-          {boosts.map((boost) => (
+          {paginatedBoosts.map((boost) => (
             <div
               key={boost.id}
               className="bg-card border border-border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3"
@@ -204,6 +209,7 @@ const AdminBoosts = () => {
           ))}
         </div>
       )}
+      <AdminPagination page={bstPage} totalItems={boosts.length} pageSize={BST_PAGE_SIZE} onPageChange={setBstPage} />
     </div>
   );
 };
