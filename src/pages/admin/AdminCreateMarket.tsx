@@ -17,9 +17,12 @@ import {
   Target,
   CheckCircle2,
   Video,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 import CategoryIcon from "@/components/CategoryIcon";
+import ReactMarkdown from "react-markdown";
 import { isYouTubeUrl, getYouTubeId } from "@/components/YouTubeEmbed";
 
 const CATEGORIES = [
@@ -46,6 +49,8 @@ const AdminCreateMarket = () => {
   const [trending, setTrending] = useState(false);
   const [videoUrl, setVideoUrl] = useState("");
   const [mediaType, setMediaType] = useState<"image" | "video">("image");
+  const [details, setDetails] = useState("");
+  const [showDetailsPreview, setShowDetailsPreview] = useState(false);
 
   // Image state
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -195,6 +200,7 @@ const AdminCreateMarket = () => {
           market_type: marketType,
           image_url: imageUrl,
           video_url: mediaType === "video" && videoUrl.trim() && isYouTubeUrl(videoUrl.trim()) ? videoUrl.trim() : null,
+          details: details.trim() || null,
           trending,
           status: "active",
         })
@@ -302,6 +308,44 @@ const AdminCreateMarket = () => {
           {fieldError("description") && (
             <p className="text-[11px] text-destructive mt-1">{fieldError("description")}</p>
           )}
+        </div>
+
+        {/* More Details (Markdown) */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="flex items-center gap-2 text-sm font-semibold">
+              <FileText className="w-4 h-4 text-primary" />
+              More Details <span className="text-muted-foreground font-normal">(optional)</span>
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowDetailsPreview(!showDetailsPreview)}
+              className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+            >
+              {showDetailsPreview ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              {showDetailsPreview ? "Edit" : "Preview"}
+            </button>
+          </div>
+          {showDetailsPreview ? (
+            <div className="bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm min-h-[100px] prose prose-sm dark:prose-invert max-w-none">
+              {details.trim() ? (
+                <ReactMarkdown>{details}</ReactMarkdown>
+              ) : (
+                <p className="text-muted-foreground italic">Nothing to preview</p>
+              )}
+            </div>
+          ) : (
+            <textarea
+              value={details}
+              onChange={(e) => setDetails(e.target.value.slice(0, 2000))}
+              placeholder="Add supplementary details, links, or resolution criteria using Markdown..."
+              rows={4}
+              className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition-colors"
+            />
+          )}
+          <div className="flex justify-end mt-1">
+            <p className="text-[10px] text-muted-foreground">{details.length}/2000</p>
+          </div>
         </div>
       </div>
 
