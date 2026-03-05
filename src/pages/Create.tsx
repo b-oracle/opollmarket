@@ -1058,17 +1058,26 @@ const Create = () => {
                     Balance: <span className="text-foreground font-medium">${balance.toFixed(2)}</span>
                   </span>
                 </label>
-                <input
-                  type="number"
-                  value={initialLiquidity}
-                  onChange={(e) => setInitialLiquidity(e.target.value)}
-                  onBlur={() => markTouched("initialLiquidity")}
-                  placeholder="100"
-                  min="10"
-                  className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 transition-all ${
-                    touched.initialLiquidity && errors.initialLiquidity ? "border-destructive focus:ring-destructive/30" : "border-border focus:ring-primary/30"
-                  }`}
-                />
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={initialLiquidity}
+                    onChange={(e) => setInitialLiquidity(e.target.value)}
+                    onBlur={() => markTouched("initialLiquidity")}
+                    placeholder="100"
+                    min="10"
+                    className={`w-full bg-muted/50 border rounded-xl px-4 py-3 pr-16 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 transition-all ${
+                      touched.initialLiquidity && errors.initialLiquidity ? "border-destructive focus:ring-destructive/30" : "border-border focus:ring-primary/30"
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { setInitialLiquidity(balance.toString()); markTouched("initialLiquidity"); }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"
+                  >
+                    Max
+                  </button>
+                </div>
                 {touched.initialLiquidity && errors.initialLiquidity ? (
                   <p className="text-[10px] text-destructive mt-1.5">{errors.initialLiquidity}</p>
                 ) : (
