@@ -280,10 +280,20 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
         return;
       }
 
-      // Derive author name from auth user
-      const authorName = user.email
-        ? user.email.split("@")[0]
-        : "Anonymous";
+      // Derive author name from display_name (profile), fallback to email prefix
+      let authorName = "Anonymous";
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (profile?.display_name) {
+        authorName = profile.display_name;
+      } else if (user.user_metadata?.display_name) {
+        authorName = user.user_metadata.display_name;
+      } else if (user.email) {
+        authorName = user.email.split("@")[0];
+      }
 
       const { error } = await supabase.from("comments").insert({
         market_id: marketId,
