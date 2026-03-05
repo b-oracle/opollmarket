@@ -326,6 +326,7 @@ export type Database = {
           creator_name: string
           creator_wallet: string
           description: string
+          details: string | null
           end_date: string
           id: string
           image_url: string | null
@@ -354,6 +355,7 @@ export type Database = {
           creator_name?: string
           creator_wallet: string
           description: string
+          details?: string | null
           end_date: string
           id?: string
           image_url?: string | null
@@ -382,6 +384,7 @@ export type Database = {
           creator_name?: string
           creator_wallet?: string
           description?: string
+          details?: string | null
           end_date?: string
           id?: string
           image_url?: string | null

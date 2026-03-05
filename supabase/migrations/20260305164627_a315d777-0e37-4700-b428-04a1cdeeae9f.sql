@@ -1,0 +1,1 @@
+ALTER TABLE public.markets ADD COLUMN details text DEFAULT NULL;
