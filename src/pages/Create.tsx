@@ -28,6 +28,7 @@ import {
   MessageSquare,
   Plus,
   X,
+  Video,
   BarChart3,
   Target,
   LogIn,
@@ -167,6 +168,7 @@ const Create = () => {
   const [step, setStep] = useState(1);
   const [marketType, setMarketType] = useState<"binary" | "multi" | "range">("binary");
   const [options, setOptions] = useState<string[]>(["", ""]);
+  const [videoUrl, setVideoUrl] = useState("");
 
   const addOption = () => {
     if (options.length < 6) setOptions([...options, ""]);
@@ -352,6 +354,7 @@ const Create = () => {
         title: title.trim(),
         description: description.trim(),
         details: details.trim() || null,
+        video_url: videoUrl.trim() || null,
         category,
         end_date: endDate,
         resolution_source: resolutionSource.trim(),
@@ -1116,6 +1119,24 @@ const Create = () => {
                 {touched.resolutionSource && errors.resolutionSource && (
                   <p className="text-[10px] text-destructive mt-1.5">{errors.resolutionSource}</p>
                 )}
+              </div>
+
+              {/* Optional Video Link */}
+              <div className="glass rounded-xl p-4">
+                <label className="flex items-center gap-2 text-sm font-semibold mb-2">
+                  <Video className="w-4 h-4 text-primary" />
+                  Video Link <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+                </label>
+                <input
+                  type="url"
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  placeholder="e.g. https://youtube.com/watch?v=..."
+                  className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1.5">
+                  Add a YouTube video to display on your market's detail page.
+                </p>
               </div>
 
               <div className="flex gap-3">

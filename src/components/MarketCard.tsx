@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import YouTubeEmbed, { isYouTubeUrl } from "@/components/YouTubeEmbed";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown, ExternalLink, Flame } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -247,14 +246,9 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             </motion.div>
           </>
         )}
-        {/* Visible banner: background image/video + gradient */}
+        {/* Visible banner: always image + gradient */}
         <div className="absolute inset-0">
-          {market.videoUrl && isYouTubeUrl(market.videoUrl) ? (
-            <div className="absolute inset-0">
-              <YouTubeEmbed url={market.videoUrl} className="w-full h-full object-cover pointer-events-none" />
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/40" />
-            </div>
-          ) : market.imageUrl ? (
+          {market.imageUrl ? (
             <div className="absolute inset-0">
               <img src={market.imageUrl} alt="" className="w-full h-full object-cover opacity-50" />
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/20" />
