@@ -38,6 +38,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 import CategoryIcon from "@/components/CategoryIcon";
+import SwapModal from "@/components/SwapModal";
 
 const CATEGORIES = [
   "Crypto", "AI & Tech", "Science", "Economy",
@@ -89,6 +90,7 @@ const Create = () => {
   const [gateRunning, setGateRunning] = useState(false);
   const [gateFinished, setGateFinished] = useState(false);
   const [payingToCreate, setPayingToCreate] = useState(false);
+  const [swapModalOpen, setSwapModalOpen] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -578,16 +580,14 @@ const Create = () => {
                   You don't meet the requirements yet. Choose an option below:
                 </p>
 
-                {/* Buy Token */}
-                <a
-                  href={pancakeSwapUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                {/* Buy Token — opens embedded swap modal */}
+                <button
+                  onClick={() => setSwapModalOpen(true)}
                   className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold transition-all active:scale-95"
                 >
                   <Coins className="w-4 h-4" />
                   Buy BC400 Token
-                </a>
+                </button>
 
                 {/* Buy/Mint NFT */}
                 {nftBuyUrl && (
@@ -650,6 +650,11 @@ const Create = () => {
             </div>
           </motion.div>
         </div>
+        <SwapModal
+          open={swapModalOpen}
+          onClose={() => setSwapModalOpen(false)}
+          tokenContractAddress={tokenContractAddress}
+        />
         <BottomNav />
       </div>
     );
