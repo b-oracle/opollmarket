@@ -89,9 +89,44 @@ const AdminMarkets = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchMarkets(); fetchTrendingScores(); setMktPage(1); }, [filter]);
+  const fetchPendingMarkets = async () => {
+    const { data } = await supabase
+      .from("markets")
+      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+    if (data) setPendingMarkets(data);
+  };
+
+  useEffect(() => { fetchMarkets(); fetchTrendingScores(); fetchPendingMarkets(); setMktPage(1); }, [filter]);
 
   const paginatedMarkets = useMemo(() => markets.slice((mktPage - 1) * MKT_PAGE_SIZE, mktPage * MKT_PAGE_SIZE), [markets, mktPage]);
+
+  const handleApprove = async (id: string) => {
+    setApprovingId(id);
+    const { error } = await supabase.from("markets").update({ status: "active" }).eq("id", id);
+    if (error) { toast.error("Failed to approve"); }
+    else { toast.success("Market approved and now live!"); fetchMarkets(); fetchPendingMarkets(); }
+    setApprovingId(null);
+  };
+
+  const handleReject = async (id: string) => {
+    if (!confirm("Reject and delete this market? The creator's liquidity will NOT be refunded automatically.")) return;
+    setRejectingId(id);
+    try {
+      const { data, error } = await supabase.functions.invoke("cancel-market", {
+        body: { market_id: id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Market rejected and refunded.`);
+      fetchMarkets();
+      fetchPendingMarkets();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to reject market");
+    }
+    setRejectingId(null);
+  };
 
   const fetchTrendingScores = async () => {
     const { data, error } = await supabase.rpc("get_trending_scores");
