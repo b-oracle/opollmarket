@@ -128,15 +128,16 @@ const AdminMarkets = () => {
   };
 
   const handleReject = async (id: string) => {
-    if (!confirm("Reject and delete this market? The creator's liquidity will NOT be refunded automatically.")) return;
+    if (!confirm("Reject this market for content violation? The creation fee will be FORFEITED (not refunded). Only the initial liquidity will be refunded.")) return;
     setRejectingId(id);
     try {
       const { data, error } = await supabase.functions.invoke("cancel-market", {
-        body: { market_id: id },
+        body: { market_id: id, reason: "moderation" },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success(`Market rejected and refunded.`);
+      const feeMsg = data?.creation_fee_forfeited > 0 ? ` Creation fee ($${data.creation_fee_forfeited}) forfeited.` : "";
+      toast.success(`Market rejected.${feeMsg} Liquidity refunded.`);
       fetchMarkets();
       fetchPendingMarkets();
     } catch (err: any) {
