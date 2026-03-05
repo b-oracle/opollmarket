@@ -31,6 +31,8 @@ import {
   Target,
   LogIn,
   User,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
@@ -55,6 +57,47 @@ interface GateCheck {
   status: GateStatus;
   detail?: string;
 }
+
+const DetailsField = ({ details, setDetails }: { details: string; setDetails: (v: string) => void }) => {
+  const [preview, setPreview] = useState(false);
+  return (
+    <div className="glass rounded-xl p-4">
+      <div className="flex items-center justify-between mb-2">
+        <label className="flex items-center gap-2 text-sm font-semibold">
+          <FileText className="w-4 h-4 text-primary" />
+          More Details <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+        </label>
+        {details.trim() && (
+          <button
+            type="button"
+            onClick={() => setPreview(!preview)}
+            className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {preview ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            {preview ? "Edit" : "Preview"}
+          </button>
+        )}
+      </div>
+      {preview ? (
+        <div className="bg-muted/50 border border-border rounded-xl px-4 py-3 min-h-[5rem]">
+          <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">{details}</p>
+        </div>
+      ) : (
+        <textarea
+          value={details}
+          onChange={(e) => setDetails(e.target.value)}
+          placeholder="Provide extra context, background info, or rules that help participants make informed predictions."
+          rows={3}
+          className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none"
+          maxLength={2000}
+        />
+      )}
+      <div className="flex justify-end mt-1.5">
+        <p className={`text-[10px] ${details.length > 1800 ? "text-destructive" : "text-muted-foreground"}`}>{details.length}/2000</p>
+      </div>
+    </div>
+  );
+};
 
 const Create = () => {
   const { address, isConnected } = useAccount();
@@ -889,23 +932,7 @@ const Create = () => {
                 </div>
               </div>
 
-              <div className="glass rounded-xl p-4">
-                <label className="flex items-center gap-2 text-sm font-semibold mb-2">
-                  <FileText className="w-4 h-4 text-primary" />
-                  More Details <span className="text-xs font-normal text-muted-foreground">(optional)</span>
-                </label>
-                <textarea
-                  value={details}
-                  onChange={(e) => setDetails(e.target.value)}
-                  placeholder="Provide extra context, background info, or rules that help participants make informed predictions."
-                  rows={3}
-                  className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none"
-                  maxLength={2000}
-                />
-                <div className="flex justify-end mt-1.5">
-                  <p className="text-[10px] text-muted-foreground">{details.length}/2000</p>
-                </div>
-              </div>
+              <DetailsField details={details} setDetails={setDetails} />
 
               {/* Market Type */}
               <div className="glass rounded-xl p-4">
