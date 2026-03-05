@@ -1311,6 +1311,180 @@ const Create = () => {
                 </motion.div>
               )}
 
+              {/* First Prediction Step */}
+              {submitStep === "first_prediction" && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="glass rounded-xl p-6 flex flex-col items-center"
+                >
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", damping: 10 }}
+                    className="w-14 h-14 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center mb-3"
+                  >
+                    <TrendingUp className="w-7 h-7 text-primary" />
+                  </motion.div>
+                  <h3 className="text-base font-bold mb-1">Place Your First Prediction</h3>
+                  <p className="text-xs text-muted-foreground text-center mb-5">
+                    To make your market official, place a minimum $5 prediction. This records the first volume and shows other traders you believe in your market.
+                  </p>
+
+                  {/* Side selection */}
+                  {marketType === "binary" && (
+                    <div className="grid grid-cols-2 gap-3 w-full mb-4">
+                      <button
+                        onClick={() => setFirstPredSide("yes")}
+                        className={`p-3 rounded-xl border-2 text-center text-sm font-semibold transition-all ${
+                          firstPredSide === "yes"
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border hover:border-primary/30 text-muted-foreground"
+                        }`}
+                      >
+                        <CheckCircle2 className="w-5 h-5 mx-auto mb-1" />
+                        Yes
+                      </button>
+                      <button
+                        onClick={() => setFirstPredSide("no")}
+                        className={`p-3 rounded-xl border-2 text-center text-sm font-semibold transition-all ${
+                          firstPredSide === "no"
+                            ? "border-destructive bg-destructive/10 text-destructive"
+                            : "border-border hover:border-destructive/30 text-muted-foreground"
+                        }`}
+                      >
+                        <XCircle className="w-5 h-5 mx-auto mb-1" />
+                        No
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Amount input */}
+                  <div className="w-full mb-4">
+                    <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Prediction Amount (min $5)</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">$</span>
+                      <input
+                        type="number"
+                        value={firstPredAmount}
+                        onChange={(e) => setFirstPredAmount(e.target.value)}
+                        min={5}
+                        placeholder="5"
+                        className="w-full bg-muted/50 border border-border rounded-xl pl-7 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      {[5, 10, 25, 50].map((amt) => (
+                        <button
+                          key={amt}
+                          onClick={() => setFirstPredAmount(amt.toString())}
+                          className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
+                            firstPredAmount === amt.toString()
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-muted/50 text-muted-foreground border-border hover:border-primary/50"
+                          }`}
+                        >
+                          ${amt}
+                        </button>
+                      ))}
+                    </div>
+                    {parseFloat(firstPredAmount) < 5 && firstPredAmount !== "" && (
+                      <p className="text-[10px] text-destructive mt-1.5">Minimum prediction is $5</p>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={async () => {
+                      const amount = parseFloat(firstPredAmount);
+                      if (!user || !newMarketId || amount < 5) {
+                        toast.error("Minimum prediction is $5");
+                        return;
+                      }
+                      setSubmitStep("placing_prediction");
+
+                      // Check balance
+                      const { data: bal } = await supabase
+                        .from("balances")
+                        .select("amount")
+                        .eq("user_id", user.id)
+                        .single();
+
+                      if (!bal || bal.amount < amount) {
+                        toast.error(`Insufficient balance. You have $${bal?.amount?.toFixed(2) || "0"}`);
+                        setSubmitStep("first_prediction");
+                        return;
+                      }
+
+                      // Deduct balance
+                      const { error: deductErr } = await supabase
+                        .from("balances")
+                        .update({ amount: bal.amount - amount, updated_at: new Date().toISOString() })
+                        .eq("user_id", user.id);
+
+                      if (deductErr) {
+                        toast.error("Failed to deduct balance");
+                        setSubmitStep("first_prediction");
+                        return;
+                      }
+
+                      const price = firstPredSide === "yes" ? 0.5 : 0.5;
+                      const shares = amount / price;
+
+                      // Record transaction
+                      await supabase.from("transactions").insert({
+                        user_id: user.id,
+                        type: "buy",
+                        amount,
+                        market_id: newMarketId,
+                        status: "confirmed",
+                        side: firstPredSide,
+                        price,
+                        shares,
+                      });
+
+                      // Create/update position
+                      await supabase.from("positions").insert({
+                        user_id: user.id,
+                        market_id: newMarketId,
+                        side: firstPredSide,
+                        shares,
+                        avg_price: price,
+                      });
+
+                      // Update market volume and participants
+                      await supabase
+                        .from("markets")
+                        .update({
+                          volume: amount,
+                          participants: 1,
+                        })
+                        .eq("id", newMarketId);
+
+                      toast.success("First prediction placed! Your market is now live.");
+                      setSubmitStep("success");
+                    }}
+                    disabled={parseFloat(firstPredAmount) < 5 || !firstPredAmount}
+                    className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm transition-all active:scale-95 disabled:opacity-40 flex items-center justify-center gap-2"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Place ${firstPredAmount || "0"} {marketType === "binary" ? firstPredSide.toUpperCase() : ""} Prediction
+                  </button>
+                </motion.div>
+              )}
+
+              {/* Placing prediction loading */}
+              {submitStep === "placing_prediction" && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="glass rounded-xl p-6 flex flex-col items-center"
+                >
+                  <LogoLoader size="lg" />
+                  <h3 className="text-base font-bold mt-3 mb-1">Placing Your Prediction...</h3>
+                  <p className="text-xs text-muted-foreground text-center">Recording your first trade on the market.</p>
+                </motion.div>
+              )}
+
               {submitStep === "success" && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
