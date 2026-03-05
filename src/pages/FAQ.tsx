@@ -104,7 +104,7 @@ const FAQ = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24">
-      <SEOHead title="FAQ" description="Frequently asked questions about OPOLL prediction markets, trading, fees, and more." path="/faq" />
+      <SEOHead title="FAQ – OPollMarket" description="Frequently asked questions about OPollMarket — deposits, withdrawals, market creation, boosts, Telegram & WhatsApp integration, and more." path="/faq" />
       <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-muted transition">
