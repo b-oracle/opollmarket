@@ -449,20 +449,15 @@ const Create = () => {
               </div>
             )}
 
-            {/* Connect button */}
+            {/* Connect wallet button */}
             {!isConnected && (
-              <div className="space-y-2">
-                {connectors.map((c) => (
-                  <button
-                    key={c.uid}
-                    onClick={() => connect({ connector: c, chainId: bsc.id })}
-                    disabled={isPending}
-                    className="w-full flex items-center justify-center px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold transition-all active:scale-95 disabled:opacity-50"
-                  >
-                    {isPending ? "Connecting..." : `Connect ${c.name}`}
-                  </button>
-                ))}
-              </div>
+              <button
+                onClick={() => navigate("/profile")}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold transition-all active:scale-95"
+              >
+                <Wallet className="w-4 h-4" />
+                Connect Wallet in Profile Settings
+              </button>
             )}
 
             {/* Requirements info */}
