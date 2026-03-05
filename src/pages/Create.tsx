@@ -654,7 +654,14 @@ const Create = () => {
         </div>
         <SwapModal
           open={swapModalOpen}
-          onClose={() => setSwapModalOpen(false)}
+          onClose={() => {
+            setSwapModalOpen(false);
+            // Auto re-check eligibility after closing swap modal
+            setGateChecks([]);
+            setGateFinished(false);
+            setGatePassed(false);
+            runGateCheck();
+          }}
           tokenContractAddress={tokenContractAddress}
         />
         <BottomNav />
