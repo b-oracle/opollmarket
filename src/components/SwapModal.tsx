@@ -5,6 +5,7 @@ import { useAccount, useBalance, useSendTransaction, useWaitForTransactionReceip
 import { parseEther, formatEther, formatUnits, encodeFunctionData, type Address } from "viem";
 import { toast } from "sonner";
 import bc400Logo from "@/assets/bc400-logo.jpeg";
+import bnbLogo from "@/assets/bnb-logo.png";
 
 // PancakeSwap Router V2 on BSC
 const PANCAKE_ROUTER_V2 = "0x10ED43C718714eb63d5aA57B78B54704E256024E" as Address;
