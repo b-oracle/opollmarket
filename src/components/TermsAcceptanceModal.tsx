@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, ExternalLink } from "lucide-react";
+import { Shield, ExternalLink, CalendarClock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface TermsAcceptanceModalProps {
@@ -9,19 +9,28 @@ interface TermsAcceptanceModalProps {
   onClose: () => void;
 }
 
-const TERMS_ACCEPTED_KEY = "opoll_terms_accepted";
+/**
+ * Update this date string whenever Terms / Disclaimer / Privacy policies change.
+ * Users will be re-prompted to accept on their next prediction.
+ */
+export const LATEST_POLICY_DATE = "2026-03-05";
+
+const TERMS_ACCEPTED_KEY = "opoll_terms_accepted_date";
 
 export const hasAcceptedTerms = (): boolean => {
-  return localStorage.getItem(TERMS_ACCEPTED_KEY) === "true";
+  return localStorage.getItem(TERMS_ACCEPTED_KEY) === LATEST_POLICY_DATE;
 };
 
 export const setTermsAccepted = () => {
-  localStorage.setItem(TERMS_ACCEPTED_KEY, "true");
+  localStorage.setItem(TERMS_ACCEPTED_KEY, LATEST_POLICY_DATE);
 };
 
 const TermsAcceptanceModal = ({ open, onAccept, onClose }: TermsAcceptanceModalProps) => {
   const [checked, setChecked] = useState(false);
   const navigate = useNavigate();
+
+  const previouslyAccepted = localStorage.getItem(TERMS_ACCEPTED_KEY);
+  const isUpdate = !!previouslyAccepted && previouslyAccepted !== LATEST_POLICY_DATE;
 
   if (!open) return null;
 
@@ -46,10 +55,25 @@ const TermsAcceptanceModal = ({ open, onAccept, onClose }: TermsAcceptanceModalP
               <Shield className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-foreground">Terms & Conditions</h2>
-              <p className="text-xs text-muted-foreground">Please review before placing your first prediction</p>
+              <h2 className="text-base font-bold text-foreground">
+                {isUpdate ? "Updated Terms & Conditions" : "Terms & Conditions"}
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {isUpdate
+                  ? "Our policies have been updated — please review and accept"
+                  : "Please review before placing your first prediction"}
+              </p>
             </div>
           </div>
+
+          {isUpdate && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/50 border border-accent text-xs text-accent-foreground">
+              <CalendarClock className="w-4 h-4 shrink-0" />
+              <span>
+                Policies updated on <strong>{LATEST_POLICY_DATE}</strong>. Your previous acceptance is no longer current.
+              </span>
+            </div>
+          )}
 
           <div className="p-3 rounded-xl bg-muted/50 border border-border text-xs text-muted-foreground space-y-2 max-h-40 overflow-y-auto">
             <p>By placing predictions on OPOLL, you acknowledge and agree that:</p>
@@ -96,7 +120,7 @@ const TermsAcceptanceModal = ({ open, onAccept, onClose }: TermsAcceptanceModalP
             disabled={!checked}
             className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm transition-all active:scale-95 disabled:opacity-40 disabled:active:scale-100"
           >
-            Accept & Continue
+            {isUpdate ? "Accept Updated Terms" : "Accept & Continue"}
           </button>
         </motion.div>
       </motion.div>
