@@ -316,6 +316,18 @@ const Create = () => {
       side: "initial_liquidity",
     });
 
+    // Record the creation fee transaction if fee bypass
+    if (feeBypass) {
+      await supabase.from("transactions").insert({
+        user_id: user.id,
+        type: "buy",
+        amount: marketCreationFee,
+        market_id: data?.id,
+        status: "confirmed",
+        side: "market_creation_fee",
+      });
+    }
+
     // Save options for multi/range markets
     if (marketType !== "binary" && data?.id) {
       const validOptions = options.filter(o => o.trim());
@@ -339,14 +351,16 @@ const Create = () => {
     setCreatedAsPending(needsReview);
     setSubmitStep("success");
 
-    if (isFlagged) {
+    if (feeBypass) {
+      toast.info("Your market requires admin approval. The creation fee ($" + marketCreationFee + ") is non-refundable.");
+    } else if (isFlagged) {
       toast.warning("Your market was flagged for inappropriate content and is pending admin review.");
     } else if (isSimilar) {
       toast.info("Your market was flagged as similar to an existing one and is pending admin review.");
     } else {
       toast.success("Market created successfully!");
     }
-  }, [user, address, title, description, category, endDate, resolutionSource, initialLiquidity, marketType, options]);
+  }, [user, address, title, description, category, endDate, resolutionSource, initialLiquidity, marketType, options, feeBypass, marketCreationFee]);
 
   // Token-gate verification using wallet NFTs
   const runGateCheck = async () => {
