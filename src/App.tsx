@@ -44,7 +44,7 @@ import DesktopFooter from "./components/DesktopFooter";
 import PWAUpdatePrompt from "./components/PWAUpdatePrompt";
 const queryClient = new QueryClient();
 
-const isFooterHidden = (pathname: string) => pathname.startsWith("/admin");
+
 
 const isAdminRoute = (pathname: string) => pathname.startsWith("/admin");
 
@@ -76,8 +76,8 @@ const App = () => (
             <Sonner />
             <PWAUpdatePrompt />
             <BrowserRouter>
-            <DesktopSidebar />
-            <div className="md:ml-60 min-h-screen flex flex-col">
+            <ConditionalSidebar />
+            <ConditionalLayout>
               <div className="flex-1">
                 <Routes>
                   <Route path="/" element={<Index />} />
