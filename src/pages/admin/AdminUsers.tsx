@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Shield, ShieldOff, DollarSign, X, ShieldCheck, ShieldMinus } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import AdminPagination from "@/components/admin/AdminPagination";
 
 interface ProfileRow {
   id: string;
@@ -98,6 +99,8 @@ const AdminUsers = () => {
     }
     setCrediting(false);
   };
+
+  const paginatedUsers = useMemo(() => users.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [users, page]);
 
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>;
 
