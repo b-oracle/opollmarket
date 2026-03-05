@@ -163,7 +163,9 @@ export type Database = {
           id: string
           min_nft_balance: number
           min_token_balance: number
+          nft_contract_address: string | null
           referral_reward_amount: number
+          token_contract_address: string | null
           updated_at: string
           updated_by: string | null
         }
@@ -173,7 +175,9 @@ export type Database = {
           id?: string
           min_nft_balance?: number
           min_token_balance?: number
+          nft_contract_address?: string | null
           referral_reward_amount?: number
+          token_contract_address?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -183,7 +187,9 @@ export type Database = {
           id?: string
           min_nft_balance?: number
           min_token_balance?: number
+          nft_contract_address?: string | null
           referral_reward_amount?: number
+          token_contract_address?: string | null
           updated_at?: string
           updated_by?: string | null
         }
