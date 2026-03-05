@@ -487,14 +487,8 @@ const MarketDetail = () => {
         </div>
       </div>
 
-      {/* Visible banner */}
-      {(market.videoUrl && isYouTubeUrl(market.videoUrl)) ? (
-        <div className="relative w-full rounded-xl overflow-hidden mt-4">
-          <div className="aspect-video w-full">
-            <YouTubeEmbed url={market.videoUrl} className="w-full h-full rounded-xl" />
-          </div>
-        </div>
-      ) : market.imageUrl ? (() => {
+      {/* Visible banner — always image */}
+      {market.imageUrl ? (() => {
         const boostGlowColor = activeBoost
           ? activeBoost.tier === "whale" ? "hsla(45, 93%, 58%, 0.6)"
             : activeBoost.tier === "standard" ? "hsla(280, 70%, 60%, 0.6)"
@@ -537,6 +531,15 @@ const MarketDetail = () => {
         </div>
         );
       })() : null}
+
+      {/* Video embed below banner (if video URL exists) */}
+      {market.videoUrl && isYouTubeUrl(market.videoUrl) && (
+        <div className="relative w-full rounded-xl overflow-hidden mt-4">
+          <div className="aspect-video w-full">
+            <YouTubeEmbed url={market.videoUrl} className="w-full h-full rounded-xl" />
+          </div>
+        </div>
+      )}
 
       <div className={`${(market.imageUrl || market.videoUrl) ? 'pt-4' : 'pt-4'}`}>
         {!market.imageUrl && !market.videoUrl && <h1 className="text-2xl font-bold leading-tight mb-2">{market.title}</h1>}
