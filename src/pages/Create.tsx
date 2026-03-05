@@ -95,6 +95,7 @@ const Create = () => {
   const [gateFinished, setGateFinished] = useState(false);
   const [payingToCreate, setPayingToCreate] = useState(false);
   const [swapModalOpen, setSwapModalOpen] = useState(false);
+  const [showConnectors, setShowConnectors] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -664,13 +665,50 @@ const Create = () => {
 
             {/* Connect wallet button — when wallet not connected */}
             {!isConnected && (
-              <button
-                onClick={() => navigate("/profile?section=wallet")}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold transition-all active:scale-95"
-              >
-                <Wallet className="w-4 h-4" />
-                Connect Wallet in Profile Settings
-              </button>
+              <div className="space-y-2">
+                <button
+                  onClick={() => setShowConnectors((v) => !v)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold transition-all active:scale-95"
+                >
+                  <Wallet className="w-4 h-4" />
+                  Connect Wallet
+                </button>
+
+                <AnimatePresence>
+                  {showConnectors && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden rounded-xl border border-border bg-card"
+                    >
+                      <p className="text-[10px] text-muted-foreground px-4 pt-3 uppercase tracking-wider">
+                        Select Wallet
+                      </p>
+                      {connectors.map((c) => (
+                        <button
+                          key={c.uid}
+                          onClick={() => {
+                            connect({ connector: c, chainId: bsc.id });
+                            setShowConnectors(false);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors text-left"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0 text-base">
+                            {c.name.includes("MetaMask") ? "🦊" : c.name.includes("WalletConnect") ? "🔗" : "💰"}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">{c.name}</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {c.name.includes("Injected") ? "Browser wallet" : c.type}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             )}
 
             {/* Action buttons — when gate finished but failed */}
