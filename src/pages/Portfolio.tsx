@@ -119,7 +119,7 @@ const Sparkline = ({ avgPrice, currentPrice, seed }: { avgPrice: number; current
 
 const Portfolio = () => {
   const { isConnected } = useAccount();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const isAuthenticated = !!user || isConnected;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -285,6 +285,18 @@ const Portfolio = () => {
       setSellStep("error");
     }
   }, [sellTarget, user?.id, queryClient]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-dvh bg-background pb-20">
+        <TopBar />
+        <div className="max-w-lg md:max-w-4xl mx-auto px-4 pt-20 flex items-center justify-center min-h-[60dvh]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+        <BottomNav />
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
