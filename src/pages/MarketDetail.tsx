@@ -461,9 +461,9 @@ const MarketDetail = () => {
         <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/85 via-black/50 to-transparent">
           {isMulti && market.options?.length ? (() => {
             const leading = market.options!.reduce((a, b) => b.price > a.price ? b : a);
-            return <p className="text-lg font-bold neon-yes mb-1">{Math.round(leading.price * 100)}% chance · {leading.label}</p>;
+            return <span className="inline-block px-3 py-1 rounded-full bg-black/40 backdrop-blur-sm text-lg font-bold neon-yes mb-2">{Math.round(leading.price * 100)}% chance · {leading.label}</span>;
           })() : (
-            <p className="text-lg font-bold neon-yes mb-1">{yesPercent}% chance</p>
+            <span className="inline-block px-3 py-1 rounded-full bg-black/40 backdrop-blur-sm text-lg font-bold neon-yes mb-2">{yesPercent}% chance</span>
           )}
           <h3 className="text-2xl font-bold text-white mb-2 leading-tight">{market.title}</h3>
           <div className="flex items-center justify-between">
