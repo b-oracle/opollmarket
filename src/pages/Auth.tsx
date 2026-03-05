@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Eye, EyeOff, LogIn, UserPlus, Gift, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff, LogIn, UserPlus, Gift, CheckCircle2, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 
@@ -25,6 +25,8 @@ const Auth = () => {
     if (saved) setRememberedName(saved);
   }, []);
   
+
+  const resetSent = searchParams.get("reset_sent") === "1";
 
   // Capture referral param
   useEffect(() => {
@@ -196,6 +198,17 @@ const Auth = () => {
           </button>
         </div>
 
+        {resetSent && mode === "login" && (
+          <div className="mb-6 flex items-start gap-2.5 rounded-xl bg-primary/10 border border-primary/20 px-3.5 py-3">
+            <Mail className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-semibold text-foreground mb-0.5">Password reset email sent!</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Check your inbox for a reset link. After setting your new password, sign in below.
+              </p>
+            </div>
+          </div>
+        )}
 
         {mode === "login" && (
           <div className="text-center mt-4">
