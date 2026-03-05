@@ -87,6 +87,8 @@ const Create = () => {
   const [gateChecks, setGateChecks] = useState<GateCheck[]>([]);
   const [gatePassed, setGatePassed] = useState(false);
   const [gateRunning, setGateRunning] = useState(false);
+  const [gateFinished, setGateFinished] = useState(false);
+  const [payingToCreate, setPayingToCreate] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
