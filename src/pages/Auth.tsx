@@ -56,7 +56,13 @@ const Auth = () => {
             toast.error("Invalid referral code. Please check and try again.");
             return;
           }
-          localStorage.setItem("referral_id", referralCode.trim());
+          // Resolve username to user ID for referred_by
+          const { data: referrerId } = await supabase.rpc("get_user_id_by_username", {
+            _username: referralCode.trim(),
+          });
+          if (referrerId) {
+            localStorage.setItem("referral_id", referrerId);
+          }
         }
         const { error } = await signUp(email, password, displayName);
         if (error) { toast.error(error.message); }
