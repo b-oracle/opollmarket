@@ -297,7 +297,40 @@ const InlineComments = ({ marketId }: { marketId: string }) => {
   );
 };
 
-const MarketDetail = () => {
+const MarketDetailsCollapsible = ({ details }: { details: string }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="glass rounded-xl mb-4 overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center justify-between w-full px-4 py-3 text-left"
+      >
+        <div className="flex items-center gap-2">
+          <FileText className="w-4 h-4 text-primary" />
+          <span className="text-sm font-semibold">More Details</span>
+        </div>
+        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-4 pt-0">
+              <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">{details}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
