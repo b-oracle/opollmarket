@@ -408,12 +408,10 @@ const Profile = () => {
                             avatarUrl = selectedNftUrl;
                           } else if (avatarFile) {
                             avatarUrl = await uploadAvatar();
-                            if (!avatarUrl && avatarFile) return;
+                            if (!avatarUrl && avatarFile) { setSavingProfile(false); return; }
                           }
-                          const { error: authError } = await supabase.auth.updateUser({
-                            data: { display_name: editName.trim(), ...(avatarUrl ? { avatar_url: avatarUrl } : {}) },
-                          });
-                          if (authError) { toast.error("Failed to update: " + authError.message); return; }
+
+                          // Update profile table first (more reliable)
                           const { error: profileError } = await supabase.from("profiles").update({
                             display_name: editName.trim(),
                             ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
@@ -424,8 +422,21 @@ const Profile = () => {
                             } else {
                               toast.error("Failed to update profile");
                             }
+                            setSavingProfile(false);
                             return;
                           }
+
+                          // Update auth metadata (fire-and-forget with timeout)
+                          const authUpdatePromise = supabase.auth.updateUser({
+                            data: { display_name: editName.trim(), ...(avatarUrl ? { avatar_url: avatarUrl } : {}) },
+                          });
+                          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000));
+                          try {
+                            await Promise.race([authUpdatePromise, timeoutPromise]);
+                          } catch {
+                            // Auth metadata update timed out or failed — profile is already saved, continue
+                          }
+
                           queryClient.invalidateQueries({ queryKey: ["profile", user!.id] });
                           setAvatarFile(null);
                           setAvatarPreview(null);
@@ -433,6 +444,8 @@ const Profile = () => {
                           setShowNftPicker(false);
                           toast.success("Profile updated!");
                           setEditingProfile(false);
+                        } catch (err) {
+                          toast.error("Something went wrong");
                         } finally {
                           setSavingProfile(false);
                         }
