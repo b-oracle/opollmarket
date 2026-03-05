@@ -1159,11 +1159,14 @@ const Create = () => {
                     );
                   })}
                 </div>
-                {parseFloat(initialLiquidity) > balance && balance > 0 && (
-                  <p className="text-[10px] text-destructive mt-1.5 flex items-center gap-1">
-                    ⚠️ Amount exceeds your balance by ${(parseFloat(initialLiquidity) - balance).toFixed(2)}
-                  </p>
-                )}
+                {(() => {
+                  const totalNeeded = parseFloat(initialLiquidity) + (feeBypass ? marketCreationFee : 0);
+                  return totalNeeded > balance && balance > 0 ? (
+                    <p className="text-[10px] text-destructive mt-1.5 flex items-center gap-1">
+                      ⚠️ Total cost (${totalNeeded.toFixed(2)}) exceeds your balance by ${(totalNeeded - balance).toFixed(2)}
+                    </p>
+                  ) : null;
+                })()}
               </div>
 
               {/* Review card */}
