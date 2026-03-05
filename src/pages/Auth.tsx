@@ -198,6 +198,17 @@ const Auth = () => {
           </button>
         </div>
 
+        {resetSent && mode === "login" && (
+          <div className="mb-6 flex items-start gap-2.5 rounded-xl bg-primary/10 border border-primary/20 px-3.5 py-3">
+            <Mail className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-semibold text-foreground mb-0.5">Password reset email sent!</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Check your inbox for a reset link. After setting your new password, sign in below.
+              </p>
+            </div>
+          </div>
+        )}
 
         {mode === "login" && (
           <div className="text-center mt-4">
