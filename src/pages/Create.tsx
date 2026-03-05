@@ -770,7 +770,7 @@ const Create = () => {
                   ) : (
                     <DollarSign className="w-4 h-4" />
                   )}
-                  Pay ${marketCreationFee} to Create Market
+                  No NFT? No BC400? No problem. — ${marketCreationFee} USDT
                 </button>
 
                 {/* Retry check */}
@@ -801,7 +801,7 @@ const Create = () => {
                 </li>
                 <li className="flex items-center gap-2">
                   <DollarSign className="w-3 h-3 text-primary" />
-                  Pay ${marketCreationFee} USDT from your balance
+                  Or pay ${marketCreationFee} USDT from your balance
                 </li>
               </ul>
             </div>
