@@ -149,6 +149,7 @@ export const useAuth = () => {
       mounted.current = false;
       subscription.unsubscribe();
       document.removeEventListener("visibilitychange", handleVisibility);
+      clearInterval(refreshInterval);
     };
   }, [checkRoles]);
 
