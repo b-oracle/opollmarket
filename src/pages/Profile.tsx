@@ -417,6 +417,13 @@ const Profile = () => {
                               body: { name: editName.trim() },
                             });
                             if (nameModData?.flagged) {
+                              await supabase.from("moderation_logs").insert({
+                                content_type: "display_name",
+                                user_id: user!.id,
+                                flagged_content: editName.trim(),
+                                reason: nameModData.reason || "Flagged by AI",
+                                category: "profanity",
+                              });
                               toast.error(nameModData.reason || "This display name is not allowed");
                               setSavingProfile(false);
                               return;
@@ -440,6 +447,13 @@ const Profile = () => {
                                 body: { image_url: avatarUrl },
                               });
                               if (imgModData?.flagged) {
+                                await supabase.from("moderation_logs").insert({
+                                  content_type: "image",
+                                  user_id: user!.id,
+                                  flagged_content: avatarUrl,
+                                  reason: imgModData.reason || "Flagged by AI",
+                                  category: imgModData.category || "nsfw",
+                                });
                                 toast.error(imgModData.reason || "This image is not allowed");
                                 setSavingProfile(false);
                                 return;
