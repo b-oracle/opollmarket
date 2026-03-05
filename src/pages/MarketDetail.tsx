@@ -300,10 +300,14 @@ const InlineComments = ({ marketId }: { marketId: string }) => {
 const MarketDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: market, isLoading } = useMarket(id);
   const { boostDetails } = useActiveBoosts();
   const activeBoost = id ? boostDetails.get(id) : undefined;
   const { track } = useAnalytics();
+
+  const isCreator = !!(user && market && market.creatorAddress === user.id);
+  const needsFirstPrediction = isCreator && market && market.participants === 0;
 
   useEffect(() => { if (id) track("page_view", { page: "market_detail", marketId: id }); }, [id]);
 
