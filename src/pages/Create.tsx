@@ -889,23 +889,7 @@ const Create = () => {
                 </div>
               </div>
 
-              <div className="glass rounded-xl p-4">
-                <label className="flex items-center gap-2 text-sm font-semibold mb-2">
-                  <FileText className="w-4 h-4 text-primary" />
-                  More Details <span className="text-xs font-normal text-muted-foreground">(optional)</span>
-                </label>
-                <textarea
-                  value={details}
-                  onChange={(e) => setDetails(e.target.value)}
-                  placeholder="Provide extra context, background info, or rules that help participants make informed predictions."
-                  rows={3}
-                  className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none"
-                  maxLength={2000}
-                />
-                <div className="flex justify-end mt-1.5">
-                  <p className="text-[10px] text-muted-foreground">{details.length}/2000</p>
-                </div>
-              </div>
+              <DetailsField details={details} setDetails={setDetails} />
 
               {/* Market Type */}
               <div className="glass rounded-xl p-4">
