@@ -42,6 +42,7 @@ const formatTimeAgo = (date: string) => {
 };
 
 type FilterType = "all" | "trades" | "deposits";
+type StatusFilter = "all" | "confirmed" | "pending" | "failed";
 
 const Profile = () => {
   
@@ -60,6 +61,7 @@ const Profile = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<"deposit" | "withdraw">("deposit");
   const [txFilter, setTxFilter] = useState<FilterType>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [txPage, setTxPage] = useState(1);
   const TX_PER_PAGE = 10;
   const [editingProfile, setEditingProfile] = useState(false);
@@ -213,10 +215,16 @@ const Profile = () => {
   const openWithdraw = () => { setModalTab("withdraw"); setModalOpen(true); };
 
   const filteredTx = useMemo(() => {
-    if (txFilter === "all") return transactions;
-    if (txFilter === "trades") return transactions.filter((t: any) => t.type === "buy" || t.type === "sell");
-    return transactions.filter((t: any) => t.type === "deposit" || t.type === "withdraw");
-  }, [transactions, txFilter]);
+    let result = transactions;
+    if (txFilter === "trades") result = result.filter((t: any) => t.type === "buy" || t.type === "sell");
+    else if (txFilter === "deposits") result = result.filter((t: any) => t.type === "deposit" || t.type === "withdraw");
+    if (statusFilter !== "all") {
+      result = result.filter((t: any) =>
+        statusFilter === "failed" ? (t.status === "failed" || t.status === "expired") : t.status === statusFilter
+      );
+    }
+    return result;
+  }, [transactions, txFilter, statusFilter]);
 
   const txTotalPages = Math.max(1, Math.ceil(filteredTx.length / TX_PER_PAGE));
   const paginatedTx = useMemo(() => {
@@ -591,11 +599,26 @@ const Profile = () => {
             <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Transaction History</h3>
             <Repeat className="w-4 h-4 text-muted-foreground" />
           </div>
-          <div className="flex gap-2 mb-4">
+          <div className="flex gap-2 mb-3 flex-wrap">
             {(["all", "trades", "deposits"] as FilterType[]).map((f) => (
               <button key={f} onClick={() => { setTxFilter(f); setTxPage(1); }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize ${txFilter === f ? "bg-primary text-primary-foreground" : "glass text-muted-foreground hover:text-foreground"}`}>
                 {f === "deposits" ? "Deposits & Withdrawals" : f}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-1.5 mb-4">
+            {(["all", "confirmed", "pending", "failed"] as StatusFilter[]).map((s) => (
+              <button key={s} onClick={() => { setStatusFilter(s); setTxPage(1); }}
+                className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all capitalize ${
+                  statusFilter === s
+                    ? s === "confirmed" ? "bg-green-500/20 text-green-500 ring-1 ring-green-500/30"
+                    : s === "pending" ? "bg-yellow-500/20 text-yellow-500 ring-1 ring-yellow-500/30"
+                    : s === "failed" ? "bg-destructive/20 text-destructive ring-1 ring-destructive/30"
+                    : "bg-primary text-primary-foreground"
+                    : "bg-muted/50 text-muted-foreground hover:text-foreground"
+                }`}>
+                {s === "confirmed" ? "✓ Confirmed" : s === "pending" ? "⏳ Pending" : s === "failed" ? "✗ Failed" : "All Status"}
               </button>
             ))}
           </div>
