@@ -217,6 +217,12 @@ const Profile = () => {
     return transactions.filter((t: any) => t.type === "deposit" || t.type === "withdraw");
   }, [transactions, txFilter]);
 
+  const txTotalPages = Math.max(1, Math.ceil(filteredTx.length / TX_PER_PAGE));
+  const paginatedTx = useMemo(() => {
+    const start = (txPage - 1) * TX_PER_PAGE;
+    return filteredTx.slice(start, start + TX_PER_PAGE);
+  }, [filteredTx, txPage]);
+
   const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "User";
 
   if (!authLoading && !user) {
