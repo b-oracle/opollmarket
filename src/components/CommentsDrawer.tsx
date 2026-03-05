@@ -258,6 +258,16 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
 
     setSubmitting(true);
     try {
+      // AI moderation check
+      const { data: modData } = await supabase.functions.invoke("moderate-comment", {
+        body: { content: cleanText },
+      });
+      if (modData?.flagged) {
+        toast.error(modData.reason || "Your comment contains inappropriate content. Please revise it.");
+        setSubmitting(false);
+        return;
+      }
+
       // Derive author name from auth user
       const authorName = user.email
         ? user.email.split("@")[0]
