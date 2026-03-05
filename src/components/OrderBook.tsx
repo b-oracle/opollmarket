@@ -115,6 +115,14 @@ const OrderBook = ({ yesPrice, noPrice, liquidity, marketId }: OrderBookProps) =
     return vol;
   }, [recentTrades]);
 
+  const maxTradeVol = useMemo(() => {
+    let max = 0;
+    Object.values(tradeVolume).forEach((v) => {
+      max = Math.max(max, v.buyVol, v.sellVol);
+    });
+    return max;
+  }, [tradeVolume]);
+
   const maxTotal = Math.max(
     bids[bids.length - 1]?.total || 0,
     asks[0]?.total || 0
@@ -152,6 +160,12 @@ const OrderBook = ({ yesPrice, noPrice, liquidity, marketId }: OrderBookProps) =
             <span className="w-2 h-2 rounded-sm" style={{ background: "hsl(var(--neon-no))" }} />
             Asks
           </span>
+          {maxTradeVol > 0 && (
+            <span className="flex items-center gap-1 text-muted-foreground">
+              <span className="w-2 h-2 rounded-sm border border-current opacity-50" />
+              Real Vol
+            </span>
+          )}
         </div>
       </div>
 
@@ -164,32 +178,51 @@ const OrderBook = ({ yesPrice, noPrice, liquidity, marketId }: OrderBookProps) =
 
       {/* Asks (NO side) — red, top */}
       <div className="space-y-[2px] mb-1">
-        {asks.map((level, i) => (
-          <motion.div
-            key={`ask-${level.price}`}
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.03 }}
-            className="relative grid grid-cols-3 text-xs py-1 px-1 rounded-sm overflow-hidden"
-          >
-            <div
-              className="absolute inset-y-0 right-0 rounded-sm"
-              style={{
-                width: `${(level.total / maxTotal) * 100}%`,
-                background: "hsl(var(--neon-no) / 0.1)",
-              }}
-            />
-            <span className="relative z-10 font-medium" style={{ color: "hsl(var(--neon-no))" }}>
-              {formatSize(level.size)}
-            </span>
-            <span className="relative z-10 text-center font-mono font-semibold" style={{ color: "hsl(var(--neon-no))" }}>
-              {level.price}¢
-            </span>
-            <span className="relative z-10 text-right text-muted-foreground">
-              {formatSize(level.total)}
-            </span>
-          </motion.div>
-        ))}
+        {asks.map((level, i) => {
+          const volKey = level.price.toString();
+          const realVol = tradeVolume[volKey];
+          return (
+            <motion.div
+              key={`ask-${level.price}`}
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.03 }}
+              className="relative grid grid-cols-3 text-xs py-1 px-1 rounded-sm overflow-hidden"
+            >
+              <div
+                className="absolute inset-y-0 right-0 rounded-sm"
+                style={{
+                  width: `${(level.total / maxTotal) * 100}%`,
+                  background: "hsl(var(--neon-no) / 0.1)",
+                }}
+              />
+              {realVol && (
+                <div
+                  className="absolute inset-y-0 right-0 rounded-sm"
+                  style={{
+                    width: `${Math.min((realVol.sellVol / (maxTradeVol || 1)) * 60, 60)}%`,
+                    background: "hsl(var(--neon-no) / 0.25)",
+                    borderRight: "2px solid hsl(var(--neon-no) / 0.5)",
+                  }}
+                />
+              )}
+              <span className="relative z-10 font-medium" style={{ color: "hsl(var(--neon-no))" }}>
+                {formatSize(level.size)}
+                {realVol && (
+                  <span className="ml-1 text-[9px] opacity-70" title="Real trade volume">
+                    (${formatSize(Math.round(realVol.sellVol))})
+                  </span>
+                )}
+              </span>
+              <span className="relative z-10 text-center font-mono font-semibold" style={{ color: "hsl(var(--neon-no))" }}>
+                {level.price}¢
+              </span>
+              <span className="relative z-10 text-right text-muted-foreground">
+                {formatSize(level.total)}
+              </span>
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Spread */}
@@ -203,32 +236,51 @@ const OrderBook = ({ yesPrice, noPrice, liquidity, marketId }: OrderBookProps) =
 
       {/* Bids (YES side) — green, bottom */}
       <div className="space-y-[2px] mt-1">
-        {bids.map((level, i) => (
-          <motion.div
-            key={`bid-${level.price}`}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.03 }}
-            className="relative grid grid-cols-3 text-xs py-1 px-1 rounded-sm overflow-hidden"
-          >
-            <div
-              className="absolute inset-y-0 left-0 rounded-sm"
-              style={{
-                width: `${(level.total / maxTotal) * 100}%`,
-                background: "hsl(var(--neon-yes) / 0.1)",
-              }}
-            />
-            <span className="relative z-10 font-medium" style={{ color: "hsl(var(--neon-yes))" }}>
-              {formatSize(level.size)}
-            </span>
-            <span className="relative z-10 text-center font-mono font-semibold" style={{ color: "hsl(var(--neon-yes))" }}>
-              {level.price}¢
-            </span>
-            <span className="relative z-10 text-right text-muted-foreground">
-              {formatSize(level.total)}
-            </span>
-          </motion.div>
-        ))}
+        {bids.map((level, i) => {
+          const volKey = level.price.toString();
+          const realVol = tradeVolume[volKey];
+          return (
+            <motion.div
+              key={`bid-${level.price}`}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.03 }}
+              className="relative grid grid-cols-3 text-xs py-1 px-1 rounded-sm overflow-hidden"
+            >
+              <div
+                className="absolute inset-y-0 left-0 rounded-sm"
+                style={{
+                  width: `${(level.total / maxTotal) * 100}%`,
+                  background: "hsl(var(--neon-yes) / 0.1)",
+                }}
+              />
+              {realVol && (
+                <div
+                  className="absolute inset-y-0 left-0 rounded-sm"
+                  style={{
+                    width: `${Math.min((realVol.buyVol / (maxTradeVol || 1)) * 60, 60)}%`,
+                    background: "hsl(var(--neon-yes) / 0.25)",
+                    borderRight: "2px solid hsl(var(--neon-yes) / 0.5)",
+                  }}
+                />
+              )}
+              <span className="relative z-10 font-medium" style={{ color: "hsl(var(--neon-yes))" }}>
+                {formatSize(level.size)}
+                {realVol && (
+                  <span className="ml-1 text-[9px] opacity-70" title="Real trade volume">
+                    (${formatSize(Math.round(realVol.buyVol))})
+                  </span>
+                )}
+              </span>
+              <span className="relative z-10 text-center font-mono font-semibold" style={{ color: "hsl(var(--neon-yes))" }}>
+                {level.price}¢
+              </span>
+              <span className="relative z-10 text-right text-muted-foreground">
+                {formatSize(level.total)}
+              </span>
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Recent Trades Tape */}
