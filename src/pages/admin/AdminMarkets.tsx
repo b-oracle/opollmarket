@@ -63,7 +63,7 @@ const AdminMarkets = () => {
   const navigate = useNavigate();
   const [markets, setMarkets] = useState<MarketRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "active" | "resolved" | "cancelled">("all");
+  const [filter, setFilter] = useState<"all" | "pending" | "active" | "resolved" | "cancelled">("all");
   const [resolveState, setResolveState] = useState<ResolveState | null>(null);
   const [resolving, setResolving] = useState(false);
   const [editState, setEditState] = useState<EditState | null>(null);
@@ -209,7 +209,7 @@ const AdminMarkets = () => {
             Create Market
           </button>
           <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
-            {(["all", "active", "resolved", "cancelled"] as const).map((f) => (
+            {(["all", "pending", "active", "resolved", "cancelled"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => { setLoading(true); setFilter(f); }}
