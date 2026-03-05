@@ -190,6 +190,8 @@ const AdminCreateMarket = () => {
           resolution_source: resolutionSource.trim(),
           initial_liquidity: parseFloat(initialLiquidity) || 100,
           liquidity: parseFloat(initialLiquidity) || 100,
+          volume: parseFloat(initialVolume) || 0,
+          participants: parseInt(initialTraders) || 0,
           market_type: marketType,
           image_url: imageUrl,
           video_url: mediaType === "video" && videoUrl.trim() && isYouTubeUrl(videoUrl.trim()) ? videoUrl.trim() : null,
@@ -482,6 +484,41 @@ const AdminCreateMarket = () => {
               min={0}
               className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
+          </div>
+        </div>
+
+        {/* Simulated Initial Stats (Admin Only) */}
+        <div className="bg-muted/30 border border-border rounded-xl p-4 space-y-3">
+          <label className="flex items-center gap-2 text-sm font-semibold">
+            <BarChart3 className="w-4 h-4 text-primary" />
+            Simulated Initial Stats
+          </label>
+          <p className="text-[11px] text-muted-foreground -mt-1">
+            Set initial volume and trader count to make the market appear active. These are display-only values.
+          </p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Initial Volume ($)</label>
+              <input
+                type="number"
+                value={initialVolume}
+                onChange={(e) => setInitialVolume(e.target.value)}
+                placeholder="0"
+                min={0}
+                className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Initial Traders</label>
+              <input
+                type="number"
+                value={initialTraders}
+                onChange={(e) => setInitialTraders(e.target.value)}
+                placeholder="0"
+                min={0}
+                className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
           </div>
         </div>
 
