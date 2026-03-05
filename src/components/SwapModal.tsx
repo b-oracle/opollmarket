@@ -225,8 +225,8 @@ const SwapModal = ({ open, onClose, tokenContractAddress }: SwapModalProps) => {
               {/* Success State */}
               {swapStep === "success" ? (
                 <div className="flex flex-col items-center gap-4 py-8">
-                  <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
-                    <CheckCircle2 className="w-8 h-8 text-green-500" />
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                    <CheckCircle2 className="w-8 h-8 text-primary" />
                   </div>
                   <div className="text-center">
                     <p className="text-lg font-bold text-foreground">Swap Complete!</p>
