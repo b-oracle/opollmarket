@@ -156,10 +156,12 @@ const Create = () => {
   };
 
   // Submission state
-  type SubmitStep = "idle" | "deploying" | "saving" | "success" | "error";
+  type SubmitStep = "idle" | "checking_similarity" | "deploying" | "saving" | "success" | "error";
   const [submitStep, setSubmitStep] = useState<SubmitStep>("idle");
   const [txHash, setTxHash] = useState("");
   const [newMarketId, setNewMarketId] = useState("");
+  const [similarMarkets, setSimilarMarkets] = useState<Array<{ id: string; title: string; category: string }>>([]);
+  const [createdAsPending, setCreatedAsPending] = useState(false);
 
   // Save wallet address to profile when connected
   useEffect(() => {
