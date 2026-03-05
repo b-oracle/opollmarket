@@ -224,6 +224,14 @@ const Create = () => {
       if (!modError && modData?.flagged) {
         isFlagged = true;
         setModerationReason(modData.reason || "Content flagged by AI moderation");
+        // Log to moderation dashboard
+        await supabase.from("moderation_logs").insert({
+          content_type: "market",
+          user_id: user.id,
+          flagged_content: `${title.trim()} — ${description.trim()}`,
+          reason: modData.reason || "Flagged by AI",
+          category: modData.categories?.[0] || "content",
+        });
       }
     } catch (err) {
       console.error("Moderation check failed, proceeding:", err);
