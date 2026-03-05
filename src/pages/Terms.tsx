@@ -21,57 +21,207 @@ const Terms = () => {
       <div className="max-w-lg mx-auto px-4 pt-6 space-y-6 text-sm text-muted-foreground leading-relaxed">
         <section className="space-y-2">
           <h2 className="text-base font-semibold text-foreground">1. Acceptance of Terms</h2>
-          <p>By accessing or using this platform, you agree to be bound by these Terms & Conditions. If you do not agree with any part of these terms, you must not use our services. We reserve the right to update these terms at any time, and continued use of the platform constitutes acceptance of any changes.</p>
+          <p>By accessing, browsing, or using the OPollMarket platform ("Platform"), including all associated features, services, and applications, you acknowledge that you have read, understood, and agree to be bound by these Terms & Conditions ("Terms"). If you do not agree with any part of these Terms, you must immediately discontinue use of the Platform.</p>
+          <p>We reserve the right to modify these Terms at any time. Material changes will be communicated via in-app notifications or email. Your continued use of the Platform after such changes constitutes acceptance of the revised Terms. We recommend reviewing these Terms periodically.</p>
         </section>
 
         <section className="space-y-2">
           <h2 className="text-base font-semibold text-foreground">2. Eligibility</h2>
-          <p>You must be at least 18 years of age to use this platform. By registering an account, you represent and warrant that you meet this age requirement and that all information you provide is accurate and complete. Users are responsible for ensuring their participation complies with local laws and regulations.</p>
+          <p>You must be at least 18 years of age (or the age of majority in your jurisdiction, whichever is greater) to use the Platform. By creating an account, you represent and warrant that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>You meet the minimum age requirement.</li>
+            <li>All registration information you provide is truthful, accurate, and complete.</li>
+            <li>Your use of the Platform does not violate any applicable law or regulation in your jurisdiction.</li>
+            <li>You are not located in, or a resident of, any jurisdiction where prediction market participation is prohibited or restricted.</li>
+            <li>You are not on any sanctions list or otherwise prohibited from engaging in financial transactions.</li>
+          </ul>
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-semibold text-foreground">3. Account Responsibilities</h2>
-          <p>You are responsible for maintaining the confidentiality of your account credentials, including your wallet connection and login information. You agree to notify us immediately of any unauthorized use of your account. We are not liable for any loss arising from unauthorized access to your account.</p>
+          <h2 className="text-base font-semibold text-foreground">3. Account Registration & Security</h2>
+          <p>To access certain features, you must create an account using your email address or through a supported third-party authentication provider (Google, Apple). You may also connect an EVM-compatible cryptocurrency wallet (e.g., MetaMask, Trust Wallet, SafePal, Coinbase Wallet, Rabby, Binance Wallet, Bitget Wallet) for specific platform functions.</p>
+          <p>You are solely responsible for:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Maintaining the confidentiality of your login credentials and wallet private keys.</li>
+            <li>All activities that occur under your account, whether authorized or not.</li>
+            <li>Notifying us immediately of any unauthorized access or security breach.</li>
+          </ul>
+          <p>We are not liable for losses resulting from unauthorized account access, compromised wallets, or failure to maintain adequate security measures. Creating multiple accounts to circumvent restrictions, manipulate markets, or abuse platform features is strictly prohibited.</p>
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-semibold text-foreground">4. Trading Rules</h2>
-          <p>All trades are final once confirmed. Market prices are determined by supply and demand among participants. The platform does not guarantee any particular outcome or return. Manipulation of markets, including wash trading, coordinated trading, or exploitation of system vulnerabilities, is strictly prohibited and may result in account suspension.</p>
+          <h2 className="text-base font-semibold text-foreground">4. Platform Services</h2>
+          <p>OPollMarket provides a peer-to-peer prediction market platform where users can:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Trade predictions</strong> on binary (Yes/No), multiple-choice, and range-bracket markets using an Automated Market Maker (AMM) pricing mechanism.</li>
+            <li><strong>Create markets</strong> by proposing prediction questions, providing initial liquidity, and defining clear resolution criteria.</li>
+            <li><strong>Boost markets</strong> to increase visibility through paid promotional tiers.</li>
+            <li><strong>Engage socially</strong> by commenting on markets, liking content, bookmarking markets, and sharing via integrated social channels (X/Twitter, Telegram, WhatsApp).</li>
+            <li><strong>Participate in a referral program</strong> to earn bonus rewards for introducing new users.</li>
+            <li><strong>View real-time data</strong> including order book depth, price history charts, and live trade feeds.</li>
+          </ul>
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-semibold text-foreground">5. Fees and Payments</h2>
-          <p>The platform charges commissions on winning trades as displayed at the time of transaction. Fee structures may be updated periodically. All deposits and withdrawals are processed through supported cryptocurrency methods. Processing times may vary based on network conditions.</p>
+          <h2 className="text-base font-semibold text-foreground">5. Trading Rules & AMM Pricing</h2>
+          <p>All trades on the Platform are executed through an Automated Market Maker (AMM) using a constant-product formula. By placing a trade, you acknowledge and agree that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>All trades are final once confirmed and cannot be reversed, cancelled, or refunded.</li>
+            <li>Market prices are dynamically determined by supply, demand, and available liquidity — not by the Platform.</li>
+            <li>Order book depth levels displayed are derived from the AMM formula and represent potential liquidity, not traditional limit orders.</li>
+            <li>Slippage may occur, and the execution price may differ from the displayed price at the time of order placement.</li>
+            <li>The Platform does not guarantee any particular outcome, return, or profit.</li>
+            <li>Past market performance is not indicative of future results.</li>
+          </ul>
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-semibold text-foreground">6. Market Creation</h2>
-          <p>Users may propose new markets subject to review and approval. Market creators must provide clear, unambiguous resolution criteria. The platform reserves the right to reject, modify, or cancel any market at its discretion. Markets that violate community guidelines or promote harmful content will be removed.</p>
-          <p className="font-medium text-foreground">Content Moderation & Fee Forfeiture:</p>
-          <p>All market submissions — including titles, descriptions, answer options, and cover images — are screened by our automated content moderation system. If a market is flagged and subsequently rejected due to profane language, nudity, hate speech, graphic violence, or any other violation of our community guidelines, the <span className="font-semibold text-foreground">market creation fee is non-refundable and will be forfeited</span>. Only the initial liquidity deposited for the market will be refunded to the creator's balance. By submitting a market, you acknowledge and accept this policy. Repeated violations may result in account suspension or permanent ban.</p>
+          <h2 className="text-base font-semibold text-foreground">6. Fees & Commissions</h2>
+          <p>The Platform charges the following fees, which are subject to change with notice:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Platform Fee:</strong> A percentage commission is deducted from winning payouts upon market resolution. The current fee structure (admin fee and creator fee percentages) is displayed within the Platform.</li>
+            <li><strong>Market Creation Fee:</strong> Users who do not meet token-gating requirements (BC400 token holding or NFT ownership) may create markets by paying a flat creation fee. This fee is <strong>non-refundable</strong> if the market is rejected for content violations. It is refundable only if the market is cancelled by an administrator before approval.</li>
+            <li><strong>Market Boost Fee:</strong> Optional paid promotion fees vary by tier (Silver, Gold, Diamond) and duration.</li>
+          </ul>
+          <p>All fee amounts and percentages are managed centrally and may be adjusted by administrators. Current rates are always visible within the Platform interface.</p>
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-semibold text-foreground">7. Prohibited Conduct</h2>
-          <p>Users may not: (a) use the platform for money laundering or other illegal activities; (b) attempt to manipulate market outcomes; (c) create multiple accounts to circumvent restrictions; (d) use automated bots without prior authorization; (e) harass, threaten, or abuse other users; (f) interfere with the platform's operation or security.</p>
+          <h2 className="text-base font-semibold text-foreground">7. Deposits & Withdrawals</h2>
+          <p>The Platform supports cryptocurrency deposits and withdrawals processed through integrated payment providers (NOWPayments). By using these services, you agree that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Deposits are credited to your Platform balance upon blockchain confirmation.</li>
+            <li>Withdrawal requests are subject to administrative review and processing times.</li>
+            <li>Network fees, gas costs, and third-party processing fees are borne by the user.</li>
+            <li>The Platform is not responsible for delays, errors, or losses caused by blockchain network congestion, incorrect wallet addresses, or third-party payment processor issues.</li>
+            <li>Minimum withdrawal amounts and supported cryptocurrencies are displayed within the Platform.</li>
+          </ul>
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-semibold text-foreground">8. Intellectual Property</h2>
-          <p>All content, branding, and technology on this platform are the property of the platform operators or their licensors. You may not reproduce, distribute, or create derivative works without explicit written permission. User-generated content (comments, market proposals) grants us a non-exclusive license to display and distribute such content on the platform.</p>
+          <h2 className="text-base font-semibold text-foreground">8. Market Creation & Token-Gating</h2>
+          <p>Market creation access is determined by a tiered verification system:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Verified Creators:</strong> Users who hold a minimum balance of BC400 tokens or own a qualifying BC400 NFT may create markets without additional fees.</li>
+            <li><strong>Fee-Based Creators:</strong> Users who do not meet token-gating requirements may create markets by paying a market creation fee. Fee-based markets require administrator approval before going live.</li>
+            <li><strong>First Prediction Requirement:</strong> Non-admin market creators must place a minimum $5 prediction on their own market after creation to make it officially public. This records initial volume and trading activity.</li>
+          </ul>
+          <p>All market creators must provide clear, unambiguous resolution criteria and a resolution source. The Platform reserves the right to approve, reject, modify, or cancel any market at its sole discretion.</p>
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-semibold text-foreground">9. Limitation of Liability</h2>
-          <p>To the maximum extent permitted by law, the platform and its operators shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the platform. Our total liability shall not exceed the amount of fees paid by you in the preceding 12 months.</p>
+          <h2 className="text-base font-semibold text-foreground">9. Content Moderation & Community Guidelines</h2>
+          <p>All user-generated content — including market titles, descriptions, answer options, cover images, comments, display names, and avatars — is subject to automated AI moderation and manual administrative review. Content that violates community guidelines will be removed or flagged.</p>
+          <p className="font-medium text-foreground">Prohibited content includes but is not limited to:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Profane, obscene, or vulgar language.</li>
+            <li>Nudity, sexually explicit, or graphic violent imagery.</li>
+            <li>Hate speech, discrimination, or incitement to violence.</li>
+            <li>Personally identifiable information of third parties without consent.</li>
+            <li>Spam, misleading information, or fraudulent content.</li>
+            <li>Content that promotes illegal activities.</li>
+          </ul>
+          <p className="font-medium text-foreground">Fee Forfeiture Policy:</p>
+          <p>If a market created via the fee-based pathway is <strong>rejected</strong> due to content moderation violations, the market creation fee is <strong>permanently forfeited and non-refundable</strong>. Only the initial liquidity deposit will be returned to the creator's balance. If a market is <strong>cancelled</strong> by an administrator (for reasons other than content violations), both the creation fee and initial liquidity are refunded. Repeated violations may result in temporary suspension or permanent ban from the Platform.</p>
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-semibold text-foreground">10. Termination</h2>
-          <p>We reserve the right to suspend or terminate your account at any time for violation of these terms or for any other reason at our discretion. Upon termination, your right to use the platform ceases immediately. Any outstanding balances will be handled in accordance with our withdrawal policies.</p>
+          <h2 className="text-base font-semibold text-foreground">10. Market Resolution</h2>
+          <p>Markets are resolved by Platform administrators based on the resolution criteria and source specified at the time of market creation. Resolution follows these principles:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Winning shares pay out at $1.00 per share, less applicable platform and creator fees.</li>
+            <li>Losing shares expire worthless with no payout.</li>
+            <li>For multiple-choice markets, the winning option is determined by the administrator and all other options are treated as losing.</li>
+            <li>Resolution decisions are final once confirmed. Disputed resolutions are reviewed by the administration team.</li>
+            <li>Cancelled markets result in full refund of all confirmed position amounts to respective user balances.</li>
+          </ul>
         </section>
 
-        <p className="text-xs text-muted-foreground/60 pt-4">Last updated: March 2026</p>
+        <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">11. Market Boosting</h2>
+          <p>Users may purchase promotional boosts to increase market visibility. Boost purchases are processed via cryptocurrency payment and are subject to administrator confirmation. Boost durations and pricing are determined by the selected tier. Boost fees are non-refundable once the boost period has commenced.</p>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">12. Referral Program</h2>
+          <p>The Platform offers a referral program where existing users may invite new users. Upon a referred user's first qualifying trade, the referrer receives a bonus reward credited to their account balance. Referral rewards are subject to the following conditions:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Only one referral reward is issued per referred user.</li>
+            <li>Self-referrals, fraudulent referrals, or referral manipulation schemes are prohibited and may result in forfeiture of rewards and account suspension.</li>
+            <li>Reward amounts are set by the Platform and may be adjusted at any time.</li>
+          </ul>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">13. Prohibited Conduct</h2>
+          <p>You agree not to:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Use the Platform for money laundering, terrorist financing, or other illegal activities.</li>
+            <li>Attempt to manipulate market outcomes through wash trading, coordinated trading, insider information, or exploitation of system vulnerabilities.</li>
+            <li>Create multiple accounts to circumvent restrictions, abuse promotions, or inflate referral rewards.</li>
+            <li>Use automated bots, scripts, or tools to interact with the Platform without prior written authorization.</li>
+            <li>Harass, threaten, defame, or abuse other users through comments or any communication channel.</li>
+            <li>Interfere with the Platform's operation, security, or infrastructure.</li>
+            <li>Reverse-engineer, decompile, or attempt to extract the source code of the Platform.</li>
+            <li>Submit false, misleading, or fraudulent market proposals or resolution claims.</li>
+            <li>Circumvent or attempt to circumvent content moderation, token-gating, or any other access control mechanism.</li>
+          </ul>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">14. Intellectual Property</h2>
+          <p>All content, branding, trademarks, logos, software, and technology on the Platform (collectively, "Platform IP") are the exclusive property of OPollMarket or its licensors. You may not reproduce, distribute, modify, or create derivative works of Platform IP without explicit written permission.</p>
+          <p>By submitting user-generated content (comments, market proposals, images), you grant OPollMarket a non-exclusive, worldwide, royalty-free, perpetual license to display, distribute, and use such content in connection with Platform operations.</p>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">15. Limitation of Liability</h2>
+          <p>To the maximum extent permitted by applicable law:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>The Platform is provided on an "AS IS" and "AS AVAILABLE" basis without warranties of any kind, express or implied.</li>
+            <li>We do not warrant that the Platform will be uninterrupted, error-free, secure, or free of viruses or harmful components.</li>
+            <li>We shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Platform, including but not limited to loss of profits, data, or digital assets.</li>
+            <li>Our total aggregate liability for all claims shall not exceed the total fees paid by you to the Platform in the twelve (12) months preceding the claim.</li>
+            <li>We are not liable for losses caused by blockchain network failures, smart contract vulnerabilities, third-party payment processor errors, or events beyond our reasonable control.</li>
+          </ul>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">16. Indemnification</h2>
+          <p>You agree to indemnify, defend, and hold harmless OPollMarket, its operators, affiliates, directors, officers, employees, and agents from any and all claims, liabilities, damages, losses, costs, and expenses (including reasonable legal fees) arising from: (a) your use of the Platform; (b) your violation of these Terms; (c) your violation of any third-party rights; or (d) any content you submit to the Platform.</p>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">17. Termination</h2>
+          <p>We reserve the right to suspend or terminate your account at any time, with or without notice, for violation of these Terms, suspected fraudulent activity, or for any other reason at our sole discretion. Upon termination:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Your right to access and use the Platform ceases immediately.</li>
+            <li>Outstanding balances will be handled in accordance with our withdrawal policies, subject to any applicable holds or legal requirements.</li>
+            <li>Provisions that by their nature should survive termination (including Limitation of Liability, Indemnification, and Intellectual Property) shall remain in effect.</li>
+          </ul>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">18. Dispute Resolution</h2>
+          <p>Any dispute arising from or relating to these Terms or the Platform shall first be attempted to be resolved through good-faith negotiation between the parties. If negotiation fails, disputes shall be resolved through binding arbitration in accordance with the rules of the jurisdiction in which OPollMarket is incorporated, unless otherwise required by applicable consumer protection laws.</p>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">19. Governing Law</h2>
+          <p>These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which OPollMarket operates, without regard to conflict of law principles. You consent to the exclusive jurisdiction of the courts in that jurisdiction for any legal proceedings.</p>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">20. Severability</h2>
+          <p>If any provision of these Terms is found to be invalid, illegal, or unenforceable by a court of competent jurisdiction, such provision shall be modified to the minimum extent necessary to make it enforceable, and the remaining provisions shall continue in full force and effect.</p>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">21. Contact Information</h2>
+          <p>For questions, concerns, or requests relating to these Terms, please contact us through the Platform's support channels or via the contact information provided in the application.</p>
+        </section>
+
+        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: March 5, 2026</p>
       </div>
       <BackToTop />
     </div>
