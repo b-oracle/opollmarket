@@ -619,6 +619,17 @@ const Profile = () => {
                             {tx.side.toUpperCase()}
                           </span>
                         )}
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                          tx.status === "confirmed"
+                            ? "bg-green-500/10 text-green-500"
+                            : tx.status === "pending"
+                            ? "bg-yellow-500/10 text-yellow-500"
+                            : tx.status === "failed" || tx.status === "expired"
+                            ? "bg-destructive/10 text-destructive"
+                            : "bg-muted text-muted-foreground"
+                        }`}>
+                          {tx.status === "confirmed" ? "✓ Confirmed" : tx.status === "pending" ? "⏳ Pending" : tx.status === "failed" ? "✗ Failed" : tx.status === "expired" ? "✗ Expired" : tx.status}
+                        </span>
                       </div>
                       <span className={`text-sm font-bold ${tx.type === "buy" || tx.type === "withdraw" ? "text-destructive" : "text-primary"}`}>
                         {tx.type === "sell" || tx.type === "deposit" ? "+" : "-"}${Number(tx.amount).toFixed(2)}
