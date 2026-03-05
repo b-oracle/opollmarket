@@ -627,7 +627,7 @@ const Profile = () => {
                 <div className="bg-muted/30 rounded-xl p-3">
                   <p className="text-xs text-muted-foreground leading-relaxed">
                     Open this page in a{" "}
-                    <span className="font-semibold text-foreground">wallet browser</span> (MetaMask, Trust Wallet, SafePal, Coinbase Wallet, Rabby, Binance Wallet) or use a{" "}
+                    <span className="font-semibold text-foreground">wallet browser</span> (MetaMask, Trust Wallet, SafePal, Coinbase Wallet, Rabby, Binance Wallet, Bitget Wallet) or use a{" "}
                     <span className="font-semibold text-foreground">desktop browser</span> with a Web3 wallet extension installed.
                   </p>
                   <div className="flex flex-wrap justify-center gap-1.5 mt-2">

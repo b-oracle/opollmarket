@@ -660,7 +660,7 @@ const Create = () => {
                 <h3 className="text-sm font-bold">Wallet Connection Required</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   To connect your wallet, please open this page in a{" "}
-                   <span className="font-semibold text-foreground">wallet browser</span> (MetaMask, Trust Wallet, SafePal, Coinbase Wallet, Rabby, Binance Wallet) or use a{" "}
+                   <span className="font-semibold text-foreground">wallet browser</span> (MetaMask, Trust Wallet, SafePal, Coinbase Wallet, Rabby, Binance Wallet, Bitget Wallet) or use a{" "}
                    <span className="font-semibold text-foreground">desktop browser</span> with a Web3 wallet extension installed.
                  </p>
                  <div className="flex flex-wrap justify-center gap-2 pt-1">
