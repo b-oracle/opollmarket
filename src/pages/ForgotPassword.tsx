@@ -64,7 +64,7 @@ const ForgotPassword = () => {
               </p>
             </div>
             <button
-              onClick={() => navigate("/auth")}
+              onClick={() => navigate("/auth?reset_sent=1")}
               className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:bg-primary/90 transition-all active:scale-[0.98]"
             >
               Back to Sign In
