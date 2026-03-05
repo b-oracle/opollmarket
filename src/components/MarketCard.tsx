@@ -401,6 +401,10 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             </div>
           )}
 
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-sm font-bold neon-yes">{yesPercent}% chance</span>
+          </div>
+
           <h2
             className="text-lg sm:text-xl font-bold leading-tight mb-3 cursor-pointer hover:text-primary transition-colors"
             onClick={() => navigate(`/market/${market.id}`)}
