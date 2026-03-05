@@ -1150,7 +1150,7 @@ const Create = () => {
                 </div>
               )}
 
-              {(submitStep === "deploying" || submitStep === "saving") && (
+              {(submitStep === "checking_similarity" || submitStep === "deploying" || submitStep === "saving") && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -1158,16 +1158,23 @@ const Create = () => {
                 >
                   <LogoLoader size="lg" />
                   <h3 className="text-base font-bold mt-3 mb-1">
-                    {submitStep === "deploying" ? "Deploying Contract..." : "Saving to Database..."}
+                    {submitStep === "checking_similarity"
+                      ? "Checking for Duplicates..."
+                      : submitStep === "deploying"
+                      ? "Deploying Contract..."
+                      : "Saving to Database..."}
                   </h3>
                   <p className="text-xs text-muted-foreground text-center">
-                    {submitStep === "deploying"
+                    {submitStep === "checking_similarity"
+                      ? "Using AI to verify your market is unique..."
+                      : submitStep === "deploying"
                       ? "Deploying your prediction market contract on BSC. Please confirm in your wallet."
                       : "Storing market data and linking contract address..."}
                   </p>
                   <div className="mt-4 space-y-2 w-full max-w-xs">
                     {[
-                      { label: "Preparing contract", done: true },
+                      { label: "Checking for similar markets", done: submitStep !== "checking_similarity" },
+                      { label: "Preparing contract", done: submitStep === "saving" },
                       { label: "Awaiting wallet signature", done: submitStep === "saving" },
                       { label: "Broadcasting transaction", done: submitStep === "saving" },
                       { label: "Saving market data", done: false },
