@@ -29,7 +29,7 @@ const CATEGORIES = [
 
 const AdminCreateMarket = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, displayName } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
@@ -182,7 +182,7 @@ const AdminCreateMarket = () => {
         .from("markets")
         .insert({
           creator_wallet: user.id,
-          creator_name: user.user_metadata?.display_name || user.email?.split("@")[0] || "Admin",
+          creator_name: displayName,
           title: title.trim(),
           description: description.trim(),
           category,

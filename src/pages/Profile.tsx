@@ -46,7 +46,7 @@ type StatusFilter = "all" | "confirmed" | "pending" | "failed";
 
 const Profile = () => {
   
-  const { user, loading: authLoading, isAdmin } = useAuth();
+  const { user, loading: authLoading, isAdmin, displayName: authDisplayName } = useAuth();
   const { balance, bonusBalance } = useUserBalance();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -232,7 +232,7 @@ const Profile = () => {
     return filteredTx.slice(start, start + TX_PER_PAGE);
   }, [filteredTx, txPage]);
 
-  const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "User";
+  const displayName = authDisplayName;
 
   if (!authLoading && !user) {
     return (

@@ -154,7 +154,7 @@ const InlineCommentItem = ({
 };
 
 const InlineComments = ({ marketId }: { marketId: string }) => {
-  const { user } = useAuth();
+  const { user, displayName: authDisplayName } = useAuth();
   const [comments, setComments] = useState<DbComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [inputValue, setInputValue] = useState("");
@@ -226,7 +226,7 @@ const InlineComments = ({ marketId }: { marketId: string }) => {
         return;
       }
 
-      const authorName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Anonymous";
+      const authorName = authDisplayName || "Anonymous";
       const { error } = await supabase.from("comments").insert({
         market_id: marketId, parent_id: replyTo?.id || null,
         author_name: authorName, author_wallet: user?.id || null, content: cleanText,

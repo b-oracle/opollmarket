@@ -126,7 +126,7 @@ const CommentItem = ({
 
 const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawerProps) => {
   const { address } = useAccount();
-  const { user } = useAuth();
+  const { user, displayName } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -280,20 +280,7 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
         return;
       }
 
-      // Derive author name from display_name (profile), fallback to email prefix
-      let authorName = "Anonymous";
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("display_name")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (profile?.display_name) {
-        authorName = profile.display_name;
-      } else if (user.user_metadata?.display_name) {
-        authorName = user.user_metadata.display_name;
-      } else if (user.email) {
-        authorName = user.email.split("@")[0];
-      }
+      const authorName = displayName || "Anonymous";
 
       const { error } = await supabase.from("comments").insert({
         market_id: marketId,
@@ -432,7 +419,7 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0">
                     <span className="text-xs font-bold text-primary">
-                      {user?.email ? user.email.charAt(0).toUpperCase() : address ? address.charAt(2).toUpperCase() : "A"}
+                      {displayName.charAt(0).toUpperCase()}
                     </span>
                   </div>
                   <input

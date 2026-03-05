@@ -7,6 +7,7 @@ interface AuthContextValue {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  displayName: string;
   isAdmin: boolean;
   isModerator: boolean;
   hasAdminAccess: boolean;
@@ -24,7 +25,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isModerator, setIsModerator] = useState(false);
+  const [profileDisplayName, setProfileDisplayName] = useState<string | null>(null);
   const lastSessionRef = useRef<Session | null>(null);
+
+  const fetchDisplayName = useCallback(async (userId: string, mounted: { current: boolean }) => {
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", userId)
+        .maybeSingle();
+      if (mounted.current) setProfileDisplayName(data?.display_name || null);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const checkRoles = useCallback(async (userId: string, mounted: { current: boolean }) => {
     try {
@@ -70,11 +85,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (newSession?.user) {
           // Use setTimeout to avoid potential Supabase deadlock during auth callback
           setTimeout(() => {
-            if (mounted.current) checkRoles(newSession.user.id, mounted);
+            if (mounted.current) {
+              checkRoles(newSession.user.id, mounted);
+              fetchDisplayName(newSession.user.id, mounted);
+            }
           }, 0);
         } else {
           setIsAdmin(false);
           setIsModerator(false);
+          setProfileDisplayName(null);
         }
         if (mounted.current) setLoading(false);
       }
@@ -87,7 +106,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
       if (initialSession?.user) {
-        await checkRoles(initialSession.user.id, mounted);
+        await Promise.all([
+          checkRoles(initialSession.user.id, mounted),
+          fetchDisplayName(initialSession.user.id, mounted),
+        ]);
       }
       if (mounted.current) setLoading(false);
     });
@@ -192,9 +214,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const isEmailVerified = !!user?.email_confirmed_at;
   const hasAdminAccess = isAdmin || isModerator;
+  const displayName = profileDisplayName || user?.user_metadata?.display_name || user?.email?.split("@")[0] || "User";
 
   const value: AuthContextValue = {
-    user, session, loading, isAdmin, isModerator, hasAdminAccess, isEmailVerified,
+    user, session, loading, displayName, isAdmin, isModerator, hasAdminAccess, isEmailVerified,
     signIn, signUp, signOut,
   };
 
