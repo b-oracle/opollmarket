@@ -115,6 +115,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         balance: formatted,
         raw_balance: rawBalance.toString(),
+        decimals,
         wallet_address,
         token_contract_address,
       }),
