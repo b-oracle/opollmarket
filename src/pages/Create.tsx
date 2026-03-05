@@ -695,26 +695,33 @@ const Create = () => {
                       <p className="text-[10px] text-muted-foreground px-4 pt-3 uppercase tracking-wider">
                         Select Wallet
                       </p>
-                      {connectors.map((c) => (
-                        <button
-                          key={c.uid}
-                          onClick={() => {
-                            connect({ connector: c, chainId: bsc.id });
-                            setShowConnectors(false);
-                          }}
-                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors text-left"
-                        >
-                          <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0 text-base">
-                            {c.name.includes("MetaMask") ? "🦊" : c.name.includes("WalletConnect") ? "🔗" : "💰"}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">{c.name}</p>
-                            <p className="text-[10px] text-muted-foreground">
-                              {c.name.includes("Injected") ? "Browser wallet" : c.type}
-                            </p>
-                          </div>
-                        </button>
-                      ))}
+                      {connectors.length === 0 ? (
+                        <div className="px-4 py-6 text-center">
+                          <p className="text-sm text-muted-foreground">No wallets detected.</p>
+                          <p className="text-xs text-muted-foreground mt-1">Please install <a href="https://metamask.io" target="_blank" rel="noopener noreferrer" className="text-primary underline">MetaMask</a> to continue.</p>
+                        </div>
+                      ) : (
+                        connectors.map((c) => (
+                          <button
+                            key={c.uid}
+                            onClick={() => {
+                              connect({ connector: c, chainId: bsc.id });
+                              setShowConnectors(false);
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors text-left"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0 text-base">
+                              {c.name.includes("MetaMask") ? "🦊" : c.name.includes("WalletConnect") ? "🔗" : "💰"}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">{c.name}</p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {c.name.includes("Injected") ? "Browser wallet" : c.type}
+                              </p>
+                            </div>
+                          </button>
+                        ))
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
