@@ -85,11 +85,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (newSession?.user) {
           // Use setTimeout to avoid potential Supabase deadlock during auth callback
           setTimeout(() => {
-            if (mounted.current) checkRoles(newSession.user.id, mounted);
+            if (mounted.current) {
+              checkRoles(newSession.user.id, mounted);
+              fetchDisplayName(newSession.user.id, mounted);
+            }
           }, 0);
         } else {
           setIsAdmin(false);
           setIsModerator(false);
+          setProfileDisplayName(null);
         }
         if (mounted.current) setLoading(false);
       }
@@ -102,7 +106,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
       if (initialSession?.user) {
-        await checkRoles(initialSession.user.id, mounted);
+        await Promise.all([
+          checkRoles(initialSession.user.id, mounted),
+          fetchDisplayName(initialSession.user.id, mounted),
+        ]);
       }
       if (mounted.current) setLoading(false);
     });
