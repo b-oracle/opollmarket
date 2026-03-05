@@ -696,35 +696,30 @@ const Create = () => {
                       <p className="text-[10px] text-muted-foreground px-4 pt-3 uppercase tracking-wider">
                         Select Wallet
                       </p>
-                      {(() => {
-                        const hasInjected = typeof window !== 'undefined' && !!(window as any).ethereum;
-                        const filtered = connectors.filter((c) => c.type === 'walletConnect' || (c.type === 'injected' && hasInjected));
-                        if (filtered.length === 0) return (
-                          <div className="px-4 py-6 text-center">
-                            <p className="text-sm text-muted-foreground">No wallets available.</p>
+                      {connectors.length === 0 ? (
+                        <div className="px-4 py-6 text-center">
+                          <p className="text-sm text-muted-foreground">No wallets available.</p>
+                        </div>
+                      ) : connectors.map((c) => (
+                        <button
+                          key={c.uid}
+                          onClick={() => {
+                            connect({ connector: c, chainId: bsc.id });
+                            setShowConnectors(false);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors text-left"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0 text-base">
+                            {c.type === 'injected' ? "🦊" : "🔗"}
                           </div>
-                        );
-                        return filtered.map((c) => (
-                          <button
-                            key={c.uid}
-                            onClick={() => {
-                              connect({ connector: c, chainId: bsc.id });
-                              setShowConnectors(false);
-                            }}
-                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors text-left"
-                          >
-                            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0 text-base">
-                              {c.type === 'injected' ? "🦊" : "🔗"}
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium">{c.type === 'injected' ? 'Browser Wallet' : 'WalletConnect'}</p>
-                              <p className="text-[10px] text-muted-foreground">
-                                {c.type === 'injected' ? 'MetaMask, Brave, etc.' : '300+ wallets via QR code'}
-                              </p>
-                            </div>
-                          </button>
-                        ));
-                      })()}
+                          <div>
+                            <p className="text-sm font-medium">{c.type === 'injected' ? 'Browser Wallet' : 'WalletConnect'}</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {c.type === 'injected' ? 'MetaMask, Brave, etc.' : '300+ wallets via QR code'}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
                     </motion.div>
                   )}
                 </AnimatePresence>
