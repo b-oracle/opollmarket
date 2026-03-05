@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
@@ -8,61 +8,106 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isModerator, setIsModerator] = useState(false);
+  const lastSessionRef = useRef<Session | null>(null);
+
+  const checkRoles = useCallback(async (userId: string, mounted: { current: boolean }) => {
+    try {
+      const [{ data: adminData }, { data: modData }] = await Promise.all([
+        supabase.rpc("has_role", { _user_id: userId, _role: "admin" }),
+        supabase.rpc("has_role", { _user_id: userId, _role: "moderator" }),
+      ]);
+      if (mounted.current) {
+        setIsAdmin(!!adminData);
+        setIsModerator(!!modData);
+      }
+    } catch {
+      if (mounted.current) {
+        setIsAdmin(false);
+        setIsModerator(false);
+      }
+    }
+  }, []);
 
   useEffect(() => {
-    let mounted = true;
-
-    const checkRoles = async (userId: string) => {
-      try {
-        const [{ data: adminData }, { data: modData }] = await Promise.all([
-          supabase.rpc("has_role", { _user_id: userId, _role: "admin" }),
-          supabase.rpc("has_role", { _user_id: userId, _role: "moderator" }),
-        ]);
-        if (mounted) {
-          setIsAdmin(!!adminData);
-          setIsModerator(!!modData);
-        }
-      } catch {
-        if (mounted) {
-          setIsAdmin(false);
-          setIsModerator(false);
-        }
-      }
-    };
+    const mounted = { current: true };
 
     // Get initial session first
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return;
+      if (!mounted.current) return;
+      lastSessionRef.current = session;
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        await checkRoles(session.user.id);
+        await checkRoles(session.user.id, mounted);
       }
-      if (mounted) setLoading(false);
+      if (mounted.current) setLoading(false);
     });
 
     // Then listen for changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (!mounted) return;
+      async (event, session) => {
+        if (!mounted.current) return;
+
+        // If we had a session and now get null, it might be a transient
+        // token-refresh failure (common in wallet/dApp browsers).
+        // Try to recover before clearing auth state.
+        if (!session && lastSessionRef.current && event === "SIGNED_OUT") {
+          // Attempt to recover session from storage
+          const { data: recovered } = await supabase.auth.getSession();
+          if (recovered.session) {
+            // Session is still valid in storage — ignore this transient event
+            lastSessionRef.current = recovered.session;
+            setSession(recovered.session);
+            setUser(recovered.session.user);
+            return;
+          }
+        }
+
+        lastSessionRef.current = session;
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          await checkRoles(session.user.id);
+          await checkRoles(session.user.id, mounted);
         } else {
           setIsAdmin(false);
           setIsModerator(false);
         }
-        if (mounted) setLoading(false);
+        if (mounted.current) setLoading(false);
       }
     );
 
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
+    // Re-validate session when app returns to foreground
+    // Wallet browsers often suspend JS execution; this catches stale states
+    const handleVisibility = async () => {
+      if (document.visibilityState !== "visible" || !mounted.current) return;
+      const { data: { session: freshSession } } = await supabase.auth.getSession();
+      if (!mounted.current) return;
+
+      if (freshSession && !session) {
+        // We were "signed out" but session is actually valid
+        lastSessionRef.current = freshSession;
+        setSession(freshSession);
+        setUser(freshSession.user);
+        await checkRoles(freshSession.user.id, mounted);
+      } else if (!freshSession && lastSessionRef.current) {
+        // Session truly expired
+        lastSessionRef.current = null;
+        setSession(null);
+        setUser(null);
+        setIsAdmin(false);
+        setIsModerator(false);
+      }
     };
-  }, []);
+
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      mounted.current = false;
+      subscription.unsubscribe();
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [checkRoles]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -89,6 +134,7 @@ export const useAuth = () => {
   };
 
   const signOut = async () => {
+    lastSessionRef.current = null;
     await supabase.auth.signOut();
   };
 
