@@ -13,13 +13,13 @@ interface ChecklistItem {
 const CHECKLIST_ITEMS: ChecklistItem[] = [
   // Security
   { id: "rls_policies", label: "RLS policies on all tables", description: "Ensure Row-Level Security is enabled and tested on every table.", category: "Security", icon: Shield },
-  { id: "admin_role", label: "Admin role configured", description: "Verify admin users are assigned roles and can access the dashboard.", category: "Security", icon: Shield },
+  { id: "admin_role", label: "System-Mod role configured", description: "Verify system-mod users are assigned roles and can access the dashboard.", category: "Security", icon: Shield },
   { id: "rate_limiting", label: "Rate limiting active", description: "Confirm client-side rate limiting is in place for sensitive actions.", category: "Security", icon: Shield },
 
   // Payments
   { id: "deposit_flow", label: "Deposit flow tested", description: "Test a real deposit end-to-end with NOWPayments.", category: "Payments", icon: CreditCard },
   { id: "withdrawal_flow", label: "Withdrawal flow tested", description: "Process a test withdrawal and verify balance deduction.", category: "Payments", icon: CreditCard },
-  { id: "commission_settings", label: "Commission rates configured", description: "Set admin fee, creator fee, and referral reward amounts.", category: "Payments", icon: CreditCard },
+  { id: "commission_settings", label: "Commission rates configured", description: "Set platform fee, creator fee, and referral reward amounts.", category: "Payments", icon: CreditCard },
 
   // Content
   { id: "markets_created", label: "Initial markets created", description: "Seed the platform with at least 5-10 active markets.", category: "Content", icon: Megaphone },

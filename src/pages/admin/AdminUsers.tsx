@@ -133,10 +133,10 @@ const AdminUsers = () => {
                     </td>
                     <td className="p-3">
                       {u.roles.length > 0 ? u.roles.map((r) => (
-                        <span key={r} className={`px-2 py-0.5 rounded-full text-[10px] font-bold mr-1 ${
+                         <span key={r} className={`px-2 py-0.5 rounded-full text-[10px] font-bold mr-1 ${
                           r === "admin" ? "bg-primary/10 text-primary" : r === "moderator" ? "bg-amber-500/10 text-amber-500" : "bg-muted text-muted-foreground"
                         }`}>
-                          {r}
+                          {r === "admin" ? "system-mod" : r}
                         </span>
                       )) : <span className="text-[10px] text-muted-foreground">user</span>}
                     </td>
@@ -166,7 +166,7 @@ const AdminUsers = () => {
                           className={`p-1.5 rounded-lg transition-colors ${
                             isAdmin ? "hover:bg-destructive/10 text-destructive" : "hover:bg-primary/10 text-primary"
                           }`}
-                          title={isAdmin ? "Remove Admin" : "Make Admin"}
+                          title={isAdmin ? "Remove System-Mod" : "Make System-Mod"}
                         >
                           {isAdmin ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
                         </button>

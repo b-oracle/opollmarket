@@ -106,11 +106,11 @@ const Terms = () => {
           <h2 className="text-base font-semibold text-foreground">6. Fees & Commissions</h2>
           <p>The Platform charges the following fees, which are subject to change with notice:</p>
           <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Platform Fee:</strong> A percentage commission is deducted from winning payouts upon market resolution. The current fee structure (admin fee and creator fee percentages) is displayed within the Platform.</li>
-            <li><strong>Market Creation Fee:</strong> Users who do not meet token-gating requirements (BC400 token holding or NFT ownership) may create markets by paying a flat creation fee. This fee is <strong>non-refundable</strong> if the market is rejected for content violations. It is refundable only if the market is cancelled by an administrator before approval.</li>
+            <li><strong>Platform Fee:</strong> A percentage commission is deducted from winning payouts upon market resolution. The current fee structure (platform fee and creator fee percentages) is displayed within the Platform.</li>
+            <li><strong>Market Creation Fee:</strong> Users who do not meet token-gating requirements (BC400 token holding or NFT ownership) may create markets by paying a flat creation fee. This fee is <strong>non-refundable</strong> if the market is rejected for content violations. It is refundable only if the market is cancelled by the System-Mod Engine before approval.</li>
             <li><strong>Market Boost Fee:</strong> Optional paid promotion fees vary by tier (Silver, Gold, Diamond) and duration.</li>
           </ul>
-          <p>All fee amounts and percentages are managed centrally and may be adjusted by administrators. Current rates are always visible within the Platform interface.</p>
+          <p>All fee amounts and percentages are managed centrally and may be adjusted by the System-Mod Engine. Current rates are always visible within the Platform interface.</p>
         </section>
 
         <section id="deposits" className="space-y-2 scroll-mt-20">
@@ -118,7 +118,7 @@ const Terms = () => {
           <p>The Platform supports cryptocurrency deposits and withdrawals processed through integrated payment providers (NOWPayments). By using these services, you agree that:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li>Deposits are credited to your Platform balance upon blockchain confirmation.</li>
-            <li>Withdrawal requests are subject to administrative review and processing times.</li>
+            <li>Withdrawal requests are subject to review and processing times.</li>
             <li>Network fees, gas costs, and third-party processing fees are borne by the user.</li>
             <li>The Platform is not responsible for delays, errors, or losses caused by blockchain network congestion, incorrect wallet addresses, or third-party payment processor issues.</li>
             <li>Minimum withdrawal amounts and supported cryptocurrencies are displayed within the Platform.</li>
@@ -130,15 +130,15 @@ const Terms = () => {
           <p>Market creation access is determined by a tiered verification system:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li><strong>Verified Creators:</strong> Users who hold a minimum balance of BC400 tokens or own a qualifying BC400 NFT may create markets without additional fees.</li>
-            <li><strong>Fee-Based Creators:</strong> Users who do not meet token-gating requirements may create markets by paying a market creation fee. Fee-based markets require administrator approval before going live.</li>
-            <li><strong>First Prediction Requirement:</strong> Non-admin market creators must place a minimum $5 prediction on their own market after creation to make it officially public. This records initial volume and trading activity.</li>
+            <li><strong>Fee-Based Creators:</strong> Users who do not meet token-gating requirements may create markets by paying a market creation fee. Fee-based markets require System-Mod Engine approval before going live.</li>
+            <li><strong>First Prediction Requirement:</strong> Market creators must place a minimum $5 prediction on their own market after creation to make it officially public. This records initial volume and trading activity.</li>
           </ul>
           <p>All market creators must provide clear, unambiguous resolution criteria and a resolution source. The Platform reserves the right to approve, reject, modify, or cancel any market at its sole discretion.</p>
         </section>
 
         <section id="moderation" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">9. Content Moderation & Community Guidelines</h2>
-          <p>All user-generated content — including market titles, descriptions, answer options, cover images, comments, display names, and avatars — is subject to automated AI moderation and manual administrative review. Content that violates community guidelines will be removed or flagged.</p>
+          <p>All user-generated content — including market titles, descriptions, answer options, cover images, comments, display names, and avatars — is subject to automated AI moderation and manual review by the System-Mod Engine. Content that violates community guidelines will be removed or flagged.</p>
           <p className="font-medium text-foreground">Prohibited content includes but is not limited to:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li>Profane, obscene, or vulgar language.</li>
@@ -149,24 +149,24 @@ const Terms = () => {
             <li>Content that promotes illegal activities.</li>
           </ul>
           <p className="font-medium text-foreground">Fee Forfeiture Policy:</p>
-          <p>If a market created via the fee-based pathway is <strong>rejected</strong> due to content moderation violations, the market creation fee is <strong>permanently forfeited and non-refundable</strong>. Only the initial liquidity deposit will be returned to the creator's balance. If a market is <strong>cancelled</strong> by an administrator (for reasons other than content violations), both the creation fee and initial liquidity are refunded. Repeated violations may result in temporary suspension or permanent ban from the Platform.</p>
+          <p>If a market created via the fee-based pathway is <strong>rejected</strong> due to content moderation violations, the market creation fee is <strong>permanently forfeited and non-refundable</strong>. Only the initial liquidity deposit will be returned to the creator's balance. If a market is <strong>cancelled</strong> by the System-Mod Engine (for reasons other than content violations), both the creation fee and initial liquidity are refunded. Repeated violations may result in temporary suspension or permanent ban from the Platform.</p>
         </section>
 
         <section id="resolution" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">10. Market Resolution</h2>
-          <p>Markets are resolved by Platform administrators based on the resolution criteria and source specified at the time of market creation. Resolution follows these principles:</p>
+          <p>Markets are resolved by the System-Mod Engine based on the resolution criteria and source specified at the time of market creation. Resolution follows these principles:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li>Winning shares pay out at $1.00 per share, less applicable platform and creator fees.</li>
             <li>Losing shares expire worthless with no payout.</li>
-            <li>For multiple-choice markets, the winning option is determined by the administrator and all other options are treated as losing.</li>
-            <li>Resolution decisions are final once confirmed. Disputed resolutions are reviewed by the administration team.</li>
+            <li>For multiple-choice markets, the winning option is determined by the System-Mod Engine and all other options are treated as losing.</li>
+            <li>Resolution decisions are final once confirmed. Disputed resolutions are reviewed by the moderation team.</li>
             <li>Cancelled markets result in full refund of all confirmed position amounts to respective user balances.</li>
           </ul>
         </section>
 
         <section id="boosting" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">11. Market Boosting</h2>
-          <p>Users may purchase promotional boosts to increase market visibility. Boost purchases are processed via cryptocurrency payment and are subject to administrator confirmation. Boost durations and pricing are determined by the selected tier. Boost fees are non-refundable once the boost period has commenced.</p>
+          <p>Users may purchase promotional boosts to increase market visibility. Boost purchases are processed via cryptocurrency payment and are subject to confirmation by the System-Mod Engine. Boost durations and pricing are determined by the selected tier. Boost fees are non-refundable once the boost period has commenced.</p>
         </section>
 
         <section id="referral" className="space-y-2 scroll-mt-20">

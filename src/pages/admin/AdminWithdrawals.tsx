@@ -215,7 +215,7 @@ const AdminWithdrawals = () => {
 
             <div className="mb-5">
               <label className="text-xs text-muted-foreground mb-1 block">
-                Admin Note {showActionModal.action === "reject" ? "(reason)" : "(optional)"}
+                Mod Note {showActionModal.action === "reject" ? "(reason)" : "(optional)"}
               </label>
               <Input
                 value={noteInput}

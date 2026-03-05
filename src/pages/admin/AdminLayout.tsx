@@ -75,7 +75,7 @@ const AdminLayout = () => {
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         <div className="h-14 flex items-center justify-between px-4 border-b border-border">
-          <h1 className="text-lg font-bold text-primary">Admin Panel</h1>
+          <h1 className="text-lg font-bold text-primary">System-Mod Engine</h1>
           <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden p-1 rounded-lg hover:bg-muted transition-colors"
@@ -130,7 +130,7 @@ const AdminLayout = () => {
           >
             <Menu className="w-5 h-5" />
           </button>
-          <span className="text-sm font-bold text-primary">Admin</span>
+          <span className="text-sm font-bold text-primary">System-Mod Engine</span>
         </div>
         <div className="max-w-5xl mx-auto p-4 sm:p-6">
           <Outlet />

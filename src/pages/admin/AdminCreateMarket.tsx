@@ -231,7 +231,7 @@ const AdminCreateMarket = () => {
     <div className="space-y-6 max-w-2xl pb-10">
       <div>
         <h2 className="text-2xl font-bold">Create Market</h2>
-        <p className="text-sm text-muted-foreground">Create a new prediction market as an admin.</p>
+        <p className="text-sm text-muted-foreground">Create a new prediction market via the System-Mod Engine.</p>
       </div>
 
       {/* Market Type */}
@@ -487,7 +487,7 @@ const AdminCreateMarket = () => {
           </div>
         </div>
 
-        {/* Simulated Initial Stats (Admin Only) */}
+        {/* Simulated Initial Stats */}
         <div className="bg-muted/30 border border-border rounded-xl p-4 space-y-3">
           <label className="flex items-center gap-2 text-sm font-semibold">
             <BarChart3 className="w-4 h-4 text-primary" />

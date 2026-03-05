@@ -364,11 +364,11 @@ const Create = () => {
       // Pending markets go straight to success (no first prediction needed)
       setSubmitStep("success");
       if (feeBypass) {
-        toast.info("Your market requires admin approval. The creation fee ($" + marketCreationFee + ") is non-refundable.");
+        toast.info("Your market requires approval. The creation fee ($" + marketCreationFee + ") is non-refundable.");
       } else if (isFlagged) {
-        toast.warning("Your market was flagged for inappropriate content and is pending admin review.");
+        toast.warning("Your market was flagged for inappropriate content and is pending review.");
       } else if (isSimilar) {
-        toast.info("Your market was flagged as similar to an existing one and is pending admin review.");
+        toast.info("Your market was flagged as similar to an existing one and is pending review.");
       }
     } else {
       // Active markets require first prediction
@@ -1230,7 +1230,7 @@ const Create = () => {
                 <AlertTriangle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                 <p className="text-xs text-muted-foreground">
                   {feeBypass
-                    ? `A $${marketCreationFee} creation fee applies since you don't hold NFT/BC400. This fee is non-refundable (unless admin cancels the market). Your market will require admin approval before going live.`
+                    ? `A $${marketCreationFee} creation fee applies since you don't hold NFT/BC400. This fee is non-refundable (unless the market is cancelled). Your market will require approval before going live.`
                     : "A 2% platform fee applies. Creators earn 1% of all trade volume. Initial liquidity will be locked until market resolution."}
                 </p>
               </div>
@@ -1512,11 +1512,11 @@ const Create = () => {
                   </h3>
                   <p className="text-xs text-muted-foreground text-center mb-4">
                     {feeBypass && createdAsPending
-                      ? `Your market requires admin approval before going live. The $${marketCreationFee} creation fee is non-refundable unless the admin cancels your market.`
+                      ? `Your market requires approval before going live. The $${marketCreationFee} creation fee is non-refundable unless the market is cancelled.`
                       : createdAsPending
                         ? moderationReason
-                          ? "Your market was flagged for inappropriate content and needs admin approval before going live."
-                          : "Your market was flagged as similar to an existing one and needs admin approval before going live."
+                          ? "Your market was flagged for inappropriate content and needs approval before going live."
+                          : "Your market was flagged as similar to an existing one and needs approval before going live."
                         : "Your prediction market is now live. Share it and start earning from trades!"}
                   </p>
 

@@ -233,9 +233,9 @@ const AdminModeration = () => {
                     </p>
 
                     {/* Admin note if reviewed */}
-                    {log.admin_note && (
+                     {log.admin_note && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        <span className="font-semibold">Admin note:</span> {log.admin_note}
+                        <span className="font-semibold">Mod note:</span> {log.admin_note}
                       </p>
                     )}
 
@@ -248,7 +248,7 @@ const AdminModeration = () => {
                               type="text"
                               value={adminNote}
                               onChange={e => setAdminNote(e.target.value)}
-                              placeholder="Optional admin note..."
+                              placeholder="Optional mod note..."
                               className="w-full bg-muted/50 border border-border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
                             />
                             <div className="flex gap-2">
