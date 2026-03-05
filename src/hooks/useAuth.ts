@@ -25,7 +25,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isModerator, setIsModerator] = useState(false);
+  const [profileDisplayName, setProfileDisplayName] = useState<string | null>(null);
   const lastSessionRef = useRef<Session | null>(null);
+
+  const fetchDisplayName = useCallback(async (userId: string, mounted: { current: boolean }) => {
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", userId)
+        .maybeSingle();
+      if (mounted.current) setProfileDisplayName(data?.display_name || null);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const checkRoles = useCallback(async (userId: string, mounted: { current: boolean }) => {
     try {
@@ -193,9 +207,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const isEmailVerified = !!user?.email_confirmed_at;
   const hasAdminAccess = isAdmin || isModerator;
+  const displayName = profileDisplayName || user?.user_metadata?.display_name || user?.email?.split("@")[0] || "User";
 
   const value: AuthContextValue = {
-    user, session, loading, isAdmin, isModerator, hasAdminAccess, isEmailVerified,
+    user, session, loading, displayName, isAdmin, isModerator, hasAdminAccess, isEmailVerified,
     signIn, signUp, signOut,
   };
 
