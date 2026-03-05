@@ -94,6 +94,20 @@ const WalletButton = () => {
                   <ExternalLink className="w-3.5 h-3.5 text-primary" />
                   Open in Trust Wallet
                 </a>
+                <a
+                  href={`https://safepal.com/dapp?url=${encodeURIComponent(window.location.href)}`}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/50 hover:bg-accent transition-colors text-xs font-medium text-foreground"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-primary" />
+                  Open in SafePal
+                </a>
+                <a
+                  href={`https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(window.location.href)}`}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/50 hover:bg-accent transition-colors text-xs font-medium text-foreground"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-primary" />
+                  Open in Coinbase Wallet
+                </a>
               </div>
             </motion.div>
           )}
