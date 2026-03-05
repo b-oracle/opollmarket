@@ -119,7 +119,7 @@ const Index = () => {
         {/* Hero */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-8">
           <h2 className="text-2xl sm:text-3xl font-bold leading-tight mb-2">
-            Predict the <span className="text-primary">future</span>,<br />earn from it.
+            Predict the <span className="text-primary">future</span>, earn from it.
           </h2>
           <p className="text-xs sm:text-sm text-muted-foreground">Swipe through markets. Predict. Win big.</p>
         </motion.div>
