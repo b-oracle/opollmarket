@@ -408,13 +408,20 @@ const AdminMarkets = () => {
                       </td>
                       {/* Status */}
                       <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          m.status === "active" ? "bg-green-500/10 text-green-500" :
-                          m.status === "resolved" ? "bg-blue-500/10 text-blue-500" :
-                          "bg-yellow-500/10 text-yellow-500"
-                        }`}>
-                          {m.status}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            m.status === "active" ? "bg-green-500/10 text-green-500" :
+                            m.status === "resolved" ? "bg-blue-500/10 text-blue-500" :
+                            "bg-yellow-500/10 text-yellow-500"
+                          }`}>
+                            {m.status}
+                          </span>
+                          {m.status === "pending" && feeBasedMarketIds.has(m.id) && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-primary/15 text-primary">
+                              💰
+                            </span>
+                          )}
+                        </div>
                       </td>
                       {/* Volume */}
                       <td className="p-3 text-muted-foreground">${Number(m.volume).toLocaleString()}</td>
