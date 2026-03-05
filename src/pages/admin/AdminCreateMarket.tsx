@@ -17,9 +17,12 @@ import {
   Target,
   CheckCircle2,
   Video,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 import CategoryIcon from "@/components/CategoryIcon";
+import ReactMarkdown from "react-markdown";
 import { isYouTubeUrl, getYouTubeId } from "@/components/YouTubeEmbed";
 
 const CATEGORIES = [
