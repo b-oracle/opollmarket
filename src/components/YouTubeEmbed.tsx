@@ -26,7 +26,7 @@ const YouTubeEmbed = ({ url, className = "" }: YouTubeEmbedProps) => {
   return (
     <iframe
       className={className}
-      src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
+      src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&rel=0&modestbranding=1`}
       title="YouTube video"
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
       allowFullScreen
