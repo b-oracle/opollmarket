@@ -723,18 +723,13 @@ const Create = () => {
                   </a>
                 )}
 
-                {/* Pay to Create */}
+                {/* No NFT or Token? Proceed with fee */}
                 <button
-                  onClick={handlePayToCreate}
-                  disabled={payingToCreate}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-border text-foreground font-semibold transition-all active:scale-95 hover:bg-muted/50 disabled:opacity-50"
+                  onClick={handleFeeBypass}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-border text-foreground font-semibold transition-all active:scale-95 hover:bg-muted/50"
                 >
-                  {payingToCreate ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <DollarSign className="w-4 h-4" />
-                  )}
-                  Pay ${marketCreationFee} to Create Market
+                  <DollarSign className="w-4 h-4" />
+                  No NFT or BC400? No problem.
                 </button>
 
                 {/* Retry check */}
