@@ -86,7 +86,9 @@ const AdminMarkets = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchMarkets(); fetchTrendingScores(); }, [filter]);
+  useEffect(() => { fetchMarkets(); fetchTrendingScores(); setMktPage(1); }, [filter]);
+
+  const paginatedMarkets = useMemo(() => markets.slice((mktPage - 1) * MKT_PAGE_SIZE, mktPage * MKT_PAGE_SIZE), [markets, mktPage]);
 
   const fetchTrendingScores = async () => {
     const { data, error } = await supabase.rpc("get_trending_scores");
@@ -242,7 +244,7 @@ const AdminMarkets = () => {
               </tr>
             </thead>
             <tbody>
-              {markets.map((m) => {
+              {paginatedMarkets.map((m) => {
                 const isEditing = editState?.id === m.id;
                 const isExpanded = expandedId === m.id;
                 return (
@@ -530,6 +532,7 @@ const AdminMarkets = () => {
           </table>
         </div>
       </div>
+      <AdminPagination page={mktPage} totalItems={markets.length} pageSize={MKT_PAGE_SIZE} onPageChange={setMktPage} />
 
       {/* Resolution Modal */}
       <AnimatePresence>
