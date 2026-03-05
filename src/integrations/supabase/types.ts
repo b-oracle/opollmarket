@@ -738,6 +738,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      expire_stale_pending_deposits: { Args: never; Returns: undefined }
       get_trending_scores: {
         Args: never
         Returns: {
