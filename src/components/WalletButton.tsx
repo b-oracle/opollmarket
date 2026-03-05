@@ -1,12 +1,20 @@
 import { useAppKit } from "@reown/appkit/react";
 import { useAccount, useDisconnect, useBalance } from "wagmi";
-import { Wallet, LogOut, ChevronDown, Copy, Check, ExternalLink } from "lucide-react";
-import { useState } from "react";
+import { Wallet, LogOut, ChevronDown, Copy, Check, ExternalLink, X, Smartphone } from "lucide-react";
+import { useState, useEffect } from "react";
 import { formatUnits } from "viem";
 import { motion, AnimatePresence } from "framer-motion";
 
 const truncateAddress = (addr: string) =>
   `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+
+const isNormalMobileBrowser = () => {
+  if (typeof window === "undefined") return false;
+  const ua = navigator.userAgent;
+  const isMobile = /iPhone|iPad|Android|Mobile/i.test(ua);
+  const hasInjected = !!(window as any).ethereum;
+  return isMobile && !hasInjected;
+};
 
 const WalletButton = () => {
   const { open } = useAppKit();
@@ -15,6 +23,22 @@ const WalletButton = () => {
   const { data: balance } = useBalance({ address });
   const [showDropdown, setShowDropdown] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+
+  useEffect(() => {
+    if (!showHint) return;
+    const timer = setTimeout(() => setShowHint(false), 10000);
+    return () => clearTimeout(timer);
+  }, [showHint]);
+
+  const handleConnect = () => {
+    const alreadyShown = sessionStorage.getItem("dapp_hint_shown");
+    if (isNormalMobileBrowser() && !alreadyShown) {
+      setShowHint(true);
+      sessionStorage.setItem("dapp_hint_shown", "1");
+    }
+    open();
+  };
 
   const copyAddress = () => {
     if (address) {
@@ -26,13 +50,41 @@ const WalletButton = () => {
 
   if (!isConnected) {
     return (
-      <button
-        onClick={() => open()}
-        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground shadow-[0_0_20px_hsl(var(--neon-yes)/0.3)] transition-all active:scale-95"
-      >
-        <Wallet className="w-4 h-4" />
-        Connect
-      </button>
+      <div className="relative">
+        <button
+          onClick={handleConnect}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground shadow-[0_0_20px_hsl(var(--neon-yes)/0.3)] transition-all active:scale-95"
+        >
+          <Wallet className="w-4 h-4" />
+          Connect
+        </button>
+
+        <AnimatePresence>
+          {showHint && (
+            <motion.div
+              initial={{ opacity: 0, y: -8, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.95 }}
+              className="absolute right-0 top-12 w-72 z-50 rounded-xl border border-primary/20 bg-card p-3 shadow-lg"
+            >
+              <button
+                onClick={() => setShowHint(false)}
+                className="absolute top-2 right-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+              <div className="flex items-start gap-2.5 pr-4">
+                <Smartphone className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  For the best experience, open this site in your wallet's built-in browser (
+                  <span className="font-semibold text-foreground">MetaMask</span>,{" "}
+                  <span className="font-semibold text-foreground">Trust Wallet</span>, or any dApp browser).
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     );
   }
 
