@@ -333,10 +333,12 @@ const Create = () => {
     }
 
     setNewMarketId(data?.id || "");
-    setCreatedAsPending(isSimilar);
+    setCreatedAsPending(needsReview);
     setSubmitStep("success");
 
-    if (isSimilar) {
+    if (isFlagged) {
+      toast.warning("Your market was flagged for inappropriate content and is pending admin review.");
+    } else if (isSimilar) {
       toast.info("Your market was flagged as similar to an existing one and is pending admin review.");
     } else {
       toast.success("Market created successfully!");
