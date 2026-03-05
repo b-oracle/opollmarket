@@ -267,8 +267,9 @@ const Create = () => {
 
     setSubmitStep("saving");
 
-    // If similar, create as pending for admin review
-    const marketStatus = isSimilar ? "pending" : "active";
+    // If similar or flagged by moderation, create as pending for admin review
+    const needsReview = isSimilar || isFlagged;
+    const marketStatus = needsReview ? "pending" : "active";
 
     // Save to database
     const { data, error } = await supabase
