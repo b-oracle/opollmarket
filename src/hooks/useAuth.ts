@@ -77,28 +77,71 @@ export const useAuth = () => {
       }
     );
 
-    // Re-validate session when app returns to foreground
+    // Re-validate and refresh session when app returns to foreground
     // Wallet browsers often suspend JS execution; this catches stale states
     const handleVisibility = async () => {
       if (document.visibilityState !== "visible" || !mounted.current) return;
-      const { data: { session: freshSession } } = await supabase.auth.getSession();
-      if (!mounted.current) return;
+      
+      try {
+        // Always try to refresh the session proactively when foregrounded
+        const { data: { session: freshSession } } = await supabase.auth.getSession();
+        if (!mounted.current) return;
 
-      if (freshSession && !session) {
-        // We were "signed out" but session is actually valid
-        lastSessionRef.current = freshSession;
-        setSession(freshSession);
-        setUser(freshSession.user);
-        await checkRoles(freshSession.user.id, mounted);
-      } else if (!freshSession && lastSessionRef.current) {
-        // Session truly expired
-        lastSessionRef.current = null;
-        setSession(null);
-        setUser(null);
-        setIsAdmin(false);
-        setIsModerator(false);
+        if (freshSession) {
+          // Proactively refresh token if it's going to expire within 5 minutes
+          const expiresAt = freshSession.expires_at;
+          const fiveMinutesFromNow = Math.floor(Date.now() / 1000) + 300;
+          if (expiresAt && expiresAt < fiveMinutesFromNow) {
+            const { data: refreshed } = await supabase.auth.refreshSession();
+            if (refreshed.session && mounted.current) {
+              lastSessionRef.current = refreshed.session;
+              setSession(refreshed.session);
+              setUser(refreshed.session.user);
+              return;
+            }
+          }
+
+          lastSessionRef.current = freshSession;
+          setSession(freshSession);
+          setUser(freshSession.user);
+          await checkRoles(freshSession.user.id, mounted);
+        } else if (lastSessionRef.current) {
+          // Session truly gone — try one last refresh before giving up
+          const { data: refreshed } = await supabase.auth.refreshSession();
+          if (refreshed.session && mounted.current) {
+            lastSessionRef.current = refreshed.session;
+            setSession(refreshed.session);
+            setUser(refreshed.session.user);
+            await checkRoles(refreshed.session.user.id, mounted);
+          } else if (mounted.current) {
+            lastSessionRef.current = null;
+            setSession(null);
+            setUser(null);
+            setIsAdmin(false);
+            setIsModerator(false);
+          }
+        }
+      } catch {
+        // Network error — keep current state, don't sign out
       }
     };
+
+    // Also refresh session periodically to prevent token expiry
+    const refreshInterval = setInterval(async () => {
+      if (!mounted.current || !lastSessionRef.current) return;
+      try {
+        const { data: { session: current } } = await supabase.auth.getSession();
+        if (current) {
+          const expiresAt = current.expires_at;
+          const tenMinutesFromNow = Math.floor(Date.now() / 1000) + 600;
+          if (expiresAt && expiresAt < tenMinutesFromNow) {
+            await supabase.auth.refreshSession();
+          }
+        }
+      } catch {
+        // Silently ignore — don't disrupt user
+      }
+    }, 4 * 60 * 1000); // Every 4 minutes
 
     document.addEventListener("visibilitychange", handleVisibility);
 
