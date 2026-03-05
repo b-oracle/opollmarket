@@ -668,10 +668,20 @@ const Create = () => {
               <div className="space-y-2">
                 <button
                   onClick={() => setShowConnectors((v) => !v)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold transition-all active:scale-95"
+                  disabled={isPending}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold transition-all active:scale-95 disabled:opacity-60"
                 >
-                  <Wallet className="w-4 h-4" />
-                  Connect Wallet
+                  {isPending ? (
+                    <>
+                      <LogoLoader size="sm" />
+                      Connecting...
+                    </>
+                  ) : (
+                    <>
+                      <Wallet className="w-4 h-4" />
+                      Connect Wallet
+                    </>
+                  )}
                 </button>
 
                 <AnimatePresence>
