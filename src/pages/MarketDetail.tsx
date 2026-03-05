@@ -494,6 +494,24 @@ const MarketDetail = () => {
           </div>
         )}
 
+        {needsFirstPrediction && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 rounded-xl border border-primary/40 bg-primary/10 p-4 flex items-start gap-3"
+          >
+            <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+              <TrendingUp className="w-4.5 h-4.5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground">Your market is almost live!</p>
+              <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                Place your first prediction (min $5) to make this market publicly visible on the feed.
+              </p>
+            </div>
+          </motion.div>
+        )}
+
         {/* Chart */}
         <div className="glass rounded-2xl p-4 mb-4">
           <div className="flex items-center justify-between mb-2">
