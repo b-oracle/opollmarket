@@ -566,7 +566,7 @@ const Profile = () => {
 
         {/* Wallet Management */}
         <div ref={walletSectionRef} className="mb-6">
-          <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">BSC Wallet</h3>
+          <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Wallet Connection</h3>
           <div className="glass rounded-xl p-4">
             {isConnected || savedWallet ? (
               <div className="space-y-3">
