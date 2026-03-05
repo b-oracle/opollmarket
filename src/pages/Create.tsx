@@ -38,6 +38,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 import CategoryIcon from "@/components/CategoryIcon";
+import SwapModal from "@/components/SwapModal";
 
 const CATEGORIES = [
   "Crypto", "AI & Tech", "Science", "Economy",
