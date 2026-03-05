@@ -1,4 +1,5 @@
 import LogoLoader from "@/components/LogoLoader";
+import { useUserBalance } from "@/hooks/useUserBalance";
 import { useState, useEffect, useCallback } from "react";
 import { useAccount, useConnect } from "wagmi";
 import { useNavigate } from "react-router-dom";
@@ -59,6 +60,7 @@ const Create = () => {
   const { connect, connectors, isPending } = useConnect();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { balance } = useUserBalance();
 
   // Gate thresholds & settings from DB
   const [minTokenBalance, setMinTokenBalance] = useState(10_000_000);
@@ -1047,9 +1049,14 @@ const Create = () => {
               className="space-y-4"
             >
               <div className={`glass rounded-xl p-4 ${shakeClass("initialLiquidity")} ${touched.initialLiquidity && errors.initialLiquidity ? "border-destructive/50" : ""}`}>
-                <label className="flex items-center gap-2 text-sm font-semibold mb-2">
-                  <DollarSign className="w-4 h-4 text-primary" />
-                  Initial Liquidity (USDT)
+                <label className="flex items-center justify-between text-sm font-semibold mb-2">
+                  <span className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-primary" />
+                    Initial Liquidity (USDT)
+                  </span>
+                  <span className="text-xs font-normal text-muted-foreground">
+                    Balance: <span className="text-foreground font-medium">${balance.toFixed(2)}</span>
+                  </span>
                 </label>
                 <input
                   type="number"
