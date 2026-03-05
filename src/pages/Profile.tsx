@@ -281,7 +281,9 @@ const Profile = () => {
               </span>
             )}
           </div>
-          <p className="text-xs text-muted-foreground">{user?.email}</p>
+          <p className="text-xs text-muted-foreground">
+            {user?.email ? `${user.email.slice(0, 3)}***@${user.email.split("@")[1]}` : ""}
+          </p>
           <button
             onClick={() => setEditingProfile(true)}
             className="mt-2 text-xs text-primary font-semibold hover:underline flex items-center gap-1"
