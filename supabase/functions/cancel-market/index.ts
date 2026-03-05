@@ -129,6 +129,48 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Refund creation fee for fee-bypass markets
+    let creationFeeRefunded = 0;
+    const { data: feeTxns } = await adminClient
+      .from("transactions")
+      .select("*")
+      .eq("market_id", market_id)
+      .eq("side", "market_creation_fee")
+      .eq("status", "confirmed");
+
+    for (const feeTx of feeTxns || []) {
+      const { data: feeBalance } = await adminClient
+        .from("balances")
+        .select("amount")
+        .eq("user_id", feeTx.user_id)
+        .single();
+
+      if (feeBalance) {
+        await adminClient
+          .from("balances")
+          .update({
+            amount: Number(feeBalance.amount) + feeTx.amount,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("user_id", feeTx.user_id);
+      }
+
+      await adminClient.from("transactions").insert({
+        user_id: feeTx.user_id,
+        market_id: market_id,
+        type: "refund",
+        amount: feeTx.amount,
+        side: "creation_fee_refund",
+        status: "confirmed",
+      });
+
+      creationFeeRefunded += feeTx.amount;
+      if (!refundedUsers.has(feeTx.user_id)) {
+        refundedUsers.add(feeTx.user_id);
+        usersRefunded++;
+      }
+    }
+
     // Update market status
     await adminClient
       .from("markets")
@@ -140,6 +182,7 @@ Deno.serve(async (req) => {
         success: true,
         users_refunded: usersRefunded,
         total_refunded: totalRefunded,
+        creation_fee_refunded: creationFeeRefunded,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
