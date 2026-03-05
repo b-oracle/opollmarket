@@ -270,8 +270,8 @@ const Create = () => {
 
     setSubmitStep("saving");
 
-    // If similar or flagged by moderation, create as pending for admin review
-    const needsReview = isSimilar || isFlagged;
+    // If similar, flagged, or fee bypass — needs admin review
+    const needsReview = isSimilar || isFlagged || feeBypass;
     const marketStatus = needsReview ? "pending" : "active";
 
     // Save to database
