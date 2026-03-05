@@ -114,7 +114,7 @@ const App = () => (
               </div>
               
               <ConditionalFooter />
-            </div>
+            </ConditionalLayout>
             </BrowserRouter>
           </TooltipProvider>
         </QueryClientProvider>
