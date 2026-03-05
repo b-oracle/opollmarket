@@ -1350,11 +1350,13 @@ const Create = () => {
                     {createdAsPending ? "Market Pending Review" : "Market Created!"}
                   </h3>
                   <p className="text-xs text-muted-foreground text-center mb-4">
-                    {createdAsPending
-                      ? moderationReason
-                        ? "Your market was flagged for inappropriate content and needs admin approval before going live."
-                        : "Your market was flagged as similar to an existing one and needs admin approval before going live."
-                      : "Your prediction market is now live. Share it and start earning from trades!"}
+                    {feeBypass && createdAsPending
+                      ? `Your market requires admin approval before going live. The $${marketCreationFee} creation fee is non-refundable unless the admin cancels your market.`
+                      : createdAsPending
+                        ? moderationReason
+                          ? "Your market was flagged for inappropriate content and needs admin approval before going live."
+                          : "Your market was flagged as similar to an existing one and needs admin approval before going live."
+                        : "Your prediction market is now live. Share it and start earning from trades!"}
                   </p>
 
                   {/* Moderation reason */}
@@ -1389,6 +1391,18 @@ const Create = () => {
                       <span className="text-muted-foreground">Liquidity</span>
                       <span className="font-semibold">${initialLiquidity} USDT</span>
                     </div>
+                    {feeBypass && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Creation Fee</span>
+                        <span className="font-semibold">${marketCreationFee} USDT</span>
+                      </div>
+                    )}
+                    {feeBypass && (
+                      <div className="flex justify-between text-xs border-t border-border pt-1.5">
+                        <span className="text-muted-foreground font-semibold">Total Charged</span>
+                        <span className="font-bold">${(parseFloat(initialLiquidity) + marketCreationFee).toFixed(2)} USDT</span>
+                      </div>
+                    )}
                     {address && (
                       <div className="flex justify-between text-xs">
                         <span className="text-muted-foreground">Wallet</span>
