@@ -112,79 +112,81 @@ const AdminWithdrawals = () => {
           No withdrawal requests found.
         </div>
       ) : (
-        <div className="rounded-xl border border-border overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Wallet</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Note</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedWd.map((w: any) => (
-                <TableRow key={w.id}>
-                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                    {format(new Date(w.created_at), "MMM d, yyyy HH:mm")}
-                  </TableCell>
-                  <TableCell className="font-bold">${Number(w.amount).toFixed(2)}</TableCell>
-                  <TableCell className="font-mono text-xs max-w-[140px] truncate">
-                    {w.wallet_address}
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${
-                        statusColors[w.status] || ""
-                      }`}
-                    >
-                      {w.status === "pending" && <Clock className="w-3 h-3" />}
-                      {w.status === "completed" && <CheckCircle2 className="w-3 h-3" />}
-                      {w.status === "rejected" && <XCircle className="w-3 h-3" />}
-                      {w.status}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-[120px] truncate">
-                    {w.admin_note || "—"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {w.status === "pending" && (
-                      <div className="flex gap-2 justify-end">
-                        <button
-                          onClick={() =>
-                            setShowActionModal({
-                              id: w.id,
-                              action: "approve",
-                              amount: w.amount,
-                            })
-                          }
-                          className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 transition-colors"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() =>
-                            setShowActionModal({
-                              id: w.id,
-                              action: "reject",
-                              amount: w.amount,
-                            })
-                          }
-                          className="px-3 py-1.5 bg-destructive text-destructive-foreground rounded-lg text-xs font-semibold hover:bg-destructive/90 transition-colors"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    )}
-                  </TableCell>
+        <>
+          <div className="rounded-xl border border-border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Wallet</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Note</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-        <AdminPagination page={wdPage} totalItems={filtered.length} pageSize={WD_PAGE_SIZE} onPageChange={setWdPage} />
+              </TableHeader>
+              <TableBody>
+                {paginatedWd.map((w: any) => (
+                  <TableRow key={w.id}>
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                      {format(new Date(w.created_at), "MMM d, yyyy HH:mm")}
+                    </TableCell>
+                    <TableCell className="font-bold">${Number(w.amount).toFixed(2)}</TableCell>
+                    <TableCell className="font-mono text-xs max-w-[140px] truncate">
+                      {w.wallet_address}
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${
+                          statusColors[w.status] || ""
+                        }`}
+                      >
+                        {w.status === "pending" && <Clock className="w-3 h-3" />}
+                        {w.status === "completed" && <CheckCircle2 className="w-3 h-3" />}
+                        {w.status === "rejected" && <XCircle className="w-3 h-3" />}
+                        {w.status}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-[120px] truncate">
+                      {w.admin_note || "—"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {w.status === "pending" && (
+                        <div className="flex gap-2 justify-end">
+                          <button
+                            onClick={() =>
+                              setShowActionModal({
+                                id: w.id,
+                                action: "approve",
+                                amount: w.amount,
+                              })
+                            }
+                            className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 transition-colors"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() =>
+                              setShowActionModal({
+                                id: w.id,
+                                action: "reject",
+                                amount: w.amount,
+                              })
+                            }
+                            className="px-3 py-1.5 bg-destructive text-destructive-foreground rounded-lg text-xs font-semibold hover:bg-destructive/90 transition-colors"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <AdminPagination page={wdPage} totalItems={filtered.length} pageSize={WD_PAGE_SIZE} onPageChange={setWdPage} />
+        </>
       )}
 
       {/* Action modal */}
