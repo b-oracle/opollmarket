@@ -39,6 +39,8 @@ const AdminCreateMarket = () => {
   const [endDate, setEndDate] = useState("");
   const [resolutionSource, setResolutionSource] = useState("");
   const [initialLiquidity, setInitialLiquidity] = useState("100");
+  const [initialVolume, setInitialVolume] = useState("0");
+  const [initialTraders, setInitialTraders] = useState("0");
   const [marketType, setMarketType] = useState<"binary" | "multi">("binary");
   const [options, setOptions] = useState<string[]>(["", ""]);
   const [trending, setTrending] = useState(false);
