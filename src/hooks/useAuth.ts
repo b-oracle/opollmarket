@@ -1,8 +1,24 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, createContext, useContext, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
+import React from "react";
 
-export const useAuth = () => {
+interface AuthContextValue {
+  user: User | null;
+  session: Session | null;
+  loading: boolean;
+  isAdmin: boolean;
+  isModerator: boolean;
+  hasAdminAccess: boolean;
+  isEmailVerified: boolean;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, displayName?: string) => Promise<{ error: any }>;
+  signOut: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,31 +47,15 @@ export const useAuth = () => {
   useEffect(() => {
     const mounted = { current: true };
 
-    // Get initial session first
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted.current) return;
-      lastSessionRef.current = session;
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await checkRoles(session.user.id, mounted);
-      }
-      if (mounted.current) setLoading(false);
-    });
-
-    // Then listen for changes
+    // 1. Set up auth listener FIRST (Supabase recommended order)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event, newSession) => {
         if (!mounted.current) return;
 
-        // If we had a session and now get null, it might be a transient
-        // token-refresh failure (common in wallet/dApp browsers).
-        // Try to recover before clearing auth state.
-        if (!session && lastSessionRef.current && event === "SIGNED_OUT") {
-          // Attempt to recover session from storage
+        // Transient sign-out recovery
+        if (!newSession && lastSessionRef.current && event === "SIGNED_OUT") {
           const { data: recovered } = await supabase.auth.getSession();
           if (recovered.session) {
-            // Session is still valid in storage — ignore this transient event
             lastSessionRef.current = recovered.session;
             setSession(recovered.session);
             setUser(recovered.session.user);
@@ -63,12 +63,15 @@ export const useAuth = () => {
           }
         }
 
-        lastSessionRef.current = session;
-        setSession(session);
-        setUser(session?.user ?? null);
+        lastSessionRef.current = newSession;
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
 
-        if (session?.user) {
-          await checkRoles(session.user.id, mounted);
+        if (newSession?.user) {
+          // Use setTimeout to avoid potential Supabase deadlock during auth callback
+          setTimeout(() => {
+            if (mounted.current) checkRoles(newSession.user.id, mounted);
+          }, 0);
         } else {
           setIsAdmin(false);
           setIsModerator(false);
@@ -77,18 +80,27 @@ export const useAuth = () => {
       }
     );
 
-    // Re-validate and refresh session when app returns to foreground
-    // Wallet browsers often suspend JS execution; this catches stale states
+    // 2. THEN get initial session
+    supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
+      if (!mounted.current) return;
+      lastSessionRef.current = initialSession;
+      setSession(initialSession);
+      setUser(initialSession?.user ?? null);
+      if (initialSession?.user) {
+        await checkRoles(initialSession.user.id, mounted);
+      }
+      if (mounted.current) setLoading(false);
+    });
+
+    // Re-validate session on foreground
     const handleVisibility = async () => {
       if (document.visibilityState !== "visible" || !mounted.current) return;
-      
+
       try {
-        // Always try to refresh the session proactively when foregrounded
         const { data: { session: freshSession } } = await supabase.auth.getSession();
         if (!mounted.current) return;
 
         if (freshSession) {
-          // Proactively refresh token if it's going to expire within 5 minutes
           const expiresAt = freshSession.expires_at;
           const fiveMinutesFromNow = Math.floor(Date.now() / 1000) + 300;
           if (expiresAt && expiresAt < fiveMinutesFromNow) {
@@ -100,13 +112,11 @@ export const useAuth = () => {
               return;
             }
           }
-
           lastSessionRef.current = freshSession;
           setSession(freshSession);
           setUser(freshSession.user);
           await checkRoles(freshSession.user.id, mounted);
         } else if (lastSessionRef.current) {
-          // Session truly gone — try one last refresh before giving up
           const { data: refreshed } = await supabase.auth.refreshSession();
           if (refreshed.session && mounted.current) {
             lastSessionRef.current = refreshed.session;
@@ -126,11 +136,10 @@ export const useAuth = () => {
       }
     };
 
-    // Proactively refresh token every 2 minutes to prevent expiry
+    // Proactive refresh every 2 minutes
     const refreshInterval = setInterval(async () => {
       if (!mounted.current || !lastSessionRef.current) return;
       try {
-        // Always refresh proactively — don't wait for near-expiry
         const { data: refreshed } = await supabase.auth.refreshSession();
         if (refreshed.session && mounted.current) {
           lastSessionRef.current = refreshed.session;
@@ -138,9 +147,9 @@ export const useAuth = () => {
           setUser(refreshed.session.user);
         }
       } catch {
-        // Silently ignore — don't disrupt user
+        // Silently ignore
       }
-    }, 2 * 60 * 1000); // Every 2 minutes
+    }, 2 * 60 * 1000);
 
     document.addEventListener("visibilitychange", handleVisibility);
 
@@ -152,12 +161,12 @@ export const useAuth = () => {
     };
   }, [checkRoles]);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
-  };
+  }, []);
 
-  const signUp = async (email: string, password: string, displayName?: string) => {
+  const signUp = useCallback(async (email: string, password: string, displayName?: string) => {
     const referredBy = localStorage.getItem("referral_id");
     const { error } = await supabase.auth.signUp({
       email,
@@ -174,15 +183,28 @@ export const useAuth = () => {
       localStorage.removeItem("referral_id");
     }
     return { error };
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     lastSessionRef.current = null;
     await supabase.auth.signOut();
-  };
+  }, []);
 
   const isEmailVerified = !!user?.email_confirmed_at;
   const hasAdminAccess = isAdmin || isModerator;
 
-  return { user, session, loading, isAdmin, isModerator, hasAdminAccess, isEmailVerified, signIn, signUp, signOut };
+  const value: AuthContextValue = {
+    user, session, loading, isAdmin, isModerator, hasAdminAccess, isEmailVerified,
+    signIn, signUp, signOut,
+  };
+
+  return React.createElement(AuthContext.Provider, { value }, children);
+};
+
+export const useAuth = (): AuthContextValue => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 };
