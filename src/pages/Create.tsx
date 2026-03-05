@@ -190,6 +190,7 @@ const Create = () => {
   const handleCreateMarket = useCallback(async () => {
     if (!user || !address) return;
     const liquidityAmount = parseFloat(initialLiquidity);
+    const totalDeduction = feeBypass ? liquidityAmount + marketCreationFee : liquidityAmount;
     setSimilarMarkets([]);
     setCreatedAsPending(false);
     setModerationReason("");
@@ -243,16 +244,16 @@ const Create = () => {
       return;
     }
 
-    if (bal.amount < liquidityAmount) {
+    if (bal.amount < totalDeduction) {
       setSubmitStep("error");
-      toast.error(`Insufficient balance. You need $${liquidityAmount} USDT but have $${bal.amount.toFixed(2)}.`);
+      toast.error(`Insufficient balance. You need $${totalDeduction} USDT but have $${bal.amount.toFixed(2)}.`);
       return;
     }
 
-    // Deduct initial liquidity from creator's balance
+    // Deduct total (liquidity + fee if bypass) from creator's balance
     const { error: deductError } = await supabase
       .from("balances")
-      .update({ amount: bal.amount - liquidityAmount, updated_at: new Date().toISOString() })
+      .update({ amount: bal.amount - totalDeduction, updated_at: new Date().toISOString() })
       .eq("user_id", user.id);
 
     if (deductError) {
