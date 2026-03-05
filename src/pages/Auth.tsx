@@ -15,9 +15,15 @@ const Auth = () => {
   const [referralFromLink, setReferralFromLink] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [rememberedName, setRememberedName] = useState<string | null>(null);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const saved = localStorage.getItem("remembered_display_name");
+    if (saved) setRememberedName(saved);
+  }, []);
   
 
   // Capture referral param
@@ -40,8 +46,12 @@ const Auth = () => {
         if (result.error && result.error.message?.toLowerCase().includes("load failed")) {
           result = await signIn(email, password);
         }
-        if (result.error) { toast.error(result.error.message); }
-        else { toast.success("Logged in successfully!"); navigate("/"); return; }
+        else {
+          // Remember display name for personalized greeting
+          const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", (await supabase.auth.getUser()).data.user?.id ?? "").single();
+          if (profile?.display_name) localStorage.setItem("remembered_display_name", profile.display_name);
+          toast.success("Logged in successfully!"); navigate("/"); return;
+        }
       } else {
         // Validate referral code if provided
         if (referralCode.trim()) {
@@ -76,7 +86,13 @@ const Auth = () => {
     <div className="min-h-dvh bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold mb-2">{mode === "login" ? "Welcome Back" : "Create Account"}</h1>
+          <h1 className="text-2xl font-bold mb-2">
+            {mode === "login"
+              ? rememberedName
+                ? `Welcome back, ${rememberedName}`
+                : "Welcome Back"
+              : "Create Account"}
+          </h1>
           <p className="text-sm text-muted-foreground">{mode === "login" ? "Sign in to access your account" : "Sign up to get started"}</p>
           {referralFromLink && mode === "signup" && (
             <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
