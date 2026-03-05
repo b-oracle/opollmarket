@@ -7,7 +7,7 @@ interface EventRow {
   event_name: string;
   user_id: string | null;
   created_at: string;
-  properties: Record<string, any>;
+  properties: Record<string, any> | null;
 }
 
 const CHART_COLORS = [
@@ -33,13 +33,13 @@ const AdminAnalytics = () => {
       since.setDate(since.getDate() - timeRange);
 
       const { data } = await supabase
-        .from("analytics_events" as any)
+        .from("analytics_events")
         .select("event_name, user_id, created_at, properties")
         .gte("created_at", since.toISOString())
         .order("created_at", { ascending: false })
-        .limit(1000) as any;
+        .limit(1000);
 
-      setEvents(data || []);
+      setEvents((data || []) as EventRow[]);
       setLoading(false);
     };
     fetch();

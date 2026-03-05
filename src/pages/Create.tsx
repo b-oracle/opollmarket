@@ -79,12 +79,12 @@ const Create = () => {
         .limit(1)
         .single();
       if (data) {
-        setMinTokenBalance(Number((data as any).min_token_balance) || 10_000_000);
-        setMinNftBalance(Number((data as any).min_nft_balance) || 1);
-        setTokenContractAddress((data as any).token_contract_address || "");
-        setNftBuyUrl((data as any).nft_buy_url || "");
-        setMarketCreationFee(Number((data as any).market_creation_fee) || 50);
-        setTokenDecimals(Number((data as any).token_decimals) ?? 18);
+        setMinTokenBalance(Number(data.min_token_balance) || 10_000_000);
+        setMinNftBalance(Number(data.min_nft_balance) || 1);
+        setTokenContractAddress(data.token_contract_address || "");
+        setNftBuyUrl(data.nft_buy_url || "");
+        setMarketCreationFee(Number(data.market_creation_fee) || 50);
+        setTokenDecimals(Number(data.token_decimals) ?? 18);
       }
     })();
   }, []);
