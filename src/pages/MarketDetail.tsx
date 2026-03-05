@@ -2,7 +2,7 @@ import SEOHead from "@/components/SEOHead";
 import YouTubeEmbed, { isYouTubeUrl } from "@/components/YouTubeEmbed";
 import { useParams, useNavigate } from "react-router-dom";
 import watermarkLogo from "@/assets/watermark-logo.png";
-import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2, Wallet } from "lucide-react";
+import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2, Wallet, FileText } from "lucide-react";
 // LogoLoader removed for faster load
 import { useMarket } from "@/hooks/useMarkets";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
@@ -487,6 +487,8 @@ const MarketDetail = () => {
       <div className={`${(market.imageUrl || market.videoUrl) ? 'pt-4' : 'pt-4'}`}>
         {!market.imageUrl && !market.videoUrl && <h1 className="text-2xl font-bold leading-tight mb-2">{market.title}</h1>}
         {!market.imageUrl && !market.videoUrl && <p className="text-sm text-muted-foreground mb-6">{market.description}</p>}
+
+        {market.details && <MarketDetailsCollapsible details={market.details} />}
 
         {activeBoost && (
           <div className="mb-4">
