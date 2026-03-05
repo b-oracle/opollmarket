@@ -458,9 +458,9 @@ const MarketDetail = () => {
           } : undefined}
         >
           <div className="h-40 w-full overflow-hidden">
-            <img src={market.imageUrl} alt={market.title} className="w-full h-full object-cover blur-[2px] opacity-70 scale-110 will-change-transform" style={{ transform: `scale(1.1) translateY(${scrollY * 0.15}px)` }} />
+            <img src={market.imageUrl} alt={market.title} className="w-full h-full object-cover opacity-60 scale-110 will-change-transform" style={{ transform: `scale(1.1) translateY(${scrollY * 0.15}px)` }} />
           </div>
-          <div className="absolute inset-0 bg-black/50" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-black/40" />
           {activeBoost && (
             <div
               className="absolute inset-0 pointer-events-none animate-pulse"
@@ -469,13 +469,10 @@ const MarketDetail = () => {
               }}
             />
           )}
-          <div className="absolute inset-0 animate-banner-shimmer pointer-events-none" style={{ background: activeBoost
-            ? `linear-gradient(105deg, transparent 35%, ${boostGlowColor?.replace('0.6', '0.15')} 50%, transparent 65%)`
-            : 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.08) 50%, transparent 60%)', backgroundSize: '200% 100%' }} />
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
-            <h1 className="text-lg font-bold text-white leading-snug drop-shadow-lg">{market.title}</h1>
-            <p className="text-xs text-white/70 mt-1.5 drop-shadow-md line-clamp-2">{market.description}</p>
-            <span className="text-[10px] text-white/50 font-mono mt-2 flex items-center gap-1">
+            <h1 className="text-lg font-bold text-white leading-snug" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8), 0 1px 3px rgba(0,0,0,0.9)' }}>{market.title}</h1>
+            <p className="text-xs text-white/90 mt-1.5 line-clamp-2" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>{market.description}</p>
+            <span className="text-[10px] text-white/70 font-mono mt-2 flex items-center gap-1" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>
               <Clock className="w-2.5 h-2.5" /> {getTimeRemaining(market.endDate)} · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
