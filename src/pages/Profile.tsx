@@ -120,6 +120,15 @@ const Profile = () => {
     }
   }, [user, isConnected, address, profile]);
 
+  // Auto-scroll to wallet section when coming from /create
+  useEffect(() => {
+    if (searchParams.get("section") === "wallet" && walletSectionRef.current) {
+      setTimeout(() => {
+        walletSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 500);
+    }
+  }, [searchParams, profile]);
+
   const fetchWalletNfts = async () => {
     const walletAddr = savedWallet || address;
     if (!walletAddr) { toast.error("Connect a wallet first"); return; }
