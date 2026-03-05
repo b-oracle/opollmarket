@@ -48,24 +48,32 @@ const AdminSettings = () => {
   const isValid = adminNum >= 0 && creatorNum >= 0 && totalFee <= 100 && referralNum >= 0 && tokenNum >= 0 && nftNum >= 0;
 
   const handleSave = async () => {
-    if (!isValid || !settingsId) return;
+    if (!isValid || !settingsId) {
+      if (!settingsId) toast.error("Settings not loaded. Please refresh.");
+      return;
+    }
     setSaving(true);
-    const { error } = await supabase
-      .from("commission_settings")
-      .update({
-        admin_fee_percent: adminNum,
-        creator_fee_percent: creatorNum,
-        referral_reward_amount: referralNum,
-        min_token_balance: tokenNum,
-        min_nft_balance: nftNum,
-        updated_at: new Date().toISOString(),
-      } as any)
-      .eq("id", settingsId);
-    setSaving(false);
-    if (error) {
-      toast.error("Failed to save settings");
-    } else {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("commission_settings")
+        .update({
+          admin_fee_percent: adminNum,
+          creator_fee_percent: creatorNum,
+          referral_reward_amount: referralNum,
+          min_token_balance: tokenNum,
+          min_nft_balance: nftNum,
+          updated_at: new Date().toISOString(),
+          updated_by: user?.id || null,
+        } as any)
+        .eq("id", settingsId);
+      if (error) throw error;
       toast.success("Commission settings saved");
+    } catch (err: any) {
+      console.error("Save settings error:", err);
+      toast.error(err.message || "Failed to save settings");
+    } finally {
+      setSaving(false);
     }
   };
 

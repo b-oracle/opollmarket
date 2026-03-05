@@ -66,24 +66,31 @@ const AdminContracts = () => {
       toast.error("Invalid NFT buy URL format");
       return;
     }
+    if (!settingsId) {
+      toast.error("Settings not loaded. Please refresh the page.");
+      return;
+    }
 
     setSaving(true);
     try {
-      const { error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error, count } = await supabase
         .from("commission_settings")
         .update({
-          token_contract_address: tokenContract,
-          nft_contract_address: nftContract,
-          nft_buy_url: nftBuyUrl,
+          token_contract_address: tokenContract || null,
+          nft_contract_address: nftContract || null,
+          nft_buy_url: nftBuyUrl || null,
           market_creation_fee: parseFloat(marketCreationFee) || 50,
           token_decimals: parseInt(tokenDecimals) || 18,
           updated_at: new Date().toISOString(),
+          updated_by: user?.id || null,
         } as any)
         .eq("id", settingsId);
 
       if (error) throw error;
       toast.success("Settings updated successfully");
     } catch (err: any) {
+      console.error("Save contract settings error:", err);
       toast.error(err.message || "Failed to save settings");
     } finally {
       setSaving(false);
