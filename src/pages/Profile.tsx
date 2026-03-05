@@ -54,7 +54,7 @@ const Profile = () => {
   useEffect(() => { track("page_view", { page: "profile" }); }, []);
   const queryClient = useQueryClient();
   const { address, isConnected } = useAccount();
-  const { connect, connectors, isPending } = useConnect();
+  const { connect, connectors, isPending } = useFilteredConnectors();
   const { disconnect } = useDisconnect();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<"deposit" | "withdraw">("deposit");

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Wallet, LogOut, ChevronDown, Copy, Check, ExternalLink } from "lucide-react";
-import { useAccount, useDisconnect, useBalance, useConnect } from "wagmi";
+import { useAccount, useDisconnect, useBalance } from "wagmi";
+import { useFilteredConnectors } from "@/hooks/useFilteredConnectors";
 import { formatUnits } from "viem";
 import { bsc } from "wagmi/chains";
 import { motion, AnimatePresence } from "framer-motion";
@@ -11,7 +12,7 @@ const truncateAddress = (addr: string) =>
 const WalletButton = () => {
   const { address, isConnected, connector } = useAccount();
   const { disconnect } = useDisconnect();
-  const { connect, connectors, isPending } = useConnect();
+  const { connect, connectors, isPending } = useFilteredConnectors();
   const { data: balance } = useBalance({ address });
   const [showDropdown, setShowDropdown] = useState(false);
   const [showConnectors, setShowConnectors] = useState(false);

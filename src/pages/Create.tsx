@@ -1,7 +1,8 @@
 import LogoLoader from "@/components/LogoLoader";
 import { useUserBalance } from "@/hooks/useUserBalance";
 import { useState, useEffect, useCallback } from "react";
-import { useAccount, useConnect } from "wagmi";
+import { useAccount } from "wagmi";
+import { useFilteredConnectors } from "@/hooks/useFilteredConnectors";
 import { useNavigate } from "react-router-dom";
 import { bsc } from "wagmi/chains";
 import { motion, AnimatePresence } from "framer-motion";
@@ -57,7 +58,7 @@ interface GateCheck {
 
 const Create = () => {
   const { address, isConnected } = useAccount();
-  const { connect, connectors, isPending } = useConnect();
+  const { connect, connectors, isPending } = useFilteredConnectors();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { balance } = useUserBalance();
