@@ -3,7 +3,7 @@ import { useNavigate, Outlet, NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard, ShoppingBag, MessageSquare, Users, LogOut, Loader2,
-  ArrowLeft, PlusCircle, Receipt, Settings, Coins, Menu, X, ArrowUpFromLine, Zap, BarChart3, Rocket, FileCode2,
+  ArrowLeft, PlusCircle, Receipt, Settings, Coins, Menu, X, ArrowUpFromLine, Zap, BarChart3, Rocket, FileCode2, ShieldAlert,
 } from "lucide-react";
 
 type NavItem = { to: string; label: string; icon: any; end?: boolean; adminOnly?: boolean };
@@ -15,6 +15,7 @@ const navItems: NavItem[] = [
   { to: "/admin/transactions", label: "Transactions", icon: Receipt, adminOnly: true },
   { to: "/admin/withdrawals", label: "Withdrawals", icon: ArrowUpFromLine, adminOnly: true },
   { to: "/admin/boosts", label: "Boosts", icon: Zap },
+  { to: "/admin/moderation", label: "Moderation", icon: ShieldAlert, adminOnly: true },
   { to: "/admin/comments", label: "Comments", icon: MessageSquare },
   { to: "/admin/users", label: "Users", icon: Users, adminOnly: true },
   { to: "/admin/commissions", label: "Commissions", icon: Coins, adminOnly: true },
