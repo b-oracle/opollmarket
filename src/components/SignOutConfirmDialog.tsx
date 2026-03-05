@@ -17,14 +17,18 @@ const SignOutConfirmDialog = ({ open, onClose }: SignOutConfirmDialogProps) => {
   const handleSignOut = async () => {
     setSigningOut(true);
     try {
-      await supabase.auth.signOut();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("timeout")), 5000)
+      );
+      await Promise.race([supabase.auth.signOut(), timeoutPromise]);
+    } catch {
+      // If global sign out fails/times out, force local sign out
+      await supabase.auth.signOut({ scope: "local" });
+    } finally {
+      setSigningOut(false);
       toast.success("Signed out successfully");
       onClose();
       navigate("/");
-    } catch {
-      toast.error("Failed to sign out");
-    } finally {
-      setSigningOut(false);
     }
   };
 
