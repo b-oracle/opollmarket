@@ -77,6 +77,7 @@ const AdminMarkets = () => {
   const MKT_PAGE_SIZE = 20;
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [cancellingPendingId, setCancellingPendingId] = useState<string | null>(null);
 
   const fetchMarkets = async () => {
     let query = supabase
@@ -327,9 +328,35 @@ const AdminMarkets = () => {
                     Approve
                   </button>
                   <button
+                    onClick={async () => {
+                      if (!confirm("Cancel this pending market? The creator will receive a FULL refund (including creation fee).")) return;
+                      setCancellingPendingId(m.id);
+                      try {
+                        const { data, error } = await supabase.functions.invoke("cancel-market", {
+                          body: { market_id: m.id },
+                        });
+                        if (error) throw error;
+                        if (data?.error) throw new Error(data.error);
+                        toast.success("Market cancelled — full refund issued.");
+                        fetchMarkets();
+                        fetchPendingMarkets();
+                      } catch (err: any) {
+                        toast.error(err?.message || "Failed to cancel market");
+                      }
+                      setCancellingPendingId(null);
+                    }}
+                    disabled={cancellingPendingId === m.id}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-xs font-semibold hover:bg-muted/80 transition-all active:scale-95 disabled:opacity-50"
+                    title="Cancel with full refund (including creation fee)"
+                  >
+                    {cancellingPendingId === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+                    Cancel
+                  </button>
+                  <button
                     onClick={() => handleReject(m.id)}
                     disabled={rejectingId === m.id}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-semibold hover:bg-destructive/20 transition-all active:scale-95 disabled:opacity-50"
+                    title="Reject for content violation — creation fee forfeited"
                   >
                     {rejectingId === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
                     Reject
