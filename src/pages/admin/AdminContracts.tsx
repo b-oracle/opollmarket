@@ -10,6 +10,7 @@ const AdminContracts = () => {
   const [nftContract, setNftContract] = useState("");
   const [nftBuyUrl, setNftBuyUrl] = useState("");
   const [marketCreationFee, setMarketCreationFee] = useState("50");
+  const [tokenDecimals, setTokenDecimals] = useState("18");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState("");
@@ -33,6 +34,7 @@ const AdminContracts = () => {
         setNftContract((data as any).nft_contract_address || "");
         setNftBuyUrl((data as any).nft_buy_url || "");
         setMarketCreationFee(String((data as any).market_creation_fee ?? 50));
+        setTokenDecimals(String((data as any).token_decimals ?? 18));
       }
     } catch (err) {
       console.error("Failed to fetch contract settings:", err);
@@ -74,6 +76,7 @@ const AdminContracts = () => {
           nft_contract_address: nftContract,
           nft_buy_url: nftBuyUrl,
           market_creation_fee: parseFloat(marketCreationFee) || 50,
+          token_decimals: parseInt(tokenDecimals) || 18,
           updated_at: new Date().toISOString(),
         } as any)
         .eq("id", settingsId);
