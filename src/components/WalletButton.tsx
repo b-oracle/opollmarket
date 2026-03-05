@@ -105,7 +105,7 @@ const WalletButton = () => {
                   href={`https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(window.location.href)}`}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/50 hover:bg-accent transition-colors text-xs font-medium text-foreground"
                 >
-                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="4" fill="#0052FF"/><rect x="10" y="10" width="20" height="20" rx="6" fill="white"/><rect x="15" y="17" width="4" height="6" rx="1" fill="#0052FF"/><rect x="21" y="17" width="4" height="6" rx="1" fill="#0052FF"/></svg>
+                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="0" fill="#0052FF"/><rect x="10" y="10" width="20" height="20" rx="4" fill="white"/><rect x="15" y="17" width="4" height="6" rx="1" fill="#0052FF"/><rect x="21" y="17" width="4" height="6" rx="1" fill="#0052FF"/></svg>
                   Open in Coinbase Wallet
                 </a>
               </div>
