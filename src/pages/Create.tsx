@@ -59,9 +59,12 @@ const Create = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  // Gate thresholds from DB
+  // Gate thresholds & settings from DB
   const [minTokenBalance, setMinTokenBalance] = useState(10_000_000);
   const [minNftBalance, setMinNftBalance] = useState(1);
+  const [tokenContractAddress, setTokenContractAddress] = useState("");
+  const [nftBuyUrl, setNftBuyUrl] = useState("");
+  const [marketCreationFee, setMarketCreationFee] = useState(50);
 
   useEffect(() => {
     (async () => {
@@ -73,6 +76,9 @@ const Create = () => {
       if (data) {
         setMinTokenBalance(Number((data as any).min_token_balance) || 10_000_000);
         setMinNftBalance(Number((data as any).min_nft_balance) || 1);
+        setTokenContractAddress((data as any).token_contract_address || "");
+        setNftBuyUrl((data as any).nft_buy_url || "");
+        setMarketCreationFee(Number((data as any).market_creation_fee) || 50);
       }
     })();
   }, []);
