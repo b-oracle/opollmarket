@@ -263,6 +263,15 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
         body: { content: cleanText },
       });
       if (modData?.flagged) {
+        // Log to moderation_logs
+        await supabase.from("moderation_logs").insert({
+          content_type: "comment",
+          content_id: marketId,
+          user_id: user.id,
+          flagged_content: cleanText,
+          reason: modData.reason || "Flagged by AI",
+          category: "profanity",
+        });
         toast.error(modData.reason || "Your comment contains inappropriate content. Please revise it.");
         setSubmitting(false);
         return;
