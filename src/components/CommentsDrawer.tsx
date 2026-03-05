@@ -272,7 +272,10 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
           reason: modData.reason || "Flagged by AI",
           category: "profanity",
         });
-        toast.error(modData.reason || "Your comment contains inappropriate content. Please revise it.");
+        toast.error("Comment blocked", {
+          description: modData.reason || "Your comment contains inappropriate content. Please revise it.",
+          duration: 6000,
+        });
         setSubmitting(false);
         return;
       }

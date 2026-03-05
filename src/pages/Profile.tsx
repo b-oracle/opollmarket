@@ -424,7 +424,10 @@ const Profile = () => {
                                 reason: nameModData.reason || "Flagged by AI",
                                 category: "profanity",
                               });
-                              toast.error(nameModData.reason || "This display name is not allowed");
+              toast.error("Display name not allowed", {
+                description: nameModData.reason || "This display name contains inappropriate content. Please choose another.",
+                duration: 6000,
+              });
                               setSavingProfile(false);
                               return;
                             }
