@@ -161,8 +161,10 @@ export type Database = {
           admin_fee_percent: number
           creator_fee_percent: number
           id: string
+          market_creation_fee: number | null
           min_nft_balance: number
           min_token_balance: number
+          nft_buy_url: string | null
           nft_contract_address: string | null
           referral_reward_amount: number
           token_contract_address: string | null
@@ -173,8 +175,10 @@ export type Database = {
           admin_fee_percent?: number
           creator_fee_percent?: number
           id?: string
+          market_creation_fee?: number | null
           min_nft_balance?: number
           min_token_balance?: number
+          nft_buy_url?: string | null
           nft_contract_address?: string | null
           referral_reward_amount?: number
           token_contract_address?: string | null
@@ -185,8 +189,10 @@ export type Database = {
           admin_fee_percent?: number
           creator_fee_percent?: number
           id?: string
+          market_creation_fee?: number | null
           min_nft_balance?: number
           min_token_balance?: number
+          nft_buy_url?: string | null
           nft_contract_address?: string | null
           referral_reward_amount?: number
           token_contract_address?: string | null
