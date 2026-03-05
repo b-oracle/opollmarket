@@ -238,12 +238,12 @@ const AdminTransactions = () => {
           ))}
         </div>
       </div>
-        <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1">
           {(["all", "confirmed", "pending", "failed"] as const).map((s) => (
             <button
               key={s}
               onClick={() => { setPage(0); setStatusFilter(s); }}
-              className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all capitalize ${
+              className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all capitalize whitespace-nowrap ${
                 statusFilter === s
                   ? s === "confirmed" ? "bg-green-500/20 text-green-500 ring-1 ring-green-500/30"
                   : s === "pending" ? "bg-yellow-500/20 text-yellow-500 ring-1 ring-yellow-500/30"
@@ -255,7 +255,7 @@ const AdminTransactions = () => {
               {s === "confirmed" ? "✓ Confirmed" : s === "pending" ? "⏳ Pending" : s === "failed" ? "✗ Failed" : "All Status"}
             </button>
           ))}
-        </div>
+      </div>
 
       {/* Table */}
       <div className="bg-card border border-border rounded-xl overflow-hidden">
