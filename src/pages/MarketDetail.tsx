@@ -330,7 +330,7 @@ const MarketDetailsCollapsible = ({ details }: { details: string }) => {
   );
 };
 
-
+const MarketDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
