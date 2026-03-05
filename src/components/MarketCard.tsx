@@ -35,11 +35,14 @@ const formatVolume = (v: number) => {
 
 const getTimeRemaining = (endDate: string) => {
   const diff = new Date(endDate).getTime() - Date.now();
+  if (diff <= 0) return "Ended";
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor(diff / (1000 * 60 * 60));
   if (days > 365) return `${Math.floor(days / 365)}y left`;
   if (days > 30) return `${Math.floor(days / 30)}mo left`;
-  if (days <= 0) return "Ended";
-  return `${days}d left`;
+  if (days >= 1) return `${days}d left`;
+  if (hours >= 1) return `${hours}h left`;
+  return `< 1h left`;
 };
 
 const optionColors = [
