@@ -15,9 +15,15 @@ const Auth = () => {
   const [referralFromLink, setReferralFromLink] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [rememberedName, setRememberedName] = useState<string | null>(null);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const saved = localStorage.getItem("remembered_display_name");
+    if (saved) setRememberedName(saved);
+  }, []);
   
 
   // Capture referral param
