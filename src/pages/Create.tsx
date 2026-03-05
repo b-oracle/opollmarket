@@ -308,6 +308,52 @@ const Create = () => {
     }
   }, [isConnected]);
 
+  // Pay to create market — deduct fee from balance
+  const handlePayToCreate = async () => {
+    if (!user) return;
+    setPayingToCreate(true);
+    try {
+      const { data: bal } = await supabase
+        .from("balances")
+        .select("amount")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!bal || bal.amount < marketCreationFee) {
+        toast.error(`Insufficient balance. You need $${marketCreationFee} USDT.`);
+        setPayingToCreate(false);
+        return;
+      }
+
+      const { error } = await supabase
+        .from("balances")
+        .update({ amount: bal.amount - marketCreationFee, updated_at: new Date().toISOString() })
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      // Record the transaction
+      await supabase.from("transactions").insert({
+        user_id: user.id,
+        type: "buy",
+        amount: marketCreationFee,
+        status: "confirmed",
+        side: "market_creation_fee",
+      });
+
+      toast.success("Payment successful! You can now create a market.");
+      setGatePassed(true);
+    } catch (err: any) {
+      toast.error(err.message || "Payment failed");
+    } finally {
+      setPayingToCreate(false);
+    }
+  };
+
+  const pancakeSwapUrl = tokenContractAddress
+    ? `https://pancakeswap.finance/swap?outputCurrency=${tokenContractAddress}&chain=bsc`
+    : "https://pancakeswap.finance/swap";
+
   const isFormValid =
     title.trim().length >= 10 &&
     description.trim().length >= 20 &&
