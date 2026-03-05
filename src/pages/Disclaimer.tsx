@@ -61,7 +61,7 @@ const Disclaimer = () => {
             <li><strong>Price Volatility:</strong> Market prices can fluctuate rapidly and unpredictably based on participant activity and external events.</li>
             <li><strong>Liquidity Risk:</strong> Markets with low liquidity may experience significant price slippage, and you may not be able to exit positions at your desired price.</li>
             <li><strong>AMM Mechanics:</strong> The constant-product AMM formula means that larger trades result in greater price impact. Displayed prices may differ from execution prices.</li>
-            <li><strong>Resolution Risk:</strong> Market outcomes depend on real-world events and the interpretation of resolution criteria by Platform administrators. Resolution decisions are final.</li>
+            <li><strong>Resolution Risk:</strong> Market outcomes depend on real-world events and the interpretation of resolution criteria by the System-Mod Engine. Resolution decisions are final.</li>
             <li><strong>Counterparty Risk:</strong> While the Platform holds user funds in managed accounts, there is inherent risk in any centralized custody arrangement.</li>
           </ul>
           <p className="font-medium text-foreground">Past performance of any market, position, or trading strategy does not guarantee future results.</p>
@@ -82,12 +82,12 @@ const Disclaimer = () => {
 
         <section id="market-resolution" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">Market Creation & Resolution</h2>
-          <p>Markets on the Platform are created by users and administrators. You should be aware that:</p>
+          <p>Markets on the Platform are created by users and the System-Mod Engine. You should be aware that:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li>Resolution criteria are defined at the time of market creation and may be subject to interpretation.</li>
-            <li>Markets are resolved by Platform administrators based on publicly available information and the specified resolution source.</li>
-            <li>Resolution decisions are final once confirmed. While disputed resolutions are reviewed, the administrative team's determination is binding.</li>
-            <li>Markets may be cancelled by administrators at any time, in which case all confirmed positions are refunded.</li>
+            <li>Markets are resolved by the System-Mod Engine based on publicly available information and the specified resolution source.</li>
+            <li>Resolution decisions are final once confirmed. While disputed resolutions are reviewed, the moderation team's determination is binding.</li>
+            <li>Markets may be cancelled by the System-Mod Engine at any time, in which case all confirmed positions are refunded.</li>
             <li>Initial trading activity (volume, participant counts) on certain markets may reflect simulated data set during market creation.</li>
           </ul>
         </section>
@@ -98,7 +98,7 @@ const Disclaimer = () => {
           <ul className="list-disc pl-5 space-y-1">
             <li>May produce false positives or false negatives in content moderation.</li>
             <li>Do not guarantee the accuracy, appropriateness, or safety of all user-generated content.</li>
-            <li>Are supplemented by human administrative review but may not catch all violations in real time.</li>
+            <li>Are supplemented by human review but may not catch all violations in real time.</li>
           </ul>
         </section>
 
