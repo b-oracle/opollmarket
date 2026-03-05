@@ -33,9 +33,10 @@ const faqSections = [
   {
     title: "Markets",
     items: [
-      { question: "Who may create a market?", answer: "Users meeting eligibility requirements (e.g., NFT holders or holding 10,000,000+ BC400 tokens) may create markets." },
+      { question: "Who may create a market?", answer: "Users meeting eligibility requirements (e.g., NFT holders or holding 10,000,000+ BC400 tokens) may create markets. Users who do not meet these requirements can pay a Market Creation Fee to proceed." },
       { question: "What types of markets are supported?", answer: "• Political events\n• Technology and innovation\n• Cryptocurrency prices\n• Sports outcomes\n• Community milestones\n• Custom event-based questions" },
       { question: "Can a market be edited after creation?", answer: "No. Core parameters cannot be modified once a market is live, ensuring fairness and integrity." },
+      { question: "What happens if my market is flagged for inappropriate content?", answer: "All market submissions are screened by our AI moderation system for profanity, nudity, hate speech, violence, and other guideline violations. If your market is flagged and rejected:\n\n• The Market Creation Fee is permanently forfeited (non-refundable)\n• Only your initial liquidity will be refunded to your balance\n\nThis policy exists to discourage misuse and ensure a safe community. Repeated violations may lead to account suspension." },
     ],
   },
   {
