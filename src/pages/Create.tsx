@@ -6,6 +6,7 @@ import { useFilteredConnectors } from "@/hooks/useFilteredConnectors";
 import { useNavigate } from "react-router-dom";
 import { bsc } from "wagmi/chains";
 import { motion, AnimatePresence } from "framer-motion";
+import ReactMarkdown from "react-markdown";
 import {
   TrendingUp,
   Lock,
@@ -79,8 +80,22 @@ const DetailsField = ({ details, setDetails }: { details: string; setDetails: (v
         )}
       </div>
       {preview ? (
-        <div className="bg-muted/50 border border-border rounded-xl px-4 py-3 min-h-[5rem]">
-          <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">{details}</p>
+        <div className="bg-muted/50 border border-border rounded-xl px-4 py-3 min-h-[5rem] text-xs text-muted-foreground leading-relaxed">
+          <ReactMarkdown
+            components={{
+              h1: ({ children }) => <h3 className="text-sm font-bold text-foreground mt-3 mb-1">{children}</h3>,
+              h2: ({ children }) => <h4 className="text-xs font-bold text-foreground mt-2.5 mb-1">{children}</h4>,
+              h3: ({ children }) => <h5 className="text-xs font-semibold text-foreground mt-2 mb-0.5">{children}</h5>,
+              p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+              ul: ({ children }) => <ul className="list-disc pl-4 mb-2 space-y-0.5">{children}</ul>,
+              ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-0.5">{children}</ol>,
+              li: ({ children }) => <li>{children}</li>,
+              a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{children}</a>,
+              strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+              em: ({ children }) => <em>{children}</em>,
+              code: ({ children }) => <code className="bg-muted px-1 py-0.5 rounded text-[10px]">{children}</code>,
+            }}
+          >{details}</ReactMarkdown>
         </div>
       ) : (
         <textarea
