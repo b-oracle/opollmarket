@@ -168,7 +168,7 @@ const AdminCreateMarket = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-2xl pb-10">
       <div>
         <h2 className="text-2xl font-bold">Create Market</h2>
         <p className="text-sm text-muted-foreground">Create a new prediction market as an admin.</p>
@@ -438,18 +438,31 @@ const AdminCreateMarket = () => {
         </div>
       </div>
 
+      {/* Validation hints */}
+      {!isValid && (
+        <div className="text-xs text-muted-foreground bg-muted/30 border border-border rounded-xl p-3 space-y-1">
+          <p className="font-semibold text-foreground mb-1">Required to submit:</p>
+          {title.trim().length < 10 && <p>• Market question (min 10 characters)</p>}
+          {description.trim().length < 10 && <p>• Description (min 10 characters)</p>}
+          {!category && <p>• Select a category</p>}
+          {!endDate && <p>• Set an end date</p>}
+          {resolutionSource.trim().length < 5 && <p>• Resolution source (min 5 characters)</p>}
+          {marketType === "multi" && options.filter((o) => o.trim()).length < 2 && <p>• At least 2 options for multi-choice</p>}
+        </div>
+      )}
+
       {/* Submit */}
       <div className="flex gap-3">
         <button
           onClick={() => navigate("/admin/markets")}
-          className="flex-1 py-3 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors"
+          className="flex-1 py-3.5 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors active:scale-[0.98]"
         >
           Cancel
         </button>
         <button
           onClick={handleSubmit}
           disabled={!isValid || submitting}
-          className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          className="flex-1 py-3.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-[0.98]"
         >
           {submitting ? (
             <>
