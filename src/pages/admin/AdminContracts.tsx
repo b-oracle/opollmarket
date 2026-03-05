@@ -73,22 +73,36 @@ const AdminContracts = () => {
 
     setSaving(true);
     try {
+      console.log("[AdminContracts] Starting save, settingsId:", settingsId);
       const { data: { user } } = await supabase.auth.getUser();
-      const { error, count } = await supabase
+      console.log("[AdminContracts] Got user:", user?.id);
+      
+      const updatePayload = {
+        token_contract_address: tokenContract || null,
+        nft_contract_address: nftContract || null,
+        nft_buy_url: nftBuyUrl || null,
+        market_creation_fee: parseFloat(marketCreationFee) || 50,
+        token_decimals: parseInt(tokenDecimals) || 18,
+        updated_at: new Date().toISOString(),
+        updated_by: user?.id || null,
+      };
+      console.log("[AdminContracts] Update payload:", updatePayload);
+      
+      const { error, data, status, statusText } = await supabase
         .from("commission_settings")
-        .update({
-          token_contract_address: tokenContract || null,
-          nft_contract_address: nftContract || null,
-          nft_buy_url: nftBuyUrl || null,
-          market_creation_fee: parseFloat(marketCreationFee) || 50,
-          token_decimals: parseInt(tokenDecimals) || 18,
-          updated_at: new Date().toISOString(),
-          updated_by: user?.id || null,
-        } as any)
-        .eq("id", settingsId);
+        .update(updatePayload as any)
+        .eq("id", settingsId)
+        .select();
 
+      console.log("[AdminContracts] Update response:", { error, data, status, statusText });
+      
       if (error) throw error;
-      toast.success("Settings updated successfully");
+      if (!data || data.length === 0) {
+        console.warn("[AdminContracts] No rows updated - RLS may be blocking");
+        toast.error("Update failed - no rows were modified. Check admin permissions.");
+      } else {
+        toast.success("Settings updated successfully");
+      }
     } catch (err: any) {
       console.error("Save contract settings error:", err);
       toast.error(err.message || "Failed to save settings");
