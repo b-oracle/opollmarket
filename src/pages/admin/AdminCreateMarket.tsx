@@ -134,7 +134,16 @@ const AdminCreateMarket = () => {
     (marketType === "binary" || options.filter((o) => o.trim()).length >= 2);
 
   const handleSubmit = async () => {
-    if (!isValid || !user) return;
+    // Touch all fields on submit attempt
+    const allFields = ["title", "description", "category", "endDate", "resolutionSource", "options"];
+    setTouched(allFields.reduce((acc, f) => ({ ...acc, [f]: true }), {}));
+
+    if (!isValid || !user) {
+      // Shake first invalid field
+      const firstInvalid = allFields.find((f) => errors[f as keyof typeof errors]);
+      if (firstInvalid) shake(firstInvalid);
+      return;
+    }
     setSubmitting(true);
 
     try {
@@ -232,8 +241,8 @@ const AdminCreateMarket = () => {
       </div>
 
       {/* Title & Description */}
-      <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-        <div>
+      <div className={`bg-card border border-border rounded-xl p-5 space-y-4`}>
+        <div className={shakeClass("title")}>
           <label className="flex items-center gap-2 text-sm font-semibold mb-2">
             <FileText className="w-4 h-4 text-primary" />
             Market Question
@@ -242,11 +251,31 @@ const AdminCreateMarket = () => {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            onBlur={() => touch("title")}
             placeholder="Will Bitcoin hit $150K before July 2026?"
             maxLength={120}
-            className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-colors ${inputBorder("title")}`}
           />
-          <p className="text-[10px] text-muted-foreground mt-1 text-right">{title.length}/120</p>
+          <div className="flex justify-between mt-1">
+            {fieldError("title") ? (
+              <p className="text-[11px] text-destructive">{fieldError("title")}</p>
+            ) : <span />}
+            <p className="text-[10px] text-muted-foreground">{title.length}/120</p>
+          </div>
+        </div>
+        <div className={shakeClass("description")}>
+          <label className="text-sm font-semibold mb-2 block">Description</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            onBlur={() => touch("description")}
+            placeholder="Provide context and resolution criteria..."
+            rows={3}
+            className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 resize-none transition-colors ${inputBorder("description")}`}
+          />
+          {fieldError("description") && (
+            <p className="text-[11px] text-destructive mt-1">{fieldError("description")}</p>
+          )}
         </div>
         <div>
           <label className="text-sm font-semibold mb-2 block">Description</label>
