@@ -67,4 +67,15 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'web3': ['wagmi', 'viem', '@reown/appkit', '@reown/appkit-adapter-wagmi', '@wagmi/connectors'],
+          'ui': ['framer-motion', 'recharts', '@radix-ui/react-dialog', '@radix-ui/react-popover', '@radix-ui/react-dropdown-menu'],
+          'supabase': ['@supabase/supabase-js'],
+        },
+      },
+    },
+  },
 }));
