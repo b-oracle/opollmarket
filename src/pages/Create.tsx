@@ -60,6 +60,7 @@ const Create = () => {
   const { connect, connectors, isPending } = useConnect();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { balance } = useUserBalance();
 
   // Gate thresholds & settings from DB
   const [minTokenBalance, setMinTokenBalance] = useState(10_000_000);
