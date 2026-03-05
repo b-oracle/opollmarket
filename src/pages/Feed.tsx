@@ -1,5 +1,6 @@
 import SEOHead from "@/components/SEOHead";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { toast } from "sonner";
 import MarketCard from "@/components/MarketCard";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
@@ -36,6 +37,8 @@ const Feed = () => {
     });
   }, [markets, boostedMarketIds]);
 
+  const endToastShown = useRef(false);
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -43,10 +46,35 @@ const Feed = () => {
       const itemHeight = container.clientHeight;
       const index = Math.round(container.scrollTop / itemHeight);
       setActiveIndex(index);
+
+      // Detect overscroll past the last card
+      const maxScroll = container.scrollHeight - container.clientHeight;
+      const isAtEnd = container.scrollTop >= maxScroll - 5;
+      const isOnLastCard = index >= sortedMarkets.length - 1;
+
+      if (isAtEnd && isOnLastCard && sortedMarkets.length > 0 && !endToastShown.current) {
+        endToastShown.current = true;
+        toast("Nothing more to see 👀", {
+          duration: 2000,
+          position: "top-center",
+        });
+        // Snap back to the last card
+        setTimeout(() => {
+          container.scrollTo({
+            top: (sortedMarkets.length - 1) * itemHeight,
+            behavior: "smooth",
+          });
+        }, 300);
+      }
+
+      // Reset toast flag when user scrolls away from end
+      if (!isAtEnd) {
+        endToastShown.current = false;
+      }
     };
     container.addEventListener("scroll", handleScroll, { passive: true });
     return () => container.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [sortedMarkets.length]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const container = containerRef.current;
