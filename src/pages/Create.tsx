@@ -261,18 +261,55 @@ const Create = () => {
       )
     );
 
-    // Step 2: Token balance check (on-chain — currently simulated as failed)
-    await new Promise((r) => setTimeout(r, 900));
-    const tokenPassed = false; // TODO: real on-chain balance check
-    setGateChecks((prev) =>
-      prev.map((c, i) =>
-        i === 1
-          ? { ...c, status: tokenPassed ? "passed" : "failed", detail: tokenPassed ? `≥ ${minTokenBalance.toLocaleString()} BC400` : "Insufficient balance" }
-          : i === 2
-          ? { ...c, status: "checking" }
-          : c
-      )
-    );
+    // Step 2: Token balance check via BSC RPC edge function
+    let tokenPassed = false;
+    try {
+      if (tokenContractAddress) {
+        const { data, error } = await supabase.functions.invoke("check-token-balance", {
+          body: { wallet_address: address, token_contract_address: tokenContractAddress },
+        });
+        if (!error && data?.balance >= minTokenBalance) {
+          tokenPassed = true;
+        }
+        setGateChecks((prev) =>
+          prev.map((c, i) =>
+            i === 1
+              ? {
+                  ...c,
+                  status: tokenPassed ? "passed" : "failed",
+                  detail: tokenPassed
+                    ? `${Number(data?.balance || 0).toLocaleString()} BC400`
+                    : `${Number(data?.balance || 0).toLocaleString()} / ${minTokenBalance.toLocaleString()} BC400`,
+                }
+              : i === 2
+              ? { ...c, status: "checking" }
+              : c
+          )
+        );
+      } else {
+        // No token contract configured — skip check as failed
+        setGateChecks((prev) =>
+          prev.map((c, i) =>
+            i === 1
+              ? { ...c, status: "failed", detail: "Token contract not configured" }
+              : i === 2
+              ? { ...c, status: "checking" }
+              : c
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Token balance check error:", err);
+      setGateChecks((prev) =>
+        prev.map((c, i) =>
+          i === 1
+            ? { ...c, status: "failed", detail: "Check failed" }
+            : i === 2
+            ? { ...c, status: "checking" }
+            : c
+        )
+      );
+    }
 
     // Step 3: NFT check via edge function
     await new Promise((r) => setTimeout(r, 900));
