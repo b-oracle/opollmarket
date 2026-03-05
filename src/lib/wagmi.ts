@@ -1,18 +1,27 @@
-import { http, createConfig } from 'wagmi';
-import { bsc } from 'wagmi/chains';
-import { injected, walletConnect } from 'wagmi/connectors';
+import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
+import { bsc } from '@reown/appkit/networks';
+import { createAppKit } from '@reown/appkit/react';
 
-const walletConnectProjectId = '6c625cc1764d2b59af4ebb27a7253cc7';
+const projectId = '6c625cc1764d2b59af4ebb27a7253cc7';
 
-export const config = createConfig({
-  chains: [bsc],
-  connectors: [
-    walletConnect({ projectId: walletConnectProjectId }),
-    injected(),
-  ],
-  transports: {
-    [bsc.id]: http(),
+export const wagmiAdapter = new WagmiAdapter({
+  projectId,
+  networks: [bsc],
+});
+
+export const config = wagmiAdapter.wagmiConfig;
+
+createAppKit({
+  adapters: [wagmiAdapter],
+  projectId,
+  networks: [bsc],
+  metadata: {
+    name: 'OPOLL',
+    description: 'Social Prediction Market',
+    url: 'https://opollmarket.lovable.app',
+    icons: ['https://opollmarket.lovable.app/logo.png'],
   },
+  themeMode: 'dark',
 });
 
 declare module 'wagmi' {
