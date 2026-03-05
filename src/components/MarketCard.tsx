@@ -389,7 +389,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
               <span className="text-xs font-bold text-primary">{market.creatorName.charAt(0)}</span>
             </div>
-            <span className="text-sm font-medium text-foreground/80">@{market.creatorName}</span>
+            <span className={`text-sm font-medium text-foreground/80 ${creatorProfile?.wallet_address ? 'font-mono' : ''}`}>{creatorLabel}</span>
             {showBoosted && (
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 ${
                 isBoosted 
