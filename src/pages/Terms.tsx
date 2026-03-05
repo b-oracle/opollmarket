@@ -47,6 +47,8 @@ const Terms = () => {
         <section className="space-y-2">
           <h2 className="text-base font-semibold text-foreground">6. Market Creation</h2>
           <p>Users may propose new markets subject to review and approval. Market creators must provide clear, unambiguous resolution criteria. The platform reserves the right to reject, modify, or cancel any market at its discretion. Markets that violate community guidelines or promote harmful content will be removed.</p>
+          <p className="font-medium text-foreground">Content Moderation & Fee Forfeiture:</p>
+          <p>All market submissions — including titles, descriptions, answer options, and cover images — are screened by our automated content moderation system. If a market is flagged and subsequently rejected due to profane language, nudity, hate speech, graphic violence, or any other violation of our community guidelines, the <span className="font-semibold text-foreground">market creation fee is non-refundable and will be forfeited</span>. Only the initial liquidity deposited for the market will be refunded to the creator's balance. By submitting a market, you acknowledge and accept this policy. Repeated violations may result in account suspension or permanent ban.</p>
         </section>
 
         <section className="space-y-2">
