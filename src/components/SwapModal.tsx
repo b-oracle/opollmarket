@@ -44,6 +44,32 @@ interface SwapModalProps {
 const SwapModal = ({ open, onClose, tokenContractAddress }: SwapModalProps) => {
   const { address, isConnected } = useAccount();
   const { data: bnbBalance } = useBalance({ address });
+  const [bc400Balance, setBc400Balance] = useState<string>("0");
+
+  // Fetch BC400 token balance via RPC
+  useEffect(() => {
+    if (!address || !tokenContractAddress || !open) return;
+    const fetchTokenBalance = async () => {
+      try {
+        const balanceOfSig = "0x70a08231";
+        const paddedAddr = address.slice(2).toLowerCase().padStart(64, "0");
+        const data = balanceOfSig + paddedAddr;
+        const resp = await fetch("https://bsc-dataseed1.binance.org/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jsonrpc: "2.0", id: 1, method: "eth_call",
+            params: [{ to: tokenContractAddress, data }, "latest"],
+          }),
+        });
+        const result = await resp.json();
+        if (result.result && result.result !== "0x") {
+          setBc400Balance(formatUnits(BigInt(result.result), 18));
+        }
+      } catch { /* ignore */ }
+    };
+    fetchTokenBalance();
+  }, [address, tokenContractAddress, open]);
 
   const [bnbAmount, setBnbAmount] = useState("");
   const [estimatedTokens, setEstimatedTokens] = useState("");
@@ -310,7 +336,12 @@ const SwapModal = ({ open, onClose, tokenContractAddress }: SwapModalProps) => {
                   <div className="rounded-xl border border-border bg-muted/30 p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs text-muted-foreground">You Receive (estimated)</span>
-                      {quoteLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+                      <div className="flex items-center gap-2">
+                        {quoteLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+                        <span className="text-[10px] text-muted-foreground font-semibold">
+                          Balance: {parseFloat(bc400Balance).toLocaleString(undefined, { maximumFractionDigits: 2 })} BC400
+                        </span>
+                      </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="flex-1 text-2xl font-bold text-foreground">
