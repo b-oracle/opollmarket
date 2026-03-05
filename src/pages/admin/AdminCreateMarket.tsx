@@ -52,6 +52,31 @@ const AdminCreateMarket = () => {
 
   // Submit state
   const [submitting, setSubmitting] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [shakeField, setShakeField] = useState<string | null>(null);
+
+  const touch = (field: string) => setTouched((t) => ({ ...t, [field]: true }));
+  const shake = (field: string) => {
+    setShakeField(field);
+    setTimeout(() => setShakeField(null), 500);
+  };
+
+  // Field-level validation
+  const errors = {
+    title: title.trim().length > 0 && title.trim().length < 10 ? "Min 10 characters" : title.trim().length === 0 ? "Required" : "",
+    description: description.trim().length > 0 && description.trim().length < 10 ? "Min 10 characters" : description.trim().length === 0 ? "Required" : "",
+    category: !category ? "Select a category" : "",
+    endDate: !endDate ? "Required" : "",
+    resolutionSource: resolutionSource.trim().length > 0 && resolutionSource.trim().length < 5 ? "Min 5 characters" : resolutionSource.trim().length === 0 ? "Required" : "",
+    options: marketType === "multi" && options.filter((o) => o.trim()).length < 2 ? "At least 2 options required" : "",
+  };
+
+  const fieldError = (field: keyof typeof errors) => touched[field] ? errors[field] : "";
+  const inputBorder = (field: keyof typeof errors) =>
+    fieldError(field)
+      ? "border-destructive focus:ring-destructive/30"
+      : "border-border focus:ring-primary/30";
+  const shakeClass = (field: string) => shakeField === field ? "animate-shake" : "";
 
   const addOption = () => {
     if (options.length < 6) setOptions([...options, ""]);
@@ -109,7 +134,16 @@ const AdminCreateMarket = () => {
     (marketType === "binary" || options.filter((o) => o.trim()).length >= 2);
 
   const handleSubmit = async () => {
-    if (!isValid || !user) return;
+    // Touch all fields on submit attempt
+    const allFields = ["title", "description", "category", "endDate", "resolutionSource", "options"];
+    setTouched(allFields.reduce((acc, f) => ({ ...acc, [f]: true }), {}));
+
+    if (!isValid || !user) {
+      // Shake first invalid field
+      const firstInvalid = allFields.find((f) => errors[f as keyof typeof errors]);
+      if (firstInvalid) shake(firstInvalid);
+      return;
+    }
     setSubmitting(true);
 
     try {
@@ -207,8 +241,8 @@ const AdminCreateMarket = () => {
       </div>
 
       {/* Title & Description */}
-      <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-        <div>
+      <div className={`bg-card border border-border rounded-xl p-5 space-y-4`}>
+        <div className={shakeClass("title")}>
           <label className="flex items-center gap-2 text-sm font-semibold mb-2">
             <FileText className="w-4 h-4 text-primary" />
             Market Question
@@ -217,21 +251,31 @@ const AdminCreateMarket = () => {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            onBlur={() => touch("title")}
             placeholder="Will Bitcoin hit $150K before July 2026?"
             maxLength={120}
-            className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-colors ${inputBorder("title")}`}
           />
-          <p className="text-[10px] text-muted-foreground mt-1 text-right">{title.length}/120</p>
+          <div className="flex justify-between mt-1">
+            {fieldError("title") ? (
+              <p className="text-[11px] text-destructive">{fieldError("title")}</p>
+            ) : <span />}
+            <p className="text-[10px] text-muted-foreground">{title.length}/120</p>
+          </div>
         </div>
-        <div>
+        <div className={shakeClass("description")}>
           <label className="text-sm font-semibold mb-2 block">Description</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            onBlur={() => touch("description")}
             placeholder="Provide context and resolution criteria..."
             rows={3}
-            className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+            className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 resize-none transition-colors ${inputBorder("description")}`}
           />
+          {fieldError("description") && (
+            <p className="text-[11px] text-destructive mt-1">{fieldError("description")}</p>
+          )}
         </div>
       </div>
 
@@ -242,7 +286,7 @@ const AdminCreateMarket = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="bg-card border border-border rounded-xl p-5"
+            className={`bg-card border rounded-xl p-5 ${shakeClass("options")} ${fieldError("options") ? "border-destructive" : "border-border"}`}
           >
             <label className="text-sm font-semibold mb-3 block">Options (2–6)</label>
             <div className="space-y-2">
@@ -254,7 +298,8 @@ const AdminCreateMarket = () => {
                     value={opt}
                     onChange={(e) => updateOption(i, e.target.value)}
                     placeholder={`Option ${i + 1}`}
-                    className="flex-1 bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className={`flex-1 bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30`}
+                    onBlur={() => touch("options")}
                   />
                   {options.length > 2 && (
                     <button onClick={() => removeOption(i)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive">
@@ -268,6 +313,9 @@ const AdminCreateMarket = () => {
               <button onClick={addOption} className="mt-3 flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80">
                 <Plus className="w-3.5 h-3.5" /> Add Option
               </button>
+            )}
+            {fieldError("options") && (
+              <p className="text-[11px] text-destructive mt-2">{fieldError("options")}</p>
             )}
           </motion.div>
         )}
@@ -356,16 +404,16 @@ const AdminCreateMarket = () => {
 
       {/* Category & Settings */}
       <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-        <div>
+        <div className={shakeClass("category")}>
           <label className="flex items-center gap-2 text-sm font-semibold mb-3">
             <Tag className="w-4 h-4 text-primary" />
             Category
           </label>
-          <div className="grid grid-cols-4 gap-2">
+          <div className={`grid grid-cols-4 gap-2 rounded-xl ${fieldError("category") ? "ring-1 ring-destructive p-1" : ""}`}>
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
-                onClick={() => setCategory(cat)}
+                onClick={() => { setCategory(cat); touch("category"); }}
                 className={`p-2 rounded-xl border text-center text-xs font-medium transition-all ${
                   category === cat
                     ? "border-primary bg-primary/10 text-primary"
@@ -377,10 +425,13 @@ const AdminCreateMarket = () => {
               </button>
             ))}
           </div>
+          {fieldError("category") && (
+            <p className="text-[11px] text-destructive mt-1.5">{fieldError("category")}</p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div>
+          <div className={shakeClass("endDate")}>
             <label className="flex items-center gap-2 text-sm font-semibold mb-2">
               <Calendar className="w-4 h-4 text-primary" />
               End Date
@@ -389,9 +440,13 @@ const AdminCreateMarket = () => {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
+              onBlur={() => touch("endDate")}
               min={new Date().toISOString().split("T")[0]}
-              className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-colors ${inputBorder("endDate")}`}
             />
+            {fieldError("endDate") && (
+              <p className="text-[11px] text-destructive mt-1">{fieldError("endDate")}</p>
+            )}
           </div>
           <div>
             <label className="text-sm font-semibold mb-2 block">Initial Liquidity</label>
@@ -406,15 +461,19 @@ const AdminCreateMarket = () => {
           </div>
         </div>
 
-        <div>
+        <div className={shakeClass("resolutionSource")}>
           <label className="text-sm font-semibold mb-2 block">Resolution Source</label>
           <input
             type="text"
             value={resolutionSource}
             onChange={(e) => setResolutionSource(e.target.value)}
+            onBlur={() => touch("resolutionSource")}
             placeholder="e.g. CoinGecko price data, official announcement..."
-            className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-colors ${inputBorder("resolutionSource")}`}
           />
+          {fieldError("resolutionSource") && (
+            <p className="text-[11px] text-destructive mt-1">{fieldError("resolutionSource")}</p>
+          )}
         </div>
 
         {/* Trending toggle */}
@@ -438,18 +497,7 @@ const AdminCreateMarket = () => {
         </div>
       </div>
 
-      {/* Validation hints */}
-      {!isValid && (
-        <div className="text-xs text-muted-foreground bg-muted/30 border border-border rounded-xl p-3 space-y-1">
-          <p className="font-semibold text-foreground mb-1">Required to submit:</p>
-          {title.trim().length < 10 && <p>• Market question (min 10 characters)</p>}
-          {description.trim().length < 10 && <p>• Description (min 10 characters)</p>}
-          {!category && <p>• Select a category</p>}
-          {!endDate && <p>• Set an end date</p>}
-          {resolutionSource.trim().length < 5 && <p>• Resolution source (min 5 characters)</p>}
-          {marketType === "multi" && options.filter((o) => o.trim()).length < 2 && <p>• At least 2 options for multi-choice</p>}
-        </div>
-      )}
+
 
       {/* Submit */}
       <div className="flex gap-3">
