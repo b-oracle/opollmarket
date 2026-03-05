@@ -411,12 +411,42 @@ const Profile = () => {
                         if (!editName.trim()) { toast.error("Name cannot be empty"); return; }
                         setSavingProfile(true);
                         try {
+                          // Moderate display name
+                          try {
+                            const { data: nameModData } = await supabase.functions.invoke("moderate-display-name", {
+                              body: { name: editName.trim() },
+                            });
+                            if (nameModData?.flagged) {
+                              toast.error(nameModData.reason || "This display name is not allowed");
+                              setSavingProfile(false);
+                              return;
+                            }
+                          } catch (err) {
+                            console.error("Name moderation check failed, proceeding:", err);
+                          }
+
                           let avatarUrl: string | null = null;
                           if (selectedNftUrl) {
                             avatarUrl = selectedNftUrl;
                           } else if (avatarFile) {
                             avatarUrl = await uploadAvatar();
                             if (!avatarUrl && avatarFile) { setSavingProfile(false); return; }
+                          }
+
+                          // Moderate uploaded image
+                          if (avatarUrl) {
+                            try {
+                              const { data: imgModData } = await supabase.functions.invoke("moderate-image", {
+                                body: { image_url: avatarUrl },
+                              });
+                              if (imgModData?.flagged) {
+                                toast.error(imgModData.reason || "This image is not allowed");
+                                setSavingProfile(false);
+                                return;
+                              }
+                            } catch (err) {
+                              console.error("Image moderation check failed, proceeding:", err);
+                            }
                           }
 
                           // Update profile table first (more reliable)
