@@ -343,7 +343,7 @@ const Create = () => {
             {/* Steps preview */}
             <div className="space-y-2.5 mb-6">
               {[
-                { step: "1", label: "Sign in to your account", icon: <User className="w-4 h-4" />, active: true },
+                { step: "1", label: "Sign in to your EVM wallet", icon: <User className="w-4 h-4" />, active: true },
                 { step: "2", label: "Connect your BSC wallet", icon: <Wallet className="w-4 h-4" />, active: false },
                 { step: "3", label: "Verify token holdings", icon: <Coins className="w-4 h-4" />, active: false },
               ].map((s) => (
