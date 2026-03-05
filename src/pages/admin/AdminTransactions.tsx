@@ -28,6 +28,7 @@ const AdminTransactions = () => {
   const [txns, setTxns] = useState<TxRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "deposit" | "withdrawal" | "bet" | "payout">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "confirmed" | "pending" | "failed">("all");
   const [page, setPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [search, setSearch] = useState("");
@@ -79,6 +80,10 @@ const AdminTransactions = () => {
       // Get total count
       let countQuery = supabase.from("transactions").select("*", { count: "exact", head: true });
       if (filter !== "all") countQuery = countQuery.eq("type", filter);
+      if (statusFilter !== "all") {
+        if (statusFilter === "failed") countQuery = countQuery.in("status", ["failed", "expired"]);
+        else countQuery = countQuery.eq("status", statusFilter);
+      }
       countQuery = applySearchFilter(countQuery);
       const { count } = await countQuery;
       setTotalCount(count ?? 0);
@@ -93,6 +98,10 @@ const AdminTransactions = () => {
         .range(from, to);
 
       if (filter !== "all") query = query.eq("type", filter);
+      if (statusFilter !== "all") {
+        if (statusFilter === "failed") query = query.in("status", ["failed", "expired"]);
+        else query = query.eq("status", statusFilter);
+      }
       query = applySearchFilter(query);
 
       const { data } = await query;
@@ -128,7 +137,7 @@ const AdminTransactions = () => {
       setLoading(false);
     };
     fetchData();
-  }, [filter, page, debouncedSearch]);
+  }, [filter, statusFilter, page, debouncedSearch]);
 
   const totals = {
     deposits: txns.filter((t) => t.type === "deposit").reduce((s, t) => s + Number(t.amount), 0),
@@ -228,7 +237,25 @@ const AdminTransactions = () => {
             </button>
           ))}
         </div>
-      </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {(["all", "confirmed", "pending", "failed"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => { setPage(0); setStatusFilter(s); }}
+              className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all capitalize ${
+                statusFilter === s
+                  ? s === "confirmed" ? "bg-green-500/20 text-green-500 ring-1 ring-green-500/30"
+                  : s === "pending" ? "bg-yellow-500/20 text-yellow-500 ring-1 ring-yellow-500/30"
+                  : s === "failed" ? "bg-destructive/20 text-destructive ring-1 ring-destructive/30"
+                  : "bg-primary text-primary-foreground"
+                  : "bg-muted/50 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {s === "confirmed" ? "✓ Confirmed" : s === "pending" ? "⏳ Pending" : s === "failed" ? "✗ Failed" : "All Status"}
+            </button>
+          ))}
+        </div>
 
       {/* Table */}
       <div className="bg-card border border-border rounded-xl overflow-hidden">
