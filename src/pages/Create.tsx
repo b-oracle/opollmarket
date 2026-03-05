@@ -1,6 +1,6 @@
 import LogoLoader from "@/components/LogoLoader";
 import { useUserBalance } from "@/hooks/useUserBalance";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAccount } from "wagmi";
 import { useFilteredConnectors } from "@/hooks/useFilteredConnectors";
 import { useNavigate } from "react-router-dom";
@@ -16,6 +16,7 @@ import {
   Wallet,
   Coins,
   ImageIcon,
+  Upload,
   ArrowRight,
   Calendar,
   FileText,
@@ -169,6 +170,44 @@ const Create = () => {
   const [marketType, setMarketType] = useState<"binary" | "multi" | "range">("binary");
   const [options, setOptions] = useState<string[]>(["", ""]);
   const [videoUrl, setVideoUrl] = useState("");
+
+  // Image upload state
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return null;
+    const ext = imageFile.name.split(".").pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await supabase.storage
+      .from("market-images")
+      .upload(fileName, imageFile, { contentType: imageFile.type });
+    if (error) {
+      console.error("Image upload error:", error);
+      toast.error("Failed to upload image");
+      return null;
+    }
+    const { data: urlData } = supabase.storage.from("market-images").getPublicUrl(fileName);
+    return urlData.publicUrl;
+  };
 
   const addOption = () => {
     if (options.length < 6) setOptions([...options, ""]);
@@ -345,6 +384,12 @@ const Create = () => {
     const needsReview = isSimilar || isFlagged || feeBypass;
     const marketStatus = needsReview ? "pending" : "active";
 
+    // Upload cover image if present
+    let imageUrl: string | null = null;
+    if (imageFile) {
+      imageUrl = await uploadImage();
+    }
+
     // Save to database
     const { data, error } = await supabase
       .from("markets")
@@ -355,6 +400,7 @@ const Create = () => {
         description: description.trim(),
         details: details.trim() || null,
         video_url: videoUrl.trim() || null,
+        image_url: imageUrl,
         category,
         end_date: endDate,
         resolution_source: resolutionSource.trim(),
@@ -1119,6 +1165,34 @@ const Create = () => {
                 {touched.resolutionSource && errors.resolutionSource && (
                   <p className="text-[10px] text-destructive mt-1.5">{errors.resolutionSource}</p>
                 )}
+              </div>
+
+              {/* Cover Image Upload */}
+              <div className="glass rounded-xl p-4">
+                <label className="flex items-center gap-2 text-sm font-semibold mb-2">
+                  <ImageIcon className="w-4 h-4 text-primary" />
+                  Cover Image <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+                </label>
+                {imagePreview ? (
+                  <div className="relative rounded-xl overflow-hidden">
+                    <img src={imagePreview} alt="Preview" className="w-full h-40 object-cover rounded-xl" />
+                    <button
+                      onClick={removeImage}
+                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full h-32 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/40 hover:bg-primary/5 transition-all"
+                  >
+                    <Upload className="w-6 h-6 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Click to upload (max 5MB)</span>
+                  </button>
+                )}
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
               </div>
 
               {/* Optional Video Link */}
