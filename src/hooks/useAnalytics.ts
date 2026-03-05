@@ -25,11 +25,11 @@ const useAnalytics = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
-      await supabase.from("analytics_events" as any).insert({
+      await supabase.from("analytics_events").insert({
         event_name: event,
         properties: properties || {},
         user_id: user?.id || null,
-      } as any);
+      });
     } catch {
       // Silent fail — analytics should never break the app
     }

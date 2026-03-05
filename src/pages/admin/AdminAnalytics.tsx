@@ -33,11 +33,11 @@ const AdminAnalytics = () => {
       since.setDate(since.getDate() - timeRange);
 
       const { data } = await supabase
-        .from("analytics_events" as any)
+        .from("analytics_events")
         .select("event_name, user_id, created_at, properties")
         .gte("created_at", since.toISOString())
         .order("created_at", { ascending: false })
-        .limit(1000) as any;
+        .limit(1000);
 
       setEvents(data || []);
       setLoading(false);
