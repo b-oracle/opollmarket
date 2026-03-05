@@ -117,7 +117,7 @@ const DetailsField = ({ details, setDetails }: { details: string; setDetails: (v
 const Create = () => {
   const { address, isConnected } = useAccount();
   const { connect, connectors, isPending } = useFilteredConnectors();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, displayName } = useAuth();
   const navigate = useNavigate();
   const { balance } = useUserBalance();
 
@@ -348,7 +348,7 @@ const Create = () => {
       .from("markets")
       .insert({
         creator_wallet: user.id,
-        creator_name: profileDisplayName || user.user_metadata?.display_name || user.email?.split("@")[0] || "Anonymous",
+        creator_name: displayName,
         title: title.trim(),
         description: description.trim(),
         details: details.trim() || null,

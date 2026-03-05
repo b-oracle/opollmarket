@@ -109,7 +109,7 @@ interface BulkCSVImportProps {
 }
 
 const BulkCSVImport = ({ onComplete }: BulkCSVImportProps) => {
-  const { user } = useAuth();
+  const { user, displayName } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [parsed, setParsed] = useState<ParsedMarket[]>([]);

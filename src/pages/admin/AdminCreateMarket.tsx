@@ -29,7 +29,7 @@ const CATEGORIES = [
 
 const AdminCreateMarket = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, displayName } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
