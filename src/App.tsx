@@ -30,6 +30,7 @@ import AdminCommissions from "./pages/admin/AdminCommissions";
 import AdminBoosts from "./pages/admin/AdminBoosts";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminChecklist from "./pages/admin/AdminChecklist";
+import AdminContracts from "./pages/admin/AdminContracts";
 import Referrals from "./pages/Referrals";
 import FAQ from "./pages/FAQ";
 import Disclaimer from "./pages/Disclaimer";
@@ -107,6 +108,7 @@ const App = () => (
                     <Route path="commissions" element={<AdminCommissions />} />
                     <Route path="settings" element={<AdminSettings />} />
                     <Route path="analytics" element={<AdminAnalytics />} />
+                    <Route path="contracts" element={<AdminContracts />} />
                     <Route path="checklist" element={<AdminChecklist />} />
                   </Route>
                   <Route path="*" element={<NotFound />} />
