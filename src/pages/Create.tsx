@@ -1046,7 +1046,7 @@ const Create = () => {
                 </div>
               </div>
 
-              <DetailsField details={details} setDetails={setDetails} />
+              <DetailsField details={details} setDetails={setDetails} error={errors.details} touched={!!touched.details} onBlur={() => markTouched("details")} shakeClass={shakeClass("details")} />
 
               {/* Market Type */}
               <div className="glass rounded-xl p-4">
