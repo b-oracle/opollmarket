@@ -209,20 +209,84 @@ export const usePlaceBet = () => {
       });
       if (txError) throw txError;
 
-      // Update market volume & participants
+      // Update market volume, participants & AMM prices
       const { data: mkt } = await supabase
         .from("markets")
-        .select("volume, participants")
+        .select("volume, participants, yes_price, no_price, market_type")
         .eq("id", marketId)
         .single();
       if (mkt) {
+        // Simple AMM price impact: shift price based on bet side and amount relative to liquidity
+        const isMulti = mkt.market_type === "multi" || mkt.market_type === "range";
+        let updateFields: Record<string, any> = {
+          volume: Number(mkt.volume) + poolAmount,
+          participants: mkt.participants + 1,
+        };
+
+        if (!isMulti) {
+          // Binary market: adjust yes_price/no_price
+          const currentYes = Number(mkt.yes_price);
+          const currentNo = Number(mkt.no_price);
+          const totalLiq = Number(mkt.volume) + poolAmount + 100; // avoid division by zero
+          const impact = Math.min(poolAmount / totalLiq, 0.15); // cap impact at 15%
+
+          let newYes: number;
+          if (side === "yes") {
+            newYes = Math.min(0.99, currentYes + impact);
+          } else {
+            newYes = Math.max(0.01, currentYes - impact);
+          }
+          const newNo = Math.round((1 - newYes) * 100) / 100;
+          newYes = Math.round(newYes * 100) / 100;
+
+          updateFields.yes_price = newYes;
+          updateFields.no_price = newNo;
+        }
+
         await supabase
           .from("markets")
-          .update({
-            volume: Number(mkt.volume) + poolAmount,
-            participants: mkt.participants + 1,
-          })
+          .update(updateFields)
           .eq("id", marketId);
+
+        // Multi-option: update the selected option's price and rebalance others
+        if (isMulti && optionId) {
+          const { data: allOptions } = await supabase
+            .from("market_options")
+            .select("id, price")
+            .eq("market_id", marketId);
+
+          if (allOptions && allOptions.length > 0) {
+            const totalLiq = Number(mkt.volume) + poolAmount + 100;
+            const impact = Math.min(poolAmount / totalLiq, 0.15);
+
+            const selectedOpt = allOptions.find((o) => o.id === optionId);
+            if (selectedOpt) {
+              const newSelectedPrice = Math.min(0.99, Number(selectedOpt.price) + impact);
+              const othersTotal = allOptions
+                .filter((o) => o.id !== optionId)
+                .reduce((sum, o) => sum + Number(o.price), 0);
+
+              // Update selected option
+              await supabase
+                .from("market_options")
+                .update({ price: Math.round(newSelectedPrice * 100) / 100 })
+                .eq("id", optionId);
+
+              // Rebalance other options proportionally so all sum to ~1.0
+              if (othersTotal > 0) {
+                const remaining = Math.max(0.01, 1 - newSelectedPrice);
+                const scaleFactor = remaining / othersTotal;
+                for (const opt of allOptions.filter((o) => o.id !== optionId)) {
+                  const newPrice = Math.max(0.01, Math.round(Number(opt.price) * scaleFactor * 100) / 100);
+                  await supabase
+                    .from("market_options")
+                    .update({ price: newPrice })
+                    .eq("id", opt.id);
+                }
+              }
+            }
+          }
+        }
       }
 
       // --- Referral reward: check if this is user's first prediction ---
