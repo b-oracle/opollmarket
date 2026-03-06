@@ -16,7 +16,7 @@ import { bsc } from "wagmi/chains";
 import {
   Wallet, Gift, ArrowDownToLine, ArrowUpFromLine, ArrowUpRight, ArrowDownLeft,
   Repeat, LogIn, Send, MessageCircle, ExternalLink, ChevronRight,
-  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image,
+  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image, BarChart3,
 } from "lucide-react";
 import NftBadge, { isNftAvatar } from "@/components/NftBadge";
 import { AnimatePresence, motion } from "framer-motion";
@@ -555,6 +555,11 @@ const Profile = () => {
 
         {/* Actions */}
         <div className="space-y-3 mb-8">
+          <button onClick={() => navigate("/portfolio")} className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
+            <BarChart3 className="w-5 h-5 text-primary" />
+            <span className="text-sm font-medium">Portfolio</span>
+            <ChevronRight className="w-4 h-4 text-muted-foreground ml-auto" />
+          </button>
           <button onClick={openDeposit} className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
             <ArrowDownToLine className="w-5 h-5 text-primary" />
             <span className="text-sm font-medium">Deposit Funds</span>
