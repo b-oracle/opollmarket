@@ -390,7 +390,7 @@ const Rankings = () => {
 
   const { referrers, loading: refLoading } = useReferralLeaderboard(timePeriod);
   const { traders, loading: tradeLoading } = useTradingLeaderboard(timePeriod);
-  const { quickTraders, loading: quickLoading } = useQuickTradeLeaderboard();
+  const { quickTraders, loading: quickLoading } = useQuickTradeLeaderboard(timePeriod);
 
   const sortedReferrers = [...referrers].sort((a, b) =>
     referralSort === "totalEarned" ? b.totalEarned - a.totalEarned : b.totalReferrals - a.totalReferrals
