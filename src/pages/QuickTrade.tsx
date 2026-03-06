@@ -653,6 +653,13 @@ export default function QuickTrade() {
                   >
                     <BarChart3 className="w-3.5 h-3.5" />
                   </button>
+                  <button
+                    onClick={() => setChartType("tv")}
+                    className={`px-1.5 py-1 rounded text-[9px] font-bold transition-all ${chartType === "tv" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    title="TradingView chart"
+                  >
+                    TV
+                  </button>
                 </div>
               </div>
               {historyLoading ? (
