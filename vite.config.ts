@@ -45,6 +45,7 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         navigateFallbackDenylist: [/^\/~oauth/, /^\/auth/],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp}"],
+        importScripts: ["/push-sw.js"],
         runtimeCaching: [
           {
             // ALL Supabase requests must bypass SW cache to prevent stale tokens
