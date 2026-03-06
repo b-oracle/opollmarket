@@ -98,6 +98,15 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
               description: `Target: ${targetLabel}`,
               duration: 10000,
             });
+            confetti({
+              particleCount: 50,
+              spread: 60,
+              origin: { y: 0.7 },
+              colors: ["hsl(193,98%,50%)", "#ffffff", "hsl(142,71%,45%)"],
+              zIndex: 9999,
+              gravity: 1.2,
+              scalar: 0.8,
+            });
           } else if (prog != null && prog >= 95 && !met && !toastFiredRef.current) {
             toastFiredRef.current = true;
             toast.warning(`🔥 ${asset} is ${prog}% toward its target!`, {
