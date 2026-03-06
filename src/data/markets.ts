@@ -30,6 +30,10 @@ export interface Market {
   autoResolveTargetPrice?: number;
   autoResolveOperator?: string;
   autoResolveDeadline?: string;
+  sportType?: string;
+  sportMatchId?: string;
+  sportPredictedOutcome?: string;
+  sportLeague?: string;
 }
 
 export const mockMarkets: Market[] = [
