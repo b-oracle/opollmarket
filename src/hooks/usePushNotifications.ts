@@ -2,8 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
-
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -13,6 +11,22 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
     outputArray[i] = rawData.charCodeAt(i);
   }
   return outputArray;
+}
+
+let cachedVapidKey: string | null = null;
+
+async function getVapidPublicKey(): Promise<string> {
+  if (cachedVapidKey) return cachedVapidKey;
+  try {
+    const { data, error } = await supabase.functions.invoke("get-vapid-key");
+    if (!error && data?.publicKey) {
+      cachedVapidKey = data.publicKey;
+      return data.publicKey;
+    }
+  } catch {
+    // ignore
+  }
+  return "";
 }
 
 export const usePushNotifications = () => {
@@ -27,8 +41,7 @@ export const usePushNotifications = () => {
     typeof window !== "undefined" &&
     "serviceWorker" in navigator &&
     "PushManager" in window &&
-    "Notification" in window &&
-    !!VAPID_PUBLIC_KEY;
+    "Notification" in window;
 
   // Check existing subscription on mount
   useEffect(() => {
@@ -52,13 +65,19 @@ export const usePushNotifications = () => {
         return false;
       }
 
+      const vapidKey = await getVapidPublicKey();
+      if (!vapidKey) {
+        setLoading(false);
+        return false;
+      }
+
       const reg = await navigator.serviceWorker.ready;
 
       // Unsubscribe old if exists
       const existing = await reg.pushManager.getSubscription();
       if (existing) await existing.unsubscribe();
 
-      const appServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+      const appServerKey = urlBase64ToUint8Array(vapidKey);
       const subscription = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: appServerKey.buffer as ArrayBuffer,
@@ -96,7 +115,6 @@ export const usePushNotifications = () => {
       const sub = await reg.pushManager.getSubscription();
       if (sub) {
         await sub.unsubscribe();
-        // Remove from DB
         await supabase
           .from("push_subscriptions" as any)
           .delete()
