@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   TrendingUp,
@@ -11,6 +11,7 @@ import {
   History,
   ChevronDown,
 } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, ReferenceLine } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserBalance } from "@/hooks/useUserBalance";
@@ -95,6 +96,16 @@ export default function QuickTrade() {
 
   const isLocked = activeRound?.status === "locked" || timeLeft <= LOCK_BUFFER;
 
+  // ── Price history for mini chart (last 15 min) ──
+  const [priceHistory, setPriceHistory] = useState<{ time: string; price: number; ts: number }[]>([]);
+  const priceHistoryRef = useRef(priceHistory);
+  priceHistoryRef.current = priceHistory;
+
+  // Reset price history when asset changes
+  useEffect(() => {
+    setPriceHistory([]);
+  }, [selectedAsset.symbol]);
+
   // ── Fetch price ──
   useEffect(() => {
     const poll = async () => {
@@ -102,6 +113,15 @@ export default function QuickTrade() {
       if (p != null) {
         setPrevPrice(currentPrice);
         setCurrentPrice(p);
+
+        // Add to price history
+        const now = Date.now();
+        const cutoff = now - 15 * 60 * 1000; // 15 minutes
+        const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
+        setPriceHistory((prev) => {
+          const updated = [...prev, { time: timeLabel, price: p, ts: now }];
+          return updated.filter((pt) => pt.ts >= cutoff);
+        });
       }
     };
     poll();
@@ -418,6 +438,62 @@ export default function QuickTrade() {
                     ({currentPrice > Number(activeRound.open_price) ? "+" : ""}{((currentPrice - Number(activeRound.open_price)) / Number(activeRound.open_price) * 100).toFixed(3)}%)
                   </span>
                 )}
+              </div>
+            )}
+
+            {/* Mini price chart */}
+            {priceHistory.length >= 2 && (
+              <div className="mt-3 -mx-2">
+                <ResponsiveContainer width="100%" height={100}>
+                  <AreaChart data={priceHistory} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop
+                          offset="0%"
+                          stopColor={
+                            priceHistory[priceHistory.length - 1].price >= priceHistory[0].price
+                              ? "hsl(142, 76%, 36%)"
+                              : "hsl(0, 84%, 60%)"
+                          }
+                          stopOpacity={0.3}
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor={
+                            priceHistory[priceHistory.length - 1].price >= priceHistory[0].price
+                              ? "hsl(142, 76%, 36%)"
+                              : "hsl(0, 84%, 60%)"
+                          }
+                          stopOpacity={0}
+                        />
+                      </linearGradient>
+                    </defs>
+                    <YAxis domain={["dataMin", "dataMax"]} hide />
+                    <XAxis dataKey="time" hide />
+                    {activeRound?.open_price && (
+                      <ReferenceLine
+                        y={Number(activeRound.open_price)}
+                        stroke="hsl(var(--muted-foreground))"
+                        strokeDasharray="3 3"
+                        strokeOpacity={0.4}
+                      />
+                    )}
+                    <Area
+                      type="monotone"
+                      dataKey="price"
+                      stroke={
+                        priceHistory[priceHistory.length - 1].price >= priceHistory[0].price
+                          ? "hsl(142, 76%, 36%)"
+                          : "hsl(0, 84%, 60%)"
+                      }
+                      strokeWidth={2}
+                      fill="url(#priceGradient)"
+                      dot={false}
+                      isAnimationActive={false}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+                <p className="text-[10px] text-muted-foreground text-center mt-1">Last 15 minutes</p>
               </div>
             )}
           </div>
