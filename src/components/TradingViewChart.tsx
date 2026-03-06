@@ -10,8 +10,9 @@ import {
   CandlestickSeries,
   HistogramSeries,
   LineSeries,
+  AreaSeries,
 } from "lightweight-charts";
-import { Maximize2, Minimize2, TrendingUp, Minus, Trash2, Undo2, MousePointer } from "lucide-react";
+import { Maximize2, Minimize2, TrendingUp, Minus, Trash2, Undo2, MousePointer, CandlestickChart, LineChart } from "lucide-react";
 import { useChartDrawings, type DrawingTool } from "@/hooks/useChartDrawings";
 
 interface PricePoint {
@@ -50,6 +51,7 @@ export default function TradingViewChart({
   const chartRef = useRef<IChartApi | null>(null);
   const rsiChartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const lineMainSeriesRef = useRef<ISeriesApi<"Area"> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null);
   const maSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const ma14SeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
@@ -59,9 +61,11 @@ export default function TradingViewChart({
   const macdHistRef = useRef<ISeriesApi<"Histogram"> | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [indicator, setIndicator] = useState<"rsi" | "macd">("rsi");
+  const [chartStyle, setChartStyle] = useState<"candle" | "line">("candle");
 
+  const activeMainSeries = chartStyle === "candle" ? candleSeriesRef : lineMainSeriesRef;
   const { activeTool, setActiveTool, clearDrawings, removeLastDrawing } =
-    useChartDrawings(chartRef, candleSeriesRef, containerRef);
+    useChartDrawings(chartRef, activeMainSeries as any, containerRef);
 
   const isDark =
     typeof document !== "undefined" &&
@@ -176,7 +180,21 @@ export default function TradingViewChart({
       handleScroll: { vertTouchDrag: false },
     });
 
-    candleSeriesRef.current = chart.addSeries(CandlestickSeries, { upColor: "#22c55e", downColor: "#ef4444", borderUpColor: "#22c55e", borderDownColor: "#ef4444", wickUpColor: "#22c55e", wickDownColor: "#ef4444" });
+    if (chartStyle === "candle") {
+      candleSeriesRef.current = chart.addSeries(CandlestickSeries, { upColor: "#22c55e", downColor: "#ef4444", borderUpColor: "#22c55e", borderDownColor: "#ef4444", wickUpColor: "#22c55e", wickDownColor: "#ef4444" });
+      lineMainSeriesRef.current = null;
+    } else {
+      lineMainSeriesRef.current = chart.addSeries(AreaSeries, {
+        lineColor: "hsl(var(--primary))",
+        topColor: isDark ? "hsla(193, 98%, 50%, 0.25)" : "hsla(193, 98%, 50%, 0.15)",
+        bottomColor: isDark ? "hsla(193, 98%, 50%, 0.02)" : "hsla(193, 98%, 50%, 0.01)",
+        lineWidth: 2,
+        priceLineVisible: true,
+        lastValueVisible: true,
+      });
+      candleSeriesRef.current = null;
+    }
+
     volumeSeriesRef.current = chart.addSeries(HistogramSeries, { priceFormat: { type: "volume" }, priceScaleId: "volume" });
     chart.priceScale("volume").applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
     maSeriesRef.current = chart.addSeries(LineSeries, { color: "hsl(45, 93%, 58%)", lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
@@ -188,7 +206,7 @@ export default function TradingViewChart({
     });
     ro.observe(containerRef.current);
     return () => { ro.disconnect(); chart.remove(); chartRef.current = null; };
-  }, [isDark]);
+  }, [isDark, chartStyle]);
 
   // Create indicator chart
   useEffect(() => {
@@ -245,9 +263,16 @@ export default function TradingViewChart({
 
   // Update data
   useEffect(() => {
-    if (!chartRef.current || !candleSeriesRef.current) return;
+    if (!chartRef.current) return;
     const { candles, volumes, ma7, ma14, rsi, macdLine, macdSignal, macdHist } = buildData();
-    candleSeriesRef.current.setData(candles);
+
+    if (chartStyle === "candle" && candleSeriesRef.current) {
+      candleSeriesRef.current.setData(candles);
+    } else if (chartStyle === "line" && lineMainSeriesRef.current) {
+      const lineData = candles.map((c: any) => ({ time: c.time, value: c.close }));
+      lineMainSeriesRef.current.setData(lineData);
+    }
+
     volumeSeriesRef.current?.setData(volumes as any);
     maSeriesRef.current?.setData(ma7);
     ma14SeriesRef.current?.setData(ma14);
@@ -257,7 +282,7 @@ export default function TradingViewChart({
     macdHistRef.current?.setData(macdHist as any);
     chartRef.current.timeScale().fitContent();
     rsiChartRef.current?.timeScale().fitContent();
-  }, [buildData, indicator]);
+  }, [buildData, indicator, chartStyle]);
 
   return (
     <div className={isFullscreen ? "fixed inset-0 z-50 bg-background flex flex-col" : "relative"}>
@@ -275,6 +300,23 @@ export default function TradingViewChart({
           </div>
         </div>
         <div className="flex items-center gap-1">
+          {/* Chart style toggle */}
+          <div className="flex items-center gap-0.5 bg-muted/40 rounded-md p-0.5">
+            <button
+              onClick={() => setChartStyle("candle")}
+              className={`p-1 rounded transition-all ${chartStyle === "candle" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              title="Candlestick"
+            >
+              <CandlestickChart className="w-3 h-3" />
+            </button>
+            <button
+              onClick={() => setChartStyle("line")}
+              className={`p-1 rounded transition-all ${chartStyle === "line" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              title="Line chart"
+            >
+              <LineChart className="w-3 h-3" />
+            </button>
+          </div>
           {/* Drawing tools */}
           <div className="flex items-center gap-0.5 bg-muted/40 rounded-md p-0.5">
             <button
