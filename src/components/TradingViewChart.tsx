@@ -11,7 +11,8 @@ import {
   HistogramSeries,
   LineSeries,
 } from "lightweight-charts";
-import { Maximize2, Minimize2 } from "lucide-react";
+import { Maximize2, Minimize2, TrendingUp, Minus, Trash2, Undo2, MousePointer } from "lucide-react";
+import { useChartDrawings, type DrawingTool } from "@/hooks/useChartDrawings";
 
 interface PricePoint {
   ts: number;
