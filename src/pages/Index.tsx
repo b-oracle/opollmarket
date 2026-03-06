@@ -137,16 +137,76 @@ const Index = () => {
       <SEOHead title="Home" description="Swipe through markets. Predict. Win big. Trade on real-world events with OPOLL." path="/" />
       <TopBar />
       <div className="max-w-lg md:max-w-4xl xl:max-w-6xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
-        {/* Hero */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-8">
+        {/* Mobile Hero */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-8 md:hidden">
           <h2 className="text-2xl sm:text-3xl font-bold leading-tight mb-2">
             Predict the <span className="text-primary">future</span>, earn from it.
           </h2>
           <p className="text-xs sm:text-sm text-muted-foreground">Swipe through markets. Predict. Win big.</p>
         </motion.div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-8">
+        {/* Desktop Hero */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="hidden md:block mb-10"
+        >
+          <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/10 via-background to-accent/30 p-8 lg:p-10">
+            <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-primary/5 blur-3xl" />
+            <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-primary/8 blur-2xl" />
+            <div className="relative flex items-center justify-between gap-8">
+              <div className="flex-1 max-w-xl">
+                <h1 className="text-4xl lg:text-5xl font-bold leading-tight mb-3">
+                  Predict the <span className="text-primary">future</span>,<br />earn from it.
+                </h1>
+                <p className="text-base text-muted-foreground mb-6 max-w-md">
+                  Trade on real-world events across crypto, sports, politics & more. Join thousands of traders making predictions that pay.
+                </p>
+                <div className="flex items-center gap-3">
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => navigate("/feed")}
+                    className="btn-yes px-8 py-3 rounded-xl font-bold text-sm transition-all"
+                  >
+                    🔥 Explore Markets
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => navigate("/create")}
+                    className="px-8 py-3 rounded-xl font-bold text-sm border border-border bg-muted/50 text-foreground hover:bg-muted transition-all"
+                  >
+                    + Create Market
+                  </motion.button>
+                </div>
+              </div>
+              <div className="hidden lg:grid grid-cols-3 gap-3 shrink-0">
+                {[
+                  { icon: TrendingUp, label: "Volume", value: formatVolume(totalVolume) },
+                  { icon: Users, label: "Traders", value: totalTraders.toLocaleString() },
+                  { icon: Zap, label: "Markets", value: markets.length.toString() },
+                ].map(({ icon: Icon, label, value }, i) => (
+                  <motion.div
+                    key={label}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 + i * 0.1 }}
+                    className="glass rounded-xl p-4 text-center min-w-[110px] border border-border"
+                  >
+                    <Icon className="w-5 h-5 text-primary mx-auto mb-1.5" />
+                    <p className="text-xl font-bold">{value}</p>
+                    <p className="text-[11px] text-muted-foreground">{label}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Stats — mobile + tablet only (desktop stats are in hero) */}
+        <div className="grid grid-cols-3 gap-3 mb-8 lg:hidden">
           {[
             { icon: TrendingUp, label: "Volume", value: formatVolume(totalVolume) },
             { icon: Users, label: "Traders", value: totalTraders.toLocaleString() },
