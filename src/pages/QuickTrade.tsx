@@ -95,6 +95,7 @@ type Bet = {
   payout: number;
   status: string;
   round_id: string;
+  streak: number;
 };
 
 export default function QuickTrade() {
@@ -804,6 +805,9 @@ export default function QuickTrade() {
                             </div>
                             <p className="text-[10px] text-muted-foreground">
                               ${Number(myBet.amount).toFixed(2)}
+                              {didWin && (myBet as any).streak >= 2 && (
+                                <span className="text-amber-500 text-[9px] ml-1">🔥{(myBet as any).streak}×{getStreakMultiplier((myBet as any).streak)}</span>
+                              )}
                               {didWin && (
                                 <span className="text-green-500 font-bold ml-1">→ ${Number(myBet.payout).toFixed(2)}</span>
                               )}
