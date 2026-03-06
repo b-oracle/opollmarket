@@ -737,21 +737,29 @@ const Portfolio = () => {
                     </span>
                   </div>
                   <div className="border-t border-border pt-2 flex justify-between text-sm">
-                    <span className="text-muted-foreground">Sale Proceeds</span>
-                    <span className="font-bold text-lg">${sellTarget.currentValue.toFixed(2)}</span>
+                    <span className="text-muted-foreground">Gross Proceeds</span>
+                    <span className="font-semibold">${sellTarget.currentValue.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-destructive">Exit Fee ({exitFeePercent}%)</span>
+                    <span className="font-semibold text-destructive">-${(sellTarget.currentValue * exitFeePercent / 100).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Net Proceeds</span>
+                    <span className="font-bold text-lg">${(sellTarget.currentValue * (1 - exitFeePercent / 100)).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Realized P&L</span>
-                    <span className={`font-bold ${sellTarget.unrealizedPnl >= 0 ? "neon-yes" : "neon-no"}`}>
-                      {sellTarget.unrealizedPnl >= 0 ? "+" : ""}${sellTarget.unrealizedPnl.toFixed(2)} ({sellTarget.pnlPercent >= 0 ? "+" : ""}{sellTarget.pnlPercent.toFixed(1)}%)
+                    <span className={`font-bold ${(sellTarget.currentValue * (1 - exitFeePercent / 100) - sellTarget.invested) >= 0 ? "neon-yes" : "neon-no"}`}>
+                      {(sellTarget.currentValue * (1 - exitFeePercent / 100) - sellTarget.invested) >= 0 ? "+" : ""}${(sellTarget.currentValue * (1 - exitFeePercent / 100) - sellTarget.invested).toFixed(2)}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border mb-5">
-                  <AlertTriangle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 mb-5">
+                  <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
                   <p className="text-[10px] text-muted-foreground">
-                    Selling will close your entire position. Proceeds will be credited to your platform balance instantly.
+                    A {exitFeePercent}% exit fee is charged on early sells. This fee is returned to the market pool for remaining participants. Hold until resolution to avoid this fee.
                   </p>
                 </div>
 
@@ -794,8 +802,16 @@ const Portfolio = () => {
                 </p>
                 <div className="glass rounded-xl p-3 w-full space-y-1.5 mb-5">
                   <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Proceeds</span>
+                    <span className="text-muted-foreground">Gross Proceeds</span>
                     <span className="font-semibold">${sellTarget.currentValue.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-destructive">Exit Fee ({exitFeePercent}%)</span>
+                    <span className="font-semibold text-destructive">-${(sellTarget.currentValue * exitFeePercent / 100).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Net Proceeds</span>
+                    <span className="font-bold">${(sellTarget.currentValue * (1 - exitFeePercent / 100)).toFixed(2)}</span>
                   </div>
                 </div>
                 <button onClick={closeSell} className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm transition-all active:scale-95">
