@@ -181,6 +181,11 @@ const AdminSettings = () => {
               </div>
             </CardContent>
           </Card>
+
+          <Card className="border-dashed">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Coins className="w-4 h-4" /> Creator Gate Thresholds
               </CardTitle>
               <CardDescription className="text-xs">
                 Minimum BC400 token and NFT holdings required to create markets.
