@@ -11,6 +11,8 @@ import { useActiveBoosts } from "@/hooks/useActiveBoosts";
 import { useMemo, useState, useEffect } from "react";
 import BoostCountdown from "@/components/BoostCountdown";
 import BoostedCarousel from "@/components/BoostedCarousel";
+import CategoryCarousel from "@/components/CategoryCarousel";
+import { Gem, ArrowLeftRight } from "lucide-react";
 import BoostMarketModal from "@/components/BoostMarketModal";
 import { useCommentCount } from "@/hooks/useCommentCount";
 import useAnalytics from "@/hooks/useAnalytics";
@@ -73,6 +75,16 @@ const Index = () => {
     if (boosted.length > 0) return boosted;
     return markets.filter((m) => m.trending).slice(0, 5);
   }, [markets, boostedMarketIds]);
+
+  const commodityMarkets = useMemo(() =>
+    markets.filter((m) => m.category === "Commodities").slice(0, 8),
+    [markets]
+  );
+
+  const forexMarkets = useMemo(() =>
+    markets.filter((m) => m.category === "Forex").slice(0, 8),
+    [markets]
+  );
 
   const categories = useMemo(() => {
     const cats = new Set(markets.map((m) => m.category));
@@ -166,7 +178,23 @@ const Index = () => {
           onBoost={(market) => setBoostModalMarket({ id: market.id, title: market.title })}
         />
 
-        {/* Search */}
+        <CategoryCarousel
+          title="Commodities"
+          icon={<Gem className="w-3.5 h-3.5 text-amber-500" />}
+          markets={commodityMarkets}
+          formatVolume={formatVolume}
+          onViewAll={() => { setCategoryFilter("Commodities"); setFilter("all"); }}
+        />
+
+        <CategoryCarousel
+          title="Forex"
+          icon={<ArrowLeftRight className="w-3.5 h-3.5 text-emerald-500" />}
+          markets={forexMarkets}
+          formatVolume={formatVolume}
+          onViewAll={() => { setCategoryFilter("Forex"); setFilter("all"); }}
+        />
+
+
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
