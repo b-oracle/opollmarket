@@ -755,6 +755,8 @@ export default function QuickTrade() {
                 </div>
               );
             })()}
+          </div>
+
         </div>
       </div>
       <BottomNav />
