@@ -137,6 +137,7 @@ const AdminCreateMarket = () => {
   const isValid =
     title.trim().length >= 10 &&
     description.trim().length >= 10 &&
+    details.trim().length >= 20 &&
     category &&
     endDate &&
     resolutionSource.trim().length >= 5 &&
@@ -144,8 +145,7 @@ const AdminCreateMarket = () => {
     !!imageFile;
 
   const handleSubmit = async () => {
-    // Touch all fields on submit attempt
-    const allFields = ["title", "description", "category", "endDate", "resolutionSource", "options"];
+    const allFields = ["title", "description", "details", "category", "endDate", "resolutionSource", "options", "image"];
     setTouched(allFields.reduce((acc, f) => ({ ...acc, [f]: true }), {}));
 
     if (!isValid || !user) {
