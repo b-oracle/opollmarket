@@ -358,6 +358,7 @@ const Feed = () => {
 
   const pullProgress = Math.min(pullDistance / PULL_THRESHOLD, 1);
 
+  useEffect(() => { track("page_view", { page: "feed" }); }, []);
 
   /* ── Single layout for all screen sizes (swipe feed) ── */
   /* ── Mobile Layout (TikTok-style snap feed) ── */
