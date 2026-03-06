@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import { toast } from "sonner";
 import { getAssetClass } from "@/data/assetClasses";
 
 const ASSET_GECKO_MAP: Record<string, string> = {
