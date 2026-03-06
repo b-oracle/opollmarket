@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LogOut } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SignOutConfirmDialogProps {
   open: boolean;
@@ -13,23 +13,16 @@ interface SignOutConfirmDialogProps {
 const SignOutConfirmDialog = ({ open, onClose }: SignOutConfirmDialogProps) => {
   const [signingOut, setSigningOut] = useState(false);
   const navigate = useNavigate();
+  const { signOut } = useAuth();
 
   const handleSignOut = async () => {
     setSigningOut(true);
-    try {
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("timeout")), 5000)
-      );
-      await Promise.race([supabase.auth.signOut(), timeoutPromise]);
-    } catch {
-      // If global sign out fails/times out, force local sign out
-      await supabase.auth.signOut({ scope: "local" });
-    } finally {
-      setSigningOut(false);
-      toast.success("Signed out successfully");
-      onClose();
-      navigate("/");
-    }
+    onClose();
+    navigate("/");
+    toast.success("Signed out successfully");
+    // signOut clears state instantly, network call is fire-and-forget
+    await signOut();
+    setSigningOut(false);
   };
 
   return (
