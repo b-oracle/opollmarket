@@ -318,7 +318,7 @@ const AdminCreateMarket = () => {
           <div className="flex items-center justify-between mb-2">
             <label className="flex items-center gap-2 text-sm font-semibold">
               <FileText className="w-4 h-4 text-primary" />
-              More Details <span className="text-muted-foreground font-normal">(optional)</span>
+              More Details <span className="text-xs font-normal text-destructive">*</span>
             </label>
             <button
               type="button"
@@ -343,11 +343,14 @@ const AdminCreateMarket = () => {
               onChange={(e) => setDetails(e.target.value.slice(0, 2000))}
               placeholder="Add supplementary details, links, or resolution criteria using Markdown..."
               rows={4}
-              className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition-colors"
+              className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 resize-none transition-colors ${
+                fieldError("details" as any) ? "border-destructive focus:ring-destructive/30" : "border-border focus:ring-primary/30"
+              }`}
             />
           )}
-          <div className="flex justify-end mt-1">
-            <p className="text-[10px] text-muted-foreground">{details.length}/2000</p>
+          <div className="flex justify-between mt-1">
+            {fieldError("details" as any) && <p className="text-[10px] text-destructive">{fieldError("details" as any)}</p>}
+            <p className="text-[10px] text-muted-foreground ml-auto">{details.length}/2000</p>
           </div>
         </div>
       </div>
