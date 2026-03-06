@@ -17,6 +17,7 @@ import { useBookmark } from "@/hooks/useBookmark";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import LiveScoreBadge from "@/components/LiveScoreBadge";
+import LivePriceBadge from "@/components/LivePriceBadge";
 
 interface MarketCardProps {
   market: Market;
