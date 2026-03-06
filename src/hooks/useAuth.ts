@@ -68,7 +68,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       async (event, newSession) => {
         if (!mounted.current) return;
 
-        // Transient sign-out recovery
+        // Skip recovery if we're intentionally signing out
+        if (event === "SIGNED_OUT" && signingOutRef.current) {
+          lastSessionRef.current = null;
+          setSession(null);
+          setUser(null);
+          setIsAdmin(false);
+          setIsModerator(false);
+          setProfileDisplayName(null);
+          if (mounted.current) setLoading(false);
+          return;
+        }
+
+        // Transient sign-out recovery (only for unexpected disconnects)
         if (!newSession && lastSessionRef.current && event === "SIGNED_OUT") {
           const { data: recovered } = await supabase.auth.getSession();
           if (recovered.session) {
