@@ -157,7 +157,30 @@ const AdminSettings = () => {
           <Card className="border-dashed">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Coins className="w-4 h-4" /> Creator Gate Thresholds
+                <ArrowUpFromLine className="w-4 h-4" /> Withdrawal Settings
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Minimum amount users must withdraw. Set to 0 to allow any amount.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label htmlFor="minWithdrawalAmount">Minimum Withdrawal ($)</Label>
+                <Input
+                  id="minWithdrawalAmount"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={minWithdrawalAmount}
+                  onChange={(e) => setMinWithdrawalAmount(e.target.value)}
+                  placeholder="5"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Current: ${minWithdrawNum.toFixed(2)}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
               </CardTitle>
               <CardDescription className="text-xs">
                 Minimum BC400 token and NFT holdings required to create markets.
