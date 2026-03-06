@@ -87,7 +87,23 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
     }
   }, [price, prev]);
 
-  if (price == null) return null;
+  // Fire a one-time toast when crossing the 95% threshold
+  useEffect(() => {
+    if (
+      !toastFiredRef.current &&
+      progress != null &&
+      progress >= 95 &&
+      !conditionMet
+    ) {
+      toastFiredRef.current = true;
+      toast.warning(`🔥 ${asset} is ${progress}% toward its target!`, {
+        description: targetPrice != null
+          ? `Target: ${cls === "forex" ? targetPrice.toFixed(4) : `$${targetPrice.toLocaleString()}`}`
+          : undefined,
+        duration: 8000,
+      });
+    }
+  }, [progress, conditionMet, asset, targetPrice, cls]);
 
   const dir = prev != null ? (price > prev ? "up" : price < prev ? "down" : "flat") : "flat";
   const isForex = cls === "forex";
