@@ -63,8 +63,9 @@ export default function TradingViewChart({
   const [indicator, setIndicator] = useState<"rsi" | "macd">("rsi");
   const [chartStyle, setChartStyle] = useState<"candle" | "line">("candle");
 
+  const activeMainSeries = chartStyle === "candle" ? candleSeriesRef : lineMainSeriesRef;
   const { activeTool, setActiveTool, clearDrawings, removeLastDrawing } =
-    useChartDrawings(chartRef, candleSeriesRef, containerRef);
+    useChartDrawings(chartRef, activeMainSeries as any, containerRef);
 
   const isDark =
     typeof document !== "undefined" &&
