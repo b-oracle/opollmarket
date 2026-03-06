@@ -32,6 +32,7 @@ import { useNavigate } from "react-router-dom";
 import StreakMilestoneModal from "@/components/StreakMilestoneModal";
 import ShareModal from "@/components/ShareModal";
 import watermarkLogo from "@/assets/watermark-logo.png";
+import TradingViewChart from "@/components/TradingViewChart";
 // ── Asset config ──
 const ASSETS = [
   { symbol: "BTC", label: "Bitcoin", geckoId: "bitcoin" },
@@ -205,7 +206,7 @@ export default function QuickTrade() {
   ] as const;
   type ChartTF = typeof CHART_TIMEFRAMES[number]["key"];
   const [chartTimeframe, setChartTimeframe] = useState<ChartTF>("15m");
-  const [chartType, setChartType] = useState<"area" | "candle">("area");
+  const [chartType, setChartType] = useState<"area" | "candle" | "tv">("area");
   const chartMs = CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.ms;
 
   const [priceHistory, setPriceHistory] = useState<{ time: string; price: number; ts: number }[]>([]);
@@ -652,6 +653,13 @@ export default function QuickTrade() {
                   >
                     <BarChart3 className="w-3.5 h-3.5" />
                   </button>
+                  <button
+                    onClick={() => setChartType("tv")}
+                    className={`px-1.5 py-1 rounded text-[9px] font-bold transition-all ${chartType === "tv" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    title="TradingView chart"
+                  >
+                    TV
+                  </button>
                 </div>
               </div>
               {historyLoading ? (
@@ -676,6 +684,12 @@ export default function QuickTrade() {
                     </div>
                   </div>
                 </div>
+              ) : chartType === "tv" ? (
+                <TradingViewChart
+                  priceHistory={priceHistory}
+                  chartMs={chartMs}
+                  timeframeLabel={CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.label}
+                />
               ) : (() => {
                 const cutoff = Date.now() - chartMs;
                 const filtered = priceHistory.filter(pt => pt.ts >= cutoff);
