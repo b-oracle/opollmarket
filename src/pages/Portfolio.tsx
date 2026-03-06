@@ -293,7 +293,7 @@ const Portfolio = () => {
         market_id: sellTarget.marketId,
         type: "sell",
         side: sellTarget.side,
-        amount: proceeds,
+        amount: netProceeds,
         price: sellTarget.currentPrice / 100,
         shares: sellTarget.shares,
         status: "confirmed",
