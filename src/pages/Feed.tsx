@@ -369,42 +369,54 @@ const Feed = () => {
 
       {/* Feed tabs */}
       <div className="w-full max-w-3xl mx-auto flex items-center gap-1 px-4 py-2 shrink-0">
-        <button
-          onClick={() => setFeedTab("foryou")}
-          className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${
-            feedTab === "foryou"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          For You
-        </button>
-        <button
-          onClick={() => {
-            if (!user) {
-              toast.error("Sign in to view your watchlist", {
-                action: { label: "Sign In", onClick: () => window.location.href = "/auth" },
-              });
-              return;
-            }
-            setFeedTab("bookmarks");
-          }}
-          className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all inline-flex items-center justify-center gap-1.5 ${
-            feedTab === "bookmarks"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Bookmark className="w-3.5 h-3.5" />
-          Watchlist
-          {bookmarkedIds.size > 0 && (
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-              feedTab === "bookmarks" ? "bg-primary-foreground/20" : "bg-muted"
-            }`}>
-              {bookmarkedIds.size}
-            </span>
-          )}
-        </button>
+        <div className="relative flex w-full rounded-xl bg-muted/50 p-1">
+          {/* Sliding indicator */}
+          <motion.div
+            className="absolute top-1 bottom-1 rounded-lg bg-primary shadow-md"
+            layout
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            style={{
+              width: "calc(50% - 4px)",
+              left: feedTab === "foryou" ? 4 : "calc(50% + 2px)",
+            }}
+          />
+          <button
+            onClick={() => setFeedTab("foryou")}
+            className={`relative z-10 flex-1 py-2 rounded-lg text-sm font-semibold transition-colors duration-200 ${
+              feedTab === "foryou"
+                ? "text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            For You
+          </button>
+          <button
+            onClick={() => {
+              if (!user) {
+                toast.error("Sign in to view your watchlist", {
+                  action: { label: "Sign In", onClick: () => window.location.href = "/auth" },
+                });
+                return;
+              }
+              setFeedTab("bookmarks");
+            }}
+            className={`relative z-10 flex-1 py-2 rounded-lg text-sm font-semibold transition-colors duration-200 inline-flex items-center justify-center gap-1.5 ${
+              feedTab === "bookmarks"
+                ? "text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Bookmark className="w-3.5 h-3.5" />
+            Watchlist
+            {bookmarkedIds.size > 0 && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                feedTab === "bookmarks" ? "bg-primary-foreground/20" : "bg-muted"
+              }`}>
+                {bookmarkedIds.size}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Pull-to-refresh indicator */}
