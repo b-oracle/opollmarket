@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
 
     const moralisData = await moralisRes.json();
 
-    // Parse and return only relevant fields with image URLs
+    // Parse and return relevant fields with image URLs
     const nfts = (moralisData.result || [])
       .map((nft: any) => {
         let imageUrl = null;
@@ -115,14 +115,13 @@ Deno.serve(async (req) => {
         }
 
         return {
-          token_address: nft.token_address,
+          token_address: nft.token_address?.toLowerCase(),
           token_id: nft.token_id,
           name,
           image_url: imageUrl,
           collection_name: nft.name || "Unknown Collection",
         };
-      })
-      .filter((nft: any) => nft.image_url);
+      });
 
     return new Response(JSON.stringify({ nfts }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
