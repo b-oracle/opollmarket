@@ -115,6 +115,7 @@ const Index = () => {
 
   const totalVolume = markets.reduce((s, m) => s + m.volume, 0);
   const totalTraders = markets.reduce((s, m) => s + m.participants, 0);
+  const liveCount = useMemo(() => markets.filter((m) => m.autoResolve && m.sportType && m.sportMatchId).length, [markets]);
 
   // No blocking loader — render page immediately, show inline spinner in content area
 
