@@ -70,6 +70,22 @@ Deno.serve(async (req) => {
       const statusShort = item.fixture?.status?.short || "NS";
       const liveStatuses = ["1H", "2H", "ET", "P", "HT", "LIVE", "BT"];
       const finishedStatuses = ["FT", "AET", "PEN", "AWD", "WO"];
+
+      // Extract half-time and full-time scores
+      const periodScores: any[] = [];
+      if (item.score?.halftime?.home !== null && item.score?.halftime?.home !== undefined) {
+        periodScores.push({ label: "HT", home: item.score.halftime.home, away: item.score.halftime.away });
+      }
+      if (item.score?.fulltime?.home !== null && item.score?.fulltime?.home !== undefined) {
+        periodScores.push({ label: "FT", home: item.score.fulltime.home, away: item.score.fulltime.away });
+      }
+      if (item.score?.extratime?.home !== null && item.score?.extratime?.home !== undefined) {
+        periodScores.push({ label: "ET", home: item.score.extratime.home, away: item.score.extratime.away });
+      }
+      if (item.score?.penalty?.home !== null && item.score?.penalty?.home !== undefined) {
+        periodScores.push({ label: "PEN", home: item.score.penalty.home, away: item.score.penalty.away });
+      }
+
       match = {
         homeTeam: item.teams?.home?.name || "TBD",
         awayTeam: item.teams?.away?.name || "TBD",
@@ -86,6 +102,7 @@ Deno.serve(async (req) => {
         league: item.league?.name || "",
         leagueLogo: item.league?.logo || "",
         venue: item.fixture?.venue?.name || "",
+        periodScores,
       };
     } else {
       // Generic for other sports
@@ -96,6 +113,48 @@ Deno.serve(async (req) => {
 
       const homeScore = item.scores?.home?.total ?? item.scores?.home?.points ?? null;
       const awayScore = item.scores?.away?.total ?? item.scores?.away?.points ?? null;
+
+      // Extract quarter/period scores for basketball, NFL, etc.
+      const periodScores: any[] = [];
+      const scores = item.scores;
+      if (scores) {
+        // Basketball: quarter1, quarter2, quarter3, quarter4, over_time
+        for (const key of ["quarter_1", "quarter_2", "quarter_3", "quarter_4", "over_time"]) {
+          if (scores.home?.[key] !== null && scores.home?.[key] !== undefined) {
+            const label = key === "over_time" ? "OT" : key.replace("quarter_", "Q");
+            periodScores.push({ label, home: scores.home[key], away: scores.away?.[key] ?? null });
+          }
+        }
+        // NFL / American Football: similar structure
+        if (periodScores.length === 0) {
+          for (const key of ["first", "second", "third", "fourth", "overtime"]) {
+            const hVal = scores.home?.[key];
+            if (hVal !== null && hVal !== undefined) {
+              const labelMap: Record<string, string> = { first: "Q1", second: "Q2", third: "Q3", fourth: "Q4", overtime: "OT" };
+              periodScores.push({ label: labelMap[key] || key, home: hVal, away: scores.away?.[key] ?? null });
+            }
+          }
+        }
+        // Hockey: period1, period2, period3, overtime
+        if (periodScores.length === 0) {
+          for (const key of ["period_1", "period_2", "period_3", "overtime"]) {
+            const hVal = scores.home?.[key];
+            if (hVal !== null && hVal !== undefined) {
+              const label = key === "overtime" ? "OT" : key.replace("period_", "P");
+              periodScores.push({ label, home: hVal, away: scores.away?.[key] ?? null });
+            }
+          }
+        }
+        // Baseball: innings
+        if (periodScores.length === 0) {
+          for (let i = 1; i <= 9; i++) {
+            const key = `inning_${i}`;
+            if (scores.home?.[key] !== null && scores.home?.[key] !== undefined) {
+              periodScores.push({ label: `${i}`, home: scores.home[key], away: scores.away?.[key] ?? null });
+            }
+          }
+        }
+      }
 
       match = {
         homeTeam: item.teams?.home?.name || "TBD",
@@ -113,6 +172,7 @@ Deno.serve(async (req) => {
         league: item.league?.name || item.country?.name || "",
         leagueLogo: item.league?.logo || "",
         venue: "",
+        periodScores,
       };
     }
 
