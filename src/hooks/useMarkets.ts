@@ -94,6 +94,24 @@ export const useMarkets = () => {
 };
 
 export const useMarket = (id: string | undefined) => {
+  const queryClient = useQueryClient();
+
+  // Realtime: refresh this market when it's updated
+  useEffect(() => {
+    if (!id) return;
+    const channel = supabase
+      .channel(`market-detail-${id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "markets", filter: `id=eq.${id}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["market", id] });
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [id, queryClient]);
+
   return useQuery({
     queryKey: ["market", id],
     queryFn: async (): Promise<Market | null> => {
