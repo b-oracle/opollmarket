@@ -167,8 +167,8 @@ const NotificationBell = () => {
                     {pushLoading ? "..." : pushSubscribed ? "On" : "Off"}
                   </button>
                 </div>
-              )}
 
+              {notifications.length === 0 ? (
                 <div className="p-6 text-center text-sm text-muted-foreground">No notifications yet</div>
               ) : (
                 <div className="divide-y divide-border/20">
