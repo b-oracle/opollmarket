@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import StreakMilestoneModal from "@/components/StreakMilestoneModal";
 
 // ── Asset config ──
 const ASSETS = [
@@ -123,6 +124,8 @@ export default function QuickTrade() {
   const [userBets, setUserBets] = useState<Bet[]>([]);
   const [selectedTimeframe, setSelectedTimeframe] = useState(TIMEFRAMES[2]); // default 5m
   const [streak, setStreak] = useState<{ current_streak: number; best_streak: number } | null>(null);
+  const [milestoneModal, setMilestoneModal] = useState<{ open: boolean; streak: number; multiplier: number }>({ open: false, streak: 0, multiplier: 1 });
+  const prevStreakRef = useRef<number>(0);
 
   const isLocked = activeRound?.status === "locked" || timeLeft <= LOCK_BUFFER;
 
@@ -135,7 +138,7 @@ export default function QuickTrade() {
     return 1.0;
   };
 
-  // Fetch user streak
+  // Fetch user streak and detect milestones
   useEffect(() => {
     if (!user) { setStreak(null); return; }
     const load = async () => {
@@ -144,7 +147,17 @@ export default function QuickTrade() {
         .select("current_streak, best_streak")
         .eq("user_id", user.id)
         .maybeSingle();
-      setStreak(data || { current_streak: 0, best_streak: 0 });
+      const newStreak = data || { current_streak: 0, best_streak: 0 };
+      const prev = prevStreakRef.current;
+      const curr = newStreak.current_streak;
+
+      // Trigger milestone celebration when crossing 3 or 5
+      if (curr >= 3 && prev < curr && (curr === 3 || curr === 5)) {
+        setMilestoneModal({ open: true, streak: curr, multiplier: getStreakMultiplier(curr) });
+      }
+
+      prevStreakRef.current = curr;
+      setStreak(newStreak);
     };
     load();
   }, [user, activeRound?.status]);
@@ -887,6 +900,12 @@ export default function QuickTrade() {
         </div>
       </div>
       <BottomNav />
+      <StreakMilestoneModal
+        open={milestoneModal.open}
+        onClose={() => setMilestoneModal(m => ({ ...m, open: false }))}
+        streak={milestoneModal.streak}
+        multiplier={milestoneModal.multiplier}
+      />
     </>
   );
 }
