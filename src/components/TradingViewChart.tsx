@@ -339,7 +339,7 @@ export default function TradingViewChart({
       </div>
 
       {/* Main chart */}
-      <div ref={containerRef} className={isFullscreen ? "flex-1" : "h-[150px]"} />
+      <div ref={containerRef} className={`${isFullscreen ? "flex-1" : "h-[150px]"} ${activeTool !== "none" ? "cursor-crosshair" : ""}`} />
 
       {/* Indicator separator */}
       <div className="flex items-center gap-1.5 px-2 py-0.5">
