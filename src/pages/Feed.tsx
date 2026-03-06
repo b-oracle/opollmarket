@@ -368,21 +368,21 @@ const Feed = () => {
       <TopBar />
 
       {/* Feed tabs */}
-      <div className="w-full max-w-3xl mx-auto flex items-center gap-1 px-4 py-2 shrink-0">
-        <div className="relative flex w-full rounded-xl bg-muted/50 p-1">
+      <div className="w-full max-w-3xl mx-auto flex items-center gap-1 px-4 py-3 shrink-0">
+        <div className="relative flex w-full rounded-2xl bg-muted p-1.5 border border-border/50">
           {/* Sliding indicator */}
           <motion.div
-            className="absolute top-1 bottom-1 rounded-lg bg-primary shadow-md"
+            className="absolute top-1.5 bottom-1.5 rounded-xl bg-primary shadow-lg"
             layout
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
             style={{
-              width: "calc(50% - 4px)",
-              left: feedTab === "foryou" ? 4 : "calc(50% + 2px)",
+              width: "calc(50% - 6px)",
+              left: feedTab === "foryou" ? 6 : "calc(50% + 2px)",
             }}
           />
           <button
             onClick={() => setFeedTab("foryou")}
-            className={`relative z-10 flex-1 py-2 rounded-lg text-sm font-semibold transition-colors duration-200 ${
+            className={`relative z-10 flex-1 py-3 rounded-xl text-base font-bold tracking-wide transition-colors duration-200 ${
               feedTab === "foryou"
                 ? "text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -400,17 +400,17 @@ const Feed = () => {
               }
               setFeedTab("bookmarks");
             }}
-            className={`relative z-10 flex-1 py-2 rounded-lg text-sm font-semibold transition-colors duration-200 inline-flex items-center justify-center gap-1.5 ${
+            className={`relative z-10 flex-1 py-3 rounded-xl text-base font-bold tracking-wide transition-colors duration-200 inline-flex items-center justify-center gap-2 ${
               feedTab === "bookmarks"
                 ? "text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Bookmark className="w-3.5 h-3.5" />
+            <Bookmark className="w-4 h-4" />
             Watchlist
             {bookmarkedIds.size > 0 && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                feedTab === "bookmarks" ? "bg-primary-foreground/20" : "bg-muted"
+              <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                feedTab === "bookmarks" ? "bg-primary-foreground/20" : "bg-background"
               }`}>
                 {bookmarkedIds.size}
               </span>
