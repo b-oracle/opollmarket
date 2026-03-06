@@ -715,6 +715,7 @@ export type Database = {
           round_id: string
           side: string
           status: string
+          streak: number
           user_id: string
         }
         Insert: {
@@ -725,6 +726,7 @@ export type Database = {
           round_id: string
           side: string
           status?: string
+          streak?: number
           user_id: string
         }
         Update: {
@@ -735,6 +737,7 @@ export type Database = {
           round_id?: string
           side?: string
           status?: string
+          streak?: number
           user_id?: string
         }
         Relationships: [
@@ -783,6 +786,27 @@ export type Database = {
           resolved_at?: string | null
           result?: string | null
           status?: string
+        }
+        Relationships: []
+      }
+      quick_trade_streaks: {
+        Row: {
+          best_streak: number
+          current_streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          best_streak?: number
+          current_streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          best_streak?: number
+          current_streak?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

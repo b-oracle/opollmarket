@@ -95,6 +95,7 @@ type Bet = {
   payout: number;
   status: string;
   round_id: string;
+  streak: number;
 };
 
 export default function QuickTrade() {
@@ -121,8 +122,32 @@ export default function QuickTrade() {
   const [poolDown, setPoolDown] = useState(0);
   const [userBets, setUserBets] = useState<Bet[]>([]);
   const [selectedTimeframe, setSelectedTimeframe] = useState(TIMEFRAMES[2]); // default 5m
+  const [streak, setStreak] = useState<{ current_streak: number; best_streak: number } | null>(null);
 
   const isLocked = activeRound?.status === "locked" || timeLeft <= LOCK_BUFFER;
+
+  // Streak multiplier tiers (mirror backend)
+  const getStreakMultiplier = (s: number) => {
+    if (s >= 5) return 1.25;
+    if (s === 4) return 1.15;
+    if (s === 3) return 1.10;
+    if (s === 2) return 1.05;
+    return 1.0;
+  };
+
+  // Fetch user streak
+  useEffect(() => {
+    if (!user) { setStreak(null); return; }
+    const load = async () => {
+      const { data } = await supabase
+        .from("quick_trade_streaks")
+        .select("current_streak, best_streak")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      setStreak(data || { current_streak: 0, best_streak: 0 });
+    };
+    load();
+  }, [user, activeRound?.status]);
 
   // ── Price history for mini chart (last 15 min) ──
   const [priceHistory, setPriceHistory] = useState<{ time: string; price: number; ts: number }[]>([]);
@@ -654,6 +679,13 @@ export default function QuickTrade() {
                 </Button>
               </div>
 
+              {/* Streak multiplier hint */}
+              {streak && streak.current_streak >= 1 && !isLocked && timeLeft > 0 && (
+                <p className="text-[10px] text-amber-500 text-center mt-2">
+                  🔥 Win to get {getStreakMultiplier(streak.current_streak + 1)}x payout bonus!
+                </p>
+              )}
+
               {isLocked && timeLeft > 0 && (
                 <p className="text-xs text-amber-500 text-center mt-2">Round locked — bets closed. Next round starting soon.</p>
               )}
@@ -664,6 +696,16 @@ export default function QuickTrade() {
           {user && (
             <div className="text-center mb-6">
               <p className="text-xs text-muted-foreground">Balance: <span className="font-bold text-foreground">${balance.toFixed(2)}</span></p>
+              {streak && streak.current_streak >= 2 && (
+                <div className="mt-1.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30">
+                  <span className="text-sm">🔥</span>
+                  <span className="text-xs font-bold text-amber-500">{streak.current_streak} Win Streak</span>
+                  <span className="text-[10px] text-amber-400 font-semibold">— {getStreakMultiplier(streak.current_streak)}x Bonus</span>
+                </div>
+              )}
+              {streak && streak.current_streak >= 1 && streak.current_streak < 2 && (
+                <p className="text-[10px] text-muted-foreground mt-1">🔥 1 win — one more for a streak bonus!</p>
+              )}
             </div>
           )}
 
@@ -763,6 +805,9 @@ export default function QuickTrade() {
                             </div>
                             <p className="text-[10px] text-muted-foreground">
                               ${Number(myBet.amount).toFixed(2)}
+                              {didWin && (myBet as any).streak >= 2 && (
+                                <span className="text-amber-500 text-[9px] ml-1">🔥{(myBet as any).streak}×{getStreakMultiplier((myBet as any).streak)}</span>
+                              )}
                               {didWin && (
                                 <span className="text-green-500 font-bold ml-1">→ ${Number(myBet.payout).toFixed(2)}</span>
                               )}
