@@ -93,13 +93,7 @@ const AdminCreateMarket = () => {
     setDescription(newDesc);
   };
 
-  const CRYPTO_ASSETS = ["BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "DOGE", "MATIC", "AVAX", "DOT", "LINK", "SHIB"];
-  const OPERATORS = [
-    { value: "at_or_above", label: "Reaches or exceeds" },
-    { value: "above", label: "Closes above" },
-    { value: "at_or_below", label: "Drops to or below" },
-    { value: "below", label: "Closes below" },
-  ];
+  const { getAssetsForCategory, isPriceAutoResolveCategory, getAssetClassLabel, getResolutionSource, OPERATORS } = await import("@/data/assetClasses");
   const SPORT_TYPES = [
     { value: "football", label: "Football (Soccer)" },
     { value: "basketball", label: "Basketball" },
