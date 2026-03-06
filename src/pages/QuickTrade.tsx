@@ -620,20 +620,38 @@ export default function QuickTrade() {
 
             {/* Chart timeframe selector + Mini price chart */}
             <div className="mt-3 -mx-2">
-              <div className="flex items-center justify-center gap-1 mb-2 px-2">
-                {CHART_TIMEFRAMES.map((tf) => (
+              <div className="flex items-center justify-between mb-2 px-2">
+                <div className="flex items-center gap-1">
+                  {CHART_TIMEFRAMES.map((tf) => (
+                    <button
+                      key={tf.key}
+                      onClick={() => setChartTimeframe(tf.key)}
+                      className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all ${
+                        chartTimeframe === tf.key
+                          ? "bg-secondary text-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {tf.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-0.5 bg-muted/40 rounded-md p-0.5">
                   <button
-                    key={tf.key}
-                    onClick={() => setChartTimeframe(tf.key)}
-                    className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all ${
-                      chartTimeframe === tf.key
-                        ? "bg-secondary text-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
+                    onClick={() => setChartType("area")}
+                    className={`p-1.5 rounded transition-all ${chartType === "area" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    title="Area chart"
                   >
-                    {tf.label}
+                    <LineChartIcon className="w-3.5 h-3.5" />
                   </button>
-                ))}
+                  <button
+                    onClick={() => setChartType("candle")}
+                    className={`p-1.5 rounded transition-all ${chartType === "candle" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    title="Candlestick chart"
+                  >
+                    <BarChart3 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
               {historyLoading ? (
                 <div className="relative h-[100px] overflow-hidden rounded-lg bg-muted/30">
