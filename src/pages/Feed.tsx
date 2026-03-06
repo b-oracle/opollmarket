@@ -249,9 +249,11 @@ const Feed = () => {
 
   // Pulse when bookmarks increase
   useEffect(() => {
-    if (prevBookmarkCount.current !== null && bookmarkedIds.size > prevBookmarkCount.current) {
+    const prev = prevBookmarkCount.current;
+    if (prev !== null && bookmarkedIds.size > prev) {
       setWatchlistPulse(true);
       const t = setTimeout(() => setWatchlistPulse(false), 2000);
+      prevBookmarkCount.current = bookmarkedIds.size;
       return () => clearTimeout(t);
     }
     prevBookmarkCount.current = bookmarkedIds.size;

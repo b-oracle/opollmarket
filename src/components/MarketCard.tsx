@@ -401,9 +401,13 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             <span className="text-[10px] text-muted-foreground">Details</span>
           </button>
           <button onClick={handleBookmark} className="flex flex-col items-center gap-1 group">
-            <div className={`w-10 h-10 rounded-full glass flex items-center justify-center transition-colors ${bookmarked ? 'bg-primary/20' : 'group-hover:bg-primary/20'}`}>
+            <motion.div
+              className={`w-10 h-10 rounded-full glass flex items-center justify-center transition-colors ${bookmarked ? 'bg-primary/20' : 'group-hover:bg-primary/20'}`}
+              animate={bookmarked ? { scale: [1, 1.3, 1] } : { scale: 1 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
               <Bookmark className={`w-5 h-5 transition-colors ${bookmarked ? 'text-primary fill-primary' : 'text-foreground/70 group-hover:text-primary'}`} />
-            </div>
+            </motion.div>
             <span className="text-[10px] text-muted-foreground">{bookmarkCount > 0 ? formatCount(bookmarkCount) : (bookmarked ? "Saved" : "Save")}</span>
           </button>
           <button onClick={handleShare} className="flex flex-col items-center gap-1 group">
