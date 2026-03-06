@@ -511,6 +511,49 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                         <span className={`font-bold ${optionColor ? "" : sideTextClass}`} style={optionColor ? { color: optionColor } : undefined}>${potentialPayout.toFixed(2)}</span>
                       </div>
                     </div>
+
+                    {/* Push notification prompt — shows when push is supported but not subscribed */}
+                    {pushSupported && !pushSubscribed && !pushPromptDismissed && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="rounded-xl border border-primary/20 bg-primary/5 p-3 mb-4 w-full"
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            <BellRing className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold mb-0.5">Never miss a payout</p>
+                            <p className="text-[10px] text-muted-foreground mb-2">
+                              Get notified when your predictions resolve — even when the app is closed.
+                            </p>
+                            <div className="flex gap-2">
+                              <button
+                                disabled={pushLoading}
+                                onClick={async () => {
+                                  const ok = await pushSubscribe();
+                                  if (ok) {
+                                    toast.success("Push notifications enabled!");
+                                    track("push_enabled_first_bet", {});
+                                  }
+                                }}
+                                className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-[10px] font-semibold active:scale-95 transition-transform"
+                              >
+                                {pushLoading ? "..." : "Enable Alerts"}
+                              </button>
+                              <button
+                                onClick={() => setPushPromptDismissed(true)}
+                                className="px-3 py-1.5 rounded-lg text-[10px] font-medium text-muted-foreground hover:bg-muted transition-colors"
+                              >
+                                Not now
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
                     <div className="flex gap-3 w-full">
                       <button onClick={handleClose} className="flex-1 glass py-3 rounded-xl font-semibold text-sm transition-all active:scale-95">Close</button>
                       <button
