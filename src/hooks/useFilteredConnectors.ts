@@ -5,7 +5,8 @@ export const useFilteredConnectors = () => {
   const { connect, connectors, isPending } = useConnect();
 
   const filtered = useMemo(() => {
-    const hasInjected = typeof window !== 'undefined' && !!(window as any).ethereum;
+    const w = typeof window !== 'undefined' ? (window as any) : null;
+    const hasInjected = !!(w?.ethereum || w?.rabby);
     return connectors.filter(
       (c) => c.type === 'walletConnect' || (c.type === 'injected' && hasInjected)
     );
