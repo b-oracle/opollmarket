@@ -628,8 +628,26 @@ export default function QuickTrade() {
                 ))}
               </div>
               {historyLoading ? (
-                <div className="flex items-center justify-center h-[100px]">
-                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                <div className="relative h-[100px] overflow-hidden rounded-lg bg-muted/30">
+                  {/* Skeleton wave lines */}
+                  <div className="absolute inset-0 flex items-end gap-[3px] px-2 pb-2">
+                    {Array.from({ length: 40 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="flex-1 rounded-sm bg-muted/50 animate-pulse"
+                        style={{
+                          height: `${20 + Math.sin(i * 0.4) * 15 + Math.random() * 10}%`,
+                          animationDelay: `${i * 50}ms`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-background/80 backdrop-blur-sm">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
+                      <span className="text-[10px] font-medium text-muted-foreground">Loading chart...</span>
+                    </div>
+                  </div>
                 </div>
               ) : (() => {
                 const cutoff = Date.now() - chartMs;
