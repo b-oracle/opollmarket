@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Market, MarketOption } from "@/data/markets";
 
@@ -57,6 +58,23 @@ const mapDbToMarket = (db: DbMarket): Market => ({
 });
 
 export const useMarkets = () => {
+  const queryClient = useQueryClient();
+
+  // Realtime: refresh market list when any market is updated
+  useEffect(() => {
+    const channel = supabase
+      .channel("markets-list-realtime")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "markets" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["markets"] });
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ["markets"],
     queryFn: async (): Promise<Market[]> => {
@@ -76,6 +94,24 @@ export const useMarkets = () => {
 };
 
 export const useMarket = (id: string | undefined) => {
+  const queryClient = useQueryClient();
+
+  // Realtime: refresh this market when it's updated
+  useEffect(() => {
+    if (!id) return;
+    const channel = supabase
+      .channel(`market-detail-${id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "markets", filter: `id=eq.${id}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["market", id] });
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [id, queryClient]);
+
   return useQuery({
     queryKey: ["market", id],
     queryFn: async (): Promise<Market | null> => {
