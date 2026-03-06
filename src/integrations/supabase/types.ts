@@ -164,6 +164,7 @@ export type Database = {
           market_creation_fee: number | null
           min_nft_balance: number
           min_token_balance: number
+          min_withdrawal_amount: number
           nft_buy_url: string | null
           nft_contract_address: string | null
           referral_reward_amount: number
@@ -179,6 +180,7 @@ export type Database = {
           market_creation_fee?: number | null
           min_nft_balance?: number
           min_token_balance?: number
+          min_withdrawal_amount?: number
           nft_buy_url?: string | null
           nft_contract_address?: string | null
           referral_reward_amount?: number
@@ -194,6 +196,7 @@ export type Database = {
           market_creation_fee?: number | null
           min_nft_balance?: number
           min_token_balance?: number
+          min_withdrawal_amount?: number
           nft_buy_url?: string | null
           nft_contract_address?: string | null
           referral_reward_amount?: number
