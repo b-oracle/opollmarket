@@ -27,6 +27,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isModerator, setIsModerator] = useState(false);
   const [profileDisplayName, setProfileDisplayName] = useState<string | null>(null);
   const lastSessionRef = useRef<Session | null>(null);
+  const signingOutRef = useRef(false);
 
   const fetchDisplayName = useCallback(async (userId: string, mounted: { current: boolean }) => {
     try {
