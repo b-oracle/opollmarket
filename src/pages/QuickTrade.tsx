@@ -12,8 +12,10 @@ import {
   ChevronDown,
   Loader2,
   Share2,
+  BarChart3,
+  LineChart as LineChartIcon,
 } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, ReferenceLine, Tooltip as RechartsTooltip } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, ReferenceLine, Tooltip as RechartsTooltip, ComposedChart, Bar, Cell } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useConfetti } from "@/hooks/useConfetti";
@@ -203,6 +205,7 @@ export default function QuickTrade() {
   ] as const;
   type ChartTF = typeof CHART_TIMEFRAMES[number]["key"];
   const [chartTimeframe, setChartTimeframe] = useState<ChartTF>("15m");
+  const [chartType, setChartType] = useState<"area" | "candle">("area");
   const chartMs = CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.ms;
 
   const [priceHistory, setPriceHistory] = useState<{ time: string; price: number; ts: number }[]>([]);
