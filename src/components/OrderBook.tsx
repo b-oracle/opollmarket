@@ -26,8 +26,11 @@ interface RecentTrade {
   created_at: string;
 }
 
+const TRADES_PER_PAGE = 10;
+
 const OrderBook = ({ yesPrice, noPrice, liquidity, marketId }: OrderBookProps) => {
   const queryClient = useQueryClient();
+  const [tradePage, setTradePage] = useState(0);
 
   // Fetch real recent trades for this market
   const { data: recentTrades = [] } = useQuery({
@@ -41,7 +44,7 @@ const OrderBook = ({ yesPrice, noPrice, liquidity, marketId }: OrderBookProps) =
         .in("type", ["buy", "sell"])
         .eq("status", "confirmed")
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(100);
       return (data || []) as RecentTrade[];
     },
     enabled: !!marketId,
