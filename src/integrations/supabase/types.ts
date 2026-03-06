@@ -1031,6 +1031,16 @@ export type Database = {
               wins: number
             }[]
           }
+      get_streak_leaderboard: {
+        Args: { _limit?: number }
+        Returns: {
+          avatar_url: string
+          best_streak: number
+          current_streak: number
+          display_name: string
+          user_id: string
+        }[]
+      }
       get_trending_scores: {
         Args: never
         Returns: {
