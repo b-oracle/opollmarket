@@ -89,7 +89,7 @@ const Index = () => {
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       filtered = markets.filter((m) => m.createdAt >= oneDayAgo);
     } else if (filter === "live") {
-      filtered = markets.filter((m) => m.autoResolve && m.sportType && m.sportMatchId);
+      filtered = markets.filter((m) => m.autoResolve && ((m.sportType && m.sportMatchId) || m.autoResolveAsset));
     }
     if (categoryFilter !== "All") {
       filtered = filtered.filter((m) => m.category === categoryFilter);
@@ -115,7 +115,7 @@ const Index = () => {
 
   const totalVolume = markets.reduce((s, m) => s + m.volume, 0);
   const totalTraders = markets.reduce((s, m) => s + m.participants, 0);
-  const liveCount = useMemo(() => markets.filter((m) => m.autoResolve && m.sportType && m.sportMatchId).length, [markets]);
+  const liveCount = useMemo(() => markets.filter((m) => m.autoResolve && ((m.sportType && m.sportMatchId) || m.autoResolveAsset)).length, [markets]);
 
   // No blocking loader — render page immediately, show inline spinner in content area
 
