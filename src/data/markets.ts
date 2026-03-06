@@ -25,6 +25,11 @@ export interface Market {
   details?: string;
   trending: boolean;
   createdAt: string;
+  autoResolve?: boolean;
+  autoResolveAsset?: string;
+  autoResolveTargetPrice?: number;
+  autoResolveOperator?: string;
+  autoResolveDeadline?: string;
 }
 
 export const mockMarkets: Market[] = [

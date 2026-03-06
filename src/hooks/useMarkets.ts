@@ -23,6 +23,11 @@ interface DbMarket {
   trending: boolean;
   status: string;
   created_at: string;
+  auto_resolve: boolean;
+  auto_resolve_asset: string | null;
+  auto_resolve_target_price: number | null;
+  auto_resolve_operator: string | null;
+  auto_resolve_deadline: string | null;
   market_options: { id: string; label: string; price: number; sort_order: number }[];
 }
 
@@ -45,6 +50,11 @@ const mapDbToMarket = (db: DbMarket): Market => ({
   details: db.details || undefined,
   trending: db.trending,
   createdAt: db.created_at,
+  autoResolve: db.auto_resolve,
+  autoResolveAsset: db.auto_resolve_asset || undefined,
+  autoResolveTargetPrice: db.auto_resolve_target_price ? Number(db.auto_resolve_target_price) : undefined,
+  autoResolveOperator: db.auto_resolve_operator || undefined,
+  autoResolveDeadline: db.auto_resolve_deadline || undefined,
   options: db.market_options?.length
     ? db.market_options
         .sort((a, b) => a.sort_order - b.sort_order)
