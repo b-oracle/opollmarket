@@ -72,10 +72,12 @@ const AdminCreateMarket = () => {
   const errors = {
     title: title.trim().length > 0 && title.trim().length < 10 ? "Min 10 characters" : title.trim().length === 0 ? "Required" : "",
     description: description.trim().length > 0 && description.trim().length < 10 ? "Min 10 characters" : description.trim().length === 0 ? "Required" : "",
+    details: details.trim().length === 0 ? "Required" : details.trim().length < 20 ? "Min 20 characters" : "",
     category: !category ? "Select a category" : "",
     endDate: !endDate ? "Required" : "",
     resolutionSource: resolutionSource.trim().length > 0 && resolutionSource.trim().length < 5 ? "Min 5 characters" : resolutionSource.trim().length === 0 ? "Required" : "",
     options: marketType === "multi" && options.filter((o) => o.trim()).length < 2 ? "At least 2 options required" : "",
+    image: !imageFile ? "Cover image is required" : "",
   };
 
   const fieldError = (field: keyof typeof errors) => touched[field] ? errors[field] : "";
