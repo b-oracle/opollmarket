@@ -578,7 +578,17 @@ const MarketDetail = () => {
           />
         )}
 
-        {activeBoost && (
+        {/* Live Sports Match Ticker */}
+        {market.autoResolve && market.sportType && market.sportMatchId && market.sportPredictedOutcome && (
+          <SportsMatchTicker
+            sportType={market.sportType}
+            matchId={market.sportMatchId}
+            predictedOutcome={market.sportPredictedOutcome}
+            league={market.sportLeague}
+            deadline={market.autoResolveDeadline}
+          />
+        )}
+        
           <div className="mb-4">
             <BoostCountdown endsAt={activeBoost.ends_at} tier={activeBoost.tier} />
           </div>
