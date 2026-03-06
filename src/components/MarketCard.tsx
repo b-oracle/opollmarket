@@ -102,6 +102,28 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const captureContentRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const touchLockedRef = useRef<"horizontal" | "vertical" | null>(null);
+  const [parallaxY, setParallaxY] = useState(0);
+
+  // Parallax effect for background image
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+    const scrollParent = card.closest('.snap-feed') || card.parentElement;
+    if (!scrollParent) return;
+
+    const handleScroll = () => {
+      const rect = card.getBoundingClientRect();
+      const parentRect = scrollParent.getBoundingClientRect();
+      const cardCenter = rect.top + rect.height / 2;
+      const parentCenter = parentRect.top + parentRect.height / 2;
+      const offset = (cardCenter - parentCenter) / parentRect.height;
+      setParallaxY(offset * -30); // subtle 30px max shift
+    };
+
+    scrollParent.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => scrollParent.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const SWIPE_THRESHOLD = 60;
   const LOCK_ANGLE_THRESHOLD = 20; // pixels before locking direction
@@ -255,13 +277,13 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           </>
         )}
         {/* Visible banner: always image + gradient */}
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 overflow-hidden">
           {market.imageUrl ? (
-            <div className="absolute inset-0">
+            <div className="absolute inset-[-30px_0] will-change-transform" style={{ transform: `translateY(${parallaxY}px)` }}>
               <img src={market.imageUrl} alt="" className="w-full h-full object-cover opacity-50" />
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/20" />
             </div>
           ) : null}
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/20" />
           <div className={`absolute inset-0 ${isBoosted ? 'bg-gradient-to-br from-primary/15 via-primary/5 to-transparent' : ''}`} />
         </div>
 
