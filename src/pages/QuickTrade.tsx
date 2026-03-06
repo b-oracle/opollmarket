@@ -138,7 +138,7 @@ export default function QuickTrade() {
     return 1.0;
   };
 
-  // Fetch user streak
+  // Fetch user streak and detect milestones
   useEffect(() => {
     if (!user) { setStreak(null); return; }
     const load = async () => {
@@ -147,7 +147,17 @@ export default function QuickTrade() {
         .select("current_streak, best_streak")
         .eq("user_id", user.id)
         .maybeSingle();
-      setStreak(data || { current_streak: 0, best_streak: 0 });
+      const newStreak = data || { current_streak: 0, best_streak: 0 };
+      const prev = prevStreakRef.current;
+      const curr = newStreak.current_streak;
+
+      // Trigger milestone celebration when crossing 3 or 5
+      if (curr >= 3 && prev < curr && (curr === 3 || curr === 5)) {
+        setMilestoneModal({ open: true, streak: curr, multiplier: getStreakMultiplier(curr) });
+      }
+
+      prevStreakRef.current = curr;
+      setStreak(newStreak);
     };
     load();
   }, [user, activeRound?.status]);
