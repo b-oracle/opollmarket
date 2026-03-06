@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useUserBalance, usePlaceBet } from "@/hooks/useUserBalance";
 import { usePlaceLimitOrder } from "@/hooks/useLimitOrders";
 import { useRateLimit } from "@/hooks/useRateLimit";
@@ -24,6 +25,7 @@ import {
   Plus,
   LogIn,
   Clock,
+  BellRing,
 } from "lucide-react";
 
 
@@ -56,6 +58,8 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
   const navigate = useNavigate();
   const { checkLimit: checkBetLimit } = useRateLimit(5, 60000);
   const { track } = useAnalytics();
+  const { isSupported: pushSupported, isSubscribed: pushSubscribed, loading: pushLoading, subscribe: pushSubscribe } = usePushNotifications();
+  const [pushPromptDismissed, setPushPromptDismissed] = useState(false);
   const [amount, setAmount] = useState("");
   const [step, setStep] = useState<ModalStep>("input");
   const [errorMsg, setErrorMsg] = useState("");
@@ -507,6 +511,49 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                         <span className={`font-bold ${optionColor ? "" : sideTextClass}`} style={optionColor ? { color: optionColor } : undefined}>${potentialPayout.toFixed(2)}</span>
                       </div>
                     </div>
+
+                    {/* Push notification prompt — shows when push is supported but not subscribed */}
+                    {pushSupported && !pushSubscribed && !pushPromptDismissed && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="rounded-xl border border-primary/20 bg-primary/5 p-3 mb-4 w-full"
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            <BellRing className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold mb-0.5">Never miss a payout</p>
+                            <p className="text-[10px] text-muted-foreground mb-2">
+                              Get notified when your predictions resolve — even when the app is closed.
+                            </p>
+                            <div className="flex gap-2">
+                              <button
+                                disabled={pushLoading}
+                                onClick={async () => {
+                                  const ok = await pushSubscribe();
+                                  if (ok) {
+                                    toast.success("Push notifications enabled!");
+                                    track("push_enabled_first_bet", {});
+                                  }
+                                }}
+                                className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-[10px] font-semibold active:scale-95 transition-transform"
+                              >
+                                {pushLoading ? "..." : "Enable Alerts"}
+                              </button>
+                              <button
+                                onClick={() => setPushPromptDismissed(true)}
+                                className="px-3 py-1.5 rounded-lg text-[10px] font-medium text-muted-foreground hover:bg-muted transition-colors"
+                              >
+                                Not now
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
                     <div className="flex gap-3 w-full">
                       <button onClick={handleClose} className="flex-1 glass py-3 rounded-xl font-semibold text-sm transition-all active:scale-95">Close</button>
                       <button

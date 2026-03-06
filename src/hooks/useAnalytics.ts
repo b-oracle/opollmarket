@@ -17,7 +17,8 @@ type EventName =
   | "market_bookmarked"
   | "limit_order_placed"
   | "limit_order_started"
-  | "limit_order_cancelled";
+  | "limit_order_cancelled"
+  | "push_enabled_first_bet";
 
 interface EventProperties {
   [key: string]: string | number | boolean | undefined;
