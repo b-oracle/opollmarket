@@ -25,6 +25,31 @@ export function usePriceHistory(
   isMulti: boolean,
   options?: { id: string; label: string; price: number }[]
 ) {
+  const queryClient = useQueryClient();
+
+  // Subscribe to realtime transaction inserts for this market
+  useEffect(() => {
+    if (!marketId) return;
+    const channel = supabase
+      .channel(`price-history-${marketId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "transactions",
+          filter: `market_id=eq.${marketId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["price-history", marketId] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [marketId, queryClient]);
   const { data: transactions = [] } = useQuery({
     queryKey: ["price-history", marketId],
     queryFn: async () => {
