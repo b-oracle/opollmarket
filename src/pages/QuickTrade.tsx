@@ -43,6 +43,22 @@ const TIMEFRAMES = [
 ];
 
 const LOCK_BUFFER = 10; // lock 10s before end
+
+// Haptic feedback helper
+const haptic = (style: "light" | "medium" | "heavy" | "success" | "error" = "medium") => {
+  try {
+    if ("vibrate" in navigator) {
+      const patterns: Record<string, number | number[]> = {
+        light: 10,
+        medium: 30,
+        heavy: 50,
+        success: [30, 50, 30],
+        error: [50, 30, 50, 30, 50],
+      };
+      navigator.vibrate(patterns[style]);
+    }
+  } catch {}
+};
 const AMOUNT_PRESETS = [5, 10, 25, 50, 100];
 
 async function fetchPrice(geckoId: string): Promise<number | null> {
@@ -260,8 +276,12 @@ export default function QuickTrade() {
   useEffect(() => {
     const channel = supabase
       .channel("quick-rounds-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "quick_rounds" }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "quick_rounds" }, (payload) => {
         fetchActiveRound();
+        // Haptic on round resolution
+        if (payload.eventType === "UPDATE" && (payload.new as any)?.status === "resolved") {
+          haptic("heavy");
+        }
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -285,6 +305,7 @@ export default function QuickTrade() {
       return;
     }
 
+    haptic("medium");
     setPlacing(true);
     try {
       // Deduct balance
@@ -327,6 +348,7 @@ export default function QuickTrade() {
 
       queryClient.invalidateQueries({ queryKey: ["balance"] });
 
+      haptic("success");
       toast({ title: `${side.toUpperCase()} bet placed!`, description: `$${amt} on ${selectedAsset.symbol}` });
 
       // Reload bet state
@@ -338,6 +360,7 @@ export default function QuickTrade() {
         .limit(1);
       if (newBet && newBet.length > 0) setUserBet(newBet[0] as unknown as Bet);
     } catch (err: any) {
+      haptic("error");
       toast({ title: "Failed to place bet", description: err.message, variant: "destructive" });
     } finally {
       setPlacing(false);
