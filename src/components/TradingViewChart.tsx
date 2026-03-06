@@ -60,6 +60,9 @@ export default function TradingViewChart({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [indicator, setIndicator] = useState<"rsi" | "macd">("rsi");
 
+  const { activeTool, setActiveTool, clearDrawings, removeLastDrawing } =
+    useChartDrawings(chartRef, candleSeriesRef, containerRef);
+
   const isDark =
     typeof document !== "undefined" &&
     document.documentElement.classList.contains("dark");
