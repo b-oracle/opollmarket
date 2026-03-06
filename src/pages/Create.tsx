@@ -61,14 +61,14 @@ interface GateCheck {
   detail?: string;
 }
 
-const DetailsField = ({ details, setDetails }: { details: string; setDetails: (v: string) => void }) => {
+const DetailsField = ({ details, setDetails, error, touched: fieldTouched, onBlur, shakeClass }: { details: string; setDetails: (v: string) => void; error?: string | null; touched?: boolean; onBlur?: () => void; shakeClass?: string }) => {
   const [preview, setPreview] = useState(false);
   return (
-    <div className="glass rounded-xl p-4">
+    <div className={`glass rounded-xl p-4 ${shakeClass || ""} ${fieldTouched && error ? "border-destructive/50" : ""}`}>
       <div className="flex items-center justify-between mb-2">
         <label className="flex items-center gap-2 text-sm font-semibold">
           <FileText className="w-4 h-4 text-primary" />
-          More Details <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+          More Details <span className="text-xs font-normal text-destructive">*</span>
         </label>
         {details.trim() && (
           <button
@@ -236,6 +236,7 @@ const Create = () => {
   const errors: Record<string, string | null> = {
     title: title.trim().length === 0 ? "Question is required" : title.trim().length < 10 ? "Must be at least 10 characters" : null,
     description: description.trim().length === 0 ? "Description is required" : description.trim().length < 20 ? "Must be at least 20 characters" : null,
+    details: details.trim().length === 0 ? "More details are required" : details.trim().length < 20 ? "Must be at least 20 characters" : null,
     category: !category ? "Select a category" : null,
     endDate: !endDate ? "Resolution date is required" : null,
     resolutionSource: resolutionSource.trim().length === 0 ? "Resolution source is required" : resolutionSource.trim().length < 10 ? "Must be at least 10 characters" : null,
@@ -246,9 +247,10 @@ const Create = () => {
   const shakeClass = (field: string) => shakeField === field ? "animate-[shake_0.4s_ease-in-out]" : "";
 
   const tryAdvanceStep1 = () => {
-    setTouched((t) => ({ ...t, title: true, description: true, options: true }));
+    setTouched((t) => ({ ...t, title: true, description: true, details: true, options: true }));
     if (errors.title) { shake("title"); return; }
     if (errors.description) { shake("description"); return; }
+    if (errors.details) { shake("details"); return; }
     if (marketType !== "binary" && errors.options) { shake("options"); return; }
     setStep(2);
   };
