@@ -89,6 +89,15 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
     false
   );
 
+  // Progress toward target (0–100%)
+  const progress = targetPrice != null && targetPrice > 0
+    ? (operator === "above" || operator === "at_or_above")
+      ? Math.min(Math.round((price / targetPrice) * 100), 100)
+      : (operator === "below" || operator === "at_or_below")
+        ? Math.min(Math.round((targetPrice / price) * 100), 100)
+        : null
+    : null;
+
   return (
     <div
       className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold tabular-nums backdrop-blur-sm ${
@@ -107,6 +116,15 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
       {targetPrice != null && operator && (
         <span className="text-muted-foreground ml-0.5">
           {OP_LABELS[operator] || "="} {isForex ? targetPrice.toFixed(4) : `$${targetPrice.toLocaleString()}`}
+        </span>
+      )}
+      {progress != null && (
+        <span className={`ml-0.5 px-1 py-px rounded text-[9px] font-bold ${
+          conditionMet
+            ? "bg-green-500/20 text-green-600 dark:text-green-400"
+            : "bg-primary/15 text-primary"
+        }`}>
+          {progress}%
         </span>
       )}
     </div>
