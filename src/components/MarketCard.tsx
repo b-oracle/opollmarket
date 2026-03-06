@@ -232,7 +232,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
     <>
       <div
         ref={cardRef}
-        className={`snap-item relative w-full flex items-end pb-16 px-3 sm:px-4 overflow-hidden shrink-0 ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}
+        className={`snap-item relative w-full flex items-end px-3 sm:px-4 overflow-hidden shrink-0 ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}
         style={{ 
           height: 'var(--feed-card-height, calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px)))',
           minHeight: 'var(--feed-card-height, calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px)))',
@@ -564,10 +564,17 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           )}
 
           {!isMulti && (
-            <p className="text-[10px] text-muted-foreground/50 text-center mt-3 animate-fade-in">
+            <motion.p
+              className="text-[10px] text-muted-foreground/50 text-center mt-3 pb-1"
+              initial={{ y: 0 }}
+              animate={{ y: [0, -8, 0] }}
+              transition={{ delay: 1.5, duration: 1.2, ease: "easeInOut", repeat: 1, repeatDelay: 3 }}
+            >
               ← Swipe left for NO · Swipe right for YES →
-            </p>
+            </motion.p>
           )}
+          {/* Spacer to push swipe hint behind BottomNav */}
+          <div className="h-16 shrink-0 md:h-4" />
         </div>
       </div>
 
