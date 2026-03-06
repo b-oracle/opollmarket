@@ -76,6 +76,32 @@ async function fetchPrice(geckoId: string): Promise<number | null> {
   }
 }
 
+async function fetchPriceHistory(
+  geckoId: string,
+  durationMs: number
+): Promise<{ time: string; price: number; ts: number }[]> {
+  try {
+    // CoinGecko market_chart: for <=24h use minutes granularity
+    const days = durationMs <= 24 * 60 * 60 * 1000 ? 1 : Math.ceil(durationMs / (24 * 60 * 60 * 1000));
+    const r = await fetch(
+      `https://api.coingecko.com/api/v3/coins/${geckoId}/market_chart?vs_currency=usd&days=${days}`
+    );
+    if (!r.ok) return [];
+    const d = await r.json();
+    const prices: [number, number][] = d.prices || [];
+    const cutoff = Date.now() - durationMs;
+    return prices
+      .filter(([ts]) => ts >= cutoff)
+      .map(([ts, price]) => ({
+        time: new Date(ts).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true }),
+        price,
+        ts,
+      }));
+  } catch {
+    return [];
+  }
+}
+
 type Round = {
   id: string;
   asset: string;
