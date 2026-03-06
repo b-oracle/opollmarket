@@ -262,14 +262,18 @@ interface QuickTrader {
   totalWagered: number;
 }
 
-const useQuickTradeLeaderboard = () => {
+const useQuickTradeLeaderboard = (period: TimePeriod) => {
   const [quickTraders, setQuickTraders] = useState<QuickTrader[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
     (async () => {
-      const { data } = await supabase.rpc("get_quick_trade_leaderboard", { _limit: 20 });
+      const cutoff = getCutoffDate(period);
+      const { data } = await supabase.rpc("get_quick_trade_leaderboard", {
+        _limit: 20,
+        ...(cutoff ? { _cutoff: cutoff } : {}),
+      } as any);
       if (data) {
         setQuickTraders(
           (data as any[]).map((d) => ({
@@ -285,7 +289,7 @@ const useQuickTradeLeaderboard = () => {
       }
       setLoading(false);
     })();
-  }, []);
+  }, [period]);
 
   return { quickTraders, loading };
 };
