@@ -44,6 +44,35 @@ Deno.serve(async (req) => {
   const supabase = createClient(supabaseUrl, serviceKey);
 
   try {
+    // Handle balance deduction for placing bets
+    if (req.method === "POST") {
+      const body = await req.json().catch(() => ({}));
+      if (body.action === "deduct" && body.userId && body.amount) {
+        const { data: bal } = await supabase
+          .from("balances")
+          .select("amount")
+          .eq("user_id", body.userId)
+          .eq("currency", "USDT")
+          .single();
+        if (!bal || Number(bal.amount) < Number(body.amount)) {
+          return new Response(JSON.stringify({ error: "Insufficient balance" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        await supabase
+          .from("balances")
+          .update({
+            amount: Number(bal.amount) - Number(body.amount),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("user_id", body.userId)
+          .eq("currency", "USDT");
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
     // 1. Find rounds that are past their deadline and still open/locked
     const deadline = new Date();
     const { data: rounds, error: fetchErr } = await supabase
