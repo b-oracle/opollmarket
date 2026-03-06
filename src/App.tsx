@@ -70,7 +70,9 @@ const ConditionalSidebar = () => {
 const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const isAdmin = isAdminRoute(location.pathname);
-  return <div className={isAdmin ? "min-h-screen flex flex-col" : "md:ml-60 min-h-screen flex flex-col"}>{children}</div>;
+  const { collapsed } = useSidebarState();
+  const ml = isAdmin ? "" : collapsed ? "md:ml-[4.5rem]" : "md:ml-60";
+  return <div className={`${ml} min-h-screen flex flex-col transition-all duration-300`}>{children}</div>;
 };
 
 const PageFallback = () => (
