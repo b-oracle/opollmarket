@@ -688,6 +688,16 @@ export default function QuickTrade() {
           {user && (
             <div className="text-center mb-6">
               <p className="text-xs text-muted-foreground">Balance: <span className="font-bold text-foreground">${balance.toFixed(2)}</span></p>
+              {streak && streak.current_streak >= 2 && (
+                <div className="mt-1.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30">
+                  <span className="text-sm">🔥</span>
+                  <span className="text-xs font-bold text-amber-500">{streak.current_streak} Win Streak</span>
+                  <span className="text-[10px] text-amber-400 font-semibold">— {getStreakMultiplier(streak.current_streak)}x Bonus</span>
+                </div>
+              )}
+              {streak && streak.current_streak >= 1 && streak.current_streak < 2 && (
+                <p className="text-[10px] text-muted-foreground mt-1">🔥 1 win — one more for a streak bonus!</p>
+              )}
             </div>
           )}
 
