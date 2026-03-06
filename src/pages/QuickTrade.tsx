@@ -15,7 +15,7 @@ import {
   BarChart3,
   LineChart as LineChartIcon,
 } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, ReferenceLine, Tooltip as RechartsTooltip, ComposedChart, Bar, Cell } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, ReferenceLine, Tooltip as RechartsTooltip, ComposedChart, Bar, Cell, Line } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useConfetti } from "@/hooks/useConfetti";
@@ -724,6 +724,8 @@ export default function QuickTrade() {
                           <span className="text-muted-foreground">L</span><span className="font-mono font-semibold text-foreground">${d.low.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                           <span className="text-muted-foreground">C</span><span className="font-mono font-semibold text-foreground">${d.close.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                           <span className="text-muted-foreground">Vol</span><span className="font-mono font-semibold text-foreground">{d.volume}</span>
+                          {d.ma7 != null && <><span className="text-muted-foreground">MA7</span><span className="font-mono font-semibold" style={{ color: 'hsl(45, 93%, 58%)' }}>${d.ma7.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></>}
+                          {d.ma14 != null && <><span className="text-muted-foreground">MA14</span><span className="font-mono font-semibold" style={{ color: 'hsl(280, 80%, 65%)' }}>${d.ma14.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></>}
                         </div>
                       </div>
                     );
@@ -776,10 +778,17 @@ export default function QuickTrade() {
                     );
                   };
 
+                  // Compute moving averages (7-period and 14-period)
+                  const withMA = candles.map((c, i) => {
+                    const ma7 = i >= 6 ? candles.slice(i - 6, i + 1).reduce((s, x) => s + x.close, 0) / 7 : undefined;
+                    const ma14 = i >= 13 ? candles.slice(i - 13, i + 1).reduce((s, x) => s + x.close, 0) / 14 : undefined;
+                    return { ...c, ma7, ma14 };
+                  });
+
                   return (
                     <>
                       <ResponsiveContainer width="100%" height={120}>
-                        <ComposedChart data={candles} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
+                        <ComposedChart data={withMA} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
                           <YAxis domain={[yMin - padding, yMax + padding]} hide />
                           <XAxis dataKey="ts" hide />
                           <RechartsTooltip content={tooltipContent} cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '3 3' }} />
@@ -787,10 +796,12 @@ export default function QuickTrade() {
                             <ReferenceLine y={Number(activeRound.open_price)} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.4} />
                           )}
                           <Bar dataKey="body" shape={<CandlestickShape />} isAnimationActive={false}>
-                            {candles.map((c, i) => (
+                            {withMA.map((c, i) => (
                               <Cell key={i} fill={c.close >= c.open ? upColor : downColor} />
                             ))}
                           </Bar>
+                          <Line type="monotone" dataKey="ma7" stroke="hsl(45, 93%, 58%)" strokeWidth={1.5} dot={false} isAnimationActive={false} connectNulls />
+                          <Line type="monotone" dataKey="ma14" stroke="hsl(280, 80%, 65%)" strokeWidth={1.5} dot={false} isAnimationActive={false} connectNulls />
                         </ComposedChart>
                       </ResponsiveContainer>
                       {/* Volume bars */}
