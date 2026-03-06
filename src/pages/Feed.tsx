@@ -6,13 +6,15 @@ import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { useMarkets } from "@/hooks/useMarkets";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
-import { Loader2, TrendingUp, Users, Clock, Heart, MessageCircle, Zap, Flame, ExternalLink } from "lucide-react";
+import { Loader2, TrendingUp, Users, Clock, Heart, MessageCircle, Zap, Flame, ExternalLink, Bookmark } from "lucide-react";
 import { motion, useAnimation } from "framer-motion";
 import useAnalytics from "@/hooks/useAnalytics";
 import CategoryIcon from "@/components/CategoryIcon";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState as useStateHook, useEffect as useEffectHook } from "react";
+import { useBookmarkedMarkets } from "@/hooks/useBookmarkedMarkets";
+import { useAuth } from "@/hooks/useAuth";
 
 const useIsDesktop = () => {
   const [isDesktop, setIsDesktop] = useStateHook(false);
@@ -236,6 +238,9 @@ const Feed = () => {
   const { boostedMarketIds, boostDetails } = useActiveBoosts();
   const { track } = useAnalytics();
   const isDesktop = useIsDesktop();
+  const { bookmarkedIds } = useBookmarkedMarkets();
+  const { user } = useAuth();
+  const [feedTab, setFeedTab] = useState<"foryou" | "bookmarks">("foryou");
 
   useEffect(() => { track("page_view", { page: "feed" }); }, []);
 
@@ -248,12 +253,14 @@ const Feed = () => {
   const spinControls = useAnimation();
 
   const sortedMarkets = useMemo(() => {
-    return [...markets].sort((a, b) => {
+    const base = [...markets].sort((a, b) => {
       const aBoost = boostedMarketIds.has(a.id) ? 2 : a.trending ? 1 : 0;
       const bBoost = boostedMarketIds.has(b.id) ? 2 : b.trending ? 1 : 0;
       return bBoost - aBoost;
     });
-  }, [markets, boostedMarketIds]);
+    if (feedTab === "bookmarks") return base.filter((m) => bookmarkedIds.has(m.id));
+    return base;
+  }, [markets, boostedMarketIds, feedTab, bookmarkedIds]);
 
   const endToastShown = useRef(false);
 
@@ -355,13 +362,50 @@ const Feed = () => {
 
   const pullProgress = Math.min(pullDistance / PULL_THRESHOLD, 1);
 
-
-  /* ── Single layout for all screen sizes (swipe feed) ── */
-  /* ── Mobile Layout (TikTok-style snap feed) ── */
   return (
     <div className="h-dvh flex flex-col bg-background">
       <SEOHead title="Feed" description="Swipe through prediction markets like TikTok. Vote YES or NO on real-world events." path="/feed" />
       <TopBar />
+
+      {/* Feed tabs */}
+      <div className="w-full max-w-3xl mx-auto flex items-center gap-1 px-4 py-2 shrink-0">
+        <button
+          onClick={() => setFeedTab("foryou")}
+          className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${
+            feedTab === "foryou"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          For You
+        </button>
+        <button
+          onClick={() => {
+            if (!user) {
+              toast.error("Sign in to view bookmarks", {
+                action: { label: "Sign In", onClick: () => window.location.href = "/auth" },
+              });
+              return;
+            }
+            setFeedTab("bookmarks");
+          }}
+          className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all inline-flex items-center justify-center gap-1.5 ${
+            feedTab === "bookmarks"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Bookmark className="w-3.5 h-3.5" />
+          Bookmarks
+          {bookmarkedIds.size > 0 && (
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+              feedTab === "bookmarks" ? "bg-primary-foreground/20" : "bg-muted"
+            }`}>
+              {bookmarkedIds.size}
+            </span>
+          )}
+        </button>
+      </div>
 
       {/* Pull-to-refresh indicator */}
       <motion.div
@@ -387,28 +431,45 @@ const Feed = () => {
         </div>
       </motion.div>
 
-      <div
-        ref={containerRef}
-        className="snap-feed w-full max-w-3xl mx-auto"
-        style={{ height: 'calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px))' }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        {sortedMarkets.map((market, i) => {
-          const boost = boostDetails.get(market.id);
-          return (
-            <MarketCard
-              key={market.id}
-              market={market}
-              isActive={i === activeIndex}
-              isBoosted={boostedMarketIds.has(market.id)}
-              boostEndsAt={boost?.ends_at}
-              boostTier={boost?.tier}
-            />
-          );
-        })}
-      </div>
+      {/* Empty bookmarks state */}
+      {feedTab === "bookmarks" && sortedMarkets.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center px-4">
+          <div className="text-center space-y-3">
+            <Bookmark className="w-12 h-12 text-muted-foreground/30 mx-auto" />
+            <p className="text-sm font-medium text-muted-foreground">No bookmarks yet</p>
+            <p className="text-xs text-muted-foreground/70">Tap the bookmark icon on any market to save it here</p>
+            <button
+              onClick={() => setFeedTab("foryou")}
+              className="mt-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold"
+            >
+              Browse Markets
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div
+          ref={containerRef}
+          className="snap-feed w-full max-w-3xl mx-auto"
+          style={{ height: 'calc(100dvh - 3.5rem - 3rem - env(safe-area-inset-top, 0px))' }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {sortedMarkets.map((market, i) => {
+            const boost = boostDetails.get(market.id);
+            return (
+              <MarketCard
+                key={market.id}
+                market={market}
+                isActive={i === activeIndex}
+                isBoosted={boostedMarketIds.has(market.id)}
+                boostEndsAt={boost?.ends_at}
+                boostTier={boost?.tier}
+              />
+            );
+          })}
+        </div>
+      )}
       <BottomNav />
     </div>
   );
