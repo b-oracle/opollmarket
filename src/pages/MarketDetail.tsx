@@ -401,7 +401,7 @@ const MarketDetail = () => {
   const selectedOptionColor = selectedOptionIdx >= 0 ? optionColors[selectedOptionIdx % optionColors.length] : undefined;
 
   return (
-    <div ref={pageRef} className="h-dvh bg-background overflow-y-auto" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+    <div ref={pageRef} className="h-dvh bg-background overflow-y-auto" style={{ paddingBottom: 'calc(8rem + env(safe-area-inset-bottom))' }}>
       {market && <SEOHead title={market.title} description={market.description} path={`/market/${id}`} image={ogImageUrl} type="article" />}
       <div className="sticky top-0 z-20 glass-strong" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="flex items-center justify-between h-14 px-4 max-w-lg md:max-w-4xl mx-auto">
@@ -688,7 +688,7 @@ const MarketDetail = () => {
       </div>
 
       {!isMulti && (
-        <div className="fixed left-0 right-0 md:left-60 z-50 px-4 pb-4 pt-3 bg-gradient-to-t from-background via-background to-transparent md:bottom-0" style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}>
+        <div className="fixed left-0 right-0 md:left-60 z-[60] px-4 pb-4 pt-3 bg-gradient-to-t from-background via-background to-transparent md:bottom-0" style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}>
           <div className="w-full max-w-lg md:max-w-2xl mx-auto flex gap-3">
             <button onClick={() => { setBetSide("yes"); setBetOpen(true); }} className="flex-1 min-w-0 btn-yes py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy Yes {yesPercent}¢</button>
             <button onClick={() => { setBetSide("no"); setBetOpen(true); }} className="flex-1 min-w-0 btn-no py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy No {noPercent}¢</button>
