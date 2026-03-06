@@ -14,7 +14,10 @@ type EventName =
   | "terms_accepted"
   | "comment_posted"
   | "market_liked"
-  | "market_bookmarked";
+  | "market_bookmarked"
+  | "limit_order_placed"
+  | "limit_order_started"
+  | "limit_order_cancelled";
 
 interface EventProperties {
   [key: string]: string | number | boolean | undefined;
