@@ -281,10 +281,11 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         <div className="absolute inset-0 overflow-hidden">
           {market.imageUrl ? (
             <div className="absolute inset-[-30px_0] will-change-transform" style={{ transform: `translateY(${parallaxY}px)` }}>
-              <img src={market.imageUrl} alt="" className="w-full h-full object-cover opacity-50" />
+              <img src={market.imageUrl} alt="" className="w-full h-full object-cover opacity-40" />
             </div>
           ) : null}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/20" />
+          {/* Strong bottom-heavy gradient for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background from-10% via-background/80 via-40% to-background/30" />
           <div className={`absolute inset-0 ${isBoosted ? 'bg-gradient-to-br from-primary/15 via-primary/5 to-transparent' : ''}`} />
         </div>
 
