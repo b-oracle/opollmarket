@@ -187,12 +187,35 @@ const Create = () => {
   const [autoResolveTargetPrice, setAutoResolveTargetPrice] = useState("");
   const [autoResolveTime, setAutoResolveTime] = useState("00:00");
 
+  // Sports auto-resolve state
+  const [sportType, setSportType] = useState("football");
+  const [sportMatchId, setSportMatchId] = useState("");
+  const [sportPredictedOutcome, setSportPredictedOutcome] = useState("");
+  const [sportLeague, setSportLeague] = useState("");
+
   const CRYPTO_ASSETS = ["BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "DOGE", "MATIC", "AVAX", "DOT", "LINK", "SHIB"];
   const OPERATORS = [
     { value: "at_or_above", label: "Reaches or exceeds" },
     { value: "above", label: "Closes above" },
     { value: "at_or_below", label: "Drops to or below" },
     { value: "below", label: "Closes below" },
+  ];
+  const SPORT_TYPES = [
+    { value: "football", label: "Football (Soccer)" },
+    { value: "basketball", label: "Basketball" },
+    { value: "nfl", label: "American Football" },
+    { value: "baseball", label: "Baseball" },
+    { value: "hockey", label: "Hockey" },
+    { value: "mma", label: "MMA / UFC" },
+    { value: "formula1", label: "Formula 1" },
+    { value: "rugby", label: "Rugby" },
+    { value: "volleyball", label: "Volleyball" },
+    { value: "handball", label: "Handball" },
+  ];
+  const OUTCOME_TYPES = [
+    { value: "home_win", label: "Home Win" },
+    { value: "away_win", label: "Away Win" },
+    { value: "draw", label: "Draw" },
   ];
   // Image upload state
   const fileInputRef = useRef<HTMLInputElement>(null);
