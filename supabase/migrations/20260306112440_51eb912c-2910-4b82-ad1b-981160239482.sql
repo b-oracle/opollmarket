@@ -1,0 +1,1 @@
+ALTER TABLE public.commission_settings ADD COLUMN IF NOT EXISTS min_withdrawal_amount numeric NOT NULL DEFAULT 5;
