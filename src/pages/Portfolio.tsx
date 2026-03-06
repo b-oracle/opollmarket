@@ -22,6 +22,7 @@ import {
   AlertTriangle,
   LogOut,
   Trophy,
+  Ban,
 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
@@ -31,6 +32,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import useAnalytics from "@/hooks/useAnalytics";
+import { useUserLimitOrders, useCancelLimitOrder } from "@/hooks/useLimitOrders";
 
 interface PositionRow {
   id: string;
@@ -70,6 +72,7 @@ interface EnrichedPosition {
 }
 
 type FilterType = "all" | "profit" | "loss";
+type PortfolioTab = "positions" | "orders";
 
 const Sparkline = ({ avgPrice, currentPrice, seed }: { avgPrice: number; currentPrice: number; seed: string }) => {
   const count = 20;
@@ -124,12 +127,15 @@ const Portfolio = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<FilterType>("all");
+  const [activeTab, setActiveTab] = useState<PortfolioTab>("positions");
   const [sellTarget, setSellTarget] = useState<EnrichedPosition | null>(null);
   const [sellStep, setSellStep] = useState<"confirm" | "executing" | "success" | "error">("confirm");
   const [winModal, setWinModal] = useState<{ open: boolean; market: string; side: "YES" | "NO"; payout: number; profit: number }>({
     open: false, market: "", side: "YES", payout: 0, profit: 0,
   });
   const { track } = useAnalytics();
+  const { data: userLimitOrders = [], isLoading: limitOrdersLoading } = useUserLimitOrders();
+  const cancelLimitOrder = useCancelLimitOrder();
 
   useEffect(() => { track("page_view", { page: "portfolio" }); }, []);
 
@@ -384,144 +390,291 @@ const Portfolio = () => {
           </div>
         </motion.div>
 
-        {/* Filter tabs */}
-        <div className="flex gap-1 p-0.5 rounded-lg bg-muted/50 mb-4 w-full sm:w-fit overflow-x-auto scrollbar-hide">
-          {([
-            { key: "all" as FilterType, label: "All" },
-            { key: "profit" as FilterType, label: "In Profit", icon: TrendingUp },
-            { key: "loss" as FilterType, label: "At Loss", icon: TrendingDown },
-          ]).map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
-                filter === f.key
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {f.icon && <f.icon className="w-3 h-3" />}
-              {f.label}
-            </button>
-          ))}
+        {/* Portfolio Tabs: Positions / Open Orders */}
+        <div className="flex gap-1 p-0.5 rounded-lg bg-muted/50 mb-4 w-full">
+          <button
+            onClick={() => setActiveTab("positions")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-xs font-semibold transition-all ${
+              activeTab === "positions"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <BarChart3 className="w-3 h-3" />
+            Positions
+          </button>
+          <button
+            onClick={() => setActiveTab("orders")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-xs font-semibold transition-all ${
+              activeTab === "orders"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Clock className="w-3 h-3" />
+            Open Orders
+            {userLimitOrders.filter(o => o.status === "pending").length > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-500 text-[9px] font-bold">
+                {userLimitOrders.filter(o => o.status === "pending").length}
+              </span>
+            )}
+          </button>
         </div>
 
-        {/* Loading state */}
-        {isLoading && (
-          <div className="space-y-3 animate-pulse">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="glass rounded-xl p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-muted/60 shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-muted/60 rounded-lg w-2/3" />
+        {activeTab === "positions" && (
+          <>
+            {/* Filter tabs */}
+            <div className="flex gap-1 p-0.5 rounded-lg bg-muted/50 mb-4 w-full sm:w-fit overflow-x-auto scrollbar-hide">
+              {([
+                { key: "all" as FilterType, label: "All" },
+                { key: "profit" as FilterType, label: "In Profit", icon: TrendingUp },
+                { key: "loss" as FilterType, label: "At Loss", icon: TrendingDown },
+              ]).map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => setFilter(f.key)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
+                    filter === f.key
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {f.icon && <f.icon className="w-3 h-3" />}
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Loading state */}
+            {isLoading && (
+              <div className="space-y-3 animate-pulse">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="glass rounded-xl p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-muted/60 shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-muted/60 rounded-lg w-2/3" />
+                        <div className="h-3 bg-muted/40 rounded-lg w-1/3" />
+                      </div>
+                    </div>
+                    <div className="flex justify-between">
+                      <div className="h-3 bg-muted/40 rounded w-20" />
+                      <div className="h-3 bg-muted/40 rounded w-16" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Empty state */}
+            {!isLoading && enriched.length === 0 && (
+              <div className="glass rounded-xl p-8 text-center">
+                <BarChart3 className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                <h3 className="text-base font-bold mb-1">No Positions Yet</h3>
+                <p className="text-sm text-muted-foreground mb-4">Start predicting on markets to build your portfolio.</p>
+                <button
+                  onClick={() => navigate("/")}
+                  className="px-5 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
+                >
+                  Browse Markets
+                </button>
+              </div>
+            )}
+
+            {/* Positions list */}
+            {!isLoading && (
+              <div className="space-y-3">
+                {filtered.map((pos, i) => (
+                  <motion.div
+                    key={pos.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    onClick={() => navigate(`/market/${pos.marketId}`)}
+                    className="w-full glass rounded-xl p-4 text-left transition-all active:scale-[0.98] hover:bg-accent/30 cursor-pointer"
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <p className="text-sm font-semibold leading-tight flex-1 line-clamp-2">{pos.marketTitle}</p>
+                      <span
+                        className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
+                          pos.side === "yes"
+                            ? "bg-primary/15 text-primary border border-primary/30"
+                            : "bg-destructive/15 text-destructive border border-destructive/30"
+                        }`}
+                      >
+                        {pos.side}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+                      <div>
+                        <p className="text-[9px] text-muted-foreground uppercase">Shares</p>
+                        <p className="text-xs font-bold">{pos.shares}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-muted-foreground uppercase">Avg Price</p>
+                        <p className="text-xs font-bold">{pos.avgPrice}¢</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-muted-foreground uppercase">Current</p>
+                        <p className={`text-xs font-bold ${pos.currentPrice > pos.avgPrice ? "neon-yes" : pos.currentPrice < pos.avgPrice ? "neon-no" : ""}`}>
+                          {pos.currentPrice}¢
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-muted-foreground uppercase">Expires</p>
+                        <p className="text-xs font-bold flex items-center gap-0.5">
+                          <Clock className="w-2.5 h-2.5" />
+                          {getTimeRemaining(pos.endDate)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <Sparkline avgPrice={pos.avgPrice} currentPrice={pos.currentPrice} seed={pos.id} />
+
+                    <div className="flex items-center justify-between pt-2 border-t border-border">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] text-muted-foreground">P&L:</span>
+                          <span className={`text-xs font-bold flex items-center gap-0.5 ${pos.unrealizedPnl >= 0 ? "neon-yes" : "neon-no"}`}>
+                            {pos.unrealizedPnl >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                            ${Math.abs(pos.unrealizedPnl).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                      {pos.status === "active" && (
+                        <button
+                          onClick={(e) => openSell(pos, e)}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-[10px] font-bold uppercase tracking-wider hover:bg-destructive/20 transition-all active:scale-95"
+                        >
+                          <LogOut className="w-3 h-3" />
+                          Sell
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+
+                {filtered.length === 0 && enriched.length > 0 && (
+                  <div className="glass rounded-xl p-8 text-center">
+                    <BarChart3 className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">No positions match this filter.</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Open Orders Tab */}
+        {activeTab === "orders" && (
+          <div className="space-y-3">
+            {limitOrdersLoading && (
+              <div className="space-y-3 animate-pulse">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="glass rounded-xl p-4">
+                    <div className="h-4 bg-muted/60 rounded-lg w-2/3 mb-2" />
                     <div className="h-3 bg-muted/40 rounded-lg w-1/3" />
                   </div>
-                </div>
-                <div className="flex justify-between">
-                  <div className="h-3 bg-muted/40 rounded w-20" />
-                  <div className="h-3 bg-muted/40 rounded w-16" />
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+            )}
 
-        {/* Empty state */}
-        {!isLoading && enriched.length === 0 && (
-          <div className="glass rounded-xl p-8 text-center">
-            <BarChart3 className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-            <h3 className="text-base font-bold mb-1">No Positions Yet</h3>
-            <p className="text-sm text-muted-foreground mb-4">Start predicting on markets to build your portfolio.</p>
-            <button
-              onClick={() => navigate("/")}
-              className="px-5 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
-            >
-              Browse Markets
-            </button>
-          </div>
-        )}
+            {!limitOrdersLoading && userLimitOrders.length === 0 && (
+              <div className="glass rounded-xl p-8 text-center">
+                <Clock className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                <h3 className="text-base font-bold mb-1">No Limit Orders</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Place a limit order on any market to buy at your target price.
+                </p>
+                <button
+                  onClick={() => navigate("/")}
+                  className="px-5 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
+                >
+                  Browse Markets
+                </button>
+              </div>
+            )}
 
-        {/* Positions list */}
-        {!isLoading && (
-          <div className="space-y-3">
-            {filtered.map((pos, i) => (
-              <motion.div
-                key={pos.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                onClick={() => navigate(`/market/${pos.marketId}`)}
-                className="w-full glass rounded-xl p-4 text-left transition-all active:scale-[0.98] hover:bg-accent/30 cursor-pointer"
-              >
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <p className="text-sm font-semibold leading-tight flex-1 line-clamp-2">{pos.marketTitle}</p>
-                  <span
-                    className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
-                      pos.side === "yes"
-                        ? "bg-primary/15 text-primary border border-primary/30"
-                        : "bg-destructive/15 text-destructive border border-destructive/30"
-                    }`}
-                  >
-                    {pos.side}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
-                  <div>
-                    <p className="text-[9px] text-muted-foreground uppercase">Shares</p>
-                    <p className="text-xs font-bold">{pos.shares}</p>
-                  </div>
-                  <div>
-                    <p className="text-[9px] text-muted-foreground uppercase">Avg Price</p>
-                    <p className="text-xs font-bold">{pos.avgPrice}¢</p>
-                  </div>
-                  <div>
-                    <p className="text-[9px] text-muted-foreground uppercase">Current</p>
-                    <p className={`text-xs font-bold ${pos.currentPrice > pos.avgPrice ? "neon-yes" : pos.currentPrice < pos.avgPrice ? "neon-no" : ""}`}>
-                      {pos.currentPrice}¢
+            {!limitOrdersLoading && userLimitOrders.map((order, i) => {
+              const isPending = order.status === "pending";
+              const isFilled = order.status === "filled";
+              const isCancelled = order.status === "cancelled";
+              return (
+                <motion.div
+                  key={order.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  onClick={() => navigate(`/market/${order.market_id}`)}
+                  className="w-full glass rounded-xl p-4 text-left transition-all active:scale-[0.98] hover:bg-accent/30 cursor-pointer"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <p className="text-sm font-semibold leading-tight flex-1 line-clamp-2">
+                      {order.markets?.title || "Unknown Market"}
                     </p>
-                  </div>
-                  <div>
-                    <p className="text-[9px] text-muted-foreground uppercase">Expires</p>
-                    <p className="text-xs font-bold flex items-center gap-0.5">
-                      <Clock className="w-2.5 h-2.5" />
-                      {getTimeRemaining(pos.endDate)}
-                    </p>
-                  </div>
-                </div>
-
-                <Sparkline avgPrice={pos.avgPrice} currentPrice={pos.currentPrice} seed={pos.id} />
-
-                <div className="flex items-center justify-between pt-2 border-t border-border">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-muted-foreground">P&L:</span>
-                      <span className={`text-xs font-bold flex items-center gap-0.5 ${pos.unrealizedPnl >= 0 ? "neon-yes" : "neon-no"}`}>
-                        {pos.unrealizedPnl >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                        ${Math.abs(pos.unrealizedPnl).toFixed(2)}
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
+                          order.side === "yes"
+                            ? "bg-primary/15 text-primary border border-primary/30"
+                            : "bg-destructive/15 text-destructive border border-destructive/30"
+                        }`}
+                      >
+                        {order.side}
+                      </span>
+                      <span
+                        className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
+                          isPending
+                            ? "bg-amber-500/15 text-amber-500 border border-amber-500/30"
+                            : isFilled
+                            ? "bg-primary/15 text-primary border border-primary/30"
+                            : "bg-muted text-muted-foreground border border-border"
+                        }`}
+                      >
+                        {order.status}
                       </span>
                     </div>
                   </div>
-                  {pos.status === "active" && (
-                    <button
-                      onClick={(e) => openSell(pos, e)}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-[10px] font-bold uppercase tracking-wider hover:bg-destructive/20 transition-all active:scale-95"
-                    >
-                      <LogOut className="w-3 h-3" />
-                      Sell
-                    </button>
-                  )}
-                </div>
-              </motion.div>
-            ))}
 
-            {filtered.length === 0 && enriched.length > 0 && (
-              <div className="glass rounded-xl p-8 text-center">
-                <BarChart3 className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">No positions match this filter.</p>
-              </div>
-            )}
+                  <div className="grid grid-cols-3 gap-2 mb-3">
+                    <div>
+                      <p className="text-[9px] text-muted-foreground uppercase">Limit Price</p>
+                      <p className="text-xs font-bold">{Math.round(Number(order.limit_price) * 100)}¢</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-muted-foreground uppercase">Amount</p>
+                      <p className="text-xs font-bold">${Number(order.amount).toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-muted-foreground uppercase">Shares</p>
+                      <p className="text-xs font-bold">{Number(order.shares).toFixed(2)}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-border">
+                    <span className="text-[10px] text-muted-foreground">
+                      {new Date(order.created_at).toLocaleDateString()}
+                    </span>
+                    {isPending && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (cancelLimitOrder.isPending) return;
+                          cancelLimitOrder.mutate(order.id);
+                          track("limit_order_cancelled", { marketId: order.market_id });
+                        }}
+                        disabled={cancelLimitOrder.isPending}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-[10px] font-bold uppercase tracking-wider hover:bg-destructive/20 transition-all active:scale-95 disabled:opacity-50"
+                      >
+                        <Ban className="w-3 h-3" />
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </div>

@@ -334,7 +334,7 @@ export const usePlaceBet = () => {
 
       return { success: true };
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["balance"] });
       queryClient.invalidateQueries({ queryKey: ["positions"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
@@ -343,6 +343,14 @@ export const usePlaceBet = () => {
       queryClient.invalidateQueries({ queryKey: ["bonus_balance"] });
       queryClient.invalidateQueries({ queryKey: ["price-history"] });
       queryClient.invalidateQueries({ queryKey: ["orderbook-trades"] });
+      queryClient.invalidateQueries({ queryKey: ["limit-orders"] });
+
+      // Trigger limit order matching after price change
+      if (variables.marketId) {
+        supabase.functions.invoke("match-limit-orders", {
+          body: { market_id: variables.marketId },
+        }).catch(() => {});
+      }
     },
   });
 };
