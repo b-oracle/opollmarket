@@ -37,6 +37,7 @@ import {
   Eye,
   EyeOff,
   Zap,
+  Trophy,
 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
@@ -187,12 +188,35 @@ const Create = () => {
   const [autoResolveTargetPrice, setAutoResolveTargetPrice] = useState("");
   const [autoResolveTime, setAutoResolveTime] = useState("00:00");
 
+  // Sports auto-resolve state
+  const [sportType, setSportType] = useState("football");
+  const [sportMatchId, setSportMatchId] = useState("");
+  const [sportPredictedOutcome, setSportPredictedOutcome] = useState("");
+  const [sportLeague, setSportLeague] = useState("");
+
   const CRYPTO_ASSETS = ["BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "DOGE", "MATIC", "AVAX", "DOT", "LINK", "SHIB"];
   const OPERATORS = [
     { value: "at_or_above", label: "Reaches or exceeds" },
     { value: "above", label: "Closes above" },
     { value: "at_or_below", label: "Drops to or below" },
     { value: "below", label: "Closes below" },
+  ];
+  const SPORT_TYPES = [
+    { value: "football", label: "Football (Soccer)" },
+    { value: "basketball", label: "Basketball" },
+    { value: "nfl", label: "American Football" },
+    { value: "baseball", label: "Baseball" },
+    { value: "hockey", label: "Hockey" },
+    { value: "mma", label: "MMA / UFC" },
+    { value: "formula1", label: "Formula 1" },
+    { value: "rugby", label: "Rugby" },
+    { value: "volleyball", label: "Volleyball" },
+    { value: "handball", label: "Handball" },
+  ];
+  const OUTCOME_TYPES = [
+    { value: "home_win", label: "Home Win" },
+    { value: "away_win", label: "Away Win" },
+    { value: "draw", label: "Draw" },
   ];
   // Image upload state
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -447,10 +471,14 @@ const Create = () => {
         market_type: autoResolve ? "binary" : marketType,
         status: marketStatus,
         auto_resolve: autoResolve,
-        auto_resolve_asset: autoResolve ? autoResolveAsset : null,
-        auto_resolve_target_price: autoResolve ? parseFloat(autoResolveTargetPrice) : null,
-        auto_resolve_operator: autoResolve ? autoResolveOperator : null,
+        auto_resolve_asset: autoResolve && category === "Crypto" ? autoResolveAsset : null,
+        auto_resolve_target_price: autoResolve && category === "Crypto" ? parseFloat(autoResolveTargetPrice) : null,
+        auto_resolve_operator: autoResolve && category === "Crypto" ? autoResolveOperator : null,
         auto_resolve_deadline: autoResolveDeadline,
+        sport_type: autoResolve && category === "Sports" ? sportType : null,
+        sport_match_id: autoResolve && category === "Sports" ? sportMatchId : null,
+        sport_predicted_outcome: autoResolve && category === "Sports" ? sportPredictedOutcome : null,
+        sport_league: autoResolve && category === "Sports" ? sportLeague || null : null,
       } as any)
       .select("id")
       .maybeSingle();
@@ -1316,6 +1344,146 @@ const Create = () => {
                         <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
                           <p className="text-xs font-medium text-primary">
                             ⚡ Resolves YES if {autoResolveAsset}/USD {OPERATORS.find(o => o.value === autoResolveOperator)?.label.toLowerCase()} ${Number(autoResolveTargetPrice).toLocaleString()} by {endDate} {autoResolveTime} UTC
+                          </p>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </div>
+              )}
+
+              {/* Auto-Resolve Toggle (Sports only) */}
+              {category === "Sports" && (
+                <div className="glass rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-semibold">
+                        <Trophy className="w-4 h-4 text-primary" />
+                        Auto-Resolve by Match Result
+                      </label>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        Automatically resolves when the match finishes
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const next = !autoResolve;
+                        setAutoResolve(next);
+                        if (next) {
+                          setMarketType("binary");
+                          setResolutionSource(`Auto-resolved via live ${sportType} match result`);
+                        }
+                      }}
+                      className={`w-11 h-6 rounded-full transition-colors relative ${autoResolve ? "bg-primary" : "bg-muted"}`}
+                    >
+                      <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${autoResolve ? "translate-x-[22px]" : "translate-x-0.5"}`} />
+                    </button>
+                  </div>
+
+                  {autoResolve && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="space-y-3 pt-2 border-t border-border/50"
+                    >
+                      {/* Sport Type */}
+                      <div>
+                        <label className="text-xs font-semibold mb-1.5 block">Sport</label>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {SPORT_TYPES.map((s) => (
+                            <button
+                              key={s.value}
+                              onClick={() => {
+                                setSportType(s.value);
+                                setResolutionSource(`Auto-resolved via live ${s.label} match result`);
+                              }}
+                              className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                sportType === s.value
+                                  ? "bg-primary/15 border border-primary/40 text-primary"
+                                  : "bg-muted/50 border border-border text-muted-foreground hover:text-foreground"
+                              }`}
+                            >
+                              {s.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* League */}
+                      <div>
+                        <label className="text-xs font-semibold mb-1.5 block">League / Competition (optional)</label>
+                        <input
+                          type="text"
+                          value={sportLeague}
+                          onChange={(e) => setSportLeague(e.target.value)}
+                          placeholder="e.g. Premier League, NBA, UFC 300"
+                          className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                      </div>
+
+                      {/* Match ID */}
+                      <div>
+                        <label className="text-xs font-semibold mb-1.5 block">Match / Fixture ID</label>
+                        <input
+                          type="text"
+                          value={sportMatchId}
+                          onChange={(e) => setSportMatchId(e.target.value)}
+                          placeholder="API-Football fixture ID (e.g. 1035024)"
+                          className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          Find match IDs at <a href="https://dashboard.api-football.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">api-football.com</a>
+                        </p>
+                      </div>
+
+                      {/* Predicted Outcome */}
+                      <div>
+                        <label className="text-xs font-semibold mb-1.5 block">Predicted Outcome</label>
+                        <div className="grid grid-cols-3 gap-1.5 mb-2">
+                          {OUTCOME_TYPES.map((o) => (
+                            <button
+                              key={o.value}
+                              onClick={() => setSportPredictedOutcome(o.value)}
+                              className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                sportPredictedOutcome === o.value
+                                  ? "bg-primary/15 border border-primary/40 text-primary"
+                                  : "bg-muted/50 border border-border text-muted-foreground hover:text-foreground"
+                              }`}
+                            >
+                              {o.label}
+                            </button>
+                          ))}
+                        </div>
+                        <input
+                          type="text"
+                          value={sportPredictedOutcome}
+                          onChange={(e) => setSportPredictedOutcome(e.target.value)}
+                          placeholder="Or type custom: e.g. over 2.5, btts, team name"
+                          className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                      </div>
+
+                      {/* Resolution Time */}
+                      <div>
+                        <label className="text-xs font-semibold mb-1.5 block">Resolution Deadline Time (UTC)</label>
+                        <input
+                          type="time"
+                          value={autoResolveTime}
+                          onChange={(e) => setAutoResolveTime(e.target.value)}
+                          className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          Set after the match is expected to end. If the match hasn't finished by this time, resolves NO.
+                        </p>
+                      </div>
+
+                      {/* Preview */}
+                      {sportMatchId && sportPredictedOutcome && endDate && (
+                        <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
+                          <p className="text-xs font-medium text-primary">
+                            🏆 Resolves YES if "{sportPredictedOutcome.replace(/_/g, " ")}" occurs in {SPORT_TYPES.find(s => s.value === sportType)?.label} match #{sportMatchId}
+                            {sportLeague ? ` (${sportLeague})` : ""} by {endDate} {autoResolveTime} UTC
                           </p>
                         </div>
                       )}

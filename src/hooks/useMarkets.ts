@@ -28,6 +28,10 @@ interface DbMarket {
   auto_resolve_target_price: number | null;
   auto_resolve_operator: string | null;
   auto_resolve_deadline: string | null;
+  sport_type: string | null;
+  sport_match_id: string | null;
+  sport_predicted_outcome: string | null;
+  sport_league: string | null;
   market_options: { id: string; label: string; price: number; sort_order: number }[];
 }
 
@@ -55,6 +59,10 @@ const mapDbToMarket = (db: DbMarket): Market => ({
   autoResolveTargetPrice: db.auto_resolve_target_price ? Number(db.auto_resolve_target_price) : undefined,
   autoResolveOperator: db.auto_resolve_operator || undefined,
   autoResolveDeadline: db.auto_resolve_deadline || undefined,
+  sportType: db.sport_type || undefined,
+  sportMatchId: db.sport_match_id || undefined,
+  sportPredictedOutcome: db.sport_predicted_outcome || undefined,
+  sportLeague: db.sport_league || undefined,
   options: db.market_options?.length
     ? db.market_options
         .sort((a, b) => a.sort_order - b.sort_order)

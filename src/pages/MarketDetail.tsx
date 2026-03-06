@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import CryptoPriceTicker from "@/components/CryptoPriceTicker";
+import SportsMatchTicker from "@/components/SportsMatchTicker";
 import { useAuth } from "@/hooks/useAuth";
 import { useBookmark } from "@/hooks/useBookmark";
 import { toast } from "sonner";
@@ -573,6 +574,17 @@ const MarketDetail = () => {
             asset={market.autoResolveAsset}
             targetPrice={market.autoResolveTargetPrice}
             operator={market.autoResolveOperator}
+            deadline={market.autoResolveDeadline}
+          />
+        )}
+
+        {/* Live Sports Match Ticker */}
+        {market.autoResolve && market.sportType && market.sportMatchId && market.sportPredictedOutcome && (
+          <SportsMatchTicker
+            sportType={market.sportType}
+            matchId={market.sportMatchId}
+            predictedOutcome={market.sportPredictedOutcome}
+            league={market.sportLeague}
             deadline={market.autoResolveDeadline}
           />
         )}
