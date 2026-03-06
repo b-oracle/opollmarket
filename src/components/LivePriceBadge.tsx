@@ -71,6 +71,30 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
       if (p != null && !cancelled) {
         setPrev(price);
         setPrice(p);
+
+        // Fire a one-time toast when crossing the 95% threshold
+        if (!toastFiredRef.current && targetPrice != null && targetPrice > 0 && operator) {
+          const prog = (operator === "above" || operator === "at_or_above")
+            ? Math.min(Math.round((p / targetPrice) * 100), 100)
+            : (operator === "below" || operator === "at_or_below")
+              ? Math.min(Math.round((targetPrice / p) * 100), 100)
+              : null;
+
+          const met = operator === "above" ? p > targetPrice
+            : operator === "below" ? p < targetPrice
+            : operator === "at_or_above" ? p >= targetPrice
+            : operator === "at_or_below" ? p <= targetPrice
+            : false;
+
+          if (prog != null && prog >= 95 && !met) {
+            toastFiredRef.current = true;
+            const isForex = getAssetClass(asset) === "forex";
+            toast.warning(`🔥 ${asset} is ${prog}% toward its target!`, {
+              description: `Target: ${isForex ? targetPrice.toFixed(4) : `$${targetPrice.toLocaleString()}`}`,
+              duration: 8000,
+            });
+          }
+        }
       }
     };
     load();
