@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import ThemeToggle from "@/components/ThemeToggle";
 import NotificationBell from "@/components/NotificationBell";
 import SignOutConfirmDialog from "@/components/SignOutConfirmDialog";
+import { useSidebarState } from "@/hooks/useSidebarState";
 import logo from "@/assets/logo.png";
 import { User, LogOut, Shield, ArrowLeft } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
@@ -16,6 +17,7 @@ const TopBar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [signOutOpen, setSignOutOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+  const { collapsed } = useSidebarState();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -31,7 +33,7 @@ const TopBar = () => {
     <>
     <header
       ref={headerRef}
-      className={`fixed top-0 left-0 right-0 z-50 border-0 md:left-60 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-50 border-0 transition-all duration-300 ${collapsed ? "md:left-[4.5rem]" : "md:left-60"} ${
         scrolled
           ? "shadow-[0_2px_12px_-3px_hsl(var(--foreground)/0.12)]"
           : "shadow-[0_1px_8px_-2px_hsl(var(--foreground)/0.08)]"

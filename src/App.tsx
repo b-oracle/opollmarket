@@ -15,6 +15,7 @@ import DesktopFooter from "./components/DesktopFooter";
 import PWAUpdatePrompt from "./components/PWAUpdatePrompt";
 import LogoLoader from "./components/LogoLoader";
 import { AuthProvider } from "./hooks/useAuth";
+import { SidebarStateProvider, useSidebarState } from "./hooks/useSidebarState";
 
 // Lazy-loaded pages
 const Index = lazy(() => import("./pages/Index"));
@@ -69,7 +70,9 @@ const ConditionalSidebar = () => {
 const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const isAdmin = isAdminRoute(location.pathname);
-  return <div className={isAdmin ? "min-h-screen flex flex-col" : "md:ml-60 min-h-screen flex flex-col"}>{children}</div>;
+  const { collapsed } = useSidebarState();
+  const ml = isAdmin ? "" : collapsed ? "md:ml-[4.5rem]" : "md:ml-60";
+  return <div className={`${ml} min-h-screen flex flex-col transition-all duration-300`}>{children}</div>;
 };
 
 const PageFallback = () => (
@@ -84,57 +87,59 @@ const App = () => (
       <WagmiProvider config={config}>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <PWAUpdatePrompt />
-              <BrowserRouter>
-              <ConditionalSidebar />
-              <ConditionalLayout>
-                <div className="flex-1">
-                  <Suspense fallback={<PageFallback />}>
-                    <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/feed" element={<Feed />} />
-                      <Route path="/market/:id" element={<MarketDetail />} />
-                      <Route path="/create" element={<Create />} />
-                      <Route path="/rankings" element={<Rankings />} />
-                      <Route path="/portfolio" element={<Portfolio />} />
-                      <Route path="/profile" element={<Profile />} />
-                      <Route path="/auth" element={<Auth />} />
-                      <Route path="/reset-password" element={<ResetPassword />} />
-                      <Route path="/forgot-password" element={<ForgotPassword />} />
-                      <Route path="/referrals" element={<Referrals />} />
-                      <Route path="/faq" element={<FAQ />} />
-                      <Route path="/disclaimer" element={<Disclaimer />} />
-                      <Route path="/terms" element={<Terms />} />
-                      <Route path="/privacy" element={<Privacy />} />
-                      <Route path="/maintenance" element={<Maintenance />} />
-                      <Route path="/admin" element={<AdminLayout />}>
-                        <Route index element={<AdminDashboard />} />
-                        <Route path="markets" element={<AdminMarkets />} />
-                        <Route path="create-market" element={<AdminCreateMarket />} />
-                        <Route path="comments" element={<AdminComments />} />
-                        <Route path="transactions" element={<AdminTransactions />} />
-                        <Route path="withdrawals" element={<AdminWithdrawals />} />
-                        <Route path="boosts" element={<AdminBoosts />} />
-                        <Route path="users" element={<AdminUsers />} />
-                        <Route path="commissions" element={<AdminCommissions />} />
-                        <Route path="settings" element={<AdminSettings />} />
-                        <Route path="analytics" element={<AdminAnalytics />} />
-                        <Route path="contracts" element={<AdminContracts />} />
-                        <Route path="moderation" element={<AdminModeration />} />
-                        <Route path="checklist" element={<AdminChecklist />} />
-                      </Route>
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </Suspense>
-                </div>
-                
-                <ConditionalFooter />
-              </ConditionalLayout>
-              </BrowserRouter>
-            </TooltipProvider>
+            <SidebarStateProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <PWAUpdatePrompt />
+                <BrowserRouter>
+                <ConditionalSidebar />
+                <ConditionalLayout>
+                  <div className="flex-1">
+                    <Suspense fallback={<PageFallback />}>
+                      <Routes>
+                        <Route path="/" element={<Index />} />
+                        <Route path="/feed" element={<Feed />} />
+                        <Route path="/market/:id" element={<MarketDetail />} />
+                        <Route path="/create" element={<Create />} />
+                        <Route path="/rankings" element={<Rankings />} />
+                        <Route path="/portfolio" element={<Portfolio />} />
+                        <Route path="/profile" element={<Profile />} />
+                        <Route path="/auth" element={<Auth />} />
+                        <Route path="/reset-password" element={<ResetPassword />} />
+                        <Route path="/forgot-password" element={<ForgotPassword />} />
+                        <Route path="/referrals" element={<Referrals />} />
+                        <Route path="/faq" element={<FAQ />} />
+                        <Route path="/disclaimer" element={<Disclaimer />} />
+                        <Route path="/terms" element={<Terms />} />
+                        <Route path="/privacy" element={<Privacy />} />
+                        <Route path="/maintenance" element={<Maintenance />} />
+                        <Route path="/admin" element={<AdminLayout />}>
+                          <Route index element={<AdminDashboard />} />
+                          <Route path="markets" element={<AdminMarkets />} />
+                          <Route path="create-market" element={<AdminCreateMarket />} />
+                          <Route path="comments" element={<AdminComments />} />
+                          <Route path="transactions" element={<AdminTransactions />} />
+                          <Route path="withdrawals" element={<AdminWithdrawals />} />
+                          <Route path="boosts" element={<AdminBoosts />} />
+                          <Route path="users" element={<AdminUsers />} />
+                          <Route path="commissions" element={<AdminCommissions />} />
+                          <Route path="settings" element={<AdminSettings />} />
+                          <Route path="analytics" element={<AdminAnalytics />} />
+                          <Route path="contracts" element={<AdminContracts />} />
+                          <Route path="moderation" element={<AdminModeration />} />
+                          <Route path="checklist" element={<AdminChecklist />} />
+                        </Route>
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </Suspense>
+                  </div>
+                  
+                  <ConditionalFooter />
+                </ConditionalLayout>
+                </BrowserRouter>
+              </TooltipProvider>
+            </SidebarStateProvider>
           </AuthProvider>
         </QueryClientProvider>
       </WagmiProvider>
