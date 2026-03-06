@@ -103,8 +103,8 @@ const DesktopFooter = () => {
             </h4>
             <ul className="space-y-2">
               {[
-                { label: "Predict via Telegram", href: "https://t.me/opoll_predict_bot", external: true },
-                { label: "Predict via WhatsApp", href: "#", comingSoon: true },
+                { label: "via Telegram", href: "https://t.me/opoll_predict_bot", external: true },
+                { label: "via WhatsApp", href: "#", comingSoon: true },
                 { label: "Create Market", href: "/create" },
                 { label: "Leaderboard", href: "/rankings" },
                 { label: "Referral Program", href: "/referrals" },
