@@ -108,6 +108,10 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
         : null
     : null;
 
+  const proximityTier = progress != null
+    ? progress >= 100 ? "met" : progress >= 95 ? "imminent" : progress >= 90 ? "close" : null
+    : null;
+
   return (
     <div
       className={`inline-flex flex-col rounded-lg text-[10px] font-bold tabular-nums backdrop-blur-sm transition-all duration-500 overflow-hidden ${
@@ -117,11 +121,33 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
             ? "bg-destructive/25 border border-destructive/40 shadow-[0_0_8px_hsl(var(--destructive)/0.3)]"
             : conditionMet
               ? "bg-green-500/15 border border-green-500/30 text-green-600 dark:text-green-400"
-              : "bg-primary/10 border border-primary/20 text-primary"
+              : proximityTier === "imminent"
+                ? "bg-amber-500/20 border border-amber-500/40 text-amber-600 dark:text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.25)]"
+                : proximityTier === "close"
+                  ? "bg-yellow-500/15 border border-yellow-500/30 text-yellow-600 dark:text-yellow-400"
+                  : "bg-primary/10 border border-primary/20 text-primary"
       }`}
     >
+      {/* Proximity alert banner */}
+      {proximityTier === "imminent" && !conditionMet && (
+        <div className="flex items-center justify-center gap-1 px-2 py-0.5 bg-amber-500/25 text-amber-600 dark:text-amber-300 text-[9px] font-bold animate-pulse">
+          🔥 Almost there! {progress}% to target
+        </div>
+      )}
+      {proximityTier === "close" && !conditionMet && (
+        <div className="flex items-center justify-center gap-1 px-2 py-0.5 bg-yellow-500/20 text-yellow-600 dark:text-yellow-300 text-[9px] font-semibold">
+          ⚡ Approaching target — {progress}%
+        </div>
+      )}
+      {conditionMet && (
+        <div className="flex items-center justify-center gap-1 px-2 py-0.5 bg-green-500/25 text-green-600 dark:text-green-300 text-[9px] font-bold">
+          ✅ Condition met!
+        </div>
+      )}
       <div className="flex items-center gap-1 px-2 py-1">
-        <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse shrink-0" />
+        <span className={`w-1.5 h-1.5 rounded-full shrink-0 animate-pulse ${
+          proximityTier === "imminent" ? "bg-amber-500" : proximityTier === "close" ? "bg-yellow-500" : "bg-destructive"
+        }`} />
         <span>{asset}</span>
         <span className={dir === "up" ? "text-green-500" : dir === "down" ? "text-destructive" : ""}>
           {formatted}
@@ -137,7 +163,11 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
           <span className={`ml-0.5 px-1 py-px rounded text-[9px] font-bold ${
             conditionMet
               ? "bg-green-500/20 text-green-600 dark:text-green-400"
-              : "bg-primary/15 text-primary"
+              : proximityTier === "imminent"
+                ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                : proximityTier === "close"
+                  ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
+                  : "bg-primary/15 text-primary"
           }`}>
             {progress}%
           </span>
@@ -147,7 +177,10 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
         <div className="h-[3px] w-full bg-muted/30">
           <div
             className={`h-full rounded-r-full transition-all duration-700 ease-out ${
-              conditionMet ? "bg-green-500" : "bg-primary"
+              conditionMet ? "bg-green-500"
+                : proximityTier === "imminent" ? "bg-amber-500"
+                : proximityTier === "close" ? "bg-yellow-500"
+                : "bg-primary"
             }`}
             style={{ width: `${progress}%` }}
           />
