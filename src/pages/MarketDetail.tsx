@@ -399,10 +399,9 @@ const MarketDetail = () => {
   useEffect(() => {
     const el = commentsEndRef.current;
     if (!el) return;
-    const root = pageRef.current;
     const observer = new IntersectionObserver(
       ([entry]) => setCommentsReached(entry.isIntersecting),
-      { root: root, threshold: 0, rootMargin: "0px 0px 80px 0px" }
+      { root: null, threshold: 0, rootMargin: "0px 0px 80px 0px" }
     );
     observer.observe(el);
     return () => observer.disconnect();
@@ -416,7 +415,7 @@ const MarketDetail = () => {
   const selectedOptionColor = selectedOptionIdx >= 0 ? optionColors[selectedOptionIdx % optionColors.length] : undefined;
 
   return (
-    <div ref={pageRef} className="h-dvh bg-background overflow-y-auto" style={{ paddingBottom: 'calc(8rem + env(safe-area-inset-bottom))' }}>
+    <div ref={pageRef} className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(8rem + env(safe-area-inset-bottom))' }}>
       {market && <SEOHead title={market.title} description={market.description} path={`/market/${id}`} image={ogImageUrl} type="article" />}
       <div className="sticky top-0 z-20 glass-strong" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="flex items-center justify-between h-14 px-4 max-w-lg md:max-w-4xl mx-auto">
