@@ -703,6 +703,22 @@ export default function QuickTrade() {
                 );
               })()}
             </div>
+
+            {/* Share button */}
+            <div className="flex justify-end mt-3">
+              <button
+                onClick={() => setShowShareModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg glass text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                Share Chart
+              </button>
+            </div>
+
+            {/* Watermark */}
+            <div className="absolute bottom-3 right-4 z-20 opacity-40 pointer-events-none">
+              <img src={watermarkLogo} alt="" className="h-7 w-auto" />
+            </div>
           </div>
 
           {/* Pool info */}
