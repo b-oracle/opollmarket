@@ -769,7 +769,7 @@ const Portfolio = () => {
                 <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 mb-5">
                   <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
                   <p className="text-[10px] text-muted-foreground">
-                    A {exitFeePercent}% exit fee is charged on early sells. This fee is returned to the market pool for remaining participants. Hold until resolution to avoid this fee.
+                    A {exitFeePercent}% exit fee is charged on early sells. This fee is returned to the market pool for remaining participants. Hold until resolution to avoid this fee. Referral bonus balance will be used first to cover fees.
                   </p>
                 </div>
 
