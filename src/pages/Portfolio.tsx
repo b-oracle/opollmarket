@@ -234,7 +234,6 @@ const Portfolio = () => {
     try {
       const grossProceeds = sellTarget.currentValue;
       const exitFee = grossProceeds * (exitFeePercent / 100);
-      const proceeds = grossProceeds - exitFee;
 
       // 1. Set shares to 0 on the position
       const { error: posError } = await supabase
@@ -245,17 +244,28 @@ const Portfolio = () => {
 
       if (posError) throw posError;
 
-      // 2. Credit balance (net of exit fee)
+      // 2. Credit balance (net of exit fee), using bonus_balance for fee first
       const { data: balanceRow } = await supabase
         .from("balances")
-        .select("amount")
+        .select("amount, bonus_balance")
         .eq("user_id", user.id)
         .single();
 
-      const currentBalance = balanceRow?.amount || 0;
+      const currentBalance = Number(balanceRow?.amount || 0);
+      const currentBonus = Number(balanceRow?.bonus_balance || 0);
+
+      // Use referral bonus to cover exit fee first
+      const bonusForFee = Math.min(currentBonus, exitFee);
+      const feeFromProceeds = exitFee - bonusForFee;
+      const netProceeds = grossProceeds - feeFromProceeds;
+
       const { error: balError } = await supabase
         .from("balances")
-        .update({ amount: currentBalance + proceeds, updated_at: new Date().toISOString() })
+        .update({
+          amount: currentBalance + netProceeds,
+          bonus_balance: currentBonus - bonusForFee,
+          updated_at: new Date().toISOString(),
+        })
         .eq("user_id", user.id);
 
       if (balError) throw balError;
@@ -282,7 +292,7 @@ const Portfolio = () => {
         market_id: sellTarget.marketId,
         type: "sell",
         side: sellTarget.side,
-        amount: proceeds,
+        amount: netProceeds,
         price: sellTarget.currentPrice / 100,
         shares: sellTarget.shares,
         status: "confirmed",
@@ -759,7 +769,7 @@ const Portfolio = () => {
                 <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 mb-5">
                   <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
                   <p className="text-[10px] text-muted-foreground">
-                    A {exitFeePercent}% exit fee is charged on early sells. This fee is returned to the market pool for remaining participants. Hold until resolution to avoid this fee.
+                    A {exitFeePercent}% exit fee is charged on early sells. This fee is returned to the market pool for remaining participants. Hold until resolution to avoid this fee. Referral bonus balance will be used first to cover fees.
                   </p>
                 </div>
 
