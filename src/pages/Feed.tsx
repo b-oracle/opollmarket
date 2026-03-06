@@ -12,6 +12,19 @@ import useAnalytics from "@/hooks/useAnalytics";
 import CategoryIcon from "@/components/CategoryIcon";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useState as useStateHook, useEffect as useEffectHook } from "react";
+
+const useIsDesktop = () => {
+  const [isDesktop, setIsDesktop] = useStateHook(false);
+  useEffectHook(() => {
+    const mql = window.matchMedia("(min-width: 1024px)");
+    const onChange = () => setIsDesktop(mql.matches);
+    mql.addEventListener("change", onChange);
+    setIsDesktop(mql.matches);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+  return isDesktop;
+};
 import { useCommentCount } from "@/hooks/useCommentCount";
 import { useLikeCount } from "@/hooks/useLikeCount";
 import BoostCountdown from "@/components/BoostCountdown";
@@ -222,7 +235,7 @@ const Feed = () => {
   const { data: markets = [], isLoading, refetch } = useMarkets();
   const { boostedMarketIds, boostDetails } = useActiveBoosts();
   const { track } = useAnalytics();
-  const isMobile = useIsMobile();
+  const isDesktop = useIsDesktop();
 
   useEffect(() => { track("page_view", { page: "feed" }); }, []);
 
@@ -245,7 +258,7 @@ const Feed = () => {
   const endToastShown = useRef(false);
 
   useEffect(() => {
-    if (!isMobile) return;
+    if (isDesktop) return;
     const container = containerRef.current;
     if (!container) return;
     const handleScroll = () => {
@@ -269,7 +282,7 @@ const Feed = () => {
     };
     container.addEventListener("scroll", handleScroll, { passive: true });
     return () => container.removeEventListener("scroll", handleScroll);
-  }, [sortedMarkets.length, isMobile]);
+  }, [sortedMarkets.length, isDesktop]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const container = containerRef.current;
@@ -342,8 +355,8 @@ const Feed = () => {
 
   const pullProgress = Math.min(pullDistance / PULL_THRESHOLD, 1);
 
-  /* ── Desktop / Tablet Layout ── */
-  if (!isMobile) {
+  /* ── Desktop Layout (≥1024px) ── */
+  if (isDesktop) {
     return (
       <div className="min-h-dvh bg-background">
         <SEOHead title="Feed" description="Browse prediction markets. Vote YES or NO on real-world events." path="/feed" />
@@ -413,7 +426,7 @@ const Feed = () => {
 
       <div
         ref={containerRef}
-        className="snap-feed"
+        className="snap-feed md:max-w-2xl md:mx-auto"
         style={{ height: 'calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px))' }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
