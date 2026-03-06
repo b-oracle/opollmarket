@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { Bell, X, Check, TrendingUp, RefreshCw, DollarSign, Info } from "lucide-react";
+import { Bell, X, Check, TrendingUp, RefreshCw, DollarSign, Info, BellRing } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { toast } from "sonner";
 
 interface Notification {
   id: string;
@@ -34,6 +36,7 @@ const formatTimeAgo = (date: string) => {
 const NotificationBell = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { isSupported: pushSupported, isSubscribed: pushSubscribed, loading: pushLoading, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotifications();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
@@ -135,6 +138,36 @@ const NotificationBell = () => {
                   </button>
                 </div>
               </div>
+
+              {/* Push notification toggle */}
+              {pushSupported && (
+                <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
+                  <div className="flex items-center gap-1.5">
+                    <BellRing className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-[11px] text-muted-foreground">Push alerts</span>
+                  </div>
+                  <button
+                    disabled={pushLoading}
+                    onClick={async () => {
+                      if (pushSubscribed) {
+                        await pushUnsubscribe();
+                        toast.info("Push notifications disabled");
+                      } else {
+                        const ok = await pushSubscribe();
+                        if (ok) toast.success("Push notifications enabled!");
+                        else toast.error("Permission denied or failed");
+                      }
+                    }}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition-colors ${
+                      pushSubscribed
+                        ? "bg-primary/20 text-primary"
+                        : "bg-muted text-muted-foreground hover:bg-accent"
+                    }`}
+                  >
+                    {pushLoading ? "..." : pushSubscribed ? "On" : "Off"}
+                  </button>
+                </div>
+              )}
 
               {notifications.length === 0 ? (
                 <div className="p-6 text-center text-sm text-muted-foreground">No notifications yet</div>

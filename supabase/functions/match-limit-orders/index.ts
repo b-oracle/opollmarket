@@ -104,14 +104,37 @@ Deno.serve(async (req) => {
         .update({ status: "filled", updated_at: new Date().toISOString() })
         .eq("id", order.id);
 
-      // 5. Notify user
+      // 5. Notify user (in-app)
+      const notifTitle = "Limit Order Filled! ✅";
+      const notifMessage = `Your ${order.side.toUpperCase()} limit order at ${Math.round(order.limit_price * 100)}¢ for $${Number(order.amount).toFixed(2)} has been filled.`;
+      
       await supabase.from("notifications").insert({
         user_id: order.user_id,
-        title: "Limit Order Filled! ✅",
-        message: `Your ${order.side.toUpperCase()} limit order at ${Math.round(order.limit_price * 100)}¢ for $${Number(order.amount).toFixed(2)} has been filled.`,
+        title: notifTitle,
+        message: notifMessage,
         type: "info",
         market_id: order.market_id,
       });
+
+      // 6. Send browser push notification
+      try {
+        const pushUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-push`;
+        await fetch(pushUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+          body: JSON.stringify({
+            user_id: order.user_id,
+            title: notifTitle,
+            body: notifMessage,
+            url: `/market/${order.market_id}`,
+          }),
+        });
+      } catch (_pushErr) {
+        // Push is best-effort, don't fail the fill
+      }
 
       filledCount++;
     }
