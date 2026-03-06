@@ -295,6 +295,41 @@ const useQuickTradeLeaderboard = (period: TimePeriod) => {
   return { quickTraders, loading };
 };
 
+// ── Streak Leaderboard ────────────────────────────────────────────────
+interface StreakUser {
+  userId: string;
+  name: string;
+  avatar: string | null;
+  currentStreak: number;
+  bestStreak: number;
+}
+
+const useStreakLeaderboard = () => {
+  const [streakUsers, setStreakUsers] = useState<StreakUser[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    (async () => {
+      const { data } = await supabase.rpc("get_streak_leaderboard", { _limit: 20 } as any);
+      if (data) {
+        setStreakUsers(
+          (data as any[]).map((d) => ({
+            userId: d.user_id,
+            name: d.display_name || "Anonymous",
+            avatar: d.avatar_url,
+            currentStreak: Number(d.current_streak),
+            bestStreak: Number(d.best_streak),
+          }))
+        );
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  return { streakUsers, loading };
+};
+
 // ── Podium Component ──────────────────────────────────────────────────
 const Podium = <T extends { userId: string; name: string; avatar: string | null }>({
   items,
