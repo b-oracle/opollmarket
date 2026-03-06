@@ -382,7 +382,7 @@ const Feed = () => {
         <button
           onClick={() => {
             if (!user) {
-              toast.error("Sign in to view bookmarks", {
+              toast.error("Sign in to view your watchlist", {
                 action: { label: "Sign In", onClick: () => window.location.href = "/auth" },
               });
               return;
@@ -396,7 +396,7 @@ const Feed = () => {
           }`}
         >
           <Bookmark className="w-3.5 h-3.5" />
-          Bookmarks
+          Watchlist
           {bookmarkedIds.size > 0 && (
             <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
               feedTab === "bookmarks" ? "bg-primary-foreground/20" : "bg-muted"
@@ -436,8 +436,8 @@ const Feed = () => {
         <div className="flex-1 flex items-center justify-center px-4">
           <div className="text-center space-y-3">
             <Bookmark className="w-12 h-12 text-muted-foreground/30 mx-auto" />
-            <p className="text-sm font-medium text-muted-foreground">No bookmarks yet</p>
-            <p className="text-xs text-muted-foreground/70">Tap the bookmark icon on any market to save it here</p>
+            <p className="text-sm font-medium text-muted-foreground">Your watchlist is empty</p>
+            <p className="text-xs text-muted-foreground/70">Tap the bookmark icon on any market to add it to your watchlist</p>
             <button
               onClick={() => setFeedTab("foryou")}
               className="mt-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold"
