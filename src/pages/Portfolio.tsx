@@ -23,6 +23,7 @@ import {
   LogOut,
   Trophy,
   Ban,
+  Gift,
 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
