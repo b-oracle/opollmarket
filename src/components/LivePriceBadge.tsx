@@ -110,7 +110,7 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
 
   return (
     <div
-      className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold tabular-nums backdrop-blur-sm transition-all duration-500 ${
+      className={`inline-flex flex-col rounded-lg text-[10px] font-bold tabular-nums backdrop-blur-sm transition-all duration-500 overflow-hidden ${
         flash === "up"
           ? "bg-green-500/25 border border-green-500/40 shadow-[0_0_8px_rgba(34,197,94,0.3)]"
           : flash === "down"
@@ -120,26 +120,38 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
               : "bg-primary/10 border border-primary/20 text-primary"
       }`}
     >
-      <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse shrink-0" />
-      <span>{asset}</span>
-      <span className={dir === "up" ? "text-green-500" : dir === "down" ? "text-destructive" : ""}>
-        {formatted}
-      </span>
-      {dir === "up" && <TrendingUp className="w-2.5 h-2.5" />}
-      {dir === "down" && <TrendingDown className="w-2.5 h-2.5" />}
-      {targetPrice != null && operator && (
-        <span className="text-muted-foreground ml-0.5">
-          {OP_LABELS[operator] || "="} {isForex ? targetPrice.toFixed(4) : `$${targetPrice.toLocaleString()}`}
+      <div className="flex items-center gap-1 px-2 py-1">
+        <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse shrink-0" />
+        <span>{asset}</span>
+        <span className={dir === "up" ? "text-green-500" : dir === "down" ? "text-destructive" : ""}>
+          {formatted}
         </span>
-      )}
+        {dir === "up" && <TrendingUp className="w-2.5 h-2.5" />}
+        {dir === "down" && <TrendingDown className="w-2.5 h-2.5" />}
+        {targetPrice != null && operator && (
+          <span className="text-muted-foreground ml-0.5">
+            {OP_LABELS[operator] || "="} {isForex ? targetPrice.toFixed(4) : `$${targetPrice.toLocaleString()}`}
+          </span>
+        )}
+        {progress != null && (
+          <span className={`ml-0.5 px-1 py-px rounded text-[9px] font-bold ${
+            conditionMet
+              ? "bg-green-500/20 text-green-600 dark:text-green-400"
+              : "bg-primary/15 text-primary"
+          }`}>
+            {progress}%
+          </span>
+        )}
+      </div>
       {progress != null && (
-        <span className={`ml-0.5 px-1 py-px rounded text-[9px] font-bold ${
-          conditionMet
-            ? "bg-green-500/20 text-green-600 dark:text-green-400"
-            : "bg-primary/15 text-primary"
-        }`}>
-          {progress}%
-        </span>
+        <div className="h-[3px] w-full bg-muted/30">
+          <div
+            className={`h-full rounded-r-full transition-all duration-700 ease-out ${
+              conditionMet ? "bg-green-500" : "bg-primary"
+            }`}
+            style={{ width: `${progress}%` }}
+          />
+        </div>
       )}
     </div>
   );
