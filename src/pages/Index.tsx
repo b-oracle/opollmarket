@@ -86,7 +86,7 @@ const Index = () => {
     [markets]
   );
 
-
+  const categories = useMemo(() => {
     const cats = new Set(markets.map((m) => m.category));
     return ["All", ...Array.from(cats).sort()];
   }, [markets]);
