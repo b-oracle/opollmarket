@@ -58,6 +58,7 @@ const OP_LABELS: Record<string, string> = {
 const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) => {
   const [price, setPrice] = useState<number | null>(null);
   const [prev, setPrev] = useState<number | null>(null);
+  const [flash, setFlash] = useState<"up" | "down" | null>(null);
 
   const cls = getAssetClass(asset);
 
@@ -74,6 +75,15 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
     const interval = setInterval(load, 60_000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [asset]);
+
+  // Trigger flash when price changes
+  useEffect(() => {
+    if (price != null && prev != null && price !== prev) {
+      setFlash(price > prev ? "up" : "down");
+      const timeout = setTimeout(() => setFlash(null), 800);
+      return () => clearTimeout(timeout);
+    }
+  }, [price, prev]);
 
   if (price == null) return null;
 
