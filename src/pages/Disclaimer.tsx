@@ -61,6 +61,8 @@ const Disclaimer = () => {
             <li><strong>Price Volatility:</strong> Market prices can fluctuate rapidly and unpredictably based on participant activity and external events.</li>
             <li><strong>Liquidity Risk:</strong> Markets with low liquidity may experience significant price slippage, and you may not be able to exit positions at your desired price.</li>
             <li><strong>AMM Mechanics:</strong> The constant-product AMM formula means that larger trades result in greater price impact. Displayed prices may differ from execution prices.</li>
+            <li><strong>Early Exit Penalty:</strong> Selling a position before market resolution incurs an early exit fee (percentage configured by the System-Mod Engine). This fee is deducted from sale proceeds and reduces your net payout.</li>
+            <li><strong>Limit Order Risk:</strong> Limit orders may not be filled if market conditions do not reach the target price. Unfilled orders tie up your balance until cancelled.</li>
             <li><strong>Resolution Risk:</strong> Market outcomes depend on real-world events and the interpretation of resolution criteria by the System-Mod Engine. Resolution decisions are final.</li>
             <li><strong>Counterparty Risk:</strong> While the Platform holds user funds in managed accounts, there is inherent risk in any centralized custody arrangement.</li>
           </ul>
@@ -139,7 +141,7 @@ const Disclaimer = () => {
           <p>To the fullest extent permitted by law, OPollMarket and its operators, affiliates, employees, and agents disclaim all liability for any direct, indirect, incidental, special, consequential, or punitive damages — including loss of profits, data, digital assets, or goodwill — arising from your use of or inability to use the Platform, regardless of the cause of action or the theory of liability.</p>
         </section>
 
-        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: March 5, 2026</p>
+        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: March 6, 2026</p>
       </div>
       <BackToTop />
     </div>

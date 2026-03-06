@@ -96,7 +96,9 @@ const Terms = () => {
             <li>All trades are final once confirmed and cannot be reversed, cancelled, or refunded.</li>
             <li>Market prices are dynamically determined by supply, demand, and available liquidity — not by the Platform.</li>
             <li>Order book depth levels displayed are derived from the AMM formula and represent potential liquidity, not traditional limit orders.</li>
+            <li><strong>Limit Orders:</strong> Users may place limit orders specifying a target price. Limit orders are matched automatically when market conditions meet the specified price. Unfilled or partially filled limit orders may be cancelled by the user. Limit order matching is not guaranteed and depends on market activity.</li>
             <li>Slippage may occur, and the execution price may differ from the displayed price at the time of order placement.</li>
+            <li><strong>Early Exit:</strong> Users may sell their positions before market resolution. An early exit fee (percentage set by the System-Mod Engine) is deducted from the sale proceeds and returned to the market pool.</li>
             <li>The Platform does not guarantee any particular outcome, return, or profit.</li>
             <li>Past market performance is not indicative of future results.</li>
           </ul>
@@ -107,9 +109,12 @@ const Terms = () => {
           <p>The Platform charges the following fees, which are subject to change with notice:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li><strong>Platform Fee:</strong> A percentage commission is deducted from winning payouts upon market resolution. The current fee structure (platform fee and creator fee percentages) is displayed within the Platform.</li>
+            <li><strong>Early Exit Fee:</strong> Selling a position before market resolution incurs an early exit fee (percentage configurable by the System-Mod Engine). The exit fee is deducted from sale proceeds and returned to the market liquidity pool, increasing potential payouts for remaining participants.</li>
             <li><strong>Market Creation Fee:</strong> Users who do not meet token-gating requirements (BC400 token holding or NFT ownership) may create markets by paying a flat creation fee. This fee is <strong>non-refundable</strong> if the market is rejected for content violations. It is refundable only if the market is cancelled by the System-Mod Engine before approval.</li>
             <li><strong>Market Boost Fee:</strong> Optional paid promotion fees vary by tier (Silver, Gold, Diamond) and duration.</li>
           </ul>
+          <p className="font-medium text-foreground">Referral Bonus as Fee Credit:</p>
+          <p>Referral bonus rewards credited to your account are designated exclusively as <strong>fee credits</strong>. When any fee is charged (platform fee, exit fee, or market creation fee), the Platform will automatically apply your available referral bonus balance to offset those fees before deducting from your main balance. Referral bonus cannot be used to fund trade principal, deposits, or withdrawals — only to cover Platform fees.</p>
           <p>All fee amounts and percentages are managed centrally and may be adjusted by the System-Mod Engine. Current rates are always visible within the Platform interface.</p>
         </section>
 
@@ -171,9 +176,11 @@ const Terms = () => {
 
         <section id="referral" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">12. Referral Program</h2>
-          <p>The Platform offers a referral program where existing users may invite new users. Upon a referred user's first qualifying trade, the referrer receives a bonus reward credited to their account balance. Referral rewards are subject to the following conditions:</p>
+          <p>The Platform offers a referral program where existing users may invite new users using their display name as a referral code. Upon a referred user's first qualifying trade (buy), the referrer receives a bonus reward credited to their <strong>bonus balance</strong>. Referral rewards are subject to the following conditions:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li>Only one referral reward is issued per referred user.</li>
+            <li>Bonus rewards are classified as <strong>fee credits only</strong> — they can only be used to offset Platform fees (trading fees, exit fees, market creation fees) and cannot be withdrawn, transferred, or used to fund trade principal.</li>
+            <li>When a fee is charged, the Platform automatically prioritizes the bonus balance before deducting from the main balance.</li>
             <li>Self-referrals, fraudulent referrals, or referral manipulation schemes are prohibited and may result in forfeiture of rewards and account suspension.</li>
             <li>Reward amounts are set by the Platform and may be adjusted at any time.</li>
           </ul>
@@ -248,7 +255,7 @@ const Terms = () => {
           <p>For questions, concerns, or requests relating to these Terms, please contact us through the Platform's support channels or via the contact information provided in the application.</p>
         </section>
 
-        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: March 5, 2026</p>
+        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: March 6, 2026</p>
       </div>
       <BackToTop />
     </div>

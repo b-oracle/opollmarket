@@ -53,7 +53,7 @@ const Privacy = () => {
             <li><strong>Authentication Data:</strong> Credentials from third-party OAuth providers (Google, Apple) if you choose to sign in via social login. We receive only the data necessary for authentication (email, name, profile picture).</li>
             <li><strong>Wallet Information:</strong> Public blockchain wallet addresses you connect to the Platform (e.g., MetaMask, Trust Wallet, SafePal, Coinbase Wallet, Rabby, Binance Wallet, Bitget Wallet). We never request or store your private keys or seed phrases.</li>
             <li><strong>User-Generated Content:</strong> Market proposals, comments, display names, and uploaded images (market covers, profile avatars).</li>
-            <li><strong>Financial Information:</strong> Transaction amounts, trade details, deposit/withdrawal data, and referral information.</li>
+            <li><strong>Financial Information:</strong> Transaction amounts, trade details, deposit/withdrawal data, referral information, bonus balance usage, limit order history, and exit fee records.</li>
             <li><strong>Communication Data:</strong> Any information you provide when contacting support or submitting feedback.</li>
           </ul>
 
@@ -84,7 +84,8 @@ const Privacy = () => {
             <li><strong>Communications:</strong> To send in-app notifications about market resolutions, payouts, referral rewards, pending reviews, and important platform updates.</li>
             <li><strong>Analytics & Improvement:</strong> To analyze usage patterns, optimize Platform performance, identify popular features, and improve user experience through aggregated and anonymized data analysis.</li>
             <li><strong>Legal Compliance:</strong> To comply with applicable laws, regulations, legal processes, or governmental requests.</li>
-            <li><strong>Referral Program:</strong> To track referral relationships, verify eligibility, and distribute referral bonus rewards.</li>
+            <li><strong>Referral Program:</strong> To track referral relationships, verify eligibility, distribute referral bonus rewards, and apply bonus balance as fee credits.</li>
+            <li><strong>Limit Order Processing:</strong> To manage, match, and execute limit orders based on market price movements.</li>
           </ul>
         </section>
 
@@ -202,7 +203,7 @@ const Privacy = () => {
           <p>If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us through the Platform's support channels or via the contact information provided in the application. We aim to respond to all inquiries within 30 days.</p>
         </section>
 
-        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: March 5, 2026</p>
+        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: March 6, 2026</p>
       </div>
       <BackToTop />
     </div>

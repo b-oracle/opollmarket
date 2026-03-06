@@ -32,8 +32,8 @@ const faqSections = [
     items: [
       { question: "What digital assets are supported?", answer: "Currently, USDC, USDT, BNB, and BC400 are supported, subject to network availability and operational requirements." },
       { question: "How do I deposit assets?", answer: "1. Copy the provided deposit address from OPollMarket.\n2. Send supported tokens to the address.\n3. Funds will be reflected in your portfolio after blockchain confirmation." },
-      { question: "How do withdrawals work?", answer: "1. Enter your external wallet address.\n2. Confirm the transaction.\n3. Funds are transferred directly to the specified wallet." },
-      { question: "Are there fees?", answer: "Network transaction fees (gas fees) may apply, depending on the blockchain used." },
+      { question: "How do withdrawals work?", answer: "1. Enter your external wallet address.\n2. Confirm the transaction.\n3. Funds are transferred directly to the specified wallet.\n\nNote: You must have at least one confirmed deposit before you can withdraw. A minimum withdrawal amount applies." },
+      { question: "Are there fees?", answer: "Yes. The Platform charges several types of fees:\n\n• **Trading Fees:** A percentage commission is deducted from winning payouts (split between platform and market creator).\n• **Early Exit Fee:** Selling a position before market resolution incurs an exit fee (percentage set by the admin). This fee is returned to the market pool.\n• **Market Creation Fee:** Users who don't hold qualifying tokens/NFTs pay a flat creation fee.\n• **Network Fees:** Blockchain gas fees may apply to deposits and withdrawals.\n\nAll fee percentages are displayed in the Platform and can be adjusted by the admin." },
     ],
   },
   {
@@ -84,8 +84,10 @@ const faqSections = [
   {
     title: "Portfolio & Shares",
     items: [
-      { question: "What does my Portfolio display?", answer: "• Total balance\n• Active predictions\n• Shares owned\n• Realized gains\n• Unrealized PnL" },
+      { question: "What does my Portfolio display?", answer: "• Total balance (main + referral bonus)\n• Active predictions\n• Shares owned\n• Realized gains\n• Unrealized PnL\n• Limit order status" },
       { question: "What are shares?", answer: "Shares reflect your position in a specific outcome." },
+      { question: "Can I sell my position before a market resolves?", answer: "Yes. You can exit a position early by selling your shares. An early exit fee (set by the admin) is deducted from the sale proceeds and returned to the market pool. If you have referral bonus balance, it will automatically be applied to offset the exit fee before your main proceeds are reduced. The net payout is shown in the sell confirmation." },
+      { question: "What are Limit Orders?", answer: "Limit orders let you specify a target price at which you want to buy shares. Your order will be automatically matched when market conditions reach your target price. You can view and cancel pending limit orders from your Portfolio page." },
     ],
   },
   {
@@ -94,6 +96,14 @@ const faqSections = [
       { question: "How are markets resolved?", answer: "Markets are resolved using verified, publicly available data, based on predefined rules." },
       { question: "Who determines outcomes?", answer: "Outcomes are determined according to OPollMarket resolution protocols and trusted data sources." },
       { question: "What happens after resolution?", answer: "Winning shares are settled automatically, and funds are credited to users' balances." },
+    ],
+  },
+  {
+    title: "Referral Program",
+    items: [
+      { question: "How does the Referral Program work?", answer: "Share your unique referral link (based on your display name) with friends. When a referred user places their first trade, you receive a bonus reward." },
+      { question: "What can I use my referral bonus for?", answer: "Referral bonus balance is a **fee credit only**. It is automatically applied to cover Platform fees (trading fees, exit fees, market creation fees) before your main balance is charged. It cannot be withdrawn, transferred, or used to fund trade amounts." },
+      { question: "How do I check my referral bonus?", answer: "Your referral bonus balance is displayed on your Profile page and in the sell/buy confirmation modals when applicable." },
     ],
   },
   {
