@@ -58,6 +58,7 @@ const OP_LABELS: Record<string, string> = {
 const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) => {
   const [price, setPrice] = useState<number | null>(null);
   const [prev, setPrev] = useState<number | null>(null);
+  const [flash, setFlash] = useState<"up" | "down" | null>(null);
 
   const cls = getAssetClass(asset);
 
@@ -74,6 +75,15 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
     const interval = setInterval(load, 60_000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [asset]);
+
+  // Trigger flash when price changes
+  useEffect(() => {
+    if (price != null && prev != null && price !== prev) {
+      setFlash(price > prev ? "up" : "down");
+      const timeout = setTimeout(() => setFlash(null), 800);
+      return () => clearTimeout(timeout);
+    }
+  }, [price, prev]);
 
   if (price == null) return null;
 
@@ -100,10 +110,14 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
 
   return (
     <div
-      className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold tabular-nums backdrop-blur-sm ${
-        conditionMet
-          ? "bg-green-500/15 border border-green-500/30 text-green-600 dark:text-green-400"
-          : "bg-primary/10 border border-primary/20 text-primary"
+      className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold tabular-nums backdrop-blur-sm transition-all duration-500 ${
+        flash === "up"
+          ? "bg-green-500/25 border border-green-500/40 shadow-[0_0_8px_rgba(34,197,94,0.3)]"
+          : flash === "down"
+            ? "bg-destructive/25 border border-destructive/40 shadow-[0_0_8px_hsl(var(--destructive)/0.3)]"
+            : conditionMet
+              ? "bg-green-500/15 border border-green-500/30 text-green-600 dark:text-green-400"
+              : "bg-primary/10 border border-primary/20 text-primary"
       }`}
     >
       <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse shrink-0" />
