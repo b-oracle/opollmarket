@@ -678,6 +678,13 @@ export default function QuickTrade() {
                 </Button>
               </div>
 
+              {/* Streak multiplier hint */}
+              {streak && streak.current_streak >= 1 && !isLocked && timeLeft > 0 && (
+                <p className="text-[10px] text-amber-500 text-center mt-2">
+                  🔥 Win to get {getStreakMultiplier(streak.current_streak + 1)}x payout bonus!
+                </p>
+              )}
+
               {isLocked && timeLeft > 0 && (
                 <p className="text-xs text-amber-500 text-center mt-2">Round locked — bets closed. Next round starting soon.</p>
               )}
