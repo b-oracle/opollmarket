@@ -216,6 +216,11 @@ const Index = () => {
             >
               {'icon' in tab && tab.icon && <Clock className="w-3.5 h-3.5" />}
               {tab.label}
+              {'count' in tab && (tab as any).count > 0 && (
+                <span className="ml-0.5 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+                  {(tab as any).count}
+                </span>
+              )}
             </button>
           ))}
         </div>
