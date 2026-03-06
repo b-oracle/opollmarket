@@ -300,6 +300,23 @@ export default function TradingViewChart({
           </div>
         </div>
         <div className="flex items-center gap-1">
+          {/* Chart style toggle */}
+          <div className="flex items-center gap-0.5 bg-muted/40 rounded-md p-0.5">
+            <button
+              onClick={() => setChartStyle("candle")}
+              className={`p-1 rounded transition-all ${chartStyle === "candle" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              title="Candlestick"
+            >
+              <CandlestickChart className="w-3 h-3" />
+            </button>
+            <button
+              onClick={() => setChartStyle("line")}
+              className={`p-1 rounded transition-all ${chartStyle === "line" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              title="Line chart"
+            >
+              <LineChart className="w-3 h-3" />
+            </button>
+          </div>
           {/* Drawing tools */}
           <div className="flex items-center gap-0.5 bg-muted/40 rounded-md p-0.5">
             <button
