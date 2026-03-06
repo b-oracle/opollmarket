@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { Bell, X, Check, TrendingUp, RefreshCw, DollarSign, Info } from "lucide-react";
+import { Bell, X, Check, TrendingUp, RefreshCw, DollarSign, Info, BellRing } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { toast } from "sonner";
 
 interface Notification {
   id: string;
