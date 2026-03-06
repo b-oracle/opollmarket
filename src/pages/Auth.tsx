@@ -33,8 +33,8 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [rememberedName, setRememberedName] = useState<string | null>(null);
   const { signIn, signUp } = useAuth();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const isDapp = useIsDappBrowser();
+
 
   useEffect(() => {
     const saved = localStorage.getItem("remembered_display_name");
