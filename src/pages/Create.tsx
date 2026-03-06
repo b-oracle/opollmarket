@@ -767,7 +767,7 @@ const Create = () => {
               </div>
             )}
 
-            {/* Connect wallet instruction — when wallet not connected */}
+            {/* Connect wallet — when wallet not connected */}
             {!isConnected && (
               <div className="glass rounded-xl p-5 text-center space-y-3">
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
@@ -775,23 +775,49 @@ const Create = () => {
                 </div>
                 <h3 className="text-sm font-bold">Wallet Connection Required</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  To connect your wallet, please open this page in a{" "}
-                   <span className="font-semibold text-foreground">wallet browser</span> (MetaMask, Trust Wallet, SafePal, Coinbase Wallet, Rabby, Binance Wallet, Bitget Wallet) or use a{" "}
-                   <span className="font-semibold text-foreground">desktop browser</span> with a Web3 wallet extension installed.
-                 </p>
-                 <div className="flex flex-wrap justify-center gap-2 pt-1">
-                   {[
-                     { name: "MetaMask", emoji: "🦊" },
-                     { name: "Trust Wallet", emoji: "🛡️" },
-                     { name: "SafePal", emoji: "🔐" },
-                     { name: "Coinbase", emoji: "🔵" },
-                     { name: "Rabby", emoji: "🐰" },
-                     { name: "Binance", emoji: "🟡" },
-                   ].map((w) => (
-                     <span key={w.name} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-muted/50 border border-border text-[10px] font-medium text-muted-foreground">
-                       <span>{w.emoji}</span> {w.name}
-                     </span>
-                   ))}
+                  Connect your wallet to verify token holdings and unlock market creation.
+                </p>
+
+                {/* Connect buttons */}
+                <div className="space-y-2 pt-1">
+                  {connectors.length > 0 ? (
+                    connectors.map((connector) => (
+                      <button
+                        key={connector.uid}
+                        onClick={() => connect({ connector })}
+                        disabled={isPending}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground transition-all active:scale-95 disabled:opacity-50"
+                      >
+                        {isPending ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Wallet className="w-4 h-4" />
+                        )}
+                        {connector.name === "Injected" ? "Connect Wallet" : `Connect ${connector.name}`}
+                      </button>
+                    ))
+                  ) : (
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      No wallet detected. Open this page in a{" "}
+                      <span className="font-semibold text-foreground">wallet browser</span> (MetaMask, Trust Wallet, SafePal, Coinbase Wallet, Rabby, Binance Wallet, Bitget Wallet) or use a{" "}
+                      <span className="font-semibold text-foreground">desktop browser</span> with a Web3 wallet extension installed.
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap justify-center gap-2 pt-1">
+                  {[
+                    { name: "MetaMask", emoji: "🦊" },
+                    { name: "Trust Wallet", emoji: "🛡️" },
+                    { name: "SafePal", emoji: "🔐" },
+                    { name: "Coinbase", emoji: "🔵" },
+                    { name: "Rabby", emoji: "🐰" },
+                    { name: "Binance", emoji: "🟡" },
+                  ].map((w) => (
+                    <span key={w.name} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-muted/50 border border-border text-[10px] font-medium text-muted-foreground">
+                      <span>{w.emoji}</span> {w.name}
+                    </span>
+                  ))}
                 </div>
               </div>
             )}
