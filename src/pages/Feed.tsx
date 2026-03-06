@@ -12,6 +12,19 @@ import useAnalytics from "@/hooks/useAnalytics";
 import CategoryIcon from "@/components/CategoryIcon";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useState as useStateHook, useEffect as useEffectHook } from "react";
+
+const useIsDesktop = () => {
+  const [isDesktop, setIsDesktop] = useStateHook(false);
+  useEffectHook(() => {
+    const mql = window.matchMedia("(min-width: 1024px)");
+    const onChange = () => setIsDesktop(mql.matches);
+    mql.addEventListener("change", onChange);
+    setIsDesktop(mql.matches);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+  return isDesktop;
+};
 import { useCommentCount } from "@/hooks/useCommentCount";
 import { useLikeCount } from "@/hooks/useLikeCount";
 import BoostCountdown from "@/components/BoostCountdown";
