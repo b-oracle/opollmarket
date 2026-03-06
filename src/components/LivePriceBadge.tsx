@@ -60,6 +60,7 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
   const [price, setPrice] = useState<number | null>(null);
   const [prev, setPrev] = useState<number | null>(null);
   const [flash, setFlash] = useState<"up" | "down" | null>(null);
+  const toastFiredRef = useRef(false);
 
   const cls = getAssetClass(asset);
 
