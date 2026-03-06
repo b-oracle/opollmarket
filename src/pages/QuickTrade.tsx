@@ -13,7 +13,7 @@ import {
   Loader2,
   Share2,
 } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, ReferenceLine } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, ReferenceLine, Tooltip as RechartsTooltip } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useConfetti } from "@/hooks/useConfetti";
@@ -676,7 +676,20 @@ export default function QuickTrade() {
                           </linearGradient>
                         </defs>
                         <YAxis domain={["dataMin", "dataMax"]} hide />
-                        <XAxis dataKey="time" hide />
+                        <XAxis dataKey="ts" hide />
+                        <RechartsTooltip
+                          content={({ active, payload }) => {
+                            if (!active || !payload?.length) return null;
+                            const d = payload[0].payload;
+                            return (
+                              <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg text-[11px]">
+                                <p className="font-semibold text-foreground">${Number(d.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                <p className="text-muted-foreground">{new Date(d.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
+                              </div>
+                            );
+                          }}
+                          cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '3 3' }}
+                        />
                         {activeRound?.open_price && (
                           <ReferenceLine
                             y={Number(activeRound.open_price)}
