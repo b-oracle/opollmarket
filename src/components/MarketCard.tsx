@@ -462,7 +462,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           )}
 
           <h2
-            className="text-lg sm:text-xl font-bold leading-tight mb-3 cursor-pointer hover:text-primary transition-colors"
+            className="text-base sm:text-lg font-bold leading-tight mb-1.5 cursor-pointer hover:text-primary transition-colors"
             onClick={() => navigate(`/market/${market.id}`)}
           >
             {market.title}{" "}
@@ -480,17 +480,17 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             )}
           </h2>
 
-          <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{market.description}</p>
+          <p className="text-[11px] text-muted-foreground mb-2 line-clamp-2">{market.description}</p>
 
-          <div className="flex items-center gap-4 mb-4 text-xs text-muted-foreground">
+          <div className="flex items-center gap-3 mb-3 text-[11px] text-muted-foreground">
             <span className="flex items-center gap-1">
-              <TrendingUp className="w-3.5 h-3.5" /> {formatVolume(market.volume)} vol
+              <TrendingUp className="w-3 h-3" /> {formatVolume(market.volume)} vol
             </span>
             <span className="flex items-center gap-1">
-              <Users className="w-3.5 h-3.5" /> {market.participants.toLocaleString()}
+              <Users className="w-3 h-3" /> {market.participants.toLocaleString()}
             </span>
             <span className="flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" /> {getTimeRemaining(market.endDate)}
+              <Clock className="w-3 h-3" /> {getTimeRemaining(market.endDate)}
             </span>
           </div>
 
