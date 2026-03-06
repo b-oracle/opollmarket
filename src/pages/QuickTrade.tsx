@@ -195,6 +195,7 @@ export default function QuickTrade() {
 
   // ── Price history for mini chart ──
   const CHART_TIMEFRAMES = [
+    { key: "1m", label: "1m", ms: 1 * 60 * 1000 },
     { key: "5m", label: "5m", ms: 5 * 60 * 1000 },
     { key: "15m", label: "15m", ms: 15 * 60 * 1000 },
     { key: "1h", label: "1H", ms: 60 * 60 * 1000 },
