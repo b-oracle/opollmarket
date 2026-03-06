@@ -102,7 +102,7 @@ const DesktopFeedCard = ({ market, isBoosted, boostEndsAt, boostTier }: {
           <img
             src={market.imageUrl}
             alt={market.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-full object-cover opacity-50 transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
           />
         ) : (
@@ -110,7 +110,7 @@ const DesktopFeedCard = ({ market, isBoosted, boostEndsAt, boostTier }: {
             <CategoryIcon category={market.category} className="w-12 h-12 text-muted-foreground/30" />
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/20" />
 
         {/* Category badge */}
         <div className="absolute top-3 left-3 flex items-center gap-2">
