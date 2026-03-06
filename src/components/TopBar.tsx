@@ -17,6 +17,7 @@ const TopBar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [signOutOpen, setSignOutOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+  const { collapsed } = useSidebarState();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
