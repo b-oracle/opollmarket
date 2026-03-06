@@ -559,7 +559,7 @@ export default function QuickTrade() {
           </div>
 
           {/* Price display */}
-          <div className="rounded-2xl border border-border bg-card p-5 mb-4">
+          <div ref={chartCardRef} className="relative rounded-2xl border border-border bg-card p-5 mb-4">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">{selectedAsset.label} / USD</p>
