@@ -51,7 +51,7 @@ import SwapModal from "@/components/SwapModal";
 import FixtureSearch from "@/components/FixtureSearch";
 
 const CATEGORIES = [
-  "Crypto", "AI & Tech", "Science", "Economy",
+  "Crypto", "Commodities", "Forex", "AI & Tech", "Science", "Economy",
   "Entertainment", "Sports", "Politics", "Other",
 ];
 

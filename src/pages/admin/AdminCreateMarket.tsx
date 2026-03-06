@@ -29,7 +29,7 @@ import FixtureSearch from "@/components/FixtureSearch";
 import { isYouTubeUrl, getYouTubeId } from "@/components/YouTubeEmbed";
 
 const CATEGORIES = [
-  "Crypto", "AI & Tech", "Science", "Economy",
+  "Crypto", "Commodities", "Forex", "AI & Tech", "Science", "Economy",
   "Entertainment", "Sports", "Politics", "Other",
 ];
 
