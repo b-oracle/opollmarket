@@ -980,6 +980,19 @@ export type Database = {
     }
     Functions: {
       expire_stale_pending_deposits: { Args: never; Returns: undefined }
+      get_quick_trade_leaderboard: {
+        Args: { _limit?: number }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          profit: number
+          total_bets: number
+          total_wagered: number
+          total_won: number
+          user_id: string
+          wins: number
+        }[]
+      }
       get_trending_scores: {
         Args: never
         Returns: {
