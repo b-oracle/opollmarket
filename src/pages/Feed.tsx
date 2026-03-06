@@ -363,13 +363,13 @@ const Feed = () => {
   const pullProgress = Math.min(pullDistance / PULL_THRESHOLD, 1);
 
   return (
-    <div className="h-dvh flex flex-col bg-background">
+    <div className="h-dvh flex flex-col bg-background relative">
       <SEOHead title="Feed" description="Swipe through prediction markets like TikTok. Vote YES or NO on real-world events." path="/feed" />
       <TopBar />
 
-      {/* Feed tabs */}
-      <div className="w-full max-w-3xl mx-auto flex items-center gap-1 px-4 py-2 shrink-0">
-        <div className="relative flex w-full rounded-xl bg-muted/50 p-1">
+      {/* Feed tabs - floating overlay on top of cards */}
+      <div className="absolute left-1/2 -translate-x-1/2 z-30 w-[90%] max-w-xs" style={{ top: 'calc(3.5rem + env(safe-area-inset-top, 0px) + 8px)' }}>
+        <div className="relative flex w-full rounded-xl bg-background/80 backdrop-blur-md border border-border/50 p-1 shadow-lg">
           {/* Sliding indicator */}
           <motion.div
             className="absolute top-1 bottom-1 rounded-lg bg-primary shadow-md"
