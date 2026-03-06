@@ -232,10 +232,10 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
     <>
       <div
         ref={cardRef}
-        className={`snap-item relative w-full flex items-end pb-4 px-3 sm:px-4 overflow-hidden shrink-0 ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}
+        className={`snap-item relative w-full flex items-end pb-20 px-3 sm:px-4 overflow-hidden shrink-0 ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}
         style={{ 
-          height: 'var(--feed-card-height, calc(100dvh - 3.5rem - 4rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)))',
-          minHeight: 'var(--feed-card-height, calc(100dvh - 3.5rem - 4rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)))',
+          height: 'var(--feed-card-height, calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px)))',
+          minHeight: 'var(--feed-card-height, calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px)))',
           touchAction: "pan-y",
           transform: dragX !== 0 ? `translateX(${dragX * 0.5}px)` : undefined,
           transition: dragX === 0 ? 'transform 0.25s ease-out' : 'none',
