@@ -263,9 +263,16 @@ export default function TradingViewChart({
 
   // Update data
   useEffect(() => {
-    if (!chartRef.current || !candleSeriesRef.current) return;
+    if (!chartRef.current) return;
     const { candles, volumes, ma7, ma14, rsi, macdLine, macdSignal, macdHist } = buildData();
-    candleSeriesRef.current.setData(candles);
+
+    if (chartStyle === "candle" && candleSeriesRef.current) {
+      candleSeriesRef.current.setData(candles);
+    } else if (chartStyle === "line" && lineMainSeriesRef.current) {
+      const lineData = candles.map((c: any) => ({ time: c.time, value: c.close }));
+      lineMainSeriesRef.current.setData(lineData);
+    }
+
     volumeSeriesRef.current?.setData(volumes as any);
     maSeriesRef.current?.setData(ma7);
     ma14SeriesRef.current?.setData(ma14);
@@ -275,7 +282,7 @@ export default function TradingViewChart({
     macdHistRef.current?.setData(macdHist as any);
     chartRef.current.timeScale().fitContent();
     rsiChartRef.current?.timeScale().fitContent();
-  }, [buildData, indicator]);
+  }, [buildData, indicator, chartStyle]);
 
   return (
     <div className={isFullscreen ? "fixed inset-0 z-50 bg-background flex flex-col" : "relative"}>
