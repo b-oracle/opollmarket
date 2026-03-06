@@ -367,25 +367,22 @@ const Feed = () => {
       <SEOHead title="Feed" description="Swipe through prediction markets like TikTok. Vote YES or NO on real-world events." path="/feed" />
       <TopBar />
 
-      {/* Feed tabs - floating overlay on top of cards */}
-      <div className="absolute left-1/2 -translate-x-1/2 z-30 w-[90%] max-w-xs" style={{ top: 'calc(3.5rem + env(safe-area-inset-top, 0px) + 8px)' }}>
-        <div className="relative flex w-full rounded-xl bg-background/80 backdrop-blur-md border border-border/50 p-1 shadow-lg">
-          {/* Sliding indicator */}
+      {/* Feed tabs - compact floating pill */}
+      <div className="absolute left-1/2 -translate-x-1/2 z-30" style={{ top: 'calc(3.5rem + env(safe-area-inset-top, 0px) + 6px)' }}>
+        <div className="relative flex rounded-full bg-background/70 backdrop-blur-md border border-border/40 p-0.5 shadow-md">
           <motion.div
-            className="absolute top-1 bottom-1 rounded-lg bg-primary shadow-md"
+            className="absolute top-0.5 bottom-0.5 rounded-full bg-primary"
             layout
-            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            transition={{ type: "spring", stiffness: 500, damping: 32 }}
             style={{
-              width: "calc(50% - 4px)",
-              left: feedTab === "foryou" ? 4 : "calc(50% + 2px)",
+              width: "calc(50% - 2px)",
+              left: feedTab === "foryou" ? 2 : "calc(50%)",
             }}
           />
           <button
             onClick={() => setFeedTab("foryou")}
-            className={`relative z-10 flex-1 py-2 rounded-lg text-sm font-semibold transition-colors duration-200 ${
-              feedTab === "foryou"
-                ? "text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
+            className={`relative z-10 px-3 py-1 rounded-full text-[11px] font-semibold transition-colors ${
+              feedTab === "foryou" ? "text-primary-foreground" : "text-muted-foreground"
             }`}
           >
             For You
@@ -400,21 +397,12 @@ const Feed = () => {
               }
               setFeedTab("bookmarks");
             }}
-            className={`relative z-10 flex-1 py-2 rounded-lg text-sm font-semibold transition-colors duration-200 inline-flex items-center justify-center gap-1.5 ${
-              feedTab === "bookmarks"
-                ? "text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
+            className={`relative z-10 px-3 py-1 rounded-full text-[11px] font-semibold transition-colors inline-flex items-center gap-1 ${
+              feedTab === "bookmarks" ? "text-primary-foreground" : "text-muted-foreground"
             }`}
           >
-            <Bookmark className="w-3.5 h-3.5" />
+            <Bookmark className="w-2.5 h-2.5" />
             Watchlist
-            {bookmarkedIds.size > 0 && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                feedTab === "bookmarks" ? "bg-primary-foreground/20" : "bg-muted"
-              }`}>
-                {bookmarkedIds.size}
-              </span>
-            )}
           </button>
         </div>
       </div>
