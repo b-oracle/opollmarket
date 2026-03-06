@@ -160,6 +160,7 @@ export type Database = {
         Row: {
           admin_fee_percent: number
           creator_fee_percent: number
+          exit_fee_percent: number
           id: string
           market_creation_fee: number | null
           min_nft_balance: number
@@ -176,6 +177,7 @@ export type Database = {
         Insert: {
           admin_fee_percent?: number
           creator_fee_percent?: number
+          exit_fee_percent?: number
           id?: string
           market_creation_fee?: number | null
           min_nft_balance?: number
@@ -192,6 +194,7 @@ export type Database = {
         Update: {
           admin_fee_percent?: number
           creator_fee_percent?: number
+          exit_fee_percent?: number
           id?: string
           market_creation_fee?: number | null
           min_nft_balance?: number

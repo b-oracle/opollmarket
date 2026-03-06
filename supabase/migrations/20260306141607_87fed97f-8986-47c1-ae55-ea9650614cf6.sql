@@ -1,0 +1,1 @@
+ALTER TABLE public.commission_settings ADD COLUMN IF NOT EXISTS exit_fee_percent numeric NOT NULL DEFAULT 5;
