@@ -1968,66 +1968,32 @@ const Create = () => {
                       }
                       setSubmitStep("placing_prediction");
 
-                      // Check balance
-                      const { data: bal } = await supabase
-                        .from("balances")
-                        .select("amount")
-                        .eq("user_id", user.id)
-                        .single();
+                      try {
+                        const price = firstPredSide === "yes" ? 50 : 50;
+                        const shares = amount / (price / 100);
 
-                      if (!bal || bal.amount < amount) {
-                        toast.error(`Insufficient balance. You have $${bal?.amount?.toFixed(2) || "0"}`);
+                        const { data, error } = await supabase.functions.invoke("place-bet", {
+                          body: {
+                            marketId: newMarketId,
+                            side: firstPredSide,
+                            amount,
+                            price,
+                            shares,
+                          },
+                        });
+
+                        if (error || data?.error) {
+                          toast.error(data?.error || error?.message || "Failed to place prediction");
+                          setSubmitStep("first_prediction");
+                          return;
+                        }
+
+                        toast.success("First prediction placed! Your market is now live.");
+                        setSubmitStep("success");
+                      } catch (err: any) {
+                        toast.error(err.message || "Failed to place prediction");
                         setSubmitStep("first_prediction");
-                        return;
                       }
-
-                      // Deduct balance
-                      const { error: deductErr } = await supabase
-                        .from("balances")
-                        .update({ amount: bal.amount - amount, updated_at: new Date().toISOString() })
-                        .eq("user_id", user.id);
-
-                      if (deductErr) {
-                        toast.error("Failed to deduct balance");
-                        setSubmitStep("first_prediction");
-                        return;
-                      }
-
-                      const price = firstPredSide === "yes" ? 0.5 : 0.5;
-                      const shares = amount / price;
-
-                      // Record transaction
-                      await supabase.from("transactions").insert({
-                        user_id: user.id,
-                        type: "buy",
-                        amount,
-                        market_id: newMarketId,
-                        status: "confirmed",
-                        side: firstPredSide,
-                        price,
-                        shares,
-                      });
-
-                      // Create/update position
-                      await supabase.from("positions").insert({
-                        user_id: user.id,
-                        market_id: newMarketId,
-                        side: firstPredSide,
-                        shares,
-                        avg_price: price,
-                      });
-
-                      // Update market volume and participants
-                      await supabase
-                        .from("markets")
-                        .update({
-                          volume: amount,
-                          participants: 1,
-                        })
-                        .eq("id", newMarketId);
-
-                      toast.success("First prediction placed! Your market is now live.");
-                      setSubmitStep("success");
                     }}
                     disabled={parseFloat(firstPredAmount) < 5 || !firstPredAmount}
                     className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm transition-all active:scale-95 disabled:opacity-40 flex items-center justify-center gap-2"
