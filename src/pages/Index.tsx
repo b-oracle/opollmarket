@@ -52,7 +52,7 @@ const Index = () => {
   const [searchParams] = useSearchParams();
   const { data: markets = [], isLoading, isError } = useMarkets();
   const { boostedMarketIds, boostDetails } = useActiveBoosts();
-  const [filter, setFilter] = useState<"trending" | "boosted" | "new" | "all">("all");
+  const [filter, setFilter] = useState<"trending" | "boosted" | "new" | "all" | "live">("all");
   const [boostModalMarket, setBoostModalMarket] = useState<{ id: string; title: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const { track } = useAnalytics();
@@ -88,6 +88,8 @@ const Index = () => {
     } else if (filter === "new") {
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       filtered = markets.filter((m) => m.createdAt >= oneDayAgo);
+    } else if (filter === "live") {
+      filtered = markets.filter((m) => m.autoResolve && m.sportType && m.sportMatchId);
     }
     if (categoryFilter !== "All") {
       filtered = filtered.filter((m) => m.category === categoryFilter);
@@ -199,6 +201,7 @@ const Index = () => {
         <div className="flex gap-1.5 p-1 rounded-xl bg-muted/50 mb-4">
           {([
             { key: "all" as const, label: "All" },
+            { key: "live" as const, label: "🔴 Live" },
             { key: "new" as const, label: "New", icon: true },
             { key: "boosted" as const, label: "⚡ Boosted" },
             { key: "trending" as const, label: "🔥 Trending" },
