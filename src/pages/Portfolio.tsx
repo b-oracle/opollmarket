@@ -245,17 +245,28 @@ const Portfolio = () => {
 
       if (posError) throw posError;
 
-      // 2. Credit balance (net of exit fee)
+      // 2. Credit balance (net of exit fee), using bonus_balance for fee first
       const { data: balanceRow } = await supabase
         .from("balances")
-        .select("amount")
+        .select("amount, bonus_balance")
         .eq("user_id", user.id)
         .single();
 
-      const currentBalance = balanceRow?.amount || 0;
+      const currentBalance = Number(balanceRow?.amount || 0);
+      const currentBonus = Number(balanceRow?.bonus_balance || 0);
+
+      // Use referral bonus to cover exit fee first
+      const bonusForFee = Math.min(currentBonus, exitFee);
+      const feeFromProceeds = exitFee - bonusForFee;
+      const netProceeds = grossProceeds - feeFromProceeds;
+
       const { error: balError } = await supabase
         .from("balances")
-        .update({ amount: currentBalance + proceeds, updated_at: new Date().toISOString() })
+        .update({
+          amount: currentBalance + netProceeds,
+          bonus_balance: currentBonus - bonusForFee,
+          updated_at: new Date().toISOString(),
+        })
         .eq("user_id", user.id);
 
       if (balError) throw balError;

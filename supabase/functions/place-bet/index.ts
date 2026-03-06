@@ -65,6 +65,7 @@ Deno.serve(async (req) => {
 
     const adminAmount = amount * adminFeePercent;
     const creatorAmount = amount * creatorFeePercent;
+    const totalFees = adminAmount + creatorAmount;
     const totalCost = amount;
 
     // Check balance
@@ -77,6 +78,12 @@ Deno.serve(async (req) => {
 
     const currentBalance = Number(balData?.amount || 0);
     const currentBonus = Number(balData?.bonus_balance || 0);
+
+    // Bonus (referral) balance can ONLY be used to pay fees, not the bet itself
+    const bonusForFees = Math.min(currentBonus, totalFees);
+    const feesFromMain = totalFees - bonusForFees;
+    const betAmount = amount - totalFees; // net amount going to pool
+    const mainDeduct = betAmount + feesFromMain;
     const totalAvailable = currentBalance + currentBonus;
 
     if (totalAvailable < totalCost) {
@@ -85,15 +92,17 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Deduct from bonus first, then main balance
-    const bonusDeduct = Math.min(currentBonus, totalCost);
-    const mainDeduct = totalCost - bonusDeduct;
+    if (currentBalance < mainDeduct) {
+      return new Response(JSON.stringify({ error: "Insufficient main balance" }), {
+        status: 400, headers: corsHeaders,
+      });
+    }
 
     const { error: balError } = await supabase
       .from("balances")
       .update({
         amount: currentBalance - mainDeduct,
-        bonus_balance: currentBonus - bonusDeduct,
+        bonus_balance: currentBonus - bonusForFees,
         updated_at: new Date().toISOString(),
       })
       .eq("user_id", userId)

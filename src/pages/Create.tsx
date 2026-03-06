@@ -428,7 +428,7 @@ const Create = () => {
 
     const { data: bal, error: balError } = await supabase
       .from("balances")
-      .select("amount")
+      .select("amount, bonus_balance")
       .eq("user_id", user.id)
       .single();
 
@@ -438,16 +438,27 @@ const Create = () => {
       return;
     }
 
-    if (bal.amount < totalDeduction) {
+    // Referral bonus can only cover the creation fee portion, not liquidity
+    const feeAmount = feeBypass ? marketCreationFee : 0;
+    const bonusForFee = Math.min(Number(bal.bonus_balance || 0), feeAmount);
+    const feeFromMain = feeAmount - bonusForFee;
+    const mainDeduction = liquidityAmount + feeFromMain;
+
+    if (bal.amount < mainDeduction) {
       setSubmitStep("error");
-      toast.error(`Insufficient balance. You need $${totalDeduction} USDT but have $${bal.amount.toFixed(2)}.`);
+      const totalNeeded = mainDeduction + bonusForFee;
+      toast.error(`Insufficient balance. You need $${totalNeeded.toFixed(2)} USDT but have $${(Number(bal.amount) + Number(bal.bonus_balance || 0)).toFixed(2)}.`);
       return;
     }
 
-    // Deduct total (liquidity + fee if bypass) from creator's balance
+    // Deduct: main balance for liquidity + remaining fee, bonus for fee portion
     const { error: deductError } = await supabase
       .from("balances")
-      .update({ amount: bal.amount - totalDeduction, updated_at: new Date().toISOString() })
+      .update({
+        amount: Number(bal.amount) - mainDeduction,
+        bonus_balance: Number(bal.bonus_balance || 0) - bonusForFee,
+        updated_at: new Date().toISOString(),
+      })
       .eq("user_id", user.id);
 
     if (deductError) {
