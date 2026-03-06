@@ -235,7 +235,7 @@ const Feed = () => {
   const { data: markets = [], isLoading, refetch } = useMarkets();
   const { boostedMarketIds, boostDetails } = useActiveBoosts();
   const { track } = useAnalytics();
-  const isMobile = useIsMobile();
+  const isDesktop = useIsDesktop();
 
   useEffect(() => { track("page_view", { page: "feed" }); }, []);
 
@@ -258,7 +258,7 @@ const Feed = () => {
   const endToastShown = useRef(false);
 
   useEffect(() => {
-    if (!isMobile) return;
+    if (isDesktop) return;
     const container = containerRef.current;
     if (!container) return;
     const handleScroll = () => {
@@ -282,7 +282,7 @@ const Feed = () => {
     };
     container.addEventListener("scroll", handleScroll, { passive: true });
     return () => container.removeEventListener("scroll", handleScroll);
-  }, [sortedMarkets.length, isMobile]);
+  }, [sortedMarkets.length, isDesktop]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const container = containerRef.current;
@@ -355,8 +355,8 @@ const Feed = () => {
 
   const pullProgress = Math.min(pullDistance / PULL_THRESHOLD, 1);
 
-  /* ── Desktop / Tablet Layout ── */
-  if (!isMobile) {
+  /* ── Desktop Layout (≥1024px) ── */
+  if (isDesktop) {
     return (
       <div className="min-h-dvh bg-background">
         <SEOHead title="Feed" description="Browse prediction markets. Vote YES or NO on real-world events." path="/feed" />
