@@ -13,6 +13,7 @@ const AdminSettings = () => {
   const [referralReward, setReferralReward] = useState("");
   const [minTokenBalance, setMinTokenBalance] = useState("");
   const [minNftBalance, setMinNftBalance] = useState("");
+  const [minWithdrawalAmount, setMinWithdrawalAmount] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
@@ -30,6 +31,7 @@ const AdminSettings = () => {
         setReferralReward(String(data.referral_reward_amount ?? 5));
         setMinTokenBalance(String(data.min_token_balance ?? 10000000));
         setMinNftBalance(String(data.min_nft_balance ?? 1));
+        setMinWithdrawalAmount(String((data as any).min_withdrawal_amount ?? 5));
         setSettingsId(data.id);
       }
       if (error) console.error(error);
@@ -43,9 +45,10 @@ const AdminSettings = () => {
   const referralNum = parseFloat(referralReward) || 0;
   const tokenNum = parseFloat(minTokenBalance) || 0;
   const nftNum = parseInt(minNftBalance) || 0;
+  const minWithdrawNum = parseFloat(minWithdrawalAmount) || 0;
   const totalFee = adminNum + creatorNum;
   const poolPercent = 100 - totalFee;
-  const isValid = adminNum >= 0 && creatorNum >= 0 && totalFee <= 100 && referralNum >= 0 && tokenNum >= 0 && nftNum >= 0;
+  const isValid = adminNum >= 0 && creatorNum >= 0 && totalFee <= 100 && referralNum >= 0 && tokenNum >= 0 && nftNum >= 0 && minWithdrawNum >= 0;
 
   const handleSave = async () => {
     if (!isValid || !settingsId) {
@@ -63,9 +66,10 @@ const AdminSettings = () => {
           referral_reward_amount: referralNum,
           min_token_balance: tokenNum,
           min_nft_balance: nftNum,
+          min_withdrawal_amount: minWithdrawNum,
           updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
-        })
+        } as any)
         .eq("id", settingsId);
       if (error) throw error;
       toast.success("Commission settings saved");
