@@ -6,11 +6,215 @@ import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { useMarkets } from "@/hooks/useMarkets";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
-import { Loader2 } from "lucide-react";
+import { Loader2, TrendingUp, Users, Clock, Heart, MessageCircle, Zap, Flame, ExternalLink } from "lucide-react";
 import { motion, useAnimation } from "framer-motion";
 import useAnalytics from "@/hooks/useAnalytics";
+import CategoryIcon from "@/components/CategoryIcon";
+import { useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useCommentCount } from "@/hooks/useCommentCount";
+import { useLikeCount } from "@/hooks/useLikeCount";
+import BoostCountdown from "@/components/BoostCountdown";
 
 const PULL_THRESHOLD = 80;
+
+const formatVolume = (v: number) => {
+  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`;
+  return `$${v}`;
+};
+
+const getTimeRemaining = (endDate: string) => {
+  const diff = new Date(endDate).getTime() - Date.now();
+  if (diff <= 0) return "Ended";
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  if (days > 365) return `${Math.floor(days / 365)}y left`;
+  if (days > 30) return `${Math.floor(days / 30)}mo left`;
+  if (days >= 1) return `${days}d left`;
+  if (hours >= 1) return `${hours}h left`;
+  return `< 1h left`;
+};
+
+const optionColors = ["#02C7FC", "#EF4444", "#EAB308", "#A855F7", "#F97316", "#9CA3AF"];
+
+const CommentBadge = ({ marketId }: { marketId: string }) => {
+  const count = useCommentCount(marketId);
+  if (count === 0) return null;
+  return (
+    <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+      <MessageCircle className="w-3 h-3" />
+      {count}
+    </span>
+  );
+};
+
+const LikeBadge = ({ marketId }: { marketId: string }) => {
+  const count = useLikeCount(marketId);
+  if (count === 0) return null;
+  return (
+    <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+      <Heart className="w-3 h-3" />
+      {count}
+    </span>
+  );
+};
+
+/* ── Desktop/Tablet Feed Card ── */
+const DesktopFeedCard = ({ market, isBoosted, boostEndsAt, boostTier }: {
+  market: any;
+  isBoosted: boolean;
+  boostEndsAt?: string;
+  boostTier?: string;
+}) => {
+  const navigate = useNavigate();
+  const yesPercent = Math.round(market.yesPrice * 100);
+  const noPercent = Math.round(market.noPrice * 100);
+  const isMulti = market.marketType === "multi" || market.marketType === "range";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`group glass rounded-2xl overflow-hidden cursor-pointer transition-all hover:-translate-y-1 hover:shadow-xl ${
+        isBoosted ? "ring-1 ring-primary/30" : ""
+      }`}
+      onClick={() => navigate(`/market/${market.id}`)}
+    >
+      {/* Image */}
+      <div className="relative h-44 lg:h-52 overflow-hidden">
+        {market.imageUrl ? (
+          <img
+            src={market.imageUrl}
+            alt={market.title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-primary/20 via-muted to-accent flex items-center justify-center">
+            <CategoryIcon category={market.category} className="w-12 h-12 text-muted-foreground/30" />
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent" />
+
+        {/* Category badge */}
+        <div className="absolute top-3 left-3 flex items-center gap-2">
+          <span className="px-2.5 py-1 rounded-full bg-background/70 backdrop-blur-sm text-[11px] font-medium text-foreground inline-flex items-center gap-1">
+            <CategoryIcon category={market.category} className="w-3 h-3" />
+            {market.category}
+          </span>
+          {isMulti && (
+            <span className="px-2 py-1 rounded-full bg-primary/20 backdrop-blur-sm text-[10px] font-bold text-primary">
+              {market.marketType === "range" ? "📊 Range" : "🎯 Multi"}
+            </span>
+          )}
+        </div>
+
+        {/* Boosted / Trending badge */}
+        {(isBoosted || market.trending) && (
+          <div className="absolute top-3 right-3">
+            <span className={`px-2 py-1 rounded-full text-[10px] font-semibold flex items-center gap-1 backdrop-blur-sm ${
+              isBoosted ? "bg-orange-500/20 text-orange-400" : "bg-primary/20 text-primary"
+            }`}>
+              {isBoosted ? <><Flame className="w-3 h-3" /> Boosted</> : <><Zap className="w-3 h-3" /> Trending</>}
+            </span>
+          </div>
+        )}
+
+        {/* Chance overlay */}
+        <div className="absolute bottom-3 left-3">
+          {isMulti && market.options?.length ? (() => {
+            const leading = market.options.reduce((a: any, b: any) => b.price > a.price ? b : a);
+            return (
+              <span className="px-2.5 py-1 rounded-full bg-background/70 backdrop-blur-sm text-xs font-bold neon-yes">
+                {Math.round(leading.price * 100)}% · {leading.label}
+              </span>
+            );
+          })() : (
+            <span className="px-2.5 py-1 rounded-full bg-background/70 backdrop-blur-sm text-xs font-bold neon-yes">
+              {yesPercent}% Chance
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-4">
+        {isBoosted && boostEndsAt && (
+          <div className="mb-2">
+            <BoostCountdown endsAt={boostEndsAt} tier={boostTier} />
+          </div>
+        )}
+
+        <h3 className="text-sm font-bold leading-snug mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+          {market.title}
+        </h3>
+
+        <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{market.description}</p>
+
+        {/* Stats */}
+        <div className="flex items-center gap-3 mb-3 text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <TrendingUp className="w-3 h-3" /> {formatVolume(market.volume)}
+          </span>
+          <span className="flex items-center gap-1">
+            <Users className="w-3 h-3" /> {market.participants.toLocaleString()}
+          </span>
+          <span className="flex items-center gap-1">
+            <Clock className="w-3 h-3" /> {getTimeRemaining(market.endDate)}
+          </span>
+          <CommentBadge marketId={market.id} />
+          <LikeBadge marketId={market.id} />
+        </div>
+
+        {/* Prediction buttons */}
+        {isMulti && market.options ? (
+          <div className="space-y-1.5">
+            {market.options.slice(0, 3).map((opt: any, i: number) => {
+              const pct = Math.round(opt.price * 100);
+              const color = optionColors[i % optionColors.length];
+              return (
+                <div
+                  key={opt.id}
+                  className="relative rounded-lg px-3 py-2 flex items-center justify-between overflow-hidden"
+                  style={{ background: `${color}10` }}
+                >
+                  <div
+                    className="absolute inset-0 rounded-lg"
+                    style={{ background: `linear-gradient(90deg, ${color}18 0%, transparent ${pct}%)` }}
+                  />
+                  <div className="flex items-center gap-2 relative z-10">
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                    <span className="text-xs font-medium">{opt.label}</span>
+                  </div>
+                  <span className="text-xs font-bold relative z-10" style={{ color }}>{pct}¢</span>
+                </div>
+              );
+            })}
+            {market.options.length > 3 && (
+              <p className="text-[10px] text-primary font-medium text-center">+{market.options.length - 3} more</p>
+            )}
+          </div>
+        ) : (
+          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={(e) => { e.stopPropagation(); navigate(`/market/${market.id}`); }}
+              className="flex-1 btn-yes py-2.5 rounded-xl font-bold text-xs tracking-wide transition-all active:scale-95"
+            >
+              Yes {yesPercent}¢
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); navigate(`/market/${market.id}`); }}
+              className="flex-1 btn-no py-2.5 rounded-xl font-bold text-xs tracking-wide transition-all active:scale-95"
+            >
+              No {noPercent}¢
+            </button>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
 
 const Feed = () => {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -18,6 +222,7 @@ const Feed = () => {
   const { data: markets = [], isLoading, refetch } = useMarkets();
   const { boostedMarketIds, boostDetails } = useActiveBoosts();
   const { track } = useAnalytics();
+  const isMobile = useIsMobile();
 
   useEffect(() => { track("page_view", { page: "feed" }); }, []);
 
@@ -40,6 +245,7 @@ const Feed = () => {
   const endToastShown = useRef(false);
 
   useEffect(() => {
+    if (!isMobile) return;
     const container = containerRef.current;
     if (!container) return;
     const handleScroll = () => {
@@ -47,34 +253,23 @@ const Feed = () => {
       const index = Math.round(container.scrollTop / itemHeight);
       setActiveIndex(index);
 
-      // Detect overscroll past the last card
       const maxScroll = container.scrollHeight - container.clientHeight;
       const isAtEnd = container.scrollTop >= maxScroll - 5;
       const isOnLastCard = index >= sortedMarkets.length - 1;
 
       if (isAtEnd && isOnLastCard && sortedMarkets.length > 0 && !endToastShown.current) {
         endToastShown.current = true;
-        toast("Nothing more to see 👀", {
-          duration: 2000,
-          position: "top-center",
-        });
-        // Snap back to the last card
+        toast("Nothing more to see 👀", { duration: 2000, position: "top-center" });
         setTimeout(() => {
-          container.scrollTo({
-            top: (sortedMarkets.length - 1) * itemHeight,
-            behavior: "smooth",
-          });
+          container.scrollTo({ top: (sortedMarkets.length - 1) * itemHeight, behavior: "smooth" });
         }, 300);
       }
 
-      // Reset toast flag when user scrolls away from end
-      if (!isAtEnd) {
-        endToastShown.current = false;
-      }
+      if (!isAtEnd) endToastShown.current = false;
     };
     container.addEventListener("scroll", handleScroll, { passive: true });
     return () => container.removeEventListener("scroll", handleScroll);
-  }, [sortedMarkets.length]);
+  }, [sortedMarkets.length, isMobile]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const container = containerRef.current;
@@ -111,10 +306,7 @@ const Feed = () => {
     if (pullDistance >= PULL_THRESHOLD && !refreshing) {
       setRefreshing(true);
       setPullDistance(50);
-      spinControls.start({
-        rotate: 360,
-        transition: { repeat: Infinity, duration: 0.8, ease: "linear" },
-      });
+      spinControls.start({ rotate: 360, transition: { repeat: Infinity, duration: 0.8, ease: "linear" } });
       await refetch();
       spinControls.stop();
       setRefreshing(false);
@@ -150,6 +342,46 @@ const Feed = () => {
 
   const pullProgress = Math.min(pullDistance / PULL_THRESHOLD, 1);
 
+  /* ── Desktop / Tablet Layout ── */
+  if (!isMobile) {
+    return (
+      <div className="min-h-dvh bg-background">
+        <SEOHead title="Feed" description="Browse prediction markets. Vote YES or NO on real-world events." path="/feed" />
+        <TopBar />
+
+        <div className="px-6 lg:px-8 py-6 max-w-6xl mx-auto" style={{ paddingBottom: "2rem" }}>
+          <div className="flex items-center gap-3 mb-6">
+            <h1 className="text-2xl font-bold">Feed</h1>
+            <span className="text-sm text-muted-foreground">{sortedMarkets.length} markets</span>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
+            {sortedMarkets.map((market) => {
+              const boost = boostDetails.get(market.id);
+              return (
+                <DesktopFeedCard
+                  key={market.id}
+                  market={market}
+                  isBoosted={boostedMarketIds.has(market.id)}
+                  boostEndsAt={boost?.ends_at}
+                  boostTier={boost?.tier}
+                />
+              );
+            })}
+          </div>
+
+          {sortedMarkets.length === 0 && (
+            <div className="text-center py-20 text-muted-foreground">
+              <p className="text-lg font-medium">No markets yet</p>
+              <p className="text-sm mt-1">Check back soon for new prediction markets.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Mobile Layout (TikTok-style snap feed) ── */
   return (
     <div className="h-dvh flex flex-col bg-background">
       <SEOHead title="Feed" description="Swipe through prediction markets like TikTok. Vote YES or NO on real-world events." path="/feed" />
@@ -157,7 +389,7 @@ const Feed = () => {
 
       {/* Pull-to-refresh indicator */}
       <motion.div
-        className="fixed left-0 right-0 z-40 flex items-center justify-center pointer-events-none md:max-w-2xl md:mx-auto"
+        className="fixed left-0 right-0 z-40 flex items-center justify-center pointer-events-none"
         style={{ top: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}
         initial={{ opacity: 0, y: -20 }}
         animate={{
@@ -171,7 +403,7 @@ const Feed = () => {
             animate={refreshing ? spinControls : { rotate: pullProgress * 180 }}
             transition={{ type: "tween", duration: 0 }}
           >
-            <Loader2 className={`w-4 h-4 text-primary ${refreshing ? '' : ''}`} />
+            <Loader2 className="w-4 h-4 text-primary" />
           </motion.div>
           <span className="text-xs font-medium text-muted-foreground">
             {refreshing ? "Refreshing…" : pullProgress >= 1 ? "Release to refresh" : "Pull to refresh"}
@@ -181,7 +413,7 @@ const Feed = () => {
 
       <div
         ref={containerRef}
-        className="snap-feed md:max-w-2xl md:mx-auto"
+        className="snap-feed"
         style={{ height: 'calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px))' }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
