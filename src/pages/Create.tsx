@@ -423,6 +423,10 @@ const Create = () => {
     }
 
     // Save to database
+    const autoResolveDeadline = autoResolve && endDate && autoResolveTime
+      ? new Date(`${endDate}T${autoResolveTime}:00Z`).toISOString()
+      : null;
+
     const { data, error } = await supabase
       .from("markets")
       .insert({
@@ -440,9 +444,14 @@ const Create = () => {
         liquidity: liquidityAmount,
         tx_hash: mockTxHash,
         contract_address: mockContractAddr,
-        market_type: marketType,
+        market_type: autoResolve ? "binary" : marketType,
         status: marketStatus,
-      })
+        auto_resolve: autoResolve,
+        auto_resolve_asset: autoResolve ? autoResolveAsset : null,
+        auto_resolve_target_price: autoResolve ? parseFloat(autoResolveTargetPrice) : null,
+        auto_resolve_operator: autoResolve ? autoResolveOperator : null,
+        auto_resolve_deadline: autoResolveDeadline,
+      } as any)
       .select("id")
       .maybeSingle();
 
