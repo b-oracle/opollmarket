@@ -10,6 +10,7 @@ import {
   ArrowDown,
   History,
   ChevronDown,
+  Loader2,
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, ReferenceLine } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
@@ -609,68 +610,77 @@ export default function QuickTrade() {
               </div>
             )}
 
-            {/* Mini price chart */}
-            {(() => {
-              const cutoff = Date.now() - chartMs;
-              const filtered = priceHistory.filter(pt => pt.ts >= cutoff);
-              if (filtered.length < 2) return null;
-              const isUp = filtered[filtered.length - 1].price >= filtered[0].price;
-              const upColor = "hsl(142, 76%, 36%)";
-              const downColor = "hsl(0, 84%, 60%)";
-              const color = isUp ? upColor : downColor;
-              return (
-                <div className="mt-3 -mx-2">
-                  {/* Timeframe buttons */}
-                  <div className="flex items-center justify-center gap-1 mb-2 px-2">
-                    {CHART_TIMEFRAMES.map((tf) => (
-                      <button
-                        key={tf.key}
-                        onClick={() => setChartTimeframe(tf.key)}
-                        className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all ${
-                          chartTimeframe === tf.key
-                            ? "bg-secondary text-foreground"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        {tf.label}
-                      </button>
-                    ))}
-                  </div>
-                  <ResponsiveContainer width="100%" height={100}>
-                    <AreaChart data={filtered} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={color} stopOpacity={0.3} />
-                          <stop offset="100%" stopColor={color} stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <YAxis domain={["dataMin", "dataMax"]} hide />
-                      <XAxis dataKey="time" hide />
-                      {activeRound?.open_price && (
-                        <ReferenceLine
-                          y={Number(activeRound.open_price)}
-                          stroke="hsl(var(--muted-foreground))"
-                          strokeDasharray="3 3"
-                          strokeOpacity={0.4}
-                        />
-                      )}
-                      <Area
-                        type="monotone"
-                        dataKey="price"
-                        stroke={color}
-                        strokeWidth={2}
-                        fill="url(#priceGradient)"
-                        dot={false}
-                        isAnimationActive={false}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                  <p className="text-[10px] text-muted-foreground text-center mt-1">
-                    Last {CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.label}
-                  </p>
+            {/* Chart timeframe selector + Mini price chart */}
+            <div className="mt-3 -mx-2">
+              <div className="flex items-center justify-center gap-1 mb-2 px-2">
+                {CHART_TIMEFRAMES.map((tf) => (
+                  <button
+                    key={tf.key}
+                    onClick={() => setChartTimeframe(tf.key)}
+                    className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all ${
+                      chartTimeframe === tf.key
+                        ? "bg-secondary text-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {tf.label}
+                  </button>
+                ))}
+              </div>
+              {historyLoading ? (
+                <div className="flex items-center justify-center h-[100px]">
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                 </div>
-              );
-            })()}
+              ) : (() => {
+                const cutoff = Date.now() - chartMs;
+                const filtered = priceHistory.filter(pt => pt.ts >= cutoff);
+                if (filtered.length < 2) return (
+                  <div className="flex items-center justify-center h-[100px]">
+                    <p className="text-[10px] text-muted-foreground">Waiting for price data...</p>
+                  </div>
+                );
+                const isUp = filtered[filtered.length - 1].price >= filtered[0].price;
+                const upColor = "hsl(142, 76%, 36%)";
+                const downColor = "hsl(0, 84%, 60%)";
+                const color = isUp ? upColor : downColor;
+                return (
+                  <>
+                    <ResponsiveContainer width="100%" height={100}>
+                      <AreaChart data={filtered} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={color} stopOpacity={0.3} />
+                            <stop offset="100%" stopColor={color} stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <YAxis domain={["dataMin", "dataMax"]} hide />
+                        <XAxis dataKey="time" hide />
+                        {activeRound?.open_price && (
+                          <ReferenceLine
+                            y={Number(activeRound.open_price)}
+                            stroke="hsl(var(--muted-foreground))"
+                            strokeDasharray="3 3"
+                            strokeOpacity={0.4}
+                          />
+                        )}
+                        <Area
+                          type="monotone"
+                          dataKey="price"
+                          stroke={color}
+                          strokeWidth={2}
+                          fill="url(#priceGradient)"
+                          dot={false}
+                          isAnimationActive={false}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                    <p className="text-[10px] text-muted-foreground text-center mt-1">
+                      Last {CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.label}
+                    </p>
+                  </>
+                );
+              })()}
+            </div>
           </div>
 
           {/* Pool info */}
