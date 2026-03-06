@@ -403,6 +403,10 @@ export type Database = {
           pinned_trending: boolean
           resolution_source: string
           resolved_side: string | null
+          sport_league: string | null
+          sport_match_id: string | null
+          sport_predicted_outcome: string | null
+          sport_type: string | null
           status: string
           title: string
           trending: boolean
@@ -437,6 +441,10 @@ export type Database = {
           pinned_trending?: boolean
           resolution_source: string
           resolved_side?: string | null
+          sport_league?: string | null
+          sport_match_id?: string | null
+          sport_predicted_outcome?: string | null
+          sport_type?: string | null
           status?: string
           title: string
           trending?: boolean
@@ -471,6 +479,10 @@ export type Database = {
           pinned_trending?: boolean
           resolution_source?: string
           resolved_side?: string | null
+          sport_league?: string | null
+          sport_match_id?: string | null
+          sport_predicted_outcome?: string | null
+          sport_type?: string | null
           status?: string
           title?: string
           trending?: boolean
