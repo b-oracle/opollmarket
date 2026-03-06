@@ -51,6 +51,7 @@ export default function TradingViewChart({
   const chartRef = useRef<IChartApi | null>(null);
   const rsiChartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const lineMainSeriesRef = useRef<ISeriesApi<"Area"> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null);
   const maSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const ma14SeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
@@ -60,6 +61,7 @@ export default function TradingViewChart({
   const macdHistRef = useRef<ISeriesApi<"Histogram"> | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [indicator, setIndicator] = useState<"rsi" | "macd">("rsi");
+  const [chartStyle, setChartStyle] = useState<"candle" | "line">("candle");
 
   const { activeTool, setActiveTool, clearDrawings, removeLastDrawing } =
     useChartDrawings(chartRef, candleSeriesRef, containerRef);
