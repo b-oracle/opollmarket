@@ -80,15 +80,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
-        // Transient sign-out recovery (only for unexpected disconnects)
-        if (!newSession && lastSessionRef.current && event === "SIGNED_OUT") {
-          const { data: recovered } = await supabase.auth.getSession();
-          if (recovered.session) {
-            lastSessionRef.current = recovered.session;
-            setSession(recovered.session);
-            setUser(recovered.session.user);
-            return;
-          }
+        // If signed out (intentional or not), clear everything — no recovery attempts
+        if (event === "SIGNED_OUT") {
+          lastSessionRef.current = null;
+          setSession(null);
+          setUser(null);
+          setIsAdmin(false);
+          setIsModerator(false);
+          setProfileDisplayName(null);
+          if (mounted.current) setLoading(false);
+          return;
         }
 
         lastSessionRef.current = newSession;
@@ -221,23 +222,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signOut = useCallback(async () => {
+    // Immediately clear all state so UI updates instantly
     signingOutRef.current = true;
     lastSessionRef.current = null;
+    setSession(null);
+    setUser(null);
+    setIsAdmin(false);
+    setIsModerator(false);
+    setProfileDisplayName(null);
+
+    // Fire-and-forget: attempt global sign-out, fall back to local, never block UI
     try {
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("timeout")), 5000)
-      );
-      await Promise.race([supabase.auth.signOut(), timeout]);
+      await Promise.race([
+        supabase.auth.signOut(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 3000)),
+      ]);
     } catch {
-      // If global sign-out fails/times out, force local
-      await supabase.auth.signOut({ scope: "local" });
+      try {
+        await Promise.race([
+          supabase.auth.signOut({ scope: "local" }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 2000)),
+        ]);
+      } catch {
+        // Both timed out — state is already cleared, session cookie will expire
+      }
     } finally {
-      // Clear state immediately regardless
-      setSession(null);
-      setUser(null);
-      setIsAdmin(false);
-      setIsModerator(false);
-      setProfileDisplayName(null);
       signingOutRef.current = false;
     }
   }, []);
