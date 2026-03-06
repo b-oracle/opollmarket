@@ -138,7 +138,8 @@ const AdminCreateMarket = () => {
     category &&
     endDate &&
     resolutionSource.trim().length >= 5 &&
-    (marketType === "binary" || options.filter((o) => o.trim()).length >= 2);
+    (marketType === "binary" || options.filter((o) => o.trim()).length >= 2) &&
+    !!imageFile;
 
   const handleSubmit = async () => {
     // Touch all fields on submit attempt
@@ -395,7 +396,7 @@ const AdminCreateMarket = () => {
       <div className="bg-card border border-border rounded-xl p-5">
         <label className="flex items-center gap-2 text-sm font-semibold mb-3">
           {mediaType === "video" ? <Video className="w-4 h-4 text-primary" /> : <ImageIcon className="w-4 h-4 text-primary" />}
-          Cover Media
+          Cover Media <span className="text-xs font-normal text-destructive">*</span>
         </label>
         <div className="grid grid-cols-2 gap-3 mb-4">
           <button

@@ -293,6 +293,13 @@ const Create = () => {
 
   const handleCreateMarket = useCallback(async () => {
     if (!user || !address) return;
+
+    // Validate cover image
+    if (!imageFile) {
+      toast.error("A cover image is required to create a market");
+      return;
+    }
+
     const liquidityAmount = parseFloat(initialLiquidity);
     const totalDeduction = feeBypass ? liquidityAmount + marketCreationFee : liquidityAmount;
     setSimilarMarkets([]);
@@ -1206,7 +1213,7 @@ const Create = () => {
               <div className="glass rounded-xl p-4">
                 <label className="flex items-center gap-2 text-sm font-semibold mb-2">
                   <ImageIcon className="w-4 h-4 text-primary" />
-                  Cover Image <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+                  Cover Image <span className="text-xs font-normal text-destructive">*</span>
                 </label>
                 {imagePreview ? (
                   <div className="relative rounded-xl overflow-hidden">
@@ -1221,10 +1228,11 @@ const Create = () => {
                 ) : (
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full h-32 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/40 hover:bg-primary/5 transition-all"
+                    className={`w-full h-32 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/40 hover:bg-primary/5 transition-all ${!imageFile ? "border-destructive/40" : "border-border"}`}
                   >
                     <Upload className="w-6 h-6 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground">Click to upload (max 5MB)</span>
+                    <span className="text-[10px] text-destructive">Required</span>
                   </button>
                 )}
                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
