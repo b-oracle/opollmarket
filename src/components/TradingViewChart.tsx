@@ -180,7 +180,21 @@ export default function TradingViewChart({
       handleScroll: { vertTouchDrag: false },
     });
 
-    candleSeriesRef.current = chart.addSeries(CandlestickSeries, { upColor: "#22c55e", downColor: "#ef4444", borderUpColor: "#22c55e", borderDownColor: "#ef4444", wickUpColor: "#22c55e", wickDownColor: "#ef4444" });
+    if (chartStyle === "candle") {
+      candleSeriesRef.current = chart.addSeries(CandlestickSeries, { upColor: "#22c55e", downColor: "#ef4444", borderUpColor: "#22c55e", borderDownColor: "#ef4444", wickUpColor: "#22c55e", wickDownColor: "#ef4444" });
+      lineMainSeriesRef.current = null;
+    } else {
+      lineMainSeriesRef.current = chart.addSeries(AreaSeries, {
+        lineColor: "hsl(var(--primary))",
+        topColor: isDark ? "hsla(193, 98%, 50%, 0.25)" : "hsla(193, 98%, 50%, 0.15)",
+        bottomColor: isDark ? "hsla(193, 98%, 50%, 0.02)" : "hsla(193, 98%, 50%, 0.01)",
+        lineWidth: 2,
+        priceLineVisible: true,
+        lastValueVisible: true,
+      });
+      candleSeriesRef.current = null;
+    }
+
     volumeSeriesRef.current = chart.addSeries(HistogramSeries, { priceFormat: { type: "volume" }, priceScaleId: "volume" });
     chart.priceScale("volume").applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
     maSeriesRef.current = chart.addSeries(LineSeries, { color: "hsl(45, 93%, 58%)", lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
@@ -192,7 +206,7 @@ export default function TradingViewChart({
     });
     ro.observe(containerRef.current);
     return () => { ro.disconnect(); chart.remove(); chartRef.current = null; };
-  }, [isDark]);
+  }, [isDark, chartStyle]);
 
   // Create indicator chart
   useEffect(() => {
