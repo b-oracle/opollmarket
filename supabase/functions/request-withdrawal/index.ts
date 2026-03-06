@@ -35,9 +35,18 @@ Deno.serve(async (req) => {
     const userId = user.id;
     const { amount, wallet_address, crypto_currency } = await req.json();
 
-    if (!amount || amount < 1 || amount > 50000) {
+    // Fetch min withdrawal from settings
+    const { data: settings } = await adminClient
+      .from("commission_settings")
+      .select("min_withdrawal_amount")
+      .limit(1)
+      .single();
+
+    const minWithdrawal = settings?.min_withdrawal_amount ?? 5;
+
+    if (!amount || amount < minWithdrawal || amount > 50000) {
       return new Response(
-        JSON.stringify({ error: "Amount must be between 1 and 50000" }),
+        JSON.stringify({ error: `Amount must be between $${minWithdrawal} and $50,000` }),
         { status: 400, headers: corsHeaders }
       );
     }
