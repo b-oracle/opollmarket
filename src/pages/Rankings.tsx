@@ -262,14 +262,18 @@ interface QuickTrader {
   totalWagered: number;
 }
 
-const useQuickTradeLeaderboard = () => {
+const useQuickTradeLeaderboard = (period: TimePeriod) => {
   const [quickTraders, setQuickTraders] = useState<QuickTrader[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
     (async () => {
-      const { data } = await supabase.rpc("get_quick_trade_leaderboard", { _limit: 20 });
+      const cutoff = getCutoffDate(period);
+      const { data } = await supabase.rpc("get_quick_trade_leaderboard", {
+        _limit: 20,
+        ...(cutoff ? { _cutoff: cutoff } : {}),
+      } as any);
       if (data) {
         setQuickTraders(
           (data as any[]).map((d) => ({
@@ -285,7 +289,7 @@ const useQuickTradeLeaderboard = () => {
       }
       setLoading(false);
     })();
-  }, []);
+  }, [period]);
 
   return { quickTraders, loading };
 };
@@ -386,7 +390,7 @@ const Rankings = () => {
 
   const { referrers, loading: refLoading } = useReferralLeaderboard(timePeriod);
   const { traders, loading: tradeLoading } = useTradingLeaderboard(timePeriod);
-  const { quickTraders, loading: quickLoading } = useQuickTradeLeaderboard();
+  const { quickTraders, loading: quickLoading } = useQuickTradeLeaderboard(timePeriod);
 
   const sortedReferrers = [...referrers].sort((a, b) =>
     referralSort === "totalEarned" ? b.totalEarned - a.totalEarned : b.totalReferrals - a.totalReferrals
@@ -434,8 +438,8 @@ const Rankings = () => {
           ))}
         </div>
 
-        {/* Time Period Filter — hide for quick trade since it's all-time */}
-        {tab !== "quick" && <TimePeriodSelector value={timePeriod} onChange={setTimePeriod} />}
+        {/* Time Period Filter */}
+        <TimePeriodSelector value={timePeriod} onChange={setTimePeriod} />
 
         {loading ? (
           <div className="flex justify-center py-16">
