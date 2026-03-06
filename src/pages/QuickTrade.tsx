@@ -162,7 +162,17 @@ export default function QuickTrade() {
     load();
   }, [user, activeRound?.status]);
 
-  // ── Price history for mini chart (last 15 min) ──
+  // ── Price history for mini chart ──
+  const CHART_TIMEFRAMES = [
+    { key: "5m", label: "5m", ms: 5 * 60 * 1000 },
+    { key: "15m", label: "15m", ms: 15 * 60 * 1000 },
+    { key: "1h", label: "1H", ms: 60 * 60 * 1000 },
+    { key: "4h", label: "4H", ms: 4 * 60 * 60 * 1000 },
+  ] as const;
+  type ChartTF = typeof CHART_TIMEFRAMES[number]["key"];
+  const [chartTimeframe, setChartTimeframe] = useState<ChartTF>("15m");
+  const chartMs = CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.ms;
+
   const [priceHistory, setPriceHistory] = useState<{ time: string; price: number; ts: number }[]>([]);
   const priceHistoryRef = useRef(priceHistory);
   priceHistoryRef.current = priceHistory;
