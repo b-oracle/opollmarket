@@ -27,6 +27,7 @@ import CategoryIcon from "@/components/CategoryIcon";
 import ReactMarkdown from "react-markdown";
 import FixtureSearch from "@/components/FixtureSearch";
 import { isYouTubeUrl, getYouTubeId } from "@/components/YouTubeEmbed";
+import { isPriceAutoResolveCategory, getAssetsForCategory, getAssetClassLabel, getResolutionSource } from "@/data/assetClasses";
 
 const CATEGORIES = [
   "Crypto", "Commodities", "Forex", "AI & Tech", "Science", "Economy",
@@ -93,7 +94,13 @@ const AdminCreateMarket = () => {
     setDescription(newDesc);
   };
 
-  const { getAssetsForCategory, isPriceAutoResolveCategory, getAssetClassLabel, getResolutionSource, OPERATORS } = await import("@/data/assetClasses");
+  const priceAssets = getAssetsForCategory(category);
+  const OPERATORS = [
+    { value: "at_or_above", label: "Reaches or exceeds" },
+    { value: "above", label: "Closes above" },
+    { value: "at_or_below", label: "Drops to or below" },
+    { value: "below", label: "Closes below" },
+  ];
   const SPORT_TYPES = [
     { value: "football", label: "Football (Soccer)" },
     { value: "basketball", label: "Basketball" },
