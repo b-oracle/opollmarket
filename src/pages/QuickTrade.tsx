@@ -10,9 +10,6 @@ import {
   ArrowDown,
   History,
   ChevronDown,
-  Trophy,
-  Crown,
-  Medal,
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, ReferenceLine } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
@@ -822,104 +819,10 @@ export default function QuickTrade() {
             })()}
           </div>
 
-          {/* ── Leaderboard ── */}
-          <QuickTradeLeaderboard />
 
         </div>
       </div>
       <BottomNav />
     </>
-  );
-}
-
-// ── Leaderboard Component ──
-function QuickTradeLeaderboard() {
-  const [leaders, setLeaders] = useState<{
-    user_id: string;
-    display_name: string;
-    avatar_url: string | null;
-    total_won: number;
-    total_wagered: number;
-    profit: number;
-    wins: number;
-    total_bets: number;
-  }[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const { data } = await supabase.rpc("get_quick_trade_leaderboard", { _limit: 10 });
-      if (data) setLeaders(data as any[]);
-      setLoading(false);
-    };
-    load();
-  }, []);
-
-  const rankIcon = (i: number) => {
-    if (i === 0) return <Crown className="w-4 h-4 text-amber-400" />;
-    if (i === 1) return <Medal className="w-4 h-4 text-gray-400" />;
-    if (i === 2) return <Medal className="w-4 h-4 text-amber-600" />;
-    return <span className="text-[10px] font-bold text-muted-foreground w-4 text-center">{i + 1}</span>;
-  };
-
-  return (
-    <div className="rounded-2xl border border-border bg-card p-4 mb-20">
-      <div className="flex items-center gap-2 mb-3">
-        <Trophy className="w-4 h-4 text-amber-400" />
-        <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">Top Traders</h2>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-8">
-          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : leaders.length === 0 ? (
-        <p className="text-xs text-muted-foreground text-center py-6">No winners yet — be the first!</p>
-      ) : (
-        <div className="space-y-1.5">
-          {leaders.map((l, i) => {
-            const winRate = l.total_bets > 0 ? Math.round((l.wins / l.total_bets) * 100) : 0;
-            return (
-              <div
-                key={l.user_id}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${
-                  i === 0 ? "bg-amber-500/8 border border-amber-500/20" : "bg-muted/20 border border-transparent"
-                }`}
-              >
-                <div className="shrink-0">{rankIcon(i)}</div>
-
-                {/* Avatar */}
-                <div className="w-8 h-8 rounded-full bg-muted overflow-hidden shrink-0">
-                  {l.avatar_url ? (
-                    <img src={l.avatar_url} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-xs font-bold text-muted-foreground">
-                      {l.display_name.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-foreground truncate">{l.display_name}</p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {l.wins}W/{l.total_bets - l.wins}L · {winRate}% WR
-                  </p>
-                </div>
-
-                {/* Profit */}
-                <div className="text-right shrink-0">
-                  <p className={`text-sm font-bold ${l.profit >= 0 ? "text-green-500" : "text-destructive"}`}>
-                    {l.profit >= 0 ? "+" : ""}${Number(l.profit).toFixed(2)}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">${Number(l.total_wagered).toFixed(0)} vol</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
   );
 }
