@@ -428,6 +428,7 @@ const Rankings = () => {
   const { referrers, loading: refLoading } = useReferralLeaderboard(timePeriod);
   const { traders, loading: tradeLoading } = useTradingLeaderboard(timePeriod);
   const { quickTraders, loading: quickLoading } = useQuickTradeLeaderboard(timePeriod);
+  const { streakUsers, loading: streakLoading } = useStreakLeaderboard();
 
   const sortedReferrers = [...referrers].sort((a, b) =>
     referralSort === "totalEarned" ? b.totalEarned - a.totalEarned : b.totalReferrals - a.totalReferrals
@@ -439,7 +440,7 @@ const Rankings = () => {
     return b.trades - a.trades;
   });
 
-  const loading = tab === "referrers" ? refLoading : tab === "quick" ? quickLoading : tradeLoading;
+  const loading = tab === "referrers" ? refLoading : tab === "quick" ? (quickSubTab === "streaks" ? streakLoading : quickLoading) : tradeLoading;
 
   return (
     <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
