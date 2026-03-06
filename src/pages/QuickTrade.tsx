@@ -121,8 +121,32 @@ export default function QuickTrade() {
   const [poolDown, setPoolDown] = useState(0);
   const [userBets, setUserBets] = useState<Bet[]>([]);
   const [selectedTimeframe, setSelectedTimeframe] = useState(TIMEFRAMES[2]); // default 5m
+  const [streak, setStreak] = useState<{ current_streak: number; best_streak: number } | null>(null);
 
   const isLocked = activeRound?.status === "locked" || timeLeft <= LOCK_BUFFER;
+
+  // Streak multiplier tiers (mirror backend)
+  const getStreakMultiplier = (s: number) => {
+    if (s >= 5) return 1.25;
+    if (s === 4) return 1.15;
+    if (s === 3) return 1.10;
+    if (s === 2) return 1.05;
+    return 1.0;
+  };
+
+  // Fetch user streak
+  useEffect(() => {
+    if (!user) { setStreak(null); return; }
+    const load = async () => {
+      const { data } = await supabase
+        .from("quick_trade_streaks")
+        .select("current_streak, best_streak")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      setStreak(data || { current_streak: 0, best_streak: 0 });
+    };
+    load();
+  }, [user, activeRound?.status]);
 
   // ── Price history for mini chart (last 15 min) ──
   const [priceHistory, setPriceHistory] = useState<{ time: string; price: number; ts: number }[]>([]);

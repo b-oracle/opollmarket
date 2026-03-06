@@ -19,6 +19,15 @@ const ASSET_GECKO_MAP: Record<string, string> = {
   LINK: "chainlink",
 };
 
+// Streak multiplier tiers
+function getStreakMultiplier(streak: number): number {
+  if (streak >= 5) return 1.25;
+  if (streak === 4) return 1.15;
+  if (streak === 3) return 1.10;
+  if (streak === 2) return 1.05;
+  return 1.0;
+}
+
 async function fetchCryptoPrice(asset: string): Promise<number | null> {
   const geckoId = ASSET_GECKO_MAP[asset.toUpperCase()];
   if (!geckoId) return null;
@@ -31,6 +40,38 @@ async function fetchCryptoPrice(asset: string): Promise<number | null> {
     return data[geckoId]?.usd ?? null;
   } catch {
     return null;
+  }
+}
+
+async function getOrCreateStreak(supabase: any, userId: string) {
+  const { data } = await supabase
+    .from("quick_trade_streaks")
+    .select("*")
+    .eq("user_id", userId)
+    .single();
+  if (data) return data;
+  // Create new streak row
+  const { data: created } = await supabase
+    .from("quick_trade_streaks")
+    .insert({ user_id: userId, current_streak: 0, best_streak: 0 })
+    .select()
+    .single();
+  return created || { user_id: userId, current_streak: 0, best_streak: 0 };
+}
+
+async function creditBalance(supabase: any, userId: string, amount: number) {
+  const { data: bal } = await supabase
+    .from("balances")
+    .select("amount")
+    .eq("user_id", userId)
+    .eq("currency", "USDT")
+    .single();
+  if (bal) {
+    await supabase
+      .from("balances")
+      .update({ amount: Number(bal.amount) + amount, updated_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .eq("currency", "USDT");
   }
 }
 
@@ -73,6 +114,7 @@ Deno.serve(async (req) => {
         });
       }
     }
+
     // 1. Find rounds that are past their deadline and still open/locked
     const deadline = new Date();
     const { data: rounds, error: fetchErr } = await supabase
@@ -102,12 +144,10 @@ Deno.serve(async (req) => {
     let resolvedCount = 0;
 
     for (const round of rounds) {
-      // Check if round end time has passed (created_at + duration_seconds)
       const endTime = new Date(
         new Date(round.created_at).getTime() + round.duration_seconds * 1000
       );
       if (deadline < endTime) {
-        // Lock the round if not yet locked
         if (round.status === "open") {
           await supabase
             .from("quick_rounds")
@@ -117,7 +157,6 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Fetch closing price
       const closePrice = await fetchCryptoPrice(round.asset);
       if (closePrice == null) continue;
 
@@ -125,7 +164,6 @@ Deno.serve(async (req) => {
       const result =
         closePrice > openPrice ? "up" : closePrice < openPrice ? "down" : "flat";
 
-      // Update round
       await supabase
         .from("quick_rounds")
         .update({
@@ -136,7 +174,6 @@ Deno.serve(async (req) => {
         })
         .eq("id", round.id);
 
-      // Fetch all bets for this round
       const { data: bets } = await supabase
         .from("quick_bets")
         .select("*")
@@ -149,36 +186,33 @@ Deno.serve(async (req) => {
       }
 
       if (result === "flat") {
-        // Refund all bets
         for (const bet of bets) {
           await supabase
             .from("quick_bets")
             .update({ payout: bet.amount, status: "refunded" })
             .eq("id", bet.id);
-          // Credit balance back
-          const { data: bal } = await supabase
-            .from("balances")
-            .select("amount")
-            .eq("user_id", bet.user_id)
-            .eq("currency", "USDT")
-            .single();
-          if (bal) {
-            await supabase
-              .from("balances")
-              .update({ amount: Number(bal.amount) + Number(bet.amount), updated_at: new Date().toISOString() })
-              .eq("user_id", bet.user_id)
-              .eq("currency", "USDT");
-          }
+          await creditBalance(supabase, bet.user_id, Number(bet.amount));
         }
         resolvedCount++;
         continue;
       }
 
-      const winners = bets.filter((b) => b.side === result);
-      const losers = bets.filter((b) => b.side !== result);
+      const winners = bets.filter((b: any) => b.side === result);
+      const losers = bets.filter((b: any) => b.side !== result);
 
-      const totalWinPool = winners.reduce((s, b) => s + Number(b.amount), 0);
-      const totalLosePool = losers.reduce((s, b) => s + Number(b.amount), 0);
+      const totalWinPool = winners.reduce((s: number, b: any) => s + Number(b.amount), 0);
+      const totalLosePool = losers.reduce((s: number, b: any) => s + Number(b.amount), 0);
+
+      // Reset streak for losers
+      for (const bet of losers) {
+        await supabase
+          .from("quick_trade_streaks")
+          .upsert({
+            user_id: bet.user_id,
+            current_streak: 0,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "user_id", ignoreDuplicates: false });
+      }
 
       if (winners.length === 0) {
         // All losers — refund minus commission
@@ -188,71 +222,75 @@ Deno.serve(async (req) => {
             .from("quick_bets")
             .update({ payout: refund, status: "lost" })
             .eq("id", bet.id);
-          const { data: bal } = await supabase
-            .from("balances")
-            .select("amount")
-            .eq("user_id", bet.user_id)
-            .eq("currency", "USDT")
-            .single();
-          if (bal) {
-            await supabase
-              .from("balances")
-              .update({ amount: Number(bal.amount) + refund, updated_at: new Date().toISOString() })
-              .eq("user_id", bet.user_id)
-              .eq("currency", "USDT");
-          }
+          await creditBalance(supabase, bet.user_id, refund);
         }
       } else if (losers.length === 0) {
-        // All winners — refund minus commission
+        // All winners — refund minus commission, increment streak
         for (const bet of winners) {
-          const refund = Number(bet.amount) * (1 - platformFee);
+          const streak = await getOrCreateStreak(supabase, bet.user_id);
+          const newStreak = (streak.current_streak || 0) + 1;
+          const multiplier = getStreakMultiplier(newStreak);
+          const baseRefund = Number(bet.amount) * (1 - platformFee);
+          const payout = baseRefund * multiplier;
+
           await supabase
             .from("quick_bets")
-            .update({ payout: refund, status: "won" })
+            .update({ payout, status: "won", streak: newStreak })
             .eq("id", bet.id);
-          const { data: bal } = await supabase
-            .from("balances")
-            .select("amount")
-            .eq("user_id", bet.user_id)
-            .eq("currency", "USDT")
-            .single();
-          if (bal) {
-            await supabase
-              .from("balances")
-              .update({ amount: Number(bal.amount) + refund, updated_at: new Date().toISOString() })
-              .eq("user_id", bet.user_id)
-              .eq("currency", "USDT");
+          await creditBalance(supabase, bet.user_id, payout);
+
+          // Update streak
+          await supabase
+            .from("quick_trade_streaks")
+            .upsert({
+              user_id: bet.user_id,
+              current_streak: newStreak,
+              best_streak: Math.max(newStreak, streak.best_streak || 0),
+              updated_at: new Date().toISOString(),
+            }, { onConflict: "user_id", ignoreDuplicates: false });
+
+          if (multiplier > 1) {
+            await supabase.from("notifications").insert({
+              user_id: bet.user_id,
+              title: `🔥 ${newStreak} Win Streak!`,
+              message: `${multiplier}x bonus applied! You won $${payout.toFixed(2)} on ${round.asset}.`,
+              type: "payout",
+            });
           }
         }
       } else {
-        // Normal payout: winners get stake back + share of losers' pool minus fee
+        // Normal payout with streak bonus
         const distributable = totalLosePool * (1 - platformFee);
 
         for (const bet of winners) {
+          const streak = await getOrCreateStreak(supabase, bet.user_id);
+          const newStreak = (streak.current_streak || 0) + 1;
+          const multiplier = getStreakMultiplier(newStreak);
           const share = Number(bet.amount) / totalWinPool;
-          const payout = Number(bet.amount) + distributable * share;
+          const basePayout = Number(bet.amount) + distributable * share;
+          const payout = basePayout * multiplier;
+
           await supabase
             .from("quick_bets")
-            .update({ payout, status: "won" })
+            .update({ payout, status: "won", streak: newStreak })
             .eq("id", bet.id);
-          const { data: bal } = await supabase
-            .from("balances")
-            .select("amount")
-            .eq("user_id", bet.user_id)
-            .eq("currency", "USDT")
-            .single();
-          if (bal) {
-            await supabase
-              .from("balances")
-              .update({ amount: Number(bal.amount) + payout, updated_at: new Date().toISOString() })
-              .eq("user_id", bet.user_id)
-              .eq("currency", "USDT");
-          }
-          // Notify winner
+          await creditBalance(supabase, bet.user_id, payout);
+
+          // Update streak
+          await supabase
+            .from("quick_trade_streaks")
+            .upsert({
+              user_id: bet.user_id,
+              current_streak: newStreak,
+              best_streak: Math.max(newStreak, streak.best_streak || 0),
+              updated_at: new Date().toISOString(),
+            }, { onConflict: "user_id", ignoreDuplicates: false });
+
+          const streakMsg = multiplier > 1 ? ` (🔥 ${newStreak} streak — ${multiplier}x bonus!)` : "";
           await supabase.from("notifications").insert({
             user_id: bet.user_id,
             title: "Quick Trade Won! 🎉",
-            message: `You won $${payout.toFixed(2)} on ${round.asset} ${result.toUpperCase()} prediction!`,
+            message: `You won $${payout.toFixed(2)} on ${round.asset} ${result.toUpperCase()} prediction!${streakMsg}`,
             type: "payout",
           });
         }
