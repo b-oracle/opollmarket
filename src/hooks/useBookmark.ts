@@ -55,6 +55,8 @@ export const useBookmark = (marketId: string | undefined) => {
         if (error) throw error;
         toast.success("Added to watchlist");
       }
+      queryClient.invalidateQueries({ queryKey: ["bookmark-count", marketId] });
+      queryClient.invalidateQueries({ queryKey: ["bookmarked-markets"] });
     } catch {
       setBookmarked(prev);
       toast.error("Failed to update watchlist");
