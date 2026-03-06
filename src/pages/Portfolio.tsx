@@ -22,6 +22,7 @@ import {
   AlertTriangle,
   LogOut,
   Trophy,
+  Ban,
 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
@@ -31,6 +32,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import useAnalytics from "@/hooks/useAnalytics";
+import { useUserLimitOrders, useCancelLimitOrder } from "@/hooks/useLimitOrders";
 
 interface PositionRow {
   id: string;
@@ -70,6 +72,7 @@ interface EnrichedPosition {
 }
 
 type FilterType = "all" | "profit" | "loss";
+type PortfolioTab = "positions" | "orders";
 
 const Sparkline = ({ avgPrice, currentPrice, seed }: { avgPrice: number; currentPrice: number; seed: string }) => {
   const count = 20;
@@ -124,12 +127,15 @@ const Portfolio = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<FilterType>("all");
+  const [activeTab, setActiveTab] = useState<PortfolioTab>("positions");
   const [sellTarget, setSellTarget] = useState<EnrichedPosition | null>(null);
   const [sellStep, setSellStep] = useState<"confirm" | "executing" | "success" | "error">("confirm");
   const [winModal, setWinModal] = useState<{ open: boolean; market: string; side: "YES" | "NO"; payout: number; profit: number }>({
     open: false, market: "", side: "YES", payout: 0, profit: 0,
   });
   const { track } = useAnalytics();
+  const { data: userLimitOrders = [], isLoading: limitOrdersLoading } = useUserLimitOrders();
+  const cancelLimitOrder = useCancelLimitOrder();
 
   useEffect(() => { track("page_view", { page: "portfolio" }); }, []);
 
