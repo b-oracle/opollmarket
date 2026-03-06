@@ -327,6 +327,15 @@ const Index = () => {
                     <span className="text-[10px] text-muted-foreground font-mono ml-auto">{formatVolume(market.volume)} Vol</span>
                   </div>
                   <h4 className="text-sm font-bold leading-snug truncate mb-1.5 group-hover:text-primary transition-colors">{market.title}</h4>
+                  {market.autoResolve && market.autoResolveAsset && !market.sportType && (
+                    <div className="mb-1.5">
+                      <LivePriceBadge
+                        asset={market.autoResolveAsset}
+                        targetPrice={market.autoResolveTargetPrice}
+                        operator={market.autoResolveOperator}
+                      />
+                    </div>
+                  )}
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-2 rounded-full overflow-hidden flex bg-muted">
                       {isMulti && market.options ? (
