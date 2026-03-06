@@ -202,7 +202,7 @@ const Index = () => {
         <div className="flex gap-1.5 p-1 rounded-xl bg-muted/50 mb-4">
           {([
             { key: "all" as const, label: "All" },
-            { key: "live" as const, label: "🔴 Live" },
+            { key: "live" as const, label: "🔴 Live", count: liveCount },
             { key: "new" as const, label: "New", icon: true },
             { key: "boosted" as const, label: "⚡ Boosted" },
             { key: "trending" as const, label: "🔥 Trending" },
