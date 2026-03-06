@@ -232,6 +232,7 @@ const DesktopFeedCard = ({ market, isBoosted, boostEndsAt, boostTier }: {
 };
 
 const Feed = () => {
+  const [tabOpen, setTabOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const { data: markets = [], isLoading, refetch } = useMarkets();
