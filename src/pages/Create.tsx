@@ -49,6 +49,7 @@ import { toast } from "sonner";
 import CategoryIcon from "@/components/CategoryIcon";
 import SwapModal from "@/components/SwapModal";
 import FixtureSearch from "@/components/FixtureSearch";
+import { isPriceAutoResolveCategory, getAssetsForCategory, getAssetClassLabel, getResolutionSource } from "@/data/assetClasses";
 
 const CATEGORIES = [
   "Crypto", "Commodities", "Forex", "AI & Tech", "Science", "Economy",
@@ -182,7 +183,7 @@ const Create = () => {
   const [options, setOptions] = useState<string[]>(["", ""]);
   const [videoUrl, setVideoUrl] = useState("");
 
-  // Auto-resolve state (Crypto only)
+  // Auto-resolve state
   const [autoResolve, setAutoResolve] = useState(false);
   const [autoResolveAsset, setAutoResolveAsset] = useState("BTC");
   const [autoResolveOperator, setAutoResolveOperator] = useState("at_or_above");
@@ -195,6 +196,8 @@ const Create = () => {
   const [sportPredictedOutcome, setSportPredictedOutcome] = useState("");
   const [sportLeague, setSportLeague] = useState("");
   const [selectedFixtureData, setSelectedFixtureData] = useState<{ homeTeam: string; awayTeam: string; date: string; league: string; venue: string } | null>(null);
+
+  const priceAssets = getAssetsForCategory(category);
 
   const generateSportsAutoFill = (fixture: { homeTeam: string; awayTeam: string; date: string; league: string; venue: string }, outcome: string) => {
     const matchDate = (() => { try { return new Date(fixture.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); } catch { return fixture.date; } })();
@@ -220,7 +223,6 @@ const Create = () => {
     setDescription(newDesc);
   };
 
-  const CRYPTO_ASSETS = ["BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "DOGE", "MATIC", "AVAX", "DOT", "LINK", "SHIB"];
   const OPERATORS = [
     { value: "at_or_above", label: "Reaches or exceeds" },
     { value: "above", label: "Closes above" },
