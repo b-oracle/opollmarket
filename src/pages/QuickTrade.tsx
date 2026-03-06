@@ -28,7 +28,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import StreakMilestoneModal from "@/components/StreakMilestoneModal";
-
+import ShareModal from "@/components/ShareModal";
+import watermarkLogo from "@/assets/watermark-logo.png";
 // ── Asset config ──
 const ASSETS = [
   { symbol: "BTC", label: "Bitcoin", geckoId: "bitcoin" },
