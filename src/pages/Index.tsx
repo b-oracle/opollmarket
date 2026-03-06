@@ -153,8 +153,44 @@ const Index = () => {
           className="hidden md:block mb-10"
         >
           <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/10 via-background to-accent/30 p-8 lg:p-10">
+            {/* Animated background elements */}
             <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-primary/5 blur-3xl" />
             <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-primary/8 blur-2xl" />
+            <motion.div
+              animate={{ y: [0, -20, 0], x: [0, 10, 0] }}
+              transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute top-12 right-[20%] w-3 h-3 rounded-full bg-primary/20"
+            />
+            <motion.div
+              animate={{ y: [0, 15, 0], x: [0, -8, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+              className="absolute top-24 right-[35%] w-2 h-2 rounded-full bg-primary/30"
+            />
+            <motion.div
+              animate={{ y: [0, -12, 0], x: [0, 15, 0] }}
+              transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+              className="absolute bottom-20 right-[25%] w-4 h-4 rounded-full bg-primary/10"
+            />
+            <motion.div
+              animate={{ y: [0, 18, 0], rotate: [0, 180, 360] }}
+              transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+              className="absolute top-8 left-[40%] w-2.5 h-2.5 rounded-sm bg-primary/15 rotate-45"
+            />
+            <motion.div
+              animate={{ y: [0, -15, 0], x: [0, -12, 0] }}
+              transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 3 }}
+              className="absolute bottom-12 left-[15%] w-2 h-2 rounded-full bg-primary/25"
+            />
+            <motion.div
+              animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.25, 0.1] }}
+              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+              className="absolute top-16 left-[60%] w-20 h-20 rounded-full bg-primary/5 blur-xl"
+            />
+            <motion.div
+              animate={{ y: [0, 10, 0], rotate: [0, -90, 0] }}
+              transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", delay: 4 }}
+              className="absolute bottom-28 right-[45%] w-1.5 h-1.5 rounded-full bg-primary/20"
+            />
             <div className="relative flex items-center justify-between gap-8">
               <div className="flex-1 max-w-xl">
                 <h1 className="text-4xl lg:text-5xl font-bold leading-tight mb-3">
