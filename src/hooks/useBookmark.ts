@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 export const useBookmark = (marketId: string | undefined) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [bookmarked, setBookmarked] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -53,6 +55,8 @@ export const useBookmark = (marketId: string | undefined) => {
         if (error) throw error;
         toast.success("Added to watchlist");
       }
+      queryClient.invalidateQueries({ queryKey: ["bookmark-count", marketId] });
+      queryClient.invalidateQueries({ queryKey: ["bookmarked-markets"] });
     } catch {
       setBookmarked(prev);
       toast.error("Failed to update watchlist");
