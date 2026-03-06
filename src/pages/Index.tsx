@@ -178,7 +178,23 @@ const Index = () => {
           onBoost={(market) => setBoostModalMarket({ id: market.id, title: market.title })}
         />
 
-        {/* Search */}
+        <CategoryCarousel
+          title="Commodities"
+          icon={<Gem className="w-3.5 h-3.5 text-amber-500" />}
+          markets={commodityMarkets}
+          formatVolume={formatVolume}
+          onViewAll={() => { setCategoryFilter("Commodities"); setFilter("all"); }}
+        />
+
+        <CategoryCarousel
+          title="Forex"
+          icon={<ArrowLeftRight className="w-3.5 h-3.5 text-emerald-500" />}
+          markets={forexMarkets}
+          formatVolume={formatVolume}
+          onViewAll={() => { setCategoryFilter("Forex"); setFilter("all"); }}
+        />
+
+
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
