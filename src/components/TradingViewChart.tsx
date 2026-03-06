@@ -46,21 +46,13 @@ export default function TradingViewChart({
   chartMs,
   timeframeLabel,
 }: TradingViewChartProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const rsiContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
-  const rsiChartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const lineMainSeriesRef = useRef<ISeriesApi<"Area"> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null);
   const maSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const ma14SeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
-  const rsiSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
-  const macdLineRef = useRef<ISeriesApi<"Line"> | null>(null);
-  const macdSignalRef = useRef<ISeriesApi<"Line"> | null>(null);
-  const macdHistRef = useRef<ISeriesApi<"Histogram"> | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [indicator, setIndicator] = useState<"rsi" | "macd">("rsi");
   const [chartStyle, setChartStyle] = useState<"candle" | "line">("candle");
 
   const activeMainSeries = chartStyle === "candle" ? candleSeriesRef : lineMainSeriesRef;
