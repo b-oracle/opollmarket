@@ -275,6 +275,44 @@ export default function TradingViewChart({
           </div>
         </div>
         <div className="flex items-center gap-1">
+          {/* Drawing tools */}
+          <div className="flex items-center gap-0.5 bg-muted/40 rounded-md p-0.5">
+            <button
+              onClick={() => setActiveTool(activeTool === "none" ? "none" : "none")}
+              className={`p-1 rounded transition-all ${activeTool === "none" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              title="Select (cancel drawing)"
+            >
+              <MousePointer className="w-3 h-3" />
+            </button>
+            <button
+              onClick={() => setActiveTool(activeTool === "trendline" ? "none" : "trendline")}
+              className={`p-1 rounded transition-all ${activeTool === "trendline" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              title="Trendline — click two points"
+            >
+              <TrendingUp className="w-3 h-3" />
+            </button>
+            <button
+              onClick={() => setActiveTool(activeTool === "hline" ? "none" : "hline")}
+              className={`p-1 rounded transition-all ${activeTool === "hline" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              title="Horizontal line — click price level"
+            >
+              <Minus className="w-3 h-3" />
+            </button>
+            <button
+              onClick={removeLastDrawing}
+              className="p-1 rounded text-muted-foreground hover:text-foreground transition-all"
+              title="Undo last drawing"
+            >
+              <Undo2 className="w-3 h-3" />
+            </button>
+            <button
+              onClick={clearDrawings}
+              className="p-1 rounded text-muted-foreground hover:text-destructive transition-all"
+              title="Clear all drawings"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          </div>
           {/* Indicator toggle */}
           <div className="flex items-center gap-0.5 bg-muted/40 rounded-md p-0.5">
             <button
