@@ -426,7 +426,7 @@ const Feed = () => {
 
       <div
         ref={containerRef}
-        className="snap-feed w-full"
+        className="snap-feed w-full max-w-3xl mx-auto"
         style={{ height: 'calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px))' }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
