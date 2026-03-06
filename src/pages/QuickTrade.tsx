@@ -14,6 +14,7 @@ import {
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, ReferenceLine } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useConfetti } from "@/hooks/useConfetti";
 import { useUserBalance } from "@/hooks/useUserBalance";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -102,6 +103,7 @@ export default function QuickTrade() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { fireWinConfetti } = useConfetti();
 
   const [selectedAsset, setSelectedAsset] = useState(ASSETS[0]);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
@@ -288,16 +290,33 @@ export default function QuickTrade() {
   useEffect(() => {
     const channel = supabase
       .channel("quick-rounds-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "quick_rounds" }, (payload) => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "quick_rounds" }, async (payload) => {
         fetchActiveRound();
-        // Haptic on round resolution
+        // Haptic + confetti on round resolution
         if (payload.eventType === "UPDATE" && (payload.new as any)?.status === "resolved") {
           haptic("heavy");
+
+          // Check if user won this round
+          if (user) {
+            const resolvedResult = (payload.new as any)?.result;
+            const { data: myBets } = await supabase
+              .from("quick_bets")
+              .select("side")
+              .eq("round_id", (payload.new as any)?.id)
+              .eq("user_id", user.id)
+              .limit(1);
+
+            if (myBets && myBets.length > 0 && myBets[0].side === resolvedResult) {
+              fireWinConfetti();
+              haptic("success");
+              toast({ title: "You won! 🎉", description: `The round resolved ${resolvedResult?.toUpperCase()}` });
+            }
+          }
         }
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [fetchActiveRound]);
+  }, [fetchActiveRound, user, fireWinConfetti]);
 
   // ── Place bet ──
   const placeBet = async (side: "up" | "down") => {
