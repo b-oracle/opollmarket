@@ -613,79 +613,150 @@ export default function QuickTrade() {
             </div>
           )}
 
-          {/* Recent rounds */}
-          <div className="mb-4">
-            <div className="flex items-center gap-2 mb-3">
-              <History className="w-4 h-4 text-muted-foreground" />
-              <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">Recent Rounds</h2>
+          {/* ── Results History Panel ── */}
+          <div className="rounded-2xl border border-border bg-card p-4 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <History className="w-4 h-4 text-muted-foreground" />
+                <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">Results History</h2>
+              </div>
+              {/* Streak dots */}
+              {recentRounds.length > 0 && (
+                <div className="flex gap-1">
+                  {recentRounds.slice(0, 8).reverse().map((r) => (
+                    <div
+                      key={r.id}
+                      className={`w-2.5 h-2.5 rounded-full ${
+                        r.result === "up" ? "bg-green-500" : r.result === "down" ? "bg-destructive" : "bg-muted-foreground/40"
+                      }`}
+                      title={`${r.result?.toUpperCase() || "FLAT"}`}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
+
             {recentRounds.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-4">No resolved rounds yet</p>
+              <p className="text-xs text-muted-foreground text-center py-6">No resolved rounds yet for {selectedAsset.symbol}</p>
             ) : (
-              <div className="space-y-2">
-                {recentRounds.map((r) => (
-                  <div key={r.id} className="flex items-center justify-between rounded-xl bg-muted/30 px-4 py-2.5">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        r.result === "up" ? "bg-green-500/15" : r.result === "down" ? "bg-destructive/15" : "bg-muted"
-                      }`}>
-                        {r.result === "up" ? (
-                          <ArrowUp className="w-4 h-4 text-green-500" />
-                        ) : r.result === "down" ? (
-                          <ArrowDown className="w-4 h-4 text-destructive" />
+              <div className="space-y-1.5">
+                {recentRounds.map((r) => {
+                  // Find user's bet for this round
+                  const myBet = userBets.find((b) => b.round_id === r.id);
+                  const didWin = myBet?.status === "won";
+                  const didLose = myBet?.status === "lost";
+                  const priceDelta = r.open_price && r.close_price
+                    ? ((Number(r.close_price) - Number(r.open_price)) / Number(r.open_price) * 100)
+                    : 0;
+
+                  return (
+                    <div
+                      key={r.id}
+                      className={`flex items-center justify-between rounded-xl px-3 py-2.5 transition-colors ${
+                        myBet
+                          ? didWin
+                            ? "bg-green-500/8 border border-green-500/20"
+                            : didLose
+                              ? "bg-destructive/8 border border-destructive/20"
+                              : "bg-muted/30 border border-transparent"
+                          : "bg-muted/20 border border-transparent"
+                      }`}
+                    >
+                      {/* Left: result icon + info */}
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                          r.result === "up" ? "bg-green-500/15" : r.result === "down" ? "bg-destructive/15" : "bg-muted"
+                        }`}>
+                          {r.result === "up" ? (
+                            <ArrowUp className="w-4 h-4 text-green-500" />
+                          ) : r.result === "down" ? (
+                            <ArrowDown className="w-4 h-4 text-destructive" />
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground">—</span>
+                          )}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-xs font-bold text-foreground">
+                              {r.result?.toUpperCase() || "FLAT"}
+                            </p>
+                            <span className={`text-[10px] font-semibold ${
+                              priceDelta > 0 ? "text-green-500" : priceDelta < 0 ? "text-destructive" : "text-muted-foreground"
+                            }`}>
+                              {priceDelta > 0 ? "+" : ""}{priceDelta.toFixed(3)}%
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground">
+                            {r.duration_seconds < 60 ? `${r.duration_seconds}s` : `${Math.floor(r.duration_seconds / 60)}m`} · {new Date(r.resolved_at || r.created_at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Right: user result or price range */}
+                      <div className="text-right">
+                        {myBet ? (
+                          <>
+                            <div className="flex items-center gap-1 justify-end">
+                              <Badge
+                                variant={didWin ? "default" : didLose ? "destructive" : "secondary"}
+                                className="text-[9px] px-1.5 py-0 h-4"
+                              >
+                                {didWin ? "WON" : didLose ? "LOST" : "PENDING"}
+                              </Badge>
+                              <span className={`text-[10px] font-bold ${myBet.side === "up" ? "text-green-500" : "text-destructive"}`}>
+                                {myBet.side.toUpperCase()}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground">
+                              ${Number(myBet.amount).toFixed(2)}
+                              {didWin && (
+                                <span className="text-green-500 font-bold ml-1">→ ${Number(myBet.payout).toFixed(2)}</span>
+                              )}
+                            </p>
+                          </>
                         ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
+                          <p className="text-[10px] text-muted-foreground">
+                            ${Number(r.open_price).toLocaleString(undefined, { maximumFractionDigits: 2 })} → ${Number(r.close_price).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                          </p>
                         )}
                       </div>
-                      <div>
-                        <p className="text-xs font-semibold text-foreground">
-                          {r.result?.toUpperCase() || "FLAT"}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {new Date(r.resolved_at || r.created_at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
-                        </p>
-                      </div>
                     </div>
-                    <div className="text-right text-xs">
-                      <p className="text-muted-foreground">
-                        ${Number(r.open_price).toLocaleString(undefined, { maximumFractionDigits: 2 })} → ${Number(r.close_price).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
+
+            {/* Summary stats for user */}
+            {user && userBets.length > 0 && (() => {
+              const won = userBets.filter((b) => b.status === "won");
+              const lost = userBets.filter((b) => b.status === "lost");
+              const totalProfit = won.reduce((s, b) => s + (Number(b.payout) - Number(b.amount)), 0)
+                - lost.reduce((s, b) => s + Number(b.amount), 0);
+              const winRate = won.length + lost.length > 0
+                ? Math.round(won.length / (won.length + lost.length) * 100)
+                : 0;
+
+              return (
+                <div className="mt-3 pt-3 border-t border-border grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <p className="text-lg font-bold text-foreground">{won.length}<span className="text-muted-foreground text-xs">/{won.length + lost.length}</span></p>
+                    <p className="text-[10px] text-muted-foreground uppercase">Wins</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-foreground">{winRate}%</p>
+                    <p className="text-[10px] text-muted-foreground uppercase">Win Rate</p>
+                  </div>
+                  <div>
+                    <p className={`text-lg font-bold ${totalProfit >= 0 ? "text-green-500" : "text-destructive"}`}>
+                      {totalProfit >= 0 ? "+" : ""}${Math.abs(totalProfit).toFixed(2)}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground uppercase">P&L</p>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
-          {/* User bet history */}
-          {user && userBets.length > 0 && (
-            <div className="mb-20">
-              <div className="flex items-center gap-2 mb-3">
-                <Users className="w-4 h-4 text-muted-foreground" />
-                <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">Your Bets</h2>
-              </div>
-              <div className="space-y-2">
-                {userBets.slice(0, 10).map((b) => (
-                  <div key={b.id} className="flex items-center justify-between rounded-xl bg-muted/30 px-4 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <Badge variant={b.status === "won" ? "default" : b.status === "lost" ? "destructive" : "secondary"} className="text-[10px]">
-                        {b.status}
-                      </Badge>
-                      <span className={`text-xs font-bold ${b.side === "up" ? "text-green-500" : "text-destructive"}`}>
-                        {b.side.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="text-right text-xs">
-                      <p className="text-muted-foreground">Bet: ${Number(b.amount).toFixed(2)}</p>
-                      {b.status === "won" && (
-                        <p className="text-green-500 font-bold">Won: ${Number(b.payout).toFixed(2)}</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
       <BottomNav />
