@@ -1,11 +1,12 @@
 import LogoLoader from "@/components/LogoLoader";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import BottomSheet from "@/components/BottomSheet";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserBalance, usePlaceBet } from "@/hooks/useUserBalance";
+import { usePlaceLimitOrder } from "@/hooks/useLimitOrders";
 import { useRateLimit } from "@/hooks/useRateLimit";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import { useNavigate } from "react-router-dom";
@@ -22,11 +23,13 @@ import {
   Minus,
   Plus,
   LogIn,
+  Clock,
 } from "lucide-react";
 
 
 type BetSide = "yes" | "no";
 type ModalStep = "input" | "confirm" | "executing" | "success" | "error";
+type OrderType = "market" | "limit";
 
 interface BetModalProps {
   open: boolean;
@@ -49,6 +52,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
   const { balance, totalBalance } = useUserBalance();
   const { data: commission } = useCommissionSettings();
   const placeBet = usePlaceBet();
+  const placeLimitOrder = usePlaceLimitOrder();
   const navigate = useNavigate();
   const { checkLimit: checkBetLimit } = useRateLimit(5, 60000);
   const { track } = useAnalytics();
@@ -56,18 +60,24 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
   const [step, setStep] = useState<ModalStep>("input");
   const [errorMsg, setErrorMsg] = useState("");
   const [showTerms, setShowTerms] = useState(false);
+  const [orderType, setOrderType] = useState<OrderType>("market");
+  const [limitPriceInput, setLimitPriceInput] = useState("");
 
   const numAmount = parseFloat(amount) || 0;
+  const limitPriceNum = parseFloat(limitPriceInput) || 0;
+  const effectivePrice = orderType === "limit" ? limitPriceNum : price;
+
   const totalFeePercent = (commission?.admin_fee_percent ?? 2) + (commission?.creator_fee_percent ?? 3);
-  const fee = numAmount * (totalFeePercent / 100);
+  const fee = orderType === "market" ? numAmount * (totalFeePercent / 100) : 0; // no fee on limit orders until filled
   const poolAmount = numAmount - fee;
-  const shares = poolAmount > 0 ? poolAmount / (price / 100) : 0;
+  const shares = poolAmount > 0 && effectivePrice > 0 ? poolAmount / (effectivePrice / 100) : 0;
   const potentialPayout = shares;
   const totalCost = numAmount;
   const profit = potentialPayout - totalCost;
   const roi = numAmount > 0 ? (profit / totalCost) * 100 : 0;
 
-  const isValid = numAmount >= MIN_AMOUNT && numAmount <= MAX_AMOUNT && totalCost <= totalBalance;
+  const isLimitValid = orderType === "limit" ? limitPriceNum >= 1 && limitPriceNum <= 99 : true;
+  const isValid = numAmount >= MIN_AMOUNT && numAmount <= MAX_AMOUNT && totalCost <= totalBalance && isLimitValid;
 
   const handleAmountChange = (val: string) => {
     const cleaned = val.replace(/[^0-9.]/g, "");
@@ -76,6 +86,12 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
     if (parts[1] && parts[1].length > 2) return;
     if (parseFloat(cleaned) > MAX_AMOUNT) return;
     setAmount(cleaned);
+  };
+
+  const handleLimitPriceChange = (val: string) => {
+    const cleaned = val.replace(/[^0-9]/g, "");
+    if (parseInt(cleaned) > 99) return;
+    setLimitPriceInput(cleaned);
   };
 
   const adjustAmount = (delta: number) => {
@@ -93,26 +109,40 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
     setStep("executing");
     setErrorMsg("");
     try {
-      await placeBet.mutateAsync({
-        marketId,
-        optionId,
-        side,
-        amount: numAmount,
-        price,
-        shares,
-      });
-      track("bet_confirmed", { marketId, side, amount: numAmount });
+      if (orderType === "limit") {
+        await placeLimitOrder.mutateAsync({
+          marketId,
+          optionId,
+          side,
+          amount: numAmount,
+          limitPrice: limitPriceNum / 100, // store as decimal
+          shares,
+        });
+        track("limit_order_placed", { marketId, side, amount: numAmount, limitPrice: limitPriceNum });
+      } else {
+        await placeBet.mutateAsync({
+          marketId,
+          optionId,
+          side,
+          amount: numAmount,
+          price,
+          shares,
+        });
+        track("bet_confirmed", { marketId, side, amount: numAmount });
+      }
       setStep("success");
     } catch (err: any) {
       setErrorMsg(err?.message || "Transaction failed");
       setStep("error");
     }
-  }, [marketId, optionId, side, numAmount, price, shares, placeBet]);
+  }, [marketId, optionId, side, numAmount, price, shares, placeBet, placeLimitOrder, orderType, limitPriceNum]);
 
   const handleClose = () => {
     setAmount("");
     setStep("input");
     setErrorMsg("");
+    setOrderType("market");
+    setLimitPriceInput("");
     onClose();
   };
 
@@ -180,12 +210,68 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                       </div>
                     )}
 
+                    {/* Order Type Toggle */}
+                    <div className="flex gap-1 p-0.5 rounded-lg bg-muted/50 mb-3 w-full">
+                      <button
+                        onClick={() => setOrderType("market")}
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-xs font-semibold transition-all ${
+                          orderType === "market"
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <TrendingUp className="w-3 h-3" />
+                        Market
+                      </button>
+                      <button
+                        onClick={() => setOrderType("limit")}
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-xs font-semibold transition-all ${
+                          orderType === "limit"
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <Clock className="w-3 h-3" />
+                        Limit
+                      </button>
+                    </div>
+
                     <div className={`rounded-xl p-2.5 mb-3 border ${sideBgClass}`}>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">Current Price</span>
+                        <span className="text-xs text-muted-foreground">
+                          {orderType === "market" ? "Current Price" : "Market Price"}
+                        </span>
                         <span className={`text-xl font-bold ${sideTextClass}`}>{price}¢</span>
                       </div>
                     </div>
+
+                    {/* Limit Price Input */}
+                    {orderType === "limit" && (
+                      <div className="mb-3">
+                        <label className="text-xs text-muted-foreground mb-1 block">Limit Price (1¢ – 99¢)</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={limitPriceInput}
+                            onChange={(e) => handleLimitPriceChange(e.target.value)}
+                            placeholder={`e.g. ${Math.max(1, price - 5)}`}
+                            className="flex-1 text-center text-lg font-bold bg-muted/50 border border-border rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                          />
+                          <span className="text-sm font-semibold text-muted-foreground">¢</span>
+                        </div>
+                        {limitPriceNum > 0 && limitPriceNum >= price && (
+                          <p className="text-[10px] text-amber-500 mt-1">
+                            Tip: Set below {price}¢ to buy at a better price
+                          </p>
+                        )}
+                        {limitPriceNum > 0 && limitPriceNum < price && (
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            Order fills when price drops to {limitPriceNum}¢
+                          </p>
+                        )}
+                      </div>
+                    )}
 
                     <div className="mb-2">
                       <label className="text-xs text-muted-foreground mb-1 block">Amount (USDT)</label>
@@ -225,22 +311,40 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                       ))}
                     </div>
 
-                    {numAmount > 0 && (
+                    {numAmount > 0 && (orderType === "market" || (orderType === "limit" && limitPriceNum > 0)) && (
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="glass rounded-xl p-2.5 mb-4 space-y-1.5">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">
+                            {orderType === "limit" ? "Limit Price" : "Entry Price"}
+                          </span>
+                          <span className="font-semibold">{effectivePrice}¢</span>
+                        </div>
                         <div className="flex justify-between text-xs">
                           <span className="text-muted-foreground">Shares</span>
                           <span className="font-semibold">{shares.toFixed(2)}</span>
                         </div>
+                        {orderType === "market" && (
+                          <>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">Admin Fee ({commission?.admin_fee_percent ?? 2}%)</span>
+                              <span className="font-semibold">${(numAmount * (commission?.admin_fee_percent ?? 2) / 100).toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">Creator Fee ({commission?.creator_fee_percent ?? 3}%)</span>
+                              <span className="font-semibold">${(numAmount * (commission?.creator_fee_percent ?? 3) / 100).toFixed(2)}</span>
+                            </div>
+                          </>
+                        )}
+                        {orderType === "limit" && (
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Fees</span>
+                            <span className="font-semibold text-muted-foreground">Charged on fill</span>
+                          </div>
+                        )}
                         <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">Admin Fee ({commission?.admin_fee_percent ?? 2}%)</span>
-                          <span className="font-semibold">${(numAmount * (commission?.admin_fee_percent ?? 2) / 100).toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">Creator Fee ({commission?.creator_fee_percent ?? 3}%)</span>
-                          <span className="font-semibold">${(numAmount * (commission?.creator_fee_percent ?? 3) / 100).toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">Total Cost</span>
+                          <span className="text-muted-foreground">
+                            {orderType === "limit" ? "Escrowed Amount" : "Total Cost"}
+                          </span>
                           <span className="font-semibold">${totalCost.toFixed(2)}</span>
                         </div>
                         <div className="border-t border-border pt-2 flex justify-between text-xs">
@@ -262,13 +366,13 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                           setShowTerms(true);
                           return;
                         }
-                        track("bet_placed", { marketId, side, amount: numAmount });
+                        track(orderType === "limit" ? "limit_order_started" : "bet_placed", { marketId, side, amount: numAmount });
                         setStep("confirm");
                       }}
                       disabled={!isValid || !user || !isEmailVerified}
                       className={`w-full ${sideBtnClass} py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-40 disabled:active:scale-100 flex items-center justify-center gap-2`}
                     >
-                      Review Order <ArrowRight className="w-4 h-4" />
+                      Review {orderType === "limit" ? "Limit Order" : "Order"} <ArrowRight className="w-4 h-4" />
                     </button>
 
                     <TermsAcceptanceModal
@@ -276,7 +380,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                       onAccept={() => {
                         setShowTerms(false);
                         track("terms_accepted", {});
-                        track("bet_placed", { marketId, side, amount: numAmount });
+                        track(orderType === "limit" ? "limit_order_started" : "bet_placed", { marketId, side, amount: numAmount });
                         setStep("confirm");
                       }}
                       onClose={() => setShowTerms(false)}
@@ -288,9 +392,18 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                   <motion.div key="confirm" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
                     <div className="glass rounded-xl p-4 mb-4 space-y-3">
                       <h3 className="text-sm font-semibold flex items-center gap-2">
-                        <Shield className="w-4 h-4 text-primary" /> Order Summary
+                        <Shield className="w-4 h-4 text-primary" />
+                        {orderType === "limit" ? "Limit Order Summary" : "Order Summary"}
                       </h3>
                       <div className="space-y-2">
+                        {orderType === "limit" && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Order Type</span>
+                            <span className="font-bold flex items-center gap-1 text-amber-500">
+                              <Clock className="w-3.5 h-3.5" /> Limit
+                            </span>
+                          </div>
+                        )}
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Side</span>
                           <span className={`font-bold ${optionColor ? "" : sideTextClass}`} style={optionColor ? { color: optionColor } : undefined}>{optionLabel || side.toUpperCase()}</span>
@@ -300,17 +413,21 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                           <span className="font-semibold">${numAmount.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Price</span>
-                          <span className="font-semibold">{price}¢</span>
+                          <span className="text-muted-foreground">
+                            {orderType === "limit" ? "Limit Price" : "Price"}
+                          </span>
+                          <span className="font-semibold">{effectivePrice}¢</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Shares</span>
                           <span className="font-semibold">{shares.toFixed(2)}</span>
                         </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Fee</span>
-                          <span className="font-semibold">${fee.toFixed(2)}</span>
-                        </div>
+                        {orderType === "market" && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Fee</span>
+                            <span className="font-semibold">${fee.toFixed(2)}</span>
+                          </div>
+                        )}
                         <div className="border-t border-border pt-2 flex justify-between text-sm">
                           <span className="text-muted-foreground">Potential Payout</span>
                           <span className={`font-bold text-lg ${optionColor ? "" : sideTextClass}`} style={optionColor ? { color: optionColor } : undefined}>${potentialPayout.toFixed(2)}</span>
@@ -320,15 +437,17 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                     <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border mb-5">
                       <AlertTriangle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                       <p className="text-[10px] text-muted-foreground">
-                        By confirming, you authorize this prediction. Your balance will be deducted. Predictions are final. Shares resolve at $1.00 or $0.00.
+                        {orderType === "limit"
+                          ? "Your funds will be escrowed until the order is filled or cancelled. You can cancel anytime from your portfolio."
+                          : "By confirming, you authorize this prediction. Your balance will be deducted. Predictions are final. Shares resolve at $1.00 or $0.00."}
                       </p>
                     </div>
                     <div className="space-y-3">
                       <button onClick={() => setStep("input")} className="w-full glass py-3 rounded-xl font-semibold text-sm transition-all active:scale-95">
                         ← Back to Edit
                       </button>
-                      <button onClick={handleConfirm} disabled={placeBet.isPending} className={`w-full ${sideBtnClass} py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2`}>
-                        {placeBet.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Placing...</> : "Confirm Prediction"}
+                      <button onClick={handleConfirm} disabled={placeBet.isPending || placeLimitOrder.isPending} className={`w-full ${sideBtnClass} py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2`}>
+                        {(placeBet.isPending || placeLimitOrder.isPending) ? <><Loader2 className="w-4 h-4 animate-spin" /> Placing...</> : orderType === "limit" ? "Place Limit Order" : "Confirm Prediction"}
                       </button>
                     </div>
                   </motion.div>
@@ -337,8 +456,12 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                 {step === "executing" && (
                   <motion.div key="executing" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center py-8">
                     <LogoLoader size="lg" />
-                    <h3 className="text-lg font-bold mt-4 mb-1">Processing Prediction</h3>
-                    <p className="text-sm text-muted-foreground text-center">Placing your prediction...</p>
+                    <h3 className="text-lg font-bold mt-4 mb-1">
+                      {orderType === "limit" ? "Placing Limit Order" : "Processing Prediction"}
+                    </h3>
+                    <p className="text-sm text-muted-foreground text-center">
+                      {orderType === "limit" ? "Setting up your limit order..." : "Placing your prediction..."}
+                    </p>
                   </motion.div>
                 )}
 
@@ -350,17 +473,35 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                         ? { backgroundColor: `${optionColor}20`, borderColor: `${optionColor}66` }
                         : { backgroundColor: "hsl(var(--primary) / 0.2)", borderColor: "hsl(var(--primary) / 0.4)" }
                       }>
-                      <CheckCircle2 className="w-8 h-8" style={optionColor ? { color: optionColor } : { color: "hsl(var(--primary))" }} />
+                      {orderType === "limit" ? (
+                        <Clock className="w-8 h-8" style={optionColor ? { color: optionColor } : { color: "hsl(var(--primary))" }} />
+                      ) : (
+                        <CheckCircle2 className="w-8 h-8" style={optionColor ? { color: optionColor } : { color: "hsl(var(--primary))" }} />
+                      )}
                     </motion.div>
-                    <h3 className="text-lg font-bold mb-1" style={optionColor ? { color: optionColor } : undefined}>Prediction Placed!</h3>
+                    <h3 className="text-lg font-bold mb-1" style={optionColor ? { color: optionColor } : undefined}>
+                      {orderType === "limit" ? "Limit Order Placed!" : "Prediction Placed!"}
+                    </h3>
                     <p className="text-sm text-muted-foreground text-center mb-4">
-                      You bought <span className={`font-bold ${optionColor ? "" : sideTextClass}`} style={optionColor ? { color: optionColor } : undefined}>{shares.toFixed(2)}</span> {optionLabel || side.toUpperCase()} shares
+                      {orderType === "limit" ? (
+                        <>Buying <span className={`font-bold ${optionColor ? "" : sideTextClass}`} style={optionColor ? { color: optionColor } : undefined}>{shares.toFixed(2)}</span> {optionLabel || side.toUpperCase()} shares at {effectivePrice}¢</>
+                      ) : (
+                        <>You bought <span className={`font-bold ${optionColor ? "" : sideTextClass}`} style={optionColor ? { color: optionColor } : undefined}>{shares.toFixed(2)}</span> {optionLabel || side.toUpperCase()} shares</>
+                      )}
                     </p>
                     <div className="glass rounded-xl p-3 w-full space-y-1.5 mb-5">
                       <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Cost</span>
+                        <span className="text-muted-foreground">
+                          {orderType === "limit" ? "Escrowed" : "Cost"}
+                        </span>
                         <span className="font-semibold">${totalCost.toFixed(2)}</span>
                       </div>
+                      {orderType === "limit" && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Status</span>
+                          <span className="font-semibold text-amber-500">Pending</span>
+                        </div>
+                      )}
                       <div className="flex justify-between text-xs">
                         <span className="text-muted-foreground">Max Payout</span>
                         <span className={`font-bold ${optionColor ? "" : sideTextClass}`} style={optionColor ? { color: optionColor } : undefined}>${potentialPayout.toFixed(2)}</span>
@@ -372,7 +513,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                         onClick={() => { handleClose(); navigate("/portfolio"); }}
                         className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
                       >
-                        <TrendingUp className="w-4 h-4" /> View Portfolio
+                        <TrendingUp className="w-4 h-4" /> {orderType === "limit" ? "View Orders" : "View Portfolio"}
                       </button>
                     </div>
                   </motion.div>
@@ -383,7 +524,9 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                     <div className="w-16 h-16 rounded-full bg-destructive/20 border border-destructive/40 flex items-center justify-center mb-4">
                       <AlertTriangle className="w-8 h-8 text-destructive" />
                     </div>
-                    <h3 className="text-lg font-bold mb-1">Prediction Failed</h3>
+                    <h3 className="text-lg font-bold mb-1">
+                      {orderType === "limit" ? "Order Failed" : "Prediction Failed"}
+                    </h3>
                     <p className="text-sm text-muted-foreground text-center mb-5">{errorMsg || "Something went wrong. Please try again."}</p>
                     <div className="flex gap-3 w-full">
                       <button onClick={handleClose} className="flex-1 glass py-3 rounded-xl font-semibold text-sm transition-all active:scale-95">Cancel</button>

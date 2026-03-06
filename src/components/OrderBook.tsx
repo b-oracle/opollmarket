@@ -1,8 +1,9 @@
 import { useMemo, useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { BarChart3, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { BarChart3, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLimitOrders } from "@/hooks/useLimitOrders";
 
 interface OrderBookProps {
   yesPrice: number; // 0-100
@@ -15,6 +16,7 @@ interface OrderLevel {
   price: number;
   size: number;
   total: number;
+  limitVolume?: number;
 }
 
 interface RecentTrade {
@@ -51,7 +53,10 @@ const OrderBook = ({ yesPrice, noPrice, liquidity, marketId }: OrderBookProps) =
     refetchInterval: 15000,
   });
 
-  // Subscribe to real-time trade updates
+  // Fetch pending limit orders
+  const { data: limitOrders = [] } = useLimitOrders(marketId);
+
+  // Subscribe to real-time trade updates + limit order updates
   useEffect(() => {
     if (!marketId) return;
     const channel = supabase
@@ -68,29 +73,50 @@ const OrderBook = ({ yesPrice, noPrice, liquidity, marketId }: OrderBookProps) =
           queryClient.invalidateQueries({ queryKey: ["orderbook-trades", marketId] });
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "limit_orders",
+          filter: `market_id=eq.${marketId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["limit-orders", marketId] });
+        }
+      )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [marketId, queryClient]);
 
+  // Aggregate limit orders by price level
+  const limitOrderVolume = useMemo(() => {
+    const vol: Record<string, { yesVol: number; noVol: number }> = {};
+    limitOrders.forEach((o) => {
+      const priceKey = Math.round(Number(o.limit_price) * 100).toString();
+      if (!vol[priceKey]) vol[priceKey] = { yesVol: 0, noVol: 0 };
+      if (o.side === "yes") vol[priceKey].yesVol += Number(o.amount);
+      else vol[priceKey].noVol += Number(o.amount);
+    });
+    return vol;
+  }, [limitOrders]);
+
   // Derive AMM depth levels from liquidity & price
-  // For an AMM, we calculate how many shares you can buy at each price level
-  // based on the constant-product formula approximation
   const { bids, asks } = useMemo(() => {
     const levels = 8;
     const effectiveLiquidity = Math.max(liquidity, 100);
 
-    // Calculate size at each price level using AMM depth curve
-    // Size represents how many shares are available between this level and the next
     const bids: OrderLevel[] = [];
     let bidTotal = 0;
     for (let i = 0; i < levels; i++) {
       const price = Math.max(1, yesPrice - (i + 1) * 2);
-      // AMM depth: more liquidity available further from current price
       const depthFactor = effectiveLiquidity / 10;
       const size = Math.round(depthFactor * (2 / (price / 100)) * (1 / (i + 1)) * 0.5);
       bidTotal += size;
-      bids.push({ price, size: Math.max(1, size), total: bidTotal });
+      const priceKey = price.toString();
+      const limitVol = limitOrderVolume[priceKey]?.yesVol || 0;
+      bids.push({ price, size: Math.max(1, size), total: bidTotal, limitVolume: limitVol });
     }
 
     const asks: OrderLevel[] = [];
@@ -100,11 +126,13 @@ const OrderBook = ({ yesPrice, noPrice, liquidity, marketId }: OrderBookProps) =
       const depthFactor = effectiveLiquidity / 10;
       const size = Math.round(depthFactor * (2 / ((100 - price) / 100)) * (1 / (i + 1)) * 0.5);
       askTotal += size;
-      asks.push({ price, size: Math.max(1, size), total: askTotal });
+      const priceKey = price.toString();
+      const limitVol = limitOrderVolume[priceKey]?.noVol || 0;
+      asks.push({ price, size: Math.max(1, size), total: askTotal, limitVolume: limitVol });
     }
 
     return { bids, asks: asks.reverse() };
-  }, [yesPrice, liquidity]);
+  }, [yesPrice, liquidity, limitOrderVolume]);
 
   // Aggregate real trades into bid/ask volume at price levels
   const tradeVolume = useMemo(() => {
@@ -131,6 +159,8 @@ const OrderBook = ({ yesPrice, noPrice, liquidity, marketId }: OrderBookProps) =
     asks[0]?.total || 0
   );
 
+  const totalPendingOrders = limitOrders.length;
+
   const formatSize = (v: number) => {
     if (v >= 1000) return `${(v / 1000).toFixed(1)}K`;
     return v.toString();
@@ -153,6 +183,11 @@ const OrderBook = ({ yesPrice, noPrice, liquidity, marketId }: OrderBookProps) =
         <h3 className="text-sm font-semibold flex items-center gap-2">
           <BarChart3 className="w-4 h-4 text-primary" />
           Order Book
+          {totalPendingOrders > 0 && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-500 font-bold">
+              {totalPendingOrders} pending
+            </span>
+          )}
         </h3>
         <div className="flex items-center gap-2 text-[10px]">
           <span className="flex items-center gap-1">
@@ -163,10 +198,10 @@ const OrderBook = ({ yesPrice, noPrice, liquidity, marketId }: OrderBookProps) =
             <span className="w-2 h-2 rounded-sm" style={{ background: "hsl(var(--neon-no))" }} />
             Asks
           </span>
-          {maxTradeVol > 0 && (
-            <span className="flex items-center gap-1 text-muted-foreground">
-              <span className="w-2 h-2 rounded-sm border border-current opacity-50" />
-              Real Vol
+          {totalPendingOrders > 0 && (
+            <span className="flex items-center gap-1 text-amber-500">
+              <Clock className="w-2.5 h-2.5" />
+              Limit
             </span>
           )}
         </div>
@@ -211,9 +246,9 @@ const OrderBook = ({ yesPrice, noPrice, liquidity, marketId }: OrderBookProps) =
               )}
               <span className="relative z-10 font-medium" style={{ color: "hsl(var(--neon-no))" }}>
                 {formatSize(level.size)}
-                {realVol && (
-                  <span className="ml-1 text-[9px] opacity-70" title="Real trade volume">
-                    (${formatSize(Math.round(realVol.sellVol))})
+                {(level.limitVolume ?? 0) > 0 && (
+                  <span className="ml-1 text-[9px] text-amber-500" title="Limit order volume">
+                    +${formatSize(Math.round(level.limitVolume!))}
                   </span>
                 )}
               </span>
@@ -269,9 +304,9 @@ const OrderBook = ({ yesPrice, noPrice, liquidity, marketId }: OrderBookProps) =
               )}
               <span className="relative z-10 font-medium" style={{ color: "hsl(var(--neon-yes))" }}>
                 {formatSize(level.size)}
-                {realVol && (
-                  <span className="ml-1 text-[9px] opacity-70" title="Real trade volume">
-                    (${formatSize(Math.round(realVol.buyVol))})
+                {(level.limitVolume ?? 0) > 0 && (
+                  <span className="ml-1 text-[9px] text-amber-500" title="Limit order volume">
+                    +${formatSize(Math.round(level.limitVolume!))}
                   </span>
                 )}
               </span>
