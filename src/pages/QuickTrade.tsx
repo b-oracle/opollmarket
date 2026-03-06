@@ -436,7 +436,7 @@ export default function QuickTrade() {
     <>
       <SEOHead title="Quick Trade — Fast Predictions" description="Predict if crypto goes UP or DOWN in 5 minutes" />
       <TopBar />
-      <div className="min-h-screen bg-background pb-24 md:pb-8">
+      <div className="min-h-screen bg-background pb-24 md:pb-8 pt-[calc(3.5rem+env(safe-area-inset-top))]">
         <div className="max-w-xl mx-auto px-4 pt-4">
 
           {/* Header */}
