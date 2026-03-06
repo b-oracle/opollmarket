@@ -421,34 +421,36 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         </div>
 
         {/* Content */}
-        <div className="relative z-10 w-full max-w-[calc(100%-4rem)]">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
-              <span className="text-xs font-bold text-primary">{market.creatorName.charAt(0)}</span>
+        <div className="relative z-10 w-full max-w-[calc(100%-4rem)] overflow-hidden">
+          <div className="flex items-center gap-2 mb-2 overflow-x-auto scrollbar-hide">
+            <div className="w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0">
+              <span className="text-[10px] font-bold text-primary">{market.creatorName.charAt(0)}</span>
             </div>
-            <span className={`text-sm font-medium text-foreground/80 ${creatorProfile?.wallet_address ? 'font-mono' : ''}`}>{creatorLabel}</span>
+            <span className={`text-xs font-medium text-foreground/80 shrink-0 ${creatorProfile?.wallet_address ? 'font-mono' : ''}`}>{creatorLabel}</span>
             {market.autoResolve && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 bg-destructive/15 text-destructive border border-destructive/30">
-                <Radio className="w-3 h-3 animate-pulse" /> Live
+              <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold flex items-center gap-0.5 bg-destructive/15 text-destructive border border-destructive/30 shrink-0">
+                <Radio className="w-2.5 h-2.5 animate-pulse" /> Live
               </span>
             )}
             {market.autoResolve && market.sportType && market.sportMatchId && (
-              <LiveScoreBadge sportType={market.sportType} matchId={market.sportMatchId} />
+              <div className="shrink-0"><LiveScoreBadge sportType={market.sportType} matchId={market.sportMatchId} /></div>
             )}
             {market.autoResolve && market.autoResolveAsset && !market.sportType && (
-              <LivePriceBadge
-                asset={market.autoResolveAsset}
-                targetPrice={market.autoResolveTargetPrice ?? undefined}
-                operator={market.autoResolveOperator ?? undefined}
-              />
+              <div className="shrink-0">
+                <LivePriceBadge
+                  asset={market.autoResolveAsset}
+                  targetPrice={market.autoResolveTargetPrice ?? undefined}
+                  operator={market.autoResolveOperator ?? undefined}
+                />
+              </div>
             )}
             {showBoosted && (
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 ${
+              <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-semibold flex items-center gap-0.5 shrink-0 ${
                 isBoosted 
                   ? 'bg-primary/20 text-primary animate-pulse' 
                   : 'bg-primary/10 text-primary'
               }`}>
-                <Zap className="w-3 h-3" /> {isBoosted ? 'Boosted 🔥' : 'Trending'}
+                <Zap className="w-2.5 h-2.5" /> {isBoosted ? 'Boosted 🔥' : 'Trending'}
               </span>
             )}
           </div>
