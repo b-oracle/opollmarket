@@ -31,6 +31,7 @@ interface Trader {
 }
 
 type Tab = "referrers" | "traders" | "quick";
+type QuickSubTab = "profit" | "streaks";
 type ReferralSort = "totalEarned" | "totalReferrals";
 type TraderSort = "pnl" | "volume" | "trades";
 type TimePeriod = "week" | "month" | "all";
