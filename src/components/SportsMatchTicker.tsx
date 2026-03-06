@@ -41,6 +41,7 @@ interface MatchData {
   league?: string;
   leagueLogo?: string;
   venue?: string;
+  periodScores?: { label: string; home: number | null; away: number | null }[];
 }
 
 interface SportsMatchTickerProps {
@@ -203,6 +204,40 @@ export default function SportsMatchTicker({
                   <span className="text-xs font-bold text-center leading-tight">{match.awayTeam}</span>
                 </div>
               </div>
+
+              {/* Period Scores Breakdown */}
+              {match.periodScores && match.periodScores.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-border/50">
+                  <div className="grid gap-0" style={{ gridTemplateColumns: `1fr repeat(${match.periodScores.length}, minmax(0, 1fr)) 1fr` }}>
+                    {/* Header row */}
+                    <div className="text-[9px] text-muted-foreground font-medium py-1 px-1" />
+                    {match.periodScores.map((p, i) => (
+                      <div key={`h-${i}`} className="text-[9px] text-muted-foreground font-bold text-center py-1 uppercase">
+                        {p.label}
+                      </div>
+                    ))}
+                    <div className="text-[9px] text-muted-foreground font-bold text-center py-1">T</div>
+
+                    {/* Home row */}
+                    <div className="text-[10px] font-semibold truncate py-1 px-1">{match.homeTeam.split(' ').pop()}</div>
+                    {match.periodScores.map((p, i) => (
+                      <div key={`hv-${i}`} className="text-[10px] font-bold text-center py-1 tabular-nums">
+                        {p.home ?? '-'}
+                      </div>
+                    ))}
+                    <div className="text-[10px] font-black text-center py-1 tabular-nums text-primary">{match.homeScore}</div>
+
+                    {/* Away row */}
+                    <div className="text-[10px] font-semibold truncate py-1 px-1">{match.awayTeam.split(' ').pop()}</div>
+                    {match.periodScores.map((p, i) => (
+                      <div key={`av-${i}`} className="text-[10px] font-bold text-center py-1 tabular-nums">
+                        {p.away ?? '-'}
+                      </div>
+                    ))}
+                    <div className="text-[10px] font-black text-center py-1 tabular-nums text-primary">{match.awayScore}</div>
+                  </div>
+                </div>
+              )}
 
               {/* Match start time for upcoming */}
               {!match.isLive && !match.isFinished && matchStartStr && (
