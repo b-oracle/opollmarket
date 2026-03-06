@@ -124,6 +124,8 @@ export default function QuickTrade() {
   const [userBets, setUserBets] = useState<Bet[]>([]);
   const [selectedTimeframe, setSelectedTimeframe] = useState(TIMEFRAMES[2]); // default 5m
   const [streak, setStreak] = useState<{ current_streak: number; best_streak: number } | null>(null);
+  const [milestoneModal, setMilestoneModal] = useState<{ open: boolean; streak: number; multiplier: number }>({ open: false, streak: 0, multiplier: 1 });
+  const prevStreakRef = useRef<number>(0);
 
   const isLocked = activeRound?.status === "locked" || timeLeft <= LOCK_BUFFER;
 
