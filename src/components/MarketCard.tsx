@@ -404,6 +404,13 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             {market.autoResolve && market.sportType && market.sportMatchId && (
               <LiveScoreBadge sportType={market.sportType} matchId={market.sportMatchId} />
             )}
+            {market.autoResolve && market.autoResolveAsset && !market.sportType && (
+              <LivePriceBadge
+                asset={market.autoResolveAsset}
+                targetPrice={market.autoResolveTargetPrice ?? undefined}
+                operator={market.autoResolveOperator ?? undefined}
+              />
+            )}
             {showBoosted && (
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 ${
                 isBoosted 
