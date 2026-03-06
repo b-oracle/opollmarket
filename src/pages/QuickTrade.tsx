@@ -691,14 +691,14 @@ export default function QuickTrade() {
                 // Build candlestick data by grouping into buckets
                 const buildCandles = () => {
                   const bucketMs = Math.max(Math.floor(chartMs / 30), 5000);
-                  const candles: { ts: number; open: number; high: number; low: number; close: number; body: [number, number] }[] = [];
+                  const candles: { ts: number; open: number; high: number; low: number; close: number; volume: number; body: [number, number] }[] = [];
                   if (!filtered.length) return candles;
                   let bucketStart = filtered[0].ts;
                   let bucket: number[] = [];
                   for (const pt of filtered) {
                     if (pt.ts - bucketStart >= bucketMs && bucket.length) {
                       const o = bucket[0], c = bucket[bucket.length - 1];
-                      candles.push({ ts: bucketStart, open: o, high: Math.max(...bucket), low: Math.min(...bucket), close: c, body: [Math.min(o, c), Math.max(o, c)] });
+                      candles.push({ ts: bucketStart, open: o, high: Math.max(...bucket), low: Math.min(...bucket), close: c, volume: bucket.length, body: [Math.min(o, c), Math.max(o, c)] });
                       bucketStart = pt.ts;
                       bucket = [];
                     }
@@ -706,7 +706,7 @@ export default function QuickTrade() {
                   }
                   if (bucket.length) {
                     const o = bucket[0], c = bucket[bucket.length - 1];
-                    candles.push({ ts: bucketStart, open: o, high: Math.max(...bucket), low: Math.min(...bucket), close: c, body: [Math.min(o, c), Math.max(o, c)] });
+                    candles.push({ ts: bucketStart, open: o, high: Math.max(...bucket), low: Math.min(...bucket), close: c, volume: bucket.length, body: [Math.min(o, c), Math.max(o, c)] });
                   }
                   return candles;
                 };
@@ -723,6 +723,7 @@ export default function QuickTrade() {
                           <span className="text-muted-foreground">H</span><span className="font-mono font-semibold text-foreground">${d.high.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                           <span className="text-muted-foreground">L</span><span className="font-mono font-semibold text-foreground">${d.low.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                           <span className="text-muted-foreground">C</span><span className="font-mono font-semibold text-foreground">${d.close.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          <span className="text-muted-foreground">Vol</span><span className="font-mono font-semibold text-foreground">{d.volume}</span>
                         </div>
                       </div>
                     );
@@ -788,6 +789,18 @@ export default function QuickTrade() {
                           <Bar dataKey="body" shape={<CandlestickShape />} isAnimationActive={false}>
                             {candles.map((c, i) => (
                               <Cell key={i} fill={c.close >= c.open ? upColor : downColor} />
+                            ))}
+                          </Bar>
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                      {/* Volume bars */}
+                      <ResponsiveContainer width="100%" height={30}>
+                        <ComposedChart data={candles} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                          <XAxis dataKey="ts" hide />
+                          <YAxis domain={[0, 'dataMax']} hide />
+                          <Bar dataKey="volume" isAnimationActive={false} radius={[1, 1, 0, 0]}>
+                            {candles.map((c, i) => (
+                              <Cell key={i} fill={c.close >= c.open ? upColor : downColor} fillOpacity={0.35} />
                             ))}
                           </Bar>
                         </ComposedChart>
