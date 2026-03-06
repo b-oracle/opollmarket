@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 export const useBookmark = (marketId: string | undefined) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [bookmarked, setBookmarked] = useState(false);
   const [loading, setLoading] = useState(true);
 
