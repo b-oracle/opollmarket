@@ -137,6 +137,8 @@ const Portfolio = () => {
   const { track } = useAnalytics();
   const { data: userLimitOrders = [], isLoading: limitOrdersLoading } = useUserLimitOrders();
   const cancelLimitOrder = useCancelLimitOrder();
+  const { data: commission } = useCommissionSettings();
+  const exitFeePercent = commission?.exit_fee_percent ?? 5;
 
   useEffect(() => { track("page_view", { page: "portfolio" }); }, []);
 
