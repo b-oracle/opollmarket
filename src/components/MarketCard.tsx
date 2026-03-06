@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import watermarkLogo from "@/assets/watermark-logo.png";
-import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown, ExternalLink, Flame } from "lucide-react";
+import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown, ExternalLink, Flame, Radio } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Market } from "@/data/markets";
 import CategoryIcon from "@/components/CategoryIcon";
@@ -394,6 +394,11 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
               <span className="text-xs font-bold text-primary">{market.creatorName.charAt(0)}</span>
             </div>
             <span className={`text-sm font-medium text-foreground/80 ${creatorProfile?.wallet_address ? 'font-mono' : ''}`}>{creatorLabel}</span>
+            {market.autoResolve && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 bg-destructive/15 text-destructive border border-destructive/30">
+                <Radio className="w-3 h-3 animate-pulse" /> Live
+              </span>
+            )}
             {showBoosted && (
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 ${
                 isBoosted 

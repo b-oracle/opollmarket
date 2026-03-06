@@ -21,6 +21,7 @@ import { usePriceHistory } from "@/hooks/usePriceHistory";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
+import CryptoPriceTicker from "@/components/CryptoPriceTicker";
 import { useAuth } from "@/hooks/useAuth";
 import { useBookmark } from "@/hooks/useBookmark";
 import { toast } from "sonner";
@@ -566,26 +567,14 @@ const MarketDetail = () => {
 
         {market.details && <MarketDetailsCollapsible details={market.details} />}
 
-        {/* Auto-Resolve Badge */}
-        {market.autoResolve && market.autoResolveAsset && market.autoResolveTargetPrice && (
-          <div className="glass rounded-xl p-3 mb-4 flex items-start gap-3 border border-primary/20 bg-primary/5">
-            <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-              <Zap className="w-4 h-4 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">Auto-Resolves</span>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Resolves <span className="font-semibold text-foreground">YES</span> if {market.autoResolveAsset}/USD{" "}
-                {market.autoResolveOperator === "at_or_above" ? "≥" : market.autoResolveOperator === "above" ? ">" : market.autoResolveOperator === "at_or_below" ? "≤" : "<"}{" "}
-                <span className="font-semibold text-foreground">${market.autoResolveTargetPrice.toLocaleString()}</span>
-                {market.autoResolveDeadline && (
-                  <> by <span className="font-semibold text-foreground">{new Date(market.autoResolveDeadline).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })} UTC</span></>
-                )}
-              </p>
-            </div>
-          </div>
+        {/* Live Crypto Price Ticker */}
+        {market.autoResolve && market.autoResolveAsset && market.autoResolveTargetPrice && market.autoResolveOperator && (
+          <CryptoPriceTicker
+            asset={market.autoResolveAsset}
+            targetPrice={market.autoResolveTargetPrice}
+            operator={market.autoResolveOperator}
+            deadline={market.autoResolveDeadline}
+          />
         )}
 
         {activeBoost && (
