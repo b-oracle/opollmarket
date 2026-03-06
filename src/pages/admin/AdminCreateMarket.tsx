@@ -19,6 +19,7 @@ import {
   Video,
   Eye,
   EyeOff,
+  Zap,
 } from "lucide-react";
 
 import CategoryIcon from "@/components/CategoryIcon";
@@ -51,6 +52,21 @@ const AdminCreateMarket = () => {
   const [mediaType, setMediaType] = useState<"image" | "video">("image");
   const [details, setDetails] = useState("");
   const [showDetailsPreview, setShowDetailsPreview] = useState(false);
+
+  // Auto-resolve state (Crypto only)
+  const [autoResolve, setAutoResolve] = useState(false);
+  const [autoResolveAsset, setAutoResolveAsset] = useState("BTC");
+  const [autoResolveOperator, setAutoResolveOperator] = useState("at_or_above");
+  const [autoResolveTargetPrice, setAutoResolveTargetPrice] = useState("");
+  const [autoResolveTime, setAutoResolveTime] = useState("00:00");
+
+  const CRYPTO_ASSETS = ["BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "DOGE", "MATIC", "AVAX", "DOT", "LINK", "SHIB"];
+  const OPERATORS = [
+    { value: "at_or_above", label: "Reaches or exceeds" },
+    { value: "above", label: "Closes above" },
+    { value: "at_or_below", label: "Drops to or below" },
+    { value: "below", label: "Closes below" },
+  ];
 
   // Image state
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -186,6 +202,10 @@ const AdminCreateMarket = () => {
       }
 
       // Create market
+      const autoResolveDeadline = autoResolve && endDate && autoResolveTime
+        ? new Date(`${endDate}T${autoResolveTime}:00Z`).toISOString()
+        : null;
+
       const { data, error } = await supabase
         .from("markets")
         .insert({
@@ -200,13 +220,18 @@ const AdminCreateMarket = () => {
           liquidity: parseFloat(initialLiquidity) || 100,
           volume: parseFloat(initialVolume) || 0,
           participants: parseInt(initialTraders) || 0,
-          market_type: marketType,
+          market_type: autoResolve ? "binary" : marketType,
           image_url: imageUrl,
           video_url: mediaType === "video" && videoUrl.trim() && isYouTubeUrl(videoUrl.trim()) ? videoUrl.trim() : null,
           details: details.trim() || null,
           trending,
           status: "active",
-        })
+          auto_resolve: autoResolve,
+          auto_resolve_asset: autoResolve ? autoResolveAsset : null,
+          auto_resolve_target_price: autoResolve ? parseFloat(autoResolveTargetPrice) : null,
+          auto_resolve_operator: autoResolve ? autoResolveOperator : null,
+          auto_resolve_deadline: autoResolveDeadline,
+        } as any)
         .select("id")
         .maybeSingle();
 
