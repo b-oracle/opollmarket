@@ -277,6 +277,8 @@ export const usePlaceBet = () => {
       queryClient.invalidateQueries({ queryKey: ["markets"] });
       queryClient.invalidateQueries({ queryKey: ["referral_rewards"] });
       queryClient.invalidateQueries({ queryKey: ["bonus_balance"] });
+      queryClient.invalidateQueries({ queryKey: ["price-history"] });
+      queryClient.invalidateQueries({ queryKey: ["orderbook-trades"] });
     },
   });
 };
