@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
-import { Trophy, TrendingUp, TrendingDown, Medal, Crown, Award, Users, Star, Calendar, Share2, ArrowLeft } from "lucide-react";
+import { Trophy, TrendingUp, TrendingDown, Medal, Crown, Award, Users, Star, Calendar, Share2, ArrowLeft, Zap } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,7 +30,7 @@ interface Trader {
   volume: number;
 }
 
-type Tab = "referrers" | "traders";
+type Tab = "referrers" | "traders" | "quick";
 type ReferralSort = "totalEarned" | "totalReferrals";
 type TraderSort = "pnl" | "volume" | "trades";
 type TimePeriod = "week" | "month" | "all";
@@ -251,6 +251,45 @@ const useTradingLeaderboard = (period: TimePeriod) => {
   return { traders, loading };
 };
 
+// ── Quick Trade Leaderboard ───────────────────────────────────────────
+interface QuickTrader {
+  userId: string;
+  name: string;
+  avatar: string | null;
+  profit: number;
+  wins: number;
+  totalBets: number;
+  totalWagered: number;
+}
+
+const useQuickTradeLeaderboard = () => {
+  const [quickTraders, setQuickTraders] = useState<QuickTrader[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    (async () => {
+      const { data } = await supabase.rpc("get_quick_trade_leaderboard", { _limit: 20 });
+      if (data) {
+        setQuickTraders(
+          (data as any[]).map((d) => ({
+            userId: d.user_id,
+            name: d.display_name || "Anonymous",
+            avatar: d.avatar_url,
+            profit: Number(d.profit),
+            wins: Number(d.wins),
+            totalBets: Number(d.total_bets),
+            totalWagered: Number(d.total_wagered),
+          }))
+        );
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  return { quickTraders, loading };
+};
+
 // ── Podium Component ──────────────────────────────────────────────────
 const Podium = <T extends { userId: string; name: string; avatar: string | null }>({
   items,
@@ -347,6 +386,7 @@ const Rankings = () => {
 
   const { referrers, loading: refLoading } = useReferralLeaderboard(timePeriod);
   const { traders, loading: tradeLoading } = useTradingLeaderboard(timePeriod);
+  const { quickTraders, loading: quickLoading } = useQuickTradeLeaderboard();
 
   const sortedReferrers = [...referrers].sort((a, b) =>
     referralSort === "totalEarned" ? b.totalEarned - a.totalEarned : b.totalReferrals - a.totalReferrals
@@ -358,7 +398,7 @@ const Rankings = () => {
     return b.trades - a.trades;
   });
 
-  const loading = tab === "referrers" ? refLoading : tradeLoading;
+  const loading = tab === "referrers" ? refLoading : tab === "quick" ? quickLoading : tradeLoading;
 
   return (
     <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
@@ -376,21 +416,26 @@ const Rankings = () => {
 
         {/* Tabs */}
         <div className="flex gap-2 mb-4">
-          {(["traders", "referrers"] as Tab[]).map((t) => (
+          {([
+            { key: "traders" as Tab, label: "Predictions" },
+            { key: "quick" as Tab, label: "Quick Trade", icon: Zap },
+            { key: "referrers" as Tab, label: "Referrals" },
+          ]).map((t) => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold capitalize transition-all ${
-                tab === t ? "bg-primary text-primary-foreground" : "glass text-muted-foreground hover:text-foreground"
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                tab === t.key ? "bg-primary text-primary-foreground" : "glass text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t === "traders" ? "Predictions" : "Referrals"}
+              {t.icon && <t.icon className="w-3.5 h-3.5" />}
+              {t.label}
             </button>
           ))}
         </div>
 
-        {/* Time Period Filter */}
-        <TimePeriodSelector value={timePeriod} onChange={setTimePeriod} />
+        {/* Time Period Filter — hide for quick trade since it's all-time */}
+        {tab !== "quick" && <TimePeriodSelector value={timePeriod} onChange={setTimePeriod} />}
 
         {loading ? (
           <div className="flex justify-center py-16">
