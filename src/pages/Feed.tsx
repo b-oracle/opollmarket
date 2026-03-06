@@ -355,45 +355,8 @@ const Feed = () => {
 
   const pullProgress = Math.min(pullDistance / PULL_THRESHOLD, 1);
 
-  /* ── Desktop Layout (≥1024px) ── */
-  if (isDesktop) {
-    return (
-      <div className="min-h-dvh bg-background">
-        <SEOHead title="Feed" description="Browse prediction markets. Vote YES or NO on real-world events." path="/feed" />
-        <TopBar />
 
-        <div className="px-6 lg:px-8 py-6 max-w-6xl mx-auto" style={{ paddingBottom: "2rem" }}>
-          <div className="flex items-center gap-3 mb-6">
-            <h1 className="text-2xl font-bold">Feed</h1>
-            <span className="text-sm text-muted-foreground">{sortedMarkets.length} markets</span>
-          </div>
-
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
-            {sortedMarkets.map((market) => {
-              const boost = boostDetails.get(market.id);
-              return (
-                <DesktopFeedCard
-                  key={market.id}
-                  market={market}
-                  isBoosted={boostedMarketIds.has(market.id)}
-                  boostEndsAt={boost?.ends_at}
-                  boostTier={boost?.tier}
-                />
-              );
-            })}
-          </div>
-
-          {sortedMarkets.length === 0 && (
-            <div className="text-center py-20 text-muted-foreground">
-              <p className="text-lg font-medium">No markets yet</p>
-              <p className="text-sm mt-1">Check back soon for new prediction markets.</p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
+  /* ── Single layout for all screen sizes (swipe feed) ── */
   /* ── Mobile Layout (TikTok-style snap feed) ── */
   return (
     <div className="h-dvh flex flex-col bg-background">
