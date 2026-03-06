@@ -724,6 +724,47 @@ export type Database = {
         }
         Relationships: []
       }
+      sport_score_cache: {
+        Row: {
+          away_score: number | null
+          home_score: number | null
+          id: string
+          is_live: boolean | null
+          market_id: string
+          match_id: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          away_score?: number | null
+          home_score?: number | null
+          id?: string
+          is_live?: boolean | null
+          market_id: string
+          match_id: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          away_score?: number | null
+          home_score?: number | null
+          id?: string
+          is_live?: boolean | null
+          market_id?: string
+          match_id?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sport_score_cache_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: true
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
