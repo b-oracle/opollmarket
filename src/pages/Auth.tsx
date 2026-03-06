@@ -1,10 +1,26 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Eye, EyeOff, LogIn, UserPlus, Gift, CheckCircle2, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+
+const useIsDappBrowser = () =>
+  useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const w = window as any;
+    // Detect injected DApp browser wallets
+    return !!(
+      w.ethereum?.isRabby ||
+      w.ethereum?.isTrust ||
+      w.ethereum?.isBinance ||
+      w.ethereum?.isSafePal ||
+      w.ethereum?.isBitKeep ||
+      w.ethereum?.isCoinbaseWallet ||
+      w.ethereum?.isMetaMask && w.ethereum?.isInApp
+    );
+  }, []);
 
 const Auth = () => {
   const [mode, setMode] = useState<"login" | "signup">("login");
