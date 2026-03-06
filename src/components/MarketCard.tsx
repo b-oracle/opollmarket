@@ -411,12 +411,26 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             </div>
           )}
 
-          <h2
-            className="text-lg sm:text-xl font-bold leading-tight mb-3 cursor-pointer hover:text-primary transition-colors"
-            onClick={() => navigate(`/market/${market.id}`)}
-          >
-            {market.title}
-          </h2>
+          <div className="flex items-start gap-2 mb-3">
+            <h2
+              className="text-lg sm:text-xl font-bold leading-tight cursor-pointer hover:text-primary transition-colors flex-1"
+              onClick={() => navigate(`/market/${market.id}`)}
+            >
+              {market.title}
+            </h2>
+            {isMulti && market.options?.length ? (() => {
+              const leading = market.options!.reduce((a, b) => b.price > a.price ? b : a);
+              return (
+                <span className="shrink-0 px-2.5 py-1 rounded-full bg-primary/15 text-xs font-bold neon-yes whitespace-nowrap">
+                  {Math.round(leading.price * 100)}%
+                </span>
+              );
+            })() : (
+              <span className="shrink-0 px-2.5 py-1 rounded-full bg-primary/15 text-xs font-bold neon-yes whitespace-nowrap">
+                {yesPercent}%
+              </span>
+            )}
+          </div>
 
           <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{market.description}</p>
 
