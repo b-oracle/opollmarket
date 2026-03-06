@@ -72,10 +72,12 @@ const AdminCreateMarket = () => {
   const errors = {
     title: title.trim().length > 0 && title.trim().length < 10 ? "Min 10 characters" : title.trim().length === 0 ? "Required" : "",
     description: description.trim().length > 0 && description.trim().length < 10 ? "Min 10 characters" : description.trim().length === 0 ? "Required" : "",
+    details: details.trim().length === 0 ? "Required" : details.trim().length < 20 ? "Min 20 characters" : "",
     category: !category ? "Select a category" : "",
     endDate: !endDate ? "Required" : "",
     resolutionSource: resolutionSource.trim().length > 0 && resolutionSource.trim().length < 5 ? "Min 5 characters" : resolutionSource.trim().length === 0 ? "Required" : "",
     options: marketType === "multi" && options.filter((o) => o.trim()).length < 2 ? "At least 2 options required" : "",
+    image: !imageFile ? "Cover image is required" : "",
   };
 
   const fieldError = (field: keyof typeof errors) => touched[field] ? errors[field] : "";
@@ -135,6 +137,7 @@ const AdminCreateMarket = () => {
   const isValid =
     title.trim().length >= 10 &&
     description.trim().length >= 10 &&
+    details.trim().length >= 20 &&
     category &&
     endDate &&
     resolutionSource.trim().length >= 5 &&
@@ -142,8 +145,7 @@ const AdminCreateMarket = () => {
     !!imageFile;
 
   const handleSubmit = async () => {
-    // Touch all fields on submit attempt
-    const allFields = ["title", "description", "category", "endDate", "resolutionSource", "options"];
+    const allFields = ["title", "description", "details", "category", "endDate", "resolutionSource", "options", "image"];
     setTouched(allFields.reduce((acc, f) => ({ ...acc, [f]: true }), {}));
 
     if (!isValid || !user) {
@@ -316,7 +318,7 @@ const AdminCreateMarket = () => {
           <div className="flex items-center justify-between mb-2">
             <label className="flex items-center gap-2 text-sm font-semibold">
               <FileText className="w-4 h-4 text-primary" />
-              More Details <span className="text-muted-foreground font-normal">(optional)</span>
+              More Details <span className="text-xs font-normal text-destructive">*</span>
             </label>
             <button
               type="button"
@@ -341,11 +343,14 @@ const AdminCreateMarket = () => {
               onChange={(e) => setDetails(e.target.value.slice(0, 2000))}
               placeholder="Add supplementary details, links, or resolution criteria using Markdown..."
               rows={4}
-              className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition-colors"
+              className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 resize-none transition-colors ${
+                fieldError("details" as any) ? "border-destructive focus:ring-destructive/30" : "border-border focus:ring-primary/30"
+              }`}
             />
           )}
-          <div className="flex justify-end mt-1">
-            <p className="text-[10px] text-muted-foreground">{details.length}/2000</p>
+          <div className="flex justify-between mt-1">
+            {fieldError("details" as any) && <p className="text-[10px] text-destructive">{fieldError("details" as any)}</p>}
+            <p className="text-[10px] text-muted-foreground ml-auto">{details.length}/2000</p>
           </div>
         </div>
       </div>
