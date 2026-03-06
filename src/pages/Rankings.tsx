@@ -438,8 +438,8 @@ const Rankings = () => {
           ))}
         </div>
 
-        {/* Time Period Filter — hide for quick trade since it's all-time */}
-        {tab !== "quick" && <TimePeriodSelector value={timePeriod} onChange={setTimePeriod} />}
+        {/* Time Period Filter */}
+        <TimePeriodSelector value={timePeriod} onChange={setTimePeriod} />
 
         {loading ? (
           <div className="flex justify-center py-16">
