@@ -399,10 +399,9 @@ const MarketDetail = () => {
   useEffect(() => {
     const el = commentsEndRef.current;
     if (!el) return;
-    const root = pageRef.current;
     const observer = new IntersectionObserver(
       ([entry]) => setCommentsReached(entry.isIntersecting),
-      { root: root, threshold: 0, rootMargin: "0px 0px 80px 0px" }
+      { root: null, threshold: 0, rootMargin: "0px 0px 80px 0px" }
     );
     observer.observe(el);
     return () => observer.disconnect();
