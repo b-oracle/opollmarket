@@ -20,6 +20,7 @@ import {
   Eye,
   EyeOff,
   Zap,
+  Trophy,
 } from "lucide-react";
 
 import CategoryIcon from "@/components/CategoryIcon";
@@ -53,12 +54,18 @@ const AdminCreateMarket = () => {
   const [details, setDetails] = useState("");
   const [showDetailsPreview, setShowDetailsPreview] = useState(false);
 
-  // Auto-resolve state (Crypto only)
+  // Auto-resolve state
   const [autoResolve, setAutoResolve] = useState(false);
   const [autoResolveAsset, setAutoResolveAsset] = useState("BTC");
   const [autoResolveOperator, setAutoResolveOperator] = useState("at_or_above");
   const [autoResolveTargetPrice, setAutoResolveTargetPrice] = useState("");
   const [autoResolveTime, setAutoResolveTime] = useState("00:00");
+
+  // Sports auto-resolve state
+  const [sportType, setSportType] = useState("football");
+  const [sportMatchId, setSportMatchId] = useState("");
+  const [sportPredictedOutcome, setSportPredictedOutcome] = useState("");
+  const [sportLeague, setSportLeague] = useState("");
 
   const CRYPTO_ASSETS = ["BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "DOGE", "MATIC", "AVAX", "DOT", "LINK", "SHIB"];
   const OPERATORS = [
@@ -66,6 +73,23 @@ const AdminCreateMarket = () => {
     { value: "above", label: "Closes above" },
     { value: "at_or_below", label: "Drops to or below" },
     { value: "below", label: "Closes below" },
+  ];
+  const SPORT_TYPES = [
+    { value: "football", label: "Football (Soccer)" },
+    { value: "basketball", label: "Basketball" },
+    { value: "nfl", label: "American Football" },
+    { value: "baseball", label: "Baseball" },
+    { value: "hockey", label: "Hockey" },
+    { value: "mma", label: "MMA / UFC" },
+    { value: "formula1", label: "Formula 1" },
+    { value: "rugby", label: "Rugby" },
+    { value: "volleyball", label: "Volleyball" },
+    { value: "handball", label: "Handball" },
+  ];
+  const OUTCOME_TYPES = [
+    { value: "home_win", label: "Home Win" },
+    { value: "away_win", label: "Away Win" },
+    { value: "draw", label: "Draw" },
   ];
 
   // Image state
