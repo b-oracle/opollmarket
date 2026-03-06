@@ -165,7 +165,7 @@ const Index = () => {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.5 }}
           onClick={() => navigate("/feed")}
-          className="w-full btn-yes py-4 rounded-2xl font-bold text-base mb-8 transition-all active:scale-95"
+          className="w-full btn-yes py-4 rounded-2xl font-bold text-base mb-8 transition-all active:scale-95 md:hidden"
         >
           🔥 Start Swiping
         </motion.button>
