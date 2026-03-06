@@ -664,6 +664,65 @@ const AdminCreateMarket = () => {
           </div>
         )}
 
+        {/* Auto-Resolve Toggle (Sports only) */}
+        {category === "Sports" && (
+          <div className="bg-muted/30 border border-border rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="flex items-center gap-2 text-sm font-semibold">
+                  <Trophy className="w-4 h-4 text-primary" />
+                  Auto-Resolve by Match Result
+                </label>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Automatically resolves when the match finishes</p>
+              </div>
+              <button onClick={() => { const next = !autoResolve; setAutoResolve(next); if (next) { setMarketType("binary"); setResolutionSource(`Auto-resolved via live ${sportType} match result`); } }}
+                className={`w-11 h-6 rounded-full transition-colors relative ${autoResolve ? "bg-primary" : "bg-muted"}`}>
+                <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${autoResolve ? "translate-x-[22px]" : "translate-x-0.5"}`} />
+              </button>
+            </div>
+            {autoResolve && (
+              <div className="space-y-3 pt-2 border-t border-border/50">
+                <div>
+                  <label className="text-xs font-semibold mb-1.5 block">Sport</label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {SPORT_TYPES.map((s) => (
+                      <button key={s.value} onClick={() => { setSportType(s.value); setResolutionSource(`Auto-resolved via live ${s.label} match result`); }}
+                        className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${sportType === s.value ? "bg-primary/15 border border-primary/40 text-primary" : "bg-muted/50 border border-border text-muted-foreground hover:text-foreground"}`}>{s.label}</button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold mb-1.5 block">League (optional)</label>
+                  <input type="text" value={sportLeague} onChange={(e) => setSportLeague(e.target.value)} placeholder="e.g. Premier League, NBA" className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold mb-1.5 block">Match / Fixture ID</label>
+                  <input type="text" value={sportMatchId} onChange={(e) => setSportMatchId(e.target.value)} placeholder="API-Football fixture ID" className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold mb-1.5 block">Predicted Outcome</label>
+                  <div className="grid grid-cols-3 gap-1.5 mb-2">
+                    {OUTCOME_TYPES.map((o) => (
+                      <button key={o.value} onClick={() => setSportPredictedOutcome(o.value)}
+                        className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${sportPredictedOutcome === o.value ? "bg-primary/15 border border-primary/40 text-primary" : "bg-muted/50 border border-border text-muted-foreground hover:text-foreground"}`}>{o.label}</button>
+                    ))}
+                  </div>
+                  <input type="text" value={sportPredictedOutcome} onChange={(e) => setSportPredictedOutcome(e.target.value)} placeholder="Or custom: over 2.5, btts, team name" className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold mb-1.5 block">Resolution Deadline Time (UTC)</label>
+                  <input type="time" value={autoResolveTime} onChange={(e) => setAutoResolveTime(e.target.value)} className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                </div>
+                {sportMatchId && sportPredictedOutcome && endDate && (
+                  <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
+                    <p className="text-xs font-medium text-primary">🏆 Resolves YES if "{sportPredictedOutcome.replace(/_/g, " ")}" in {SPORT_TYPES.find(s => s.value === sportType)?.label} match #{sportMatchId} by {endDate} {autoResolveTime} UTC</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-4">
           <div className={shakeClass("endDate")}>
             <label className="flex items-center gap-2 text-sm font-semibold mb-2">
