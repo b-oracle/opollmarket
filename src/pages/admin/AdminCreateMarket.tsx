@@ -685,7 +685,7 @@ const AdminCreateMarket = () => {
                 {autoResolveTargetPrice && endDate && (
                   <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
                     <p className="text-xs font-medium text-primary">
-                      ⚡ Resolves YES if {autoResolveAsset}/USD {OPERATORS.find(o => o.value === autoResolveOperator)?.label.toLowerCase()} ${Number(autoResolveTargetPrice).toLocaleString()} by {endDate} {autoResolveTime} UTC
+                      ⚡ Resolves YES if {autoResolveAsset} {OPERATORS.find(o => o.value === autoResolveOperator)?.label.toLowerCase()} {category === "Forex" ? "" : "$"}{Number(autoResolveTargetPrice).toLocaleString()} by {endDate} {autoResolveTime} UTC
                     </p>
                   </div>
                 )}
