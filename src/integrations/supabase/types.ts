@@ -204,6 +204,66 @@ export type Database = {
         }
         Relationships: []
       }
+      limit_orders: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          limit_price: number
+          market_id: string
+          option_id: string | null
+          order_type: string
+          shares: number
+          side: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          limit_price: number
+          market_id: string
+          option_id?: string | null
+          order_type?: string
+          shares: number
+          side?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          limit_price?: number
+          market_id?: string
+          option_id?: string | null
+          order_type?: string
+          shares?: number
+          side?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "limit_orders_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "limit_orders_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "market_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       market_boosts: {
         Row: {
           amount: number
