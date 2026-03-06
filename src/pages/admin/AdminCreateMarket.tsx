@@ -138,7 +138,8 @@ const AdminCreateMarket = () => {
     category &&
     endDate &&
     resolutionSource.trim().length >= 5 &&
-    (marketType === "binary" || options.filter((o) => o.trim()).length >= 2);
+    (marketType === "binary" || options.filter((o) => o.trim()).length >= 2) &&
+    !!imageFile;
 
   const handleSubmit = async () => {
     // Touch all fields on submit attempt
