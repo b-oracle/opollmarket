@@ -700,9 +700,21 @@ const MarketDetail = () => {
         <CreatorCard creatorName={market.creatorName} creatorUserId={market.creatorAddress} />
 
         <InlineComments marketId={market.id} />
+
+        {/* Anchor for detecting comments section + inline buttons when scrolled down */}
+        <div ref={commentsEndRef}>
+          {!isMulti && commentsReached && (
+            <div className="px-0 pb-4 pt-3">
+              <div className="w-full flex gap-3">
+                <button onClick={() => { setBetSide("yes"); setBetOpen(true); }} className="flex-1 min-w-0 btn-yes py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy Yes {yesPercent}¢</button>
+                <button onClick={() => { setBetSide("no"); setBetOpen(true); }} className="flex-1 min-w-0 btn-no py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy No {noPercent}¢</button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {!isMulti && (
+      {!isMulti && !commentsReached && (
         <div className="fixed left-0 right-0 md:left-60 z-[60] px-4 pb-4 pt-3 bg-gradient-to-t from-background via-background to-transparent md:bottom-0" style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}>
           <div className="w-full max-w-lg md:max-w-2xl mx-auto flex gap-3">
             <button onClick={() => { setBetSide("yes"); setBetOpen(true); }} className="flex-1 min-w-0 btn-yes py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy Yes {yesPercent}¢</button>
