@@ -706,6 +706,86 @@ export type Database = {
         }
         Relationships: []
       }
+      quick_bets: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          payout: number | null
+          round_id: string
+          side: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          payout?: number | null
+          round_id: string
+          side: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          payout?: number | null
+          round_id?: string
+          side?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quick_bets_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "quick_rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quick_rounds: {
+        Row: {
+          asset: string
+          close_price: number | null
+          created_at: string
+          duration_seconds: number
+          id: string
+          locks_at: string
+          open_price: number | null
+          resolved_at: string | null
+          result: string | null
+          status: string
+        }
+        Insert: {
+          asset?: string
+          close_price?: number | null
+          created_at?: string
+          duration_seconds?: number
+          id?: string
+          locks_at?: string
+          open_price?: number | null
+          resolved_at?: string | null
+          result?: string | null
+          status?: string
+        }
+        Update: {
+          asset?: string
+          close_price?: number | null
+          created_at?: string
+          duration_seconds?: number
+          id?: string
+          locks_at?: string
+          open_price?: number | null
+          resolved_at?: string | null
+          result?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       referral_rewards: {
         Row: {
           amount: number
