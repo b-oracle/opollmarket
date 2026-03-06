@@ -179,6 +179,20 @@ const Create = () => {
   const [options, setOptions] = useState<string[]>(["", ""]);
   const [videoUrl, setVideoUrl] = useState("");
 
+  // Auto-resolve state (Crypto only)
+  const [autoResolve, setAutoResolve] = useState(false);
+  const [autoResolveAsset, setAutoResolveAsset] = useState("BTC");
+  const [autoResolveOperator, setAutoResolveOperator] = useState("at_or_above");
+  const [autoResolveTargetPrice, setAutoResolveTargetPrice] = useState("");
+  const [autoResolveTime, setAutoResolveTime] = useState("00:00");
+
+  const CRYPTO_ASSETS = ["BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "DOGE", "MATIC", "AVAX", "DOT", "LINK", "SHIB"];
+  const OPERATORS = [
+    { value: "at_or_above", label: "Reaches or exceeds" },
+    { value: "above", label: "Closes above" },
+    { value: "at_or_below", label: "Drops to or below" },
+    { value: "below", label: "Closes below" },
+  ];
   // Image upload state
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
