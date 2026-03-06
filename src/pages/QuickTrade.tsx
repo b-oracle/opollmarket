@@ -32,6 +32,7 @@ import { useNavigate } from "react-router-dom";
 import StreakMilestoneModal from "@/components/StreakMilestoneModal";
 import ShareModal from "@/components/ShareModal";
 import watermarkLogo from "@/assets/watermark-logo.png";
+import TradingViewChart from "@/components/TradingViewChart";
 // ── Asset config ──
 const ASSETS = [
   { symbol: "BTC", label: "Bitcoin", geckoId: "bitcoin" },
@@ -205,7 +206,7 @@ export default function QuickTrade() {
   ] as const;
   type ChartTF = typeof CHART_TIMEFRAMES[number]["key"];
   const [chartTimeframe, setChartTimeframe] = useState<ChartTF>("15m");
-  const [chartType, setChartType] = useState<"area" | "candle">("area");
+  const [chartType, setChartType] = useState<"area" | "candle" | "tv">("area");
   const chartMs = CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.ms;
 
   const [priceHistory, setPriceHistory] = useState<{ time: string; price: number; ts: number }[]>([]);
