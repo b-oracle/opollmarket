@@ -67,6 +67,31 @@ const AdminCreateMarket = () => {
   const [sportMatchId, setSportMatchId] = useState("");
   const [sportPredictedOutcome, setSportPredictedOutcome] = useState("");
   const [sportLeague, setSportLeague] = useState("");
+  const [selectedFixtureData, setSelectedFixtureData] = useState<{ homeTeam: string; awayTeam: string; date: string; league: string; venue: string } | null>(null);
+
+  const generateSportsAutoFill = (fixture: { homeTeam: string; awayTeam: string; date: string; league: string; venue: string }, outcome: string) => {
+    const matchDate = (() => { try { return new Date(fixture.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); } catch { return fixture.date; } })();
+    let newTitle: string;
+    let newDesc: string;
+    if (outcome === "home_win") {
+      newTitle = `Will ${fixture.homeTeam} beat ${fixture.awayTeam} on ${matchDate}?`;
+      newDesc = `This market resolves YES if ${fixture.homeTeam} defeats ${fixture.awayTeam} in their ${fixture.league || sportType} match scheduled for ${matchDate}. It resolves NO otherwise (including a draw).`;
+    } else if (outcome === "away_win") {
+      newTitle = `Will ${fixture.awayTeam} beat ${fixture.homeTeam} on ${matchDate}?`;
+      newDesc = `This market resolves YES if ${fixture.awayTeam} defeats ${fixture.homeTeam} in their ${fixture.league || sportType} match scheduled for ${matchDate}. It resolves NO otherwise (including a draw).`;
+    } else if (outcome === "draw") {
+      newTitle = `Will ${fixture.homeTeam} vs ${fixture.awayTeam} end in a draw on ${matchDate}?`;
+      newDesc = `This market resolves YES if the ${fixture.league || sportType} match between ${fixture.homeTeam} and ${fixture.awayTeam} on ${matchDate} ends in a draw. It resolves NO if either team wins.`;
+    } else if (outcome) {
+      newTitle = `Will "${outcome.replace(/_/g, " ")}" happen in ${fixture.homeTeam} vs ${fixture.awayTeam} on ${matchDate}?`;
+      newDesc = `This market resolves YES if the condition "${outcome.replace(/_/g, " ")}" is met in the ${fixture.league || sportType} match between ${fixture.homeTeam} and ${fixture.awayTeam} on ${matchDate}.`;
+    } else {
+      newTitle = `Will ${fixture.homeTeam} beat ${fixture.awayTeam} on ${matchDate}?`;
+      newDesc = `This market resolves YES if ${fixture.homeTeam} defeats ${fixture.awayTeam} in their ${fixture.league || sportType} match scheduled for ${matchDate}. It resolves NO otherwise.`;
+    }
+    setTitle(newTitle);
+    setDescription(newDesc);
+  };
 
   const CRYPTO_ASSETS = ["BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "DOGE", "MATIC", "AVAX", "DOT", "LINK", "SHIB"];
   const OPERATORS = [
