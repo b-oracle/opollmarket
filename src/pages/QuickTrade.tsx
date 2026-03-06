@@ -900,6 +900,12 @@ export default function QuickTrade() {
         </div>
       </div>
       <BottomNav />
+      <StreakMilestoneModal
+        open={milestoneModal.open}
+        onClose={() => setMilestoneModal(m => ({ ...m, open: false }))}
+        streak={milestoneModal.streak}
+        multiplier={milestoneModal.multiplier}
+      />
     </>
   );
 }
