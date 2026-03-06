@@ -542,6 +542,7 @@ export default function QuickTrade() {
           </div>
 
           {/* Timeframe selector */}
+          <p className="text-[11px] font-semibold text-muted-foreground mb-1.5">Round Duration</p>
           <div className="flex gap-2 mb-4">
             {TIMEFRAMES.map((tf) => (
               <button
