@@ -110,12 +110,34 @@ const DesktopFooter = () => {
                 { label: "Referral Program", href: "/referrals" },
               ].map((link) => (
                 <li key={link.label}>
-                  <button
-                    onClick={() => navigate(link.href)}
-                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    {link.label}
-                  </button>
+                  {link.external ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      {link.label}
+                    </a>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        if (link.comingSoon) {
+                          toast.info(`${link.label} — Coming Soon!`);
+                        } else {
+                          navigate(link.href);
+                        }
+                      }}
+                      className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      {link.label}
+                      {link.comingSoon && (
+                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-muted border border-border text-muted-foreground">
+                          Soon
+                        </span>
+                      )}
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
