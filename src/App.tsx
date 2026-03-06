@@ -15,6 +15,7 @@ import DesktopFooter from "./components/DesktopFooter";
 import PWAUpdatePrompt from "./components/PWAUpdatePrompt";
 import LogoLoader from "./components/LogoLoader";
 import { AuthProvider } from "./hooks/useAuth";
+import { SidebarStateProvider, useSidebarState } from "./hooks/useSidebarState";
 
 // Lazy-loaded pages
 const Index = lazy(() => import("./pages/Index"));
