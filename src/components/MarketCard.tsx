@@ -411,26 +411,24 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             </div>
           )}
 
-          <div className="flex items-start gap-2 mb-3">
-            <h2
-              className="text-lg sm:text-xl font-bold leading-tight cursor-pointer hover:text-primary transition-colors flex-1"
-              onClick={() => navigate(`/market/${market.id}`)}
-            >
-              {market.title}
-            </h2>
+          <h2
+            className="text-lg sm:text-xl font-bold leading-tight mb-3 cursor-pointer hover:text-primary transition-colors"
+            onClick={() => navigate(`/market/${market.id}`)}
+          >
+            {market.title}{" "}
             {isMulti && market.options?.length ? (() => {
               const leading = market.options!.reduce((a, b) => b.price > a.price ? b : a);
               return (
-                <span className="shrink-0 px-2.5 py-1 rounded-full bg-primary/15 text-xs font-bold neon-yes whitespace-nowrap">
-                  {Math.round(leading.price * 100)}%
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/15 text-xs font-bold neon-yes whitespace-nowrap align-middle">
+                  {Math.round(leading.price * 100)}% Chance
                 </span>
               );
             })() : (
-              <span className="shrink-0 px-2.5 py-1 rounded-full bg-primary/15 text-xs font-bold neon-yes whitespace-nowrap">
-                {yesPercent}%
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/15 text-xs font-bold neon-yes whitespace-nowrap align-middle">
+                {yesPercent}% Chance
               </span>
             )}
-          </div>
+          </h2>
 
           <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{market.description}</p>
 
