@@ -103,13 +103,19 @@ const DetailsField = ({ details, setDetails, error, touched: fieldTouched, onBlu
         <textarea
           value={details}
           onChange={(e) => setDetails(e.target.value)}
+          onBlur={onBlur}
           placeholder="Provide extra context, background info, or rules that help participants make informed predictions."
           rows={3}
-          className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none"
+          className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 transition-all resize-none ${
+            fieldTouched && error ? "border-destructive focus:ring-destructive/30" : "border-border focus:ring-primary/30"
+          }`}
           maxLength={2000}
         />
       )}
-      <div className="flex justify-end mt-1.5">
+      <div className="flex justify-between mt-1.5">
+        {fieldTouched && error ? (
+          <p className="text-[10px] text-destructive">{error}</p>
+        ) : <span />}
         <p className={`text-[10px] ${details.length > 1800 ? "text-destructive" : "text-muted-foreground"}`}>{details.length}/2000</p>
       </div>
     </div>
