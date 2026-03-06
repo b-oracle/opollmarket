@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
+import confetti from "canvas-confetti";
 import { getAssetClass } from "@/data/assetClasses";
 
 const ASSET_GECKO_MAP: Record<string, string> = {
@@ -96,6 +97,15 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
             toast.success(`✅ ${asset} hit the target — resolution eligible!`, {
               description: `Target: ${targetLabel}`,
               duration: 10000,
+            });
+            confetti({
+              particleCount: 50,
+              spread: 60,
+              origin: { y: 0.7 },
+              colors: ["hsl(193,98%,50%)", "#ffffff", "hsl(142,71%,45%)"],
+              zIndex: 9999,
+              gravity: 1.2,
+              scalar: 0.8,
             });
           } else if (prog != null && prog >= 95 && !met && !toastFiredRef.current) {
             toastFiredRef.current = true;
