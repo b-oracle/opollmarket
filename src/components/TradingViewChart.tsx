@@ -12,7 +12,7 @@ import {
   LineSeries,
   AreaSeries,
 } from "lightweight-charts";
-import { Maximize2, Minimize2, TrendingUp, Minus, Trash2, Undo2, MousePointer } from "lucide-react";
+import { Maximize2, Minimize2, TrendingUp, Minus, Trash2, Undo2, MousePointer, CandlestickChart, LineChart } from "lucide-react";
 import { useChartDrawings, type DrawingTool } from "@/hooks/useChartDrawings";
 
 interface PricePoint {
