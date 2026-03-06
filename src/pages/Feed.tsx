@@ -251,12 +251,14 @@ const Feed = () => {
   const spinControls = useAnimation();
 
   const sortedMarkets = useMemo(() => {
-    return [...markets].sort((a, b) => {
+    const base = [...markets].sort((a, b) => {
       const aBoost = boostedMarketIds.has(a.id) ? 2 : a.trending ? 1 : 0;
       const bBoost = boostedMarketIds.has(b.id) ? 2 : b.trending ? 1 : 0;
       return bBoost - aBoost;
     });
-  }, [markets, boostedMarketIds]);
+    if (feedTab === "bookmarks") return base.filter((m) => bookmarkedIds.has(m.id));
+    return base;
+  }, [markets, boostedMarketIds, feedTab, bookmarkedIds]);
 
   const endToastShown = useRef(false);
 
