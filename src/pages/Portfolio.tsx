@@ -752,26 +752,50 @@ const Portfolio = () => {
                     <span className="text-muted-foreground">Gross Proceeds</span>
                     <span className="font-semibold">${sellTarget.currentValue.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-destructive">Exit Fee ({exitFeePercent}%)</span>
-                    <span className="font-semibold text-destructive">-${(sellTarget.currentValue * exitFeePercent / 100).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Net Proceeds</span>
-                    <span className="font-bold text-lg">${(sellTarget.currentValue * (1 - exitFeePercent / 100)).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Realized P&L</span>
-                    <span className={`font-bold ${(sellTarget.currentValue * (1 - exitFeePercent / 100) - sellTarget.invested) >= 0 ? "neon-yes" : "neon-no"}`}>
-                      {(sellTarget.currentValue * (1 - exitFeePercent / 100) - sellTarget.invested) >= 0 ? "+" : ""}${(sellTarget.currentValue * (1 - exitFeePercent / 100) - sellTarget.invested).toFixed(2)}
-                    </span>
-                  </div>
+                  {(() => {
+                    const exitFeeTotal = sellTarget.currentValue * exitFeePercent / 100;
+                    const bonusCover = Math.min(bonusBalance, exitFeeTotal);
+                    const feeFromProceeds = exitFeeTotal - bonusCover;
+                    const net = sellTarget.currentValue - feeFromProceeds;
+                    return (
+                      <>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-destructive">Exit Fee ({exitFeePercent}%)</span>
+                          <span className="font-semibold text-destructive">-${exitFeeTotal.toFixed(2)}</span>
+                        </div>
+                        {bonusCover > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-primary flex items-center gap-1">
+                              <Gift className="w-3 h-3" /> Referral Bonus
+                            </span>
+                            <span className="font-semibold text-primary">+${bonusCover.toFixed(2)}</span>
+                          </div>
+                        )}
+                        {feeFromProceeds > 0 && feeFromProceeds < exitFeeTotal && (
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Remaining fee from proceeds</span>
+                            <span className="font-medium text-destructive">-${feeFromProceeds.toFixed(2)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Net Proceeds</span>
+                          <span className="font-bold text-lg">${net.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Realized P&L</span>
+                          <span className={`font-bold ${(net - sellTarget.invested) >= 0 ? "neon-yes" : "neon-no"}`}>
+                            {(net - sellTarget.invested) >= 0 ? "+" : ""}${(net - sellTarget.invested).toFixed(2)}
+                          </span>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 mb-5">
                   <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
                   <p className="text-[10px] text-muted-foreground">
-                    A {exitFeePercent}% exit fee is charged on early sells. This fee is returned to the market pool for remaining participants. Hold until resolution to avoid this fee. Referral bonus balance will be used first to cover fees.
+                    A {exitFeePercent}% exit fee is charged on early sells. This fee is returned to the market pool.{bonusBalance > 0 ? ` Your referral bonus ($${bonusBalance.toFixed(2)}) will be used first to offset the fee.` : ' Hold until resolution to avoid this fee.'}
                   </p>
                 </div>
 
