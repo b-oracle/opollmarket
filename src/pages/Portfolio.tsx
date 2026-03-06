@@ -232,7 +232,9 @@ const Portfolio = () => {
     setSellStep("executing");
 
     try {
-      const proceeds = sellTarget.currentValue;
+      const grossProceeds = sellTarget.currentValue;
+      const exitFee = grossProceeds * (exitFeePercent / 100);
+      const proceeds = grossProceeds - exitFee;
 
       // 1. Set shares to 0 on the position
       const { error: posError } = await supabase
@@ -243,7 +245,7 @@ const Portfolio = () => {
 
       if (posError) throw posError;
 
-      // 2. Credit balance
+      // 2. Credit balance (net of exit fee)
       const { data: balanceRow } = await supabase
         .from("balances")
         .select("amount")
@@ -257,6 +259,22 @@ const Portfolio = () => {
         .eq("user_id", user.id);
 
       if (balError) throw balError;
+
+      // 2b. Return exit fee to market pool (increase volume/liquidity)
+      if (exitFee > 0) {
+        const { data: mkt } = await supabase
+          .from("markets")
+          .select("volume, liquidity")
+          .eq("id", sellTarget.marketId)
+          .single();
+
+        if (mkt) {
+          await supabase.from("markets").update({
+            volume: Number(mkt.volume) + exitFee,
+            liquidity: Number(mkt.liquidity) + exitFee,
+          }).eq("id", sellTarget.marketId);
+        }
+      }
 
       // 3. Record sell transaction
       await supabase.from("transactions").insert({
