@@ -234,7 +234,6 @@ const Portfolio = () => {
     try {
       const grossProceeds = sellTarget.currentValue;
       const exitFee = grossProceeds * (exitFeePercent / 100);
-      const proceeds = grossProceeds - exitFee;
 
       // 1. Set shares to 0 on the position
       const { error: posError } = await supabase
