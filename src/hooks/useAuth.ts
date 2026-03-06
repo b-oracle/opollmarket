@@ -221,8 +221,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signOut = useCallback(async () => {
+    signingOutRef.current = true;
     lastSessionRef.current = null;
-    await supabase.auth.signOut();
+    try {
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("timeout")), 5000)
+      );
+      await Promise.race([supabase.auth.signOut(), timeout]);
+    } catch {
+      // If global sign-out fails/times out, force local
+      await supabase.auth.signOut({ scope: "local" });
+    } finally {
+      // Clear state immediately regardless
+      setSession(null);
+      setUser(null);
+      setIsAdmin(false);
+      setIsModerator(false);
+      setProfileDisplayName(null);
+      signingOutRef.current = false;
+    }
   }, []);
 
   const isEmailVerified = !!user?.email_confirmed_at;
