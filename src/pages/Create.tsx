@@ -127,6 +127,7 @@ const Create = () => {
   const [minTokenBalance, setMinTokenBalance] = useState(10_000_000);
   const [minNftBalance, setMinNftBalance] = useState(1);
   const [tokenContractAddress, setTokenContractAddress] = useState("");
+  const [nftContractAddress, setNftContractAddress] = useState("");
   const [nftBuyUrl, setNftBuyUrl] = useState("");
   const [marketCreationFee, setMarketCreationFee] = useState(50);
   const [tokenDecimals, setTokenDecimals] = useState(18);
@@ -142,6 +143,7 @@ const Create = () => {
         setMinTokenBalance(Number(data.min_token_balance) || 10_000_000);
         setMinNftBalance(Number(data.min_nft_balance) || 1);
         setTokenContractAddress(data.token_contract_address || "");
+        setNftContractAddress(data.nft_contract_address || "");
         setNftBuyUrl(data.nft_buy_url || "");
         setMarketCreationFee(Number(data.market_creation_fee) || 50);
         setTokenDecimals(Number(data.token_decimals) ?? 18);
@@ -565,8 +567,15 @@ const Create = () => {
       const { data, error } = await supabase.functions.invoke("fetch-wallet-nfts", {
         body: { wallet_address: address },
       });
-      if (!error && data?.nfts?.length >= minNftBalance) {
-        nftPassed = true;
+      if (!error && data?.nfts) {
+        // If a specific NFT contract is configured, filter by it
+        const targetContract = nftContractAddress?.toLowerCase();
+        const qualifyingNfts = targetContract
+          ? data.nfts.filter((nft: any) => nft.token_address?.toLowerCase() === targetContract)
+          : data.nfts;
+        if (qualifyingNfts.length >= minNftBalance) {
+          nftPassed = true;
+        }
       }
     } catch {
       // NFT check failed
