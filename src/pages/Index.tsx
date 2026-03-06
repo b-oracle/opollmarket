@@ -115,6 +115,7 @@ const Index = () => {
 
   const totalVolume = markets.reduce((s, m) => s + m.volume, 0);
   const totalTraders = markets.reduce((s, m) => s + m.participants, 0);
+  const liveCount = useMemo(() => markets.filter((m) => m.autoResolve && m.sportType && m.sportMatchId).length, [markets]);
 
   // No blocking loader — render page immediately, show inline spinner in content area
 
@@ -201,7 +202,7 @@ const Index = () => {
         <div className="flex gap-1.5 p-1 rounded-xl bg-muted/50 mb-4">
           {([
             { key: "all" as const, label: "All" },
-            { key: "live" as const, label: "🔴 Live" },
+            { key: "live" as const, label: "🔴 Live", count: liveCount },
             { key: "new" as const, label: "New", icon: true },
             { key: "boosted" as const, label: "⚡ Boosted" },
             { key: "trending" as const, label: "🔥 Trending" },
@@ -215,6 +216,11 @@ const Index = () => {
             >
               {'icon' in tab && tab.icon && <Clock className="w-3.5 h-3.5" />}
               {tab.label}
+              {'count' in tab && (tab as any).count > 0 && (
+                <span className="ml-0.5 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+                  {(tab as any).count}
+                </span>
+              )}
             </button>
           ))}
         </div>
