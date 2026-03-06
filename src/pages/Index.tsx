@@ -11,6 +11,8 @@ import { useActiveBoosts } from "@/hooks/useActiveBoosts";
 import { useMemo, useState, useEffect } from "react";
 import BoostCountdown from "@/components/BoostCountdown";
 import BoostedCarousel from "@/components/BoostedCarousel";
+import CategoryCarousel from "@/components/CategoryCarousel";
+import { Gem, ArrowLeftRight } from "lucide-react";
 import BoostMarketModal from "@/components/BoostMarketModal";
 import { useCommentCount } from "@/hooks/useCommentCount";
 import useAnalytics from "@/hooks/useAnalytics";
