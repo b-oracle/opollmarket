@@ -199,12 +199,12 @@ export default function TradingViewChart({
     });
 
     if (indicator === "rsi") {
-      rsiSeriesRef.current = chart.addSeries(LineSeries, { color: "hsl(210, 90%, 60%)", lineWidth: 1.5, priceLineVisible: false, lastValueVisible: true });
+      rsiSeriesRef.current = chart.addSeries(LineSeries, { color: "hsl(210, 90%, 60%)", lineWidth: 2, priceLineVisible: false, lastValueVisible: true });
       macdLineRef.current = null;
       macdSignalRef.current = null;
       macdHistRef.current = null;
     } else {
-      macdLineRef.current = chart.addSeries(LineSeries, { color: "hsl(210, 90%, 60%)", lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false });
+      macdLineRef.current = chart.addSeries(LineSeries, { color: "hsl(210, 90%, 60%)", lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
       macdSignalRef.current = chart.addSeries(LineSeries, { color: "hsl(0, 80%, 60%)", lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
       macdHistRef.current = chart.addSeries(HistogramSeries, { priceScaleId: "macdHist", priceLineVisible: false, lastValueVisible: false });
       chart.priceScale("macdHist").applyOptions({ scaleMargins: { top: 0.6, bottom: 0 } });
