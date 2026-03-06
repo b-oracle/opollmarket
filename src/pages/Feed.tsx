@@ -238,8 +238,9 @@ const Feed = () => {
   const { boostedMarketIds, boostDetails } = useActiveBoosts();
   const { track } = useAnalytics();
   const isDesktop = useIsDesktop();
-
-  useEffect(() => { track("page_view", { page: "feed" }); }, []);
+  const { bookmarkedIds } = useBookmarkedMarkets();
+  const { user } = useAuth();
+  const [feedTab, setFeedTab] = useState<"foryou" | "bookmarks">("foryou");
 
   const [pulling, setPulling] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
