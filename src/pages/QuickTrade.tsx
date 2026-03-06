@@ -11,6 +11,7 @@ import {
   History,
   ChevronDown,
   Loader2,
+  Share2,
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, ReferenceLine } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
