@@ -87,11 +87,20 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
             : operator === "at_or_below" ? p <= targetPrice
             : false;
 
-          if (prog != null && prog >= 95 && !met) {
+          const isForex = getAssetClass(asset) === "forex";
+          const targetLabel = isForex ? targetPrice.toFixed(4) : `$${targetPrice.toLocaleString()}`;
+
+          if (met && !metToastFiredRef.current) {
+            metToastFiredRef.current = true;
+            toastFiredRef.current = true; // skip 95% toast if already met
+            toast.success(`✅ ${asset} hit the target — resolution eligible!`, {
+              description: `Target: ${targetLabel}`,
+              duration: 10000,
+            });
+          } else if (prog != null && prog >= 95 && !met && !toastFiredRef.current) {
             toastFiredRef.current = true;
-            const isForex = getAssetClass(asset) === "forex";
             toast.warning(`🔥 ${asset} is ${prog}% toward its target!`, {
-              description: `Target: ${isForex ? targetPrice.toFixed(4) : `$${targetPrice.toLocaleString()}`}`,
+              description: `Target: ${targetLabel}`,
               duration: 8000,
             });
           }
