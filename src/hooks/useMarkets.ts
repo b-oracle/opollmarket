@@ -58,6 +58,23 @@ const mapDbToMarket = (db: DbMarket): Market => ({
 });
 
 export const useMarkets = () => {
+  const queryClient = useQueryClient();
+
+  // Realtime: refresh market list when any market is updated
+  useEffect(() => {
+    const channel = supabase
+      .channel("markets-list-realtime")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "markets" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["markets"] });
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ["markets"],
     queryFn: async (): Promise<Market[]> => {
