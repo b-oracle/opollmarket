@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import CryptoPriceTicker from "@/components/CryptoPriceTicker";
+import SportsMatchTicker from "@/components/SportsMatchTicker";
 import { useAuth } from "@/hooks/useAuth";
 import { useBookmark } from "@/hooks/useBookmark";
 import { toast } from "sonner";
