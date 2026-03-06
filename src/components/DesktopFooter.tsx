@@ -103,19 +103,41 @@ const DesktopFooter = () => {
             </h4>
             <ul className="space-y-2">
               {[
-                { label: "Browse Markets", href: "/" },
-                { label: "Feed", href: "/feed" },
+                { label: "Predict via Telegram", href: "https://t.me/opoll_predict_bot", external: true },
+                { label: "Predict via WhatsApp", href: "#", comingSoon: true },
                 { label: "Create Market", href: "/create" },
                 { label: "Leaderboard", href: "/rankings" },
                 { label: "Referral Program", href: "/referrals" },
               ].map((link) => (
                 <li key={link.label}>
-                  <button
-                    onClick={() => navigate(link.href)}
-                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    {link.label}
-                  </button>
+                  {link.external ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      {link.label}
+                    </a>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        if (link.comingSoon) {
+                          toast.info(`${link.label} — Coming Soon!`);
+                        } else {
+                          navigate(link.href);
+                        }
+                      }}
+                      className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      {link.label}
+                      {link.comingSoon && (
+                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-muted border border-border text-muted-foreground">
+                          Soon
+                        </span>
+                      )}
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
