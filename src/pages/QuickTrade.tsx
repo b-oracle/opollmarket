@@ -35,7 +35,13 @@ const ASSETS = [
   { symbol: "DOGE", label: "Dogecoin", geckoId: "dogecoin" },
 ];
 
-const DURATION = 300; // 5 minutes
+const TIMEFRAMES = [
+  { label: "1m", seconds: 60 },
+  { label: "3m", seconds: 180 },
+  { label: "5m", seconds: 300 },
+  { label: "15m", seconds: 900 },
+];
+
 const LOCK_BUFFER = 10; // lock 10s before end
 const AMOUNT_PRESETS = [5, 10, 25, 50, 100];
 
@@ -93,6 +99,7 @@ export default function QuickTrade() {
   const [poolUp, setPoolUp] = useState(0);
   const [poolDown, setPoolDown] = useState(0);
   const [userBets, setUserBets] = useState<Bet[]>([]);
+  const [selectedTimeframe, setSelectedTimeframe] = useState(TIMEFRAMES[2]); // default 5m
 
   const isLocked = activeRound?.status === "locked" || timeLeft <= LOCK_BUFFER;
 
@@ -131,11 +138,12 @@ export default function QuickTrade() {
 
   // ── Fetch / create active round ──
   const fetchActiveRound = useCallback(async () => {
-    // Get current open/locked round for this asset
+    // Get current open/locked round for this asset + duration
     const { data } = await supabase
       .from("quick_rounds")
       .select("*")
       .eq("asset", selectedAsset.symbol)
+      .eq("duration_seconds", selectedTimeframe.seconds)
       .in("status", ["open", "locked"])
       .order("created_at", { ascending: false })
       .limit(1);
@@ -146,12 +154,12 @@ export default function QuickTrade() {
       // No active round — create one if we have a price
       if (currentPrice != null) {
         const now = new Date();
-        const locksAt = new Date(now.getTime() + (DURATION - LOCK_BUFFER) * 1000);
+        const locksAt = new Date(now.getTime() + (selectedTimeframe.seconds - LOCK_BUFFER) * 1000);
         const { data: newRound } = await supabase
           .from("quick_rounds")
           .insert({
             asset: selectedAsset.symbol,
-            duration_seconds: DURATION,
+            duration_seconds: selectedTimeframe.seconds,
             open_price: currentPrice,
             status: "open",
             locks_at: locksAt.toISOString(),
@@ -161,11 +169,11 @@ export default function QuickTrade() {
         if (newRound) setActiveRound(newRound as unknown as Round);
       }
     }
-  }, [selectedAsset.symbol, currentPrice]);
+  }, [selectedAsset.symbol, selectedTimeframe.seconds, currentPrice]);
 
   useEffect(() => {
     fetchActiveRound();
-  }, [selectedAsset.symbol, currentPrice]);
+  }, [selectedAsset.symbol, selectedTimeframe.seconds, currentPrice]);
 
   // ── Countdown ──
   useEffect(() => {
@@ -356,7 +364,7 @@ export default function QuickTrade() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-xl font-bold text-foreground">Quick Trade</h1>
-              <p className="text-xs text-muted-foreground">5-minute UP/DOWN predictions</p>
+              <p className="text-xs text-muted-foreground">{selectedTimeframe.label} UP/DOWN predictions</p>
             </div>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-destructive/15 border border-destructive/30">
               <Radio className="w-3 h-3 text-destructive animate-pulse" />
@@ -381,6 +389,27 @@ export default function QuickTrade() {
                 }`}
               >
                 {a.symbol}
+              </button>
+            ))}
+          </div>
+
+          {/* Timeframe selector */}
+          <div className="flex gap-2 mb-4">
+            {TIMEFRAMES.map((tf) => (
+              <button
+                key={tf.label}
+                onClick={() => {
+                  setSelectedTimeframe(tf);
+                  setActiveRound(null);
+                  setUserBet(null);
+                }}
+                className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${
+                  selectedTimeframe.seconds === tf.seconds
+                    ? "bg-accent text-accent-foreground shadow-md"
+                    : "bg-muted/40 text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {tf.label}
               </button>
             ))}
           </div>
