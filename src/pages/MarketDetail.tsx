@@ -588,7 +588,8 @@ const MarketDetail = () => {
             deadline={market.autoResolveDeadline}
           />
         )}
-        
+
+        {activeBoost && (
           <div className="mb-4">
             <BoostCountdown endsAt={activeBoost.ends_at} tier={activeBoost.tier} />
           </div>
