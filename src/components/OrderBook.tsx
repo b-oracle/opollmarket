@@ -287,35 +287,62 @@ const OrderBook = ({ yesPrice, noPrice, liquidity, marketId }: OrderBookProps) =
       </div>
 
       {/* Recent Trades Tape */}
-      {recentTrades.length > 0 && (
-        <div className="mt-4 border-t border-border pt-3">
-          <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Recent Trades</h4>
-          <div className="space-y-[2px] max-h-40 overflow-y-auto">
-            {recentTrades.slice(0, 10).map((trade) => {
-              const isYes = trade.side === "yes";
-              return (
-                <div key={trade.id} className="grid grid-cols-4 text-[11px] py-1 px-1 rounded-sm hover:bg-muted/30">
-                  <span className="flex items-center gap-1">
-                    {isYes ? (
-                      <ArrowDownLeft className="w-3 h-3" style={{ color: "hsl(var(--neon-yes))" }} />
-                    ) : (
-                      <ArrowUpRight className="w-3 h-3" style={{ color: "hsl(var(--neon-no))" }} />
-                    )}
-                    <span className="font-semibold" style={{ color: isYes ? "hsl(var(--neon-yes))" : "hsl(var(--neon-no))" }}>
-                      {isYes ? "YES" : "NO"}
-                    </span>
+      {recentTrades.length > 0 && (() => {
+        const totalPages = Math.ceil(recentTrades.length / TRADES_PER_PAGE);
+        const paged = recentTrades.slice(tradePage * TRADES_PER_PAGE, (tradePage + 1) * TRADES_PER_PAGE);
+        return (
+          <div className="mt-4 border-t border-border pt-3">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Recent Trades</h4>
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setTradePage((p) => Math.max(0, p - 1))}
+                    disabled={tradePage === 0}
+                    className="p-0.5 rounded hover:bg-muted/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5 text-muted-foreground" />
+                  </button>
+                  <span className="text-[9px] text-muted-foreground font-medium tabular-nums">
+                    {tradePage + 1}/{totalPages}
                   </span>
-                  <span className="font-mono text-center">
-                    {trade.price ? `${Math.round(trade.price * 100)}¢` : "—"}
-                  </span>
-                  <span className="text-center font-medium">${trade.amount.toFixed(2)}</span>
-                  <span className="text-right text-muted-foreground">{formatTimeAgo(trade.created_at)}</span>
+                  <button
+                    onClick={() => setTradePage((p) => Math.min(totalPages - 1, p + 1))}
+                    disabled={tradePage >= totalPages - 1}
+                    className="p-0.5 rounded hover:bg-muted/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                  </button>
                 </div>
-              );
-            })}
+              )}
+            </div>
+            <div className="space-y-[2px]">
+              {paged.map((trade) => {
+                const isYes = trade.side === "yes";
+                return (
+                  <div key={trade.id} className="grid grid-cols-4 text-[11px] py-1 px-1 rounded-sm hover:bg-muted/30">
+                    <span className="flex items-center gap-1">
+                      {isYes ? (
+                        <ArrowDownLeft className="w-3 h-3" style={{ color: "hsl(var(--neon-yes))" }} />
+                      ) : (
+                        <ArrowUpRight className="w-3 h-3" style={{ color: "hsl(var(--neon-no))" }} />
+                      )}
+                      <span className="font-semibold" style={{ color: isYes ? "hsl(var(--neon-yes))" : "hsl(var(--neon-no))" }}>
+                        {isYes ? "YES" : "NO"}
+                      </span>
+                    </span>
+                    <span className="font-mono text-center">
+                      {trade.price ? `${Math.round(trade.price * 100)}¢` : "—"}
+                    </span>
+                    <span className="text-center font-medium">${trade.amount.toFixed(2)}</span>
+                    <span className="text-right text-muted-foreground">{formatTimeAgo(trade.created_at)}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };
