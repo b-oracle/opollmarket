@@ -49,6 +49,7 @@ async function verifySignature(
 
 async function handleDeposit(supabase: ReturnType<typeof createClient>, payload: Record<string, unknown>, orderId: string) {
   const { payment_id, actually_paid, outcome_amount } = payload;
+  const paymentIdStr = String(payment_id);
 
   const parts = orderId.split("_");
   if (parts.length < 3 || parts[0] !== "deposit") {
@@ -57,30 +58,46 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
   }
   const userId = parts[1];
 
-  // Idempotency
-  const { data: existingTx } = await supabase
+  // 1. Check if already credited (idempotency)
+  const { data: confirmedTx } = await supabase
     .from("transactions")
-    .select("id, status")
-    .eq("nowpayments_payment_id", String(payment_id))
-    .single();
+    .select("id")
+    .eq("nowpayments_payment_id", paymentIdStr)
+    .eq("status", "confirmed")
+    .maybeSingle();
 
-  if (existingTx?.status === "confirmed") {
-    console.log("Already processed deposit:", payment_id);
+  if (confirmedTx) {
+    console.log("Already processed deposit:", paymentIdStr);
     return;
   }
 
-  const { data: pendingTx } = await supabase
+  // 2. Find the matching transaction — first by payment_id (any status), then by user pending
+  const { data: matchByPaymentId } = await supabase
     .from("transactions")
-    .select("id, amount")
-    .eq("user_id", userId)
-    .eq("type", "deposit")
-    .eq("status", "pending")
-    .order("created_at", { ascending: false })
+    .select("id, amount, status")
+    .eq("nowpayments_payment_id", paymentIdStr)
+    .in("status", ["pending", "expired"])
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  const creditAmount = pendingTx?.amount || outcome_amount || actually_paid;
+  const { data: matchByUserPending } = !matchByPaymentId
+    ? await supabase
+        .from("transactions")
+        .select("id, amount, status")
+        .eq("user_id", userId)
+        .eq("type", "deposit")
+        .in("status", ["pending", "expired"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    : { data: null };
 
+  const matchedTx = matchByPaymentId || matchByUserPending;
+
+  // Use the original requested amount if we found a matching tx, otherwise use what was actually paid
+  const creditAmount = matchedTx?.amount || outcome_amount || actually_paid;
+
+  // 3. Credit the user's balance
   const { data: balance } = await supabase
     .from("balances")
     .select("amount")
@@ -89,7 +106,7 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
     .single();
 
   if (balance) {
-    await supabase
+    const { error: balanceError } = await supabase
       .from("balances")
       .update({
         amount: Number(balance.amount) + Number(creditAmount),
@@ -97,23 +114,39 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
       })
       .eq("user_id", userId)
       .eq("currency", "USDT");
+
+    if (balanceError) {
+      console.error("Failed to update balance:", balanceError);
+      return;
+    }
+  } else {
+    console.error("No balance record found for user:", userId);
+    return;
   }
 
-  if (existingTx) {
+  // 4. Update the transaction record to confirmed
+  if (matchedTx) {
     await supabase
       .from("transactions")
-      .update({ status: "confirmed", nowpayments_payment_id: String(payment_id) })
-      .eq("id", existingTx.id);
-  } else if (pendingTx) {
+      .update({ status: "confirmed", nowpayments_payment_id: paymentIdStr })
+      .eq("id", matchedTx.id);
+  } else {
+    // No matching transaction at all — create a confirmed one (safety net)
     await supabase
       .from("transactions")
-      .update({ status: "confirmed", nowpayments_payment_id: String(payment_id) })
-      .eq("id", pendingTx.id);
+      .insert({
+        user_id: userId,
+        type: "deposit",
+        amount: Number(creditAmount),
+        status: "confirmed",
+        nowpayments_payment_id: paymentIdStr,
+      });
   }
 
+  // 5. Notify user
   await supabase.from("notifications").insert({
     user_id: userId,
-    title: "Deposit Confirmed",
+    title: "Deposit Confirmed ✅",
     message: `Your deposit of $${Number(creditAmount).toFixed(2)} has been confirmed.`,
     type: "deposit",
   });
@@ -140,7 +173,7 @@ async function handleBoost(supabase: ReturnType<typeof createClient>, payload: R
     .from("market_boosts")
     .select("id, status")
     .eq("nowpayments_payment_id", paymentIdStr)
-    .single();
+    .maybeSingle();
 
   if (existingBoost?.status === "active") {
     console.log("Boost already active:", paymentIdStr);
@@ -161,16 +194,16 @@ async function handleBoost(supabase: ReturnType<typeof createClient>, payload: R
       })
       .eq("id", existingBoost.id);
   } else {
-    // Fallback: find by pending + market_id
+    // Fallback: find by pending/expired + market_id
     const { data: pendingBoost } = await supabase
       .from("market_boosts")
       .select("id")
       .eq("market_id", marketId)
-      .eq("status", "pending")
+      .in("status", ["pending", "expired"])
       .eq("payer_wallet", userId)
       .order("created_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (pendingBoost) {
       await supabase
@@ -221,6 +254,7 @@ Deno.serve(async (req) => {
 
     const { payment_status, order_id } = payload;
 
+    // Accept "finished", "confirmed", and "sending" statuses for crediting
     if (payment_status !== "finished" && payment_status !== "confirmed") {
       console.log(`Ignoring status: ${payment_status}`);
       return new Response("OK", { status: 200, headers: corsHeaders });
