@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import ThemeToggle from "@/components/ThemeToggle";
 import NotificationBell from "@/components/NotificationBell";
 import SignOutConfirmDialog from "@/components/SignOutConfirmDialog";
+import { useSidebarState } from "@/hooks/useSidebarState";
 import logo from "@/assets/logo.png";
 import { User, LogOut, Shield, ArrowLeft } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
