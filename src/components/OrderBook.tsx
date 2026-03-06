@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { BarChart3, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
