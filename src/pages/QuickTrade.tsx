@@ -190,13 +190,13 @@ export default function QuickTrade() {
         setPrevPrice(currentPrice);
         setCurrentPrice(p);
 
-        // Add to price history
+        // Add to price history (keep max 4h of data, filter on render)
         const now = Date.now();
-        const cutoff = now - 15 * 60 * 1000; // 15 minutes
+        const maxCutoff = now - 4 * 60 * 60 * 1000;
         const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
         setPriceHistory((prev) => {
           const updated = [...prev, { time: timeLabel, price: p, ts: now }];
-          return updated.filter((pt) => pt.ts >= cutoff);
+          return updated.filter((pt) => pt.ts >= maxCutoff);
         });
       }
     };
