@@ -27,7 +27,7 @@ export const useBookmark = (marketId: string | undefined) => {
 
   const toggleBookmark = useCallback(async () => {
     if (!user) {
-      toast.error("Sign in to bookmark markets", {
+      toast.error("Sign in to add to your watchlist", {
         action: { label: "Sign In", onClick: () => window.location.href = "/auth" },
       });
       return;
@@ -45,17 +45,17 @@ export const useBookmark = (marketId: string | undefined) => {
           .eq("user_id", user.id)
           .eq("market_id", marketId);
         if (error) throw error;
-        toast.success("Removed from bookmarks");
+        toast.success("Removed from watchlist");
       } else {
         const { error } = await supabase
           .from("bookmarks")
           .insert({ user_id: user.id, market_id: marketId });
         if (error) throw error;
-        toast.success("Added to bookmarks");
+        toast.success("Added to watchlist");
       }
     } catch {
       setBookmarked(prev);
-      toast.error("Failed to update bookmark");
+      toast.error("Failed to update watchlist");
     }
   }, [user, marketId, bookmarked]);
 
