@@ -179,8 +179,11 @@ const Auth = () => {
         <div className="space-y-2 mb-4">
           <button
             onClick={async () => {
+              const redirectUri = window.location.hostname.includes("opoll.org")
+                ? "https://www.opoll.org"
+                : window.location.origin;
               const { error } = await lovable.auth.signInWithOAuth("google", {
-                redirect_uri: window.location.origin,
+                redirect_uri: redirectUri,
               });
               if (error) toast.error("Google sign-in failed");
             }}
