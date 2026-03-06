@@ -404,6 +404,7 @@ const TimePeriodSelector = ({ value, onChange }: { value: TimePeriod; onChange: 
 // ── Main Component ────────────────────────────────────────────────────
 const Rankings = () => {
   const [tab, setTab] = useState<Tab>("traders");
+  const [quickSubTab, setQuickSubTab] = useState<QuickSubTab>("profit");
   const [referralSort, setReferralSort] = useState<ReferralSort>("totalEarned");
   const [traderSort, setTraderSort] = useState<TraderSort>("pnl");
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("all");
