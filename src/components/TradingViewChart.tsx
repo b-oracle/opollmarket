@@ -7,6 +7,9 @@ import {
   type UTCTimestamp,
   ColorType,
   CrosshairMode,
+  CandlestickSeries,
+  HistogramSeries,
+  LineSeries,
 } from "lightweight-charts";
 import { Maximize2, Minimize2 } from "lucide-react";
 
@@ -135,7 +138,7 @@ export default function TradingViewChart({
       handleScroll: { vertTouchDrag: false },
     });
 
-    const candleSeries = chart.addCandlestickSeries({
+    const candleSeries = chart.addSeries(CandlestickSeries, {
       upColor: "#22c55e",
       downColor: "#ef4444",
       borderUpColor: "#22c55e",
@@ -144,7 +147,7 @@ export default function TradingViewChart({
       wickDownColor: "#ef4444",
     });
 
-    const volumeSeries = chart.addHistogramSeries({
+    const volumeSeries = chart.addSeries(HistogramSeries, {
       priceFormat: { type: "volume" },
       priceScaleId: "volume",
     });
@@ -153,14 +156,14 @@ export default function TradingViewChart({
       scaleMargins: { top: 0.85, bottom: 0 },
     });
 
-    const maSeries = chart.addLineSeries({
+    const maSeries = chart.addSeries(LineSeries, {
       color: "hsl(45, 93%, 58%)",
       lineWidth: 1,
       priceLineVisible: false,
       lastValueVisible: false,
     });
 
-    const ma14Series = chart.addLineSeries({
+    const ma14Series = chart.addSeries(LineSeries, {
       color: "hsl(280, 80%, 65%)",
       lineWidth: 1,
       priceLineVisible: false,
