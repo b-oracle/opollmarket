@@ -14,6 +14,7 @@ import ShareModal from "@/components/ShareModal";
 import { useCommentCount } from "@/hooks/useCommentCount";
 import { useMarketLike } from "@/hooks/useMarketLike";
 import { useBookmark } from "@/hooks/useBookmark";
+import { useBookmarkCount } from "@/hooks/useBookmarkCount";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import LiveScoreBadge from "@/components/LiveScoreBadge";
