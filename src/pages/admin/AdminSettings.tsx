@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Percent, Gift, Coins, ImageIcon } from "lucide-react";
+import { Loader2, Save, Percent, Gift, Coins, ImageIcon, ArrowUpFromLine } from "lucide-react";
 import { toast } from "sonner";
 
 const AdminSettings = () => {
