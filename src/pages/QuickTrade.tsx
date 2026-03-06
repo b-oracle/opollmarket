@@ -112,6 +112,9 @@ export default function QuickTrade() {
   const [placing, setPlacing] = useState(false);
   const [userBet, setUserBet] = useState<Bet | null>(null);
   const [recentRounds, setRecentRounds] = useState<Round[]>([]);
+  const [historyPage, setHistoryPage] = useState(0);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const HISTORY_PER_PAGE = 5;
   const [poolUp, setPoolUp] = useState(0);
   const [poolDown, setPoolDown] = useState(0);
   const [userBets, setUserBets] = useState<Bet[]>([]);
@@ -245,17 +248,26 @@ export default function QuickTrade() {
   // ── Recent resolved rounds ──
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase
+      const from = historyPage * HISTORY_PER_PAGE;
+      const to = from + HISTORY_PER_PAGE - 1;
+
+      const { data, count } = await supabase
         .from("quick_rounds")
-        .select("*")
+        .select("*", { count: "exact" })
         .eq("asset", selectedAsset.symbol)
         .eq("status", "resolved")
         .order("resolved_at", { ascending: false })
-        .limit(10);
+        .range(from, to);
       if (data) setRecentRounds(data as unknown as Round[]);
+      if (count != null) setHistoryTotal(count);
     };
     load();
-  }, [selectedAsset.symbol, activeRound?.status]);
+  }, [selectedAsset.symbol, activeRound?.status, historyPage]);
+
+  // Reset page when asset changes
+  useEffect(() => {
+    setHistoryPage(0);
+  }, [selectedAsset.symbol]);
 
   // ── User recent bets ──
   useEffect(() => {
@@ -746,6 +758,33 @@ export default function QuickTrade() {
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {/* Pagination controls */}
+            {historyTotal > HISTORY_PER_PAGE && (
+              <div className="flex items-center justify-between mt-3 pt-2 border-t border-border">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={historyPage === 0}
+                  onClick={() => setHistoryPage((p) => Math.max(0, p - 1))}
+                  className="text-xs h-7 px-2"
+                >
+                  ← Newer
+                </Button>
+                <span className="text-[10px] text-muted-foreground">
+                  {historyPage + 1} / {Math.ceil(historyTotal / HISTORY_PER_PAGE)}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={(historyPage + 1) * HISTORY_PER_PAGE >= historyTotal}
+                  onClick={() => setHistoryPage((p) => p + 1)}
+                  className="text-xs h-7 px-2"
+                >
+                  Older →
+                </Button>
               </div>
             )}
 
