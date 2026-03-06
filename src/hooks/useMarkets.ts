@@ -108,6 +108,13 @@ export const useMarket = (id: string | undefined) => {
           queryClient.invalidateQueries({ queryKey: ["market", id] });
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "market_options", filter: `market_id=eq.${id}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["market", id] });
+        }
+      )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [id, queryClient]);
