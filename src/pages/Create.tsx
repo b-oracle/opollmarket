@@ -1430,6 +1430,19 @@ const Create = () => {
                         onSelect={(fixture) => {
                           setSportMatchId(fixture.id);
                           if (fixture.league) setSportLeague(fixture.league);
+                          // Auto-fill title and description from fixture
+                          if (fixture.id && fixture.homeTeam && fixture.awayTeam) {
+                            const matchDate = (() => { try { return new Date(fixture.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); } catch { return fixture.date; } })();
+                            const outcomeLabel = sportPredictedOutcome === "home_win" ? `${fixture.homeTeam} win` : sportPredictedOutcome === "away_win" ? `${fixture.awayTeam} win` : sportPredictedOutcome === "draw" ? "a draw" : sportPredictedOutcome || `${fixture.homeTeam} win`;
+                            setTitle(`Will ${fixture.homeTeam} beat ${fixture.awayTeam} on ${matchDate}?`);
+                            setDescription(`This market resolves YES if ${fixture.homeTeam} defeats ${fixture.awayTeam} in their ${fixture.league || sportType} match scheduled for ${matchDate}. It resolves NO otherwise (including a draw unless specified).`);
+                            if (!details.trim()) {
+                              setDetails(`**Match Details**\n- **Home:** ${fixture.homeTeam}\n- **Away:** ${fixture.awayTeam}\n- **Date:** ${matchDate}\n- **League:** ${fixture.league || "TBD"}\n${fixture.venue ? `- **Venue:** ${fixture.venue}\n` : ""}\n**Resolution**\nThis market will be auto-resolved based on the official match result from API-Football (Match ID: ${fixture.id}).`);
+                            }
+                            if (!endDate && fixture.date) {
+                              try { setEndDate(new Date(fixture.date).toISOString().split("T")[0]); } catch {}
+                            }
+                          }
                         }}
                       />
 
