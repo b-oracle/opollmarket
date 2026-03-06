@@ -247,6 +247,16 @@ const Feed = () => {
 
   useEffect(() => { track("page_view", { page: "feed" }); }, []);
 
+  // Pulse when bookmarks increase
+  useEffect(() => {
+    if (prevBookmarkCount.current !== null && bookmarkedIds.size > prevBookmarkCount.current) {
+      setWatchlistPulse(true);
+      const t = setTimeout(() => setWatchlistPulse(false), 2000);
+      return () => clearTimeout(t);
+    }
+    prevBookmarkCount.current = bookmarkedIds.size;
+  }, [bookmarkedIds.size]);
+
   const [pulling, setPulling] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
