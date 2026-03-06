@@ -684,6 +684,12 @@ export default function QuickTrade() {
                     </div>
                   </div>
                 </div>
+              ) : chartType === "tv" ? (
+                <TradingViewChart
+                  priceHistory={priceHistory}
+                  chartMs={chartMs}
+                  timeframeLabel={CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.label}
+                />
               ) : (() => {
                 const cutoff = Date.now() - chartMs;
                 const filtered = priceHistory.filter(pt => pt.ts >= cutoff);
