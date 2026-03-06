@@ -260,15 +260,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           <div className={`absolute inset-0 ${isBoosted ? 'bg-gradient-to-br from-primary/15 via-primary/5 to-transparent' : ''}`} />
         </div>
 
-        {/* Chance badge — top left */}
-        <div className="absolute top-4 left-4 z-10">
-          {isMulti && market.options?.length ? (() => {
-            const leading = market.options!.reduce((a, b) => b.price > a.price ? b : a);
-            return <span className="px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm text-sm font-bold neon-yes">{Math.round(leading.price * 100)}% Chance · {leading.label}</span>;
-          })() : (
-            <span className="px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm text-sm font-bold neon-yes">{yesPercent}% Chance</span>
-          )}
-        </div>
+        {/* Chance badge removed from here — now inline with title */}
 
         {/* Hidden capture div for share screenshot */}
         <div ref={captureContentRef} className="absolute -left-[9999px] w-[600px] overflow-hidden rounded-xl bg-background" style={{ height: '400px' }}>
