@@ -49,9 +49,10 @@ import { toast } from "sonner";
 import CategoryIcon from "@/components/CategoryIcon";
 import SwapModal from "@/components/SwapModal";
 import FixtureSearch from "@/components/FixtureSearch";
+import { isPriceAutoResolveCategory, getAssetsForCategory, getAssetClassLabel, getResolutionSource } from "@/data/assetClasses";
 
 const CATEGORIES = [
-  "Crypto", "AI & Tech", "Science", "Economy",
+  "Crypto", "Commodities", "Forex", "AI & Tech", "Science", "Economy",
   "Entertainment", "Sports", "Politics", "Other",
 ];
 
@@ -182,7 +183,7 @@ const Create = () => {
   const [options, setOptions] = useState<string[]>(["", ""]);
   const [videoUrl, setVideoUrl] = useState("");
 
-  // Auto-resolve state (Crypto only)
+  // Auto-resolve state
   const [autoResolve, setAutoResolve] = useState(false);
   const [autoResolveAsset, setAutoResolveAsset] = useState("BTC");
   const [autoResolveOperator, setAutoResolveOperator] = useState("at_or_above");
@@ -195,6 +196,8 @@ const Create = () => {
   const [sportPredictedOutcome, setSportPredictedOutcome] = useState("");
   const [sportLeague, setSportLeague] = useState("");
   const [selectedFixtureData, setSelectedFixtureData] = useState<{ homeTeam: string; awayTeam: string; date: string; league: string; venue: string } | null>(null);
+
+  const priceAssets = getAssetsForCategory(category);
 
   const generateSportsAutoFill = (fixture: { homeTeam: string; awayTeam: string; date: string; league: string; venue: string }, outcome: string) => {
     const matchDate = (() => { try { return new Date(fixture.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); } catch { return fixture.date; } })();
@@ -220,7 +223,6 @@ const Create = () => {
     setDescription(newDesc);
   };
 
-  const CRYPTO_ASSETS = ["BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "DOGE", "MATIC", "AVAX", "DOT", "LINK", "SHIB"];
   const OPERATORS = [
     { value: "at_or_above", label: "Reaches or exceeds" },
     { value: "above", label: "Closes above" },
@@ -497,9 +499,9 @@ const Create = () => {
         market_type: autoResolve ? "binary" : marketType,
         status: marketStatus,
         auto_resolve: autoResolve,
-        auto_resolve_asset: autoResolve && category === "Crypto" ? autoResolveAsset : null,
-        auto_resolve_target_price: autoResolve && category === "Crypto" ? parseFloat(autoResolveTargetPrice) : null,
-        auto_resolve_operator: autoResolve && category === "Crypto" ? autoResolveOperator : null,
+        auto_resolve_asset: autoResolve && isPriceAutoResolveCategory(category) ? autoResolveAsset : null,
+        auto_resolve_target_price: autoResolve && isPriceAutoResolveCategory(category) ? parseFloat(autoResolveTargetPrice) : null,
+        auto_resolve_operator: autoResolve && isPriceAutoResolveCategory(category) ? autoResolveOperator : null,
         auto_resolve_deadline: autoResolveDeadline,
         sport_type: autoResolve && category === "Sports" ? sportType : null,
         sport_match_id: autoResolve && category === "Sports" ? sportMatchId : null,
@@ -1256,8 +1258,8 @@ const Create = () => {
                 )}
               </div>
 
-              {/* Auto-Resolve Toggle (Crypto only) */}
-              {category === "Crypto" && (
+              {/* Auto-Resolve Toggle (Price-based: Crypto, Commodities, Forex) */}
+              {isPriceAutoResolveCategory(category) && (
                 <div className="glass rounded-xl p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
@@ -1275,7 +1277,9 @@ const Create = () => {
                         setAutoResolve(next);
                         if (next) {
                           setMarketType("binary");
-                          setResolutionSource(`Auto-resolved via live ${autoResolveAsset}/USD price feed`);
+                          const defaultAsset = priceAssets[0]?.symbol || autoResolveAsset;
+                          setAutoResolveAsset(defaultAsset);
+                          setResolutionSource(getResolutionSource(category, defaultAsset));
                         }
                       }}
                       className={`w-11 h-6 rounded-full transition-colors relative ${autoResolve ? "bg-primary" : "bg-muted"}`}
@@ -1293,22 +1297,23 @@ const Create = () => {
                     >
                       {/* Asset Selector */}
                       <div>
-                        <label className="text-xs font-semibold mb-1.5 block">Crypto Asset</label>
+                        <label className="text-xs font-semibold mb-1.5 block">{getAssetClassLabel(category)}</label>
                         <div className="grid grid-cols-4 gap-1.5">
-                          {CRYPTO_ASSETS.map((a) => (
+                          {priceAssets.map((a) => (
                             <button
-                              key={a}
+                              key={a.symbol}
                               onClick={() => {
-                                setAutoResolveAsset(a);
-                                setResolutionSource(`Auto-resolved via live ${a}/USD price feed`);
+                                setAutoResolveAsset(a.symbol);
+                                setResolutionSource(getResolutionSource(category, a.symbol));
                               }}
                               className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                                autoResolveAsset === a
+                                autoResolveAsset === a.symbol
                                   ? "bg-primary/15 border border-primary/40 text-primary"
                                   : "bg-muted/50 border border-border text-muted-foreground hover:text-foreground"
                               }`}
+                              title={a.label}
                             >
-                              {a}
+                              {a.symbol}
                             </button>
                           ))}
                         </div>
@@ -1336,15 +1341,15 @@ const Create = () => {
 
                       {/* Target Price */}
                       <div>
-                        <label className="text-xs font-semibold mb-1.5 block">Target Price (USD)</label>
+                        <label className="text-xs font-semibold mb-1.5 block">{category === "Forex" ? "Target Rate" : "Target Price (USD)"}</label>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{category === "Forex" ? "" : "$"}</span>
                           <input
                             type="number"
                             value={autoResolveTargetPrice}
                             onChange={(e) => setAutoResolveTargetPrice(e.target.value)}
-                            placeholder="e.g. 150000"
-                            className="w-full bg-muted/50 border border-border rounded-xl pl-7 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                            placeholder={category === "Forex" ? "e.g. 1.1250" : category === "Commodities" ? "e.g. 2500" : "e.g. 150000"}
+                            className={`w-full bg-muted/50 border border-border rounded-xl ${category === "Forex" ? "pl-4" : "pl-7"} pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30`}
                             min="0"
                             step="any"
                           />
@@ -1369,7 +1374,7 @@ const Create = () => {
                       {autoResolveTargetPrice && endDate && (
                         <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
                           <p className="text-xs font-medium text-primary">
-                            ⚡ Resolves YES if {autoResolveAsset}/USD {OPERATORS.find(o => o.value === autoResolveOperator)?.label.toLowerCase()} ${Number(autoResolveTargetPrice).toLocaleString()} by {endDate} {autoResolveTime} UTC
+                            ⚡ Resolves YES if {autoResolveAsset} {OPERATORS.find(o => o.value === autoResolveOperator)?.label.toLowerCase()} {category === "Forex" ? "" : "$"}{Number(autoResolveTargetPrice).toLocaleString()} by {endDate} {autoResolveTime} UTC
                           </p>
                         </div>
                       )}

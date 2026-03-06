@@ -27,9 +27,10 @@ import CategoryIcon from "@/components/CategoryIcon";
 import ReactMarkdown from "react-markdown";
 import FixtureSearch from "@/components/FixtureSearch";
 import { isYouTubeUrl, getYouTubeId } from "@/components/YouTubeEmbed";
+import { isPriceAutoResolveCategory, getAssetsForCategory, getAssetClassLabel, getResolutionSource } from "@/data/assetClasses";
 
 const CATEGORIES = [
-  "Crypto", "AI & Tech", "Science", "Economy",
+  "Crypto", "Commodities", "Forex", "AI & Tech", "Science", "Economy",
   "Entertainment", "Sports", "Politics", "Other",
 ];
 
@@ -93,7 +94,7 @@ const AdminCreateMarket = () => {
     setDescription(newDesc);
   };
 
-  const CRYPTO_ASSETS = ["BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "DOGE", "MATIC", "AVAX", "DOT", "LINK", "SHIB"];
+  const priceAssets = getAssetsForCategory(category);
   const OPERATORS = [
     { value: "at_or_above", label: "Reaches or exceeds" },
     { value: "above", label: "Closes above" },
@@ -277,9 +278,9 @@ const AdminCreateMarket = () => {
           trending,
           status: "active",
           auto_resolve: autoResolve,
-          auto_resolve_asset: autoResolve && category === "Crypto" ? autoResolveAsset : null,
-          auto_resolve_target_price: autoResolve && category === "Crypto" ? parseFloat(autoResolveTargetPrice) : null,
-          auto_resolve_operator: autoResolve && category === "Crypto" ? autoResolveOperator : null,
+          auto_resolve_asset: autoResolve && isPriceAutoResolveCategory(category) ? autoResolveAsset : null,
+          auto_resolve_target_price: autoResolve && isPriceAutoResolveCategory(category) ? parseFloat(autoResolveTargetPrice) : null,
+          auto_resolve_operator: autoResolve && isPriceAutoResolveCategory(category) ? autoResolveOperator : null,
           auto_resolve_deadline: autoResolveDeadline,
           sport_type: autoResolve && category === "Sports" ? sportType : null,
           sport_match_id: autoResolve && category === "Sports" ? sportMatchId : null,
@@ -586,7 +587,7 @@ const AdminCreateMarket = () => {
         </div>
 
         {/* Auto-Resolve Toggle (Crypto only) */}
-        {category === "Crypto" && (
+        {isPriceAutoResolveCategory(category) && (
           <div className="bg-muted/30 border border-border rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div>
@@ -604,7 +605,9 @@ const AdminCreateMarket = () => {
                   setAutoResolve(next);
                   if (next) {
                     setMarketType("binary");
-                    setResolutionSource(`Auto-resolved via live ${autoResolveAsset}/USD price feed`);
+                    const defaultAsset = priceAssets[0]?.symbol || autoResolveAsset;
+                    setAutoResolveAsset(defaultAsset);
+                    setResolutionSource(getResolutionSource(category, defaultAsset));
                   }
                 }}
                 className={`w-11 h-6 rounded-full transition-colors relative ${autoResolve ? "bg-primary" : "bg-muted"}`}
@@ -616,22 +619,23 @@ const AdminCreateMarket = () => {
             {autoResolve && (
               <div className="space-y-3 pt-2 border-t border-border/50">
                 <div>
-                  <label className="text-xs font-semibold mb-1.5 block">Crypto Asset</label>
+                  <label className="text-xs font-semibold mb-1.5 block">{getAssetClassLabel(category)}</label>
                   <div className="grid grid-cols-4 gap-1.5">
-                    {CRYPTO_ASSETS.map((a) => (
+                    {priceAssets.map((a) => (
                       <button
-                        key={a}
+                        key={a.symbol}
                         onClick={() => {
-                          setAutoResolveAsset(a);
-                          setResolutionSource(`Auto-resolved via live ${a}/USD price feed`);
+                          setAutoResolveAsset(a.symbol);
+                          setResolutionSource(getResolutionSource(category, a.symbol));
                         }}
                         className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                          autoResolveAsset === a
+                          autoResolveAsset === a.symbol
                             ? "bg-primary/15 border border-primary/40 text-primary"
                             : "bg-muted/50 border border-border text-muted-foreground hover:text-foreground"
                         }`}
+                        title={a.label}
                       >
-                        {a}
+                        {a.symbol}
                       </button>
                     ))}
                   </div>
@@ -681,7 +685,7 @@ const AdminCreateMarket = () => {
                 {autoResolveTargetPrice && endDate && (
                   <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
                     <p className="text-xs font-medium text-primary">
-                      ⚡ Resolves YES if {autoResolveAsset}/USD {OPERATORS.find(o => o.value === autoResolveOperator)?.label.toLowerCase()} ${Number(autoResolveTargetPrice).toLocaleString()} by {endDate} {autoResolveTime} UTC
+                      ⚡ Resolves YES if {autoResolveAsset} {OPERATORS.find(o => o.value === autoResolveOperator)?.label.toLowerCase()} {category === "Forex" ? "" : "$"}{Number(autoResolveTargetPrice).toLocaleString()} by {endDate} {autoResolveTime} UTC
                     </p>
                   </div>
                 )}

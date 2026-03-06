@@ -6,8 +6,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// CoinGecko ID mapping
-const ASSET_MAP: Record<string, string> = {
+// CoinGecko ID mapping for crypto
+const CRYPTO_MAP: Record<string, string> = {
   BTC: "bitcoin",
   ETH: "ethereum",
   BNB: "binancecoin",
@@ -22,8 +22,20 @@ const ASSET_MAP: Record<string, string> = {
   SHIB: "shiba-inu",
 };
 
-async function fetchPrice(asset: string): Promise<number | null> {
-  const geckoId = ASSET_MAP[asset.toUpperCase()];
+// Commodity symbols — fetched via Frankfurter (metals) or fallback
+const COMMODITY_SYMBOLS = new Set(["XAU", "XAG", "XPT", "XPD", "BRENT", "WTI", "NG", "COPPER"]);
+
+// Forex pairs
+const FOREX_PAIRS = new Set(["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD", "USD/CHF", "NZD/USD", "EUR/GBP"]);
+
+function getAssetType(asset: string): "crypto" | "commodity" | "forex" {
+  if (FOREX_PAIRS.has(asset)) return "forex";
+  if (COMMODITY_SYMBOLS.has(asset)) return "commodity";
+  return "crypto";
+}
+
+async function fetchCryptoPrice(asset: string): Promise<number | null> {
+  const geckoId = CRYPTO_MAP[asset.toUpperCase()];
   if (!geckoId) return null;
   try {
     const resp = await fetch(
@@ -34,6 +46,51 @@ async function fetchPrice(asset: string): Promise<number | null> {
     return data[geckoId]?.usd ?? null;
   } catch {
     return null;
+  }
+}
+
+async function fetchCommodityPrice(symbol: string): Promise<number | null> {
+  try {
+    // Use metals.dev free API for precious metals
+    if (["XAU", "XAG", "XPT", "XPD"].includes(symbol)) {
+      const metalMap: Record<string, string> = { XAU: "gold", XAG: "silver", XPT: "platinum", XPD: "palladium" };
+      const metalName = metalMap[symbol];
+      if (!metalName) return null;
+      
+      const resp = await fetch(`https://api.metals.dev/v1/latest?api_key=demo&currency=USD&unit=toz`);
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      return data?.metals?.[metalName] ?? null;
+    }
+    
+    // For oil and other commodities, use a proxy via exchangerate
+    // Fallback: return null (manual resolution needed)
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchForexRate(pair: string): Promise<number | null> {
+  try {
+    const [base, quote] = pair.split("/");
+    if (!base || !quote) return null;
+    
+    const resp = await fetch(`https://api.frankfurter.app/latest?from=${base}&to=${quote}`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data?.rates?.[quote] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchPrice(asset: string): Promise<number | null> {
+  const assetType = getAssetType(asset);
+  switch (assetType) {
+    case "crypto": return fetchCryptoPrice(asset);
+    case "commodity": return fetchCommodityPrice(asset);
+    case "forex": return fetchForexRate(asset);
   }
 }
 
@@ -170,8 +227,11 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Notify ALL participants (winners + losers) with detailed auto-resolve info
-      const priceInfo = currentPrice !== null ? `${asset}/USD: $${currentPrice.toLocaleString()}` : "";
+      // Determine asset display label
+      const assetType = getAssetType(asset);
+      const priceLabel = assetType === "forex" ? asset : `${asset}/USD`;
+      const priceInfo = currentPrice !== null ? `${priceLabel}: $${currentPrice.toLocaleString()}` : "";
+      
       const { data: allParticipants } = await adminClient
         .from("positions")
         .select("user_id, side")

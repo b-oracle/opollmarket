@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, TrendingUp, TrendingDown, Radio } from "lucide-react";
+import { Zap, TrendingUp, TrendingDown, Radio, BarChart3, ArrowLeftRight } from "lucide-react";
+import { getAssetClass, type AssetClass } from "@/data/assetClasses";
 
 const ASSET_GECKO_MAP: Record<string, string> = {
   BTC: "bitcoin",
@@ -17,6 +18,13 @@ const ASSET_GECKO_MAP: Record<string, string> = {
   SHIB: "shiba-inu",
 };
 
+const METAL_MAP: Record<string, string> = {
+  XAU: "gold",
+  XAG: "silver",
+  XPT: "platinum",
+  XPD: "palladium",
+};
+
 const OP_LABELS: Record<string, string> = {
   above: ">",
   below: "<",
@@ -31,6 +39,55 @@ const OP_TEXT: Record<string, string> = {
   at_or_below: "drops to or below",
 };
 
+async function fetchAssetPrice(asset: string): Promise<number | null> {
+  const assetClass = getAssetClass(asset);
+  
+  if (assetClass === "crypto") {
+    const geckoId = ASSET_GECKO_MAP[asset.toUpperCase()];
+    if (!geckoId) return null;
+    try {
+      const resp = await fetch(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${geckoId}&vs_currencies=usd`
+      );
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      return data[geckoId]?.usd ?? null;
+    } catch {
+      return null;
+    }
+  }
+  
+  if (assetClass === "commodity") {
+    const metalName = METAL_MAP[asset];
+    if (metalName) {
+      try {
+        const resp = await fetch(`https://api.metals.dev/v1/latest?api_key=demo&currency=USD&unit=toz`);
+        if (!resp.ok) return null;
+        const data = await resp.json();
+        return data?.metals?.[metalName] ?? null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+  
+  if (assetClass === "forex") {
+    const [base, quote] = asset.split("/");
+    if (!base || !quote) return null;
+    try {
+      const resp = await fetch(`https://api.frankfurter.app/latest?from=${base}&to=${quote}`);
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      return data?.rates?.[quote] ?? null;
+    } catch {
+      return null;
+    }
+  }
+  
+  return null;
+}
+
 interface CryptoPriceTickerProps {
   asset: string;
   targetPrice: number;
@@ -43,18 +100,12 @@ export default function CryptoPriceTicker({ asset, targetPrice, operator, deadli
   const [prevPrice, setPrevPrice] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const geckoId = ASSET_GECKO_MAP[asset.toUpperCase()];
-    if (!geckoId) return;
+  const assetClass = getAssetClass(asset);
 
+  useEffect(() => {
     const fetchPrice = async () => {
       try {
-        const resp = await fetch(
-          `https://api.coingecko.com/api/v3/simple/price?ids=${geckoId}&vs_currencies=usd`
-        );
-        if (!resp.ok) return;
-        const data = await resp.json();
-        const price = data[geckoId]?.usd;
+        const price = await fetchAssetPrice(asset);
         if (price != null) {
           setPrevPrice(currentPrice);
           setCurrentPrice(price);
@@ -67,7 +118,7 @@ export default function CryptoPriceTicker({ asset, targetPrice, operator, deadli
     };
 
     fetchPrice();
-    const interval = setInterval(fetchPrice, 30_000); // refresh every 30s
+    const interval = setInterval(fetchPrice, 30_000);
     return () => clearInterval(interval);
   }, [asset]);
 
@@ -93,15 +144,26 @@ export default function CryptoPriceTicker({ asset, targetPrice, operator, deadli
     ? new Date(deadline).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }) + " UTC"
     : null;
 
+  // Dynamic labels based on asset class
+  const headerLabel = assetClass === "forex" ? "Forex Auto-Resolve" : assetClass === "commodity" ? "Commodity Auto-Resolve" : "Auto-Resolve";
+  const HeaderIcon = assetClass === "forex" ? ArrowLeftRight : assetClass === "commodity" ? BarChart3 : Zap;
+  const priceLabel = assetClass === "forex" ? asset : `${asset}/USD`;
+  const formatPrice = (p: number) => {
+    if (assetClass === "forex") {
+      return p.toFixed(4);
+    }
+    return p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
   return (
     <div className="rounded-xl border border-primary/20 bg-primary/5 overflow-hidden mb-4">
       {/* Header with LIVE badge */}
       <div className="flex items-center justify-between px-4 pt-3 pb-1">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center">
-            <Zap className="w-3.5 h-3.5 text-primary" />
+            <HeaderIcon className="w-3.5 h-3.5 text-primary" />
           </div>
-          <span className="text-xs font-bold uppercase tracking-wider text-primary">Auto-Resolve</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-primary">{headerLabel}</span>
         </div>
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-destructive/15 border border-destructive/30">
           <Radio className="w-3 h-3 text-destructive animate-pulse" />
@@ -113,7 +175,7 @@ export default function CryptoPriceTicker({ asset, targetPrice, operator, deadli
       <div className="px-4 py-3">
         <div className="flex items-end justify-between mb-3">
           <div>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">{asset}/USD Current</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">{priceLabel} Current</p>
             {loading ? (
               <div className="h-8 w-32 bg-muted/50 rounded animate-pulse" />
             ) : currentPrice != null ? (
@@ -127,7 +189,7 @@ export default function CryptoPriceTicker({ asset, targetPrice, operator, deadli
                     priceDirection === "up" ? "text-green-500" : priceDirection === "down" ? "text-destructive" : "text-foreground"
                   }`}
                 >
-                  ${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {assetClass === "forex" ? "" : "$"}{formatPrice(currentPrice)}
                   {priceDirection === "up" && <TrendingUp className="inline w-4 h-4 ml-1.5 -translate-y-0.5" />}
                   {priceDirection === "down" && <TrendingDown className="inline w-4 h-4 ml-1.5 -translate-y-0.5" />}
                 </motion.p>
@@ -139,7 +201,7 @@ export default function CryptoPriceTicker({ asset, targetPrice, operator, deadli
           <div className="text-right">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Target</p>
             <p className="text-lg font-bold text-foreground tabular-nums">
-              {OP_LABELS[operator] || "="} ${targetPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {OP_LABELS[operator] || "="} {assetClass === "forex" ? "" : "$"}{assetClass === "forex" ? targetPrice.toFixed(4) : targetPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
         </div>
@@ -152,15 +214,14 @@ export default function CryptoPriceTicker({ asset, targetPrice, operator, deadli
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           />
-          {/* Target marker */}
           <div className="absolute top-0 bottom-0 w-0.5 bg-foreground/50" style={{ left: "100%" }} />
         </div>
 
         {/* Condition summary */}
         <div className="flex items-center justify-between">
           <p className="text-[10px] text-muted-foreground">
-            Resolves <span className="font-semibold text-foreground">YES</span> if {asset} {OP_TEXT[operator] || operator}{" "}
-            <span className="font-semibold text-foreground">${targetPrice.toLocaleString()}</span>
+            Resolves <span className="font-semibold text-foreground">YES</span> if {priceLabel} {OP_TEXT[operator] || operator}{" "}
+            <span className="font-semibold text-foreground">{assetClass === "forex" ? "" : "$"}{assetClass === "forex" ? targetPrice.toFixed(4) : targetPrice.toLocaleString()}</span>
           </p>
           {conditionMet && (
             <span className="text-[10px] font-bold text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">
