@@ -470,10 +470,14 @@ const Create = () => {
         market_type: autoResolve ? "binary" : marketType,
         status: marketStatus,
         auto_resolve: autoResolve,
-        auto_resolve_asset: autoResolve ? autoResolveAsset : null,
-        auto_resolve_target_price: autoResolve ? parseFloat(autoResolveTargetPrice) : null,
-        auto_resolve_operator: autoResolve ? autoResolveOperator : null,
+        auto_resolve_asset: autoResolve && category === "Crypto" ? autoResolveAsset : null,
+        auto_resolve_target_price: autoResolve && category === "Crypto" ? parseFloat(autoResolveTargetPrice) : null,
+        auto_resolve_operator: autoResolve && category === "Crypto" ? autoResolveOperator : null,
         auto_resolve_deadline: autoResolveDeadline,
+        sport_type: autoResolve && category === "Sports" ? sportType : null,
+        sport_match_id: autoResolve && category === "Sports" ? sportMatchId : null,
+        sport_predicted_outcome: autoResolve && category === "Sports" ? sportPredictedOutcome : null,
+        sport_league: autoResolve && category === "Sports" ? sportLeague || null : null,
       } as any)
       .select("id")
       .maybeSingle();
