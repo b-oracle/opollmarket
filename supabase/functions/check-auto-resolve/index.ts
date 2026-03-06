@@ -170,13 +170,41 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Create a notification about auto-resolution
-      const priceInfo = currentPrice !== null ? ` (${asset}/USD: $${currentPrice.toLocaleString()})` : "";
-      const resolveNote = winningSide === "yes"
-        ? `Auto-resolved YES — condition met${priceInfo}`
-        : `Auto-resolved NO — deadline passed without condition being met${priceInfo}`;
+      // Notify ALL participants (winners + losers) with detailed auto-resolve info
+      const priceInfo = currentPrice !== null ? `${asset}/USD: $${currentPrice.toLocaleString()}` : "";
+      const { data: allParticipants } = await adminClient
+        .from("positions")
+        .select("user_id, side")
+        .eq("market_id", market.id)
+        .gt("shares", 0);
 
-      console.log(`Market ${market.id}: ${resolveNote}`);
+      const uniqueUsers = new Map<string, string>();
+      for (const p of allParticipants || []) {
+        if (!uniqueUsers.has(p.user_id)) uniqueUsers.set(p.user_id, p.side);
+      }
+
+      const notifications = Array.from(uniqueUsers.entries()).map(([userId, side]) => {
+        const won = side === winningSide;
+        const title = won
+          ? "You Won! 🎉 Market Auto-Resolved"
+          : "Market Auto-Resolved";
+        const message = winningSide === "yes"
+          ? `"${market.title}" resolved YES — ${priceInfo ? `price condition met (${priceInfo})` : "condition met"}. ${won ? "Your payout has been credited!" : "Better luck next time!"}`
+          : `"${market.title}" resolved NO — deadline passed without condition being met${priceInfo ? ` (${priceInfo})` : ""}. ${won ? "Your payout has been credited!" : "Better luck next time!"}`;
+        return {
+          user_id: userId,
+          title,
+          message,
+          type: won ? "payout" : "resolution",
+          market_id: market.id,
+        };
+      });
+
+      if (notifications.length > 0) {
+        await adminClient.from("notifications").insert(notifications);
+      }
+
+      console.log(`Market ${market.id}: Auto-resolved ${winningSide.toUpperCase()} — notified ${notifications.length} participants`);
       resolvedCount++;
     }
 
