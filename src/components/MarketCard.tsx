@@ -91,6 +91,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
     : `@${market.creatorName}`;
   const { liked, likeCount, toggleLike } = useMarketLike(market.id);
   const { bookmarked, toggleBookmark } = useBookmark(market.id);
+  const bookmarkCount = useBookmarkCount(market.id);
   const [betModal, setBetModal] = useState<{ open: boolean; side: "yes" | "no"; optionLabel?: string; optionPrice?: number; optionColor?: string }>({ open: false, side: "yes" });
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
