@@ -16,6 +16,7 @@ import { useMarketLike } from "@/hooks/useMarketLike";
 import { useBookmark } from "@/hooks/useBookmark";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import LiveScoreBadge from "@/components/LiveScoreBadge";
 
 interface MarketCardProps {
   market: Market;
@@ -398,6 +399,9 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
               <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 bg-destructive/15 text-destructive border border-destructive/30">
                 <Radio className="w-3 h-3 animate-pulse" /> Live
               </span>
+            )}
+            {market.autoResolve && market.sportType && market.sportMatchId && (
+              <LiveScoreBadge sportType={market.sportType} matchId={market.sportMatchId} />
             )}
             {showBoosted && (
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 ${
