@@ -679,7 +679,7 @@ export default function QuickTrade() {
                 const cutoff = Date.now() - chartMs;
                 const filtered = priceHistory.filter(pt => pt.ts >= cutoff);
                 if (filtered.length < 2) return (
-                  <div className="flex items-center justify-center h-[100px]">
+                  <div className="flex items-center justify-center h-[120px]">
                     <p className="text-[10px] text-muted-foreground">Waiting for price data...</p>
                   </div>
                 );
@@ -687,9 +687,121 @@ export default function QuickTrade() {
                 const upColor = "hsl(142, 76%, 36%)";
                 const downColor = "hsl(0, 84%, 60%)";
                 const color = isUp ? upColor : downColor;
+
+                // Build candlestick data by grouping into buckets
+                const buildCandles = () => {
+                  const bucketMs = Math.max(Math.floor(chartMs / 30), 5000);
+                  const candles: { ts: number; open: number; high: number; low: number; close: number; body: [number, number] }[] = [];
+                  if (!filtered.length) return candles;
+                  let bucketStart = filtered[0].ts;
+                  let bucket: number[] = [];
+                  for (const pt of filtered) {
+                    if (pt.ts - bucketStart >= bucketMs && bucket.length) {
+                      const o = bucket[0], c = bucket[bucket.length - 1];
+                      candles.push({ ts: bucketStart, open: o, high: Math.max(...bucket), low: Math.min(...bucket), close: c, body: [Math.min(o, c), Math.max(o, c)] });
+                      bucketStart = pt.ts;
+                      bucket = [];
+                    }
+                    bucket.push(pt.price);
+                  }
+                  if (bucket.length) {
+                    const o = bucket[0], c = bucket[bucket.length - 1];
+                    candles.push({ ts: bucketStart, open: o, high: Math.max(...bucket), low: Math.min(...bucket), close: c, body: [Math.min(o, c), Math.max(o, c)] });
+                  }
+                  return candles;
+                };
+
+                const tooltipContent = ({ active, payload }: any) => {
+                  if (!active || !payload?.length) return null;
+                  const d = payload[0].payload;
+                  if (chartType === "candle") {
+                    return (
+                      <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg text-[11px]">
+                        <p className="text-muted-foreground mb-1">{new Date(d.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+                          <span className="text-muted-foreground">O</span><span className="font-mono font-semibold text-foreground">${d.open.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          <span className="text-muted-foreground">H</span><span className="font-mono font-semibold text-foreground">${d.high.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          <span className="text-muted-foreground">L</span><span className="font-mono font-semibold text-foreground">${d.low.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          <span className="text-muted-foreground">C</span><span className="font-mono font-semibold text-foreground">${d.close.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg text-[11px]">
+                      <p className="font-semibold text-foreground">${Number(d.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className="text-muted-foreground">{new Date(d.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
+                    </div>
+                  );
+                };
+
+                if (chartType === "candle") {
+                  const candles = buildCandles();
+                  if (candles.length < 2) return (
+                    <div className="flex items-center justify-center h-[120px]">
+                      <p className="text-[10px] text-muted-foreground">Not enough data for candles</p>
+                    </div>
+                  );
+                  const allLows = candles.map(c => c.low);
+                  const allHighs = candles.map(c => c.high);
+                  const yMin = Math.min(...allLows);
+                  const yMax = Math.max(...allHighs);
+                  const padding = (yMax - yMin) * 0.1 || 1;
+
+                  // Custom candlestick shape
+                  const CandlestickShape = (props: any) => {
+                    const { x, y, width, height, payload } = props;
+                    if (!payload) return null;
+                    const isBullish = payload.close >= payload.open;
+                    const fill = isBullish ? upColor : downColor;
+                    const wickX = x + width / 2;
+
+                    // Calculate wick positions in pixel space
+                    const yScale = (val: number) => {
+                      const domain = [yMin - padding, yMax + padding];
+                      const range = [120 - 4, 4]; // chart height minus margins
+                      return range[0] + ((val - domain[0]) / (domain[1] - domain[0])) * (range[1] - range[0]);
+                    };
+                    const wickTop = yScale(payload.high);
+                    const wickBottom = yScale(payload.low);
+
+                    return (
+                      <g>
+                        {/* Wick */}
+                        <line x1={wickX} y1={wickTop} x2={wickX} y2={wickBottom} stroke={fill} strokeWidth={1} />
+                        {/* Body */}
+                        <rect x={x + 1} y={y} width={Math.max(width - 2, 2)} height={Math.max(height, 1)} fill={fill} rx={1} />
+                      </g>
+                    );
+                  };
+
+                  return (
+                    <>
+                      <ResponsiveContainer width="100%" height={120}>
+                        <ComposedChart data={candles} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
+                          <YAxis domain={[yMin - padding, yMax + padding]} hide />
+                          <XAxis dataKey="ts" hide />
+                          <RechartsTooltip content={tooltipContent} cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '3 3' }} />
+                          {activeRound?.open_price && (
+                            <ReferenceLine y={Number(activeRound.open_price)} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.4} />
+                          )}
+                          <Bar dataKey="body" shape={<CandlestickShape />} isAnimationActive={false}>
+                            {candles.map((c, i) => (
+                              <Cell key={i} fill={c.close >= c.open ? upColor : downColor} />
+                            ))}
+                          </Bar>
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                      <p className="text-[10px] text-muted-foreground text-center mt-1">
+                        Last {CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.label}
+                      </p>
+                    </>
+                  );
+                }
+
                 return (
                   <>
-                    <ResponsiveContainer width="100%" height={100}>
+                    <ResponsiveContainer width="100%" height={120}>
                       <AreaChart data={filtered} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
                         <defs>
                           <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
@@ -699,36 +811,11 @@ export default function QuickTrade() {
                         </defs>
                         <YAxis domain={["dataMin", "dataMax"]} hide />
                         <XAxis dataKey="ts" hide />
-                        <RechartsTooltip
-                          content={({ active, payload }) => {
-                            if (!active || !payload?.length) return null;
-                            const d = payload[0].payload;
-                            return (
-                              <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg text-[11px]">
-                                <p className="font-semibold text-foreground">${Number(d.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                                <p className="text-muted-foreground">{new Date(d.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
-                              </div>
-                            );
-                          }}
-                          cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '3 3' }}
-                        />
+                        <RechartsTooltip content={tooltipContent} cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '3 3' }} />
                         {activeRound?.open_price && (
-                          <ReferenceLine
-                            y={Number(activeRound.open_price)}
-                            stroke="hsl(var(--muted-foreground))"
-                            strokeDasharray="3 3"
-                            strokeOpacity={0.4}
-                          />
+                          <ReferenceLine y={Number(activeRound.open_price)} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.4} />
                         )}
-                        <Area
-                          type="monotone"
-                          dataKey="price"
-                          stroke={color}
-                          strokeWidth={2}
-                          fill="url(#priceGradient)"
-                          dot={false}
-                          isAnimationActive={false}
-                        />
+                        <Area type="monotone" dataKey="price" stroke={color} strokeWidth={2} fill="url(#priceGradient)" dot={false} isAnimationActive={false} />
                       </AreaChart>
                     </ResponsiveContainer>
                     <p className="text-[10px] text-muted-foreground text-center mt-1">
