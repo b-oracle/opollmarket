@@ -689,7 +689,7 @@ const MarketDetail = () => {
 
       {!isMulti && (
         <div className="fixed bottom-16 left-0 right-0 md:left-60 z-30 px-4 pb-3 pt-2 bg-gradient-to-t from-background via-background/95 to-transparent" style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}>
-          <div className="max-w-lg mx-auto flex gap-3">
+          <div className="max-w-lg md:max-w-4xl mx-auto flex gap-3">
             <button onClick={() => { setBetSide("yes"); setBetOpen(true); }} className="flex-1 btn-yes py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy Yes {yesPercent}¢</button>
             <button onClick={() => { setBetSide("no"); setBetOpen(true); }} className="flex-1 btn-no py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy No {noPercent}¢</button>
           </div>
