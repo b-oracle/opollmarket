@@ -203,10 +203,21 @@ export default function QuickTrade() {
   const priceHistoryRef = useRef(priceHistory);
   priceHistoryRef.current = priceHistory;
 
-  // Reset price history when asset changes
+  // Load historical price data when asset or chart timeframe changes
+  const [historyLoading, setHistoryLoading] = useState(false);
   useEffect(() => {
+    let cancelled = false;
+    setHistoryLoading(true);
     setPriceHistory([]);
-  }, [selectedAsset.symbol]);
+    (async () => {
+      const data = await fetchPriceHistory(selectedAsset.geckoId, chartMs);
+      if (!cancelled && data.length > 0) {
+        setPriceHistory(data);
+      }
+      if (!cancelled) setHistoryLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [selectedAsset.geckoId, chartMs]);
 
   // ── Fetch price ──
   useEffect(() => {
