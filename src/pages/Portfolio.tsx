@@ -34,6 +34,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import useAnalytics from "@/hooks/useAnalytics";
 import { useUserLimitOrders, useCancelLimitOrder } from "@/hooks/useLimitOrders";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
+import { useUserBalance } from "@/hooks/useUserBalance";
 
 interface PositionRow {
   id: string;
@@ -139,6 +140,7 @@ const Portfolio = () => {
   const cancelLimitOrder = useCancelLimitOrder();
   const { data: commission } = useCommissionSettings();
   const exitFeePercent = commission?.exit_fee_percent ?? 5;
+  const { bonusBalance } = useUserBalance();
 
   useEffect(() => { track("page_view", { page: "portfolio" }); }, []);
 
