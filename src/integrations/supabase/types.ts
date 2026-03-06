@@ -380,6 +380,11 @@ export type Database = {
       }
       markets: {
         Row: {
+          auto_resolve: boolean
+          auto_resolve_asset: string | null
+          auto_resolve_deadline: string | null
+          auto_resolve_operator: string | null
+          auto_resolve_target_price: number | null
           category: string
           contract_address: string | null
           created_at: string
@@ -409,6 +414,11 @@ export type Database = {
           yes_price: number
         }
         Insert: {
+          auto_resolve?: boolean
+          auto_resolve_asset?: string | null
+          auto_resolve_deadline?: string | null
+          auto_resolve_operator?: string | null
+          auto_resolve_target_price?: number | null
           category: string
           contract_address?: string | null
           created_at?: string
@@ -438,6 +448,11 @@ export type Database = {
           yes_price?: number
         }
         Update: {
+          auto_resolve?: boolean
+          auto_resolve_asset?: string | null
+          auto_resolve_deadline?: string | null
+          auto_resolve_operator?: string | null
+          auto_resolve_target_price?: number | null
           category?: string
           contract_address?: string | null
           created_at?: string

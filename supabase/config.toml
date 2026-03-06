@@ -23,3 +23,5 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.faq-ai]
     verify_jwt = false
+  [functions.check-auto-resolve]
+    verify_jwt = false

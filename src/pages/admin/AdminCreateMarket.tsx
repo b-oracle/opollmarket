@@ -19,6 +19,7 @@ import {
   Video,
   Eye,
   EyeOff,
+  Zap,
 } from "lucide-react";
 
 import CategoryIcon from "@/components/CategoryIcon";
@@ -51,6 +52,21 @@ const AdminCreateMarket = () => {
   const [mediaType, setMediaType] = useState<"image" | "video">("image");
   const [details, setDetails] = useState("");
   const [showDetailsPreview, setShowDetailsPreview] = useState(false);
+
+  // Auto-resolve state (Crypto only)
+  const [autoResolve, setAutoResolve] = useState(false);
+  const [autoResolveAsset, setAutoResolveAsset] = useState("BTC");
+  const [autoResolveOperator, setAutoResolveOperator] = useState("at_or_above");
+  const [autoResolveTargetPrice, setAutoResolveTargetPrice] = useState("");
+  const [autoResolveTime, setAutoResolveTime] = useState("00:00");
+
+  const CRYPTO_ASSETS = ["BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "DOGE", "MATIC", "AVAX", "DOT", "LINK", "SHIB"];
+  const OPERATORS = [
+    { value: "at_or_above", label: "Reaches or exceeds" },
+    { value: "above", label: "Closes above" },
+    { value: "at_or_below", label: "Drops to or below" },
+    { value: "below", label: "Closes below" },
+  ];
 
   // Image state
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -186,6 +202,10 @@ const AdminCreateMarket = () => {
       }
 
       // Create market
+      const autoResolveDeadline = autoResolve && endDate && autoResolveTime
+        ? new Date(`${endDate}T${autoResolveTime}:00Z`).toISOString()
+        : null;
+
       const { data, error } = await supabase
         .from("markets")
         .insert({
@@ -200,13 +220,18 @@ const AdminCreateMarket = () => {
           liquidity: parseFloat(initialLiquidity) || 100,
           volume: parseFloat(initialVolume) || 0,
           participants: parseInt(initialTraders) || 0,
-          market_type: marketType,
+          market_type: autoResolve ? "binary" : marketType,
           image_url: imageUrl,
           video_url: mediaType === "video" && videoUrl.trim() && isYouTubeUrl(videoUrl.trim()) ? videoUrl.trim() : null,
           details: details.trim() || null,
           trending,
           status: "active",
-        })
+          auto_resolve: autoResolve,
+          auto_resolve_asset: autoResolve ? autoResolveAsset : null,
+          auto_resolve_target_price: autoResolve ? parseFloat(autoResolveTargetPrice) : null,
+          auto_resolve_operator: autoResolve ? autoResolveOperator : null,
+          auto_resolve_deadline: autoResolveDeadline,
+        } as any)
         .select("id")
         .maybeSingle();
 
@@ -505,6 +530,111 @@ const AdminCreateMarket = () => {
             <p className="text-[11px] text-destructive mt-1.5">{fieldError("category")}</p>
           )}
         </div>
+
+        {/* Auto-Resolve Toggle (Crypto only) */}
+        {category === "Crypto" && (
+          <div className="bg-muted/30 border border-border rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="flex items-center gap-2 text-sm font-semibold">
+                  <Zap className="w-4 h-4 text-primary" />
+                  Auto-Resolve by Price
+                </label>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  Automatically resolves when a live price condition is met
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  const next = !autoResolve;
+                  setAutoResolve(next);
+                  if (next) {
+                    setMarketType("binary");
+                    setResolutionSource(`Auto-resolved via live ${autoResolveAsset}/USD price feed`);
+                  }
+                }}
+                className={`w-11 h-6 rounded-full transition-colors relative ${autoResolve ? "bg-primary" : "bg-muted"}`}
+              >
+                <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${autoResolve ? "translate-x-[22px]" : "translate-x-0.5"}`} />
+              </button>
+            </div>
+
+            {autoResolve && (
+              <div className="space-y-3 pt-2 border-t border-border/50">
+                <div>
+                  <label className="text-xs font-semibold mb-1.5 block">Crypto Asset</label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {CRYPTO_ASSETS.map((a) => (
+                      <button
+                        key={a}
+                        onClick={() => {
+                          setAutoResolveAsset(a);
+                          setResolutionSource(`Auto-resolved via live ${a}/USD price feed`);
+                        }}
+                        className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                          autoResolveAsset === a
+                            ? "bg-primary/15 border border-primary/40 text-primary"
+                            : "bg-muted/50 border border-border text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {a}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold mb-1.5 block">Condition</label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {OPERATORS.map((op) => (
+                      <button
+                        key={op.value}
+                        onClick={() => setAutoResolveOperator(op.value)}
+                        className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                          autoResolveOperator === op.value
+                            ? "bg-primary/15 border border-primary/40 text-primary"
+                            : "bg-muted/50 border border-border text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {op.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold mb-1.5 block">Target Price (USD)</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                    <input
+                      type="number"
+                      value={autoResolveTargetPrice}
+                      onChange={(e) => setAutoResolveTargetPrice(e.target.value)}
+                      placeholder="e.g. 150000"
+                      className="w-full bg-muted/50 border border-border rounded-xl pl-7 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      min="0"
+                      step="any"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold mb-1.5 block">Resolution Deadline Time (UTC)</label>
+                  <input
+                    type="time"
+                    value={autoResolveTime}
+                    onChange={(e) => setAutoResolveTime(e.target.value)}
+                    className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+                {autoResolveTargetPrice && endDate && (
+                  <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
+                    <p className="text-xs font-medium text-primary">
+                      ⚡ Resolves YES if {autoResolveAsset}/USD {OPERATORS.find(o => o.value === autoResolveOperator)?.label.toLowerCase()} ${Number(autoResolveTargetPrice).toLocaleString()} by {endDate} {autoResolveTime} UTC
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <div className={shakeClass("endDate")}>
