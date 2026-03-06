@@ -422,38 +422,45 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
         {/* Content */}
         <div className="relative z-10 w-full max-w-[calc(100%-4rem)] overflow-hidden">
-          <div className="flex items-center gap-2 mb-2 overflow-x-auto scrollbar-hide">
+          {/* Creator line */}
+          <div className="flex items-center gap-2 mb-1.5">
             <div className="w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0">
               <span className="text-[10px] font-bold text-primary">{market.creatorName.charAt(0)}</span>
             </div>
-            <span className={`text-xs font-medium text-foreground/80 shrink-0 ${creatorProfile?.wallet_address ? 'font-mono' : ''}`}>{creatorLabel}</span>
-            {market.autoResolve && (
-              <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold flex items-center gap-0.5 bg-destructive/15 text-destructive border border-destructive/30 shrink-0">
-                <Radio className="w-2.5 h-2.5 animate-pulse" /> Live
-              </span>
-            )}
-            {market.autoResolve && market.sportType && market.sportMatchId && (
-              <div className="shrink-0"><LiveScoreBadge sportType={market.sportType} matchId={market.sportMatchId} /></div>
-            )}
-            {market.autoResolve && market.autoResolveAsset && !market.sportType && (
-              <div className="shrink-0">
-                <LivePriceBadge
-                  asset={market.autoResolveAsset}
-                  targetPrice={market.autoResolveTargetPrice ?? undefined}
-                  operator={market.autoResolveOperator ?? undefined}
-                />
-              </div>
-            )}
-            {showBoosted && (
-              <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-semibold flex items-center gap-0.5 shrink-0 ${
-                isBoosted 
-                  ? 'bg-primary/20 text-primary animate-pulse' 
-                  : 'bg-primary/10 text-primary'
-              }`}>
-                <Zap className="w-2.5 h-2.5" /> {isBoosted ? 'Boosted 🔥' : 'Trending'}
-              </span>
-            )}
+            <span className={`text-xs font-medium text-foreground/80 truncate ${creatorProfile?.wallet_address ? 'font-mono' : ''}`}>{creatorLabel}</span>
           </div>
+
+          {/* Badges line — scrollable */}
+          {(market.autoResolve || showBoosted) && (
+            <div className="flex items-center gap-1.5 mb-2 overflow-x-auto scrollbar-hide">
+              {market.autoResolve && (
+                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold flex items-center gap-0.5 bg-destructive/15 text-destructive border border-destructive/30 shrink-0">
+                  <Radio className="w-2.5 h-2.5 animate-pulse" /> Live
+                </span>
+              )}
+              {market.autoResolve && market.sportType && market.sportMatchId && (
+                <div className="shrink-0"><LiveScoreBadge sportType={market.sportType} matchId={market.sportMatchId} /></div>
+              )}
+              {market.autoResolve && market.autoResolveAsset && !market.sportType && (
+                <div className="shrink-0">
+                  <LivePriceBadge
+                    asset={market.autoResolveAsset}
+                    targetPrice={market.autoResolveTargetPrice ?? undefined}
+                    operator={market.autoResolveOperator ?? undefined}
+                  />
+                </div>
+              )}
+              {showBoosted && (
+                <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-semibold flex items-center gap-0.5 shrink-0 ${
+                  isBoosted 
+                    ? 'bg-primary/20 text-primary animate-pulse' 
+                    : 'bg-primary/10 text-primary'
+                }`}>
+                  <Zap className="w-2.5 h-2.5" /> {isBoosted ? 'Boosted 🔥' : 'Trending'}
+                </span>
+              )}
+            </div>
+          )}
 
           {isBoosted && boostEndsAt && (
             <div className="mb-2">
