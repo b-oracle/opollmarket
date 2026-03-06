@@ -11,6 +11,7 @@ import {
   History,
   ChevronDown,
   Loader2,
+  Share2,
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, ReferenceLine } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,7 +28,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import StreakMilestoneModal from "@/components/StreakMilestoneModal";
-
+import ShareModal from "@/components/ShareModal";
+import watermarkLogo from "@/assets/watermark-logo.png";
 // ── Asset config ──
 const ASSETS = [
   { symbol: "BTC", label: "Bitcoin", geckoId: "bitcoin" },
@@ -153,6 +155,8 @@ export default function QuickTrade() {
   const [streak, setStreak] = useState<{ current_streak: number; best_streak: number } | null>(null);
   const [milestoneModal, setMilestoneModal] = useState<{ open: boolean; streak: number; multiplier: number }>({ open: false, streak: 0, multiplier: 1 });
   const prevStreakRef = useRef<number>(0);
+  const chartCardRef = useRef<HTMLDivElement>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const isLocked = activeRound?.status === "locked" || timeLeft <= LOCK_BUFFER;
 
@@ -555,7 +559,7 @@ export default function QuickTrade() {
           </div>
 
           {/* Price display */}
-          <div className="rounded-2xl border border-border bg-card p-5 mb-4">
+          <div ref={chartCardRef} className="relative rounded-2xl border border-border bg-card p-5 mb-4">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">{selectedAsset.label} / USD</p>
@@ -698,6 +702,22 @@ export default function QuickTrade() {
                   </>
                 );
               })()}
+            </div>
+
+            {/* Share button */}
+            <div className="flex justify-end mt-3">
+              <button
+                onClick={() => setShowShareModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg glass text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                Share Chart
+              </button>
+            </div>
+
+            {/* Watermark */}
+            <div className="absolute bottom-3 right-4 z-20 opacity-40 pointer-events-none">
+              <img src={watermarkLogo} alt="" className="h-7 w-auto" />
             </div>
           </div>
 
@@ -987,6 +1007,14 @@ export default function QuickTrade() {
         onClose={() => setMilestoneModal(m => ({ ...m, open: false }))}
         streak={milestoneModal.streak}
         multiplier={milestoneModal.multiplier}
+      />
+      <ShareModal
+        open={showShareModal}
+        onOpenChange={setShowShareModal}
+        title={`${selectedAsset.symbol} Quick Trade — ${currentPrice ? `$${currentPrice.toLocaleString()}` : ""}`}
+        description={`${selectedTimeframe.label} UP/DOWN prediction on ${selectedAsset.label}`}
+        marketUrl={`${window.location.origin}/quick-trade`}
+        captureRef={chartCardRef}
       />
     </>
   );
