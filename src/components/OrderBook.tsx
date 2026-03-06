@@ -1,6 +1,6 @@
 import { useMemo, useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { BarChart3, ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import { BarChart3, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
