@@ -1008,6 +1008,14 @@ export default function QuickTrade() {
         streak={milestoneModal.streak}
         multiplier={milestoneModal.multiplier}
       />
+      <ShareModal
+        open={showShareModal}
+        onOpenChange={setShowShareModal}
+        title={`${selectedAsset.symbol} Quick Trade — ${currentPrice ? `$${currentPrice.toLocaleString()}` : ""}`}
+        description={`${selectedTimeframe.label} UP/DOWN prediction on ${selectedAsset.label}`}
+        marketUrl={`${window.location.origin}/quick-trade`}
+        captureRef={chartCardRef}
+      />
     </>
   );
 }
