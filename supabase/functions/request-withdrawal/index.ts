@@ -35,6 +35,11 @@ Deno.serve(async (req) => {
     const userId = user.id;
     const { amount, wallet_address, crypto_currency } = await req.json();
 
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
     // Fetch min withdrawal from settings
     const { data: settings } = await adminClient
       .from("commission_settings")
@@ -65,11 +70,6 @@ Deno.serve(async (req) => {
         { status: 500, headers: corsHeaders }
       );
     }
-
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
 
     // Check user has made at least one confirmed deposit
     const { count: depositCount } = await adminClient
