@@ -76,7 +76,17 @@ const Index = () => {
     return markets.filter((m) => m.trending).slice(0, 5);
   }, [markets, boostedMarketIds]);
 
-  const categories = useMemo(() => {
+  const commodityMarkets = useMemo(() =>
+    markets.filter((m) => m.category === "Commodities").slice(0, 8),
+    [markets]
+  );
+
+  const forexMarkets = useMemo(() =>
+    markets.filter((m) => m.category === "Forex").slice(0, 8),
+    [markets]
+  );
+
+
     const cats = new Set(markets.map((m) => m.category));
     return ["All", ...Array.from(cats).sort()];
   }, [markets]);
