@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Home, Compass, PlusCircle, BarChart3, User, MoreHorizontal } from "lucide-react";
+import { Home, Compass, PlusCircle, Zap, User, MoreHorizontal } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import MoreMenu from "@/components/MoreMenu";
@@ -8,7 +8,7 @@ const baseNavItems = [
   { icon: Home, label: "Home", path: "/" },
   { icon: Compass, label: "Feed", path: "/feed" },
   { icon: PlusCircle, label: "Create", path: "/create" },
-  { icon: BarChart3, label: "Portfolio", path: "/portfolio" },
+  { icon: Zap, label: "Quick Trade", path: "/quick-trade" },
 ];
 
 const BottomNav = () => {
