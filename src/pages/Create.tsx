@@ -48,6 +48,7 @@ import { toast } from "sonner";
 
 import CategoryIcon from "@/components/CategoryIcon";
 import SwapModal from "@/components/SwapModal";
+import FixtureSearch from "@/components/FixtureSearch";
 
 const CATEGORIES = [
   "Crypto", "AI & Tech", "Science", "Economy",
@@ -1422,20 +1423,15 @@ const Create = () => {
                         />
                       </div>
 
-                      {/* Match ID */}
-                      <div>
-                        <label className="text-xs font-semibold mb-1.5 block">Match / Fixture ID</label>
-                        <input
-                          type="text"
-                          value={sportMatchId}
-                          onChange={(e) => setSportMatchId(e.target.value)}
-                          placeholder="API-Football fixture ID (e.g. 1035024)"
-                          className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                        />
-                        <p className="text-[10px] text-muted-foreground mt-1">
-                          Find match IDs at <a href="https://dashboard.api-football.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">api-football.com</a>
-                        </p>
-                      </div>
+                      {/* Fixture Search */}
+                      <FixtureSearch
+                        sportType={sportType}
+                        selectedFixtureId={sportMatchId}
+                        onSelect={(fixture) => {
+                          setSportMatchId(fixture.id);
+                          if (fixture.league) setSportLeague(fixture.league);
+                        }}
+                      />
 
                       {/* Predicted Outcome */}
                       <div>

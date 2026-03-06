@@ -25,6 +25,7 @@ import {
 
 import CategoryIcon from "@/components/CategoryIcon";
 import ReactMarkdown from "react-markdown";
+import FixtureSearch from "@/components/FixtureSearch";
 import { isYouTubeUrl, getYouTubeId } from "@/components/YouTubeEmbed";
 
 const CATEGORIES = [
@@ -695,10 +696,14 @@ const AdminCreateMarket = () => {
                   <label className="text-xs font-semibold mb-1.5 block">League (optional)</label>
                   <input type="text" value={sportLeague} onChange={(e) => setSportLeague(e.target.value)} placeholder="e.g. Premier League, NBA" className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
-                <div>
-                  <label className="text-xs font-semibold mb-1.5 block">Match / Fixture ID</label>
-                  <input type="text" value={sportMatchId} onChange={(e) => setSportMatchId(e.target.value)} placeholder="API-Football fixture ID" className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
-                </div>
+                <FixtureSearch
+                  sportType={sportType}
+                  selectedFixtureId={sportMatchId}
+                  onSelect={(fixture) => {
+                    setSportMatchId(fixture.id);
+                    if (fixture.league) setSportLeague(fixture.league);
+                  }}
+                />
                 <div>
                   <label className="text-xs font-semibold mb-1.5 block">Predicted Outcome</label>
                   <div className="grid grid-cols-3 gap-1.5 mb-2">
