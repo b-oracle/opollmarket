@@ -4,7 +4,7 @@ import { Video, HelpCircle, FileText, Shield, Scale } from "lucide-react";
 import { toast } from "sonner";
 
 const footerLinks = [
-  { icon: Video, label: "How-to Videos", href: "#", comingSoon: true },
+  { icon: Video, label: "How-to", href: "#", comingSoon: true },
   { icon: HelpCircle, label: "FAQ", href: "/faq" },
   { icon: Scale, label: "Disclaimer", href: "/disclaimer" },
   { icon: FileText, label: "Terms & Conditions", href: "/terms" },
