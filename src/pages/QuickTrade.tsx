@@ -155,6 +155,8 @@ export default function QuickTrade() {
   const [streak, setStreak] = useState<{ current_streak: number; best_streak: number } | null>(null);
   const [milestoneModal, setMilestoneModal] = useState<{ open: boolean; streak: number; multiplier: number }>({ open: false, streak: 0, multiplier: 1 });
   const prevStreakRef = useRef<number>(0);
+  const chartCardRef = useRef<HTMLDivElement>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const isLocked = activeRound?.status === "locked" || timeLeft <= LOCK_BUFFER;
 
