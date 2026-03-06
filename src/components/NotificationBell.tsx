@@ -36,6 +36,7 @@ const formatTimeAgo = (date: string) => {
 const NotificationBell = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { isSupported: pushSupported, isSubscribed: pushSubscribed, loading: pushLoading, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotifications();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
