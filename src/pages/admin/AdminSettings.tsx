@@ -136,6 +136,35 @@ const AdminSettings = () => {
           <Card className="border-dashed">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
+                <LogOut className="w-4 h-4" /> Early Exit Fee
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Percentage charged when users sell positions before market resolution. Fee is returned to the market pool. Referral bonus is used first to cover this fee.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label htmlFor="exitFee">Exit Fee (%)</Label>
+                <Input
+                  id="exitFee"
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.5}
+                  value={exitFee}
+                  onChange={(e) => setExitFee(e.target.value)}
+                  placeholder="5"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Current: {exitFeeNum}%
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-dashed">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
                 <Gift className="w-4 h-4" /> Referral Reward
               </CardTitle>
               <CardDescription className="text-xs">
