@@ -233,6 +233,8 @@ const DesktopFeedCard = ({ market, isBoosted, boostEndsAt, boostTier }: {
 
 const Feed = () => {
   const [tabOpen, setTabOpen] = useState(false);
+  const [watchlistPulse, setWatchlistPulse] = useState(false);
+  const prevBookmarkCount = useRef<number | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const { data: markets = [], isLoading, refetch } = useMarkets();
@@ -244,6 +246,16 @@ const Feed = () => {
   const [feedTab, setFeedTab] = useState<"foryou" | "bookmarks">("foryou");
 
   useEffect(() => { track("page_view", { page: "feed" }); }, []);
+
+  // Pulse when bookmarks increase
+  useEffect(() => {
+    if (prevBookmarkCount.current !== null && bookmarkedIds.size > prevBookmarkCount.current) {
+      setWatchlistPulse(true);
+      const t = setTimeout(() => setWatchlistPulse(false), 2000);
+      return () => clearTimeout(t);
+    }
+    prevBookmarkCount.current = bookmarkedIds.size;
+  }, [bookmarkedIds.size]);
 
   const [pulling, setPulling] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
@@ -381,10 +393,15 @@ const Feed = () => {
           {/* Tab handle */}
           <button
             onClick={() => setTabOpen(!tabOpen)}
-            className="w-7 h-9 rounded-l-lg bg-background/80 backdrop-blur-md border border-r-0 border-border/40 flex items-center justify-center shadow-md shrink-0"
+            className={`w-7 h-9 rounded-l-lg bg-background/80 backdrop-blur-md border border-r-0 border-border/40 flex items-center justify-center shadow-md shrink-0 transition-shadow duration-300 ${
+              watchlistPulse ? "shadow-primary/50 shadow-[0_0_12px_hsl(var(--primary)/0.5)]" : ""
+            }`}
           >
-            <motion.div animate={{ rotate: tabOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-              <Bookmark className="w-3.5 h-3.5 text-primary" />
+            <motion.div
+              animate={watchlistPulse ? { scale: [1, 1.3, 1], rotate: tabOpen ? 180 : 0 } : { rotate: tabOpen ? 180 : 0 }}
+              transition={watchlistPulse ? { scale: { repeat: 3, duration: 0.6 }, duration: 0.2 } : { duration: 0.2 }}
+            >
+              <Bookmark className={`w-3.5 h-3.5 transition-colors ${watchlistPulse ? "text-primary fill-primary/30" : "text-primary"}`} />
             </motion.div>
           </button>
           {/* Tab pill */}
