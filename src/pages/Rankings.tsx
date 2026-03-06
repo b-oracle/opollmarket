@@ -538,6 +538,87 @@ const Rankings = () => {
               </>
             )}
 
+            {/* ── Quick Trade Tab ── */}
+            {tab === "quick" && (
+              <>
+                {quickTraders.length === 0 ? (
+                  <EmptyState message="No quick trade winners yet" sub="Be the first to win a quick trade round!" />
+                ) : (
+                  <>
+                    <Podium
+                      items={quickTraders}
+                      currentUserId={currentUserId}
+                      valueLabel={(t) => ({
+                        text: `${t.profit >= 0 ? "+" : "-"}${formatDollar(t.profit)}`,
+                        positive: t.profit >= 0,
+                      })}
+                    />
+                    {(() => {
+                      if (!currentUserId) return null;
+                      const idx = quickTraders.findIndex((t) => t.userId === currentUserId);
+                      if (idx === -1 || idx < VISIBLE_COUNT) return null;
+                      const me = quickTraders[idx];
+                      const winRate = me.totalBets > 0 ? Math.round((me.wins / me.totalBets) * 100) : 0;
+                      return (
+                        <YourRankCard
+                          rank={idx + 1}
+                          name={me.name}
+                          avatar={me.avatar}
+                          statLine={`${me.wins}W/${me.totalBets - me.wins}L · ${winRate}% WR`}
+                          valueLine={`${me.profit >= 0 ? "+" : "-"}${formatDollar(me.profit)}`}
+                          valuePositive={me.profit >= 0}
+                          totalCount={quickTraders.length}
+                          onShare={() => shareRank(idx + 1, me.name, me.avatar, `${me.profit >= 0 ? "+" : "-"}${formatDollar(me.profit)}`, me.profit >= 0, `${me.wins}W/${me.totalBets - me.wins}L · ${winRate}% WR`, "Quick Trade", quickTraders.length)}
+                        />
+                      );
+                    })()}
+                    <div className="space-y-2">
+                      {quickTraders.map((qt, i) => {
+                        const isMe = currentUserId === qt.userId;
+                        const winRate = qt.totalBets > 0 ? Math.round((qt.wins / qt.totalBets) * 100) : 0;
+                        return (
+                          <motion.div
+                            key={qt.userId}
+                            initial={{ opacity: 0, x: -12 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.04 }}
+                            className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : ""}`}
+                          >
+                            <div className="w-8 flex justify-center shrink-0">{rankBadge(i + 1)}</div>
+                            <AvatarCircle avatar={qt.avatar} name={qt.name} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className={`text-sm font-bold truncate ${isMe ? "text-primary" : ""}`}>{isMe ? "You" : qt.name}</span>
+                                {isMe && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
+                              </div>
+                              <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                                <span>{qt.wins}W/{qt.totalBets - qt.wins}L</span>
+                                <span>·</span>
+                                <span>{winRate}% WR</span>
+                                <span>·</span>
+                                <span>{formatDollar(qt.totalWagered)} vol</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <p className={`text-sm font-bold flex items-center gap-1 ${qt.profit >= 0 ? "text-primary" : "text-destructive"}`}>
+                                {qt.profit >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                                {qt.profit >= 0 ? "+" : "-"}{formatDollar(qt.profit)}
+                              </p>
+                              {isMe && (
+                                <button onClick={() => shareRank(i + 1, qt.name, qt.avatar, `${qt.profit >= 0 ? "+" : "-"}${formatDollar(qt.profit)}`, qt.profit >= 0, `${qt.wins}W/${qt.totalBets - qt.wins}L · ${winRate}% WR`, "Quick Trade", quickTraders.length)} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+                                  <Share2 className="w-3.5 h-3.5 text-primary" />
+                                </button>
+                              )}
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+
             {/* ── Referrals Tab ── */}
             {tab === "referrers" && (
               <>
