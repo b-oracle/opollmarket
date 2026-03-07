@@ -3,30 +3,37 @@ import { useNavigate, Outlet, NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard, ShoppingBag, MessageSquare, Users, LogOut, Loader2,
-  ArrowLeft, PlusCircle, Receipt, Settings, Coins, Menu, X, ArrowUpFromLine, Zap, BarChart3, Rocket, FileCode2, ShieldAlert,
+  ArrowLeft, PlusCircle, Receipt, Settings, Coins, Menu, X, ArrowUpFromLine, Zap, BarChart3, Rocket, FileCode2, ShieldAlert, Eye,
 } from "lucide-react";
 
-type NavItem = { to: string; label: string; icon: any; end?: boolean; adminOnly?: boolean };
+type NavItem = {
+  to: string;
+  label: string;
+  icon: any;
+  end?: boolean;
+  /** Which roles can see this nav item. super_admin sees everything. */
+  roles?: ("super_admin" | "admin" | "moderator")[];
+};
 
 const navItems: NavItem[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/admin/markets", label: "Markets", icon: ShoppingBag },
-  { to: "/admin/create-market", label: "Create Market", icon: PlusCircle },
-  { to: "/admin/transactions", label: "Transactions", icon: Receipt, adminOnly: true },
-  { to: "/admin/withdrawals", label: "Withdrawals", icon: ArrowUpFromLine, adminOnly: true },
-  { to: "/admin/boosts", label: "Boosts", icon: Zap },
-  { to: "/admin/moderation", label: "Moderation", icon: ShieldAlert, adminOnly: true },
+  { to: "/admin/create-market", label: "Create Market", icon: PlusCircle, roles: ["super_admin"] },
+  { to: "/admin/transactions", label: "Transactions", icon: Receipt, roles: ["super_admin", "admin"] },
+  { to: "/admin/withdrawals", label: "Withdrawals", icon: ArrowUpFromLine, roles: ["super_admin", "admin"] },
+  { to: "/admin/boosts", label: "Boosts", icon: Zap, roles: ["super_admin", "admin"] },
+  { to: "/admin/moderation", label: "Moderation", icon: ShieldAlert, roles: ["super_admin", "admin"] },
   { to: "/admin/comments", label: "Comments", icon: MessageSquare },
-  { to: "/admin/users", label: "Users", icon: Users, adminOnly: true },
-  { to: "/admin/commissions", label: "Commissions", icon: Coins, adminOnly: true },
-  { to: "/admin/settings", label: "Settings", icon: Settings, adminOnly: true },
-  { to: "/admin/contracts", label: "Smart Contracts", icon: FileCode2, adminOnly: true },
-  { to: "/admin/analytics", label: "Analytics", icon: BarChart3, adminOnly: true },
-  { to: "/admin/checklist", label: "Launch Checklist", icon: Rocket, adminOnly: true },
+  { to: "/admin/users", label: "Users", icon: Users, roles: ["super_admin", "admin"] },
+  { to: "/admin/commissions", label: "Commissions", icon: Coins, roles: ["super_admin", "admin"] },
+  { to: "/admin/settings", label: "Settings", icon: Settings, roles: ["super_admin"] },
+  { to: "/admin/contracts", label: "Smart Contracts", icon: FileCode2, roles: ["super_admin"] },
+  { to: "/admin/analytics", label: "Analytics", icon: BarChart3, roles: ["super_admin", "admin"] },
+  { to: "/admin/checklist", label: "Launch Checklist", icon: Rocket, roles: ["super_admin"] },
 ];
 
 const AdminLayout = () => {
-  const { user, loading, isAdmin, hasAdminAccess, signOut } = useAuth();
+  const { user, loading, isSuperAdmin, isAdmin, isModerator, hasAdminAccess, canEdit, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -42,7 +49,15 @@ const AdminLayout = () => {
     setSidebarOpen(false);
   }, [location.pathname]);
 
-  const filteredNavItems = navItems.filter((item) => !item.adminOnly || isAdmin);
+  // Determine current user's role for nav filtering
+  const userRole = isSuperAdmin ? "super_admin" : isAdmin ? "admin" : "moderator";
+
+  const filteredNavItems = navItems.filter((item) => {
+    if (!item.roles) return true; // visible to all roles
+    return item.roles.includes(userRole);
+  });
+
+  const roleBadge = isSuperAdmin ? "Super Admin" : isAdmin ? "Admin (View Only)" : "Moderator";
 
   if (loading) {
     return (
@@ -83,6 +98,21 @@ const AdminLayout = () => {
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Role badge */}
+        <div className="px-3 pt-3 pb-1">
+          <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold ${
+            isSuperAdmin
+              ? "bg-primary/15 text-primary"
+              : isAdmin
+              ? "bg-blue-500/15 text-blue-500"
+              : "bg-amber-500/15 text-amber-500"
+          }`}>
+            {isAdmin && !isSuperAdmin ? <Eye className="w-3.5 h-3.5" /> : null}
+            {roleBadge}
+          </div>
+        </div>
+
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {filteredNavItems.map((item) => (
             <NavLink
@@ -132,6 +162,15 @@ const AdminLayout = () => {
           </button>
           <span className="text-sm font-bold text-primary">System-Mod Engine</span>
         </div>
+
+        {/* Read-only banner for admin role */}
+        {isAdmin && !isSuperAdmin && (
+          <div className="bg-blue-500/10 border-b border-blue-500/20 px-4 py-2 flex items-center gap-2 text-sm text-blue-500 font-medium">
+            <Eye className="w-4 h-4" />
+            View-only mode — you can browse all data but cannot make changes.
+          </div>
+        )}
+
         <div className="max-w-5xl mx-auto p-4 sm:p-6">
           <Outlet />
         </div>
