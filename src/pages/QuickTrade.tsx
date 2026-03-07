@@ -14,7 +14,10 @@ import {
   Share2,
   BarChart3,
   LineChart as LineChartIcon,
+  Info,
 } from "lucide-react";
+import { useCommissionSettings } from "@/hooks/useCommissionSettings";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, ReferenceLine, Tooltip as RechartsTooltip, ComposedChart, Bar, Cell, Line } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
