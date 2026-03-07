@@ -191,6 +191,12 @@ const AdminSettings = () => {
           quick_trade_fee_percent: quickTradeFeeNum,
           qt_min_bet: qtMinBetNum,
           qt_max_bet: qtMaxBetNum,
+          qt_streak_2x: qtStreak2Num,
+          qt_streak_3x: qtStreak3Num,
+          qt_streak_4x: qtStreak4Num,
+          qt_streak_5x: qtStreak5Num,
+          min_token_balance: tokenNum,
+          min_nft_balance: nftNum,
         },
       });
 
