@@ -827,6 +827,7 @@ export default function QuickTrade() {
                   ohlcData={ohlcData}
                   chartMs={chartMs}
                   timeframeLabel={CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.label}
+                  streamingPrice={streamingPrice}
                 />
               ) : (() => {
                 const cutoff = Date.now() - chartMs;
