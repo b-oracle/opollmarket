@@ -274,6 +274,30 @@ const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDra
           </div>
         );
 
+      case "withdrawals":
+        return (
+          <div className="space-y-2">
+            {data.map((w: any) => {
+              const statusCls = getStatusCls(w.status === "approved" ? "confirmed" : w.status === "rejected" ? "cancelled" : w.status);
+              return (
+                <div key={w.id} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border/50">
+                  <div className={`p-2 rounded-lg bg-muted text-amber-500`}><ArrowUpFromLine className="w-4 h-4" /></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold uppercase">{w.crypto_currency}</span>
+                      <span className={`text-[10px] font-semibold uppercase ${statusCls}`}>{w.status}</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">{w.wallet_address}</p>
+                    {w.admin_note && <p className="text-[10px] text-muted-foreground mt-0.5">Note: {w.admin_note}</p>}
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{formatDate(w.created_at)}</p>
+                  </div>
+                  <p className="text-sm font-bold shrink-0">${Number(w.amount).toLocaleString()}</p>
+                </div>
+              );
+            })}
+          </div>
+        );
+
       default:
         return null;
     }
