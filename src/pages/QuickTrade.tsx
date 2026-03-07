@@ -828,6 +828,8 @@ export default function QuickTrade() {
                   chartMs={chartMs}
                   timeframeLabel={CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.label}
                   streamingPrice={streamingPrice}
+                  entryPrice={userBet && activeRound?.open_price ? Number(activeRound.open_price) : null}
+                  entrySide={userBet ? (userBet.side as "up" | "down") : null}
                 />
               ) : (() => {
                 const cutoff = Date.now() - chartMs;

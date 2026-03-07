@@ -30,6 +30,10 @@ interface TradingViewChartProps {
   timeframeLabel: string;
   /** Streaming: latest price tick to append in real-time */
   streamingPrice?: number | null;
+  /** Entry price to show as a horizontal marker line */
+  entryPrice?: number | null;
+  /** Bet side for coloring the entry line */
+  entrySide?: "up" | "down" | null;
 }
 
 const CANDLE_BUCKETS = 60;
@@ -40,6 +44,8 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   chartMs,
   timeframeLabel,
   streamingPrice,
+  entryPrice,
+  entrySide,
 }, _ref) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -228,7 +234,28 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     chartRef.current.timeScale().fitContent();
   }, [buildData, chartStyle]);
 
-  // Stream new price ticks in real-time with dynamic color
+  // Entry price horizontal marker line
+  useEffect(() => {
+    if (!entryPrice || !chartRef.current) return;
+    
+    const series = chartStyle === "candle" ? candleSeriesRef.current : areaSeriesRef.current;
+    if (!series) return;
+    
+    const color = entrySide === "down" ? "#ef4444" : "#22c55e";
+    const priceLine = series.createPriceLine({
+      price: entryPrice,
+      color,
+      lineWidth: 2,
+      lineStyle: 2, // Dashed
+      axisLabelVisible: true,
+      title: `Entry $${entryPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    });
+    
+    return () => {
+      try { series.removePriceLine(priceLine); } catch {}
+    };
+  }, [entryPrice, entrySide, chartStyle]);
+
   useEffect(() => {
     if (!streamingPrice || !chartRef.current) return;
     
