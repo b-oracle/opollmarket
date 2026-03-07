@@ -83,30 +83,43 @@ async function fetchPrice(geckoId: string): Promise<number | null> {
   }
 }
 
-async function fetchPriceHistory(
-  geckoId: string,
-  durationMs: number
-): Promise<{ time: string; price: number; ts: number }[]> {
+// Raw price data cache: one fetch per asset, filter client-side by timeframe
+const rawPriceCache = new Map<string, { prices: [number, number][]; fetchedAt: number }>();
+const RAW_CACHE_TTL = 30_000;
+
+async function fetchRawPriceData(
+  geckoId: string
+): Promise<[number, number][]> {
+  const cached = rawPriceCache.get(geckoId);
+  if (cached && Date.now() - cached.fetchedAt < RAW_CACHE_TTL) {
+    return cached.prices;
+  }
   try {
-    // CoinGecko market_chart: for <=24h use minutes granularity
-    const days = durationMs <= 24 * 60 * 60 * 1000 ? 1 : Math.ceil(durationMs / (24 * 60 * 60 * 1000));
     const r = await fetch(
-      `https://api.coingecko.com/api/v3/coins/${geckoId}/market_chart?vs_currency=usd&days=${days}`
+      `https://api.coingecko.com/api/v3/coins/${geckoId}/market_chart?vs_currency=usd&days=1`
     );
-    if (!r.ok) return [];
+    if (!r.ok) return cached?.prices ?? [];
     const d = await r.json();
     const prices: [number, number][] = d.prices || [];
-    const cutoff = Date.now() - durationMs;
-    return prices
-      .filter(([ts]) => ts >= cutoff)
-      .map(([ts, price]) => ({
-        time: new Date(ts).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true }),
-        price,
-        ts,
-      }));
+    rawPriceCache.set(geckoId, { prices, fetchedAt: Date.now() });
+    return prices;
   } catch {
-    return [];
+    return cached?.prices ?? [];
   }
+}
+
+function filterPriceData(
+  raw: [number, number][],
+  durationMs: number
+): { time: string; price: number; ts: number }[] {
+  const cutoff = Date.now() - durationMs;
+  return raw
+    .filter(([ts]) => ts >= cutoff)
+    .map(([ts, price]) => ({
+      time: new Date(ts).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true }),
+      price,
+      ts,
+    }));
 }
 
 type Round = {
