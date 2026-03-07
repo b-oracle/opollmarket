@@ -175,19 +175,22 @@ const AdminUsers = () => {
                       <span className="text-sm font-semibold">${u.balance.toLocaleString()}</span>
                     </td>
                     <td className="p-3">
-                      {u.roles.length > 0 ? u.roles.map((r) => (
-                         <span key={r} className={`px-2 py-0.5 rounded-full text-[10px] font-bold mr-1 ${
-                          r === "admin" ? "bg-primary/10 text-primary" : r === "moderator" ? "bg-amber-500/10 text-amber-500" : "bg-muted text-muted-foreground"
-                        }`}>
-                          {r === "admin" ? "system-mod" : r}
-                        </span>
-                      )) : <span className="text-[10px] text-muted-foreground">user</span>}
+                      <div className="flex flex-wrap gap-1">
+                        {u.roles.length > 0 ? u.roles.map((r) => {
+                          const badge = getRoleBadge(r);
+                          return (
+                            <span key={r} className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${badge.cls}`}>
+                              {badge.label}
+                            </span>
+                          );
+                        }) : <span className="text-[10px] text-muted-foreground">user</span>}
+                      </div>
                     </td>
                     <td className="p-3 text-muted-foreground text-xs">
                       {new Date(u.created_at).toLocaleDateString()}
                     </td>
                     <td className="p-3">
-                      {canEdit ? (
+                      {canEdit && !isSelf ? (
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => setBalanceModal({ userId: u.id, name: u.display_name || u.email || "User", current: u.balance })}
@@ -208,13 +211,26 @@ const AdminUsers = () => {
                         <button
                           onClick={() => setRoleConfirm({ userId: u.id, name: u.display_name || u.email || "User", role: "admin", hasRole: isAdmin })}
                           className={`p-1.5 rounded-lg transition-colors ${
-                            isAdmin ? "hover:bg-destructive/10 text-destructive" : "hover:bg-primary/10 text-primary"
+                            isAdmin ? "hover:bg-destructive/10 text-blue-500" : "hover:bg-blue-500/10 text-muted-foreground"
                           }`}
-                          title={isAdmin ? "Remove System-Mod" : "Make System-Mod"}
+                          title={isAdmin ? "Remove Admin" : "Make Admin"}
                         >
                           {isAdmin ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
                         </button>
+                        {isSuperAdmin && (
+                          <button
+                            onClick={() => setRoleConfirm({ userId: u.id, name: u.display_name || u.email || "User", role: "super_admin", hasRole: isSA })}
+                            className={`p-1.5 rounded-lg transition-colors ${
+                              isSA ? "hover:bg-destructive/10 text-primary" : "hover:bg-primary/10 text-muted-foreground"
+                            }`}
+                            title={isSA ? "Remove Super Admin" : "Make Super Admin"}
+                          >
+                            <Crown className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
+                      ) : isSelf ? (
+                        <span className="text-[10px] text-muted-foreground">You</span>
                       ) : (
                         <span className="text-[10px] text-muted-foreground">View only</span>
                       )}
