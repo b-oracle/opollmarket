@@ -34,6 +34,7 @@ const AdminSettings = () => {
   const [minNftBalance, setMinNftBalance] = useState("");
   const [minWithdrawalAmount, setMinWithdrawalAmount] = useState("");
   const [withdrawalCooldown, setWithdrawalCooldown] = useState("");
+  const [withdrawalMultiplier, setWithdrawalMultiplier] = useState("");
   const [exitFee, setExitFee] = useState("");
   const [quickTradeFee, setQuickTradeFee] = useState("");
   const [qtMinBet, setQtMinBet] = useState("");
@@ -64,6 +65,7 @@ const AdminSettings = () => {
         setMinNftBalance(String(d.min_nft_balance ?? 1));
         setMinWithdrawalAmount(String(d.min_withdrawal_amount ?? 5));
         setWithdrawalCooldown(String(d.withdrawal_cooldown_minutes ?? 5));
+        setWithdrawalMultiplier(String(d.withdrawal_multiplier ?? 2));
         setExitFee(String(d.exit_fee_percent ?? 5));
         setQuickTradeFee(String(d.quick_trade_fee_percent ?? 5));
         setQtMinBet(String(d.qt_min_bet ?? 1));
@@ -91,6 +93,7 @@ const AdminSettings = () => {
   const nftNum = parseInt(minNftBalance) || 0;
   const minWithdrawNum = parseFloat(minWithdrawalAmount) || 0;
   const withdrawalCooldownNum = parseInt(withdrawalCooldown) || 5;
+  const withdrawalMultiplierNum = parseFloat(withdrawalMultiplier) || 2;
   const exitFeeNum = parseFloat(exitFee) || 0;
   const quickTradeFeeNum = parseFloat(quickTradeFee) || 0;
   const qtMinBetNum = parseFloat(qtMinBet) || 0;
@@ -104,7 +107,7 @@ const AdminSettings = () => {
   const isValid =
     adminNum >= 0 && creatorNum >= 0 && totalFee <= 100 &&
     referralNum >= 0 && tokenNum >= 0 && nftNum >= 0 &&
-    minWithdrawNum >= 0 && withdrawalCooldownNum >= 0 && exitFeeNum >= 0 && exitFeeNum <= 100 &&
+    minWithdrawNum >= 0 && withdrawalCooldownNum >= 0 && withdrawalMultiplierNum >= 1 && exitFeeNum >= 0 && exitFeeNum <= 100 &&
     quickTradeFeeNum >= 0 && quickTradeFeeNum <= 100 &&
     qtMinBetNum >= 0 && qtMaxBetNum > 0 && qtMaxBetNum >= qtMinBetNum &&
     qtStreak2Num >= 1 && qtStreak3Num >= 1 && qtStreak4Num >= 1 && qtStreak5Num >= 1 &&
@@ -154,6 +157,7 @@ const AdminSettings = () => {
           min_nft_balance: nftNum,
           min_withdrawal_amount: minWithdrawNum,
           withdrawal_cooldown_minutes: withdrawalCooldownNum,
+          withdrawal_multiplier: withdrawalMultiplierNum,
           exit_fee_percent: exitFeeNum,
           quick_trade_fee_percent: quickTradeFeeNum,
           qt_min_bet: qtMinBetNum,
