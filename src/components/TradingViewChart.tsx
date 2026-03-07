@@ -377,6 +377,28 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
         )}
       </div>
 
+      {/* Countdown timer overlay */}
+      {countdown !== null && countdown > 0 && (
+        <div className="absolute top-2 right-2 z-10">
+          <div
+            className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-mono font-bold backdrop-blur-sm border ${
+              countdown <= 10
+                ? "bg-red-500/15 text-red-500 border-red-500/30 animate-pulse"
+                : countdown <= 30
+                  ? "bg-yellow-500/15 text-yellow-500 border-yellow-500/30"
+                  : "bg-muted/60 text-foreground border-border"
+            }`}
+          >
+            <span className="text-[9px]">⏱</span>
+            <span>
+              {countdown >= 60
+                ? `${Math.floor(countdown / 60)}:${String(countdown % 60).padStart(2, "0")}`
+                : `${countdown}s`}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Toolbar */}
       <div className="flex items-center justify-between px-2 py-1">
         <div className="flex items-center gap-2 ml-14">
