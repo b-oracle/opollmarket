@@ -218,14 +218,20 @@ const AdminUsers = () => {
                     </td>
                     <td className="p-3">
                       <div className="flex flex-wrap gap-1">
-                        {u.roles.length > 0 ? u.roles.map((r) => {
-                          const badge = getRoleBadge(r);
-                          return (
-                            <span key={r} className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${badge.cls}`}>
-                              {badge.label}
-                            </span>
-                          );
-                        }) : <span className="text-[10px] text-muted-foreground">user</span>}
+                        {(() => {
+                          // Filter out super_admin role from display for non-super-admin viewers
+                          const visibleRoles = isSuperAdmin
+                            ? u.roles
+                            : u.roles.filter((r) => r !== "super_admin");
+                          return visibleRoles.length > 0 ? visibleRoles.map((r) => {
+                            const badge = getRoleBadge(r);
+                            return (
+                              <span key={r} className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${badge.cls}`}>
+                                {badge.label}
+                              </span>
+                            );
+                          }) : <span className="text-[10px] text-muted-foreground">user</span>;
+                        })()}
                       </div>
                     </td>
                     <td className="p-3 text-muted-foreground text-xs">
