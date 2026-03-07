@@ -47,7 +47,7 @@ const ALL_ASSETS = [
   { symbol: "DOGE", label: "Dogecoin", geckoId: "dogecoin" },
 ];
 
-const TIMEFRAMES = [
+const ALL_TIMEFRAMES = [
   { label: "1m", seconds: 60 },
   { label: "3m", seconds: 180 },
   { label: "5m", seconds: 300 },
