@@ -164,8 +164,12 @@ export async function fetchCryptoHistory(
   symbol: string,
   geckoId?: string
 ): Promise<[number, number][]> {
-  const sym = symbol.toUpperCase();
-  const cached = rawCache.get(sym);
+  let sym = symbol.toUpperCase();
+  if (!sym && geckoId) {
+    sym = GECKO_TO_SYM[geckoId] || "";
+  }
+  const cacheKey = sym || geckoId || "";
+  const cached = rawCache.get(cacheKey);
   if (cached && Date.now() - cached.fetchedAt < RAW_CACHE_TTL) {
     return cached.prices;
   }
