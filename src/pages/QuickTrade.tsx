@@ -158,13 +158,6 @@ export default function QuickTrade() {
     }
   }, [ASSETS, selectedAsset.symbol]);
 
-  // Ensure selected timeframe is in the enabled list
-  useEffect(() => {
-    if (TIMEFRAMES.length > 0 && !TIMEFRAMES.find(t => t.seconds === selectedTimeframe.seconds)) {
-      setSelectedTimeframe(TIMEFRAMES[0]);
-    }
-  }, [TIMEFRAMES, selectedTimeframe.seconds]);
-
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [prevPrice, setPrevPrice] = useState<number | null>(null);
   const [activeRound, setActiveRound] = useState<Round | null>(null);
@@ -185,6 +178,13 @@ export default function QuickTrade() {
   const prevStreakRef = useRef<number>(0);
   const chartCardRef = useRef<HTMLDivElement>(null);
   const [showShareModal, setShowShareModal] = useState(false);
+
+  // Ensure selected timeframe is in the enabled list
+  useEffect(() => {
+    if (TIMEFRAMES.length > 0 && !TIMEFRAMES.find(t => t.seconds === selectedTimeframe.seconds)) {
+      setSelectedTimeframe(TIMEFRAMES[0]);
+    }
+  }, [TIMEFRAMES, selectedTimeframe.seconds]);
 
   const isLocked = activeRound?.status === "locked" || timeLeft <= LOCK_BUFFER;
 
