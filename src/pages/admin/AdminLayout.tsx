@@ -22,7 +22,7 @@ const navItems: NavItem[] = [
   { to: "/admin/transactions", label: "Transactions", icon: Receipt, roles: ["super_admin", "admin"] },
   { to: "/admin/withdrawals", label: "Withdrawals", icon: ArrowUpFromLine, roles: ["super_admin", "admin"] },
   { to: "/admin/boosts", label: "Boosts", icon: Zap, roles: ["super_admin", "admin"] },
-  { to: "/admin/moderation", label: "Moderation", icon: ShieldAlert, roles: ["super_admin", "admin"] },
+  { to: "/admin/moderation", label: "Moderation", icon: ShieldAlert, roles: ["super_admin", "admin", "moderator"] },
   { to: "/admin/comments", label: "Comments", icon: MessageSquare },
   { to: "/admin/users", label: "Users", icon: Users, roles: ["super_admin", "admin"] },
   { to: "/admin/commissions", label: "Commissions", icon: Coins, roles: ["super_admin", "admin"] },
