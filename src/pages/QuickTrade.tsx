@@ -127,6 +127,7 @@ export default function QuickTrade() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { data: commissionSettings } = useCommissionSettings();
   const { fireWinConfetti } = useConfetti();
 
   const [selectedAsset, setSelectedAsset] = useState(ASSETS[0]);
