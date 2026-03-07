@@ -812,7 +812,17 @@ export default function QuickTrade() {
                   </button>
                 </div>
               </div>
-              <div className="relative">
+              <div className="relative overflow-hidden">
+                {/* Resolution flash/glow overlay */}
+                {resolveFlash && (
+                  <div
+                    className={`absolute inset-0 z-20 pointer-events-none rounded-lg animate-[flash_1.5s_ease-out_forwards] ${
+                      resolveFlash === "win"
+                        ? "bg-green-500/20 shadow-[inset_0_0_40px_rgba(34,197,94,0.4)]"
+                        : "bg-red-500/20 shadow-[inset_0_0_40px_rgba(239,68,68,0.4)]"
+                    }`}
+                  />
+                )}
                 {/* Overlays for native charts (area/candle) */}
                 {chartType !== "tv" && !historyLoading && (
                   <>
