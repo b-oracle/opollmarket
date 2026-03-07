@@ -229,8 +229,6 @@ export default function QuickTrade() {
     { key: "1h", label: "1H", ms: 60 * 60 * 1000 },
     { key: "4h", label: "4H", ms: 4 * 60 * 60 * 1000 },
     { key: "1d", label: "1D", ms: 24 * 60 * 60 * 1000 },
-    { key: "1w", label: "1W", ms: 7 * 24 * 60 * 60 * 1000 },
-    { key: "1M", label: "1M", ms: 30 * 24 * 60 * 60 * 1000 },
   ] as const;
   type ChartTF = typeof CHART_TIMEFRAMES[number]["key"];
   const validTFKeys = CHART_TIMEFRAMES.map(t => t.key) as readonly string[];
