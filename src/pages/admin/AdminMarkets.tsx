@@ -557,6 +557,9 @@ const AdminMarkets = () => {
                             </>
                           )}
                         </div>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">View only</span>
+                        )}
                       </td>
                     </tr>
                     {/* Expandable description row */}
