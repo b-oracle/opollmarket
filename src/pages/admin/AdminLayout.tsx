@@ -58,7 +58,7 @@ const AdminLayout = () => {
     return item.roles.includes(userRole);
   });
 
-  const roleBadge = isSuperAdmin ? "Super Admin" : isAdmin ? "Admin (View Only)" : "Moderator";
+  const roleBadge = isSuperAdmin ? "Super Admin" : isAdmin ? "Admin" : "Moderator";
 
   if (loading) {
     return (
@@ -109,7 +109,7 @@ const AdminLayout = () => {
               ? "bg-blue-500/15 text-blue-500"
               : "bg-amber-500/15 text-amber-500"
           }`}>
-            {isAdmin && !isSuperAdmin ? <Eye className="w-3.5 h-3.5" /> : null}
+            {false && <Eye className="w-3.5 h-3.5" />}
             {roleBadge}
           </div>
         </div>
@@ -164,13 +164,7 @@ const AdminLayout = () => {
           <span className="text-sm font-bold text-primary">System-Mod Engine</span>
         </div>
 
-        {/* Read-only banner for admin role */}
-        {isAdmin && !isSuperAdmin && (
-          <div className="bg-blue-500/10 border-b border-blue-500/20 px-4 py-2 flex items-center gap-2 text-sm text-blue-500 font-medium">
-            <Eye className="w-4 h-4" />
-            View-only mode — you can browse all data but cannot make changes.
-          </div>
-        )}
+        {/* View-only banner removed — admin now has edit access */}
 
         <div className="max-w-5xl mx-auto p-4 sm:p-6">
           <Outlet context={{ canEdit }} />

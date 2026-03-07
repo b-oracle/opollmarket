@@ -263,7 +263,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const isEmailVerified = !!user?.email_confirmed_at;
   const hasAdminAccess = isSuperAdmin || isAdmin || isModerator;
-  const canEdit = isSuperAdmin; // Only super_admin can make changes
+  const canEdit = isSuperAdmin || isAdmin; // Super admin + admin can make changes (admin has same access as moderator)
   const displayName = profileDisplayName || user?.user_metadata?.display_name || user?.email?.split("@")[0] || "User";
 
   const value: AuthContextValue = {
