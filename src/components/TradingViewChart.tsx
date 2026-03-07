@@ -28,6 +28,8 @@ interface TradingViewChartProps {
   ohlcData?: OHLCCandle[];
   chartMs: number;
   timeframeLabel: string;
+  /** Streaming: latest price tick to append in real-time */
+  streamingPrice?: number | null;
 }
 
 const CANDLE_BUCKETS = 60;
@@ -37,16 +39,19 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   ohlcData,
   chartMs,
   timeframeLabel,
+  streamingPrice,
 }, _ref) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const lineMainSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const areaSeriesRef = useRef<ISeriesApi<"Area"> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null);
   const maSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const ma14SeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [chartStyle, setChartStyle] = useState<"candle" | "line">("candle");
+  const [chartStyle, setChartStyle] = useState<"candle" | "line">("line"); // default to line for streaming feel
+  const lastCandleTimeRef = useRef<number>(0);
 
   const activeMainSeries = chartStyle === "candle" ? candleSeriesRef : lineMainSeriesRef;
   const { activeTool, setActiveTool, clearDrawings, removeLastDrawing } =
@@ -72,11 +77,10 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
 
       const volumes: { time: UTCTimestamp; value: number; color: string }[] = ohlcData.map((c) => ({
         time: c.time as UTCTimestamp,
-        value: Math.abs(c.close - c.open) * 1000, // synthetic volume from price movement
+        value: Math.abs(c.close - c.open) * 1000,
         color: c.close >= c.open ? upColor + "66" : downColor + "66",
       }));
 
-      // MA calculations
       const ma7: { time: UTCTimestamp; value: number }[] = [];
       const ma14: { time: UTCTimestamp; value: number }[] = [];
       for (let i = 0; i < candles.length; i++) {
@@ -152,20 +156,33 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
       grid: { vertLines: { color: isDark ? "#27272a" : "#f1f1f1" }, horzLines: { color: isDark ? "#27272a" : "#f1f1f1" } },
       crosshair: { mode: CrosshairMode.Normal },
       rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.1, bottom: 0.2 } },
-      timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
+      timeScale: { 
+        borderVisible: false, 
+        timeVisible: true, 
+        secondsVisible: true,
+        rightOffset: 5, // space on the right for streaming
+        shiftVisibleRangeOnNewBar: true, // auto-scroll on new data
+      },
       handleScroll: { vertTouchDrag: false },
     });
 
     if (chartStyle === "candle") {
       candleSeriesRef.current = chart.addSeries(CandlestickSeries, { upColor: "#22c55e", downColor: "#ef4444", borderUpColor: "#22c55e", borderDownColor: "#ef4444", wickUpColor: "#22c55e", wickDownColor: "#ef4444" });
       lineMainSeriesRef.current = null;
+      areaSeriesRef.current = null;
     } else {
-      lineMainSeriesRef.current = chart.addSeries(LineSeries, {
-        color: "#22c55e",
+      // Use area series for a smooth streaming line like Deriv/Pocket Option
+      areaSeriesRef.current = chart.addSeries(AreaSeries, {
+        lineColor: "#22c55e",
         lineWidth: 2,
+        topColor: "rgba(34, 197, 94, 0.28)",
+        bottomColor: "rgba(34, 197, 94, 0.02)",
         priceLineVisible: true,
         lastValueVisible: true,
+        crosshairMarkerVisible: true,
+        crosshairMarkerRadius: 4,
       });
+      lineMainSeriesRef.current = null;
       candleSeriesRef.current = null;
     }
 
@@ -182,38 +199,90 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     return () => { ro.disconnect(); chart.remove(); chartRef.current = null; };
   }, [isDark, chartStyle]);
 
-  // Update data
+  // Set initial data
   useEffect(() => {
     if (!chartRef.current) return;
     const { candles, volumes, ma7, ma14 } = buildData();
 
     if (chartStyle === "candle" && candleSeriesRef.current) {
       candleSeriesRef.current.setData(candles);
-    } else if (chartStyle === "line" && lineMainSeriesRef.current) {
-      const lineData = candles.map((c: any, i: number) => {
-        const prev = i > 0 ? (candles[i - 1] as any).close : c.close;
-        return {
-          time: c.time,
-          value: c.close,
-          color: c.close >= prev ? "#22c55e" : "#ef4444",
-        };
-      });
-      lineMainSeriesRef.current.setData(lineData);
+    } else if (chartStyle === "line" && areaSeriesRef.current) {
+      // Convert candles to area data points
+      const areaData = candles.map((c: any) => ({
+        time: c.time,
+        value: c.close,
+      }));
+      areaSeriesRef.current.setData(areaData);
     }
 
     volumeSeriesRef.current?.setData(volumes as any);
     maSeriesRef.current?.setData(ma7);
     ma14SeriesRef.current?.setData(ma14);
+    
+    // Track last candle time for streaming updates
+    if (candles.length > 0) {
+      lastCandleTimeRef.current = candles[candles.length - 1].time as number;
+    }
+    
     chartRef.current.timeScale().fitContent();
   }, [buildData, chartStyle]);
 
+  // Stream new price ticks in real-time
+  useEffect(() => {
+    if (!streamingPrice || !chartRef.current) return;
+    
+    const nowSec = Math.floor(Date.now() / 1000) as UTCTimestamp;
+    
+    if (chartStyle === "candle" && candleSeriesRef.current) {
+      // Update the last candle or create a new one every 10 seconds
+      const bucketSec = 10;
+      const candleTime = (Math.floor(nowSec / bucketSec) * bucketSec) as UTCTimestamp;
+      
+      if (candleTime > lastCandleTimeRef.current) {
+        // New candle
+        candleSeriesRef.current.update({
+          time: candleTime,
+          open: streamingPrice,
+          high: streamingPrice,
+          low: streamingPrice,
+          close: streamingPrice,
+        });
+        lastCandleTimeRef.current = candleTime;
+      } else {
+        // Update existing candle
+        candleSeriesRef.current.update({
+          time: candleTime,
+          open: streamingPrice,
+          high: streamingPrice,
+          low: streamingPrice,
+          close: streamingPrice,
+        });
+      }
+    } else if (areaSeriesRef.current) {
+      // For area/line: append each tick as a new data point (streaming line)
+      areaSeriesRef.current.update({
+        time: nowSec,
+        value: streamingPrice,
+      });
+    }
+  }, [streamingPrice, chartStyle]);
+
   return (
     <div className={isFullscreen ? "fixed inset-0 z-50 bg-background flex flex-col" : "relative"}>
+      {/* Streaming indicator */}
+      <div className="absolute top-2 left-2 z-10 flex items-center gap-1.5">
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+        </span>
+        <span className="text-[9px] font-bold text-green-500 uppercase tracking-wider">Live</span>
+      </div>
+
       {/* Toolbar */}
       <div className="flex items-center justify-between px-2 py-1">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ml-14">
           <span className="text-[10px] font-semibold text-muted-foreground">
-            TradingView · {timeframeLabel}
+            {timeframeLabel}
           </span>
           <div className="flex items-center gap-1.5">
             <span className="inline-block w-2.5 h-[2px] rounded-full" style={{ backgroundColor: "hsl(45, 93%, 58%)" }} />
