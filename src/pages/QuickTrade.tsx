@@ -743,6 +743,7 @@ export default function QuickTrade() {
               ) : chartType === "tv" ? (
                 <TradingViewChart
                   priceHistory={priceHistory}
+                  ohlcData={ohlcData}
                   chartMs={chartMs}
                   timeframeLabel={CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.label}
                 />
