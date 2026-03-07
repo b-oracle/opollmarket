@@ -323,6 +323,7 @@ const AdminMarkets = () => {
                     )}
                   </div>
                 </div>
+                {canEdit && (
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() => handleApprove(m.id)}
@@ -367,6 +368,7 @@ const AdminMarkets = () => {
                     Reject
                   </button>
                 </div>
+                )}
               </div>
             ))}
           </div>
