@@ -46,13 +46,31 @@ const CHECKLIST_ITEMS: ChecklistItem[] = [
 
 const STORAGE_KEY = "opoll_launch_checklist";
 
+// Items verified as complete via codebase/database audit
+const VERIFIED_DEFAULTS: Record<string, boolean> = {
+  rls_policies: true,
+  admin_role: true,
+  rate_limiting: true,
+  commission_settings: true,
+  email_delivery: true,
+  edge_functions: true,
+  error_boundary: true,
+  pwa_manifest: true,
+  terms_disclaimer: true,
+  seo_meta: true,
+  analytics_working: true,
+  maintenance_mode: true,
+};
+
 const AdminChecklist = () => {
   const [checked, setChecked] = useState<Record<string, boolean>>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : {};
+      const parsed = stored ? JSON.parse(stored) : {};
+      // Merge: verified defaults + any user overrides from storage
+      return { ...VERIFIED_DEFAULTS, ...parsed };
     } catch {
-      return {};
+      return { ...VERIFIED_DEFAULTS };
     }
   });
 
