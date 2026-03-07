@@ -70,16 +70,43 @@ const haptic = (style: "light" | "medium" | "heavy" | "success" | "error" = "med
 };
 const AMOUNT_PRESETS = [5, 10, 25, 50, 100];
 
+// ── Price fetching with rate-limit protection ──
+const priceCache = new Map<string, { price: number; fetchedAt: number }>();
+const PRICE_CACHE_TTL = 5_000; // 5s minimum between price fetches per asset
+let consecutiveFailures = 0;
+
 async function fetchPrice(geckoId: string): Promise<number | null> {
+  // Exponential backoff on consecutive failures (CoinGecko rate limiting)
+  if (consecutiveFailures >= 3) {
+    const backoffMs = Math.min(2 ** consecutiveFailures * 1000, 60_000);
+    const cached = priceCache.get(geckoId);
+    if (cached && Date.now() - cached.fetchedAt < backoffMs) {
+      return cached.price;
+    }
+  }
+  // Return cached if fresh enough
+  const cached = priceCache.get(geckoId);
+  if (cached && Date.now() - cached.fetchedAt < PRICE_CACHE_TTL) {
+    return cached.price;
+  }
   try {
     const r = await fetch(
       `https://api.coingecko.com/api/v3/simple/price?ids=${geckoId}&vs_currencies=usd`
     );
-    if (!r.ok) return null;
+    if (!r.ok) {
+      consecutiveFailures++;
+      return cached?.price ?? null;
+    }
+    consecutiveFailures = 0;
     const d = await r.json();
-    return d[geckoId]?.usd ?? null;
+    const price = d[geckoId]?.usd ?? null;
+    if (price != null) {
+      priceCache.set(geckoId, { price, fetchedAt: Date.now() });
+    }
+    return price;
   } catch {
-    return null;
+    consecutiveFailures++;
+    return cached?.price ?? null;
   }
 }
 
@@ -291,6 +318,9 @@ export default function QuickTrade() {
   }, [selectedAsset]);
 
   // ── Fetch / create active round ──
+  const currentPriceRef = useRef(currentPrice);
+  currentPriceRef.current = currentPrice;
+
   const fetchActiveRound = useCallback(async () => {
     // Get current open/locked round for this asset + duration
     const { data } = await supabase
@@ -306,7 +336,8 @@ export default function QuickTrade() {
       setActiveRound(data[0] as unknown as Round);
     } else {
       // No active round — create one if we have a price
-      if (currentPrice != null) {
+      const price = currentPriceRef.current;
+      if (price != null) {
         const now = new Date();
         const locksAt = new Date(now.getTime() + (selectedTimeframe.seconds - LOCK_BUFFER) * 1000);
         const { data: newRound } = await supabase
@@ -314,7 +345,7 @@ export default function QuickTrade() {
           .insert({
             asset: selectedAsset.symbol,
             duration_seconds: selectedTimeframe.seconds,
-            open_price: currentPrice,
+            open_price: price,
             status: "open",
             locks_at: locksAt.toISOString(),
           })
@@ -323,11 +354,26 @@ export default function QuickTrade() {
         if (newRound) setActiveRound(newRound as unknown as Round);
       }
     }
-  }, [selectedAsset.symbol, selectedTimeframe.seconds, currentPrice]);
+  }, [selectedAsset.symbol, selectedTimeframe.seconds]);
 
+  // Fetch round when asset or timeframe changes (not on every price tick)
   useEffect(() => {
     fetchActiveRound();
-  }, [selectedAsset.symbol, selectedTimeframe.seconds, currentPrice]);
+  }, [selectedAsset.symbol, selectedTimeframe.seconds]);
+
+  // Also fetch round once we get a price for the first time (to create if needed)
+  const hasTriedCreateRef = useRef(false);
+  useEffect(() => {
+    if (currentPrice != null && !activeRound && !hasTriedCreateRef.current) {
+      hasTriedCreateRef.current = true;
+      fetchActiveRound();
+    }
+  }, [currentPrice, activeRound]);
+
+  // Reset create flag when asset/timeframe changes
+  useEffect(() => {
+    hasTriedCreateRef.current = false;
+  }, [selectedAsset.symbol, selectedTimeframe.seconds]);
 
   // ── Countdown ──
   useEffect(() => {
