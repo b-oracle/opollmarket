@@ -64,6 +64,19 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   const prevStreamingPriceRef = useRef<number | null>(null);
   const pulsingDotRef = useRef<HTMLDivElement>(null);
   const [dotColor, setDotColor] = useState("#22c55e");
+  const [countdown, setCountdown] = useState<number | null>(null);
+
+  // Countdown timer for active round
+  useEffect(() => {
+    if (!roundEndTime) { setCountdown(null); return; }
+    const tick = () => {
+      const left = Math.max(0, Math.floor((roundEndTime - Date.now()) / 1000));
+      setCountdown(left);
+    };
+    tick();
+    const iv = setInterval(tick, 1000);
+    return () => clearInterval(iv);
+  }, [roundEndTime]);
 
   const activeMainSeries = chartStyle === "candle" ? candleSeriesRef : lineMainSeriesRef;
   const { activeTool, setActiveTool, clearDrawings, removeLastDrawing } =
