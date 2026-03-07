@@ -28,6 +28,9 @@ interface MarketRow {
   trending: boolean;
   pinned_trending: boolean;
   creator_wallet: string;
+  moderator_decision: string | null;
+  moderator_id: string | null;
+  moderator_reviewed_at: string | null;
 }
 
 interface MarketOption {
