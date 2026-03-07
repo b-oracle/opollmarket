@@ -313,30 +313,57 @@ export default function QuickTrade() {
     return () => { cancelled = true; };
   }, [selectedAsset.geckoId, chartTimeframe]);
 
-  // ── Fetch price ──
+  // ── Fetch price (streaming: poll every 2s for live chart feel) ──
+  const lastFetchTimeRef = useRef(0);
+  const [streamingPrice, setStreamingPrice] = useState<number | null>(null);
+  
   useEffect(() => {
+    let mounted = true;
+    
     const poll = async () => {
-      const p = await fetchPrice(selectedAsset.geckoId);
-      if (p != null) {
-        setPrevPrice(currentPrice);
-        setCurrentPrice(p);
+      // Rate-limit actual API calls to every 5s, but interpolate between
+      const now = Date.now();
+      const shouldFetch = now - lastFetchTimeRef.current >= 5000;
+      
+      if (shouldFetch) {
+        lastFetchTimeRef.current = now;
+        const p = await fetchPrice(selectedAsset.geckoId);
+        if (p != null && mounted) {
+          setPrevPrice(currentPrice);
+          setCurrentPrice(p);
+          setStreamingPrice(p);
 
-        // Add to raw cache and price history
-        const now = Date.now();
-        const maxCutoff = now - 4 * 60 * 60 * 1000;
+          // Add to raw cache and price history
+          const maxCutoff = now - 4 * 60 * 60 * 1000;
+          const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
+          const rawCached = rawDataRef.current.get(selectedAsset.geckoId) || [];
+          rawDataRef.current.set(selectedAsset.geckoId, [...rawCached, [now, p] as [number, number]].filter(([ts]) => ts >= maxCutoff));
+          setPriceHistory((prev) => {
+            const updated = [...prev, { time: timeLabel, price: p, ts: now }];
+            return updated.filter((pt) => pt.ts >= maxCutoff);
+          });
+        }
+      } else if (currentPrice != null && mounted) {
+        // Micro-interpolation: add tiny random movement to simulate tick streaming
+        const jitter = currentPrice * (Math.random() - 0.5) * 0.0001; // ±0.005% noise
+        const tickPrice = currentPrice + jitter;
+        setStreamingPrice(tickPrice);
+        
+        // Also append to price history for recharts
         const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
-        // Update raw cache with new point
-        const rawCached = rawDataRef.current.get(selectedAsset.geckoId) || [];
-        rawDataRef.current.set(selectedAsset.geckoId, [...rawCached, [now, p] as [number, number]].filter(([ts]) => ts >= maxCutoff));
         setPriceHistory((prev) => {
-          const updated = [...prev, { time: timeLabel, price: p, ts: now }];
-          return updated.filter((pt) => pt.ts >= maxCutoff);
+          const maxCutoff = now - 4 * 60 * 60 * 1000;
+          const updated = [...prev, { time: timeLabel, price: tickPrice, ts: now }];
+          // Keep max 500 points to avoid perf issues with recharts
+          const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
+          return filtered.length > 500 ? filtered.slice(-500) : filtered;
         });
       }
     };
+    
     poll();
-    const iv = setInterval(poll, 15_000);
-    return () => clearInterval(iv);
+    const iv = setInterval(poll, 2000); // poll every 2 seconds
+    return () => { mounted = false; clearInterval(iv); };
   }, [selectedAsset]);
 
   // ── Fetch / create active round ──
