@@ -1,10 +1,11 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Shield, ShieldOff, DollarSign, X, ShieldCheck, ShieldMinus } from "lucide-react";
+import { Loader2, Shield, ShieldOff, DollarSign, X, ShieldCheck, ShieldMinus, Search, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { useAdminContext } from "./AdminLayout";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ProfileRow {
   id: string;
@@ -18,13 +19,15 @@ interface ProfileRow {
 
 const AdminUsers = () => {
   const { canEdit } = useAdminContext();
+  const { user: currentUser, isSuperAdmin } = useAuth();
   const [users, setUsers] = useState<ProfileRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [balanceModal, setBalanceModal] = useState<{ userId: string; name: string; current: number } | null>(null);
   const [creditAmount, setCreditAmount] = useState("");
   const [crediting, setCrediting] = useState(false);
-  const [roleConfirm, setRoleConfirm] = useState<{ userId: string; name: string; role: "admin" | "moderator"; hasRole: boolean } | null>(null);
+  const [roleConfirm, setRoleConfirm] = useState<{ userId: string; name: string; role: "admin" | "moderator" | "super_admin"; hasRole: boolean } | null>(null);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
   const PAGE_SIZE = 20;
 
   const fetchUsers = async () => {
@@ -59,15 +62,15 @@ const AdminUsers = () => {
 
   useEffect(() => { fetchUsers(); }, []);
 
-  const toggleRole = async (userId: string, role: "admin" | "moderator", hasRole: boolean) => {
+  const toggleRole = async (userId: string, role: "admin" | "moderator" | "super_admin", hasRole: boolean) => {
     if (hasRole) {
       const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role);
       if (error) toast.error(`Failed to remove ${role} role`);
-      else { toast.success(`${role.charAt(0).toUpperCase() + role.slice(1)} role removed`); fetchUsers(); }
+      else { toast.success(`${role} role removed`); fetchUsers(); }
     } else {
-      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role });
+      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
       if (error) toast.error(`Failed to add ${role} role`);
-      else { toast.success(`${role.charAt(0).toUpperCase() + role.slice(1)} role added`); fetchUsers(); }
+      else { toast.success(`${role} role added`); fetchUsers(); }
     }
   };
 
@@ -102,13 +105,49 @@ const AdminUsers = () => {
     setCrediting(false);
   };
 
-  const paginatedUsers = useMemo(() => users.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [users, page]);
+  const filteredUsers = useMemo(() => {
+    if (!search.trim()) return users;
+    const q = search.toLowerCase();
+    return users.filter(u =>
+      (u.display_name?.toLowerCase().includes(q)) ||
+      (u.email?.toLowerCase().includes(q)) ||
+      (u.wallet_address?.toLowerCase().includes(q))
+    );
+  }, [users, search]);
+
+  const paginatedUsers = useMemo(() => filteredUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [filteredUsers, page]);
 
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>;
 
+  const getRoleBadge = (r: string) => {
+    switch (r) {
+      case "super_admin": return { label: "Super Admin", cls: "bg-primary/15 text-primary" };
+      case "admin": return { label: "Admin", cls: "bg-blue-500/10 text-blue-500" };
+      case "moderator": return { label: "Moderator", cls: "bg-amber-500/10 text-amber-500" };
+      default: return { label: r, cls: "bg-muted text-muted-foreground" };
+    }
+  };
+
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6">Users ({users.length})</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold">Users ({filteredUsers.length})</h2>
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            type="text"
+            value={search}
+            onChange={e => { setSearch(e.target.value); setPage(1); }}
+            placeholder="Search users..."
+            className="w-full bg-muted/50 border border-border rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+          {search && (
+            <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -124,8 +163,10 @@ const AdminUsers = () => {
             </thead>
             <tbody>
               {paginatedUsers.map((u) => {
+                const isSA = u.roles.includes("super_admin");
                 const isAdmin = u.roles.includes("admin");
                 const isMod = u.roles.includes("moderator");
+                const isSelf = u.id === currentUser?.id;
                 return (
                   <tr key={u.id} className="border-b border-border/50 hover:bg-muted/30">
                     <td className="p-3 font-medium">{u.display_name || "—"}</td>
@@ -134,19 +175,22 @@ const AdminUsers = () => {
                       <span className="text-sm font-semibold">${u.balance.toLocaleString()}</span>
                     </td>
                     <td className="p-3">
-                      {u.roles.length > 0 ? u.roles.map((r) => (
-                         <span key={r} className={`px-2 py-0.5 rounded-full text-[10px] font-bold mr-1 ${
-                          r === "admin" ? "bg-primary/10 text-primary" : r === "moderator" ? "bg-amber-500/10 text-amber-500" : "bg-muted text-muted-foreground"
-                        }`}>
-                          {r === "admin" ? "system-mod" : r}
-                        </span>
-                      )) : <span className="text-[10px] text-muted-foreground">user</span>}
+                      <div className="flex flex-wrap gap-1">
+                        {u.roles.length > 0 ? u.roles.map((r) => {
+                          const badge = getRoleBadge(r);
+                          return (
+                            <span key={r} className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${badge.cls}`}>
+                              {badge.label}
+                            </span>
+                          );
+                        }) : <span className="text-[10px] text-muted-foreground">user</span>}
+                      </div>
                     </td>
                     <td className="p-3 text-muted-foreground text-xs">
                       {new Date(u.created_at).toLocaleDateString()}
                     </td>
                     <td className="p-3">
-                      {canEdit ? (
+                      {canEdit && !isSelf ? (
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => setBalanceModal({ userId: u.id, name: u.display_name || u.email || "User", current: u.balance })}
@@ -167,13 +211,26 @@ const AdminUsers = () => {
                         <button
                           onClick={() => setRoleConfirm({ userId: u.id, name: u.display_name || u.email || "User", role: "admin", hasRole: isAdmin })}
                           className={`p-1.5 rounded-lg transition-colors ${
-                            isAdmin ? "hover:bg-destructive/10 text-destructive" : "hover:bg-primary/10 text-primary"
+                            isAdmin ? "hover:bg-destructive/10 text-blue-500" : "hover:bg-blue-500/10 text-muted-foreground"
                           }`}
-                          title={isAdmin ? "Remove System-Mod" : "Make System-Mod"}
+                          title={isAdmin ? "Remove Admin" : "Make Admin"}
                         >
                           {isAdmin ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
                         </button>
+                        {isSuperAdmin && (
+                          <button
+                            onClick={() => setRoleConfirm({ userId: u.id, name: u.display_name || u.email || "User", role: "super_admin", hasRole: isSA })}
+                            className={`p-1.5 rounded-lg transition-colors ${
+                              isSA ? "hover:bg-destructive/10 text-primary" : "hover:bg-primary/10 text-muted-foreground"
+                            }`}
+                            title={isSA ? "Remove Super Admin" : "Make Super Admin"}
+                          >
+                            <Crown className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
+                      ) : isSelf ? (
+                        <span className="text-[10px] text-muted-foreground">You</span>
                       ) : (
                         <span className="text-[10px] text-muted-foreground">View only</span>
                       )}
@@ -181,14 +238,14 @@ const AdminUsers = () => {
                   </tr>
                 );
               })}
-              {users.length === 0 && (
-                <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No users found</td></tr>
+              {filteredUsers.length === 0 && (
+                <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">{search ? "No matching users" : "No users found"}</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
-      <AdminPagination page={page} totalItems={users.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
+      <AdminPagination page={page} totalItems={filteredUsers.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
 
       {/* Balance Modal */}
       <AnimatePresence>
@@ -272,13 +329,16 @@ const AdminUsers = () => {
               <div className="flex items-center gap-2 mb-1">
                 {roleConfirm.hasRole
                   ? <ShieldOff className="w-5 h-5 text-destructive" />
-                  : <ShieldCheck className="w-5 h-5 text-primary" />}
+                  : roleConfirm.role === "super_admin" ? <Crown className="w-5 h-5 text-primary" /> : <ShieldCheck className="w-5 h-5 text-primary" />}
                 <h3 className="text-lg font-bold">
-                  {roleConfirm.hasRole ? "Remove" : "Assign"} {roleConfirm.role.charAt(0).toUpperCase() + roleConfirm.role.slice(1)} Role
+                  {roleConfirm.hasRole ? "Remove" : "Assign"} {getRoleBadge(roleConfirm.role).label} Role
                 </h3>
               </div>
               <p className="text-sm text-muted-foreground mb-6">
-                Are you sure you want to {roleConfirm.hasRole ? "remove" : "assign"} the <strong className="text-foreground">{roleConfirm.role}</strong> role {roleConfirm.hasRole ? "from" : "to"} <strong className="text-foreground">{roleConfirm.name}</strong>?
+                Are you sure you want to {roleConfirm.hasRole ? "remove" : "assign"} the <strong className="text-foreground">{getRoleBadge(roleConfirm.role).label}</strong> role {roleConfirm.hasRole ? "from" : "to"} <strong className="text-foreground">{roleConfirm.name}</strong>?
+                {roleConfirm.role === "super_admin" && !roleConfirm.hasRole && (
+                  <span className="block mt-2 text-xs text-destructive font-medium">⚠️ This grants full read/write access to all admin functions.</span>
+                )}
               </p>
               <div className="flex gap-2">
                 <button
