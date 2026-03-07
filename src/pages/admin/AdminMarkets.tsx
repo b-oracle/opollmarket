@@ -366,80 +366,144 @@ const AdminMarkets = () => {
           <div className="flex items-center gap-2 px-4 py-3 bg-yellow-500/5 border-b border-yellow-500/20">
             <ShieldAlert className="w-4 h-4 text-yellow-500" />
             <h3 className="text-sm font-bold text-yellow-500">Pending Review ({pendingMarkets.length})</h3>
-            <span className="text-xs text-muted-foreground ml-2">Markets awaiting moderation approval</span>
+            <span className="text-xs text-muted-foreground ml-2">
+              {isModeratorOnly ? "Submit your recommendation for admin approval" : "Markets awaiting final approval"}
+            </span>
           </div>
           <div className="divide-y divide-border/50">
-            {pendingMarkets.map((m) => (
-              <div key={m.id} className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-start gap-3 hover:bg-muted/20 transition-colors">
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-semibold truncate">{m.title}</h4>
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{m.description}</p>
-                  <div className="flex items-center gap-2 sm:gap-3 mt-2 flex-wrap">
-                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{m.category}</span>
-                    <span className="text-[10px] text-muted-foreground">•</span>
-                    <span className="text-[10px] text-muted-foreground">{m.market_type}</span>
-                    <span className="text-[10px] text-muted-foreground">•</span>
-                    <span className="text-[10px] text-muted-foreground">Ends {new Date(m.end_date).toLocaleDateString()}</span>
-                    <span className="text-[10px] text-muted-foreground hidden sm:inline">•</span>
-                    <span className="text-[10px] text-muted-foreground hidden sm:inline">Created {new Date(m.created_at).toLocaleDateString()}</span>
-                    {feeBasedMarketIds.has(m.id) && (
-                      <>
-                        <span className="text-[10px] text-muted-foreground">•</span>
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-primary/15 text-primary border border-primary/30">
-                          💰 Fee-Based
-                        </span>
-                      </>
+            {pendingMarkets.map((m) => {
+              const hasModReview = !!m.moderator_decision;
+              const modName = m.moderator_id ? moderatorNameMap.get(m.moderator_id) || "A moderator" : null;
+              return (
+              <div key={m.id} className="p-3 sm:p-4 flex flex-col gap-3 hover:bg-muted/20 transition-colors">
+                <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-semibold truncate">{m.title}</h4>
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{m.description}</p>
+                    <div className="flex items-center gap-2 sm:gap-3 mt-2 flex-wrap">
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{m.category}</span>
+                      <span className="text-[10px] text-muted-foreground">•</span>
+                      <span className="text-[10px] text-muted-foreground">{m.market_type}</span>
+                      <span className="text-[10px] text-muted-foreground">•</span>
+                      <span className="text-[10px] text-muted-foreground">Ends {new Date(m.end_date).toLocaleDateString()}</span>
+                      <span className="text-[10px] text-muted-foreground hidden sm:inline">•</span>
+                      <span className="text-[10px] text-muted-foreground hidden sm:inline">Created {new Date(m.created_at).toLocaleDateString()}</span>
+                      {feeBasedMarketIds.has(m.id) && (
+                        <>
+                          <span className="text-[10px] text-muted-foreground">•</span>
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-primary/15 text-primary border border-primary/30">
+                            💰 Fee-Based
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Moderator-only: Recommend buttons */}
+                  {isModeratorOnly && !hasModReview && (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => handleModeratorReview(m.id, "approve")}
+                        disabled={moderatorReviewingId === m.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 text-xs font-semibold hover:bg-emerald-500/20 transition-all active:scale-95 disabled:opacity-50"
+                      >
+                        {moderatorReviewingId === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+                        Recommend Approve
+                      </button>
+                      <button
+                        onClick={() => handleModeratorReview(m.id, "reject")}
+                        disabled={moderatorReviewingId === m.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-semibold hover:bg-destructive/20 transition-all active:scale-95 disabled:opacity-50"
+                      >
+                        {moderatorReviewingId === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
+                        Recommend Reject
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Moderator: already reviewed */}
+                  {isModeratorOnly && hasModReview && (
+                    <div className="shrink-0">
+                      <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${
+                        m.moderator_decision === "approve" ? "bg-emerald-500/10 text-emerald-500" : "bg-destructive/10 text-destructive"
+                      }`}>
+                        {m.moderator_decision === "approve" ? "✅ Recommended Approval" : "❌ Recommended Rejection"}
+                      </span>
+                      <p className="text-[10px] text-muted-foreground mt-1">Awaiting final decision</p>
+                    </div>
+                  )}
+
+                  {/* Admin/Super Admin: Final decision buttons */}
+                  {canFinalApprove && (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => handleApprove(m.id)}
+                        disabled={approvingId === m.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-all active:scale-95 disabled:opacity-50"
+                      >
+                        {approvingId === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+                        Approve
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!confirm("Cancel this pending market? The creator will receive a FULL refund (including creation fee).")) return;
+                          setCancellingPendingId(m.id);
+                          try {
+                            const { data, error } = await supabase.functions.invoke("cancel-market", {
+                              body: { market_id: m.id },
+                            });
+                            if (error) throw error;
+                            if (data?.error) throw new Error(data.error);
+                            toast.success("Market cancelled — full refund issued.");
+                            logAuditEvent({ action: "market_cancelled", targetId: m.id, targetType: "market", details: { title: m.title, pending: true } });
+                            fetchMarkets();
+                            fetchPendingMarkets();
+                          } catch (err: any) {
+                            toast.error(err?.message || "Failed to cancel market");
+                          }
+                          setCancellingPendingId(null);
+                        }}
+                        disabled={cancellingPendingId === m.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-xs font-semibold hover:bg-muted/80 transition-all active:scale-95 disabled:opacity-50"
+                        title="Cancel with full refund (including creation fee)"
+                      >
+                        {cancellingPendingId === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => handleReject(m.id)}
+                        disabled={rejectingId === m.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-semibold hover:bg-destructive/20 transition-all active:scale-95 disabled:opacity-50"
+                        title="Reject for content violation — creation fee forfeited"
+                      >
+                        {rejectingId === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
+                        Reject
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Moderator recommendation badge (visible to admins/super admins) */}
+                {canFinalApprove && hasModReview && (
+                  <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs ${
+                    m.moderator_decision === "approve"
+                      ? "bg-emerald-500/5 border border-emerald-500/20 text-emerald-500"
+                      : "bg-destructive/5 border border-destructive/20 text-destructive"
+                  }`}>
+                    {m.moderator_decision === "approve" ? <ShieldCheck className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
+                    <span className="font-semibold">
+                      {modName} recommended {m.moderator_decision === "approve" ? "approval" : "rejection"}
+                    </span>
+                    {m.moderator_reviewed_at && (
+                      <span className="text-muted-foreground ml-1">
+                        — {new Date(m.moderator_reviewed_at).toLocaleDateString()} {new Date(m.moderator_reviewed_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </span>
                     )}
                   </div>
-                </div>
-                {canEdit && (
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    onClick={() => handleApprove(m.id)}
-                    disabled={approvingId === m.id}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-all active:scale-95 disabled:opacity-50"
-                  >
-                    {approvingId === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
-                    Approve
-                  </button>
-                  <button
-                    onClick={async () => {
-                      if (!confirm("Cancel this pending market? The creator will receive a FULL refund (including creation fee).")) return;
-                      setCancellingPendingId(m.id);
-                      try {
-                        const { data, error } = await supabase.functions.invoke("cancel-market", {
-                          body: { market_id: m.id },
-                        });
-                        if (error) throw error;
-                        if (data?.error) throw new Error(data.error);
-                        toast.success("Market cancelled — full refund issued.");
-                        fetchMarkets();
-                        fetchPendingMarkets();
-                      } catch (err: any) {
-                        toast.error(err?.message || "Failed to cancel market");
-                      }
-                      setCancellingPendingId(null);
-                    }}
-                    disabled={cancellingPendingId === m.id}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-xs font-semibold hover:bg-muted/80 transition-all active:scale-95 disabled:opacity-50"
-                    title="Cancel with full refund (including creation fee)"
-                  >
-                    {cancellingPendingId === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => handleReject(m.id)}
-                    disabled={rejectingId === m.id}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-semibold hover:bg-destructive/20 transition-all active:scale-95 disabled:opacity-50"
-                    title="Reject for content violation — creation fee forfeited"
-                  >
-                    {rejectingId === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
-                    Reject
-                  </button>
-                </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
