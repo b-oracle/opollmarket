@@ -168,6 +168,7 @@ export default function QuickTrade() {
   const [recentRounds, setRecentRounds] = useState<Round[]>([]);
   const [historyPage, setHistoryPage] = useState(0);
   const [historyTotal, setHistoryTotal] = useState(0);
+  const [resolveFlash, setResolveFlash] = useState<"win" | "lose" | null>(null);
   const HISTORY_PER_PAGE = 5;
   const [poolUp, setPoolUp] = useState(0);
   const [poolDown, setPoolDown] = useState(0);
@@ -523,10 +524,10 @@ export default function QuickTrade() {
         // Haptic + confetti on round resolution
         if (payload.eventType === "UPDATE" && (payload.new as any)?.status === "resolved") {
           haptic("heavy");
+          const resolvedResult = (payload.new as any)?.result;
 
           // Check if user won this round
           if (user) {
-            const resolvedResult = (payload.new as any)?.result;
             const { data: myBets } = await supabase
               .from("quick_bets")
               .select("side")
@@ -534,11 +535,23 @@ export default function QuickTrade() {
               .eq("user_id", user.id)
               .limit(1);
 
-            if (myBets && myBets.length > 0 && myBets[0].side === resolvedResult) {
-              fireWinConfetti();
-              haptic("success");
-              toast({ title: "You won! 🎉", description: `The round resolved ${resolvedResult?.toUpperCase()}` });
+            if (myBets && myBets.length > 0) {
+              const won = myBets[0].side === resolvedResult;
+              setResolveFlash(won ? "win" : "lose");
+              setTimeout(() => setResolveFlash(null), 1500);
+              if (won) {
+                fireWinConfetti();
+                haptic("success");
+                toast({ title: "You won! 🎉", description: `The round resolved ${resolvedResult?.toUpperCase()}` });
+              }
+            } else {
+              // No bet placed, still flash neutral
+              setResolveFlash(resolvedResult === "up" ? "win" : "lose");
+              setTimeout(() => setResolveFlash(null), 1500);
             }
+          } else {
+            setResolveFlash(resolvedResult === "up" ? "win" : "lose");
+            setTimeout(() => setResolveFlash(null), 1500);
           }
         }
       })
