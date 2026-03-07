@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Zap, CheckCircle, XCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { logAuditEvent } from "@/lib/auditLog";
 import { format } from "date-fns";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { useAdminContext } from "./AdminLayout";
@@ -96,6 +97,7 @@ const AdminBoosts = () => {
       toast.error("Failed to activate boost");
     } else {
       toast.success("Boost activated");
+      logAuditEvent({ action: "boost_activated", targetId: boost.id, targetType: "boost", details: { market_id: boost.market_id, tier: boost.tier } });
       fetchBoosts();
     }
     setActionLoading(null);
@@ -103,6 +105,7 @@ const AdminBoosts = () => {
 
   const handleCancel = async (boostId: string) => {
     setActionLoading(boostId);
+    const boost = boosts.find(b => b.id === boostId);
     const { error } = await supabase
       .from("market_boosts")
       .update({ status: "cancelled" })
@@ -112,6 +115,7 @@ const AdminBoosts = () => {
       toast.error("Failed to cancel boost");
     } else {
       toast.success("Boost cancelled");
+      logAuditEvent({ action: "boost_cancelled", targetId: boostId, targetType: "boost", details: { market_id: boost?.market_id, tier: boost?.tier } });
       fetchBoosts();
     }
     setActionLoading(null);

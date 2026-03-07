@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { logAuditEvent } from "@/lib/auditLog";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { useAdminContext } from "./AdminLayout";
 
@@ -35,9 +36,14 @@ const AdminComments = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this comment?")) return;
+    const comment = comments.find(c => c.id === id);
     const { error } = await supabase.from("comments").delete().eq("id", id);
     if (error) toast.error("Failed to delete");
-    else { toast.success("Comment deleted"); fetchComments(); }
+    else {
+      toast.success("Comment deleted");
+      logAuditEvent({ action: "comment_deleted", targetId: id, targetType: "comment", details: { market_id: comment?.market_id, author: comment?.author_name } });
+      fetchComments();
+    }
   };
 
   const paginatedComments = useMemo(() => comments.slice((cmtPage - 1) * CMT_PAGE_SIZE, cmtPage * CMT_PAGE_SIZE), [comments, cmtPage]);

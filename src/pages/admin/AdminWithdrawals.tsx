@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { logAuditEvent } from "@/lib/auditLog";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CheckCircle2, XCircle, Clock, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -70,7 +71,13 @@ const AdminWithdrawals = () => {
         throw new Error(data?.error || error?.message);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      logAuditEvent({
+        action: variables.action === "approve" ? "withdrawal_approved" : "withdrawal_rejected",
+        targetId: variables.withdrawal_id,
+        targetType: "withdrawal",
+        details: { action: variables.action, note: variables.admin_note, tx_hash: variables.tx_hash },
+      });
       queryClient.invalidateQueries({ queryKey: ["admin_withdrawals"] });
       setShowActionModal(null);
       setNoteInput("");

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin, ShieldAlert, ShieldCheck, Ban } from "lucide-react";
 import { toast } from "sonner";
+import { logAuditEvent } from "@/lib/auditLog";
 import { motion, AnimatePresence } from "framer-motion";
 import BulkCSVImport from "@/components/admin/BulkCSVImport";
 import AdminPagination from "@/components/admin/AdminPagination";
@@ -125,15 +126,21 @@ const AdminMarkets = () => {
 
   const handleApprove = async (id: string) => {
     setApprovingId(id);
+    const market = [...markets, ...pendingMarkets].find(m => m.id === id);
     const { error } = await supabase.from("markets").update({ status: "active" }).eq("id", id);
     if (error) { toast.error("Failed to approve"); }
-    else { toast.success("Market approved and now live!"); fetchMarkets(); fetchPendingMarkets(); }
+    else {
+      toast.success("Market approved and now live!");
+      logAuditEvent({ action: "market_approved", targetId: id, targetType: "market", details: { title: market?.title } });
+      fetchMarkets(); fetchPendingMarkets();
+    }
     setApprovingId(null);
   };
 
   const handleReject = async (id: string) => {
     if (!confirm("Reject this market for content violation? The creation fee will be FORFEITED (not refunded). Only the initial liquidity will be refunded.")) return;
     setRejectingId(id);
+    const market = [...markets, ...pendingMarkets].find(m => m.id === id);
     try {
       const { data, error } = await supabase.functions.invoke("cancel-market", {
         body: { market_id: id, reason: "moderation" },
@@ -142,6 +149,7 @@ const AdminMarkets = () => {
       if (data?.error) throw new Error(data.error);
       const feeMsg = data?.creation_fee_forfeited > 0 ? ` Creation fee ($${data.creation_fee_forfeited}) forfeited.` : "";
       toast.success(`Market rejected.${feeMsg} Liquidity refunded.`);
+      logAuditEvent({ action: "market_rejected", targetId: id, targetType: "market", details: { title: market?.title } });
       fetchMarkets();
       fetchPendingMarkets();
     } catch (err: any) {
@@ -183,7 +191,11 @@ const AdminMarkets = () => {
       trending: editState.trending,
     }).eq("id", editState.id);
     if (error) toast.error("Failed to save changes");
-    else { toast.success("Market updated"); setEditState(null); fetchMarkets(); }
+    else {
+      toast.success("Market updated");
+      logAuditEvent({ action: "market_edited", targetId: editState.id, targetType: "market", details: { title: editState.title.trim() } });
+      setEditState(null); fetchMarkets();
+    }
     setSaving(false);
   };
 
@@ -222,6 +234,7 @@ const AdminMarkets = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success(`Market resolved! ${data.winners} winners paid out $${data.total_paid_out?.toFixed(2)}`);
+      logAuditEvent({ action: "market_resolved", targetId: market.id, targetType: "market", details: { title: market.title, winning_side: winningSide, winning_option_id: winningOptionId } });
       setResolveState(null);
       fetchMarkets();
     } catch (err: any) {
@@ -232,6 +245,7 @@ const AdminMarkets = () => {
 
   const handleCancel = async (id: string) => {
     if (!confirm("Cancel this market and refund all bets?")) return;
+    const market = markets.find(m => m.id === id);
     try {
       const { data, error } = await supabase.functions.invoke("cancel-market", {
         body: { market_id: id },
@@ -239,6 +253,7 @@ const AdminMarkets = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success(`Market cancelled! ${data.users_refunded} users refunded $${data.total_refunded?.toFixed(2)}`);
+      logAuditEvent({ action: "market_cancelled", targetId: id, targetType: "market", details: { title: market?.title } });
       fetchMarkets();
     } catch (err: any) {
       toast.error(err?.message || "Failed to cancel market");
@@ -247,15 +262,25 @@ const AdminMarkets = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Permanently delete this market and all related data?")) return;
+    const market = markets.find(m => m.id === id);
     const { error } = await supabase.from("markets").delete().eq("id", id);
     if (error) toast.error("Failed to delete market");
-    else { toast.success("Market deleted"); fetchMarkets(); }
+    else {
+      toast.success("Market deleted");
+      logAuditEvent({ action: "market_deleted", targetId: id, targetType: "market", details: { title: market?.title } });
+      fetchMarkets();
+    }
   };
 
   const handleReactivate = async (id: string) => {
+    const market = markets.find(m => m.id === id);
     const { error } = await supabase.from("markets").update({ status: "active" }).eq("id", id);
     if (error) toast.error("Failed to reactivate");
-    else { toast.success("Market reactivated"); fetchMarkets(); }
+    else {
+      toast.success("Market reactivated");
+      logAuditEvent({ action: "market_reactivated", targetId: id, targetType: "market", details: { title: market?.title } });
+      fetchMarkets();
+    }
   };
 
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>;
