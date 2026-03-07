@@ -292,6 +292,10 @@ Deno.serve(async (req) => {
           break;
         }
       }
+    } catch (payErr) {
+      console.error("Payout flow error:", payErr);
+      payoutError = String(payErr);
+    }
 
     if (!payoutSuccess) {
       // Refund balance since payout failed
