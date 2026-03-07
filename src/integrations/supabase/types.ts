@@ -168,6 +168,7 @@ export type Database = {
           min_withdrawal_amount: number
           nft_buy_url: string | null
           nft_contract_address: string | null
+          quick_trade_fee_percent: number
           referral_reward_amount: number
           token_contract_address: string | null
           token_decimals: number | null
@@ -185,6 +186,7 @@ export type Database = {
           min_withdrawal_amount?: number
           nft_buy_url?: string | null
           nft_contract_address?: string | null
+          quick_trade_fee_percent?: number
           referral_reward_amount?: number
           token_contract_address?: string | null
           token_decimals?: number | null
@@ -202,6 +204,7 @@ export type Database = {
           min_withdrawal_amount?: number
           nft_buy_url?: string | null
           nft_contract_address?: string | null
+          quick_trade_fee_percent?: number
           referral_reward_amount?: number
           token_contract_address?: string | null
           token_decimals?: number | null
