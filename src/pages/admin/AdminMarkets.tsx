@@ -113,7 +113,7 @@ const AdminMarkets = () => {
       .eq("status", "pending")
       .order("created_at", { ascending: false });
     if (data) {
-      setPendingMarkets(data);
+      setPendingMarkets(data as MarketRow[]);
       // Check which pending markets were created via fee bypass
       const ids = data.map(m => m.id);
       if (ids.length > 0) {
@@ -126,6 +126,17 @@ const AdminMarkets = () => {
         if (feeTxns) {
           setFeeBasedMarketIds(new Set(feeTxns.map(t => t.market_id!)));
         }
+      }
+      // Resolve moderator names
+      const modIds = [...new Set(data.filter(m => m.moderator_id).map(m => m.moderator_id!))];
+      if (modIds.length > 0) {
+        const { data: modProfiles } = await supabase
+          .from("profiles")
+          .select("id, display_name, email")
+          .in("id", modIds);
+        const map = new Map<string, string>();
+        modProfiles?.forEach(p => map.set(p.id, p.display_name || p.email || p.id.slice(0, 8)));
+        setModeratorNameMap(map);
       }
     }
   };
