@@ -238,14 +238,14 @@ const AdminUsers = () => {
                   </tr>
                 );
               })}
-              {users.length === 0 && (
-                <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No users found</td></tr>
+              {filteredUsers.length === 0 && (
+                <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">{search ? "No matching users" : "No users found"}</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
-      <AdminPagination page={page} totalItems={users.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
+      <AdminPagination page={page} totalItems={filteredUsers.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
 
       {/* Balance Modal */}
       <AnimatePresence>
