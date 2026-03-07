@@ -236,6 +236,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     lastSessionRef.current = null;
     setSession(null);
     setUser(null);
+    setIsSuperAdmin(false);
     setIsAdmin(false);
     setIsModerator(false);
     setProfileDisplayName(null);
@@ -261,11 +262,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const isEmailVerified = !!user?.email_confirmed_at;
-  const hasAdminAccess = isAdmin || isModerator;
+  const hasAdminAccess = isSuperAdmin || isAdmin || isModerator;
+  const canEdit = isSuperAdmin; // Only super_admin can make changes
   const displayName = profileDisplayName || user?.user_metadata?.display_name || user?.email?.split("@")[0] || "User";
 
   const value: AuthContextValue = {
-    user, session, loading, displayName, isAdmin, isModerator, hasAdminAccess, isEmailVerified,
+    user, session, loading, displayName, isSuperAdmin, isAdmin, isModerator, hasAdminAccess, canEdit, isEmailVerified,
     signIn, signUp, signOut,
   };
 
