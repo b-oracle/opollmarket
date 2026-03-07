@@ -39,6 +39,7 @@ const actionConfig: Record<string, { label: string; verb: string; icon: typeof S
   withdrawal_approved: { label: "Withdrawal Approved", verb: "approved withdrawal", icon: ArrowUpFromLine, colorClass: "text-emerald-400 bg-emerald-400/10" },
   withdrawal_rejected: { label: "Withdrawal Rejected", verb: "rejected withdrawal", icon: ArrowUpFromLine, colorClass: "text-destructive bg-destructive/10" },
   balance_adjusted: { label: "Balance Adjusted", verb: "adjusted balance for", icon: DollarSign, colorClass: "text-blue-400 bg-blue-400/10" },
+  settings_updated: { label: "Settings Updated", verb: "updated platform settings", icon: Pencil, colorClass: "text-blue-400 bg-blue-400/10" },
 };
 
 const fallbackConfig = { label: "Action", verb: "performed action on", icon: History, colorClass: "text-muted-foreground bg-muted" };
