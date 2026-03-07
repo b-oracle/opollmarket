@@ -99,6 +99,33 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
     enabled: !!user,
   });
 
+  const { data: eligibleWithdrawal } = useQuery({
+    queryKey: ["eligible_withdrawal", user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      const { data: deposits } = await supabase
+        .from("transactions")
+        .select("amount")
+        .eq("user_id", user.id)
+        .eq("type", "deposit")
+        .eq("status", "confirmed");
+
+      const totalDeposits = (deposits || []).reduce((sum, r) => sum + Number(r.amount), 0);
+
+      const { data: withdrawals } = await supabase
+        .from("transactions")
+        .select("amount")
+        .eq("user_id", user.id)
+        .eq("type", "withdrawal")
+        .eq("status", "confirmed");
+
+      const totalWithdrawn = (withdrawals || []).reduce((sum, r) => sum + Number(r.amount), 0);
+
+      return Math.max(0, (2 * totalDeposits) - totalWithdrawn);
+    },
+    enabled: !!user && tab === "withdraw",
+  });
+
   const numAmount = parseFloat(amount) || 0;
   const isDeposit = tab === "deposit";
   const maxAvailable = isDeposit ? MAX_AMOUNT : balance;
@@ -195,7 +222,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
         throw new Error(errorMsg);
       }
       queryClient.invalidateQueries({ queryKey: ["balance"] });
-      setStep("success");
+      queryClient.invalidateQueries({ queryKey: ["eligible_withdrawal"] });
     } catch (err: any) {
       setErrorMsg(err.message || "Something went wrong");
       setStep("error");
@@ -404,9 +431,14 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                     {!isDeposit && hasDeposit && (
                       <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border mb-5">
                         <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                        <p className="text-[10px] text-muted-foreground">
-                          Withdrawals are processed instantly and sent directly to your wallet. Bonus balance cannot be withdrawn.
-                        </p>
+                        <div className="text-[10px] text-muted-foreground">
+                          <p>Withdrawals are processed instantly and sent directly to your wallet. Bonus balance cannot be withdrawn.</p>
+                          {eligibleWithdrawal !== undefined && (
+                            <p className="mt-1 font-semibold text-foreground">
+                              Eligible withdrawal remaining: ${eligibleWithdrawal.toFixed(2)}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )}
 
