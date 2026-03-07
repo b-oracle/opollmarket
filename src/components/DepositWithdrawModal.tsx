@@ -99,6 +99,19 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
     enabled: !!user,
   });
 
+  const { data: cooldownMinutes } = useQuery({
+    queryKey: ["withdrawal_cooldown"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("commission_settings")
+        .select("withdrawal_cooldown_minutes")
+        .limit(1)
+        .single();
+      return data?.withdrawal_cooldown_minutes ?? 5;
+    },
+    enabled: tab === "withdraw",
+  });
+
   const { data: eligibleWithdrawal } = useQuery({
     queryKey: ["eligible_withdrawal", user?.id],
     queryFn: async () => {
@@ -436,6 +449,12 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                           {eligibleWithdrawal !== undefined && (
                             <p className="mt-1 font-semibold text-foreground">
                               Eligible withdrawal remaining: ${eligibleWithdrawal.toFixed(2)}
+                            </p>
+                          )}
+                          {cooldownMinutes !== undefined && cooldownMinutes > 0 && (
+                            <p className="mt-1 flex items-center gap-1">
+                              <Clock className="w-3 h-3 inline" />
+                              Cooldown between withdrawals: {cooldownMinutes} minute{cooldownMinutes !== 1 ? "s" : ""}
                             </p>
                           )}
                         </div>
