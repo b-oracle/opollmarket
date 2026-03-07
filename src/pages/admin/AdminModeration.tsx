@@ -4,6 +4,7 @@ import { Loader2, CheckCircle, XCircle, Eye, MessageSquare, ShoppingBag, Image, 
 import { toast } from "sonner";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAdminContext } from "./AdminLayout";
 
 interface ModerationLog {
   id: string;

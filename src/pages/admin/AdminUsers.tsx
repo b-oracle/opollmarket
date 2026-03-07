@@ -4,6 +4,7 @@ import { Loader2, Shield, ShieldOff, DollarSign, X, ShieldCheck, ShieldMinus } f
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import AdminPagination from "@/components/admin/AdminPagination";
+import { useAdminContext } from "./AdminLayout";
 
 interface ProfileRow {
   id: string;

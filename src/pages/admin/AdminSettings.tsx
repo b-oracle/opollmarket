@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
+import { useAdminContext } from "./AdminLayout";
 
 const ALL_ASSETS = [
   { symbol: "BTC", label: "Bitcoin" },

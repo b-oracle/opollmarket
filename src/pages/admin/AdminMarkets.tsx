@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import BulkCSVImport from "@/components/admin/BulkCSVImport";
 import AdminPagination from "@/components/admin/AdminPagination";
+import { useAdminContext } from "./AdminLayout";
 
 const CATEGORIES = ["Crypto", "AI & Tech", "Science", "Economy", "Entertainment", "Sports", "Politics", "Other"];
 
@@ -62,6 +63,7 @@ interface EditState {
 }
 
 const AdminMarkets = () => {
+  const { canEdit } = useAdminContext();
   const navigate = useNavigate();
   const [markets, setMarkets] = useState<MarketRow[]>([]);
   const [pendingMarkets, setPendingMarkets] = useState<MarketRow[]>([]);
