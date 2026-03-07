@@ -90,8 +90,8 @@ const AdminMarkets = () => {
   const [moderatorReviewingId, setModeratorReviewingId] = useState<string | null>(null);
   const [moderatorNameMap, setModeratorNameMap] = useState<Map<string, string>>(new Map());
 
-  const canFinalApprove = isSuperAdmin || isAdmin;
-  const isModeratorOnly = isModerator && !isSuperAdmin && !isAdmin;
+  const canFinalApprove = isSuperAdmin; // Only super admin can give final approval
+  const isModeratorOnly = (isModerator || isAdmin) && !isSuperAdmin; // Admin has same access as moderator
 
   const fetchMarkets = async () => {
     let query = supabase
