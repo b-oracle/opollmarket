@@ -141,6 +141,24 @@ const AdminAuditLog = () => {
       );
     }
 
+    if (log.action === "settings_updated") {
+      const changes: string[] = [];
+      if (d.admin_fee_percent !== undefined) changes.push(`Admin Fee: ${d.admin_fee_percent}%`);
+      if (d.creator_fee_percent !== undefined) changes.push(`Creator Fee: ${d.creator_fee_percent}%`);
+      if (d.exit_fee_percent !== undefined) changes.push(`Exit Fee: ${d.exit_fee_percent}%`);
+      if (d.min_withdrawal_amount !== undefined) changes.push(`Min Withdrawal: $${d.min_withdrawal_amount}`);
+      if (d.withdrawal_cooldown_minutes !== undefined) changes.push(`Cooldown: ${d.withdrawal_cooldown_minutes}m`);
+      if (d.withdrawal_multiplier !== undefined) changes.push(`Multiplier: ${d.withdrawal_multiplier}×`);
+      return (
+        <>
+          <span className="text-muted-foreground">updated platform settings</span>
+          {changes.length > 0 && (
+            <span className="text-muted-foreground text-xs ml-1">— {changes.join(", ")}</span>
+          )}
+        </>
+      );
+    }
+
     return (
       <>
         <span className="text-muted-foreground">{config.verb}</span>{" "}
