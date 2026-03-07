@@ -137,7 +137,8 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
 
       const totalWithdrawn = (withdrawals || []).reduce((sum, r) => sum + Number(r.amount), 0);
 
-      return Math.max(0, (2 * totalDeposits) - totalWithdrawn);
+      const multiplier = withdrawSettings?.multiplier ?? 2;
+      return Math.max(0, (multiplier * totalDeposits) - totalWithdrawn);
     },
     enabled: !!user && tab === "withdraw",
   });
@@ -454,10 +455,10 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                               Eligible withdrawal remaining: ${eligibleWithdrawal.toFixed(2)}
                             </p>
                           )}
-                          {cooldownMinutes !== undefined && cooldownMinutes > 0 && (
+                          {withdrawSettings && withdrawSettings.cooldown > 0 && (
                             <p className="mt-1 flex items-center gap-1">
                               <Clock className="w-3 h-3 inline" />
-                              Cooldown between withdrawals: {cooldownMinutes} minute{cooldownMinutes !== 1 ? "s" : ""}
+                              Cooldown between withdrawals: {withdrawSettings.cooldown} minute{withdrawSettings.cooldown !== 1 ? "s" : ""}
                             </p>
                           )}
                         </div>
