@@ -136,6 +136,27 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Cooldown: prevent rapid repeated withdrawals (5 minutes)
+    const cooldownMinutes = 5;
+    const cooldownCutoff = new Date(Date.now() - cooldownMinutes * 60 * 1000).toISOString();
+    const { data: recentWithdrawals } = await adminClient
+      .from("withdrawal_requests")
+      .select("id, created_at")
+      .eq("user_id", userId)
+      .gte("created_at", cooldownCutoff)
+      .limit(1);
+
+    if (recentWithdrawals && recentWithdrawals.length > 0) {
+      const lastTime = new Date(recentWithdrawals[0].created_at);
+      const waitUntil = new Date(lastTime.getTime() + cooldownMinutes * 60 * 1000);
+      const secsLeft = Math.ceil((waitUntil.getTime() - Date.now()) / 1000);
+      const minsLeft = Math.ceil(secsLeft / 60);
+      return new Response(
+        JSON.stringify({ error: `Please wait ${minsLeft} minute${minsLeft !== 1 ? "s" : ""} before requesting another withdrawal` }),
+        { status: 429, headers: corsHeaders }
+      );
+    }
+
     // Check balance (main balance only, not bonus)
     const { data: balance } = await adminClient
       .from("balances")
