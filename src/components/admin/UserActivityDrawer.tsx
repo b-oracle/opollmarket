@@ -107,6 +107,16 @@ const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDra
         result = refs || [];
         break;
       }
+      case "withdrawals": {
+        const { data: wd } = await supabase
+          .from("withdrawal_requests")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(50);
+        result = wd || [];
+        break;
+      }
     }
 
     setData(result);
