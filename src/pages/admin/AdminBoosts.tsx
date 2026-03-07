@@ -35,6 +35,7 @@ const tierLabels: Record<string, string> = {
 };
 
 const AdminBoosts = () => {
+  const { canEdit } = useAdminContext();
   const [boosts, setBoosts] = useState<BoostRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);

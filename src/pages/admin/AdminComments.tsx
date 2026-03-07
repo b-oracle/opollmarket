@@ -15,6 +15,7 @@ interface CommentRow {
 }
 
 const AdminComments = () => {
+  const { canEdit } = useAdminContext();
   const [comments, setComments] = useState<CommentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [cmtPage, setCmtPage] = useState(1);

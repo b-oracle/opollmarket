@@ -26,6 +26,7 @@ const ALL_TIMEFRAMES = [
 ];
 
 const AdminSettings = () => {
+  const { canEdit } = useAdminContext();
   const [adminFee, setAdminFee] = useState("");
   const [creatorFee, setCreatorFee] = useState("");
   const [referralReward, setReferralReward] = useState("");

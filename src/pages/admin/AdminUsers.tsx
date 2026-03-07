@@ -17,6 +17,7 @@ interface ProfileRow {
 }
 
 const AdminUsers = () => {
+  const { canEdit } = useAdminContext();
   const [users, setUsers] = useState<ProfileRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [balanceModal, setBalanceModal] = useState<{ userId: string; name: string; current: number } | null>(null);

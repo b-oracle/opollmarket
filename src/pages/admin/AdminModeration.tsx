@@ -40,6 +40,7 @@ const statusConfig: Record<string, { label: string; colorClass: string }> = {
 const PAGE_SIZE = 20;
 
 const AdminModeration = () => {
+  const { canEdit } = useAdminContext();
   const [logs, setLogs] = useState<ModerationLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
