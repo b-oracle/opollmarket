@@ -173,6 +173,27 @@ const AdminSettings = () => {
         } as any)
         .eq("id", settingsId);
       if (error) throw error;
+
+      // Audit log
+      const { logAuditEvent } = await import("@/lib/auditLog");
+      logAuditEvent({
+        action: "settings_updated",
+        targetId: settingsId,
+        targetType: "commission_settings",
+        details: {
+          admin_fee_percent: adminNum,
+          creator_fee_percent: creatorNum,
+          exit_fee_percent: exitFeeNum,
+          min_withdrawal_amount: minWithdrawNum,
+          withdrawal_cooldown_minutes: withdrawalCooldownNum,
+          withdrawal_multiplier: withdrawalMultiplierNum,
+          referral_reward_amount: referralNum,
+          quick_trade_fee_percent: quickTradeFeeNum,
+          qt_min_bet: qtMinBetNum,
+          qt_max_bet: qtMaxBetNum,
+        },
+      });
+
       toast.success("Settings saved successfully");
     } catch (err: any) {
       console.error("Save settings error:", err);
