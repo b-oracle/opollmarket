@@ -356,7 +356,17 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   const pnlPositive = pnl !== null && pnl >= 0;
 
   return (
-    <div className={isFullscreen ? "fixed inset-0 z-50 bg-background flex flex-col" : "relative"}>
+    <div className={`${isFullscreen ? "fixed inset-0 z-50 bg-background flex flex-col" : "relative"} overflow-hidden`}>
+      {/* Resolution flash/glow overlay */}
+      {resolveFlash && (
+        <div
+          className={`absolute inset-0 z-20 pointer-events-none rounded-lg animate-[flash_1.5s_ease-out_forwards] ${
+            resolveFlash === "win"
+              ? "bg-green-500/20 shadow-[inset_0_0_40px_rgba(34,197,94,0.4)]"
+              : "bg-red-500/20 shadow-[inset_0_0_40px_rgba(239,68,68,0.4)]"
+          }`}
+        />
+      )}
       {/* Streaming indicator + P&L badge */}
       <div className="absolute top-2 left-2 z-10 flex items-center gap-2">
         <div className="flex items-center gap-1.5">
