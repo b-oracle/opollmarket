@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Eye, EyeOff, LogIn, UserPlus, Gift, CheckCircle2, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getCanonicalOrigin } from "@/lib/canonical";
 import { lovable } from "@/integrations/lovable/index";
 
 const useIsDappBrowser = () =>
@@ -71,7 +72,7 @@ const Auth = () => {
           if (msg.includes("invalid login credentials") || msg.includes("invalid credentials")) {
             // Check if this email exists as a Google OAuth account
             const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-              redirectTo: `${window.location.origin}/reset-password`,
+              redirectTo: `${getCanonicalOrigin()}/reset-password`,
             });
             if (!resetError) {
               toast.error(
