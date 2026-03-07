@@ -61,12 +61,14 @@ const AdminComments = () => {
               <p className="text-sm text-foreground/80 truncate">{c.content}</p>
               <p className="text-[10px] text-muted-foreground mt-1">Market: {c.market_id}</p>
             </div>
+            {canEdit && (
             <button
               onClick={() => handleDelete(c.id)}
               className="p-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors shrink-0"
             >
               <Trash2 className="w-4 h-4" />
             </button>
+            )}
           </div>
         ))}
         {comments.length === 0 && (

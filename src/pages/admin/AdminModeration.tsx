@@ -242,7 +242,7 @@ const AdminModeration = () => {
                     )}
 
                     {/* Review actions */}
-                    {log.status === "pending" && (
+                    {log.status === "pending" && canEdit && (
                       <div className="mt-3">
                         {reviewingId === log.id ? (
                           <div className="space-y-2">

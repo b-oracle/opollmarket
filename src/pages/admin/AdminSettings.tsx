@@ -428,9 +428,9 @@ const AdminSettings = () => {
       {/* Save Button */}
       <div className="max-w-4xl mt-6">
         {referralNum < 0 && <p className="text-xs text-destructive mb-2">Referral reward amount cannot be negative.</p>}
-        <Button onClick={handleSave} disabled={!isValid || saving} className="w-full sm:w-auto">
+        <Button onClick={handleSave} disabled={!isValid || saving || !canEdit} className="w-full sm:w-auto">
           {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-          Save All Settings
+          {canEdit ? "Save All Settings" : "View Only — Cannot Save"}
         </Button>
       </div>
     </div>

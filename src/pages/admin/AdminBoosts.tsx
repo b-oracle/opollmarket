@@ -177,6 +177,7 @@ const AdminBoosts = () => {
                 </div>
               </div>
 
+              {canEdit && (
               <div className="flex items-center gap-2 shrink-0">
                 {boost.status === "pending" && (
                   <button
@@ -207,6 +208,7 @@ const AdminBoosts = () => {
                   </button>
                 )}
               </div>
+              )}
             </div>
           ))}
         </div>

@@ -146,6 +146,7 @@ const AdminUsers = () => {
                       {new Date(u.created_at).toLocaleDateString()}
                     </td>
                     <td className="p-3">
+                      {canEdit ? (
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => setBalanceModal({ userId: u.id, name: u.display_name || u.email || "User", current: u.balance })}
@@ -173,6 +174,9 @@ const AdminUsers = () => {
                           {isAdmin ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
                         </button>
                       </div>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">View only</span>
+                      )}
                     </td>
                   </tr>
                 );
