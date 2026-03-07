@@ -136,6 +136,36 @@ Deno.serve(async (req) => {
       );
     }
 
+    // 2x deposit withdrawal cap
+    const { data: depositSum } = await adminClient
+      .from("transactions")
+      .select("amount")
+      .eq("user_id", userId)
+      .eq("type", "deposit")
+      .eq("status", "confirmed");
+
+    const totalDeposits = (depositSum || []).reduce((sum: number, r: any) => sum + Number(r.amount), 0);
+
+    const { data: withdrawnSum } = await adminClient
+      .from("transactions")
+      .select("amount")
+      .eq("user_id", userId)
+      .eq("type", "withdrawal")
+      .eq("status", "confirmed");
+
+    const totalWithdrawn = (withdrawnSum || []).reduce((sum: number, r: any) => sum + Number(r.amount), 0);
+
+    const maxEligible = Math.max(0, (2 * totalDeposits) - totalWithdrawn);
+
+    if (amount > maxEligible) {
+      return new Response(
+        JSON.stringify({
+          error: `Withdrawal exceeds your eligible limit. You can withdraw up to $${maxEligible.toFixed(2)} more. Deposit additional funds to increase your limit.`,
+        }),
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
     // Cooldown: prevent rapid repeated withdrawals (configurable)
     const cooldownMinutes = settings?.withdrawal_cooldown_minutes ?? 5;
     const cooldownCutoff = new Date(Date.now() - cooldownMinutes * 60 * 1000).toISOString();
