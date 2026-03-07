@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
     // Fetch min withdrawal from settings
     const { data: settings } = await adminClient
       .from("commission_settings")
-      .select("min_withdrawal_amount, withdrawal_cooldown_minutes")
+      .select("min_withdrawal_amount, withdrawal_cooldown_minutes, withdrawal_multiplier")
       .limit(1)
       .single();
 
@@ -155,7 +155,8 @@ Deno.serve(async (req) => {
 
     const totalWithdrawn = (withdrawnSum || []).reduce((sum: number, r: any) => sum + Number(r.amount), 0);
 
-    const maxEligible = Math.max(0, (2 * totalDeposits) - totalWithdrawn);
+    const withdrawalMultiplier = settings?.withdrawal_multiplier ?? 2;
+    const maxEligible = Math.max(0, (withdrawalMultiplier * totalDeposits) - totalWithdrawn);
 
     if (amount > maxEligible) {
       return new Response(
