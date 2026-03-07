@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Shield, ShieldOff, DollarSign, X, ShieldCheck, ShieldMinus, Search, Crown } from "lucide-react";
+import { Loader2, Shield, ShieldOff, DollarSign, X, ShieldCheck, ShieldMinus, Search, Crown, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { logAuditEvent } from "@/lib/auditLog";
 import { motion, AnimatePresence } from "framer-motion";
@@ -31,6 +31,7 @@ const AdminUsers = () => {
   const [creditAmount, setCreditAmount] = useState("");
   const [crediting, setCrediting] = useState(false);
   const [roleConfirm, setRoleConfirm] = useState<{ userId: string; name: string; role: "admin" | "moderator" | "super_admin"; hasRole: boolean } | null>(null);
+  const [activityDrawer, setActivityDrawer] = useState<{ userId: string; name: string } | null>(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -73,7 +74,6 @@ const AdminUsers = () => {
       return;
     }
 
-    // Fetch roles and balances only for the current page's users
     const [{ data: roles }, { data: balances }] = await Promise.all([
       supabase.from("user_roles").select("*").in("user_id", userIds),
       supabase.from("balances").select("user_id, amount").in("user_id", userIds),
@@ -232,50 +232,61 @@ const AdminUsers = () => {
                       {new Date(u.created_at).toLocaleDateString()}
                     </td>
                     <td className="p-3">
-                      {canEdit && !isSelf ? (
                       <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => setBalanceModal({ userId: u.id, name: u.display_name || u.email || "User", current: u.balance })}
-                          className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
-                          title="Manage Balance"
-                        >
-                          <DollarSign className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => setRoleConfirm({ userId: u.id, name: u.display_name || u.email || "User", role: "moderator", hasRole: isMod })}
-                          className={`p-1.5 rounded-lg transition-colors ${
-                            isMod ? "hover:bg-destructive/10 text-amber-500" : "hover:bg-amber-500/10 text-muted-foreground"
-                          }`}
-                          title={isMod ? "Remove Moderator" : "Make Moderator"}
-                        >
-                          {isMod ? <ShieldMinus className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
-                        </button>
-                        <button
-                          onClick={() => setRoleConfirm({ userId: u.id, name: u.display_name || u.email || "User", role: "admin", hasRole: isAdmin })}
-                          className={`p-1.5 rounded-lg transition-colors ${
-                            isAdmin ? "hover:bg-destructive/10 text-blue-500" : "hover:bg-blue-500/10 text-muted-foreground"
-                          }`}
-                          title={isAdmin ? "Remove Admin" : "Make Admin"}
-                        >
-                          {isAdmin ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
-                        </button>
                         {isSuperAdmin && (
                           <button
-                            onClick={() => setRoleConfirm({ userId: u.id, name: u.display_name || u.email || "User", role: "super_admin", hasRole: isSA })}
-                            className={`p-1.5 rounded-lg transition-colors ${
-                              isSA ? "hover:bg-destructive/10 text-primary" : "hover:bg-primary/10 text-muted-foreground"
-                            }`}
-                            title={isSA ? "Remove Super Admin" : "Make Super Admin"}
+                            onClick={() => setActivityDrawer({ userId: u.id, name: u.display_name || u.email || "User" })}
+                            className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                            title="View Activities"
                           >
-                            <Crown className="w-4 h-4" />
+                            <Eye className="w-4 h-4" />
                           </button>
                         )}
+                        {canEdit && !isSelf ? (
+                          <>
+                            <button
+                              onClick={() => setBalanceModal({ userId: u.id, name: u.display_name || u.email || "User", current: u.balance })}
+                              className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+                              title="Manage Balance"
+                            >
+                              <DollarSign className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setRoleConfirm({ userId: u.id, name: u.display_name || u.email || "User", role: "moderator", hasRole: isMod })}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                isMod ? "hover:bg-destructive/10 text-amber-500" : "hover:bg-amber-500/10 text-muted-foreground"
+                              }`}
+                              title={isMod ? "Remove Moderator" : "Make Moderator"}
+                            >
+                              {isMod ? <ShieldMinus className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
+                            </button>
+                            <button
+                              onClick={() => setRoleConfirm({ userId: u.id, name: u.display_name || u.email || "User", role: "admin", hasRole: isAdmin })}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                isAdmin ? "hover:bg-destructive/10 text-blue-500" : "hover:bg-blue-500/10 text-muted-foreground"
+                              }`}
+                              title={isAdmin ? "Remove Admin" : "Make Admin"}
+                            >
+                              {isAdmin ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
+                            </button>
+                            {isSuperAdmin && (
+                              <button
+                                onClick={() => setRoleConfirm({ userId: u.id, name: u.display_name || u.email || "User", role: "super_admin", hasRole: isSA })}
+                                className={`p-1.5 rounded-lg transition-colors ${
+                                  isSA ? "hover:bg-destructive/10 text-primary" : "hover:bg-primary/10 text-muted-foreground"
+                                }`}
+                                title={isSA ? "Remove Super Admin" : "Make Super Admin"}
+                              >
+                                <Crown className="w-4 h-4" />
+                              </button>
+                            )}
+                          </>
+                        ) : isSelf ? (
+                          <span className="text-[10px] text-muted-foreground">You</span>
+                        ) : !isSuperAdmin ? (
+                          <span className="text-[10px] text-muted-foreground">View only</span>
+                        ) : null}
                       </div>
-                      ) : isSelf ? (
-                        <span className="text-[10px] text-muted-foreground">You</span>
-                      ) : (
-                        <span className="text-[10px] text-muted-foreground">View only</span>
-                      )}
                     </td>
                   </tr>
                 );
@@ -285,6 +296,14 @@ const AdminUsers = () => {
         </div>
       </div>
       <AdminPagination page={page} totalItems={totalCount} pageSize={PAGE_SIZE} onPageChange={setPage} />
+
+      {/* User Activity Drawer */}
+      <UserActivityDrawer
+        open={!!activityDrawer}
+        onClose={() => setActivityDrawer(null)}
+        userId={activityDrawer?.userId || ""}
+        userName={activityDrawer?.name || ""}
+      />
 
       {/* Balance Modal */}
       <AnimatePresence>
