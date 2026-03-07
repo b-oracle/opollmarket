@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { useAdminContext } from "./AdminLayout";
 import { useAuth } from "@/hooks/useAuth";
+import UserActivityDrawer from "@/components/admin/UserActivityDrawer";
 
 interface ProfileRow {
   id: string;
