@@ -169,7 +169,32 @@ const AdminSettings = () => {
           <Card className="border-dashed">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Gift className="w-4 h-4" /> Referral Reward
+                <Zap className="w-4 h-4" /> Quick Trade Settings
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Platform fee deducted from the losing pool in Quick Trade rounds. This is independent of the market prediction fees above.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label htmlFor="quickTradeFee">Quick Trade Fee (%)</Label>
+                <Input
+                  id="quickTradeFee"
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.5}
+                  value={quickTradeFee}
+                  onChange={(e) => setQuickTradeFee(e.target.value)}
+                  placeholder="5"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Current: {quickTradeFeeNum}% · Deducted from losing pool before distributing to winners
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
               </CardTitle>
               <CardDescription className="text-xs">
                 Fixed amount credited to referrer's bonus balance when their referral places their first prediction. Non-withdrawable.
