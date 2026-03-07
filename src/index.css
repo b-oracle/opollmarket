@@ -241,3 +241,9 @@
   background-size: 200% 100%;
   animation: banner-shimmer 6s ease-in-out infinite;
 }
+
+@keyframes flash {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 0; }
+}
