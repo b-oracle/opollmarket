@@ -168,6 +168,13 @@ export type Database = {
           min_withdrawal_amount: number
           nft_buy_url: string | null
           nft_contract_address: string | null
+          qt_enabled_assets: string
+          qt_max_bet: number
+          qt_min_bet: number
+          qt_streak_2x: number
+          qt_streak_3x: number
+          qt_streak_4x: number
+          qt_streak_5x: number
           quick_trade_fee_percent: number
           referral_reward_amount: number
           token_contract_address: string | null
@@ -186,6 +193,13 @@ export type Database = {
           min_withdrawal_amount?: number
           nft_buy_url?: string | null
           nft_contract_address?: string | null
+          qt_enabled_assets?: string
+          qt_max_bet?: number
+          qt_min_bet?: number
+          qt_streak_2x?: number
+          qt_streak_3x?: number
+          qt_streak_4x?: number
+          qt_streak_5x?: number
           quick_trade_fee_percent?: number
           referral_reward_amount?: number
           token_contract_address?: string | null
@@ -204,6 +218,13 @@ export type Database = {
           min_withdrawal_amount?: number
           nft_buy_url?: string | null
           nft_contract_address?: string | null
+          qt_enabled_assets?: string
+          qt_max_bet?: number
+          qt_min_bet?: number
+          qt_streak_2x?: number
+          qt_streak_3x?: number
+          qt_streak_4x?: number
+          qt_streak_5x?: number
           quick_trade_fee_percent?: number
           referral_reward_amount?: number
           token_contract_address?: string | null
