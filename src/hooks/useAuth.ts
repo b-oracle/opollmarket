@@ -8,9 +8,11 @@ interface AuthContextValue {
   session: Session | null;
   loading: boolean;
   displayName: string;
+  isSuperAdmin: boolean;
   isAdmin: boolean;
   isModerator: boolean;
   hasAdminAccess: boolean;
+  canEdit: boolean;
   isEmailVerified: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: any }>;
@@ -23,6 +25,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isModerator, setIsModerator] = useState(false);
   const [profileDisplayName, setProfileDisplayName] = useState<string | null>(null);
@@ -44,16 +47,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const checkRoles = useCallback(async (userId: string, mounted: { current: boolean }) => {
     try {
-      const [{ data: adminData }, { data: modData }] = await Promise.all([
+      const [{ data: superAdminData }, { data: adminData }, { data: modData }] = await Promise.all([
+        supabase.rpc("has_role", { _user_id: userId, _role: "super_admin" as any }),
         supabase.rpc("has_role", { _user_id: userId, _role: "admin" }),
         supabase.rpc("has_role", { _user_id: userId, _role: "moderator" }),
       ]);
       if (mounted.current) {
+        setIsSuperAdmin(!!superAdminData);
         setIsAdmin(!!adminData);
         setIsModerator(!!modData);
       }
     } catch {
       if (mounted.current) {
+        setIsSuperAdmin(false);
         setIsAdmin(false);
         setIsModerator(false);
       }
@@ -73,6 +79,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           lastSessionRef.current = null;
           setSession(null);
           setUser(null);
+          setIsSuperAdmin(false);
           setIsAdmin(false);
           setIsModerator(false);
           setProfileDisplayName(null);
@@ -85,6 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           lastSessionRef.current = null;
           setSession(null);
           setUser(null);
+          setIsSuperAdmin(false);
           setIsAdmin(false);
           setIsModerator(false);
           setProfileDisplayName(null);
@@ -105,6 +113,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
           }, 0);
         } else {
+          setIsSuperAdmin(false);
           setIsAdmin(false);
           setIsModerator(false);
           setProfileDisplayName(null);
