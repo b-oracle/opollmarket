@@ -41,7 +41,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
-  const lineMainSeriesRef = useRef<ISeriesApi<"Area"> | null>(null);
+  const lineMainSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null);
   const maSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const ma14SeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
@@ -160,10 +160,8 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
       candleSeriesRef.current = chart.addSeries(CandlestickSeries, { upColor: "#22c55e", downColor: "#ef4444", borderUpColor: "#22c55e", borderDownColor: "#ef4444", wickUpColor: "#22c55e", wickDownColor: "#ef4444" });
       lineMainSeriesRef.current = null;
     } else {
-      lineMainSeriesRef.current = chart.addSeries(AreaSeries, {
-        lineColor: "hsl(var(--primary))",
-        topColor: isDark ? "hsla(193, 98%, 50%, 0.25)" : "hsla(193, 98%, 50%, 0.15)",
-        bottomColor: isDark ? "hsla(193, 98%, 50%, 0.02)" : "hsla(193, 98%, 50%, 0.01)",
+      lineMainSeriesRef.current = chart.addSeries(LineSeries, {
+        color: "#22c55e",
         lineWidth: 2,
         priceLineVisible: true,
         lastValueVisible: true,
@@ -192,7 +190,14 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     if (chartStyle === "candle" && candleSeriesRef.current) {
       candleSeriesRef.current.setData(candles);
     } else if (chartStyle === "line" && lineMainSeriesRef.current) {
-      const lineData = candles.map((c: any) => ({ time: c.time, value: c.close }));
+      const lineData = candles.map((c: any, i: number) => {
+        const prev = i > 0 ? (candles[i - 1] as any).close : c.close;
+        return {
+          time: c.time,
+          value: c.close,
+          color: c.close >= prev ? "#22c55e" : "#ef4444",
+        };
+      });
       lineMainSeriesRef.current.setData(lineData);
     }
 
