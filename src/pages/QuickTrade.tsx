@@ -992,6 +992,40 @@ export default function QuickTrade() {
                 </div>
               </div>
 
+              {/* Fee breakdown */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center justify-center gap-1.5 mb-3 cursor-help">
+                      <Info className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-[11px] text-muted-foreground">
+                        Platform fee: {(commissionSettings?.admin_fee_percent ?? 2) + (commissionSettings?.creator_fee_percent ?? 3)}% from losing pool
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-[260px] p-3">
+                    <p className="text-xs font-semibold mb-1.5">Fee Breakdown</p>
+                    <div className="space-y-1 text-[11px]">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Admin fee</span>
+                        <span className="font-medium">{commissionSettings?.admin_fee_percent ?? 2}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Creator fee</span>
+                        <span className="font-medium">{commissionSettings?.creator_fee_percent ?? 3}%</span>
+                      </div>
+                      <div className="border-t border-border pt-1 flex justify-between font-semibold">
+                        <span>Total</span>
+                        <span>{(commissionSettings?.admin_fee_percent ?? 2) + (commissionSettings?.creator_fee_percent ?? 3)}%</span>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-2">
+                      Deducted from the losing pool before winnings are distributed. Winners receive their bet back + share of remaining pool.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
               {/* UP / DOWN buttons */}
               <div className="grid grid-cols-2 gap-3">
                 <Button
