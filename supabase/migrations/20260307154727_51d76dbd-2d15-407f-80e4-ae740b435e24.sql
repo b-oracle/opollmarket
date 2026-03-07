@@ -1,0 +1,1 @@
+ALTER TABLE public.commission_settings ADD COLUMN withdrawal_cooldown_minutes integer NOT NULL DEFAULT 5;
