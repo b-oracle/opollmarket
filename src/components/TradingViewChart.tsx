@@ -34,6 +34,8 @@ interface TradingViewChartProps {
   entryPrice?: number | null;
   /** Bet side for coloring the entry line */
   entrySide?: "up" | "down" | null;
+  /** Unix ms timestamp when the active round ends */
+  roundEndTime?: number | null;
 }
 
 const CANDLE_BUCKETS = 60;
@@ -46,6 +48,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   streamingPrice,
   entryPrice,
   entrySide,
+  roundEndTime,
 }, _ref) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -61,6 +64,19 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   const prevStreamingPriceRef = useRef<number | null>(null);
   const pulsingDotRef = useRef<HTMLDivElement>(null);
   const [dotColor, setDotColor] = useState("#22c55e");
+  const [countdown, setCountdown] = useState<number | null>(null);
+
+  // Countdown timer for active round
+  useEffect(() => {
+    if (!roundEndTime) { setCountdown(null); return; }
+    const tick = () => {
+      const left = Math.max(0, Math.floor((roundEndTime - Date.now()) / 1000));
+      setCountdown(left);
+    };
+    tick();
+    const iv = setInterval(tick, 1000);
+    return () => clearInterval(iv);
+  }, [roundEndTime]);
 
   const activeMainSeries = chartStyle === "candle" ? candleSeriesRef : lineMainSeriesRef;
   const { activeTool, setActiveTool, clearDrawings, removeLastDrawing } =
@@ -360,6 +376,28 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
           </div>
         )}
       </div>
+
+      {/* Countdown timer overlay */}
+      {countdown !== null && countdown > 0 && (
+        <div className="absolute top-2 right-2 z-10">
+          <div
+            className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-mono font-bold backdrop-blur-sm border ${
+              countdown <= 10
+                ? "bg-red-500/15 text-red-500 border-red-500/30 animate-pulse"
+                : countdown <= 30
+                  ? "bg-yellow-500/15 text-yellow-500 border-yellow-500/30"
+                  : "bg-muted/60 text-foreground border-border"
+            }`}
+          >
+            <span className="text-[9px]">⏱</span>
+            <span>
+              {countdown >= 60
+                ? `${Math.floor(countdown / 60)}:${String(countdown % 60).padStart(2, "0")}`
+                : `${countdown}s`}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Toolbar */}
       <div className="flex items-center justify-between px-2 py-1">
