@@ -14,16 +14,13 @@ const METAL_MAP: Record<string, string> = {
   XAU: "gold", XAG: "silver", XPT: "platinum", XPD: "palladium",
 };
 
+import { fetchCryptoPrice } from "@/lib/cryptoPriceProvider";
+
 async function fetchPrice(asset: string): Promise<number | null> {
   const cls = getAssetClass(asset);
   try {
     if (cls === "crypto") {
-      const id = ASSET_GECKO_MAP[asset.toUpperCase()];
-      if (!id) return null;
-      const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`);
-      if (!r.ok) return null;
-      const d = await r.json();
-      return d[id]?.usd ?? null;
+      return fetchCryptoPrice(asset);
     }
     if (cls === "commodity") {
       const metal = METAL_MAP[asset];

@@ -39,22 +39,13 @@ const OP_TEXT: Record<string, string> = {
   at_or_below: "drops to or below",
 };
 
+import { fetchCryptoPrice } from "@/lib/cryptoPriceProvider";
+
 async function fetchAssetPrice(asset: string): Promise<number | null> {
   const assetClass = getAssetClass(asset);
   
   if (assetClass === "crypto") {
-    const geckoId = ASSET_GECKO_MAP[asset.toUpperCase()];
-    if (!geckoId) return null;
-    try {
-      const resp = await fetch(
-        `https://api.coingecko.com/api/v3/simple/price?ids=${geckoId}&vs_currencies=usd`
-      );
-      if (!resp.ok) return null;
-      const data = await resp.json();
-      return data[geckoId]?.usd ?? null;
-    } catch {
-      return null;
-    }
+    return fetchCryptoPrice(asset);
   }
   
   if (assetClass === "commodity") {
