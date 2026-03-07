@@ -799,6 +799,48 @@ export default function QuickTrade() {
                   </button>
                 </div>
               </div>
+              <div className="relative">
+                {/* Overlays for native charts (area/candle) */}
+                {chartType !== "tv" && !historyLoading && (
+                  <>
+                    {/* Live badge + P&L */}
+                    <div className="absolute top-1 left-1 z-10 flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                        </span>
+                        <span className="text-[9px] font-bold text-green-500 uppercase tracking-wider">Live</span>
+                      </div>
+                      {userBet && activeRound?.open_price && currentPrice != null && (() => {
+                        const entry = Number(activeRound.open_price);
+                        const pnl = userBet.side === "down"
+                          ? ((entry - currentPrice) / entry) * 100
+                          : ((currentPrice - entry) / entry) * 100;
+                        const pos = pnl >= 0;
+                        return (
+                          <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold backdrop-blur-sm border ${pos ? "bg-green-500/15 text-green-500 border-green-500/30" : "bg-red-500/15 text-red-500 border-red-500/30"}`}>
+                            <span>{pos ? "▲" : "▼"}</span>
+                            <span>{pos ? "+" : ""}{pnl.toFixed(2)}%</span>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                    {/* Countdown timer */}
+                    {activeRound && (() => {
+                      const isUrgent = timeLeft <= 10;
+                      const isWarning = timeLeft <= 30 && timeLeft > 10;
+                      return timeLeft > 0 ? (
+                        <div className="absolute top-1 right-1 z-10">
+                          <div className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono font-bold backdrop-blur-sm border ${isUrgent ? "bg-red-500/15 text-red-500 border-red-500/30 animate-pulse" : isWarning ? "bg-yellow-500/15 text-yellow-500 border-yellow-500/30" : "bg-muted/60 text-foreground border-border"}`}>
+                            <span className="text-[9px]">⏱</span>
+                            <span>{timeLeft >= 60 ? `${Math.floor(timeLeft / 60)}:${String(timeLeft % 60).padStart(2, "0")}` : `${timeLeft}s`}</span>
+                          </div>
+                        </div>
+                      ) : null;
+                    })()}
+                  </>
+                )}
               {historyLoading ? (
                 <div className="relative h-[100px] overflow-hidden rounded-lg bg-muted/30">
                   {/* Skeleton wave lines */}
@@ -1002,6 +1044,7 @@ export default function QuickTrade() {
                   </>
                 );
               })()}
+              </div>
             </div>
 
             {/* Share button - bottom left */}
