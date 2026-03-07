@@ -222,7 +222,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
         throw new Error(errorMsg);
       }
       queryClient.invalidateQueries({ queryKey: ["balance"] });
-      setStep("success");
+      queryClient.invalidateQueries({ queryKey: ["eligible_withdrawal"] });
     } catch (err: any) {
       setErrorMsg(err.message || "Something went wrong");
       setStep("error");
