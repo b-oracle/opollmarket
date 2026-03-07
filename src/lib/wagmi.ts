@@ -18,8 +18,8 @@ createAppKit({
   metadata: {
     name: 'OPOLL',
     description: 'Social Prediction Market',
-    url: 'https://opollmarket.lovable.app',
-    icons: ['https://opollmarket.lovable.app/logo.png'],
+    url: 'https://opoll.org',
+    icons: ['https://opoll.org/logo.png'],
   },
   themeMode: 'dark',
 });

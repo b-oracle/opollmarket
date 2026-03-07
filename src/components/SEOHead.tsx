@@ -9,10 +9,10 @@ interface SEOHeadProps {
   noindex?: boolean;
 }
 
-const BASE_URL = "https://opollmarket.lovable.app";
+const BASE_URL = "https://opoll.org";
 const DEFAULT_TITLE = "OPoll Market | The World's First Web + Telegram + WhatsApp prediction market protocol.";
 const DEFAULT_DESC = "Predict the future, earn from it. Trade on real-world events across Web, Telegram & WhatsApp with OPoll Market.";
-const DEFAULT_IMAGE = "https://opollmarket.lovable.app/og-image.png";
+const DEFAULT_IMAGE = "https://opoll.org/og-image.png";
 
 const SEOHead = ({
   title,
