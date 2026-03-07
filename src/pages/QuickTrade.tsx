@@ -207,7 +207,14 @@ export default function QuickTrade() {
     setChartTimeframeRaw(tf);
     try { localStorage.setItem("qt-chart-tf", tf); } catch {}
   }, []);
-  const [chartType, setChartType] = useState<"area" | "candle" | "tv">("area");
+  const validChartTypes = ["area", "candle", "tv"] as const;
+  const savedCT = typeof window !== "undefined" ? localStorage.getItem("qt-chart-type") : null;
+  const initialCT = (savedCT && (validChartTypes as readonly string[]).includes(savedCT) ? savedCT : "area") as "area" | "candle" | "tv";
+  const [chartType, setChartTypeRaw] = useState<"area" | "candle" | "tv">(initialCT);
+  const setChartType = useCallback((ct: "area" | "candle" | "tv") => {
+    setChartTypeRaw(ct);
+    try { localStorage.setItem("qt-chart-type", ct); } catch {}
+  }, []);
   const chartMs = CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.ms;
 
   const [priceHistory, setPriceHistory] = useState<{ time: string; price: number; ts: number }[]>([]);
