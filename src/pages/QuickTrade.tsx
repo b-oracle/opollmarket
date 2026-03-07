@@ -850,18 +850,17 @@ export default function QuickTrade() {
                   const yMax = Math.max(...allHighs);
                   const padding = (yMax - yMin) * 0.1 || 1;
 
-                  // Custom candlestick shape
-                  const CandlestickShape = (props: any) => {
+                  // Custom candlestick shape render function (not a component to avoid forwardRef warning)
+                  const renderCandlestick = (props: any) => {
                     const { x, y, width, height, payload } = props;
                     if (!payload) return null;
                     const isBullish = payload.close >= payload.open;
                     const fill = isBullish ? upColor : downColor;
                     const wickX = x + width / 2;
 
-                    // Calculate wick positions in pixel space
                     const yScale = (val: number) => {
                       const domain = [yMin - padding, yMax + padding];
-                      const range = [120 - 4, 4]; // chart height minus margins
+                      const range = [120 - 4, 4];
                       return range[0] + ((val - domain[0]) / (domain[1] - domain[0])) * (range[1] - range[0]);
                     };
                     const wickTop = yScale(payload.high);
@@ -869,9 +868,7 @@ export default function QuickTrade() {
 
                     return (
                       <g>
-                        {/* Wick */}
                         <line x1={wickX} y1={wickTop} x2={wickX} y2={wickBottom} stroke={fill} strokeWidth={1} />
-                        {/* Body */}
                         <rect x={x + 1} y={y} width={Math.max(width - 2, 2)} height={Math.max(height, 1)} fill={fill} rx={1} />
                       </g>
                     );
