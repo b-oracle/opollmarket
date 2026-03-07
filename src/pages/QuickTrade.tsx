@@ -138,6 +138,14 @@ export default function QuickTrade() {
     return filtered.length > 0 ? filtered : ALL_ASSETS;
   }, [commissionSettings?.qt_enabled_assets]);
 
+  // Filter timeframes based on admin settings
+  const TIMEFRAMES = useMemo(() => {
+    if (!commissionSettings?.qt_enabled_timeframes) return ALL_TIMEFRAMES;
+    const enabled = new Set(commissionSettings.qt_enabled_timeframes.split(",").filter(Boolean).map(Number));
+    const filtered = ALL_TIMEFRAMES.filter(t => enabled.has(t.seconds));
+    return filtered.length > 0 ? filtered : ALL_TIMEFRAMES;
+  }, [commissionSettings?.qt_enabled_timeframes]);
+
   const qtMinBet = commissionSettings?.qt_min_bet ?? 1;
   const qtMaxBet = commissionSettings?.qt_max_bet ?? 500;
 
