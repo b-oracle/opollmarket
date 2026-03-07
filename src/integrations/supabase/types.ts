@@ -461,6 +461,9 @@ export type Database = {
           initial_liquidity: number
           liquidity: number
           market_type: string
+          moderator_decision: string | null
+          moderator_id: string | null
+          moderator_reviewed_at: string | null
           no_price: number
           participants: number
           pinned_trending: boolean
@@ -499,6 +502,9 @@ export type Database = {
           initial_liquidity?: number
           liquidity?: number
           market_type?: string
+          moderator_decision?: string | null
+          moderator_id?: string | null
+          moderator_reviewed_at?: string | null
           no_price?: number
           participants?: number
           pinned_trending?: boolean
@@ -537,6 +543,9 @@ export type Database = {
           initial_liquidity?: number
           liquidity?: number
           market_type?: string
+          moderator_decision?: string | null
+          moderator_id?: string | null
+          moderator_reviewed_at?: string | null
           no_price?: number
           participants?: number
           pinned_trending?: boolean
