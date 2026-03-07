@@ -87,6 +87,11 @@ const AdminMarkets = () => {
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [cancellingPendingId, setCancellingPendingId] = useState<string | null>(null);
+  const [moderatorReviewingId, setModeratorReviewingId] = useState<string | null>(null);
+  const [moderatorNameMap, setModeratorNameMap] = useState<Map<string, string>>(new Map());
+
+  const canFinalApprove = isSuperAdmin || isAdmin;
+  const isModeratorOnly = isModerator && !isSuperAdmin && !isAdmin;
 
   const fetchMarkets = async () => {
     let query = supabase
