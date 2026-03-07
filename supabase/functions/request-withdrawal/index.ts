@@ -186,40 +186,60 @@ Deno.serve(async (req) => {
       const estimate = await estimateRes.json();
       const cryptoAmount = estimate.estimated_amount;
 
-      // Step 3: Create payout using JWT token
-      const payoutRes = await fetch("https://api.nowpayments.io/v1/payout", {
-        method: "POST",
-        headers: {
-          "x-api-key": apiKey,
-          "Authorization": `Bearer ${jwtToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          withdrawals: [
-            {
-              address: wallet_address.trim(),
-              currency: payCurrency,
-              amount: cryptoAmount,
-              ipn_callback_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/nowpayments-webhook`,
+      // Step 3: Create payout using JWT token (with retry)
+      const maxPayoutRetries = 3;
+      for (let attempt = 1; attempt <= maxPayoutRetries; attempt++) {
+        try {
+          const payoutRes = await fetch("https://api.nowpayments.io/v1/payout", {
+            method: "POST",
+            headers: {
+              "x-api-key": apiKey,
+              "Authorization": `Bearer ${jwtToken}`,
+              "Content-Type": "application/json",
             },
-          ],
-        }),
-      });
+            body: JSON.stringify({
+              withdrawals: [
+                {
+                  address: wallet_address.trim(),
+                  currency: payCurrency,
+                  amount: cryptoAmount,
+                  ipn_callback_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/nowpayments-webhook`,
+                },
+              ],
+            }),
+          });
 
-      if (payoutRes.ok) {
-        const payoutData = await payoutRes.json();
-        // The payout API returns an array of withdrawals
-        payoutId = payoutData.withdrawals?.[0]?.id || payoutData.id;
-        payoutSuccess = true;
-      } else {
-        const errText = await payoutRes.text();
-        console.error("Payout API error:", errText);
-        payoutError = errText;
+          if (payoutRes.ok) {
+            const payoutData = await payoutRes.json();
+            payoutId = payoutData.withdrawals?.[0]?.id || payoutData.id;
+            payoutSuccess = true;
+            break;
+          }
+
+          const errText = await payoutRes.text();
+          payoutError = errText;
+
+          if ((payoutRes.status >= 500 || payoutRes.status === 429) && attempt < maxPayoutRetries) {
+            const delay = Math.min(1000 * Math.pow(2, attempt - 1), 4000);
+            console.warn(`Payout attempt ${attempt} failed (${payoutRes.status}), retrying in ${delay}ms...`);
+            await new Promise((r) => setTimeout(r, delay));
+            continue;
+          }
+
+          console.error("Payout API error:", errText);
+          break;
+        } catch (err) {
+          payoutError = String(err);
+          if (attempt < maxPayoutRetries) {
+            const delay = Math.min(1000 * Math.pow(2, attempt - 1), 4000);
+            console.warn(`Payout attempt ${attempt} error: ${payoutError}, retrying in ${delay}ms...`);
+            await new Promise((r) => setTimeout(r, delay));
+            continue;
+          }
+          console.error("Payout request failed:", err);
+          break;
+        }
       }
-    } catch (err) {
-      console.error("Payout request failed:", err);
-      payoutError = String(err);
-    }
 
     if (!payoutSuccess) {
       // Refund balance since payout failed
