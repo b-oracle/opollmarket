@@ -265,7 +265,8 @@ const AdminMarkets = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h2 className="text-xl sm:text-2xl font-bold">Markets ({markets.length})</h2>
         <div className="flex items-center gap-2 flex-wrap">
-          <BulkCSVImport onComplete={fetchMarkets} />
+          {canEdit && <BulkCSVImport onComplete={fetchMarkets} />}
+          {canEdit && (
           <button
             onClick={() => navigate("/admin/create-market")}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all active:scale-95"
