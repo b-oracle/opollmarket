@@ -615,6 +615,7 @@ const AdminMarkets = () => {
                                 <Pin className="w-3 h-3 text-muted-foreground" />
                                 <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Pin as Trending</label>
                               </div>
+                              {canEdit ? (
                               <button
                                 onClick={async () => {
                                   const newVal = !m.pinned_trending;
@@ -631,6 +632,11 @@ const AdminMarkets = () => {
                               >
                                 {m.pinned_trending ? "📌 Pinned" : "Pin"}
                               </button>
+                              ) : (
+                                <span className={`px-3 py-1 rounded-lg text-[10px] font-bold ${m.pinned_trending ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                                  {m.pinned_trending ? "📌 Pinned" : "Not Pinned"}
+                                </span>
+                              )}
                             </div>
 
                             {/* Trending Score Breakdown */}
