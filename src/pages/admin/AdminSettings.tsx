@@ -33,6 +33,7 @@ const AdminSettings = () => {
   const [minTokenBalance, setMinTokenBalance] = useState("");
   const [minNftBalance, setMinNftBalance] = useState("");
   const [minWithdrawalAmount, setMinWithdrawalAmount] = useState("");
+  const [withdrawalCooldown, setWithdrawalCooldown] = useState("");
   const [exitFee, setExitFee] = useState("");
   const [quickTradeFee, setQuickTradeFee] = useState("");
   const [qtMinBet, setQtMinBet] = useState("");
@@ -62,6 +63,7 @@ const AdminSettings = () => {
         setMinTokenBalance(String(d.min_token_balance ?? 10000000));
         setMinNftBalance(String(d.min_nft_balance ?? 1));
         setMinWithdrawalAmount(String(d.min_withdrawal_amount ?? 5));
+        setWithdrawalCooldown(String(d.withdrawal_cooldown_minutes ?? 5));
         setExitFee(String(d.exit_fee_percent ?? 5));
         setQuickTradeFee(String(d.quick_trade_fee_percent ?? 5));
         setQtMinBet(String(d.qt_min_bet ?? 1));
@@ -88,6 +90,7 @@ const AdminSettings = () => {
   const tokenNum = parseFloat(minTokenBalance) || 0;
   const nftNum = parseInt(minNftBalance) || 0;
   const minWithdrawNum = parseFloat(minWithdrawalAmount) || 0;
+  const withdrawalCooldownNum = parseInt(withdrawalCooldown) || 5;
   const exitFeeNum = parseFloat(exitFee) || 0;
   const quickTradeFeeNum = parseFloat(quickTradeFee) || 0;
   const qtMinBetNum = parseFloat(qtMinBet) || 0;
@@ -101,7 +104,7 @@ const AdminSettings = () => {
   const isValid =
     adminNum >= 0 && creatorNum >= 0 && totalFee <= 100 &&
     referralNum >= 0 && tokenNum >= 0 && nftNum >= 0 &&
-    minWithdrawNum >= 0 && exitFeeNum >= 0 && exitFeeNum <= 100 &&
+    minWithdrawNum >= 0 && withdrawalCooldownNum >= 0 && exitFeeNum >= 0 && exitFeeNum <= 100 &&
     quickTradeFeeNum >= 0 && quickTradeFeeNum <= 100 &&
     qtMinBetNum >= 0 && qtMaxBetNum > 0 && qtMaxBetNum >= qtMinBetNum &&
     qtStreak2Num >= 1 && qtStreak3Num >= 1 && qtStreak4Num >= 1 && qtStreak5Num >= 1 &&
@@ -150,6 +153,7 @@ const AdminSettings = () => {
           min_token_balance: tokenNum,
           min_nft_balance: nftNum,
           min_withdrawal_amount: minWithdrawNum,
+          withdrawal_cooldown_minutes: withdrawalCooldownNum,
           exit_fee_percent: exitFeeNum,
           quick_trade_fee_percent: quickTradeFeeNum,
           qt_min_bet: qtMinBetNum,
@@ -392,11 +396,16 @@ const AdminSettings = () => {
                 <CardTitle className="text-sm flex items-center gap-2"><ArrowUpFromLine className="w-4 h-4" /> Withdrawal Settings</CardTitle>
                 <CardDescription className="text-xs">Minimum amount users must withdraw. Set to 0 for any amount.</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="minWithdrawalAmount">Minimum Withdrawal ($)</Label>
                   <Input id="minWithdrawalAmount" type="number" min={0} step={1} value={minWithdrawalAmount} onChange={(e) => setMinWithdrawalAmount(e.target.value)} placeholder="5" />
                   <p className="text-[10px] text-muted-foreground">Current: ${minWithdrawNum.toFixed(2)}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="withdrawalCooldown">Cooldown Between Withdrawals (minutes)</Label>
+                  <Input id="withdrawalCooldown" type="number" min={0} step={1} value={withdrawalCooldown} onChange={(e) => setWithdrawalCooldown(e.target.value)} placeholder="5" />
+                  <p className="text-[10px] text-muted-foreground">Current: {withdrawalCooldownNum} minute{withdrawalCooldownNum !== 1 ? "s" : ""}. Set to 0 to disable.</p>
                 </div>
               </CardContent>
             </Card>
