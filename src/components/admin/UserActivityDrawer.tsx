@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Loader2, Receipt, BarChart3, MessageSquare, Bookmark, Gift, TrendingUp, TrendingDown,
-  ArrowUpFromLine, ArrowDownToLine, Zap
+  ArrowUpFromLine, ArrowDownToLine, Zap, Banknote
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -14,12 +14,13 @@ interface UserActivityDrawerProps {
   userName: string;
 }
 
-type Tab = "transactions" | "positions" | "quick_bets" | "comments" | "bookmarks" | "referrals";
+type Tab = "transactions" | "positions" | "quick_bets" | "comments" | "bookmarks" | "referrals" | "withdrawals";
 
 const TABS: { key: Tab; label: string; icon: any }[] = [
   { key: "transactions", label: "Transactions", icon: Receipt },
   { key: "positions", label: "Positions", icon: BarChart3 },
   { key: "quick_bets", label: "Quick Trades", icon: Zap },
+  { key: "withdrawals", label: "Withdrawals", icon: Banknote },
   { key: "comments", label: "Comments", icon: MessageSquare },
   { key: "bookmarks", label: "Bookmarks", icon: Bookmark },
   { key: "referrals", label: "Referrals", icon: Gift },
@@ -104,6 +105,16 @@ const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDra
           .order("created_at", { ascending: false })
           .limit(50);
         result = refs || [];
+        break;
+      }
+      case "withdrawals": {
+        const { data: wd } = await supabase
+          .from("withdrawal_requests")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(50);
+        result = wd || [];
         break;
       }
     }
@@ -260,6 +271,30 @@ const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDra
                 <p className="text-sm font-bold text-neon-yes shrink-0">+${Number(r.amount).toLocaleString()}</p>
               </div>
             ))}
+          </div>
+        );
+
+      case "withdrawals":
+        return (
+          <div className="space-y-2">
+            {data.map((w: any) => {
+              const statusCls = getStatusCls(w.status === "approved" ? "confirmed" : w.status === "rejected" ? "cancelled" : w.status);
+              return (
+                <div key={w.id} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border/50">
+                  <div className={`p-2 rounded-lg bg-muted text-amber-500`}><ArrowUpFromLine className="w-4 h-4" /></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold uppercase">{w.crypto_currency}</span>
+                      <span className={`text-[10px] font-semibold uppercase ${statusCls}`}>{w.status}</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">{w.wallet_address}</p>
+                    {w.admin_note && <p className="text-[10px] text-muted-foreground mt-0.5">Note: {w.admin_note}</p>}
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{formatDate(w.created_at)}</p>
+                  </div>
+                  <p className="text-sm font-bold shrink-0">${Number(w.amount).toLocaleString()}</p>
+                </div>
+              );
+            })}
           </div>
         );
 
