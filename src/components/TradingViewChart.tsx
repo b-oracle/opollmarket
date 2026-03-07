@@ -34,6 +34,8 @@ interface TradingViewChartProps {
   entryPrice?: number | null;
   /** Bet side for coloring the entry line */
   entrySide?: "up" | "down" | null;
+  /** Unix ms timestamp when the active round ends */
+  roundEndTime?: number | null;
 }
 
 const CANDLE_BUCKETS = 60;
