@@ -212,7 +212,7 @@ const Index = () => {
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => navigate("/create")}
-                    className="px-8 py-3 rounded-xl font-bold text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+                    className="px-8 py-3 rounded-xl font-bold text-sm border border-border bg-muted/50 text-foreground hover:bg-muted transition-all"
                   >
                     + Create Market
                   </motion.button>
