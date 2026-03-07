@@ -48,7 +48,7 @@ const TopBar = () => {
       <div className="flex items-center justify-between h-14 max-w-lg md:max-w-full mx-auto px-4">
         <div className="flex items-center gap-1.5 cursor-pointer md:hidden" onClick={() => navigate("/")}>
           <img src={logo} alt="OPOLL" className="h-8 w-8" />
-          <span className="text-2xl font-bold tracking-tight text-primary leading-none">Poll</span>
+          <span className="text-[28px] font-bold tracking-tight text-primary leading-[32px] -ml-0.5">Poll</span>
         </div>
         <div className="hidden md:block" />
         <div className="flex items-center gap-2">
