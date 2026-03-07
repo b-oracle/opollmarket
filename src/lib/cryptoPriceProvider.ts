@@ -187,7 +187,7 @@ export async function fetchCryptoHistory(
     try {
       const prices = await fn();
       if (prices && prices.length > 0) {
-        rawCache.set(sym, { prices, fetchedAt: Date.now() });
+        rawCache.set(cacheKey, { prices, fetchedAt: Date.now() });
         return prices;
       }
     } catch {
