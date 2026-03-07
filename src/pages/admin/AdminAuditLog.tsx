@@ -39,6 +39,7 @@ const actionConfig: Record<string, { label: string; verb: string; icon: typeof S
   withdrawal_approved: { label: "Withdrawal Approved", verb: "approved withdrawal", icon: ArrowUpFromLine, colorClass: "text-emerald-400 bg-emerald-400/10" },
   withdrawal_rejected: { label: "Withdrawal Rejected", verb: "rejected withdrawal", icon: ArrowUpFromLine, colorClass: "text-destructive bg-destructive/10" },
   balance_adjusted: { label: "Balance Adjusted", verb: "adjusted balance for", icon: DollarSign, colorClass: "text-blue-400 bg-blue-400/10" },
+  settings_updated: { label: "Settings Updated", verb: "updated platform settings", icon: Pencil, colorClass: "text-blue-400 bg-blue-400/10" },
 };
 
 const fallbackConfig = { label: "Action", verb: "performed action on", icon: History, colorClass: "text-muted-foreground bg-muted" };
@@ -136,6 +137,24 @@ const AdminAuditLog = () => {
           <span className="font-semibold">${Math.abs(amt).toLocaleString()}</span>{" "}
           <span className="text-muted-foreground">to</span>{" "}
           <span className="font-semibold">{d.user_name || log.target_name}</span>
+        </>
+      );
+    }
+
+    if (log.action === "settings_updated") {
+      const changes: string[] = [];
+      if (d.admin_fee_percent !== undefined) changes.push(`Admin Fee: ${d.admin_fee_percent}%`);
+      if (d.creator_fee_percent !== undefined) changes.push(`Creator Fee: ${d.creator_fee_percent}%`);
+      if (d.exit_fee_percent !== undefined) changes.push(`Exit Fee: ${d.exit_fee_percent}%`);
+      if (d.min_withdrawal_amount !== undefined) changes.push(`Min Withdrawal: $${d.min_withdrawal_amount}`);
+      if (d.withdrawal_cooldown_minutes !== undefined) changes.push(`Cooldown: ${d.withdrawal_cooldown_minutes}m`);
+      if (d.withdrawal_multiplier !== undefined) changes.push(`Multiplier: ${d.withdrawal_multiplier}×`);
+      return (
+        <>
+          <span className="text-muted-foreground">updated platform settings</span>
+          {changes.length > 0 && (
+            <span className="text-muted-foreground text-xs ml-1">— {changes.join(", ")}</span>
+          )}
         </>
       );
     }
