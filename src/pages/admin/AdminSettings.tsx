@@ -70,6 +70,8 @@ const AdminSettings = () => {
         setQtStreak5(String(d.qt_streak_5x ?? 1.25));
         const assets = String(d.qt_enabled_assets ?? "BTC,ETH,BNB,SOL,XRP,DOGE");
         setQtEnabledAssets(new Set(assets.split(",").filter(Boolean)));
+        const timeframes = String(d.qt_enabled_timeframes ?? "60,180,300,900");
+        setQtEnabledTimeframes(new Set(timeframes.split(",").filter(Boolean).map(Number)));
         setSettingsId(d.id);
       }
       if (error) console.error(error);
@@ -101,7 +103,20 @@ const AdminSettings = () => {
     quickTradeFeeNum >= 0 && quickTradeFeeNum <= 100 &&
     qtMinBetNum >= 0 && qtMaxBetNum > 0 && qtMaxBetNum >= qtMinBetNum &&
     qtStreak2Num >= 1 && qtStreak3Num >= 1 && qtStreak4Num >= 1 && qtStreak5Num >= 1 &&
-    qtEnabledAssets.size > 0;
+    qtEnabledAssets.size > 0 && qtEnabledTimeframes.size > 0;
+
+  const toggleTimeframe = (seconds: number) => {
+    setQtEnabledTimeframes(prev => {
+      const next = new Set(prev);
+      if (next.has(seconds)) {
+        if (next.size <= 1) return next;
+        next.delete(seconds);
+      } else {
+        next.add(seconds);
+      }
+      return next;
+    });
+  };
 
   const toggleAsset = (symbol: string) => {
     setQtEnabledAssets(prev => {
@@ -142,6 +157,7 @@ const AdminSettings = () => {
           qt_streak_4x: qtStreak4Num,
           qt_streak_5x: qtStreak5Num,
           qt_enabled_assets: Array.from(qtEnabledAssets).join(","),
+          qt_enabled_timeframes: Array.from(qtEnabledTimeframes).join(","),
           updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
