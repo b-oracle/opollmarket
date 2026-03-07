@@ -99,6 +99,19 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
     enabled: !!user,
   });
 
+  const { data: cooldownMinutes } = useQuery({
+    queryKey: ["withdrawal_cooldown"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("commission_settings")
+        .select("withdrawal_cooldown_minutes")
+        .limit(1)
+        .single();
+      return data?.withdrawal_cooldown_minutes ?? 5;
+    },
+    enabled: tab === "withdraw",
+  });
+
   const { data: eligibleWithdrawal } = useQuery({
     queryKey: ["eligible_withdrawal", user?.id],
     queryFn: async () => {
