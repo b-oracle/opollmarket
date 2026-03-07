@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
 
     const totalWithdrawn = (withdrawnSum || []).reduce((sum: number, r: any) => sum + Number(r.amount), 0);
 
-    const withdrawalMultiplier = settings?.withdrawal_multiplier ?? 2;
+    const withdrawalMultiplier = Math.max(1, Number(settings?.withdrawal_multiplier) || 2);
     const maxEligible = Math.max(0, (withdrawalMultiplier * totalDeposits) - totalWithdrawn);
 
     if (amount > maxEligible) {
