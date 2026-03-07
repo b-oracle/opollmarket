@@ -24,7 +24,7 @@ const navItems: NavItem[] = [
   { to: "/admin/boosts", label: "Boosts", icon: Zap, roles: ["super_admin", "admin"] },
   { to: "/admin/moderation", label: "Moderation", icon: ShieldAlert, roles: ["super_admin", "admin", "moderator"] },
   { to: "/admin/comments", label: "Comments", icon: MessageSquare },
-  { to: "/admin/users", label: "Users", icon: Users, roles: ["super_admin", "admin"] },
+  { to: "/admin/users", label: "Users", icon: Users, roles: ["super_admin"] },
   { to: "/admin/commissions", label: "Commissions", icon: Coins, roles: ["super_admin", "admin"] },
   { to: "/admin/settings", label: "Settings", icon: Settings, roles: ["super_admin"] },
   { to: "/admin/contracts", label: "Smart Contracts", icon: FileCode2, roles: ["super_admin"] },
