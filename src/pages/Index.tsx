@@ -134,7 +134,7 @@ const Index = () => {
 
   return (
     <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
-      <SEOHead title="Home" description="Swipe through markets. Predict. Win big. Trade on real-world events with OPOLL." path="/" />
+      <SEOHead description="Predict the future, earn from it. Trade on real-world events across Web, Telegram & WhatsApp with OPoll Market." path="/" />
       <TopBar />
       <div className="max-w-lg md:max-w-4xl xl:max-w-6xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
         {/* Mobile Hero */}
