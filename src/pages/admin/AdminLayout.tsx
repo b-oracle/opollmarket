@@ -179,4 +179,7 @@ const AdminLayout = () => {
   );
 };
 
+export type AdminOutletContext = { canEdit: boolean };
+export const useAdminContext = () => useOutletContext<AdminOutletContext>();
+
 export default AdminLayout;
