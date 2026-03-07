@@ -168,6 +168,7 @@ export default function QuickTrade() {
   const [recentRounds, setRecentRounds] = useState<Round[]>([]);
   const [historyPage, setHistoryPage] = useState(0);
   const [historyTotal, setHistoryTotal] = useState(0);
+  const [resolveFlash, setResolveFlash] = useState<"win" | "lose" | null>(null);
   const HISTORY_PER_PAGE = 5;
   const [poolUp, setPoolUp] = useState(0);
   const [poolDown, setPoolDown] = useState(0);
@@ -523,10 +524,10 @@ export default function QuickTrade() {
         // Haptic + confetti on round resolution
         if (payload.eventType === "UPDATE" && (payload.new as any)?.status === "resolved") {
           haptic("heavy");
+          const resolvedResult = (payload.new as any)?.result;
 
           // Check if user won this round
           if (user) {
-            const resolvedResult = (payload.new as any)?.result;
             const { data: myBets } = await supabase
               .from("quick_bets")
               .select("side")
@@ -534,11 +535,23 @@ export default function QuickTrade() {
               .eq("user_id", user.id)
               .limit(1);
 
-            if (myBets && myBets.length > 0 && myBets[0].side === resolvedResult) {
-              fireWinConfetti();
-              haptic("success");
-              toast({ title: "You won! 🎉", description: `The round resolved ${resolvedResult?.toUpperCase()}` });
+            if (myBets && myBets.length > 0) {
+              const won = myBets[0].side === resolvedResult;
+              setResolveFlash(won ? "win" : "lose");
+              setTimeout(() => setResolveFlash(null), 1500);
+              if (won) {
+                fireWinConfetti();
+                haptic("success");
+                toast({ title: "You won! 🎉", description: `The round resolved ${resolvedResult?.toUpperCase()}` });
+              }
+            } else {
+              // No bet placed, still flash neutral
+              setResolveFlash(resolvedResult === "up" ? "win" : "lose");
+              setTimeout(() => setResolveFlash(null), 1500);
             }
+          } else {
+            setResolveFlash(resolvedResult === "up" ? "win" : "lose");
+            setTimeout(() => setResolveFlash(null), 1500);
           }
         }
       })
@@ -799,7 +812,17 @@ export default function QuickTrade() {
                   </button>
                 </div>
               </div>
-              <div className="relative">
+              <div className="relative overflow-hidden">
+                {/* Resolution flash/glow overlay */}
+                {resolveFlash && (
+                  <div
+                    className={`absolute inset-0 z-20 pointer-events-none rounded-lg animate-[flash_1.5s_ease-out_forwards] ${
+                      resolveFlash === "win"
+                        ? "bg-green-500/20 shadow-[inset_0_0_40px_rgba(34,197,94,0.4)]"
+                        : "bg-red-500/20 shadow-[inset_0_0_40px_rgba(239,68,68,0.4)]"
+                    }`}
+                  />
+                )}
                 {/* Overlays for native charts (area/candle) */}
                 {chartType !== "tv" && !historyLoading && (
                   <>
@@ -873,6 +896,7 @@ export default function QuickTrade() {
                   entryPrice={userBet && activeRound?.open_price ? Number(activeRound.open_price) : null}
                   entrySide={userBet ? (userBet.side as "up" | "down") : null}
                   roundEndTime={activeRound ? new Date(activeRound.created_at).getTime() + activeRound.duration_seconds * 1000 : null}
+                  resolveFlash={resolveFlash}
                 />
               ) : (() => {
                 const cutoff = Date.now() - chartMs;
