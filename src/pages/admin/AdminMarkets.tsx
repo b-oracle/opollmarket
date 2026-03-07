@@ -168,7 +168,7 @@ const AdminMarkets = () => {
     setModeratorReviewingId(null);
   };
 
-
+  const handleApprove = async (id: string) => {
     setApprovingId(id);
     const market = [...markets, ...pendingMarkets].find(m => m.id === id);
     const { error } = await supabase.from("markets").update({ status: "active" }).eq("id", id);
