@@ -227,43 +227,42 @@ export default function QuickTrade() {
   const priceHistoryRef = useRef(priceHistory);
   priceHistoryRef.current = priceHistory;
 
-  // In-memory cache for price history per asset+timeframe
-  const priceHistoryCacheRef = useRef<Map<string, { data: { time: string; price: number; ts: number }[]; fetchedAt: number }>>(new Map());
-  const CACHE_TTL = 30_000; // 30s before background refresh
-
-  // Load historical price data when asset or chart timeframe changes
+  // Load raw price data once per asset, then filter by timeframe client-side
   const [historyLoading, setHistoryLoading] = useState(false);
+  const rawDataRef = useRef<Map<string, [number, number][]>>(new Map());
+
+  // Fetch raw data when asset changes
   useEffect(() => {
     let cancelled = false;
-    const cacheKey = `${selectedAsset.geckoId}_${chartMs}`;
-    const cached = priceHistoryCacheRef.current.get(cacheKey);
-    const now = Date.now();
+    const geckoId = selectedAsset.geckoId;
 
-    // If we have cached data, use it immediately (no blank screen)
-    if (cached && cached.data.length > 0) {
-      setPriceHistory(cached.data);
-      // If cache is fresh enough, skip network call
-      if (now - cached.fetchedAt < CACHE_TTL) {
-        setHistoryLoading(false);
-        return;
-      }
-      // Stale cache: show cached data but refresh in background
+    // Use cached raw data immediately if available
+    const cachedRaw = rawDataRef.current.get(geckoId);
+    if (cachedRaw && cachedRaw.length > 0) {
+      setPriceHistory(filterPriceData(cachedRaw, chartMs));
       setHistoryLoading(false);
     } else {
-      setPriceHistory([]);
       setHistoryLoading(true);
     }
 
     (async () => {
-      const data = await fetchPriceHistory(selectedAsset.geckoId, chartMs);
-      if (!cancelled && data.length > 0) {
-        setPriceHistory(data);
-        priceHistoryCacheRef.current.set(cacheKey, { data, fetchedAt: Date.now() });
+      const raw = await fetchRawPriceData(geckoId);
+      if (!cancelled && raw.length > 0) {
+        rawDataRef.current.set(geckoId, raw);
+        setPriceHistory(filterPriceData(raw, chartMs));
       }
       if (!cancelled) setHistoryLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [selectedAsset.geckoId, chartMs]);
+  }, [selectedAsset.geckoId]);
+
+  // When chart timeframe changes, just re-filter existing raw data (instant)
+  useEffect(() => {
+    const raw = rawDataRef.current.get(selectedAsset.geckoId);
+    if (raw && raw.length > 0) {
+      setPriceHistory(filterPriceData(raw, chartMs));
+    }
+  }, [chartMs, selectedAsset.geckoId]);
 
   // ── Fetch price ──
   useEffect(() => {
