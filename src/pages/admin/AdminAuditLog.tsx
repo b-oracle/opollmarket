@@ -149,6 +149,16 @@ const AdminAuditLog = () => {
       if (d.min_withdrawal_amount !== undefined) changes.push(`Min Withdrawal: $${d.min_withdrawal_amount}`);
       if (d.withdrawal_cooldown_minutes !== undefined) changes.push(`Cooldown: ${d.withdrawal_cooldown_minutes}m`);
       if (d.withdrawal_multiplier !== undefined) changes.push(`Multiplier: ${d.withdrawal_multiplier}×`);
+      if (d.referral_reward_amount !== undefined) changes.push(`Referral: $${d.referral_reward_amount}`);
+      if (d.quick_trade_fee_percent !== undefined) changes.push(`QT Fee: ${d.quick_trade_fee_percent}%`);
+      if (d.qt_min_bet !== undefined) changes.push(`QT Min: $${d.qt_min_bet}`);
+      if (d.qt_max_bet !== undefined) changes.push(`QT Max: $${d.qt_max_bet}`);
+      if (d.qt_streak_2x !== undefined) changes.push(`Streak 2×: ${d.qt_streak_2x}`);
+      if (d.qt_streak_3x !== undefined) changes.push(`Streak 3×: ${d.qt_streak_3x}`);
+      if (d.qt_streak_4x !== undefined) changes.push(`Streak 4×: ${d.qt_streak_4x}`);
+      if (d.qt_streak_5x !== undefined) changes.push(`Streak 5×: ${d.qt_streak_5x}`);
+      if (d.min_token_balance !== undefined) changes.push(`Min Token: ${Number(d.min_token_balance).toLocaleString()}`);
+      if (d.min_nft_balance !== undefined) changes.push(`Min NFT: ${d.min_nft_balance}`);
       return (
         <>
           <span className="text-muted-foreground">updated platform settings</span>
