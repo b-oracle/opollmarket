@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Outlet, NavLink, useLocation } from "react-router-dom";
+import { useNavigate, Outlet, NavLink, useLocation, useOutletContext } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard, ShoppingBag, MessageSquare, Users, LogOut, Loader2,
@@ -172,7 +172,7 @@ const AdminLayout = () => {
         )}
 
         <div className="max-w-5xl mx-auto p-4 sm:p-6">
-          <Outlet />
+          <Outlet context={{ canEdit }} />
         </div>
       </main>
     </div>
