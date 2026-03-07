@@ -3,7 +3,7 @@ import SEOHead from "@/components/SEOHead";
 
 const Maintenance = () => (
   <>
-    <SEOHead title="Maintenance | OPOLL" description="We're performing scheduled maintenance. We'll be back shortly." />
+    <SEOHead title="Maintenance" description="We're performing scheduled maintenance. We'll be back shortly." />
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
       <div className="max-w-md w-full text-center space-y-6">
         <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto animate-pulse">
@@ -12,7 +12,7 @@ const Maintenance = () => (
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-foreground">We'll be right back</h1>
           <p className="text-sm text-muted-foreground">
-            OPOLL is currently undergoing scheduled maintenance. We're working to improve your experience.
+            OPoll Market is currently undergoing scheduled maintenance. We're working to improve your experience.
           </p>
         </div>
         <div className="p-4 rounded-xl bg-muted/50 border border-border space-y-2">
