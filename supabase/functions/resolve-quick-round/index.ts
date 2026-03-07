@@ -235,7 +235,7 @@ Deno.serve(async (req) => {
         for (const bet of winners) {
           const streak = await getOrCreateStreak(supabase, bet.user_id);
           const newStreak = (streak.current_streak || 0) + 1;
-          const multiplier = getStreakMultiplier(newStreak);
+          const multiplier = getStreakMultiplier(newStreak, s2, s3, s4, s5);
           const baseRefund = Number(bet.amount) * (1 - platformFee);
           const payout = baseRefund * multiplier;
 
@@ -271,7 +271,7 @@ Deno.serve(async (req) => {
         for (const bet of winners) {
           const streak = await getOrCreateStreak(supabase, bet.user_id);
           const newStreak = (streak.current_streak || 0) + 1;
-          const multiplier = getStreakMultiplier(newStreak);
+          const multiplier = getStreakMultiplier(newStreak, s2, s3, s4, s5);
           const share = Number(bet.amount) / totalWinPool;
           const basePayout = Number(bet.amount) + distributable * share;
           const payout = basePayout * multiplier;
