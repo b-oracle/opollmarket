@@ -339,6 +339,28 @@ const AdminSettings = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Enabled Timeframes */}
+            <Card className="border-dashed">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2"><Timer className="w-4 h-4" /> Round Durations</CardTitle>
+                <CardDescription className="text-xs">Toggle which round durations are available in Quick Trade. At least one must be enabled.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {ALL_TIMEFRAMES.map(tf => (
+                    <div key={tf.seconds} className="flex items-center justify-between py-1">
+                      <span className="text-sm font-medium">{tf.label}</span>
+                      <Switch
+                        checked={qtEnabledTimeframes.has(tf.seconds)}
+                        onCheckedChange={() => toggleTimeframe(tf.seconds)}
+                        disabled={qtEnabledTimeframes.has(tf.seconds) && qtEnabledTimeframes.size <= 1}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </CardContent>
         </Card>
 
