@@ -10,8 +10,8 @@ interface SEOHeadProps {
 }
 
 const BASE_URL = "https://opollmarket.lovable.app";
-const DEFAULT_TITLE = "OPOLL — Social Prediction Market";
-const DEFAULT_DESC = "Swipe through markets. Predict. Win big. The TikTok-style prediction market platform for real-world events.";
+const DEFAULT_TITLE = "OPoll Market | The World's First Web + Telegram + WhatsApp prediction market protocol.";
+const DEFAULT_DESC = "Predict the future, earn from it. Trade on real-world events across Web, Telegram & WhatsApp with OPoll Market.";
 const DEFAULT_IMAGE = "https://opollmarket.lovable.app/og-image.png";
 
 const SEOHead = ({
@@ -22,7 +22,7 @@ const SEOHead = ({
   type = "website",
   noindex = false,
 }: SEOHeadProps) => {
-  const fullTitle = title ? `${title} | OPOLL` : DEFAULT_TITLE;
+  const fullTitle = title ? `${title} | OPoll Market` : DEFAULT_TITLE;
   const canonicalUrl = `${BASE_URL}${path}`;
 
   useEffect(() => {
