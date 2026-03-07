@@ -59,6 +59,8 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   const [chartStyle, setChartStyle] = useState<"candle" | "line">("line"); // default to line for streaming feel
   const lastCandleTimeRef = useRef<number>(0);
   const prevStreamingPriceRef = useRef<number | null>(null);
+  const pulsingDotRef = useRef<HTMLDivElement>(null);
+  const [dotColor, setDotColor] = useState("#22c55e");
 
   const activeMainSeries = chartStyle === "candle" ? candleSeriesRef : lineMainSeriesRef;
   const { activeTool, setActiveTool, clearDrawings, removeLastDrawing } =
@@ -305,6 +307,24 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
       });
     }
     
+    // Position the pulsing dot at the last data point
+    setDotColor(isUp ? "#22c55e" : "#ef4444");
+    if (pulsingDotRef.current && chartRef.current) {
+      const series = chartStyle === "candle" ? candleSeriesRef.current : areaSeriesRef.current;
+      if (series) {
+        try {
+          const y = series.priceToCoordinate(streamingPrice);
+          const timeScale = chartRef.current.timeScale();
+          const x = timeScale.timeToCoordinate(nowSec);
+          if (y !== null && x !== null) {
+            pulsingDotRef.current.style.left = `${x}px`;
+            pulsingDotRef.current.style.top = `${y}px`;
+            pulsingDotRef.current.style.display = "block";
+          }
+        } catch { /* coordinate not available yet */ }
+      }
+    }
+    
     prevStreamingPriceRef.current = streamingPrice;
   }, [streamingPrice, chartStyle]);
 
@@ -398,8 +418,27 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
         </div>
       </div>
 
-      {/* Main chart */}
-      <div ref={containerRef} className={`${isFullscreen ? "flex-1" : "h-[210px]"} ${activeTool !== "none" ? "cursor-crosshair" : ""}`} />
+      {/* Main chart with pulsing dot */}
+      <div className={`relative ${isFullscreen ? "flex-1" : "h-[210px]"}`}>
+        <div ref={containerRef} className={`w-full h-full ${activeTool !== "none" ? "cursor-crosshair" : ""}`} />
+        {/* Pulsing dot at current price */}
+        <div
+          ref={pulsingDotRef}
+          className="absolute pointer-events-none z-10"
+          style={{ display: "none", transform: "translate(-50%, -50%)" }}
+        >
+          <span className="relative flex h-3 w-3">
+            <span
+              className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
+              style={{ backgroundColor: dotColor }}
+            />
+            <span
+              className="relative inline-flex rounded-full h-3 w-3 border-2 border-background"
+              style={{ backgroundColor: dotColor }}
+            />
+          </span>
+        </div>
+      </div>
     </div>
   );
 });
