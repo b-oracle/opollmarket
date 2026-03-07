@@ -144,8 +144,31 @@ const AdminMarkets = () => {
   useEffect(() => { fetchMarkets(); fetchTrendingScores(); fetchPendingMarkets(); setMktPage(1); }, [filter]);
 
   const paginatedMarkets = useMemo(() => markets.slice((mktPage - 1) * MKT_PAGE_SIZE, mktPage * MKT_PAGE_SIZE), [markets, mktPage]);
+  // Moderator: recommend approve/reject (does NOT change market status)
+  const handleModeratorReview = async (id: string, decision: "approve" | "reject") => {
+    setModeratorReviewingId(id);
+    const market = pendingMarkets.find(m => m.id === id);
+    const { error } = await supabase.from("markets").update({
+      moderator_decision: decision,
+      moderator_id: currentUser?.id,
+      moderator_reviewed_at: new Date().toISOString(),
+    } as any).eq("id", id);
+    if (error) {
+      toast.error("Failed to submit review");
+    } else {
+      toast.success(`Market ${decision === "approve" ? "recommended for approval" : "recommended for rejection"}. Awaiting final decision.`);
+      logAuditEvent({
+        action: decision === "approve" ? "market_approved" : "market_rejected",
+        targetId: id,
+        targetType: "market",
+        details: { title: market?.title, moderator_review: true, decision },
+      });
+      fetchPendingMarkets();
+    }
+    setModeratorReviewingId(null);
+  };
 
-  const handleApprove = async (id: string) => {
+
     setApprovingId(id);
     const market = [...markets, ...pendingMarkets].find(m => m.id === id);
     const { error } = await supabase.from("markets").update({ status: "active" }).eq("id", id);
