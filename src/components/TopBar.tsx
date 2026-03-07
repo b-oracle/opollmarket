@@ -10,7 +10,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const TopBar = () => {
-  const { user, isAdmin, hasAdminAccess, signOut, loading, displayName } = useAuth();
+  const { user, isSuperAdmin, isAdmin, hasAdminAccess, signOut, loading, displayName } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [showMenu, setShowMenu] = useState(false);
