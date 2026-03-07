@@ -70,7 +70,7 @@ const haptic = (style: "light" | "medium" | "heavy" | "success" | "error" = "med
 };
 const AMOUNT_PRESETS = [5, 10, 25, 50, 100];
 
-import { fetchCryptoPrice, fetchCryptoHistory } from "@/lib/cryptoPriceProvider";
+import { fetchCryptoPrice, fetchCryptoHistory, fetchOHLCData, type OHLCCandle } from "@/lib/cryptoPriceProvider";
 
 // Wrapper to keep existing call signatures (geckoId-based)
 async function fetchPrice(geckoId: string): Promise<number | null> {
@@ -190,6 +190,9 @@ export default function QuickTrade() {
     { key: "15m", label: "15m", ms: 15 * 60 * 1000 },
     { key: "1h", label: "1H", ms: 60 * 60 * 1000 },
     { key: "4h", label: "4H", ms: 4 * 60 * 60 * 1000 },
+    { key: "1d", label: "1D", ms: 24 * 60 * 60 * 1000 },
+    { key: "1w", label: "1W", ms: 7 * 24 * 60 * 60 * 1000 },
+    { key: "1M", label: "1M", ms: 30 * 24 * 60 * 60 * 1000 },
   ] as const;
   type ChartTF = typeof CHART_TIMEFRAMES[number]["key"];
   const [chartTimeframe, setChartTimeframe] = useState<ChartTF>("15m");
@@ -200,16 +203,19 @@ export default function QuickTrade() {
   const priceHistoryRef = useRef(priceHistory);
   priceHistoryRef.current = priceHistory;
 
+  // Real OHLC candle data from exchange APIs
+  const [ohlcData, setOhlcData] = useState<OHLCCandle[]>([]);
+  const ohlcCacheRef = useRef<Map<string, OHLCCandle[]>>(new Map());
+
   // Load raw price data once per asset, then filter by timeframe client-side
   const [historyLoading, setHistoryLoading] = useState(false);
   const rawDataRef = useRef<Map<string, [number, number][]>>(new Map());
 
-  // Fetch raw data when asset changes
+  // Fetch raw price data when asset changes (for area/candle recharts)
   useEffect(() => {
     let cancelled = false;
     const geckoId = selectedAsset.geckoId;
 
-    // Use cached raw data immediately if available
     const cachedRaw = rawDataRef.current.get(geckoId);
     if (cachedRaw && cachedRaw.length > 0) {
       setPriceHistory(filterPriceData(cachedRaw, chartMs));
@@ -229,13 +235,33 @@ export default function QuickTrade() {
     return () => { cancelled = true; };
   }, [selectedAsset.geckoId]);
 
-  // When chart timeframe changes, just re-filter existing raw data (instant)
+  // When chart timeframe changes, re-filter existing raw data (instant for area/candle)
   useEffect(() => {
     const raw = rawDataRef.current.get(selectedAsset.geckoId);
     if (raw && raw.length > 0) {
       setPriceHistory(filterPriceData(raw, chartMs));
     }
   }, [chartMs, selectedAsset.geckoId]);
+
+  // Fetch real OHLC data for TradingView chart (supports up to 30 days)
+  useEffect(() => {
+    let cancelled = false;
+    const cacheKey = `${selectedAsset.geckoId}:${chartTimeframe}`;
+    const cached = ohlcCacheRef.current.get(cacheKey);
+    if (cached) {
+      setOhlcData(cached);
+      return;
+    }
+
+    (async () => {
+      const candles = await fetchOHLCData("", chartTimeframe, selectedAsset.geckoId);
+      if (!cancelled && candles.length > 0) {
+        ohlcCacheRef.current.set(cacheKey, candles);
+        setOhlcData(candles);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedAsset.geckoId, chartTimeframe]);
 
   // ── Fetch price ──
   useEffect(() => {
