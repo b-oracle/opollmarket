@@ -99,6 +99,33 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
     enabled: !!user,
   });
 
+  const { data: eligibleWithdrawal } = useQuery({
+    queryKey: ["eligible_withdrawal", user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      const { data: deposits } = await supabase
+        .from("transactions")
+        .select("amount")
+        .eq("user_id", user.id)
+        .eq("type", "deposit")
+        .eq("status", "confirmed");
+
+      const totalDeposits = (deposits || []).reduce((sum, r) => sum + Number(r.amount), 0);
+
+      const { data: withdrawals } = await supabase
+        .from("transactions")
+        .select("amount")
+        .eq("user_id", user.id)
+        .eq("type", "withdrawal")
+        .eq("status", "confirmed");
+
+      const totalWithdrawn = (withdrawals || []).reduce((sum, r) => sum + Number(r.amount), 0);
+
+      return Math.max(0, (2 * totalDeposits) - totalWithdrawn);
+    },
+    enabled: !!user && tab === "withdraw",
+  });
+
   const numAmount = parseFloat(amount) || 0;
   const isDeposit = tab === "deposit";
   const maxAvailable = isDeposit ? MAX_AMOUNT : balance;
