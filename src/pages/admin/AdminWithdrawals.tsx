@@ -23,6 +23,7 @@ const statusColors: Record<string, string> = {
 };
 
 const AdminWithdrawals = () => {
+  const { canEdit } = useAdminContext();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [wdPage, setWdPage] = useState(1);
@@ -152,7 +153,7 @@ const AdminWithdrawals = () => {
                       {w.admin_note || "—"}
                     </TableCell>
                     <TableCell className="text-right">
-                      {w.status === "pending" && (
+                      {w.status === "pending" && canEdit && (
                         <div className="flex gap-2 justify-end">
                           <button
                             onClick={() =>
