@@ -6,6 +6,27 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function getNowPaymentsJwt(): Promise<string> {
+  const email = Deno.env.get("NOWPAYMENTS_EMAIL");
+  const password = Deno.env.get("NOWPAYMENTS_PASSWORD");
+  if (!email || !password) throw new Error("NOWPayments credentials not configured");
+
+  const res = await fetch("https://api.nowpayments.io/v1/auth", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`NOWPayments auth failed: ${errText}`);
+  }
+
+  const { token } = await res.json();
+  if (!token) throw new Error("NOWPayments auth returned no token");
+  return token;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -114,13 +135,16 @@ Deno.serve(async (req) => {
 
     const payCurrency = crypto_currency || "usdtbsc";
 
-    // Call NOWPayments Payout API to send crypto automatically
+    // JWT-based payout flow
     let payoutSuccess = false;
     let payoutId = null;
     let payoutError = null;
 
     try {
-      // First, get an estimated price to know how much crypto to send
+      // Step 1: Authenticate with NOWPayments to get JWT
+      const jwtToken = await getNowPaymentsJwt();
+
+      // Step 2: Get estimated crypto amount
       const estimateRes = await fetch(
         `https://api.nowpayments.io/v1/estimate?amount=${amount}&currency_from=usd&currency_to=${payCurrency}`,
         { headers: { "x-api-key": apiKey } }
@@ -133,24 +157,30 @@ Deno.serve(async (req) => {
       const estimate = await estimateRes.json();
       const cryptoAmount = estimate.estimated_amount;
 
-      // Create payout
+      // Step 3: Create payout using JWT token
       const payoutRes = await fetch("https://api.nowpayments.io/v1/payout", {
         method: "POST",
         headers: {
           "x-api-key": apiKey,
+          "Authorization": `Bearer ${jwtToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          address: wallet_address.trim(),
-          currency: payCurrency,
-          amount: cryptoAmount,
-          ipn_callback_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/nowpayments-webhook`,
+          withdrawals: [
+            {
+              address: wallet_address.trim(),
+              currency: payCurrency,
+              amount: cryptoAmount,
+              ipn_callback_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/nowpayments-webhook`,
+            },
+          ],
         }),
       });
 
       if (payoutRes.ok) {
         const payoutData = await payoutRes.json();
-        payoutId = payoutData.id;
+        // The payout API returns an array of withdrawals
+        payoutId = payoutData.withdrawals?.[0]?.id || payoutData.id;
         payoutSuccess = true;
       } else {
         const errText = await payoutRes.text();
