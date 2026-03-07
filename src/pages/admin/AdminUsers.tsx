@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Shield, ShieldOff, DollarSign, X, ShieldCheck, ShieldMinus, Search, Crown } from "lucide-react";
 import { toast } from "sonner";
+import { logAuditEvent } from "@/lib/auditLog";
 import { motion, AnimatePresence } from "framer-motion";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { useAdminContext } from "./AdminLayout";
@@ -63,7 +64,6 @@ const AdminUsers = () => {
   useEffect(() => { fetchUsers(); }, []);
 
   const toggleRole = async (userId: string, role: "admin" | "moderator" | "super_admin", hasRole: boolean) => {
-    const action = hasRole ? "role_removed" : "role_assigned";
     if (hasRole) {
       const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role);
       if (error) { toast.error(`Failed to remove ${role} role`); return; }
@@ -73,12 +73,10 @@ const AdminUsers = () => {
       if (error) { toast.error(`Failed to add ${role} role`); return; }
       toast.success(`${role} role added`);
     }
-    // Log the audit event
-    await supabase.from("audit_logs" as any).insert({
-      actor_id: currentUser?.id,
-      action,
-      target_id: userId,
-      target_type: "user",
+    logAuditEvent({
+      action: hasRole ? "role_removed" : "role_assigned",
+      targetId: userId,
+      targetType: "user",
       details: { role },
     });
     fetchUsers();
@@ -106,6 +104,12 @@ const AdminUsers = () => {
         type: amount > 0 ? "deposit" : "withdrawal",
         amount: Math.abs(amount),
         status: "confirmed",
+      });
+      logAuditEvent({
+        action: "balance_adjusted",
+        targetId: balanceModal.userId,
+        targetType: "user",
+        details: { amount, new_balance: newBalance, user_name: balanceModal.name },
       });
       toast.success(`Balance ${amount > 0 ? "credited" : "debited"}: $${Math.abs(amount)}`);
       setBalanceModal(null);
