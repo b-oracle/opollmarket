@@ -70,69 +70,15 @@ const haptic = (style: "light" | "medium" | "heavy" | "success" | "error" = "med
 };
 const AMOUNT_PRESETS = [5, 10, 25, 50, 100];
 
-// ── Price fetching with rate-limit protection ──
-const priceCache = new Map<string, { price: number; fetchedAt: number }>();
-const PRICE_CACHE_TTL = 5_000; // 5s minimum between price fetches per asset
-let consecutiveFailures = 0;
+import { fetchCryptoPrice, fetchCryptoHistory } from "@/lib/cryptoPriceProvider";
 
+// Wrapper to keep existing call signatures (geckoId-based)
 async function fetchPrice(geckoId: string): Promise<number | null> {
-  // Exponential backoff on consecutive failures (CoinGecko rate limiting)
-  if (consecutiveFailures >= 3) {
-    const backoffMs = Math.min(2 ** consecutiveFailures * 1000, 60_000);
-    const cached = priceCache.get(geckoId);
-    if (cached && Date.now() - cached.fetchedAt < backoffMs) {
-      return cached.price;
-    }
-  }
-  // Return cached if fresh enough
-  const cached = priceCache.get(geckoId);
-  if (cached && Date.now() - cached.fetchedAt < PRICE_CACHE_TTL) {
-    return cached.price;
-  }
-  try {
-    const r = await fetch(
-      `https://api.coingecko.com/api/v3/simple/price?ids=${geckoId}&vs_currencies=usd`
-    );
-    if (!r.ok) {
-      consecutiveFailures++;
-      return cached?.price ?? null;
-    }
-    consecutiveFailures = 0;
-    const d = await r.json();
-    const price = d[geckoId]?.usd ?? null;
-    if (price != null) {
-      priceCache.set(geckoId, { price, fetchedAt: Date.now() });
-    }
-    return price;
-  } catch {
-    consecutiveFailures++;
-    return cached?.price ?? null;
-  }
+  return fetchCryptoPrice("", geckoId);
 }
 
-// Raw price data cache: one fetch per asset, filter client-side by timeframe
-const rawPriceCache = new Map<string, { prices: [number, number][]; fetchedAt: number }>();
-const RAW_CACHE_TTL = 30_000;
-
-async function fetchRawPriceData(
-  geckoId: string
-): Promise<[number, number][]> {
-  const cached = rawPriceCache.get(geckoId);
-  if (cached && Date.now() - cached.fetchedAt < RAW_CACHE_TTL) {
-    return cached.prices;
-  }
-  try {
-    const r = await fetch(
-      `https://api.coingecko.com/api/v3/coins/${geckoId}/market_chart?vs_currency=usd&days=1`
-    );
-    if (!r.ok) return cached?.prices ?? [];
-    const d = await r.json();
-    const prices: [number, number][] = d.prices || [];
-    rawPriceCache.set(geckoId, { prices, fetchedAt: Date.now() });
-    return prices;
-  } catch {
-    return cached?.prices ?? [];
-  }
+async function fetchRawPriceData(geckoId: string): Promise<[number, number][]> {
+  return fetchCryptoHistory("", geckoId);
 }
 
 function filterPriceData(
