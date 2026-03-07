@@ -19,12 +19,12 @@ const ASSET_GECKO_MAP: Record<string, string> = {
   LINK: "chainlink",
 };
 
-// Streak multiplier tiers
-function getStreakMultiplier(streak: number): number {
-  if (streak >= 5) return 1.25;
-  if (streak === 4) return 1.15;
-  if (streak === 3) return 1.10;
-  if (streak === 2) return 1.05;
+// Streak multiplier tiers - configurable via settings
+function getStreakMultiplier(streak: number, s2: number, s3: number, s4: number, s5: number): number {
+  if (streak >= 5) return s5;
+  if (streak === 4) return s4;
+  if (streak === 3) return s3;
+  if (streak === 2) return s2;
   return 1.0;
 }
 
@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
     // Get commission rate
     const { data: settings } = await supabase
       .from("commission_settings")
-      .select("admin_fee_percent, creator_fee_percent, quick_trade_fee_percent")
+      .select("admin_fee_percent, creator_fee_percent, quick_trade_fee_percent, qt_streak_2x, qt_streak_3x, qt_streak_4x, qt_streak_5x")
       .limit(1)
       .single();
     const platformFee = settings?.quick_trade_fee_percent != null
@@ -142,6 +142,10 @@ Deno.serve(async (req) => {
       : settings
         ? (Number(settings.admin_fee_percent) + Number(settings.creator_fee_percent)) / 100
         : 0.05;
+    const s2 = Number(settings?.qt_streak_2x ?? 1.05);
+    const s3 = Number(settings?.qt_streak_3x ?? 1.10);
+    const s4 = Number(settings?.qt_streak_4x ?? 1.15);
+    const s5 = Number(settings?.qt_streak_5x ?? 1.25);
 
     let resolvedCount = 0;
 

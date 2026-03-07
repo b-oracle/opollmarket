@@ -38,7 +38,7 @@ import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
 import TradingViewChart from "@/components/TradingViewChart";
 // ── Asset config ──
-const ASSETS = [
+const ALL_ASSETS = [
   { symbol: "BTC", label: "Bitcoin", geckoId: "bitcoin" },
   { symbol: "ETH", label: "Ethereum", geckoId: "ethereum" },
   { symbol: "BNB", label: "BNB", geckoId: "binancecoin" },
@@ -130,7 +130,18 @@ export default function QuickTrade() {
   const { data: commissionSettings } = useCommissionSettings();
   const { fireWinConfetti } = useConfetti();
 
-  const [selectedAsset, setSelectedAsset] = useState(ASSETS[0]);
+  // Filter assets based on admin settings
+  const ASSETS = useMemo(() => {
+    if (!commissionSettings?.qt_enabled_assets) return ALL_ASSETS;
+    const enabled = new Set(commissionSettings.qt_enabled_assets.split(",").filter(Boolean));
+    const filtered = ALL_ASSETS.filter(a => enabled.has(a.symbol));
+    return filtered.length > 0 ? filtered : ALL_ASSETS;
+  }, [commissionSettings?.qt_enabled_assets]);
+
+  const qtMinBet = commissionSettings?.qt_min_bet ?? 1;
+  const qtMaxBet = commissionSettings?.qt_max_bet ?? 500;
+
+  const [selectedAsset, setSelectedAsset] = useState(ALL_ASSETS[0]);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [prevPrice, setPrevPrice] = useState<number | null>(null);
   const [activeRound, setActiveRound] = useState<Round | null>(null);
@@ -496,8 +507,12 @@ export default function QuickTrade() {
     if (!activeRound || isLocked || userBet) return;
 
     const amt = parseFloat(betAmount);
-    if (isNaN(amt) || amt < 1) {
-      toast({ title: "Minimum bet is $1", variant: "destructive" });
+    if (isNaN(amt) || amt < qtMinBet) {
+      toast({ title: `Minimum bet is $${qtMinBet}`, variant: "destructive" });
+      return;
+    }
+    if (amt > qtMaxBet) {
+      toast({ title: `Maximum bet is $${qtMaxBet}`, variant: "destructive" });
       return;
     }
     if (amt > balance) {
@@ -988,7 +1003,8 @@ export default function QuickTrade() {
                   type="number"
                   value={betAmount}
                   onChange={(e) => setBetAmount(e.target.value)}
-                  min="1"
+                  min={String(qtMinBet)}
+                  max={String(qtMaxBet)}
                   step="1"
                   className="text-lg font-bold text-center"
                   disabled={isLocked || timeLeft === 0}
