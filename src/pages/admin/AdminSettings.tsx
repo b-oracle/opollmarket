@@ -415,6 +415,7 @@ const AdminSettings = () => {
                   <Label htmlFor="withdrawalMultiplier">Withdrawal Multiplier (×deposits)</Label>
                   <Input id="withdrawalMultiplier" type="number" min={1} step={0.5} value={withdrawalMultiplier} onChange={(e) => setWithdrawalMultiplier(e.target.value)} placeholder="2" />
                   <p className="text-[10px] text-muted-foreground">Current: {withdrawalMultiplierNum}×. Users can withdraw up to {withdrawalMultiplierNum}× their total deposits.</p>
+                  {withdrawalMultiplierNum < 1 && <p className="text-xs text-destructive">Multiplier must be at least 1×.</p>}
                 </div>
               </CardContent>
             </Card>
