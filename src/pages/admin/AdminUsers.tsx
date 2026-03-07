@@ -63,15 +63,25 @@ const AdminUsers = () => {
   useEffect(() => { fetchUsers(); }, []);
 
   const toggleRole = async (userId: string, role: "admin" | "moderator" | "super_admin", hasRole: boolean) => {
+    const action = hasRole ? "role_removed" : "role_assigned";
     if (hasRole) {
       const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role);
-      if (error) toast.error(`Failed to remove ${role} role`);
-      else { toast.success(`${role} role removed`); fetchUsers(); }
+      if (error) { toast.error(`Failed to remove ${role} role`); return; }
+      toast.success(`${role} role removed`);
     } else {
       const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
-      if (error) toast.error(`Failed to add ${role} role`);
-      else { toast.success(`${role} role added`); fetchUsers(); }
+      if (error) { toast.error(`Failed to add ${role} role`); return; }
+      toast.success(`${role} role added`);
     }
+    // Log the audit event
+    await supabase.from("audit_logs" as any).insert({
+      actor_id: currentUser?.id,
+      action,
+      target_id: userId,
+      target_type: "user",
+      details: { role },
+    });
+    fetchUsers();
   };
 
   const handleCreditBalance = async () => {
