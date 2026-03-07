@@ -74,8 +74,6 @@ export async function fetchCryptoPrice(
     sym = GECKO_TO_SYM[geckoId] || "";
   }
   const cacheKey = sym || geckoId || "";
-  const sym = symbol.toUpperCase();
-  const cacheKey = sym;
 
   // Backoff on repeated failures
   if (failCount >= 3) {
