@@ -999,40 +999,6 @@ export default function QuickTrade() {
                 </div>
               </div>
 
-              {/* Fee breakdown */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center justify-center gap-1.5 mb-3 cursor-help">
-                      <Info className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span className="text-[11px] text-muted-foreground">
-                        Platform fee: {(commissionSettings?.admin_fee_percent ?? 2) + (commissionSettings?.creator_fee_percent ?? 3)}% from losing pool
-                      </span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-[260px] p-3">
-                    <p className="text-xs font-semibold mb-1.5">Fee Breakdown</p>
-                    <div className="space-y-1 text-[11px]">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Admin fee</span>
-                        <span className="font-medium">{commissionSettings?.admin_fee_percent ?? 2}%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Creator fee</span>
-                        <span className="font-medium">{commissionSettings?.creator_fee_percent ?? 3}%</span>
-                      </div>
-                      <div className="border-t border-border pt-1 flex justify-between font-semibold">
-                        <span>Total</span>
-                        <span>{(commissionSettings?.admin_fee_percent ?? 2) + (commissionSettings?.creator_fee_percent ?? 3)}%</span>
-                      </div>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground mt-2">
-                      Deducted from the losing pool before winnings are distributed. Winners receive their bet back + share of remaining pool.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
               {/* UP / DOWN buttons */}
               <div className="grid grid-cols-2 gap-3">
                 <Button
@@ -1053,47 +1019,25 @@ export default function QuickTrade() {
                 </Button>
               </div>
 
-              {/* Streak multiplier hint */}
-              {streak && streak.current_streak >= 1 && !isLocked && timeLeft > 0 && (
-                <p className="text-[10px] text-amber-500 text-center mt-2">
-                  🔥 Win to get {getStreakMultiplier(streak.current_streak + 1)}x payout bonus!
-                </p>
-              )}
-
-              {isLocked && timeLeft > 0 && (
-                <p className="text-xs text-amber-500 text-center mt-2">Round locked — bets closed. Next round starting soon.</p>
-              )}
-            </div>
-          )}
-
-          {/* Balance display */}
-          {user && (
-            <div className="text-center mb-6">
-              <p className="text-xs text-muted-foreground">Balance: <span className="font-bold text-foreground">${balance.toFixed(2)}</span></p>
-              {streak && streak.current_streak >= 2 && (
-                <div className="mt-1.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30">
-                  <span className="text-sm">🔥</span>
-                  <span className="text-xs font-bold text-amber-500">{streak.current_streak} Win Streak</span>
-                  <span className="text-[10px] text-amber-400 font-semibold">— {getStreakMultiplier(streak.current_streak)}x Bonus</span>
+              {placing && (
+                <div className="flex items-center justify-center gap-2 mt-3">
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Placing bet...</span>
                 </div>
               )}
-              {streak && streak.current_streak >= 1 && streak.current_streak < 2 && (
-                <p className="text-[10px] text-muted-foreground mt-1">🔥 1 win — one more for a streak bonus!</p>
-              )}
             </div>
           )}
 
-          {/* ── Results History Panel ── */}
-          <div className="rounded-2xl border border-border bg-card p-4 mb-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <History className="w-4 h-4 text-muted-foreground" />
-                <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">Results History</h2>
-              </div>
-              {/* Streak dots */}
-              {recentRounds.length > 0 && (
-                <div className="flex gap-1">
-                  {recentRounds.slice(0, 8).reverse().map((r) => (
+          {/* Results History */}
+          {userBets.length > 0 && (
+            <div className="rounded-2xl border border-border bg-card p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                  <History className="w-4 h-4 text-muted-foreground" />
+                  Results History
+                </h3>
+                <div className="flex items-center gap-1">
+                  {recentRounds.slice(0, 8).map((r) => (
                     <div
                       key={r.id}
                       className={`w-2.5 h-2.5 rounded-full ${
@@ -1103,93 +1047,51 @@ export default function QuickTrade() {
                     />
                   ))}
                 </div>
-              )}
-            </div>
-
-            {recentRounds.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-6">No resolved rounds yet for {selectedAsset.symbol}</p>
-            ) : (
-              <div className="space-y-1.5">
-                {recentRounds.map((r) => {
-                  // Find user's bet for this round
-                  const myBet = userBets.find((b) => b.round_id === r.id);
-                  const didWin = myBet?.status === "won";
-                  const didLose = myBet?.status === "lost";
-                  const priceDelta = r.open_price && r.close_price
-                    ? ((Number(r.close_price) - Number(r.open_price)) / Number(r.open_price) * 100)
-                    : 0;
+              </div>
+              <div className="space-y-2">
+                {userBets.map((b) => {
+                  const round = recentRounds.find((r) => r.id === b.round_id);
+                  const won = b.status === "won";
+                  const lost = b.status === "lost";
+                  const pnl = won ? Number(b.payout) - Number(b.amount) : lost ? -Number(b.amount) : 0;
+                  const priceDelta = round?.open_price && round?.close_price
+                    ? ((Number(round.close_price) - Number(round.open_price)) / Number(round.open_price) * 100)
+                    : null;
 
                   return (
-                    <div
-                      key={r.id}
-                      className={`flex items-center justify-between rounded-xl px-3 py-2.5 transition-colors ${
-                        myBet
-                          ? didWin
-                            ? "bg-green-500/8 border border-green-500/20"
-                            : didLose
-                              ? "bg-destructive/8 border border-destructive/20"
-                              : "bg-muted/30 border border-transparent"
-                          : "bg-muted/20 border border-transparent"
-                      }`}
-                    >
-                      {/* Left: result icon + info */}
+                    <div key={b.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
                       <div className="flex items-center gap-2.5">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                          r.result === "up" ? "bg-green-500/15" : r.result === "down" ? "bg-destructive/15" : "bg-muted"
+                          won ? "bg-green-500/15" : lost ? "bg-destructive/15" : "bg-muted"
                         }`}>
-                          {r.result === "up" ? (
-                            <ArrowUp className="w-4 h-4 text-green-500" />
-                          ) : r.result === "down" ? (
-                            <ArrowDown className="w-4 h-4 text-destructive" />
+                          {b.side === "up" ? (
+                            <ArrowUp className={`w-4 h-4 ${won ? "text-green-500" : "text-destructive"}`} />
                           ) : (
-                            <span className="text-[10px] text-muted-foreground">—</span>
+                            <ArrowDown className={`w-4 h-4 ${won ? "text-green-500" : "text-destructive"}`} />
                           )}
                         </div>
                         <div>
-                          <div className="flex items-center gap-1.5">
-                            <p className="text-xs font-bold text-foreground">
-                              {r.result?.toUpperCase() || "FLAT"}
-                            </p>
-                            <span className={`text-[10px] font-semibold ${
-                              priceDelta > 0 ? "text-green-500" : priceDelta < 0 ? "text-destructive" : "text-muted-foreground"
-                            }`}>
-                              {priceDelta > 0 ? "+" : ""}{priceDelta.toFixed(3)}%
-                            </span>
-                          </div>
+                          <p className="text-xs font-semibold text-foreground">
+                            {b.side.toUpperCase()} · ${Number(b.amount).toFixed(2)}
+                            {b.streak > 1 && <span className="ml-1 text-amber-500">🔥{b.streak}</span>}
+                          </p>
                           <p className="text-[10px] text-muted-foreground">
-                            {r.duration_seconds < 60 ? `${r.duration_seconds}s` : `${Math.floor(r.duration_seconds / 60)}m`} · {new Date(r.resolved_at || r.created_at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                            {round?.asset || selectedAsset.symbol}
+                            {priceDelta !== null && (
+                              <span className={priceDelta >= 0 ? "text-green-500 ml-1" : "text-destructive ml-1"}>
+                                {priceDelta >= 0 ? "+" : ""}{priceDelta.toFixed(2)}%
+                              </span>
+                            )}
                           </p>
                         </div>
                       </div>
-
-                      {/* Right: user result or price range */}
                       <div className="text-right">
-                        {myBet ? (
-                          <>
-                            <div className="flex items-center gap-1 justify-end">
-                              <Badge
-                                variant={didWin ? "default" : didLose ? "destructive" : "secondary"}
-                                className="text-[9px] px-1.5 py-0 h-4"
-                              >
-                                {didWin ? "WON" : didLose ? "LOST" : "PENDING"}
-                              </Badge>
-                              <span className={`text-[10px] font-bold ${myBet.side === "up" ? "text-green-500" : "text-destructive"}`}>
-                                {myBet.side.toUpperCase()}
-                              </span>
-                            </div>
-                            <p className="text-[10px] text-muted-foreground">
-                              ${Number(myBet.amount).toFixed(2)}
-                              {didWin && (myBet as any).streak >= 2 && (
-                                <span className="text-amber-500 text-[9px] ml-1">🔥{(myBet as any).streak}×{getStreakMultiplier((myBet as any).streak)}</span>
-                              )}
-                              {didWin && (
-                                <span className="text-green-500 font-bold ml-1">→ ${Number(myBet.payout).toFixed(2)}</span>
-                              )}
-                            </p>
-                          </>
-                        ) : (
+                        <p className={`text-xs font-bold ${won ? "text-green-500" : lost ? "text-destructive" : "text-muted-foreground"}`}>
+                          {won ? `+$${pnl.toFixed(2)}` : lost ? `-$${Number(b.amount).toFixed(2)}` : "Pending"}
+                        </p>
+                        {won && b.payout && (
                           <p className="text-[10px] text-muted-foreground">
-                            ${Number(r.open_price).toLocaleString(undefined, { maximumFractionDigits: 2 })} → ${Number(r.close_price).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                            Payout: ${Number(b.payout).toFixed(2)}
                           </p>
                         )}
                       </div>
@@ -1197,66 +1099,29 @@ export default function QuickTrade() {
                   );
                 })}
               </div>
-            )}
-
-            {/* Pagination controls */}
-            {historyTotal > HISTORY_PER_PAGE && (
-              <div className="flex items-center justify-between mt-3 pt-2 border-t border-border">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={historyPage === 0}
-                  onClick={() => setHistoryPage((p) => Math.max(0, p - 1))}
-                  className="text-xs h-7 px-2"
-                >
-                  ← Newer
-                </Button>
-                <span className="text-[10px] text-muted-foreground">
-                  {historyPage + 1} / {Math.ceil(historyTotal / HISTORY_PER_PAGE)}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={(historyPage + 1) * HISTORY_PER_PAGE >= historyTotal}
-                  onClick={() => setHistoryPage((p) => p + 1)}
-                  className="text-xs h-7 px-2"
-                >
-                  Older →
-                </Button>
-              </div>
-            )}
-
-            {/* Summary stats for user */}
-            {user && userBets.length > 0 && (() => {
-              const won = userBets.filter((b) => b.status === "won");
-              const lost = userBets.filter((b) => b.status === "lost");
-              const totalProfit = won.reduce((s, b) => s + (Number(b.payout) - Number(b.amount)), 0)
-                - lost.reduce((s, b) => s + Number(b.amount), 0);
-              const winRate = won.length + lost.length > 0
-                ? Math.round(won.length / (won.length + lost.length) * 100)
-                : 0;
-
-              return (
-                <div className="mt-3 pt-3 border-t border-border grid grid-cols-3 gap-2 text-center">
-                  <div>
-                    <p className="text-lg font-bold text-foreground">{won.length}<span className="text-muted-foreground text-xs">/{won.length + lost.length}</span></p>
-                    <p className="text-[10px] text-muted-foreground uppercase">Wins</p>
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-foreground">{winRate}%</p>
-                    <p className="text-[10px] text-muted-foreground uppercase">Win Rate</p>
-                  </div>
-                  <div>
-                    <p className={`text-lg font-bold ${totalProfit >= 0 ? "text-green-500" : "text-destructive"}`}>
-                      {totalProfit >= 0 ? "+" : ""}${Math.abs(totalProfit).toFixed(2)}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground uppercase">P&L</p>
-                  </div>
+              {historyTotal > HISTORY_PER_PAGE && (
+                <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/50">
+                  <button
+                    onClick={() => setHistoryPage(p => Math.max(0, p - 1))}
+                    disabled={historyPage === 0}
+                    className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
+                  >
+                    ← Prev
+                  </button>
+                  <span className="text-[10px] text-muted-foreground">
+                    {historyPage + 1} / {Math.ceil(historyTotal / HISTORY_PER_PAGE)}
+                  </span>
+                  <button
+                    onClick={() => setHistoryPage(p => p + 1)}
+                    disabled={(historyPage + 1) * HISTORY_PER_PAGE >= historyTotal}
+                    className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
+                  >
+                    Next →
+                  </button>
                 </div>
-              );
-            })()}
-          </div>
-
+              )}
+            </div>
+          )}
 
         </div>
       </div>
