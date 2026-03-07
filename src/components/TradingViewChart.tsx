@@ -307,6 +307,24 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
       });
     }
     
+    // Position the pulsing dot at the last data point
+    setDotColor(isUp ? "#22c55e" : "#ef4444");
+    if (pulsingDotRef.current && chartRef.current) {
+      const series = chartStyle === "candle" ? candleSeriesRef.current : areaSeriesRef.current;
+      if (series) {
+        try {
+          const y = series.priceToCoordinate(streamingPrice);
+          const timeScale = chartRef.current.timeScale();
+          const x = timeScale.timeToCoordinate(nowSec);
+          if (y !== null && x !== null) {
+            pulsingDotRef.current.style.left = `${x}px`;
+            pulsingDotRef.current.style.top = `${y}px`;
+            pulsingDotRef.current.style.display = "block";
+          }
+        } catch { /* coordinate not available yet */ }
+      }
+    }
+    
     prevStreamingPriceRef.current = streamingPrice;
   }, [streamingPrice, chartStyle]);
 
