@@ -1,0 +1,1 @@
+ALTER TABLE public.commission_settings ADD COLUMN withdrawal_multiplier numeric NOT NULL DEFAULT 2;

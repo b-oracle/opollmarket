@@ -213,6 +213,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           withdrawal_cooldown_minutes: number
+          withdrawal_multiplier: number
         }
         Insert: {
           admin_fee_percent?: number
@@ -240,6 +241,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           withdrawal_cooldown_minutes?: number
+          withdrawal_multiplier?: number
         }
         Update: {
           admin_fee_percent?: number
@@ -267,6 +269,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           withdrawal_cooldown_minutes?: number
+          withdrawal_multiplier?: number
         }
         Relationships: []
       }
