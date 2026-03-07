@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Percent, Gift, Coins, ImageIcon, ArrowUpFromLine, LogOut } from "lucide-react";
+import { Loader2, Save, Percent, Gift, Coins, ImageIcon, ArrowUpFromLine, LogOut, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 const AdminSettings = () => {
@@ -15,6 +15,7 @@ const AdminSettings = () => {
   const [minNftBalance, setMinNftBalance] = useState("");
   const [minWithdrawalAmount, setMinWithdrawalAmount] = useState("");
   const [exitFee, setExitFee] = useState("");
+  const [quickTradeFee, setQuickTradeFee] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
@@ -34,6 +35,7 @@ const AdminSettings = () => {
         setMinNftBalance(String(data.min_nft_balance ?? 1));
         setMinWithdrawalAmount(String((data as any).min_withdrawal_amount ?? 5));
         setExitFee(String((data as any).exit_fee_percent ?? 5));
+        setQuickTradeFee(String((data as any).quick_trade_fee_percent ?? 5));
         setSettingsId(data.id);
       }
       if (error) console.error(error);
@@ -49,9 +51,10 @@ const AdminSettings = () => {
   const nftNum = parseInt(minNftBalance) || 0;
   const minWithdrawNum = parseFloat(minWithdrawalAmount) || 0;
   const exitFeeNum = parseFloat(exitFee) || 0;
+  const quickTradeFeeNum = parseFloat(quickTradeFee) || 0;
   const totalFee = adminNum + creatorNum;
   const poolPercent = 100 - totalFee;
-  const isValid = adminNum >= 0 && creatorNum >= 0 && totalFee <= 100 && referralNum >= 0 && tokenNum >= 0 && nftNum >= 0 && minWithdrawNum >= 0 && exitFeeNum >= 0 && exitFeeNum <= 100;
+  const isValid = adminNum >= 0 && creatorNum >= 0 && totalFee <= 100 && referralNum >= 0 && tokenNum >= 0 && nftNum >= 0 && minWithdrawNum >= 0 && exitFeeNum >= 0 && exitFeeNum <= 100 && quickTradeFeeNum >= 0 && quickTradeFeeNum <= 100;
 
   const handleSave = async () => {
     if (!isValid || !settingsId) {
@@ -71,6 +74,7 @@ const AdminSettings = () => {
           min_nft_balance: nftNum,
           min_withdrawal_amount: minWithdrawNum,
           exit_fee_percent: exitFeeNum,
+          quick_trade_fee_percent: quickTradeFeeNum,
           updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
