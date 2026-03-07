@@ -36,6 +36,8 @@ interface TradingViewChartProps {
   entrySide?: "up" | "down" | null;
   /** Unix ms timestamp when the active round ends */
   roundEndTime?: number | null;
+  /** Flash effect on round resolution */
+  resolveFlash?: "win" | "lose" | null;
 }
 
 const CANDLE_BUCKETS = 60;
@@ -49,6 +51,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   entryPrice,
   entrySide,
   roundEndTime,
+  resolveFlash,
 }, _ref) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
