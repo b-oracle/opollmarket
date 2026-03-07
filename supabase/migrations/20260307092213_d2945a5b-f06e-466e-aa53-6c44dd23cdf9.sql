@@ -1,0 +1,1 @@
+ALTER TABLE public.commission_settings ADD COLUMN IF NOT EXISTS qt_enabled_timeframes text NOT NULL DEFAULT '60,180,300,900';
