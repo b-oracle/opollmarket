@@ -214,16 +214,38 @@ export default function QuickTrade() {
   const priceHistoryRef = useRef(priceHistory);
   priceHistoryRef.current = priceHistory;
 
+  // In-memory cache for price history per asset+timeframe
+  const priceHistoryCacheRef = useRef<Map<string, { data: { time: string; price: number; ts: number }[]; fetchedAt: number }>>(new Map());
+  const CACHE_TTL = 30_000; // 30s before background refresh
+
   // Load historical price data when asset or chart timeframe changes
   const [historyLoading, setHistoryLoading] = useState(false);
   useEffect(() => {
     let cancelled = false;
-    setHistoryLoading(true);
-    setPriceHistory([]);
+    const cacheKey = `${selectedAsset.geckoId}_${chartMs}`;
+    const cached = priceHistoryCacheRef.current.get(cacheKey);
+    const now = Date.now();
+
+    // If we have cached data, use it immediately (no blank screen)
+    if (cached && cached.data.length > 0) {
+      setPriceHistory(cached.data);
+      // If cache is fresh enough, skip network call
+      if (now - cached.fetchedAt < CACHE_TTL) {
+        setHistoryLoading(false);
+        return;
+      }
+      // Stale cache: show cached data but refresh in background
+      setHistoryLoading(false);
+    } else {
+      setPriceHistory([]);
+      setHistoryLoading(true);
+    }
+
     (async () => {
       const data = await fetchPriceHistory(selectedAsset.geckoId, chartMs);
       if (!cancelled && data.length > 0) {
         setPriceHistory(data);
+        priceHistoryCacheRef.current.set(cacheKey, { data, fetchedAt: Date.now() });
       }
       if (!cancelled) setHistoryLoading(false);
     })();
@@ -244,7 +266,11 @@ export default function QuickTrade() {
         const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
         setPriceHistory((prev) => {
           const updated = [...prev, { time: timeLabel, price: p, ts: now }];
-          return updated.filter((pt) => pt.ts >= maxCutoff);
+          const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
+          // Update cache for current asset+timeframe
+          const cacheKey = `${selectedAsset.geckoId}_${chartMs}`;
+          priceHistoryCacheRef.current.set(cacheKey, { data: filtered, fetchedAt: now });
+          return filtered;
         });
       }
     };
