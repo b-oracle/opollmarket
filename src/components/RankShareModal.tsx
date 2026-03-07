@@ -3,8 +3,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, Download, Copy, Share2, Loader2, Twitter, Facebook, MessageCircle, Send, Trophy, TrendingUp, Crown, Medal, Award } from "lucide-react";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
-import watermarkLogoDark from "@/assets/watermark-logo.png";
-import watermarkLogoLight from "@/assets/blue-opoll-logo.png";
+import watermarkLogo from "@/assets/watermark-logo.png";
 
 interface RankShareModalProps {
   open: boolean;
@@ -59,8 +58,7 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
         const ctx = canvas.getContext("2d");
         if (ctx) {
           const logo = new Image();
-          const isDark = document.documentElement.classList.contains('dark');
-          logo.src = isDark ? watermarkLogoDark : watermarkLogoLight;
+          logo.src = watermarkLogo;
           await new Promise<void>((resolve) => {
             logo.onload = () => {
               const logoSize = Math.min(canvas.width, canvas.height) * 0.12;

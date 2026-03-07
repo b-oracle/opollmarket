@@ -1,8 +1,7 @@
 import SEOHead from "@/components/SEOHead";
 import YouTubeEmbed, { isYouTubeUrl } from "@/components/YouTubeEmbed";
 import { useParams, useNavigate } from "react-router-dom";
-import watermarkLogoDark from "@/assets/watermark-logo.png";
-import watermarkLogoLight from "@/assets/blue-opoll-logo.png";
+import watermarkLogo from "@/assets/watermark-logo.png";
 import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2, Wallet, FileText } from "lucide-react";
 // LogoLoader removed for faster load
 import { useMarket } from "@/hooks/useMarkets";
@@ -505,8 +504,7 @@ const MarketDetail = () => {
         </div>
         {/* Watermark */}
         <div className="absolute bottom-3 right-4 z-20 opacity-40">
-          <img src={watermarkLogoDark} alt="" className="h-7 w-auto hidden dark:block" />
-          <img src={watermarkLogoLight} alt="" className="h-7 w-auto block dark:hidden" />
+          <img src={watermarkLogo} alt="" className="h-7 w-auto" />
         </div>
       </div>
 
@@ -672,8 +670,7 @@ const MarketDetail = () => {
                 )}
               </AreaChart>
             </ResponsiveContainer>
-            <img src={watermarkLogoDark} alt="" className="absolute inset-0 m-auto opacity-30 pointer-events-none scale-[0.4] hidden dark:block" />
-            <img src={watermarkLogoLight} alt="" className="absolute inset-0 m-auto opacity-30 pointer-events-none scale-[0.4] block dark:hidden" />
+            <img src={watermarkLogo} alt="" className="absolute inset-0 m-auto opacity-30 pointer-events-none scale-[0.4]" />
           </div>
           {isMulti && market.options && (
             <div className="flex flex-wrap gap-2 mt-3">

@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import SignOutConfirmDialog from "@/components/SignOutConfirmDialog";
 import { useSidebarState } from "@/hooks/useSidebarState";
-import logo from "@/assets/blue-opoll-logo.png";
+import logo from "@/assets/logo.png";
 
 const navItems = [
   { icon: Home, label: "Home", path: "/" },
