@@ -228,19 +228,19 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     chartRef.current.timeScale().fitContent();
   }, [buildData, chartStyle]);
 
-  // Stream new price ticks in real-time
+  // Stream new price ticks in real-time with dynamic color
   useEffect(() => {
     if (!streamingPrice || !chartRef.current) return;
     
     const nowSec = Math.floor(Date.now() / 1000) as UTCTimestamp;
+    const prevPrice = prevStreamingPriceRef.current;
+    const isUp = prevPrice === null || streamingPrice >= prevPrice;
     
     if (chartStyle === "candle" && candleSeriesRef.current) {
-      // Update the last candle or create a new one every 10 seconds
       const bucketSec = 10;
       const candleTime = (Math.floor(nowSec / bucketSec) * bucketSec) as UTCTimestamp;
       
       if (candleTime > lastCandleTimeRef.current) {
-        // New candle
         candleSeriesRef.current.update({
           time: candleTime,
           open: streamingPrice,
@@ -250,7 +250,6 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
         });
         lastCandleTimeRef.current = candleTime;
       } else {
-        // Update existing candle
         candleSeriesRef.current.update({
           time: candleTime,
           open: streamingPrice,
@@ -260,12 +259,26 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
         });
       }
     } else if (areaSeriesRef.current) {
-      // For area/line: append each tick as a new data point (streaming line)
+      // Dynamic green/red coloring based on price direction
+      const greenLine = "#22c55e";
+      const redLine = "#ef4444";
+      const lineColor = isUp ? greenLine : redLine;
+      const topColor = isUp ? "rgba(34, 197, 94, 0.28)" : "rgba(239, 68, 68, 0.28)";
+      const bottomColor = isUp ? "rgba(34, 197, 94, 0.02)" : "rgba(239, 68, 68, 0.02)";
+      
+      areaSeriesRef.current.applyOptions({
+        lineColor,
+        topColor,
+        bottomColor,
+      });
+      
       areaSeriesRef.current.update({
         time: nowSec,
         value: streamingPrice,
       });
     }
+    
+    prevStreamingPriceRef.current = streamingPrice;
   }, [streamingPrice, chartStyle]);
 
   return (
