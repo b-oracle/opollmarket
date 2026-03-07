@@ -245,4 +245,6 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
       <div ref={containerRef} className={`${isFullscreen ? "flex-1" : "h-[210px]"} ${activeTool !== "none" ? "cursor-crosshair" : ""}`} />
     </div>
   );
-}
+});
+
+export default TradingViewChart;
