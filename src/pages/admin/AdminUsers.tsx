@@ -1,10 +1,11 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Shield, ShieldOff, DollarSign, X, ShieldCheck, ShieldMinus } from "lucide-react";
+import { Loader2, Shield, ShieldOff, DollarSign, X, ShieldCheck, ShieldMinus, Search, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { useAdminContext } from "./AdminLayout";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ProfileRow {
   id: string;
