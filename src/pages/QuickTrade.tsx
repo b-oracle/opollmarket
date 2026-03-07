@@ -1044,6 +1044,7 @@ export default function QuickTrade() {
                   </>
                 );
               })()}
+              </div>
             </div>
 
             {/* Share button - bottom left */}
