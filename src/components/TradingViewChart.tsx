@@ -14,6 +14,7 @@ import {
 } from "lightweight-charts";
 import { Maximize2, Minimize2, TrendingUp, Minus, Trash2, Undo2, MousePointer, CandlestickChart, LineChart } from "lucide-react";
 import { useChartDrawings, type DrawingTool } from "@/hooks/useChartDrawings";
+import type { OHLCCandle } from "@/lib/cryptoPriceProvider";
 
 interface PricePoint {
   ts: number;
@@ -21,7 +22,10 @@ interface PricePoint {
 }
 
 interface TradingViewChartProps {
-  priceHistory: PricePoint[];
+  /** Legacy: raw price points to bucket into candles client-side */
+  priceHistory?: PricePoint[];
+  /** New: pre-built OHLC candles from exchange APIs */
+  ohlcData?: OHLCCandle[];
   chartMs: number;
   timeframeLabel: string;
 }
@@ -30,6 +34,7 @@ const CANDLE_BUCKETS = 60;
 
 const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(function TradingViewChart({
   priceHistory,
+  ohlcData,
   chartMs,
   timeframeLabel,
 }, _ref) {
@@ -52,6 +57,46 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     document.documentElement.classList.contains("dark");
 
   const buildData = useCallback(() => {
+    const upColor = "#22c55e";
+    const downColor = "#ef4444";
+
+    // Prefer real OHLC data from exchange APIs
+    if (ohlcData && ohlcData.length > 0) {
+      const candles: CandlestickData[] = ohlcData.map((c) => ({
+        time: c.time as UTCTimestamp,
+        open: c.open,
+        high: c.high,
+        low: c.low,
+        close: c.close,
+      }));
+
+      const volumes: { time: UTCTimestamp; value: number; color: string }[] = ohlcData.map((c) => ({
+        time: c.time as UTCTimestamp,
+        value: Math.abs(c.close - c.open) * 1000, // synthetic volume from price movement
+        color: c.close >= c.open ? upColor + "66" : downColor + "66",
+      }));
+
+      // MA calculations
+      const ma7: { time: UTCTimestamp; value: number }[] = [];
+      const ma14: { time: UTCTimestamp; value: number }[] = [];
+      for (let i = 0; i < candles.length; i++) {
+        if (i >= 6) {
+          let sum = 0;
+          for (let j = i - 6; j <= i; j++) sum += (candles[j] as any).close;
+          ma7.push({ time: candles[i].time as UTCTimestamp, value: sum / 7 });
+        }
+        if (i >= 13) {
+          let sum = 0;
+          for (let j = i - 13; j <= i; j++) sum += (candles[j] as any).close;
+          ma14.push({ time: candles[i].time as UTCTimestamp, value: sum / 14 });
+        }
+      }
+
+      return { candles, volumes, ma7, ma14 };
+    }
+
+    // Fallback: bucket raw price points into candles
+    if (!priceHistory) return { candles: [], volumes: [], ma7: [], ma14: [] };
     const cutoff = Date.now() - chartMs;
     const filtered = priceHistory.filter((pt) => pt.ts >= cutoff);
     if (filtered.length < 2) return { candles: [], volumes: [], ma7: [], ma14: [] };
@@ -61,8 +106,6 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     const volumes: { time: UTCTimestamp; value: number; color: string }[] = [];
     let bucketStart = filtered[0].ts;
     let bucket: number[] = [];
-    const upColor = "#22c55e";
-    const downColor = "#ef4444";
 
     const flush = () => {
       if (!bucket.length) return;
@@ -83,7 +126,6 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     }
     flush();
 
-    // MA
     const ma7: { time: UTCTimestamp; value: number }[] = [];
     const ma14: { time: UTCTimestamp; value: number }[] = [];
     for (let i = 0; i < candles.length; i++) {
@@ -100,7 +142,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     }
 
     return { candles, volumes, ma7, ma14 };
-  }, [priceHistory, chartMs]);
+  }, [priceHistory, ohlcData, chartMs]);
 
   // Create main chart
   useEffect(() => {
