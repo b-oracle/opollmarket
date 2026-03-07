@@ -69,6 +69,7 @@ interface EditState {
 
 const AdminMarkets = () => {
   const { canEdit } = useAdminContext();
+  const { isSuperAdmin, isAdmin, isModerator, user: currentUser } = useAuth();
   const navigate = useNavigate();
   const [markets, setMarkets] = useState<MarketRow[]>([]);
   const [pendingMarkets, setPendingMarkets] = useState<MarketRow[]>([]);
@@ -90,7 +91,7 @@ const AdminMarkets = () => {
   const fetchMarkets = async () => {
     let query = supabase
       .from("markets")
-      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending, creator_wallet")
+      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending, creator_wallet, moderator_decision, moderator_id, moderator_reviewed_at")
       .order("created_at", { ascending: false });
     if (filter !== "all") query = query.eq("status", filter);
     const { data, error } = await query;
@@ -103,7 +104,7 @@ const AdminMarkets = () => {
   const fetchPendingMarkets = async () => {
     const { data } = await supabase
       .from("markets")
-      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending, creator_wallet")
+      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending, creator_wallet, moderator_decision, moderator_id, moderator_reviewed_at")
       .eq("status", "pending")
       .order("created_at", { ascending: false });
     if (data) {
