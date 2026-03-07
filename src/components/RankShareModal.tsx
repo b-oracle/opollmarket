@@ -4,6 +4,7 @@ import { X, Download, Copy, Share2, Loader2, Twitter, Facebook, MessageCircle, S
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
 import watermarkLogo from "@/assets/watermark-logo.png";
+import blueLogo from "@/assets/blue-opoll-logo.png";
 
 interface RankShareModalProps {
   open: boolean;
@@ -58,7 +59,7 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
         const ctx = canvas.getContext("2d");
         if (ctx) {
           const logo = new Image();
-          logo.src = watermarkLogo;
+          logo.src = document.documentElement.classList.contains('dark') ? watermarkLogo : blueLogo;
           await new Promise<void>((resolve) => {
             logo.onload = () => {
               const logoSize = Math.min(canvas.width, canvas.height) * 0.12;

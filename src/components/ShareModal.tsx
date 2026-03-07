@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import html2canvas from "html2canvas";
 import watermarkLogo from "@/assets/watermark-logo.png";
+import blueLogo from "@/assets/blue-opoll-logo.png";
 
 interface ShareModalProps {
   open: boolean;
@@ -77,7 +78,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
 
           // Draw watermark logo
           const logo = new Image();
-          logo.src = watermarkLogo;
+          logo.src = document.documentElement.classList.contains('dark') ? watermarkLogo : blueLogo;
           await new Promise<void>((resolve) => {
             logo.onload = () => {
               const logoSize = Math.min(canvas.width, canvas.height) * 0.15;
