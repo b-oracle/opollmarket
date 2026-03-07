@@ -190,7 +190,14 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     if (chartStyle === "candle" && candleSeriesRef.current) {
       candleSeriesRef.current.setData(candles);
     } else if (chartStyle === "line" && lineMainSeriesRef.current) {
-      const lineData = candles.map((c: any) => ({ time: c.time, value: c.close }));
+      const lineData = candles.map((c: any, i: number) => {
+        const prev = i > 0 ? (candles[i - 1] as any).close : c.close;
+        return {
+          time: c.time,
+          value: c.close,
+          color: c.close >= prev ? "#22c55e" : "#ef4444",
+        };
+      });
       lineMainSeriesRef.current.setData(lineData);
     }
 
