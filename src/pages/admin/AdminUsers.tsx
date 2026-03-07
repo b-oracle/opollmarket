@@ -163,8 +163,10 @@ const AdminUsers = () => {
             </thead>
             <tbody>
               {paginatedUsers.map((u) => {
+                const isSA = u.roles.includes("super_admin");
                 const isAdmin = u.roles.includes("admin");
                 const isMod = u.roles.includes("moderator");
+                const isSelf = u.id === currentUser?.id;
                 return (
                   <tr key={u.id} className="border-b border-border/50 hover:bg-muted/30">
                     <td className="p-3 font-medium">{u.display_name || "—"}</td>
