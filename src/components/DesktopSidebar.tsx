@@ -58,10 +58,12 @@ const DesktopSidebar = () => {
               className={`w-full flex items-center rounded-xl text-sm font-medium transition-all ${
                 collapsed ? "justify-center px-0 py-2.5" : "gap-3 px-3 py-2.5"
               } ${
-                isActive
-                  ? "bg-primary/10 text-primary border border-primary/20"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              } ${isCreate ? "mt-2" : ""}`}
+                isCreate
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90 mt-2"
+                  : isActive
+                    ? "bg-primary/10 text-primary border border-primary/20"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              }`}
             >
               <Icon className={`w-5 h-5 shrink-0 ${isActive ? "text-primary" : ""}`} />
               {!collapsed && label}
