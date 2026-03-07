@@ -266,7 +266,11 @@ export default function QuickTrade() {
         const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
         setPriceHistory((prev) => {
           const updated = [...prev, { time: timeLabel, price: p, ts: now }];
-          return updated.filter((pt) => pt.ts >= maxCutoff);
+          const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
+          // Update cache for current asset+timeframe
+          const cacheKey = `${selectedAsset.geckoId}_${chartMs}`;
+          priceHistoryCacheRef.current.set(cacheKey, { data: filtered, fetchedAt: now });
+          return filtered;
         });
       }
     };
