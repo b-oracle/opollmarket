@@ -31,7 +31,8 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import StreakMilestoneModal from "@/components/StreakMilestoneModal";
 import ShareModal from "@/components/ShareModal";
-import watermarkLogo from "@/assets/watermark-logo.png";
+import watermarkLogoDark from "@/assets/watermark-logo.png";
+import watermarkLogoLight from "@/assets/blue-opoll-logo.png";
 import TradingViewChart from "@/components/TradingViewChart";
 // ── Asset config ──
 const ASSETS = [
@@ -876,7 +877,8 @@ export default function QuickTrade() {
 
             {/* Watermark */}
             <div className="absolute bottom-3 right-4 z-20 opacity-40 pointer-events-none">
-              <img src={watermarkLogo} alt="" className="h-7 w-auto" />
+              <img src={watermarkLogoDark} alt="" className="h-7 w-auto hidden dark:block" />
+              <img src={watermarkLogoLight} alt="" className="h-7 w-auto block dark:hidden" />
             </div>
           </div>
 

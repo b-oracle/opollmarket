@@ -1,7 +1,8 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import watermarkLogo from "@/assets/watermark-logo.png";
+import watermarkLogoDark from "@/assets/watermark-logo.png";
+import watermarkLogoLight from "@/assets/blue-opoll-logo.png";
 import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown, ExternalLink, Flame, Radio } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Market } from "@/data/markets";
@@ -367,7 +368,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           </div>
           {/* Watermark */}
           <div className="absolute bottom-3 right-4 z-20 opacity-40">
-            <img src={watermarkLogo} alt="" className="h-7 w-auto" />
+            <img src={watermarkLogoDark} alt="" className="h-7 w-auto hidden dark:block" />
+            <img src={watermarkLogoLight} alt="" className="h-7 w-auto block dark:hidden" />
           </div>
         </div>
 
