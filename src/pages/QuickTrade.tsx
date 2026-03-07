@@ -199,7 +199,14 @@ export default function QuickTrade() {
     { key: "1M", label: "1M", ms: 30 * 24 * 60 * 60 * 1000 },
   ] as const;
   type ChartTF = typeof CHART_TIMEFRAMES[number]["key"];
-  const [chartTimeframe, setChartTimeframe] = useState<ChartTF>("15m");
+  const validTFKeys = CHART_TIMEFRAMES.map(t => t.key) as readonly string[];
+  const savedTF = typeof window !== "undefined" ? localStorage.getItem("qt-chart-tf") : null;
+  const initialTF = (savedTF && validTFKeys.includes(savedTF) ? savedTF : "15m") as ChartTF;
+  const [chartTimeframe, setChartTimeframeRaw] = useState<ChartTF>(initialTF);
+  const setChartTimeframe = useCallback((tf: ChartTF) => {
+    setChartTimeframeRaw(tf);
+    try { localStorage.setItem("qt-chart-tf", tf); } catch {}
+  }, []);
   const [chartType, setChartType] = useState<"area" | "candle" | "tv">("area");
   const chartMs = CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.ms;
 
