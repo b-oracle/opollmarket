@@ -105,13 +105,49 @@ const AdminUsers = () => {
     setCrediting(false);
   };
 
-  const paginatedUsers = useMemo(() => users.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [users, page]);
+  const filteredUsers = useMemo(() => {
+    if (!search.trim()) return users;
+    const q = search.toLowerCase();
+    return users.filter(u =>
+      (u.display_name?.toLowerCase().includes(q)) ||
+      (u.email?.toLowerCase().includes(q)) ||
+      (u.wallet_address?.toLowerCase().includes(q))
+    );
+  }, [users, search]);
+
+  const paginatedUsers = useMemo(() => filteredUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [filteredUsers, page]);
 
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>;
 
+  const getRoleBadge = (r: string) => {
+    switch (r) {
+      case "super_admin": return { label: "Super Admin", cls: "bg-primary/15 text-primary" };
+      case "admin": return { label: "Admin", cls: "bg-blue-500/10 text-blue-500" };
+      case "moderator": return { label: "Moderator", cls: "bg-amber-500/10 text-amber-500" };
+      default: return { label: r, cls: "bg-muted text-muted-foreground" };
+    }
+  };
+
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6">Users ({users.length})</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold">Users ({filteredUsers.length})</h2>
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            type="text"
+            value={search}
+            onChange={e => { setSearch(e.target.value); setPage(1); }}
+            placeholder="Search users..."
+            className="w-full bg-muted/50 border border-border rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+          {search && (
+            <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
