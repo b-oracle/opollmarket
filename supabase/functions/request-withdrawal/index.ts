@@ -6,25 +6,54 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-async function getNowPaymentsJwt(): Promise<string> {
+async function getNowPaymentsJwt(maxRetries = 3): Promise<string> {
   const email = Deno.env.get("NOWPAYMENTS_EMAIL");
   const password = Deno.env.get("NOWPAYMENTS_PASSWORD");
   if (!email || !password) throw new Error("NOWPayments credentials not configured");
 
-  const res = await fetch("https://api.nowpayments.io/v1/auth", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
+  let lastError: Error | null = null;
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`NOWPayments auth failed: ${errText}`);
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await fetch("https://api.nowpayments.io/v1/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (res.status >= 500 || res.status === 429) {
+        const errText = await res.text();
+        lastError = new Error(`NOWPayments auth failed (${res.status}): ${errText}`);
+        if (attempt < maxRetries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 4000);
+          console.warn(`Auth attempt ${attempt} failed (${res.status}), retrying in ${delay}ms...`);
+          await new Promise((r) => setTimeout(r, delay));
+          continue;
+        }
+        throw lastError;
+      }
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`NOWPayments auth failed (${res.status}): ${errText}`);
+      }
+
+      const { token } = await res.json();
+      if (!token) throw new Error("NOWPayments auth returned no token");
+      return token;
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      if (attempt < maxRetries && !lastError.message.includes("auth failed (4")) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 4000);
+        console.warn(`Auth attempt ${attempt} error: ${lastError.message}, retrying in ${delay}ms...`);
+        await new Promise((r) => setTimeout(r, delay));
+        continue;
+      }
+      throw lastError;
+    }
   }
 
-  const { token } = await res.json();
-  if (!token) throw new Error("NOWPayments auth returned no token");
-  return token;
+  throw lastError || new Error("NOWPayments auth failed after retries");
 }
 
 Deno.serve(async (req) => {
