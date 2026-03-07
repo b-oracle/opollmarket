@@ -30,6 +30,10 @@ interface TradingViewChartProps {
   timeframeLabel: string;
   /** Streaming: latest price tick to append in real-time */
   streamingPrice?: number | null;
+  /** Entry price to show as a horizontal marker line */
+  entryPrice?: number | null;
+  /** Bet side for coloring the entry line */
+  entrySide?: "up" | "down" | null;
 }
 
 const CANDLE_BUCKETS = 60;
@@ -40,6 +44,8 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   chartMs,
   timeframeLabel,
   streamingPrice,
+  entryPrice,
+  entrySide,
 }, _ref) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
