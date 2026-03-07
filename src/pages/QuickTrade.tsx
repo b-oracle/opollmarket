@@ -158,12 +158,6 @@ export default function QuickTrade() {
     }
   }, [ASSETS, selectedAsset.symbol]);
 
-  // Ensure selected timeframe is in the enabled list
-  useEffect(() => {
-    if (TIMEFRAMES.length > 0 && !TIMEFRAMES.find(t => t.seconds === selectedTimeframe.seconds)) {
-      setSelectedTimeframe(TIMEFRAMES[0]);
-    }
-  }, [TIMEFRAMES, selectedTimeframe.seconds]);
 
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [prevPrice, setPrevPrice] = useState<number | null>(null);
