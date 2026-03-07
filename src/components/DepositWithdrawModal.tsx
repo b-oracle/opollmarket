@@ -451,6 +451,12 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                               Eligible withdrawal remaining: ${eligibleWithdrawal.toFixed(2)}
                             </p>
                           )}
+                          {cooldownMinutes !== undefined && cooldownMinutes > 0 && (
+                            <p className="mt-1 flex items-center gap-1">
+                              <Clock className="w-3 h-3 inline" />
+                              Cooldown between withdrawals: {cooldownMinutes} minute{cooldownMinutes !== 1 ? "s" : ""}
+                            </p>
+                          )}
                         </div>
                       </div>
                     )}
