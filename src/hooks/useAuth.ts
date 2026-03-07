@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, createContext, useContext, ty
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 import React from "react";
+import { getCanonicalOrigin } from "@/lib/canonical";
 
 interface AuthContextValue {
   user: User | null;
@@ -221,7 +222,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           display_name: displayName,
           ...(referredBy ? { referred_by: referredBy } : {}),
         },
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: getCanonicalOrigin(),
       },
     });
     if (!error) {
