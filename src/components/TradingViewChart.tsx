@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, forwardRef } from "react";
 import {
   createChart,
   type IChartApi,
@@ -28,11 +28,11 @@ interface TradingViewChartProps {
 
 const CANDLE_BUCKETS = 60;
 
-export default function TradingViewChart({
+const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(function TradingViewChart({
   priceHistory,
   chartMs,
   timeframeLabel,
-}: TradingViewChartProps) {
+}, _ref) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -245,4 +245,6 @@ export default function TradingViewChart({
       <div ref={containerRef} className={`${isFullscreen ? "flex-1" : "h-[210px]"} ${activeTool !== "none" ? "cursor-crosshair" : ""}`} />
     </div>
   );
-}
+});
+
+export default TradingViewChart;

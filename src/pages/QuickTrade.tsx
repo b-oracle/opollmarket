@@ -70,16 +70,43 @@ const haptic = (style: "light" | "medium" | "heavy" | "success" | "error" = "med
 };
 const AMOUNT_PRESETS = [5, 10, 25, 50, 100];
 
+// ── Price fetching with rate-limit protection ──
+const priceCache = new Map<string, { price: number; fetchedAt: number }>();
+const PRICE_CACHE_TTL = 5_000; // 5s minimum between price fetches per asset
+let consecutiveFailures = 0;
+
 async function fetchPrice(geckoId: string): Promise<number | null> {
+  // Exponential backoff on consecutive failures (CoinGecko rate limiting)
+  if (consecutiveFailures >= 3) {
+    const backoffMs = Math.min(2 ** consecutiveFailures * 1000, 60_000);
+    const cached = priceCache.get(geckoId);
+    if (cached && Date.now() - cached.fetchedAt < backoffMs) {
+      return cached.price;
+    }
+  }
+  // Return cached if fresh enough
+  const cached = priceCache.get(geckoId);
+  if (cached && Date.now() - cached.fetchedAt < PRICE_CACHE_TTL) {
+    return cached.price;
+  }
   try {
     const r = await fetch(
       `https://api.coingecko.com/api/v3/simple/price?ids=${geckoId}&vs_currencies=usd`
     );
-    if (!r.ok) return null;
+    if (!r.ok) {
+      consecutiveFailures++;
+      return cached?.price ?? null;
+    }
+    consecutiveFailures = 0;
     const d = await r.json();
-    return d[geckoId]?.usd ?? null;
+    const price = d[geckoId]?.usd ?? null;
+    if (price != null) {
+      priceCache.set(geckoId, { price, fetchedAt: Date.now() });
+    }
+    return price;
   } catch {
-    return null;
+    consecutiveFailures++;
+    return cached?.price ?? null;
   }
 }
 
@@ -286,11 +313,14 @@ export default function QuickTrade() {
       }
     };
     poll();
-    const iv = setInterval(poll, 10_000);
+    const iv = setInterval(poll, 15_000);
     return () => clearInterval(iv);
   }, [selectedAsset]);
 
   // ── Fetch / create active round ──
+  const currentPriceRef = useRef(currentPrice);
+  currentPriceRef.current = currentPrice;
+
   const fetchActiveRound = useCallback(async () => {
     // Get current open/locked round for this asset + duration
     const { data } = await supabase
@@ -306,7 +336,8 @@ export default function QuickTrade() {
       setActiveRound(data[0] as unknown as Round);
     } else {
       // No active round — create one if we have a price
-      if (currentPrice != null) {
+      const price = currentPriceRef.current;
+      if (price != null) {
         const now = new Date();
         const locksAt = new Date(now.getTime() + (selectedTimeframe.seconds - LOCK_BUFFER) * 1000);
         const { data: newRound } = await supabase
@@ -314,7 +345,7 @@ export default function QuickTrade() {
           .insert({
             asset: selectedAsset.symbol,
             duration_seconds: selectedTimeframe.seconds,
-            open_price: currentPrice,
+            open_price: price,
             status: "open",
             locks_at: locksAt.toISOString(),
           })
@@ -323,11 +354,26 @@ export default function QuickTrade() {
         if (newRound) setActiveRound(newRound as unknown as Round);
       }
     }
-  }, [selectedAsset.symbol, selectedTimeframe.seconds, currentPrice]);
+  }, [selectedAsset.symbol, selectedTimeframe.seconds]);
 
+  // Fetch round when asset or timeframe changes (not on every price tick)
   useEffect(() => {
     fetchActiveRound();
-  }, [selectedAsset.symbol, selectedTimeframe.seconds, currentPrice]);
+  }, [selectedAsset.symbol, selectedTimeframe.seconds]);
+
+  // Also fetch round once we get a price for the first time (to create if needed)
+  const hasTriedCreateRef = useRef(false);
+  useEffect(() => {
+    if (currentPrice != null && !activeRound && !hasTriedCreateRef.current) {
+      hasTriedCreateRef.current = true;
+      fetchActiveRound();
+    }
+  }, [currentPrice, activeRound]);
+
+  // Reset create flag when asset/timeframe changes
+  useEffect(() => {
+    hasTriedCreateRef.current = false;
+  }, [selectedAsset.symbol, selectedTimeframe.seconds]);
 
   // ── Countdown ──
   useEffect(() => {
@@ -804,18 +850,17 @@ export default function QuickTrade() {
                   const yMax = Math.max(...allHighs);
                   const padding = (yMax - yMin) * 0.1 || 1;
 
-                  // Custom candlestick shape
-                  const CandlestickShape = (props: any) => {
+                  // Custom candlestick shape render function (not a component to avoid forwardRef warning)
+                  const renderCandlestick = (props: any) => {
                     const { x, y, width, height, payload } = props;
                     if (!payload) return null;
                     const isBullish = payload.close >= payload.open;
                     const fill = isBullish ? upColor : downColor;
                     const wickX = x + width / 2;
 
-                    // Calculate wick positions in pixel space
                     const yScale = (val: number) => {
                       const domain = [yMin - padding, yMax + padding];
-                      const range = [120 - 4, 4]; // chart height minus margins
+                      const range = [120 - 4, 4];
                       return range[0] + ((val - domain[0]) / (domain[1] - domain[0])) * (range[1] - range[0]);
                     };
                     const wickTop = yScale(payload.high);
@@ -823,9 +868,7 @@ export default function QuickTrade() {
 
                     return (
                       <g>
-                        {/* Wick */}
                         <line x1={wickX} y1={wickTop} x2={wickX} y2={wickBottom} stroke={fill} strokeWidth={1} />
-                        {/* Body */}
                         <rect x={x + 1} y={y} width={Math.max(width - 2, 2)} height={Math.max(height, 1)} fill={fill} rx={1} />
                       </g>
                     );
@@ -848,7 +891,7 @@ export default function QuickTrade() {
                           {activeRound?.open_price && (
                             <ReferenceLine y={Number(activeRound.open_price)} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.4} />
                           )}
-                          <Bar dataKey="body" shape={<CandlestickShape />} isAnimationActive={false}>
+                          <Bar dataKey="body" shape={renderCandlestick} isAnimationActive={false}>
                             {withMA.map((c, i) => (
                               <Cell key={i} fill={c.close >= c.open ? upColor : downColor} />
                             ))}
