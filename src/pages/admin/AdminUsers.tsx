@@ -19,13 +19,15 @@ interface ProfileRow {
 
 const AdminUsers = () => {
   const { canEdit } = useAdminContext();
+  const { user: currentUser, isSuperAdmin } = useAuth();
   const [users, setUsers] = useState<ProfileRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [balanceModal, setBalanceModal] = useState<{ userId: string; name: string; current: number } | null>(null);
   const [creditAmount, setCreditAmount] = useState("");
   const [crediting, setCrediting] = useState(false);
-  const [roleConfirm, setRoleConfirm] = useState<{ userId: string; name: string; role: "admin" | "moderator"; hasRole: boolean } | null>(null);
+  const [roleConfirm, setRoleConfirm] = useState<{ userId: string; name: string; role: "admin" | "moderator" | "super_admin"; hasRole: boolean } | null>(null);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
   const PAGE_SIZE = 20;
 
   const fetchUsers = async () => {
