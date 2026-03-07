@@ -17,7 +17,8 @@ type AuditAction =
   | "boost_cancelled"
   | "withdrawal_approved"
   | "withdrawal_rejected"
-  | "balance_adjusted";
+  | "balance_adjusted"
+  | "settings_updated";
 
 interface AuditLogParams {
   action: AuditAction;
