@@ -1,0 +1,1 @@
+ALTER TABLE public.commission_settings ADD COLUMN IF NOT EXISTS quick_trade_fee_percent numeric NOT NULL DEFAULT 5;
