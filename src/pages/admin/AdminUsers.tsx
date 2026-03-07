@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Shield, ShieldOff, DollarSign, X, ShieldCheck, ShieldMinus, Search, Crown } from "lucide-react";
 import { toast } from "sonner";
@@ -18,28 +18,66 @@ interface ProfileRow {
   balance: number;
 }
 
+const PAGE_SIZE = 20;
+
 const AdminUsers = () => {
   const { canEdit } = useAdminContext();
   const { user: currentUser, isSuperAdmin } = useAuth();
   const [users, setUsers] = useState<ProfileRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
   const [balanceModal, setBalanceModal] = useState<{ userId: string; name: string; current: number } | null>(null);
   const [creditAmount, setCreditAmount] = useState("");
   const [crediting, setCrediting] = useState(false);
   const [roleConfirm, setRoleConfirm] = useState<{ userId: string; name: string; role: "admin" | "moderator" | "super_admin"; hasRole: boolean } | null>(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const PAGE_SIZE = 20;
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const fetchUsers = async () => {
-    const { data: profiles, error } = await supabase
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    const from = (page - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
+    let query = supabase
       .from("profiles")
-      .select("*")
+      .select("*", { count: "exact" })
       .order("created_at", { ascending: false });
+
+    if (debouncedSearch.trim()) {
+      const q = `%${debouncedSearch.trim()}%`;
+      query = query.or(`display_name.ilike.${q},email.ilike.${q}`);
+    }
+
+    const { data: profiles, count, error } = await query.range(from, to);
 
     if (error) { setLoading(false); return; }
 
-    const { data: roles } = await supabase.from("user_roles").select("*");
+    setTotalCount(count ?? 0);
+
+    const userIds = (profiles || []).map(p => p.id);
+
+    if (userIds.length === 0) {
+      setUsers([]);
+      setLoading(false);
+      return;
+    }
+
+    // Fetch roles and balances only for the current page's users
+    const [{ data: roles }, { data: balances }] = await Promise.all([
+      supabase.from("user_roles").select("*").in("user_id", userIds),
+      supabase.from("balances").select("user_id, amount").in("user_id", userIds),
+    ]);
+
     const roleMap = new Map<string, string[]>();
     roles?.forEach((r) => {
       const existing = roleMap.get(r.user_id) || [];
@@ -47,7 +85,6 @@ const AdminUsers = () => {
       roleMap.set(r.user_id, existing);
     });
 
-    const { data: balances } = await supabase.from("balances").select("user_id, amount");
     const balanceMap = new Map<string, number>();
     balances?.forEach((b) => balanceMap.set(b.user_id, Number(b.amount)));
 
@@ -59,9 +96,9 @@ const AdminUsers = () => {
       }))
     );
     setLoading(false);
-  };
+  }, [page, debouncedSearch]);
 
-  useEffect(() => { fetchUsers(); }, []);
+  useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
   const toggleRole = async (userId: string, role: "admin" | "moderator" | "super_admin", hasRole: boolean) => {
     if (hasRole) {
@@ -98,7 +135,6 @@ const AdminUsers = () => {
     if (error) {
       toast.error("Failed to update balance");
     } else {
-      // Record the transaction
       await supabase.from("transactions").insert({
         user_id: balanceModal.userId,
         type: amount > 0 ? "deposit" : "withdrawal",
@@ -119,20 +155,6 @@ const AdminUsers = () => {
     setCrediting(false);
   };
 
-  const filteredUsers = useMemo(() => {
-    if (!search.trim()) return users;
-    const q = search.toLowerCase();
-    return users.filter(u =>
-      (u.display_name?.toLowerCase().includes(q)) ||
-      (u.email?.toLowerCase().includes(q)) ||
-      (u.wallet_address?.toLowerCase().includes(q))
-    );
-  }, [users, search]);
-
-  const paginatedUsers = useMemo(() => filteredUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [filteredUsers, page]);
-
-  if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>;
-
   const getRoleBadge = (r: string) => {
     switch (r) {
       case "super_admin": return { label: "Super Admin", cls: "bg-primary/15 text-primary" };
@@ -145,15 +167,15 @@ const AdminUsers = () => {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-        <h2 className="text-xl sm:text-2xl font-bold">Users ({filteredUsers.length})</h2>
-        <div className="relative w-full sm:w-64">
+        <h2 className="text-xl sm:text-2xl font-bold">Users ({totalCount})</h2>
+        <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
             value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Search users..."
-            className="w-full bg-muted/50 border border-border rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search by username or email..."
+            className="w-full bg-muted/50 border border-border rounded-lg pl-9 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
           {search && (
             <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
@@ -162,6 +184,7 @@ const AdminUsers = () => {
           )}
         </div>
       </div>
+
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -176,7 +199,11 @@ const AdminUsers = () => {
               </tr>
             </thead>
             <tbody>
-              {paginatedUsers.map((u) => {
+              {loading ? (
+                <tr><td colSpan={6} className="p-10 text-center"><Loader2 className="w-5 h-5 text-primary animate-spin mx-auto" /></td></tr>
+              ) : users.length === 0 ? (
+                <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">{debouncedSearch ? "No matching users" : "No users found"}</td></tr>
+              ) : users.map((u) => {
                 const isSA = u.roles.includes("super_admin");
                 const isAdmin = u.roles.includes("admin");
                 const isMod = u.roles.includes("moderator");
@@ -252,14 +279,11 @@ const AdminUsers = () => {
                   </tr>
                 );
               })}
-              {filteredUsers.length === 0 && (
-                <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">{search ? "No matching users" : "No users found"}</td></tr>
-              )}
             </tbody>
           </table>
         </div>
       </div>
-      <AdminPagination page={page} totalItems={filteredUsers.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
+      <AdminPagination page={page} totalItems={totalCount} pageSize={PAGE_SIZE} onPageChange={setPage} />
 
       {/* Balance Modal */}
       <AnimatePresence>
