@@ -313,7 +313,7 @@ export default function QuickTrade() {
       }
     };
     poll();
-    const iv = setInterval(poll, 10_000);
+    const iv = setInterval(poll, 15_000);
     return () => clearInterval(iv);
   }, [selectedAsset]);
 
