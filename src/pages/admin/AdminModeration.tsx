@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CheckCircle, XCircle, Eye, MessageSquare, ShoppingBag, Image, User, Filter } from "lucide-react";
 import { toast } from "sonner";
+import { logAuditEvent } from "@/lib/auditLog";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAdminContext } from "./AdminLayout";
@@ -78,6 +79,7 @@ const AdminModeration = () => {
 
   const handleReview = async (id: string, action: "approved" | "rejected") => {
     setProcessing(true);
+    const log = logs.find(l => l.id === id);
     const { error } = await supabase
       .from("moderation_logs")
       .update({
@@ -91,6 +93,12 @@ const AdminModeration = () => {
       toast.error("Failed to update");
     } else {
       toast.success(`Content ${action}`);
+      logAuditEvent({
+        action: action === "approved" ? "moderation_approved" : "moderation_rejected",
+        targetId: log?.content_id ?? id,
+        targetType: log?.content_type ?? "content",
+        details: { moderation_log_id: id, content_type: log?.content_type, note: adminNote.trim() || null },
+      });
       setReviewingId(null);
       setAdminNote("");
       fetchLogs();

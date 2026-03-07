@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin, ShieldAlert, ShieldCheck, Ban } from "lucide-react";
 import { toast } from "sonner";
+import { logAuditEvent } from "@/lib/auditLog";
 import { motion, AnimatePresence } from "framer-motion";
 import BulkCSVImport from "@/components/admin/BulkCSVImport";
 import AdminPagination from "@/components/admin/AdminPagination";
@@ -125,15 +126,21 @@ const AdminMarkets = () => {
 
   const handleApprove = async (id: string) => {
     setApprovingId(id);
+    const market = [...markets, ...pendingMarkets].find(m => m.id === id);
     const { error } = await supabase.from("markets").update({ status: "active" }).eq("id", id);
     if (error) { toast.error("Failed to approve"); }
-    else { toast.success("Market approved and now live!"); fetchMarkets(); fetchPendingMarkets(); }
+    else {
+      toast.success("Market approved and now live!");
+      logAuditEvent({ action: "market_approved", targetId: id, targetType: "market", details: { title: market?.title } });
+      fetchMarkets(); fetchPendingMarkets();
+    }
     setApprovingId(null);
   };
 
   const handleReject = async (id: string) => {
     if (!confirm("Reject this market for content violation? The creation fee will be FORFEITED (not refunded). Only the initial liquidity will be refunded.")) return;
     setRejectingId(id);
+    const market = [...markets, ...pendingMarkets].find(m => m.id === id);
     try {
       const { data, error } = await supabase.functions.invoke("cancel-market", {
         body: { market_id: id, reason: "moderation" },
@@ -142,6 +149,7 @@ const AdminMarkets = () => {
       if (data?.error) throw new Error(data.error);
       const feeMsg = data?.creation_fee_forfeited > 0 ? ` Creation fee ($${data.creation_fee_forfeited}) forfeited.` : "";
       toast.success(`Market rejected.${feeMsg} Liquidity refunded.`);
+      logAuditEvent({ action: "market_rejected", targetId: id, targetType: "market", details: { title: market?.title } });
       fetchMarkets();
       fetchPendingMarkets();
     } catch (err: any) {
