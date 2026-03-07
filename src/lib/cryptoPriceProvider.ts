@@ -14,6 +14,8 @@ const GECKO_IDS: Record<string, string> = {
 const GECKO_TO_SYM: Record<string, string> = Object.fromEntries(
   Object.entries(GECKO_IDS).map(([k, v]) => [v, k])
 );
+
+const COINCAP_IDS: Record<string, string> = {
   BTC: "bitcoin", ETH: "ethereum", BNB: "binance-coin", SOL: "solana",
   XRP: "xrp", ADA: "cardano", DOGE: "dogecoin", MATIC: "polygon",
   AVAX: "avalanche", DOT: "polkadot", LINK: "chainlink", SHIB: "shiba-inu",
