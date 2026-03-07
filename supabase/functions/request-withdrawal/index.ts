@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
     // Fetch min withdrawal from settings
     const { data: settings } = await adminClient
       .from("commission_settings")
-      .select("min_withdrawal_amount")
+      .select("min_withdrawal_amount, withdrawal_cooldown_minutes")
       .limit(1)
       .single();
 
@@ -136,8 +136,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Cooldown: prevent rapid repeated withdrawals (5 minutes)
-    const cooldownMinutes = 5;
+    // Cooldown: prevent rapid repeated withdrawals (configurable)
+    const cooldownMinutes = settings?.withdrawal_cooldown_minutes ?? 5;
     const cooldownCutoff = new Date(Date.now() - cooldownMinutes * 60 * 1000).toISOString();
     const { data: recentWithdrawals } = await adminClient
       .from("withdrawal_requests")
