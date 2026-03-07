@@ -160,10 +160,8 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
       candleSeriesRef.current = chart.addSeries(CandlestickSeries, { upColor: "#22c55e", downColor: "#ef4444", borderUpColor: "#22c55e", borderDownColor: "#ef4444", wickUpColor: "#22c55e", wickDownColor: "#ef4444" });
       lineMainSeriesRef.current = null;
     } else {
-      lineMainSeriesRef.current = chart.addSeries(AreaSeries, {
-        lineColor: "hsl(var(--primary))",
-        topColor: isDark ? "hsla(193, 98%, 50%, 0.25)" : "hsla(193, 98%, 50%, 0.15)",
-        bottomColor: isDark ? "hsla(193, 98%, 50%, 0.02)" : "hsla(193, 98%, 50%, 0.01)",
+      lineMainSeriesRef.current = chart.addSeries(LineSeries, {
+        color: "#22c55e",
         lineWidth: 2,
         priceLineVisible: true,
         lastValueVisible: true,
