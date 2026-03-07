@@ -189,8 +189,10 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
           crypto_currency: selectedCrypto,
         },
       });
-      if (error || data?.error) {
-        throw new Error(data?.error || error?.message || "Failed to request withdrawal");
+      // Edge functions return error details in data even on non-2xx
+      const errorMsg = data?.error || error?.message;
+      if (errorMsg) {
+        throw new Error(errorMsg);
       }
       queryClient.invalidateQueries({ queryKey: ["balance"] });
       setStep("success");
