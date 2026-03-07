@@ -195,6 +195,10 @@ const AdminSettings = () => {
             </CardContent>
           </Card>
 
+          <Card className="border-dashed">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Gift className="w-4 h-4" /> Referral Reward
               </CardTitle>
               <CardDescription className="text-xs">
                 Fixed amount credited to referrer's bonus balance when their referral places their first prediction. Non-withdrawable.
