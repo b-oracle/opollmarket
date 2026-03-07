@@ -4,6 +4,7 @@ import { Loader2, CheckCircle, XCircle, Eye, MessageSquare, ShoppingBag, Image, 
 import { toast } from "sonner";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAdminContext } from "./AdminLayout";
 
 interface ModerationLog {
   id: string;
@@ -39,6 +40,7 @@ const statusConfig: Record<string, { label: string; colorClass: string }> = {
 const PAGE_SIZE = 20;
 
 const AdminModeration = () => {
+  const { canEdit } = useAdminContext();
   const [logs, setLogs] = useState<ModerationLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -240,7 +242,7 @@ const AdminModeration = () => {
                     )}
 
                     {/* Review actions */}
-                    {log.status === "pending" && (
+                    {log.status === "pending" && canEdit && (
                       <div className="mt-3">
                         {reviewingId === log.id ? (
                           <div className="space-y-2">

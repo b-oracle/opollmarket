@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import BulkCSVImport from "@/components/admin/BulkCSVImport";
 import AdminPagination from "@/components/admin/AdminPagination";
+import { useAdminContext } from "./AdminLayout";
 
 const CATEGORIES = ["Crypto", "AI & Tech", "Science", "Economy", "Entertainment", "Sports", "Politics", "Other"];
 
@@ -62,6 +63,7 @@ interface EditState {
 }
 
 const AdminMarkets = () => {
+  const { canEdit } = useAdminContext();
   const navigate = useNavigate();
   const [markets, setMarkets] = useState<MarketRow[]>([]);
   const [pendingMarkets, setPendingMarkets] = useState<MarketRow[]>([]);
@@ -263,7 +265,8 @@ const AdminMarkets = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h2 className="text-xl sm:text-2xl font-bold">Markets ({markets.length})</h2>
         <div className="flex items-center gap-2 flex-wrap">
-          <BulkCSVImport onComplete={fetchMarkets} />
+          {canEdit && <BulkCSVImport onComplete={fetchMarkets} />}
+          {canEdit && (
           <button
             onClick={() => navigate("/admin/create-market")}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all active:scale-95"
@@ -271,6 +274,7 @@ const AdminMarkets = () => {
             <Plus className="w-3.5 h-3.5" />
             Create
           </button>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 overflow-x-auto scrollbar-hide">
@@ -319,6 +323,7 @@ const AdminMarkets = () => {
                     )}
                   </div>
                 </div>
+                {canEdit && (
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() => handleApprove(m.id)}
@@ -363,6 +368,7 @@ const AdminMarkets = () => {
                     Reject
                   </button>
                 </div>
+                )}
               </div>
             ))}
           </div>
@@ -468,8 +474,8 @@ const AdminMarkets = () => {
                           <span className="text-muted-foreground text-xs">{new Date(m.end_date).toLocaleDateString()}</span>
                         )}
                       </td>
-                      {/* Actions */}
                       <td className="p-3">
+                        {canEdit ? (
                         <div className="flex items-center gap-1">
                           {isEditing ? (
                             <>
@@ -551,6 +557,9 @@ const AdminMarkets = () => {
                             </>
                           )}
                         </div>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">View only</span>
+                        )}
                       </td>
                     </tr>
                     {/* Expandable description row */}
@@ -606,6 +615,7 @@ const AdminMarkets = () => {
                                 <Pin className="w-3 h-3 text-muted-foreground" />
                                 <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Pin as Trending</label>
                               </div>
+                              {canEdit ? (
                               <button
                                 onClick={async () => {
                                   const newVal = !m.pinned_trending;
@@ -622,6 +632,11 @@ const AdminMarkets = () => {
                               >
                                 {m.pinned_trending ? "📌 Pinned" : "Pin"}
                               </button>
+                              ) : (
+                                <span className={`px-3 py-1 rounded-lg text-[10px] font-bold ${m.pinned_trending ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                                  {m.pinned_trending ? "📌 Pinned" : "Not Pinned"}
+                                </span>
+                              )}
                             </div>
 
                             {/* Trending Score Breakdown */}

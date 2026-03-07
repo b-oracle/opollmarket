@@ -4,6 +4,7 @@ import { Loader2, Shield, ShieldOff, DollarSign, X, ShieldCheck, ShieldMinus } f
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import AdminPagination from "@/components/admin/AdminPagination";
+import { useAdminContext } from "./AdminLayout";
 
 interface ProfileRow {
   id: string;
@@ -16,6 +17,7 @@ interface ProfileRow {
 }
 
 const AdminUsers = () => {
+  const { canEdit } = useAdminContext();
   const [users, setUsers] = useState<ProfileRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [balanceModal, setBalanceModal] = useState<{ userId: string; name: string; current: number } | null>(null);
@@ -144,6 +146,7 @@ const AdminUsers = () => {
                       {new Date(u.created_at).toLocaleDateString()}
                     </td>
                     <td className="p-3">
+                      {canEdit ? (
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => setBalanceModal({ userId: u.id, name: u.display_name || u.email || "User", current: u.balance })}
@@ -171,6 +174,9 @@ const AdminUsers = () => {
                           {isAdmin ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
                         </button>
                       </div>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">View only</span>
+                      )}
                     </td>
                   </tr>
                 );

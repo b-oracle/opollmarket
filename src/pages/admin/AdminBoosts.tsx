@@ -4,6 +4,7 @@ import { Loader2, Zap, CheckCircle, XCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import AdminPagination from "@/components/admin/AdminPagination";
+import { useAdminContext } from "./AdminLayout";
 
 interface BoostRow {
   id: string;
@@ -34,6 +35,7 @@ const tierLabels: Record<string, string> = {
 };
 
 const AdminBoosts = () => {
+  const { canEdit } = useAdminContext();
   const [boosts, setBoosts] = useState<BoostRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -175,6 +177,7 @@ const AdminBoosts = () => {
                 </div>
               </div>
 
+              {canEdit && (
               <div className="flex items-center gap-2 shrink-0">
                 {boost.status === "pending" && (
                   <button
@@ -205,6 +208,7 @@ const AdminBoosts = () => {
                   </button>
                 )}
               </div>
+              )}
             </div>
           ))}
         </div>

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
+import { useAdminContext } from "./AdminLayout";
 
 const ALL_ASSETS = [
   { symbol: "BTC", label: "Bitcoin" },
@@ -25,6 +26,7 @@ const ALL_TIMEFRAMES = [
 ];
 
 const AdminSettings = () => {
+  const { canEdit } = useAdminContext();
   const [adminFee, setAdminFee] = useState("");
   const [creatorFee, setCreatorFee] = useState("");
   const [referralReward, setReferralReward] = useState("");
@@ -426,9 +428,9 @@ const AdminSettings = () => {
       {/* Save Button */}
       <div className="max-w-4xl mt-6">
         {referralNum < 0 && <p className="text-xs text-destructive mb-2">Referral reward amount cannot be negative.</p>}
-        <Button onClick={handleSave} disabled={!isValid || saving} className="w-full sm:w-auto">
+        <Button onClick={handleSave} disabled={!isValid || saving || !canEdit} className="w-full sm:w-auto">
           {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-          Save All Settings
+          {canEdit ? "Save All Settings" : "View Only — Cannot Save"}
         </Button>
       </div>
     </div>

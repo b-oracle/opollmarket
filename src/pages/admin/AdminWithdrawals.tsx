@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CheckCircle2, XCircle, Clock, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useAdminContext } from "./AdminLayout";
 import {
   Table,
   TableBody,
@@ -22,6 +23,7 @@ const statusColors: Record<string, string> = {
 };
 
 const AdminWithdrawals = () => {
+  const { canEdit } = useAdminContext();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [wdPage, setWdPage] = useState(1);
@@ -151,7 +153,7 @@ const AdminWithdrawals = () => {
                       {w.admin_note || "—"}
                     </TableCell>
                     <TableCell className="text-right">
-                      {w.status === "pending" && (
+                      {w.status === "pending" && canEdit && (
                         <div className="flex gap-2 justify-end">
                           <button
                             onClick={() =>
