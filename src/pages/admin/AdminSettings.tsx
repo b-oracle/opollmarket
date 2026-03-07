@@ -301,6 +301,10 @@ const AdminSettings = () => {
               <span className="text-muted-foreground">Early Exit Fee</span>
               <span className="font-medium">{exitFeeNum}%</span>
             </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Quick Trade Fee</span>
+              <span className="font-medium">{quickTradeFeeNum}%</span>
+            </div>
             <div className="border-t border-border pt-1.5 flex justify-between text-sm">
               <span className="text-muted-foreground">Pool (bet amount)</span>
               <span className={`font-bold ${poolPercent < 0 ? "text-destructive" : "text-primary"}`}>
