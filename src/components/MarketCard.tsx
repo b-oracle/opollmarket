@@ -368,7 +368,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           </div>
           {/* Watermark */}
           <div className="absolute bottom-3 right-4 z-20 opacity-40">
-            <img src={watermarkLogo} alt="" className="h-7 w-auto" />
+            <img src={watermarkLogoDark} alt="" className="h-7 w-auto hidden dark:block" />
+            <img src={watermarkLogoLight} alt="" className="h-7 w-auto block dark:hidden" />
           </div>
         </div>
 

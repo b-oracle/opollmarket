@@ -59,7 +59,8 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
         const ctx = canvas.getContext("2d");
         if (ctx) {
           const logo = new Image();
-          logo.src = watermarkLogo;
+          const isDark = document.documentElement.classList.contains('dark');
+          logo.src = isDark ? watermarkLogoDark : watermarkLogoLight;
           await new Promise<void>((resolve) => {
             logo.onload = () => {
               const logoSize = Math.min(canvas.width, canvas.height) * 0.12;

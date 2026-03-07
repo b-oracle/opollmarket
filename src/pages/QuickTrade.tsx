@@ -877,7 +877,8 @@ export default function QuickTrade() {
 
             {/* Watermark */}
             <div className="absolute bottom-3 right-4 z-20 opacity-40 pointer-events-none">
-              <img src={watermarkLogo} alt="" className="h-7 w-auto" />
+              <img src={watermarkLogoDark} alt="" className="h-7 w-auto hidden dark:block" />
+              <img src={watermarkLogoLight} alt="" className="h-7 w-auto block dark:hidden" />
             </div>
           </div>
 
