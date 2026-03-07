@@ -17,6 +17,13 @@ const ALL_ASSETS = [
   { symbol: "DOGE", label: "Dogecoin" },
 ];
 
+const ALL_TIMEFRAMES = [
+  { seconds: 60, label: "1 Minute" },
+  { seconds: 180, label: "3 Minutes" },
+  { seconds: 300, label: "5 Minutes" },
+  { seconds: 900, label: "15 Minutes" },
+];
+
 const AdminSettings = () => {
   const [adminFee, setAdminFee] = useState("");
   const [creatorFee, setCreatorFee] = useState("");
@@ -33,6 +40,7 @@ const AdminSettings = () => {
   const [qtStreak4, setQtStreak4] = useState("");
   const [qtStreak5, setQtStreak5] = useState("");
   const [qtEnabledAssets, setQtEnabledAssets] = useState<Set<string>>(new Set(ALL_ASSETS.map(a => a.symbol)));
+  const [qtEnabledTimeframes, setQtEnabledTimeframes] = useState<Set<number>>(new Set(ALL_TIMEFRAMES.map(t => t.seconds)));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
