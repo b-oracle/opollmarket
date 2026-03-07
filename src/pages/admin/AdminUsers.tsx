@@ -329,13 +329,16 @@ const AdminUsers = () => {
               <div className="flex items-center gap-2 mb-1">
                 {roleConfirm.hasRole
                   ? <ShieldOff className="w-5 h-5 text-destructive" />
-                  : <ShieldCheck className="w-5 h-5 text-primary" />}
+                  : roleConfirm.role === "super_admin" ? <Crown className="w-5 h-5 text-primary" /> : <ShieldCheck className="w-5 h-5 text-primary" />}
                 <h3 className="text-lg font-bold">
-                  {roleConfirm.hasRole ? "Remove" : "Assign"} {roleConfirm.role.charAt(0).toUpperCase() + roleConfirm.role.slice(1)} Role
+                  {roleConfirm.hasRole ? "Remove" : "Assign"} {getRoleBadge(roleConfirm.role).label} Role
                 </h3>
               </div>
               <p className="text-sm text-muted-foreground mb-6">
-                Are you sure you want to {roleConfirm.hasRole ? "remove" : "assign"} the <strong className="text-foreground">{roleConfirm.role}</strong> role {roleConfirm.hasRole ? "from" : "to"} <strong className="text-foreground">{roleConfirm.name}</strong>?
+                Are you sure you want to {roleConfirm.hasRole ? "remove" : "assign"} the <strong className="text-foreground">{getRoleBadge(roleConfirm.role).label}</strong> role {roleConfirm.hasRole ? "from" : "to"} <strong className="text-foreground">{roleConfirm.name}</strong>?
+                {roleConfirm.role === "super_admin" && !roleConfirm.hasRole && (
+                  <span className="block mt-2 text-xs text-destructive font-medium">⚠️ This grants full read/write access to all admin functions.</span>
+                )}
               </p>
               <div className="flex gap-2">
                 <button
