@@ -52,6 +52,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [chartStyle, setChartStyle] = useState<"candle" | "line">("line"); // default to line for streaming feel
   const lastCandleTimeRef = useRef<number>(0);
+  const prevStreamingPriceRef = useRef<number | null>(null);
 
   const activeMainSeries = chartStyle === "candle" ? candleSeriesRef : lineMainSeriesRef;
   const { activeTool, setActiveTool, clearDrawings, removeLastDrawing } =
