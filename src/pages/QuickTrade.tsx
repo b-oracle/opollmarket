@@ -31,7 +31,8 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import StreakMilestoneModal from "@/components/StreakMilestoneModal";
 import ShareModal from "@/components/ShareModal";
-import watermarkLogo from "@/assets/watermark-logo.png";
+import watermarkLogoDark from "@/assets/watermark-logo.png";
+import watermarkLogoLight from "@/assets/blue-opoll-logo.png";
 import TradingViewChart from "@/components/TradingViewChart";
 // ── Asset config ──
 const ASSETS = [

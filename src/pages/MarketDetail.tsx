@@ -1,7 +1,8 @@
 import SEOHead from "@/components/SEOHead";
 import YouTubeEmbed, { isYouTubeUrl } from "@/components/YouTubeEmbed";
 import { useParams, useNavigate } from "react-router-dom";
-import watermarkLogo from "@/assets/watermark-logo.png";
+import watermarkLogoDark from "@/assets/watermark-logo.png";
+import watermarkLogoLight from "@/assets/blue-opoll-logo.png";
 import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2, Wallet, FileText } from "lucide-react";
 // LogoLoader removed for faster load
 import { useMarket } from "@/hooks/useMarkets";

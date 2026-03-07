@@ -4,7 +4,8 @@ import { X, Download, Copy, Share2, Loader2, Twitter, Facebook, MessageCircle, S
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import html2canvas from "html2canvas";
-import watermarkLogo from "@/assets/watermark-logo.png";
+import watermarkLogoDark from "@/assets/watermark-logo.png";
+import watermarkLogoLight from "@/assets/blue-opoll-logo.png";
 
 interface ShareModalProps {
   open: boolean;

@@ -3,7 +3,8 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, Download, Copy, Share2, Loader2, Twitter, Facebook, MessageCircle, Send, Trophy, TrendingUp, Crown, Medal, Award } from "lucide-react";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
-import watermarkLogo from "@/assets/watermark-logo.png";
+import watermarkLogoDark from "@/assets/watermark-logo.png";
+import watermarkLogoLight from "@/assets/blue-opoll-logo.png";
 
 interface RankShareModalProps {
   open: boolean;
