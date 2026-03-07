@@ -891,7 +891,7 @@ export default function QuickTrade() {
                           {activeRound?.open_price && (
                             <ReferenceLine y={Number(activeRound.open_price)} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.4} />
                           )}
-                          <Bar dataKey="body" shape={<CandlestickShape />} isAnimationActive={false}>
+                          <Bar dataKey="body" shape={renderCandlestick} isAnimationActive={false}>
                             {withMA.map((c, i) => (
                               <Cell key={i} fill={c.close >= c.open ? upColor : downColor} />
                             ))}
