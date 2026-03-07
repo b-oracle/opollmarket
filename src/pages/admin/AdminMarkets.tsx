@@ -474,8 +474,8 @@ const AdminMarkets = () => {
                           <span className="text-muted-foreground text-xs">{new Date(m.end_date).toLocaleDateString()}</span>
                         )}
                       </td>
-                      {/* Actions */}
                       <td className="p-3">
+                        {canEdit ? (
                         <div className="flex items-center gap-1">
                           {isEditing ? (
                             <>
