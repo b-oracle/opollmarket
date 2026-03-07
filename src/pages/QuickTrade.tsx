@@ -83,30 +83,43 @@ async function fetchPrice(geckoId: string): Promise<number | null> {
   }
 }
 
-async function fetchPriceHistory(
-  geckoId: string,
-  durationMs: number
-): Promise<{ time: string; price: number; ts: number }[]> {
+// Raw price data cache: one fetch per asset, filter client-side by timeframe
+const rawPriceCache = new Map<string, { prices: [number, number][]; fetchedAt: number }>();
+const RAW_CACHE_TTL = 30_000;
+
+async function fetchRawPriceData(
+  geckoId: string
+): Promise<[number, number][]> {
+  const cached = rawPriceCache.get(geckoId);
+  if (cached && Date.now() - cached.fetchedAt < RAW_CACHE_TTL) {
+    return cached.prices;
+  }
   try {
-    // CoinGecko market_chart: for <=24h use minutes granularity
-    const days = durationMs <= 24 * 60 * 60 * 1000 ? 1 : Math.ceil(durationMs / (24 * 60 * 60 * 1000));
     const r = await fetch(
-      `https://api.coingecko.com/api/v3/coins/${geckoId}/market_chart?vs_currency=usd&days=${days}`
+      `https://api.coingecko.com/api/v3/coins/${geckoId}/market_chart?vs_currency=usd&days=1`
     );
-    if (!r.ok) return [];
+    if (!r.ok) return cached?.prices ?? [];
     const d = await r.json();
     const prices: [number, number][] = d.prices || [];
-    const cutoff = Date.now() - durationMs;
-    return prices
-      .filter(([ts]) => ts >= cutoff)
-      .map(([ts, price]) => ({
-        time: new Date(ts).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true }),
-        price,
-        ts,
-      }));
+    rawPriceCache.set(geckoId, { prices, fetchedAt: Date.now() });
+    return prices;
   } catch {
-    return [];
+    return cached?.prices ?? [];
   }
+}
+
+function filterPriceData(
+  raw: [number, number][],
+  durationMs: number
+): { time: string; price: number; ts: number }[] {
+  const cutoff = Date.now() - durationMs;
+  return raw
+    .filter(([ts]) => ts >= cutoff)
+    .map(([ts, price]) => ({
+      time: new Date(ts).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true }),
+      price,
+      ts,
+    }));
 }
 
 type Round = {
@@ -214,43 +227,42 @@ export default function QuickTrade() {
   const priceHistoryRef = useRef(priceHistory);
   priceHistoryRef.current = priceHistory;
 
-  // In-memory cache for price history per asset+timeframe
-  const priceHistoryCacheRef = useRef<Map<string, { data: { time: string; price: number; ts: number }[]; fetchedAt: number }>>(new Map());
-  const CACHE_TTL = 30_000; // 30s before background refresh
-
-  // Load historical price data when asset or chart timeframe changes
+  // Load raw price data once per asset, then filter by timeframe client-side
   const [historyLoading, setHistoryLoading] = useState(false);
+  const rawDataRef = useRef<Map<string, [number, number][]>>(new Map());
+
+  // Fetch raw data when asset changes
   useEffect(() => {
     let cancelled = false;
-    const cacheKey = `${selectedAsset.geckoId}_${chartMs}`;
-    const cached = priceHistoryCacheRef.current.get(cacheKey);
-    const now = Date.now();
+    const geckoId = selectedAsset.geckoId;
 
-    // If we have cached data, use it immediately (no blank screen)
-    if (cached && cached.data.length > 0) {
-      setPriceHistory(cached.data);
-      // If cache is fresh enough, skip network call
-      if (now - cached.fetchedAt < CACHE_TTL) {
-        setHistoryLoading(false);
-        return;
-      }
-      // Stale cache: show cached data but refresh in background
+    // Use cached raw data immediately if available
+    const cachedRaw = rawDataRef.current.get(geckoId);
+    if (cachedRaw && cachedRaw.length > 0) {
+      setPriceHistory(filterPriceData(cachedRaw, chartMs));
       setHistoryLoading(false);
     } else {
-      setPriceHistory([]);
       setHistoryLoading(true);
     }
 
     (async () => {
-      const data = await fetchPriceHistory(selectedAsset.geckoId, chartMs);
-      if (!cancelled && data.length > 0) {
-        setPriceHistory(data);
-        priceHistoryCacheRef.current.set(cacheKey, { data, fetchedAt: Date.now() });
+      const raw = await fetchRawPriceData(geckoId);
+      if (!cancelled && raw.length > 0) {
+        rawDataRef.current.set(geckoId, raw);
+        setPriceHistory(filterPriceData(raw, chartMs));
       }
       if (!cancelled) setHistoryLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [selectedAsset.geckoId, chartMs]);
+  }, [selectedAsset.geckoId]);
+
+  // When chart timeframe changes, just re-filter existing raw data (instant)
+  useEffect(() => {
+    const raw = rawDataRef.current.get(selectedAsset.geckoId);
+    if (raw && raw.length > 0) {
+      setPriceHistory(filterPriceData(raw, chartMs));
+    }
+  }, [chartMs, selectedAsset.geckoId]);
 
   // ── Fetch price ──
   useEffect(() => {
@@ -260,17 +272,16 @@ export default function QuickTrade() {
         setPrevPrice(currentPrice);
         setCurrentPrice(p);
 
-        // Add to price history (keep max 4h of data, filter on render)
+        // Add to raw cache and price history
         const now = Date.now();
         const maxCutoff = now - 4 * 60 * 60 * 1000;
         const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
+        // Update raw cache with new point
+        const rawCached = rawDataRef.current.get(selectedAsset.geckoId) || [];
+        rawDataRef.current.set(selectedAsset.geckoId, [...rawCached, [now, p] as [number, number]].filter(([ts]) => ts >= maxCutoff));
         setPriceHistory((prev) => {
           const updated = [...prev, { time: timeLabel, price: p, ts: now }];
-          const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
-          // Update cache for current asset+timeframe
-          const cacheKey = `${selectedAsset.geckoId}_${chartMs}`;
-          priceHistoryCacheRef.current.set(cacheKey, { data: filtered, fetchedAt: now });
-          return filtered;
+          return updated.filter((pt) => pt.ts >= maxCutoff);
         });
       }
     };
