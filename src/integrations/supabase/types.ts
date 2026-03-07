@@ -212,6 +212,7 @@ export type Database = {
           token_decimals: number | null
           updated_at: string
           updated_by: string | null
+          withdrawal_cooldown_minutes: number
         }
         Insert: {
           admin_fee_percent?: number
@@ -238,6 +239,7 @@ export type Database = {
           token_decimals?: number | null
           updated_at?: string
           updated_by?: string | null
+          withdrawal_cooldown_minutes?: number
         }
         Update: {
           admin_fee_percent?: number
@@ -264,6 +266,7 @@ export type Database = {
           token_decimals?: number | null
           updated_at?: string
           updated_by?: string | null
+          withdrawal_cooldown_minutes?: number
         }
         Relationships: []
       }
