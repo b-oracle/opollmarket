@@ -10,7 +10,10 @@ const GECKO_IDS: Record<string, string> = {
   AVAX: "avalanche-2", DOT: "polkadot", LINK: "chainlink", SHIB: "shiba-inu",
 };
 
-const COINCAP_IDS: Record<string, string> = {
+// Reverse lookup: geckoId → symbol
+const GECKO_TO_SYM: Record<string, string> = Object.fromEntries(
+  Object.entries(GECKO_IDS).map(([k, v]) => [v, k])
+);
   BTC: "bitcoin", ETH: "ethereum", BNB: "binance-coin", SOL: "solana",
   XRP: "xrp", ADA: "cardano", DOGE: "dogecoin", MATIC: "polygon",
   AVAX: "avalanche", DOT: "polkadot", LINK: "chainlink", SHIB: "shiba-inu",
@@ -63,6 +66,12 @@ export async function fetchCryptoPrice(
   symbol: string,
   geckoId?: string
 ): Promise<number | null> {
+  // Resolve symbol from geckoId if symbol is empty
+  let sym = symbol.toUpperCase();
+  if (!sym && geckoId) {
+    sym = GECKO_TO_SYM[geckoId] || "";
+  }
+  const cacheKey = sym || geckoId || "";
   const sym = symbol.toUpperCase();
   const cacheKey = sym;
 
