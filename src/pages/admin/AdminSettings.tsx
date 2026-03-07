@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign } from "lucide-react";
+import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 
@@ -15,6 +15,13 @@ const ALL_ASSETS = [
   { symbol: "SOL", label: "Solana" },
   { symbol: "XRP", label: "XRP" },
   { symbol: "DOGE", label: "Dogecoin" },
+];
+
+const ALL_TIMEFRAMES = [
+  { seconds: 60, label: "1 Minute" },
+  { seconds: 180, label: "3 Minutes" },
+  { seconds: 300, label: "5 Minutes" },
+  { seconds: 900, label: "15 Minutes" },
 ];
 
 const AdminSettings = () => {
@@ -33,6 +40,7 @@ const AdminSettings = () => {
   const [qtStreak4, setQtStreak4] = useState("");
   const [qtStreak5, setQtStreak5] = useState("");
   const [qtEnabledAssets, setQtEnabledAssets] = useState<Set<string>>(new Set(ALL_ASSETS.map(a => a.symbol)));
+  const [qtEnabledTimeframes, setQtEnabledTimeframes] = useState<Set<number>>(new Set(ALL_TIMEFRAMES.map(t => t.seconds)));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
@@ -62,6 +70,8 @@ const AdminSettings = () => {
         setQtStreak5(String(d.qt_streak_5x ?? 1.25));
         const assets = String(d.qt_enabled_assets ?? "BTC,ETH,BNB,SOL,XRP,DOGE");
         setQtEnabledAssets(new Set(assets.split(",").filter(Boolean)));
+        const timeframes = String(d.qt_enabled_timeframes ?? "60,180,300,900");
+        setQtEnabledTimeframes(new Set(timeframes.split(",").filter(Boolean).map(Number)));
         setSettingsId(d.id);
       }
       if (error) console.error(error);
@@ -93,7 +103,20 @@ const AdminSettings = () => {
     quickTradeFeeNum >= 0 && quickTradeFeeNum <= 100 &&
     qtMinBetNum >= 0 && qtMaxBetNum > 0 && qtMaxBetNum >= qtMinBetNum &&
     qtStreak2Num >= 1 && qtStreak3Num >= 1 && qtStreak4Num >= 1 && qtStreak5Num >= 1 &&
-    qtEnabledAssets.size > 0;
+    qtEnabledAssets.size > 0 && qtEnabledTimeframes.size > 0;
+
+  const toggleTimeframe = (seconds: number) => {
+    setQtEnabledTimeframes(prev => {
+      const next = new Set(prev);
+      if (next.has(seconds)) {
+        if (next.size <= 1) return next;
+        next.delete(seconds);
+      } else {
+        next.add(seconds);
+      }
+      return next;
+    });
+  };
 
   const toggleAsset = (symbol: string) => {
     setQtEnabledAssets(prev => {
@@ -134,6 +157,7 @@ const AdminSettings = () => {
           qt_streak_4x: qtStreak4Num,
           qt_streak_5x: qtStreak5Num,
           qt_enabled_assets: Array.from(qtEnabledAssets).join(","),
+          qt_enabled_timeframes: Array.from(qtEnabledTimeframes).join(","),
           updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
@@ -309,6 +333,28 @@ const AdminSettings = () => {
                         checked={qtEnabledAssets.has(asset.symbol)}
                         onCheckedChange={() => toggleAsset(asset.symbol)}
                         disabled={qtEnabledAssets.has(asset.symbol) && qtEnabledAssets.size <= 1}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Enabled Timeframes */}
+            <Card className="border-dashed">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2"><Timer className="w-4 h-4" /> Round Durations</CardTitle>
+                <CardDescription className="text-xs">Toggle which round durations are available in Quick Trade. At least one must be enabled.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {ALL_TIMEFRAMES.map(tf => (
+                    <div key={tf.seconds} className="flex items-center justify-between py-1">
+                      <span className="text-sm font-medium">{tf.label}</span>
+                      <Switch
+                        checked={qtEnabledTimeframes.has(tf.seconds)}
+                        onCheckedChange={() => toggleTimeframe(tf.seconds)}
+                        disabled={qtEnabledTimeframes.has(tf.seconds) && qtEnabledTimeframes.size <= 1}
                       />
                     </div>
                   ))}

@@ -47,7 +47,7 @@ const ALL_ASSETS = [
   { symbol: "DOGE", label: "Dogecoin", geckoId: "dogecoin" },
 ];
 
-const TIMEFRAMES = [
+const ALL_TIMEFRAMES = [
   { label: "1m", seconds: 60 },
   { label: "3m", seconds: 180 },
   { label: "5m", seconds: 300 },
@@ -138,6 +138,14 @@ export default function QuickTrade() {
     return filtered.length > 0 ? filtered : ALL_ASSETS;
   }, [commissionSettings?.qt_enabled_assets]);
 
+  // Filter timeframes based on admin settings
+  const TIMEFRAMES = useMemo(() => {
+    if (!commissionSettings?.qt_enabled_timeframes) return ALL_TIMEFRAMES;
+    const enabled = new Set(commissionSettings.qt_enabled_timeframes.split(",").filter(Boolean).map(Number));
+    const filtered = ALL_TIMEFRAMES.filter(t => enabled.has(t.seconds));
+    return filtered.length > 0 ? filtered : ALL_TIMEFRAMES;
+  }, [commissionSettings?.qt_enabled_timeframes]);
+
   const qtMinBet = commissionSettings?.qt_min_bet ?? 1;
   const qtMaxBet = commissionSettings?.qt_max_bet ?? 500;
 
@@ -149,6 +157,7 @@ export default function QuickTrade() {
       setSelectedAsset(ASSETS[0]);
     }
   }, [ASSETS, selectedAsset.symbol]);
+
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [prevPrice, setPrevPrice] = useState<number | null>(null);
   const [activeRound, setActiveRound] = useState<Round | null>(null);
@@ -163,12 +172,19 @@ export default function QuickTrade() {
   const [poolUp, setPoolUp] = useState(0);
   const [poolDown, setPoolDown] = useState(0);
   const [userBets, setUserBets] = useState<Bet[]>([]);
-  const [selectedTimeframe, setSelectedTimeframe] = useState(TIMEFRAMES[2]); // default 5m
+  const [selectedTimeframe, setSelectedTimeframe] = useState(ALL_TIMEFRAMES[2]); // default 5m
   const [streak, setStreak] = useState<{ current_streak: number; best_streak: number } | null>(null);
   const [milestoneModal, setMilestoneModal] = useState<{ open: boolean; streak: number; multiplier: number }>({ open: false, streak: 0, multiplier: 1 });
   const prevStreakRef = useRef<number>(0);
   const chartCardRef = useRef<HTMLDivElement>(null);
   const [showShareModal, setShowShareModal] = useState(false);
+
+  // Ensure selected timeframe is in the enabled list
+  useEffect(() => {
+    if (TIMEFRAMES.length > 0 && !TIMEFRAMES.find(t => t.seconds === selectedTimeframe.seconds)) {
+      setSelectedTimeframe(TIMEFRAMES[0]);
+    }
+  }, [TIMEFRAMES, selectedTimeframe.seconds]);
 
   const isLocked = activeRound?.status === "locked" || timeLeft <= LOCK_BUFFER;
 

@@ -169,6 +169,7 @@ export type Database = {
           nft_buy_url: string | null
           nft_contract_address: string | null
           qt_enabled_assets: string
+          qt_enabled_timeframes: string
           qt_max_bet: number
           qt_min_bet: number
           qt_streak_2x: number
@@ -194,6 +195,7 @@ export type Database = {
           nft_buy_url?: string | null
           nft_contract_address?: string | null
           qt_enabled_assets?: string
+          qt_enabled_timeframes?: string
           qt_max_bet?: number
           qt_min_bet?: number
           qt_streak_2x?: number
@@ -219,6 +221,7 @@ export type Database = {
           nft_buy_url?: string | null
           nft_contract_address?: string | null
           qt_enabled_assets?: string
+          qt_enabled_timeframes?: string
           qt_max_bet?: number
           qt_min_bet?: number
           qt_streak_2x?: number
