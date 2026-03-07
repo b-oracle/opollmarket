@@ -59,6 +59,8 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   const [chartStyle, setChartStyle] = useState<"candle" | "line">("line"); // default to line for streaming feel
   const lastCandleTimeRef = useRef<number>(0);
   const prevStreamingPriceRef = useRef<number | null>(null);
+  const pulsingDotRef = useRef<HTMLDivElement>(null);
+  const [dotColor, setDotColor] = useState("#22c55e");
 
   const activeMainSeries = chartStyle === "candle" ? candleSeriesRef : lineMainSeriesRef;
   const { activeTool, setActiveTool, clearDrawings, removeLastDrawing } =
