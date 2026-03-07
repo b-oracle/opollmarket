@@ -48,6 +48,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   streamingPrice,
   entryPrice,
   entrySide,
+  roundEndTime,
 }, _ref) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
