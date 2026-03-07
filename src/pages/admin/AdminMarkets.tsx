@@ -274,6 +274,7 @@ const AdminMarkets = () => {
             <Plus className="w-3.5 h-3.5" />
             Create
           </button>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 overflow-x-auto scrollbar-hide">
