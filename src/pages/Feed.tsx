@@ -373,68 +373,46 @@ const Feed = () => {
       <SEOHead title="Feed" description="Swipe through prediction markets like TikTok. Vote YES or NO on real-world events." path="/feed" />
       <TopBar />
 
-      {/* Feed tabs - slide-in from right */}
+      {/* Feed tab bar - compact, non-overlapping */}
       <div
-        className="absolute right-0 z-30 flex items-center"
-        style={{ top: 'calc(3.5rem + env(safe-area-inset-top, 0px) + 10px)' }}>
-        
-        <motion.div
-          className="flex items-center"
-          animate={{ x: tabOpen ? 0 : 'calc(100% - 28px)' }}
-          transition={{ type: "spring", stiffness: 400, damping: 35 }}>
-          
-          {/* Tab handle */}
+        className="relative z-20 flex items-center justify-center py-1.5 bg-background/80 backdrop-blur-md border-b border-border/20"
+      >
+        <div className="relative flex rounded-full bg-muted/50 p-0.5">
+          <motion.div
+            className="absolute top-0.5 bottom-0.5 rounded-full bg-primary"
+            layout
+            transition={{ type: "spring", stiffness: 500, damping: 32 }}
+            style={{
+              width: "calc(50% - 2px)",
+              left: feedTab === "foryou" ? 2 : "calc(50%)"
+            }}
+          />
           <button
-            onClick={() => setTabOpen(!tabOpen)}
-            className={`w-7 h-9 rounded-l-lg bg-background/80 backdrop-blur-md border border-r-0 border-border/40 flex items-center justify-center shadow-md shrink-0 transition-shadow duration-300 ${
-            watchlistPulse ? "shadow-primary/50 shadow-[0_0_12px_hsl(var(--primary)/0.5)]" : ""}`
-            }>
-            
-            <motion.div
-              animate={watchlistPulse ? { scale: [1, 1.3, 1], rotate: tabOpen ? 180 : 0 } : { rotate: tabOpen ? 180 : 0 }}
-              transition={watchlistPulse ? { scale: { repeat: 3, duration: 0.6 }, duration: 0.2 } : { duration: 0.2 }}>
-              
-              <Bookmark className={`w-3.5 h-3.5 transition-colors ${watchlistPulse ? "text-primary fill-primary/30" : "text-primary"}`} />
-            </motion.div>
+            onClick={() => setFeedTab("foryou")}
+            className={`relative z-10 px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+              feedTab === "foryou" ? "text-primary-foreground" : "text-muted-foreground"
+            }`}
+          >
+            For You
           </button>
-          {/* Tab pill */}
-          <div className="relative flex rounded-l-xl bg-background/80 backdrop-blur-md border border-r-0 border-border/40 p-0.5 shadow-md">
-            <motion.div
-              className="absolute top-0.5 bottom-0.5 rounded-l-lg rounded-r-lg bg-primary"
-              layout
-              transition={{ type: "spring", stiffness: 500, damping: 32 }}
-              style={{
-                width: "calc(50% - 2px)",
-                left: feedTab === "foryou" ? 2 : "calc(50%)"
-              }} />
-            
-            <button
-              onClick={() => {setFeedTab("foryou");setTimeout(() => setTabOpen(false), 300);}}
-              className={`relative z-10 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-              feedTab === "foryou" ? "text-primary-foreground" : "text-muted-foreground"}`
-              }>
-              
-              For You
-            </button>
-            <button
-              onClick={() => {
-                if (!user) {
-                  toast.error("Sign in to view your watchlist", {
-                    action: { label: "Sign In", onClick: () => window.location.href = "/auth" }
-                  });
-                  return;
-                }
-                setFeedTab("bookmarks");
-                setTimeout(() => setTabOpen(false), 300);
-              }}
-              className={`relative z-10 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1 ${
-              feedTab === "bookmarks" ? "text-primary-foreground" : "text-muted-foreground"}`
-              }>
-              
-              Watchlist
-            </button>
-          </div>
-        </motion.div>
+          <button
+            onClick={() => {
+              if (!user) {
+                toast.error("Sign in to view your watchlist", {
+                  action: { label: "Sign In", onClick: () => window.location.href = "/auth" },
+                });
+                return;
+              }
+              setFeedTab("bookmarks");
+            }}
+            className={`relative z-10 px-4 py-1.5 rounded-full text-xs font-semibold transition-colors inline-flex items-center gap-1 ${
+              feedTab === "bookmarks" ? "text-primary-foreground" : "text-muted-foreground"
+            }`}
+          >
+            <Bookmark className="w-3 h-3" />
+            Watchlist
+          </button>
+        </div>
       </div>
 
       {/* Pull-to-refresh indicator */}
