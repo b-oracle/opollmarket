@@ -367,7 +367,7 @@ const Portfolio = () => {
   return (
     <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
       <TopBar />
-      <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4 pt-20">
+      <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top, 0px))' }}>
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-5">
           <h1 className="text-2xl font-bold mb-1">Portfolio</h1>
