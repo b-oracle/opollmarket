@@ -470,7 +470,7 @@ const Profile = () => {
             <Pencil className="w-3 h-3" /> Edit Profile
           </button>
           <button
-            onClick={() => setSocialOpen(true)}
+            onClick={() => navigate(`/user/${user?.id}`)}
             className="mt-1.5 text-xs text-muted-foreground font-semibold hover:text-foreground flex items-center gap-1 transition-colors"
           >
             <Users className="w-3 h-3" /> Social
