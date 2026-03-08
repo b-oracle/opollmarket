@@ -658,6 +658,7 @@ const Rankings = () => {
                         <Podium
                           items={quickTraders}
                           currentUserId={currentUserId}
+                          onUserClick={(id) => navigate(`/user/${id}`)}
                           valueLabel={(t) => ({
                             text: `${t.profit >= 0 ? "+" : "-"}${formatDollar(t.profit)}`,
                             positive: t.profit >= 0,
