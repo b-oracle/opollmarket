@@ -317,8 +317,70 @@ const AdminAnalytics = () => {
           <p className="text-sm text-muted-foreground text-center py-4">No bet events recorded yet</p>
         )}
       </div>
+
+      {/* Polymarket Fee Earnings */}
+      <div className="bg-card border border-border rounded-xl p-5">
+        <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+          <span>🔮</span> Polymarket Fee Earnings
+        </h3>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+          {[
+            { label: "Admin Fees", value: `$${polyFees.adminFees.toFixed(2)}`, color: "text-green-500", icon: DollarSign },
+            { label: "Creator Fees", value: `$${polyFees.creatorFees.toFixed(2)}`, color: "text-blue-500", icon: DollarSign },
+            { label: "Total Fees", value: `$${(polyFees.adminFees + polyFees.creatorFees).toFixed(2)}`, color: "text-primary", icon: TrendingUp },
+            { label: "Poly Volume", value: `$${polyFees.totalVolume.toFixed(2)}`, color: "text-purple-500", icon: BarChart3 },
+          ].map((card) => (
+            <div key={card.label} className="bg-muted/30 border border-border rounded-lg p-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{card.label}</span>
+                <card.icon className={`w-3.5 h-3.5 ${card.color}`} />
+              </div>
+              <span className="text-lg font-bold">{card.value}</span>
+            </div>
+          ))}
+        </div>
+
+        {polyFees.feesByMarket.length > 0 ? (
+          <div>
+            <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Fee Breakdown by Market</h4>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={polyFees.feesByMarket} layout="vertical">
+                  <XAxis type="number" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
+                  <YAxis type="category" dataKey="title" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={120} tickFormatter={(v) => v.length > 20 ? v.slice(0, 20) + "…" : v} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                    }}
+                    formatter={(value: number, name: string) => [`$${value.toFixed(2)}`, name === "adminFee" ? "Admin Fee" : "Creator Fee"]}
+                  />
+                  <Bar dataKey="adminFee" stackId="fees" fill="hsl(var(--chart-3))" radius={[0, 0, 0, 0]} name="Admin Fee" />
+                  <Bar dataKey="creatorFee" stackId="fees" fill="hsl(var(--chart-2))" radius={[0, 4, 4, 0]} name="Creator Fee" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "hsl(var(--chart-3))" }} />
+                <span className="text-[10px] text-muted-foreground">Admin Fee</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "hsl(var(--chart-2))" }} />
+                <span className="text-[10px] text-muted-foreground">Creator Fee</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground text-center py-4">No Polymarket fee data for this period</p>
+        )}
+      </div>
     </div>
   );
+
 };
 
 export default AdminAnalytics;
