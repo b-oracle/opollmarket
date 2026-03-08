@@ -414,19 +414,24 @@ const Profile = () => {
 
   return (
     <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEndCapture}>
-      {/* Swipe hint indicator on left edge */}
+      {/* Swipe hint glow on right edge */}
       {!swipeHintDismissed && (
         <motion.div
-          className="fixed left-0 top-1/2 -translate-y-1/2 z-30 flex items-center pointer-events-none"
+          className="fixed right-0 top-1/3 bottom-1/3 z-30 pointer-events-none w-12"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.5, duration: 0.6 }}
+          animate={{ opacity: [0, 0.7, 0.3, 0.7, 0] }}
+          transition={{ delay: 1.2, duration: 3, repeat: 2, repeatDelay: 2 }}
         >
+          <div className="w-full h-full rounded-l-full bg-gradient-to-l from-primary/40 via-primary/15 to-transparent blur-md" />
           <motion.div
-            className="w-1 h-10 rounded-r-full bg-primary/30"
-            animate={{ x: [0, 4, 0] }}
-            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut", repeatDelay: 3 }}
-          />
+            className="absolute right-1 top-1/2 -translate-y-1/2"
+            animate={{ x: [0, -6, 0] }}
+            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+          >
+            <svg width="14" height="24" viewBox="0 0 14 24" fill="none" className="text-primary opacity-60">
+              <path d="M12 2L2 12L12 22" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </motion.div>
         </motion.div>
       )}
       <TopBar />
