@@ -762,7 +762,8 @@ const Rankings = () => {
                                       initial={{ opacity: 0, x: -12 }}
                                       animate={{ opacity: 1, x: 0 }}
                                       transition={{ delay: i * 0.04 }}
-                                      className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : ""}`}
+                                      onClick={() => !isMe && navigate(`/user/${su.userId}`)}
+                                      className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : "cursor-pointer hover:bg-accent/30"}`}
                                     >
                                       <div className="w-8 flex justify-center shrink-0">{rankBadge(rank)}</div>
                                       <AvatarCircle avatar={su.avatar} name={su.name} />
@@ -777,11 +778,12 @@ const Rankings = () => {
                                           <span>{streakMultiplier} bonus</span>
                                         </div>
                                       </div>
-                                      <div className="flex items-center gap-1.5 shrink-0">
+                                      <div className="flex items-center gap-2 shrink-0">
                                         <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30">
                                           <Flame className="w-4 h-4 text-amber-500" />
                                           <span className="text-sm font-bold text-amber-500">{su.currentStreak}</span>
                                         </div>
+                                        {!isMe && <FollowButton userId={su.userId} />}
                                       </div>
                                     </motion.div>
                                   );
