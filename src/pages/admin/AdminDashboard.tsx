@@ -12,6 +12,11 @@ interface Stats {
   totalTransactions: number;
   totalReferrals: number;
   totalRewardsPaid: number;
+  quickTradeRounds: number;
+  quickTradeBets: number;
+  quickTradeVolume: number;
+  totalFollows: number;
+  totalLikes: number;
 }
 
 interface MarketRow {
