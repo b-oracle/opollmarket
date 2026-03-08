@@ -336,30 +336,59 @@ const Referrals = () => {
             </div>
           ) : (
             <div className="space-y-2">
-              {rewards.map((reward: any, i: number) => {
-                const profile = referredProfiles.find((p: any) => p.id === reward.referred_id);
-                const name = profile?.display_name || profile?.email?.split("@")[0] || "User";
+              {(() => {
+                const totalPages = Math.max(1, Math.ceil(rewards.length / ITEMS_PER_PAGE));
+                const paginatedRewards = rewards.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
                 return (
-                  <motion.div
-                    key={reward.id}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    className="glass rounded-xl p-3.5 flex items-center gap-3"
-                  >
-                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Gift className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-semibold truncate block">{name}</span>
-                      <span className="text-[10px] text-muted-foreground">
-                        {new Date(reward.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <span className="text-sm font-bold text-primary">+${Number(reward.amount).toFixed(2)}</span>
-                  </motion.div>
+                  <>
+                    {paginatedRewards.map((reward: any, i: number) => {
+                      const profile = referredProfiles.find((p: any) => p.id === reward.referred_id);
+                      const name = profile?.display_name || profile?.email?.split("@")[0] || "User";
+                      return (
+                        <motion.div
+                          key={reward.id}
+                          initial={{ opacity: 0, y: 12 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.05 }}
+                          className="glass rounded-xl p-3.5 flex items-center gap-3"
+                        >
+                          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            <Gift className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-semibold truncate block">{name}</span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {new Date(reward.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <span className="text-sm font-bold text-primary">+${Number(reward.amount).toFixed(2)}</span>
+                        </motion.div>
+                      );
+                    })}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-3 py-3">
+                        <button
+                          onClick={() => setPage((p) => Math.max(1, p - 1))}
+                          disabled={page === 1}
+                          className="w-8 h-8 rounded-lg glass flex items-center justify-center disabled:opacity-30 hover:bg-muted transition-colors"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <span className="text-xs font-medium text-muted-foreground">
+                          {page} / {totalPages}
+                        </span>
+                        <button
+                          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                          disabled={page === totalPages}
+                          className="w-8 h-8 rounded-lg glass flex items-center justify-center disabled:opacity-30 hover:bg-muted transition-colors"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </>
                 );
-              })}
+              })()}
             </div>
           )}
         </div>
