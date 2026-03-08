@@ -168,8 +168,9 @@ async function handleHelp(token: string, chatId: number) {
       "📖 <b>OPoll Market — Commands</b>\n" +
       "━━━━━━━━━━━━━━━━━━━━\n\n" +
       "🔗 <b>Account</b>\n" +
-      "  /link <i>email password</i> — Link account\n" +
-      "  /unlink — Unlink account\n\n" +
+      "  /link — Link your account (secure)\n" +
+      "  /unlink — Unlink account\n" +
+      "  /cancel — Cancel linking process\n\n" +
       "📊 <b>Trading</b>\n" +
       "  /markets — Browse active markets\n" +
       "  /portfolio — View your positions\n" +
