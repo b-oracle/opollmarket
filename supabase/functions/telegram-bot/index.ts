@@ -909,16 +909,16 @@ async function handleMarketDetail(
 
   const buttons = [
     [
-      { text: `✅ Yes $5 (${yesP}¢)`, callback_data: `bet_yes_5_${mkt.id.slice(0, 20)}` },
-      { text: `❌ No $5 (${noP}¢)`, callback_data: `bet_no_5_${mkt.id.slice(0, 20)}` },
+      { text: `✅ Yes $5 (${yesP}¢)`, callback_data: `b_y_5_${mkt.id}` },
+      { text: `❌ No $5 (${noP}¢)`, callback_data: `b_n_5_${mkt.id}` },
     ],
     [
-      { text: `✅ Yes $10`, callback_data: `bet_yes_10_${mkt.id.slice(0, 20)}` },
-      { text: `❌ No $10`, callback_data: `bet_no_10_${mkt.id.slice(0, 20)}` },
+      { text: `✅ Yes $10`, callback_data: `b_y_10_${mkt.id}` },
+      { text: `❌ No $10`, callback_data: `b_n_10_${mkt.id}` },
     ],
     [
-      { text: `✅ Yes $25`, callback_data: `bet_yes_25_${mkt.id.slice(0, 20)}` },
-      { text: `❌ No $25`, callback_data: `bet_no_25_${mkt.id.slice(0, 20)}` },
+      { text: `✅ Yes $25`, callback_data: `b_y_25_${mkt.id}` },
+      { text: `❌ No $25`, callback_data: `b_n_25_${mkt.id}` },
     ],
     [
       { text: "🌐 View on Web", url: `${APP_URL}/market/${mkt.id}` },
