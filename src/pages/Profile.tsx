@@ -111,7 +111,7 @@ const TelegramSection = ({ userId }: { userId?: string }) => {
         </div>
         <div className="flex gap-2">
           <a
-            href="https://t.me/opoll_predict_bot"
+            href="https://t.me/OPoll_market_bot"
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-muted/50 border border-border text-xs font-semibold hover:bg-accent/50 transition-colors"
@@ -145,7 +145,7 @@ const TelegramSection = ({ userId }: { userId?: string }) => {
       </div>
       <div className="bg-muted/30 rounded-lg p-3">
         <p className="text-xs text-muted-foreground leading-relaxed mb-2">
-          1. Open <a href="https://t.me/opoll_predict_bot" target="_blank" rel="noopener noreferrer" className="text-primary font-semibold hover:underline">@opoll_predict_bot</a> on Telegram
+          1. Open <a href="https://t.me/OPoll_market_bot" target="_blank" rel="noopener noreferrer" className="text-primary font-semibold hover:underline">@OPoll_market_bot</a> on Telegram
         </p>
         <p className="text-xs text-muted-foreground leading-relaxed mb-2">
           2. Send <code className="px-1.5 py-0.5 rounded bg-muted text-foreground text-[11px] font-mono">/link your@email.com password</code>
@@ -155,7 +155,7 @@ const TelegramSection = ({ userId }: { userId?: string }) => {
         </p>
       </div>
       <a
-        href="https://t.me/opoll_predict_bot"
+        href="https://t.me/OPoll_market_bot"
         target="_blank"
         rel="noopener noreferrer"
         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sm font-semibold text-sky-400 hover:bg-sky-500/20 transition-colors"
