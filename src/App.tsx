@@ -98,6 +98,28 @@ const FeatureGate = ({ featureKey, children }: { featureKey: string; children: R
   return <>{children}</>;
 };
 
+const MaintenanceGuard = ({ children }: { children: React.ReactNode }) => {
+  const { toggles, isLoading } = useFeatureToggles();
+  const { isAdmin, isSuperAdmin } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) return null;
+
+  const maintenanceToggle = toggles.find((t) => t.feature_key === "maintenance_mode");
+  const isMaintenanceOn = maintenanceToggle?.enabled === true;
+
+  // Admins bypass maintenance
+  if (isAdmin || isSuperAdmin) return <>{children}</>;
+
+  // Allow access to maintenance page itself + auth/legal pages
+  const allowedPaths = ["/maintenance", "/auth", "/terms", "/privacy", "/disclaimer", "/reset-password", "/forgot-password"];
+  if (isMaintenanceOn && !allowedPaths.some((p) => location.pathname.startsWith(p))) {
+    return <Navigate to="/maintenance" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 const SocialTutorialTrigger = () => {
   const { user } = useAuth();
   const [show, setShow] = useState(false);
@@ -133,10 +155,10 @@ const App = () => (
                 <ConditionalLayout>
                   <div className="flex-1">
                     <Suspense fallback={<PageFallback />}>
+                      <MaintenanceGuard>
                       <Routes>
                         <Route path="/" element={<Index />} />
                         <Route path="/feed" element={<FeatureGate featureKey="feed"><Feed /></FeatureGate>} />
-                        <Route path="/market/:id" element={<MarketDetail />} />
                         <Route path="/create" element={<FeatureGate featureKey="create_market"><Create /></FeatureGate>} />
                         <Route path="/rankings" element={<FeatureGate featureKey="rankings"><Rankings /></FeatureGate>} />
                         <Route path="/portfolio" element={<FeatureGate featureKey="portfolio"><Portfolio /></FeatureGate>} />
@@ -175,6 +197,7 @@ const App = () => (
                         </Route>
                         <Route path="*" element={<NotFound />} />
                       </Routes>
+                      </MaintenanceGuard>
                     </Suspense>
                   </div>
                   
