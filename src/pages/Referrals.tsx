@@ -6,12 +6,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Gift, Copy, Check, Users, DollarSign, ArrowLeft, Share2, LogIn,
+  Gift, Copy, Check, Users, DollarSign, ArrowLeft, Share2, LogIn, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import useAnalytics from "@/hooks/useAnalytics";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const ITEMS_PER_PAGE = 10;
 
 const Referrals = () => {
   const { user, loading: authLoading } = useAuth();
