@@ -746,18 +746,21 @@ async function handleBalance(
       `💎 Total: <b>$${total.toFixed(2)}</b>\n\n` +
       `${progressBar(mainPct, 15)} ${mainPct}% main`,
     parse_mode: "HTML",
-    reply_markup: {
-      inline_keyboard: [
-        [
-          { text: "💳 Deposit", url: `${APP_URL}/portfolio` },
-          { text: "💸 Withdraw", url: `${APP_URL}/portfolio` },
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "💳 Deposit", url: `${APP_URL}/portfolio` },
+            { text: "💸 Withdraw", url: `${APP_URL}/portfolio` },
+          ],
+          [
+            { text: "📊 Portfolio", callback_data: "cmd_portfolio" },
+            { text: "🔮 Markets", callback_data: "cmd_markets" },
+          ],
+          [
+            { text: "🏠 Home", callback_data: "cmd_home" },
+          ],
         ],
-        [
-          { text: "📊 Portfolio", callback_data: "cmd_portfolio" },
-          { text: "🔮 Markets", callback_data: "cmd_markets" },
-        ],
-      ],
-    },
+      },
   });
 }
 
