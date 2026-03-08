@@ -374,6 +374,11 @@ const AdminMarkets = () => {
                 {endedCount}
               </span>
             )}
+            {f === "pending" && pendingCount > 0 && (
+              <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold bg-yellow-500 text-white">
+                {pendingCount}
+              </span>
+            )}
           </button>
         ))}
       </div>
