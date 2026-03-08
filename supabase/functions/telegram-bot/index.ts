@@ -1378,14 +1378,17 @@ async function handleQTSideSelected(
       `⏳ Result in ~5 minutes.\n` +
       `You'll be notified when the round resolves!`,
     parse_mode: "HTML",
-    reply_markup: {
-      inline_keyboard: [
-        [
-          { text: "⚡ Trade Again", callback_data: "cmd_quicktrade" },
-          { text: "📊 Portfolio", callback_data: "cmd_portfolio" },
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "⚡ Trade Again", callback_data: "cmd_quicktrade" },
+            { text: "📊 Portfolio", callback_data: "cmd_portfolio" },
+          ],
+          [
+            { text: "🏠 Home", callback_data: "cmd_home" },
+          ],
         ],
-      ],
-    },
+      },
   });
 
   try {
