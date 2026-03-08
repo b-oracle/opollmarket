@@ -34,7 +34,7 @@ const AdminDeposits = () => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("pending,partial");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-deposits", page, statusFilter, search],
@@ -55,8 +55,14 @@ const AdminDeposits = () => {
       let query = supabase
         .from("transactions")
         .select("id, user_id, amount, status, nowpayments_payment_id, created_at", { count: "exact" })
-        .eq("type", "deposit")
-        .in("status", statuses)
+        .eq("type", "deposit");
+
+      if (statusFilter !== "all") {
+        const statuses = statusFilter.split(",").filter(Boolean);
+        query = query.in("status", statuses);
+      }
+
+      query = query
         .order("created_at", { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
@@ -141,6 +147,7 @@ const AdminDeposits = () => {
         </div>
         <div className="flex gap-1.5">
           {[
+            { value: "all", label: "All" },
             { value: "pending,partial", label: "Active" },
             { value: "pending", label: "Pending" },
             { value: "partial", label: "Partial" },
