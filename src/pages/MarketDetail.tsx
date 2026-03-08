@@ -3,7 +3,7 @@ import YouTubeEmbed, { isYouTubeUrl } from "@/components/YouTubeEmbed";
 import { useParams, useNavigate } from "react-router-dom";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
-import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2, Wallet, FileText } from "lucide-react";
+import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2, Wallet, FileText, ExternalLink } from "lucide-react";
 // LogoLoader removed for faster load
 import { useMarket } from "@/hooks/useMarkets";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
@@ -569,6 +569,24 @@ const MarketDetail = () => {
         {!market.imageUrl && !market.videoUrl && <p className="text-sm text-muted-foreground mb-6">{market.description}</p>}
 
         {market.details && <MarketDetailsCollapsible details={market.details} />}
+
+        {market.polymarketEventSlug && (
+          <a
+            href={`https://polymarket.com/event/${market.polymarketEventSlug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="glass rounded-xl px-4 py-3 mb-4 flex items-center gap-3 group hover:border-primary/40 transition-colors"
+          >
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <span className="text-base">🔮</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-foreground">Resolution Source: Polymarket</p>
+              <p className="text-[10px] text-muted-foreground">This market resolves based on Polymarket's final outcome</p>
+            </div>
+            <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+          </a>
+        )}
 
         {/* Live Crypto Price Ticker */}
         {market.autoResolve && market.autoResolveAsset && market.autoResolveTargetPrice && market.autoResolveOperator && (

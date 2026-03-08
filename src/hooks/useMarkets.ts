@@ -33,6 +33,7 @@ interface DbMarket {
   sport_predicted_outcome: string | null;
   sport_league: string | null;
   market_options: { id: string; label: string; price: number; sort_order: number }[];
+  polymarket_event_slug: string | null;
 }
 
 const mapDbToMarket = (db: DbMarket): Market => ({
@@ -63,6 +64,7 @@ const mapDbToMarket = (db: DbMarket): Market => ({
   sportMatchId: db.sport_match_id || undefined,
   sportPredictedOutcome: db.sport_predicted_outcome || undefined,
   sportLeague: db.sport_league || undefined,
+  polymarketEventSlug: db.polymarket_event_slug || undefined,
   options: db.market_options?.length
     ? db.market_options
         .sort((a, b) => a.sort_order - b.sort_order)
