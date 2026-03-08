@@ -829,7 +829,10 @@ async function handleCallback(
     return;
   }
 
-  if (data.startsWith("mkt_")) {
+  if (data.startsWith("mktpage_")) {
+    const page = parseInt(data.replace("mktpage_", ""), 10) || 0;
+    await handleMarkets(token, supabase, chatId, page);
+  } else if (data.startsWith("mkt_")) {
     await handleMarketDetail(token, supabase, chatId, data);
   } else if (data.startsWith("bet_")) {
     await handleBetConfirm(token, supabase, chatId, data);
