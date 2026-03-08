@@ -865,6 +865,8 @@ async function handleCallback(
     await handleBetConfirm(token, supabase, chatId, data);
   } else if (data.startsWith("qt_asset_")) {
     await handleQTAssetSelected(token, chatId, data);
+  } else if (data.startsWith("qt_custom_")) {
+    await handleQTCustomAmount(token, supabase, chatId, data);
   } else if (data.startsWith("qt_side_")) {
     await handleQTSideSelected(token, supabase, chatId, data);
   }
