@@ -75,6 +75,8 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
   const [copied, setCopied] = useState(false);
   const [pollInterval, setPollInterval] = useState<ReturnType<typeof setInterval> | null>(null);
   const [partialInfo, setPartialInfo] = useState<PartialInfo | null>(null);
+  const [depositCreatedAt, setDepositCreatedAt] = useState<number | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<string>("");
 
   useEffect(() => {
     if (open) {
