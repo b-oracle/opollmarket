@@ -4,7 +4,7 @@ import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { Trophy, TrendingUp, TrendingDown, Medal, Crown, Award, Users, Star, Calendar, Share2, ArrowLeft, Zap, Flame, ChevronLeft, ChevronRight } from "lucide-react";
 import { Loader2 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
