@@ -118,6 +118,73 @@ const UserProfile = () => {
     enabled: !!id,
   });
 
+  // Leaderboard ranks
+  const { data: leaderboardRanks, isLoading: ranksLoading } = useQuery({
+    queryKey: ["user-leaderboard-ranks", id],
+    queryFn: async () => {
+      if (!id) return null;
+
+      // Prediction PnL rank: compute from positions
+      const { data: allTraders } = await supabase
+        .from("transactions")
+        .select("user_id, amount, side, type, status")
+        .in("type", ["buy", "sell", "payout", "refund"])
+        .eq("status", "confirmed");
+
+      let predictionRank: number | null = null;
+      if (allTraders) {
+        const pnlMap = new Map<string, number>();
+        for (const t of allTraders) {
+          const uid = t.user_id;
+          const cur = pnlMap.get(uid) || 0;
+          if (t.type === "payout" || t.type === "sell" || t.type === "refund") {
+            pnlMap.set(uid, cur + Number(t.amount));
+          } else if (t.type === "buy") {
+            pnlMap.set(uid, cur - Number(t.amount));
+          }
+        }
+        const sorted = [...pnlMap.entries()].sort((a, b) => b[1] - a[1]);
+        const idx = sorted.findIndex(([uid]) => uid === id);
+        predictionRank = idx >= 0 ? idx + 1 : null;
+      }
+
+      // Referral rank
+      const { data: allReferrers } = await supabase
+        .from("referral_rewards")
+        .select("referrer_id, amount");
+      let referralRank: number | null = null;
+      if (allReferrers) {
+        const refMap = new Map<string, number>();
+        for (const r of allReferrers) {
+          refMap.set(r.referrer_id, (refMap.get(r.referrer_id) || 0) + Number(r.amount));
+        }
+        const sorted = [...refMap.entries()].sort((a, b) => b[1] - a[1]);
+        const idx = sorted.findIndex(([uid]) => uid === id);
+        referralRank = idx >= 0 ? idx + 1 : null;
+      }
+
+      // Quick Trade profit rank
+      const { data: qtLeaderboard } = await supabase.rpc("get_quick_trade_leaderboard", { _limit: 500 });
+      let qtProfitRank: number | null = null;
+      if (qtLeaderboard && Array.isArray(qtLeaderboard)) {
+        const idx = qtLeaderboard.findIndex((r: any) => r.user_id === id);
+        qtProfitRank = idx >= 0 ? idx + 1 : null;
+      }
+
+      // Streak rank
+      const { data: streakLeaderboard } = await supabase.rpc("get_streak_leaderboard", { _limit: 500 });
+      let streakRank: number | null = null;
+      if (streakLeaderboard && Array.isArray(streakLeaderboard)) {
+        const idx = streakLeaderboard.findIndex((r: any) => r.user_id === id);
+        streakRank = idx >= 0 ? idx + 1 : null;
+      }
+
+      return { predictionRank, referralRank, qtProfitRank, streakRank };
+    },
+    enabled: !!id,
+    staleTime: 60_000,
+  });
+
   // Markets data for positions
   const marketIds = useMemo(() => userPositions.map((p: any) => p.market_id), [userPositions]);
   const { data: positionMarkets = [] } = useQuery({
