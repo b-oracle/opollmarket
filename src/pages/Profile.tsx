@@ -22,7 +22,7 @@ import { Switch } from "@/components/ui/switch";
 import NftBadge, { isNftAvatar } from "@/components/NftBadge";
 import { AnimatePresence, motion } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import SocialPage from "@/components/SocialPage";
+
 
 
 type TxType = "buy" | "sell" | "deposit" | "withdraw";
@@ -202,10 +202,9 @@ const Profile = () => {
   const [selectedNftUrl, setSelectedNftUrl] = useState<string | null>(null);
   const [editBio, setEditBio] = useState("");
   const [editIsPublic, setEditIsPublic] = useState(true);
-  const [socialOpen, setSocialOpen] = useState(false);
   const [swipeHintDismissed, setSwipeHintDismissed] = useState(() => localStorage.getItem("social_swipe_used") === "1");
 
-  // Swipe-right detection for social page — edge swipe from left 40px zone
+  // Swipe-right detection — navigate to own public profile
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const touchStartedInEdge = useRef(false);
@@ -215,18 +214,23 @@ const Profile = () => {
     touchStartY.current = e.touches[0].clientY;
     touchStartedInEdge.current = x < 40;
   }, []);
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (!touchStartedInEdge.current || socialOpen) return;
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+  const handleTouchEnd = useCallback(() => {
+    if (!touchStartedInEdge.current || !user) return;
+    const dx = (window as any).__lastTouchEndX - touchStartX.current;
+    const dy = Math.abs((window as any).__lastTouchEndY - touchStartY.current);
     if (dx > 60 && dy < 80) {
-      setSocialOpen(true);
       if (!swipeHintDismissed) {
         localStorage.setItem("social_swipe_used", "1");
         setSwipeHintDismissed(true);
       }
+      navigate(`/user/${user.id}`);
     }
-  }, [socialOpen, swipeHintDismissed]);
+  }, [swipeHintDismissed, user, navigate]);
+  const handleTouchEndCapture = useCallback((e: React.TouchEvent) => {
+    (window as any).__lastTouchEndX = e.changedTouches[0].clientX;
+    (window as any).__lastTouchEndY = e.changedTouches[0].clientY;
+    handleTouchEnd();
+  }, [handleTouchEnd]);
 
   // Fetch profile data
   const { data: profile } = useQuery({
@@ -409,9 +413,9 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+    <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEndCapture}>
       {/* Swipe hint indicator on left edge */}
-      {!socialOpen && !swipeHintDismissed && (
+      {!swipeHintDismissed && (
         <motion.div
           className="fixed left-0 top-1/2 -translate-y-1/2 z-30 flex items-center pointer-events-none"
           initial={{ opacity: 0 }}
@@ -466,7 +470,7 @@ const Profile = () => {
             <Pencil className="w-3 h-3" /> Edit Profile
           </button>
           <button
-            onClick={() => setSocialOpen(true)}
+            onClick={() => navigate(`/user/${user?.id}`)}
             className="mt-1.5 text-xs text-muted-foreground font-semibold hover:text-foreground flex items-center gap-1 transition-colors"
           >
             <Users className="w-3 h-3" /> Social
@@ -1074,7 +1078,7 @@ const Profile = () => {
       <InstallAppModal open={installOpen} onClose={() => setInstallOpen(false)} />
       
       <BottomNav />
-      <SocialPage open={socialOpen} onClose={() => setSocialOpen(false)} />
+      
     </div>
   );
 };

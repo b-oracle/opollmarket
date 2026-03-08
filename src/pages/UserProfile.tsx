@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import ActivityFeed from "@/components/ActivityFeed";
+import SocialSection from "@/components/SocialSection";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFollow, useFollowCounts } from "@/hooks/useFollow";
@@ -355,6 +356,11 @@ const UserProfile = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Social Section (collapsible) */}
+        {(isOwnProfile || profile?.is_public) && (
+          <SocialSection userId={id!} isOwnProfile={isOwnProfile} isPublic={!!profile?.is_public} />
+        )}
 
         {/* Content Tabs */}
         <div className="flex gap-1 p-1 rounded-xl bg-muted/50 mb-4">
