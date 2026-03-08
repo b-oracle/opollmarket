@@ -237,12 +237,23 @@ const SocialTutorial = ({ onComplete }: SocialTutorialProps) => {
 
             {/* Actions */}
             <div className="flex items-center justify-between mt-5">
-              <button
-                onClick={handleSkip}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1"
-              >
-                Skip tour
-              </button>
+              <div className="flex items-center gap-2">
+                {step > 0 ? (
+                  <button
+                    onClick={handleBack}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1"
+                  >
+                    <ArrowLeft className="w-3 h-3" /> Back
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleSkip}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1"
+                  >
+                    Skip tour
+                  </button>
+                )}
+              </div>
               <button
                 onClick={handleNext}
                 className="flex items-center gap-1.5 bg-primary text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-all active:scale-[0.97]"
