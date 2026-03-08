@@ -792,6 +792,7 @@ const Rankings = () => {
                                   const streakMultiplier = su.currentStreak >= 5 ? "1.25x" : su.currentStreak >= 4 ? "1.15x" : su.currentStreak >= 3 ? "1.10x" : su.currentStreak >= 2 ? "1.05x" : "1.0x";
                                   return (
                                     <motion.div
+                                      data-user-rank={su.userId}
                                       key={su.userId}
                                       initial={{ opacity: 0, x: -12 }}
                                       animate={{ opacity: 1, x: 0 }}
