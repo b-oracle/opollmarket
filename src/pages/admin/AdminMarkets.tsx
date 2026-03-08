@@ -106,6 +106,9 @@ const AdminMarkets = () => {
     }
     const { data, error } = await query;
     if (!error && data) setMarkets(data);
+    // Always fetch ended count regardless of current filter
+    const { count } = await supabase.from("markets").select("id", { count: "exact", head: true }).eq("status", "ended");
+    setEndedCount(count ?? 0);
     setLoading(false);
   };
 
