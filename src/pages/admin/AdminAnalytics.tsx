@@ -347,19 +347,19 @@ const AdminAnalytics = () => {
         <h3 className="text-sm font-semibold mb-4">Most Active Markets (by bets)</h3>
         {popularMarkets.length > 0 ? (
           <div className="space-y-3">
-            {popularMarkets.map(([marketId, count], i) => (
-              <div key={marketId} className="flex items-center gap-3">
+            {popularMarkets.map((market, i) => (
+              <div key={market.id} className="flex items-center gap-3">
                 <span className="text-xs font-bold text-muted-foreground w-5">{i + 1}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium truncate font-mono">{marketId.slice(0, 8)}…</span>
-                    <span className="text-xs text-muted-foreground">{count} bets</span>
+                    <span className="text-xs font-medium truncate" title={market.title}>{market.title}</span>
+                    <span className="text-xs text-muted-foreground">{market.count} bets</span>
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full"
                       style={{
-                        width: `${(count / (popularMarkets[0]?.[1] || 1)) * 100}%`,
+                        width: `${(market.count / (popularMarkets[0]?.count || 1)) * 100}%`,
                         backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
                       }}
                     />
