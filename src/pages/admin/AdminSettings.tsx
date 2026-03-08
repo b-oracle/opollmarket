@@ -767,6 +767,17 @@ const PolymarketPresetsSection = ({ canEdit }: { canEdit: boolean }) => {
                   />
                 </div>
                 <div className="space-y-1.5">
+                  <Label className="text-xs">Max Imports Per Run</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={200}
+                    value={addMaxImports}
+                    onChange={(e) => setAddMaxImports(e.target.value)}
+                    placeholder="10"
+                  />
+                </div>
+                <div className="space-y-1.5">
                   <Label className="text-xs">Auto-approve</Label>
                   <div className="flex items-center gap-2 h-10">
                     <Switch checked={addAutoApprove} onCheckedChange={setAddAutoApprove} />

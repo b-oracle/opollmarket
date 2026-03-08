@@ -181,6 +181,7 @@ Deno.serve(async (req) => {
                 }
               } else {
                 totalImported++;
+                presetImported++;
               }
             }
           }
