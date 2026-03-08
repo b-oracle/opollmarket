@@ -1264,7 +1264,23 @@ async function handleQTAssetSelected(token: string, chatId: number, data: string
     BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
   };
 
+  // CoinGecko IDs for chart links
+  const geckoIds: Record<string, string> = {
+    BTC: "bitcoin", ETH: "ethereum", BNB: "binancecoin", SOL: "solana",
+    XRP: "ripple", DOGE: "dogecoin", ADA: "cardano", MATIC: "matic-network",
+    AVAX: "avalanche-2", DOT: "polkadot", LINK: "chainlink", SHIB: "shiba-inu",
+  };
+
+  const chartUrl = `${APP_URL}/quick-trade?asset=${asset}`;
+  const geckoChartUrl = geckoIds[asset]
+    ? `https://www.coingecko.com/en/coins/${geckoIds[asset]}`
+    : `https://www.tradingview.com/chart/?symbol=${asset}USDT`;
+
   const buttons = [
+    [
+      { text: "📊 View Chart", url: chartUrl },
+      { text: "📈 TradingView", url: `https://www.tradingview.com/chart/?symbol=BINANCE:${asset}USDT` },
+    ],
     [
       { text: "📈 UP ($5)", callback_data: `qt_side_up_5_${asset}` },
       { text: "📉 DOWN ($5)", callback_data: `qt_side_down_5_${asset}` },
@@ -1278,6 +1294,9 @@ async function handleQTAssetSelected(token: string, chatId: number, data: string
       { text: "📉 DOWN ($25)", callback_data: `qt_side_down_25_${asset}` },
     ],
     [
+      { text: "💲 Custom Amount", callback_data: `qt_custom_${asset}` },
+    ],
+    [
       { text: "⬅️ Back to Assets", callback_data: "cmd_quicktrade" },
       { text: "🏠 Home", callback_data: "cmd_home" },
     ],
@@ -1289,6 +1308,7 @@ async function handleQTAssetSelected(token: string, chatId: number, data: string
       `⚡ <b>Quick Trade — ${assetEmojis[asset] || "📊"} ${asset}</b>\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `Will <b>${asset}</b> go UP 📈 or DOWN 📉 in the next 5 minutes?\n\n` +
+      `📊 View the chart before deciding!\n\n` +
       `Choose your prediction and amount:`,
     parse_mode: "HTML",
     reply_markup: { inline_keyboard: buttons },
