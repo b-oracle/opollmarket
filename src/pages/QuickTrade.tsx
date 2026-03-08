@@ -1248,26 +1248,28 @@ export default function QuickTrade() {
             </div>
           )}
 
-          {/* Results History */}
-          {userBets.length > 0 && (
-            <div className="rounded-2xl border border-border bg-card p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                  <History className="w-4 h-4 text-muted-foreground" />
-                  Results History
-                </h3>
-                <div className="flex items-center gap-1">
-                  {recentRounds.slice(0, 8).map((r) => (
-                    <div
-                      key={r.id}
-                      className={`w-2.5 h-2.5 rounded-full ${
-                        r.result === "up" ? "bg-green-500" : r.result === "down" ? "bg-destructive" : "bg-muted-foreground/40"
-                      }`}
-                      title={`${r.result?.toUpperCase() || "FLAT"}`}
-                    />
-                  ))}
-                </div>
+          {/* Results History — always visible */}
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                <History className="w-4 h-4 text-muted-foreground" />
+                Results History
+              </h3>
+              <div className="flex items-center gap-1">
+                {recentRounds.slice(0, 8).map((r) => (
+                  <div
+                    key={r.id}
+                    className={`w-2.5 h-2.5 rounded-full ${
+                      r.result === "up" ? "bg-green-500" : r.result === "down" ? "bg-destructive" : "bg-muted-foreground/40"
+                    }`}
+                    title={`${r.result?.toUpperCase() || "FLAT"}`}
+                  />
+                ))}
               </div>
+            </div>
+
+            {/* User's bet history */}
+            {userBets.length > 0 ? (
               <div className="space-y-2">
                 {userBets.map((b) => {
                   const round = recentRounds.find((r) => r.id === b.round_id);
@@ -1319,29 +1321,76 @@ export default function QuickTrade() {
                   );
                 })}
               </div>
-              {historyTotal > HISTORY_PER_PAGE && (
-                <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/50">
-                  <button
-                    onClick={() => setHistoryPage(p => Math.max(0, p - 1))}
-                    disabled={historyPage === 0}
-                    className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
-                  >
-                    ← Prev
-                  </button>
-                  <span className="text-[10px] text-muted-foreground">
-                    {historyPage + 1} / {Math.ceil(historyTotal / HISTORY_PER_PAGE)}
-                  </span>
-                  <button
-                    onClick={() => setHistoryPage(p => p + 1)}
-                    disabled={(historyPage + 1) * HISTORY_PER_PAGE >= historyTotal}
-                    className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
-                  >
-                    Next →
-                  </button>
+            ) : (
+              /* Round results (no personal bets yet) */
+              recentRounds.length > 0 ? (
+                <div className="space-y-2">
+                  {recentRounds.map((r) => {
+                    const priceDelta = r.open_price && r.close_price
+                      ? ((Number(r.close_price) - Number(r.open_price)) / Number(r.open_price) * 100)
+                      : null;
+                    return (
+                      <div key={r.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+                        <div className="flex items-center gap-2.5">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                            r.result === "up" ? "bg-green-500/15" : r.result === "down" ? "bg-destructive/15" : "bg-muted"
+                          }`}>
+                            {r.result === "up" ? (
+                              <ArrowUp className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <ArrowDown className="w-4 h-4 text-destructive" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-foreground">
+                              {r.result?.toUpperCase() || "—"} · {r.asset}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {new Date(r.resolved_at || r.created_at).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true })}
+                              {priceDelta !== null && (
+                                <span className={priceDelta >= 0 ? "text-green-500 ml-1" : "text-destructive ml-1"}>
+                                  {priceDelta >= 0 ? "+" : ""}{priceDelta.toFixed(2)}%
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] text-muted-foreground">
+                            ${Number(r.open_price || 0).toLocaleString()} → ${Number(r.close_price || 0).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
-          )}
+              ) : (
+                <p className="text-xs text-muted-foreground text-center py-4">No rounds resolved yet</p>
+              )
+            )}
+
+            {historyTotal > HISTORY_PER_PAGE && (
+              <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/50">
+                <button
+                  onClick={() => setHistoryPage(p => Math.max(0, p - 1))}
+                  disabled={historyPage === 0}
+                  className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
+                >
+                  ← Prev
+                </button>
+                <span className="text-[10px] text-muted-foreground">
+                  {historyPage + 1} / {Math.ceil(historyTotal / HISTORY_PER_PAGE)}
+                </span>
+                <button
+                  onClick={() => setHistoryPage(p => p + 1)}
+                  disabled={(historyPage + 1) * HISTORY_PER_PAGE >= historyTotal}
+                  className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+          </div>
 
         </div>
       </div>
