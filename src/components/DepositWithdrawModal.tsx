@@ -680,7 +680,66 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                   </motion.div>
                 )}
 
-                {/* ERROR */}
+                {/* PARTIAL SUCCESS */}
+                {step === "partial_success" && partialInfo && (
+                  <motion.div
+                    key="partial"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex flex-col items-center py-6"
+                  >
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", damping: 10 }}
+                      className="w-16 h-16 rounded-full bg-yellow-500/20 border border-yellow-500/40 flex items-center justify-center mb-4"
+                    >
+                      <AlertTriangle className="w-8 h-8 text-yellow-500" />
+                    </motion.div>
+                    <h3 className="text-lg font-bold mb-1">Partial Deposit Received</h3>
+                    <p className="text-sm text-muted-foreground text-center mb-4">
+                      We received <span className="font-bold text-foreground">${partialInfo.credited.toFixed(2)}</span> of your <span className="font-bold text-foreground">${partialInfo.requested.toFixed(2)}</span> deposit. The received amount has been credited to your balance.
+                    </p>
+
+                    <div className="w-full rounded-xl bg-muted/50 border border-border p-3 mb-4">
+                      <div className="flex justify-between text-sm mb-1.5">
+                        <span className="text-muted-foreground">Requested</span>
+                        <span className="font-semibold">${partialInfo.requested.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm mb-1.5">
+                        <span className="text-muted-foreground">Received</span>
+                        <span className="font-semibold text-primary">${partialInfo.credited.toFixed(2)}</span>
+                      </div>
+                      <div className="border-t border-border my-1.5" />
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Shortfall</span>
+                        <span className="font-bold text-yellow-500">${partialInfo.shortfall.toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 w-full">
+                      <button
+                        onClick={handleClose}
+                        className="flex-1 glass py-3 rounded-xl font-semibold text-sm transition-all active:scale-95"
+                      >
+                        Done
+                      </button>
+                      <button
+                        onClick={() => {
+                          setAmount(partialInfo.shortfall.toFixed(2));
+                          setPartialInfo(null);
+                          setPaymentInfo(null);
+                          setStep("input");
+                        }}
+                        className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm transition-all active:scale-95"
+                      >
+                        Top Up ${partialInfo.shortfall.toFixed(2)}
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+
+
                 {step === "error" && (
                   <motion.div
                     key="error"
