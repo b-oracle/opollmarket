@@ -271,6 +271,7 @@ const Feed = () => {
   const touchStartY = useRef(0);
   const isPulling = useRef(false);
   const hapticFired = useRef(false);
+  const [scrollNudge, setScrollNudge] = useState(false);
   const spinControls = useAnimation();
 
   const sortedMarkets = useMemo(() => {
@@ -293,6 +294,11 @@ const Feed = () => {
       const itemHeight = container.clientHeight;
       const index = Math.round(container.scrollTop / itemHeight);
       setActiveIndex(index);
+
+      // Detect slight scroll offset from snap position (nudge)
+      const snappedTop = index * itemHeight;
+      const offset = Math.abs(container.scrollTop - snappedTop);
+      setScrollNudge(offset > 15 && offset < itemHeight * 0.4);
 
       const maxScroll = container.scrollHeight - container.clientHeight;
       const isAtEnd = container.scrollTop >= maxScroll - 5;
@@ -517,7 +523,7 @@ const Feed = () => {
         })}
         </div>
       }
-      {/* Swipe hint - fixed above bottom nav */}
+      {/* Swipe hint - appears on scroll nudge */}
       {sortedMarkets.length > 0 && (() => {
         const currentMarket = sortedMarkets[activeIndex];
         const isMulti = currentMarket?.marketType === "multi" || currentMarket?.marketType === "range";
@@ -525,16 +531,13 @@ const Feed = () => {
         if (isMulti || isEnded) return null;
         return (
           <motion.p
-            key={`swipe-hint-${activeIndex}`}
-            className="fixed left-0 right-0 max-w-3xl mx-auto text-[11px] text-primary/70 font-medium text-center z-[999] pointer-events-none lg:hidden"
+            className="fixed left-0 right-0 max-w-3xl mx-auto text-[11px] text-primary font-medium text-center z-[999] pointer-events-none lg:hidden"
             style={{ bottom: 'calc(4.5rem + 2px + env(safe-area-inset-bottom, 0px))' }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.7, 0.7, 0] }}
-            transition={{ delay: 1, duration: 3, ease: "easeInOut", repeat: Infinity, repeatDelay: 5 }}>
-            
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: scrollNudge ? 1 : 0, y: scrollNudge ? 0 : 8 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}>
             ← Swipe left for NO · Swipe right for YES →
           </motion.p>);
-
       })()}
       <BottomNav />
     </div>);
