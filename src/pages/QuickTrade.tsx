@@ -36,6 +36,7 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import StreakMilestoneModal from "@/components/StreakMilestoneModal";
 import ShareModal from "@/components/ShareModal";
+import ProfitShareCard from "@/components/ProfitShareCard";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
 import { playWinSound, playLoseSound } from "@/lib/sounds";
