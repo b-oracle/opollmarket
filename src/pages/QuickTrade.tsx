@@ -1060,6 +1060,27 @@ export default function QuickTrade() {
         marketUrl={`${window.location.origin}/quick-trade`}
         captureRef={chartCardRef}
       />
+
+      {/* Win profit share */}
+      {winShareData && (
+        <ProfitShareCard
+          ref={profitCardRef}
+          market={`${winShareData.asset} Quick Trade — ${winShareData.side.toUpperCase()} prediction`}
+          side={winShareData.side === "up" ? "YES" : "NO"}
+          profit={winShareData.profit}
+          payout={winShareData.payout}
+          displayName={user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Trader"}
+          referralCode={user?.user_metadata?.display_name || user?.id || ""}
+        />
+      )}
+      <ShareModal
+        open={showWinShare}
+        onOpenChange={(open) => { setShowWinShare(open); if (!open) setWinShareData(null); }}
+        title={winShareData ? `I just won +$${winShareData.profit.toFixed(2)} on oPoll Quick Trade! 🔥` : ""}
+        description={winShareData ? `${winShareData.asset} ${winShareData.side.toUpperCase()} prediction` : ""}
+        marketUrl={`${window.location.origin}/quick-trade${user ? `?ref=${user.user_metadata?.display_name || user.id}` : ""}`}
+        captureRef={profitCardRef}
+      />
     </>
   );
 }
