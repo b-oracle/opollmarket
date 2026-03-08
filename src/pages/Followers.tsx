@@ -114,7 +114,14 @@ const Followers = () => {
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            Followers ({followers.length})
+            <span className="relative">
+              Followers ({followers.length})
+              {newFollowerCount > 0 && tab !== "followers" && (
+                <span className="absolute -top-2 -right-4 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">
+                  {newFollowerCount}
+                </span>
+              )}
+            </span>
           </button>
           <button
             onClick={() => setTab("following")}
