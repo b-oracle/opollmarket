@@ -224,6 +224,70 @@ const AdminDashboard = () => {
         ))}
       </div>
 
+      {/* Financial Overview Card */}
+      {stats && (() => {
+        const dep = stats.totalDeposits;
+        const wd = stats.totalWithdrawals;
+        const net = dep - wd;
+        const maxVal = Math.max(dep, wd, 1);
+        const fmt = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(1)}K` : `$${v.toFixed(2)}`;
+        return (
+          <div className="bg-card border border-border rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Wallet className="w-5 h-5 text-primary" />
+              <h3 className="text-sm font-semibold">Financial Overview</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+              <div className="rounded-lg bg-green-500/5 border border-green-500/10 p-3">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <ArrowDownLeft className="w-3.5 h-3.5 text-green-500" />
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Total Deposits</span>
+                </div>
+                <p className="text-xl font-bold text-green-500">{fmt(dep)}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{stats.depositCount} confirmed</p>
+              </div>
+              <div className="rounded-lg bg-yellow-500/5 border border-yellow-500/10 p-3">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <ArrowUpRight className="w-3.5 h-3.5 text-yellow-500" />
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Total Withdrawals</span>
+                </div>
+                <p className="text-xl font-bold text-yellow-500">{fmt(wd)}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{stats.withdrawalCount} confirmed</p>
+              </div>
+              <div className={`rounded-lg p-3 ${net >= 0 ? 'bg-primary/5 border border-primary/10' : 'bg-destructive/5 border border-destructive/10'}`}>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <DollarSign className={`w-3.5 h-3.5 ${net >= 0 ? 'text-primary' : 'text-destructive'}`} />
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Net Balance</span>
+                </div>
+                <p className={`text-xl font-bold ${net >= 0 ? 'text-primary' : 'text-destructive'}`}>{net < 0 ? '-' : ''}{fmt(Math.abs(net))}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">deposits − withdrawals</p>
+              </div>
+            </div>
+            {/* Progress bars */}
+            <div className="space-y-2.5">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] text-muted-foreground font-medium">Deposits</span>
+                  <span className="text-[10px] font-bold text-green-500">{fmt(dep)}</span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-green-500 rounded-full transition-all" style={{ width: `${(dep / maxVal) * 100}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] text-muted-foreground font-medium">Withdrawals</span>
+                  <span className="text-[10px] font-bold text-yellow-500">{fmt(wd)}</span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-yellow-500 rounded-full transition-all" style={{ width: `${(wd / maxVal) * 100}%` }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Activity chart */}
