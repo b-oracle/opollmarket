@@ -443,11 +443,21 @@ const AdminSettings = () => {
                   <Input id="withdrawalCooldown" type="number" min={0} step={1} value={withdrawalCooldown} onChange={(e) => setWithdrawalCooldown(e.target.value)} placeholder="5" />
                   <p className="text-[10px] text-muted-foreground">Current: {withdrawalCooldownNum} minute{withdrawalCooldownNum !== 1 ? "s" : ""}. Set to 0 to disable.</p>
                 </div>
+                <div className="flex items-center justify-between py-2 border-t border-border pt-3">
+                  <div>
+                    <Label className="text-sm font-medium">Withdrawal Limit</Label>
+                    <p className="text-[10px] text-muted-foreground">When enabled, users can only withdraw up to {withdrawalMultiplierNum}× their deposits. When off, users can withdraw their full balance.</p>
+                  </div>
+                  <Switch checked={withdrawalLimitEnabled} onCheckedChange={setWithdrawalLimitEnabled} />
+                </div>
+                {withdrawalLimitEnabled && (
                 <div className="space-y-2">
                   <Label htmlFor="withdrawalMultiplier">Withdrawal Multiplier (×deposits)</Label>
                   <Input id="withdrawalMultiplier" type="number" min={1} step={0.5} value={withdrawalMultiplier} onChange={(e) => setWithdrawalMultiplier(e.target.value)} placeholder="2" />
                   <p className="text-[10px] text-muted-foreground">Current: {withdrawalMultiplierNum}×. Users can withdraw up to {withdrawalMultiplierNum}× their total deposits.</p>
                   {withdrawalMultiplierNum < 1 && <p className="text-xs text-destructive">Multiplier must be at least 1×.</p>}
+                </div>
+                )}
                 </div>
               </CardContent>
             </Card>
