@@ -1,12 +1,15 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowDownLeft, ArrowUpRight, MessageCircle, Heart, TrendingUp, TrendingDown,
-  Loader2, Zap, Activity,
+  Loader2, Zap, Activity, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+
+const ITEMS_PER_PAGE = 10;
 
 interface ActivityFeedProps {
   userId: string;
@@ -16,6 +19,7 @@ interface ActivityFeedProps {
 
 const ActivityFeed = ({ userId, isOwnProfile, isPublic }: ActivityFeedProps) => {
   const navigate = useNavigate();
+  const [page, setPage] = useState(1);
 
   // Trades (buy/sell transactions)
   const { data: trades = [], isLoading: loadingTrades } = useQuery({
@@ -28,7 +32,7 @@ const ActivityFeed = ({ userId, isOwnProfile, isPublic }: ActivityFeedProps) => 
         .in("type", ["buy", "sell"])
         .eq("status", "confirmed")
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(100);
       return data || [];
     },
     enabled: isOwnProfile || isPublic,
@@ -43,7 +47,7 @@ const ActivityFeed = ({ userId, isOwnProfile, isPublic }: ActivityFeedProps) => 
         .select("id, content, market_id, created_at")
         .eq("author_wallet", userId)
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(100);
       return data || [];
     },
     enabled: isOwnProfile || isPublic,
@@ -58,7 +62,7 @@ const ActivityFeed = ({ userId, isOwnProfile, isPublic }: ActivityFeedProps) => 
         .select("id, market_id, created_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(100);
       return data || [];
     },
     enabled: isOwnProfile || isPublic,
@@ -99,9 +103,10 @@ const ActivityFeed = ({ userId, isOwnProfile, isPublic }: ActivityFeedProps) => 
     ...trades.map((t: any) => ({ id: `t-${t.id}`, type: "trade" as const, created_at: t.created_at, market_id: t.market_id, data: t })),
     ...comments.map((c: any) => ({ id: `c-${c.id}`, type: "comment" as const, created_at: c.created_at, market_id: c.market_id, data: c })),
     ...likes.map((l: any) => ({ id: `l-${l.id}`, type: "like" as const, created_at: l.created_at, market_id: l.market_id, data: l })),
-  ]
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 30);
+  ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  const totalPages = Math.max(1, Math.ceil(feed.length / ITEMS_PER_PAGE));
+  const paginatedFeed = feed.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   const isLoading = loadingTrades || loadingComments || loadingLikes;
 
@@ -124,7 +129,7 @@ const ActivityFeed = ({ userId, isOwnProfile, isPublic }: ActivityFeedProps) => 
 
   return (
     <div className="space-y-1.5 mb-6">
-      {feed.map((item, i) => {
+      {paginatedFeed.map((item, i) => {
         const marketTitle = item.market_id ? (marketMap as Map<string, string>).get(item.market_id) : null;
         const timeAgo = formatDistanceToNow(new Date(item.created_at), { addSuffix: true });
 
@@ -193,6 +198,29 @@ const ActivityFeed = ({ userId, isOwnProfile, isPublic }: ActivityFeedProps) => 
           </motion.div>
         );
       })}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3 pt-3">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="w-8 h-8 rounded-lg glass flex items-center justify-center disabled:opacity-30 hover:bg-muted transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="text-xs font-medium text-muted-foreground">
+            {page} / {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="w-8 h-8 rounded-lg glass flex items-center justify-center disabled:opacity-30 hover:bg-muted transition-colors"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };

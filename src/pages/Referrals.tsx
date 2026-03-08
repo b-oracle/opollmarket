@@ -6,17 +6,20 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Gift, Copy, Check, Users, DollarSign, ArrowLeft, Share2, LogIn,
+  Gift, Copy, Check, Users, DollarSign, ArrowLeft, Share2, LogIn, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import useAnalytics from "@/hooks/useAnalytics";
 import { Skeleton } from "@/components/ui/skeleton";
 
+const ITEMS_PER_PAGE = 10;
+
 const Referrals = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const [page, setPage] = useState(1);
   const { track } = useAnalytics();
 
   useEffect(() => { track("page_view", { page: "referrals" }); }, []);
@@ -160,7 +163,7 @@ const Referrals = () => {
   }
 
   return (
-    <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+    <div className="min-h-dvh bg-background overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
       <TopBar />
       <div className="max-w-lg mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
         {/* Header */}
@@ -333,30 +336,59 @@ const Referrals = () => {
             </div>
           ) : (
             <div className="space-y-2">
-              {rewards.map((reward: any, i: number) => {
-                const profile = referredProfiles.find((p: any) => p.id === reward.referred_id);
-                const name = profile?.display_name || profile?.email?.split("@")[0] || "User";
+              {(() => {
+                const totalPages = Math.max(1, Math.ceil(rewards.length / ITEMS_PER_PAGE));
+                const paginatedRewards = rewards.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
                 return (
-                  <motion.div
-                    key={reward.id}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    className="glass rounded-xl p-3.5 flex items-center gap-3"
-                  >
-                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Gift className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-semibold truncate block">{name}</span>
-                      <span className="text-[10px] text-muted-foreground">
-                        {new Date(reward.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <span className="text-sm font-bold text-primary">+${Number(reward.amount).toFixed(2)}</span>
-                  </motion.div>
+                  <>
+                    {paginatedRewards.map((reward: any, i: number) => {
+                      const profile = referredProfiles.find((p: any) => p.id === reward.referred_id);
+                      const name = profile?.display_name || profile?.email?.split("@")[0] || "User";
+                      return (
+                        <motion.div
+                          key={reward.id}
+                          initial={{ opacity: 0, y: 12 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.05 }}
+                          className="glass rounded-xl p-3.5 flex items-center gap-3"
+                        >
+                          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            <Gift className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-semibold truncate block">{name}</span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {new Date(reward.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <span className="text-sm font-bold text-primary">+${Number(reward.amount).toFixed(2)}</span>
+                        </motion.div>
+                      );
+                    })}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-3 py-3">
+                        <button
+                          onClick={() => setPage((p) => Math.max(1, p - 1))}
+                          disabled={page === 1}
+                          className="w-8 h-8 rounded-lg glass flex items-center justify-center disabled:opacity-30 hover:bg-muted transition-colors"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <span className="text-xs font-medium text-muted-foreground">
+                          {page} / {totalPages}
+                        </span>
+                        <button
+                          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                          disabled={page === totalPages}
+                          className="w-8 h-8 rounded-lg glass flex items-center justify-center disabled:opacity-30 hover:bg-muted transition-colors"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </>
                 );
-              })}
+              })()}
             </div>
           )}
         </div>
