@@ -937,8 +937,8 @@ export default function QuickTrade() {
                         </div>
                       ) : null;
                     })()}
-                    {/* "Price to beat" badge */}
-                    {activeRound?.open_price && (
+                    {/* "Price to beat" badge — only when user has an active bet */}
+                    {userBet && activeRound?.open_price && (
                       <div className="absolute bottom-2 right-2 z-10">
                         <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold backdrop-blur-sm border bg-amber-500/10 text-amber-500 border-amber-500/30">
                           <span>🎯</span>
@@ -980,7 +980,7 @@ export default function QuickTrade() {
                   entryPrice={userBet && activeRound?.open_price ? Number(activeRound.open_price) : null}
                   entrySide={userBet ? (userBet.side as "up" | "down") : null}
                   roundEndTime={activeRound ? new Date(activeRound.created_at).getTime() + activeRound.duration_seconds * 1000 : null}
-                  targetPrice={activeRound?.open_price ? Number(activeRound.open_price) : null}
+                  targetPrice={userBet && activeRound?.open_price ? Number(activeRound.open_price) : null}
                   resolveFlash={resolveFlash}
                 />
               ) : (() => {
@@ -1097,7 +1097,7 @@ export default function QuickTrade() {
                           <YAxis domain={[yMin - padding, yMax + padding]} hide />
                           <XAxis dataKey="ts" hide />
                           <RechartsTooltip content={tooltipContent} cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '3 3' }} />
-                          {activeRound?.open_price && (
+                          {userBet && activeRound?.open_price && (
                             <ReferenceLine
                               y={Number(activeRound.open_price)}
                               stroke="#f59e0b"
@@ -1147,7 +1147,7 @@ export default function QuickTrade() {
                         <YAxis domain={["dataMin", "dataMax"]} hide />
                         <XAxis dataKey="ts" hide />
                         <RechartsTooltip content={tooltipContent} cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '3 3' }} />
-                        {activeRound?.open_price && (
+                        {userBet && activeRound?.open_price && (
                           <ReferenceLine
                             y={Number(activeRound.open_price)}
                             stroke="#f59e0b"
