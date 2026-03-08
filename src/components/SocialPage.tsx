@@ -1,0 +1,302 @@
+import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useFollowCounts } from "@/hooks/useFollow";
+import FollowButton from "@/components/FollowButton";
+import ActivityFeed from "@/components/ActivityFeed";
+import NftBadge, { isNftAvatar } from "@/components/NftBadge";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ArrowLeft, Users, UserCheck, Heart, Gift, Trophy,
+  Sparkles, ChevronRight, Loader2, X,
+} from "lucide-react";
+
+interface SocialPageProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+const SocialPage = ({ open, onClose }: SocialPageProps) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const followCounts = useFollowCounts(user?.id);
+  const [activeTab, setActiveTab] = useState<"activity" | "followers" | "following" | "suggestions">("activity");
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url, bio, is_public")
+        .eq("id", user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user && open,
+  });
+
+  // Followers list
+  const { data: followers = [], isLoading: loadingFollowers } = useQuery({
+    queryKey: ["social-followers", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase
+        .from("follows")
+        .select("id, follower_id, created_at")
+        .eq("following_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (!data || data.length === 0) return [];
+      const ids = data.map((f: any) => f.follower_id);
+      const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", ids);
+      const map = new Map((profiles || []).map((p: any) => [p.id, p]));
+      return data.map((f: any) => ({ ...f, profile: map.get(f.follower_id) }));
+    },
+    enabled: !!user && open,
+  });
+
+  // Following list
+  const { data: following = [], isLoading: loadingFollowing } = useQuery({
+    queryKey: ["social-following", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase
+        .from("follows")
+        .select("id, following_id, created_at")
+        .eq("follower_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (!data || data.length === 0) return [];
+      const ids = data.map((f: any) => f.following_id);
+      const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", ids);
+      const map = new Map((profiles || []).map((p: any) => [p.id, p]));
+      return data.map((f: any) => ({ ...f, profile: map.get(f.following_id) }));
+    },
+    enabled: !!user && open,
+  });
+
+  // Follow suggestions: active users not already followed
+  const followingIds = useMemo(() => following.map((f: any) => f.following_id), [following]);
+  const { data: suggestions = [], isLoading: loadingSuggestions } = useQuery({
+    queryKey: ["follow-suggestions", user?.id, followingIds.join(",")],
+    queryFn: async () => {
+      if (!user) return [];
+      // Get active traders (users with recent transactions)
+      const { data: recentTraders } = await supabase
+        .from("transactions")
+        .select("user_id")
+        .eq("type", "buy")
+        .eq("status", "confirmed")
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (!recentTraders) return [];
+
+      // Get unique user IDs excluding self and already-followed
+      const exclude = new Set([user.id, ...followingIds]);
+      const uniqueIds = [...new Set(recentTraders.map((t: any) => t.user_id))].filter(id => !exclude.has(id)).slice(0, 15);
+
+      if (uniqueIds.length === 0) return [];
+
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url, bio, is_public")
+        .in("id", uniqueIds)
+        .eq("is_public", true);
+
+      return profiles || [];
+    },
+    enabled: !!user && open,
+  });
+
+  const hasNft = isNftAvatar(profile?.avatar_url);
+  const displayName = profile?.display_name || "Anonymous";
+
+  const renderUserRow = (userId: string, prof: any, index: number) => {
+    const name = prof?.display_name || "Anonymous";
+    const nft = isNftAvatar(prof?.avatar_url);
+    return (
+      <motion.div
+        key={userId}
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: index * 0.03 }}
+        className="glass rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-accent/30 transition-colors"
+        onClick={() => { onClose(); navigate(`/user/${userId}`); }}
+      >
+        <div className="relative shrink-0">
+          <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 overflow-hidden flex items-center justify-center">
+            {prof?.avatar_url ? (
+              <img src={prof.avatar_url} alt={name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
+            )}
+          </div>
+          {nft && <NftBadge className="absolute -bottom-0.5 -right-0.5 scale-75" />}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold truncate">{name}</p>
+          {prof?.bio && <p className="text-[10px] text-muted-foreground truncate">{prof.bio}</p>}
+        </div>
+        <div onClick={(e) => e.stopPropagation()}>
+          <FollowButton userId={userId} size="sm" />
+        </div>
+      </motion.div>
+    );
+  };
+
+  if (!user) return null;
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-background/60 backdrop-blur-sm z-[60]"
+            onClick={onClose}
+          />
+          {/* Panel */}
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", damping: 28, stiffness: 300 }}
+            className="fixed inset-y-0 right-0 w-full max-w-md bg-background z-[61] overflow-y-auto overscroll-contain"
+            style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}
+          >
+            {/* Header */}
+            <div
+              className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-border px-4 flex items-center gap-3"
+              style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top))", paddingBottom: "0.75rem" }}
+            >
+              <button
+                onClick={onClose}
+                className="w-9 h-9 rounded-full glass flex items-center justify-center hover:bg-muted transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <h2 className="text-lg font-bold flex-1">Social</h2>
+            </div>
+
+            <div className="px-4 py-4 space-y-4">
+              {/* Mini profile card */}
+              <div className="glass rounded-2xl p-4 flex items-center gap-3">
+                <div className="relative shrink-0">
+                  <div className="w-14 h-14 rounded-full bg-primary/20 border-2 border-primary/30 overflow-hidden flex items-center justify-center">
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
+                    )}
+                  </div>
+                  {hasNft && <NftBadge className="absolute -bottom-0.5 -right-0.5 scale-90" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold truncate">{displayName}</p>
+                  {profile?.bio && <p className="text-[10px] text-muted-foreground line-clamp-1">{profile.bio}</p>}
+                  <div className="flex gap-4 mt-1.5">
+                    <span className="text-xs"><span className="font-bold">{followCounts.followers}</span> <span className="text-muted-foreground">followers</span></span>
+                    <span className="text-xs"><span className="font-bold">{followCounts.following}</span> <span className="text-muted-foreground">following</span></span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { onClose(); navigate(`/user/${user.id}`); }}
+                  className="w-8 h-8 rounded-full glass flex items-center justify-center shrink-0"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Tabs */}
+              <div className="flex gap-1 p-1 rounded-xl bg-muted/50">
+                {([
+                  { key: "activity", label: "Activity", icon: Heart },
+                  { key: "followers", label: `${followers.length}`, icon: Users },
+                  { key: "following", label: `${following.length}`, icon: UserCheck },
+                  { key: "suggestions", label: "For You", icon: Sparkles },
+                ] as const).map((t) => (
+                  <button
+                    key={t.key}
+                    onClick={() => setActiveTab(t.key)}
+                    className={`flex-1 py-2 rounded-lg text-[10px] font-semibold transition-all flex flex-col items-center gap-0.5 ${
+                      activeTab === t.key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
+                    }`}
+                  >
+                    <t.icon className="w-3.5 h-3.5" />
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Content */}
+              {activeTab === "activity" && (
+                <ActivityFeed userId={user.id} isOwnProfile isPublic />
+              )}
+
+              {activeTab === "followers" && (
+                <div className="space-y-1.5">
+                  {loadingFollowers ? (
+                    <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                  ) : followers.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Users className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">No followers yet</p>
+                    </div>
+                  ) : (
+                    followers.map((f: any, i: number) => renderUserRow(f.follower_id, f.profile, i))
+                  )}
+                </div>
+              )}
+
+              {activeTab === "following" && (
+                <div className="space-y-1.5">
+                  {loadingFollowing ? (
+                    <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                  ) : following.length === 0 ? (
+                    <div className="text-center py-12">
+                      <UserCheck className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">Not following anyone yet</p>
+                      <button
+                        onClick={() => setActiveTab("suggestions")}
+                        className="mt-3 text-xs text-primary font-semibold hover:underline"
+                      >
+                        Discover people to follow →
+                      </button>
+                    </div>
+                  ) : (
+                    following.map((f: any, i: number) => renderUserRow(f.following_id, f.profile, i))
+                  )}
+                </div>
+              )}
+
+              {activeTab === "suggestions" && (
+                <div className="space-y-1.5">
+                  <p className="text-xs text-muted-foreground px-1 mb-2">Active traders you might want to follow</p>
+                  {loadingSuggestions ? (
+                    <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                  ) : suggestions.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Sparkles className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">No suggestions right now</p>
+                    </div>
+                  ) : (
+                    suggestions.map((s: any, i: number) => renderUserRow(s.id, s, i))
+                  )}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
+
+export default SocialPage;

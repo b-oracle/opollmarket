@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import useAnalytics from "@/hooks/useAnalytics";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -16,12 +16,13 @@ import { bsc } from "wagmi/chains";
 import {
   Wallet, Gift, ArrowDownToLine, ArrowUpFromLine, ArrowUpRight, ArrowDownLeft,
   Repeat, LogIn, Send, MessageCircle, ExternalLink, ChevronRight,
-  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image, BarChart3, Globe, EyeOff,
+  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image, BarChart3, Globe, EyeOff, Users,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import NftBadge, { isNftAvatar } from "@/components/NftBadge";
 import { AnimatePresence, motion } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import SocialPage from "@/components/SocialPage";
 
 
 type TxType = "buy" | "sell" | "deposit" | "withdraw";
@@ -201,6 +202,23 @@ const Profile = () => {
   const [selectedNftUrl, setSelectedNftUrl] = useState<string | null>(null);
   const [editBio, setEditBio] = useState("");
   const [editIsPublic, setEditIsPublic] = useState(true);
+  const [socialOpen, setSocialOpen] = useState(false);
+
+  // Swipe-right detection for social page
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  }, []);
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+    // Swipe right: dx > 80px and mostly horizontal
+    if (dx > 80 && dy < 60 && !socialOpen) {
+      setSocialOpen(true);
+    }
+  }, [socialOpen]);
 
   // Fetch profile data
   const { data: profile } = useQuery({
@@ -383,7 +401,7 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+    <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       <TopBar />
       <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
         {/* Avatar & Profile Edit */}
@@ -423,6 +441,12 @@ const Profile = () => {
             className="mt-2 text-xs text-primary font-semibold hover:underline flex items-center gap-1"
           >
             <Pencil className="w-3 h-3" /> Edit Profile
+          </button>
+          <button
+            onClick={() => setSocialOpen(true)}
+            className="mt-1.5 text-xs text-muted-foreground font-semibold hover:text-foreground flex items-center gap-1 transition-colors"
+          >
+            <Users className="w-3 h-3" /> Social
           </button>
         </div>
 
@@ -1027,6 +1051,7 @@ const Profile = () => {
       <InstallAppModal open={installOpen} onClose={() => setInstallOpen(false)} />
       
       <BottomNav />
+      <SocialPage open={socialOpen} onClose={() => setSocialOpen(false)} />
     </div>
   );
 };
