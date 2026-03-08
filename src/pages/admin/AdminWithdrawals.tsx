@@ -64,6 +64,9 @@ const AdminWithdrawals = () => {
   });
 
   const filtered = withdrawals.filter((w: any) => {
+    // Status filter
+    if (statusFilter !== "all" && w.status !== statusFilter) return false;
+    // Search filter
     if (!search) return true;
     const s = search.toLowerCase();
     return (
