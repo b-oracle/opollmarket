@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
     // Fetch min withdrawal from settings
     const { data: settings } = await adminClient
       .from("commission_settings")
-      .select("min_withdrawal_amount, withdrawal_cooldown_minutes, withdrawal_multiplier")
+      .select("min_withdrawal_amount, withdrawal_cooldown_minutes, withdrawal_multiplier, withdrawal_limit_enabled")
       .limit(1)
       .single();
 
