@@ -47,6 +47,8 @@ const AdminContracts = lazy(() => import("./pages/admin/AdminContracts"));
 const AdminModeration = lazy(() => import("./pages/admin/AdminModeration"));
 const AdminAuditLog = lazy(() => import("./pages/admin/AdminAuditLog"));
 const AdminDeposits = lazy(() => import("./pages/admin/AdminDeposits"));
+const AdminQuickTrade = lazy(() => import("./pages/admin/AdminQuickTrade"));
+const AdminSocial = lazy(() => import("./pages/admin/AdminSocial"));
 const Referrals = lazy(() => import("./pages/Referrals"));
 const FAQ = lazy(() => import("./pages/FAQ"));
 const Disclaimer = lazy(() => import("./pages/Disclaimer"));
@@ -160,6 +162,8 @@ const App = () => (
                           <Route path="moderation" element={<AdminModeration />} />
                           <Route path="checklist" element={<AdminChecklist />} />
                           <Route path="audit-log" element={<AdminAuditLog />} />
+                          <Route path="quick-trade" element={<AdminQuickTrade />} />
+                          <Route path="social" element={<AdminSocial />} />
                         </Route>
                         <Route path="*" element={<NotFound />} />
                       </Routes>

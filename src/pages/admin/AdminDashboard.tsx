@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingUp, Users, MessageSquare, ShoppingBag, Loader2, DollarSign, Activity, Gift, UserPlus } from "lucide-react";
+import { TrendingUp, Users, MessageSquare, ShoppingBag, Loader2, DollarSign, Activity, Gift, UserPlus, Zap, UserCheck, Heart } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
 
 interface Stats {
@@ -12,6 +12,11 @@ interface Stats {
   totalTransactions: number;
   totalReferrals: number;
   totalRewardsPaid: number;
+  quickTradeRounds: number;
+  quickTradeBets: number;
+  quickTradeVolume: number;
+  totalFollows: number;
+  totalLikes: number;
 }
 
 interface MarketRow {
@@ -41,13 +46,17 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [markets, comments, boosts, users, txns, referrals] = await Promise.all([
+      const [markets, comments, boosts, users, txns, referrals, qtRounds, qtBets, follows, likes] = await Promise.all([
         supabase.from("markets").select("*", { count: "exact", head: true }),
         supabase.from("comments").select("*", { count: "exact", head: true }),
         supabase.from("market_boosts").select("*", { count: "exact", head: true }).eq("status", "active"),
         supabase.from("profiles").select("*", { count: "exact", head: true }),
         supabase.from("transactions").select("*", { count: "exact", head: true }),
         supabase.from("referral_rewards").select("amount"),
+        supabase.from("quick_rounds").select("*", { count: "exact", head: true }),
+        supabase.from("quick_bets").select("amount, status"),
+        supabase.from("follows").select("*", { count: "exact", head: true }),
+        supabase.from("market_likes").select("*", { count: "exact", head: true }),
       ]);
 
       const { data: marketRows } = await supabase.from("markets").select("category, volume, status, created_at");
@@ -55,6 +64,7 @@ const AdminDashboard = () => {
 
       const totalVolume = marketRows?.reduce((sum, m) => sum + Number(m.volume), 0) ?? 0;
       const totalRewardsPaid = referrals.data?.reduce((sum, r) => sum + Number(r.amount), 0) ?? 0;
+      const quickTradeVolume = (qtBets.data || []).reduce((sum, b) => sum + Number(b.amount), 0);
 
       setStats({
         totalMarkets: markets.count ?? 0,
@@ -65,6 +75,11 @@ const AdminDashboard = () => {
         totalTransactions: txns.count ?? 0,
         totalReferrals: referrals.data?.length ?? 0,
         totalRewardsPaid,
+        quickTradeRounds: qtRounds.count ?? 0,
+        quickTradeBets: qtBets.data?.length ?? 0,
+        quickTradeVolume,
+        totalFollows: follows.count ?? 0,
+        totalLikes: likes.count ?? 0,
       });
 
       // Category breakdown
@@ -133,6 +148,10 @@ const AdminDashboard = () => {
     { label: "Transactions", value: stats?.totalTransactions ?? 0, icon: DollarSign, color: "text-yellow-500" },
     { label: "Comments", value: stats?.totalComments ?? 0, icon: MessageSquare, color: "text-purple-500" },
     { label: "Active Boosts", value: stats?.activeBoosts ?? 0, icon: Activity, color: "text-pink-500" },
+    { label: "QT Rounds", value: stats?.quickTradeRounds ?? 0, icon: Zap, color: "text-cyan-500" },
+    { label: "QT Volume", value: (stats?.quickTradeVolume ?? 0) >= 1000 ? `$${((stats?.quickTradeVolume ?? 0) / 1000).toFixed(1)}K` : `$${(stats?.quickTradeVolume ?? 0).toFixed(2)}`, icon: Zap, color: "text-amber-500" },
+    { label: "Follows", value: stats?.totalFollows ?? 0, icon: UserCheck, color: "text-emerald-500" },
+    { label: "Likes", value: stats?.totalLikes ?? 0, icon: Heart, color: "text-pink-500" },
     { label: "Referrals", value: stats?.totalReferrals ?? 0, icon: UserPlus, color: "text-cyan-500" },
     { label: "Rewards Paid", value: `$${(stats?.totalRewardsPaid ?? 0).toFixed(0)}`, icon: Gift, color: "text-orange-500" },
   ];
