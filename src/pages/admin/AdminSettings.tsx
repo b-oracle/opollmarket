@@ -4,11 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer, Globe, Plus, Trash2, RefreshCw } from "lucide-react";
+import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer, Globe, Plus, Trash2, RefreshCw, ToggleLeft } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { useAdminContext } from "./AdminLayout";
 import { Badge } from "@/components/ui/badge";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
+import { logAuditEvent } from "@/lib/auditLog";
 
 const ALL_ASSETS = [
   { symbol: "BTC", label: "Bitcoin" },
