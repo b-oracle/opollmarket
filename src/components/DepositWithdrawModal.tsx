@@ -626,13 +626,54 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
                   >
+                    {/* Progress Stepper */}
+                    <div className="flex items-center justify-between mb-5 px-2">
+                      {[
+                        { label: "Created", done: true },
+                        { label: "Awaiting Payment", done: false, active: true },
+                        { label: "Confirming", done: false },
+                        { label: "Credited", done: false },
+                      ].map((s, i, arr) => (
+                        <div key={s.label} className="flex items-center flex-1 last:flex-none">
+                          <div className="flex flex-col items-center">
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
+                              s.done
+                                ? "bg-primary text-primary-foreground"
+                                : s.active
+                                  ? "bg-primary/20 border-2 border-primary text-primary"
+                                  : "bg-muted border border-border text-muted-foreground"
+                            }`}>
+                              {s.done ? <Check className="w-3.5 h-3.5" /> : i + 1}
+                            </div>
+                            <span className={`text-[9px] mt-1 font-medium ${
+                              s.done || s.active ? "text-primary" : "text-muted-foreground"
+                            }`}>{s.label}</span>
+                          </div>
+                          {i < arr.length - 1 && (
+                            <div className={`flex-1 h-0.5 mx-1 mt-[-14px] rounded-full ${
+                              s.done ? "bg-primary" : "bg-border"
+                            }`} />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
                     <div className="glass rounded-xl p-4 mb-4 text-center">
-                      <div className="w-12 h-12 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center mx-auto mb-3">
-                        <Clock className="w-6 h-6 text-primary" />
+                      <div className="w-14 h-14 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center mx-auto mb-3 relative">
+                        <Clock className="w-7 h-7 text-primary" />
+                        {/* Pulsing ring */}
+                        <motion.div
+                          className="absolute inset-0 rounded-full border-2 border-primary/40"
+                          animate={{ scale: [1, 1.3, 1], opacity: [0.6, 0, 0.6] }}
+                          transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                        />
                       </div>
-                      <h3 className="text-sm font-bold mb-1">Send Crypto to This Address</h3>
-                      <p className="text-[10px] text-muted-foreground mb-4">
-                        Send exactly the amount shown below. Your balance will be credited automatically.
+                      <h3 className="text-base font-bold mb-1">Send Crypto to Complete Deposit</h3>
+                      <p className="text-[11px] text-muted-foreground mb-1">
+                        Send the exact amount below to the address provided
+                      </p>
+                      <p className="text-[10px] text-primary/70 font-medium mb-4">
+                        ⏱ Payment typically confirms in 5–15 minutes
                       </p>
 
                       {/* QR Code */}
@@ -674,25 +715,39 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                         </div>
                       </div>
 
-                      {/* Status */}
-                      <div className="flex items-center justify-center gap-2 py-2">
+                      {/* Live status indicator */}
+                      <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary/5 border border-primary/20">
+                        <motion.div
+                          className="w-2 h-2 rounded-full bg-primary"
+                          animate={{ opacity: [1, 0.3, 1] }}
+                          transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                        />
+                        <p className="text-xs text-primary font-semibold">
+                          Listening for your payment...
+                        </p>
                         <motion.div
                           animate={{ rotate: 360 }}
                           transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
                         >
-                          <Loader2 className="w-4 h-4 text-primary" />
+                          <Loader2 className="w-3.5 h-3.5 text-primary" />
                         </motion.div>
-                        <p className="text-xs text-muted-foreground font-medium">
-                          Waiting for payment confirmation...
-                        </p>
                       </div>
                     </div>
 
-                    <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border mb-4">
-                      <AlertTriangle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                      <p className="text-[10px] text-muted-foreground">
-                        Only send <strong>{paymentInfo.pay_currency.toUpperCase()}</strong> to this address. Sending any other token may result in permanent loss of funds.
-                      </p>
+                    {/* Tips section */}
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border">
+                        <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                        <p className="text-[10px] text-muted-foreground">
+                          Only send <strong className="text-foreground">{paymentInfo.pay_currency.toUpperCase()}</strong> to this address. Sending any other token may result in permanent loss of funds.
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border">
+                        <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                        <p className="text-[10px] text-muted-foreground">
+                          You can close this modal — your payment will still be tracked and credited automatically once confirmed on-chain.
+                        </p>
+                      </div>
                     </div>
 
                     <button
