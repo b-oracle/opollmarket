@@ -65,6 +65,7 @@ const mapDbToMarket = (db: DbMarket): Market => ({
   sportPredictedOutcome: db.sport_predicted_outcome || undefined,
   sportLeague: db.sport_league || undefined,
   polymarketEventSlug: db.polymarket_event_slug || undefined,
+  status: db.status,
   options: db.market_options?.length
     ? db.market_options
         .sort((a, b) => a.sort_order - b.sort_order)
@@ -101,7 +102,7 @@ export const useMarkets = () => {
       const { data, error } = await supabase
         .from("markets")
         .select("*, market_options!market_options_market_id_fkey(*)")
-        .eq("status", "active")
+        .in("status", ["active", "ended"])
         .order("created_at", { ascending: false });
 
       if (error) throw error;
