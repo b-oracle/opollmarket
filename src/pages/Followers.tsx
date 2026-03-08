@@ -82,6 +82,12 @@ const Followers = () => {
       )
     : list;
 
+  // Count new followers since last seen
+  const newFollowerCount = useMemo(() => {
+    if (!lastSeen || tab !== "followers") return 0;
+    return followers.filter((f: any) => new Date(f.created_at) > new Date(lastSeen)).length;
+  }, [followers, lastSeen, tab]);
+
   if (!user) {
     navigate("/auth");
     return null;
