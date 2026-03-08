@@ -1,5 +1,6 @@
 // App root
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
+import { AnimatePresence } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { useLocation } from "react-router-dom";
@@ -14,8 +15,9 @@ import DesktopSidebar from "./components/DesktopSidebar";
 import DesktopFooter from "./components/DesktopFooter";
 import PWAUpdatePrompt from "./components/PWAUpdatePrompt";
 import LogoLoader from "./components/LogoLoader";
-import { AuthProvider } from "./hooks/useAuth";
+import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { SidebarStateProvider, useSidebarState } from "./hooks/useSidebarState";
+import SocialTutorial, { shouldShowTutorial } from "./components/SocialTutorial";
 
 // Lazy-loaded pages
 const Index = lazy(() => import("./pages/Index"));
@@ -86,6 +88,24 @@ const PageFallback = () => (
   </div>
 );
 
+const SocialTutorialTrigger = () => {
+  const { user } = useAuth();
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    if (user && shouldShowTutorial()) {
+      const timer = setTimeout(() => setShow(true), 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [user]);
+
+  return (
+    <AnimatePresence>
+      {show && <SocialTutorial onComplete={() => setShow(false)} />}
+    </AnimatePresence>
+  );
+};
+
 const App = () => (
   <ErrorBoundary>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
@@ -98,6 +118,7 @@ const App = () => (
                 <Sonner />
                 <PWAUpdatePrompt />
                 <BrowserRouter>
+                <SocialTutorialTrigger />
                 <ConditionalSidebar />
                 <ConditionalLayout>
                   <div className="flex-1">
