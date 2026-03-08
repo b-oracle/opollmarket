@@ -724,6 +724,7 @@ const Rankings = () => {
                                   const winRate = qt.totalBets > 0 ? Math.round((qt.wins / qt.totalBets) * 100) : 0;
                                   return (
                                     <motion.div
+                                      data-user-rank={qt.userId}
                                       key={qt.userId}
                                       initial={{ opacity: 0, x: -12 }}
                                       animate={{ opacity: 1, x: 0 }}
