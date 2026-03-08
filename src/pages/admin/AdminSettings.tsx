@@ -497,6 +497,7 @@ interface PolyPreset {
   id: string;
   category: string;
   max_days_ahead: number;
+  max_imports_per_run: number;
   enabled: boolean;
   auto_approve: boolean;
   created_at: string;
