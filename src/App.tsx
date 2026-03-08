@@ -54,6 +54,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const Maintenance = lazy(() => import("./pages/Maintenance"));
 const QuickTrade = lazy(() => import("./pages/QuickTrade"));
 const UserProfile = lazy(() => import("./pages/UserProfile"));
+const Followers = lazy(() => import("./pages/Followers"));
 
 const queryClient = new QueryClient();
 
