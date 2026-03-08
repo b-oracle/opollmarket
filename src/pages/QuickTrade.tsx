@@ -37,6 +37,7 @@ import ShareModal from "@/components/ShareModal";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
 import TradingViewChart from "@/components/TradingViewChart";
+import { playWinSound, playLoseSound } from "@/lib/sounds";
 // ── Asset config ──
 const ALL_ASSETS = [
   { symbol: "BTC", label: "Bitcoin", geckoId: "bitcoin" },
@@ -591,9 +592,13 @@ export default function QuickTrade() {
               setResolveFlash(won ? "win" : "lose");
               setTimeout(() => setResolveFlash(null), 1500);
               if (won) {
+                playWinSound();
                 fireWinConfetti();
                 haptic("success");
                 toast({ title: "You won! 🎉", description: `The round resolved ${resolvedResult?.toUpperCase()}` });
+              } else {
+                playLoseSound();
+                haptic("error");
               }
             } else {
               // No bet placed, still flash neutral
