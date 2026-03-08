@@ -518,11 +518,11 @@ const Feed = () => {
         return (
           <motion.p
             key={`swipe-hint-${activeIndex}`}
-            className="absolute left-0 right-0 text-[10px] text-muted-foreground text-center z-[60] pointer-events-none"
-            style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px) + 4px)' }}
+            className="fixed left-0 right-0 text-[11px] text-muted-foreground font-medium text-center z-[999] pointer-events-none"
+            style={{ bottom: 'calc(4rem + 6px)' }}
             initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.8, 0.8, 0] }}
-            transition={{ delay: 1.5, duration: 3, ease: "easeInOut", repeat: Infinity, repeatDelay: 5 }}
+            animate={{ opacity: [0, 0.7, 0.7, 0] }}
+            transition={{ delay: 2, duration: 4, ease: "easeInOut", repeat: Infinity, repeatDelay: 4 }}
           >
             ← Swipe left for NO · Swipe right for YES →
           </motion.p>
