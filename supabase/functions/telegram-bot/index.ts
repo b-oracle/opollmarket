@@ -1056,6 +1056,9 @@ async function handleBetConfirm(
           [
             { text: "🌐 View Market", url: `${APP_URL}/market/${mkt.id}` },
           ],
+          [
+            { text: "🏠 Home", callback_data: "cmd_home" },
+          ],
         ],
       },
     });
