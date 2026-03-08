@@ -40,6 +40,18 @@ const AdminDeposits = () => {
     queryKey: ["admin-deposits", page, statusFilter, search],
     queryFn: async () => {
       const statuses = statusFilter.split(",").filter(Boolean);
+      const trimmed = search.trim();
+
+      // If searching by email, resolve user IDs first
+      let emailUserIds: string[] | null = null;
+      if (trimmed && !isValidUUID(trimmed)) {
+        const { data: matchedProfiles } = await supabase
+          .from("profiles")
+          .select("id")
+          .or(`email.ilike.%${trimmed}%,display_name.ilike.%${trimmed}%`);
+        emailUserIds = (matchedProfiles || []).map((p) => p.id);
+      }
+
       let query = supabase
         .from("transactions")
         .select("id, user_id, amount, status, nowpayments_payment_id, created_at", { count: "exact" })
@@ -48,14 +60,20 @@ const AdminDeposits = () => {
         .order("created_at", { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
-      if (search.trim()) {
-        query = query.or(`nowpayments_payment_id.ilike.%${search.trim()}%,user_id.eq.${isValidUUID(search.trim()) ? search.trim() : "00000000-0000-0000-0000-000000000000"}`);
+      if (trimmed) {
+        if (isValidUUID(trimmed)) {
+          query = query.or(`user_id.eq.${trimmed},nowpayments_payment_id.ilike.%${trimmed}%`);
+        } else if (emailUserIds && emailUserIds.length > 0) {
+          query = query.in("user_id", emailUserIds);
+        } else if (emailUserIds && emailUserIds.length === 0) {
+          // No matching users — try payment ID match only
+          query = query.ilike("nowpayments_payment_id", `%${trimmed}%`);
+        }
       }
 
       const { data: txs, count, error } = await query;
       if (error) throw error;
 
-      // Fetch display names for user_ids
       const userIds = [...new Set((txs || []).map((t) => t.user_id))];
       const { data: profiles } = userIds.length
         ? await supabase.from("profiles").select("id, display_name, email").in("id", userIds)
