@@ -7,7 +7,7 @@ import { useMarkets } from "@/hooks/useMarkets";
 import { TrendingUp, Users, Zap, MessageCircle, Search, X, Heart } from "lucide-react";
 import CategoryIcon from "@/components/CategoryIcon";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
 import { useMemo, useState, useEffect } from "react";
 import BoostCountdown from "@/components/BoostCountdown";
@@ -19,6 +19,8 @@ import BoostMarketModal from "@/components/BoostMarketModal";
 import { useCommentCount } from "@/hooks/useCommentCount";
 import useAnalytics from "@/hooks/useAnalytics";
 import { useLikeCount } from "@/hooks/useLikeCount";
+import { useAuth } from "@/hooks/useAuth";
+import SocialTutorial, { shouldShowTutorial } from "@/components/SocialTutorial";
 
 
 const formatVolume = (v: number) => {
@@ -60,8 +62,18 @@ const Index = () => {
   const [boostModalMarket, setBoostModalMarket] = useState<{ id: string; title: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const { track } = useAnalytics();
+  const { user } = useAuth();
+  const [showTutorial, setShowTutorial] = useState(false);
 
   useEffect(() => { track("page_view", { page: "home" }); }, []);
+
+  // Show social tutorial once after first login
+  useEffect(() => {
+    if (user && shouldShowTutorial()) {
+      const timer = setTimeout(() => setShowTutorial(true), 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [user]);
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
 
   // Capture referral param on landing
@@ -477,6 +489,9 @@ const Index = () => {
       <BoostMarketModal open={!!boostModalMarket} onClose={() => setBoostModalMarket(null)} marketId={boostModalMarket?.id || ""} marketTitle={boostModalMarket?.title || ""} />
       
       <BottomNav />
+      <AnimatePresence>
+        {showTutorial && <SocialTutorial onComplete={() => setShowTutorial(false)} />}
+      </AnimatePresence>
     </div>
   );
 };
