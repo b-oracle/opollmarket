@@ -213,14 +213,14 @@ const AdminTransactions = () => {
             <ArrowDownLeft className="w-4 h-4 text-green-500" />
             <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Deposits</span>
           </div>
-          <p className="text-xl font-bold">${totals.deposits.toLocaleString()}</p>
+          <p className="text-xl font-bold">${totals.deposits < 1000 ? totals.deposits.toFixed(2) : (totals.deposits / 1000).toFixed(1) + "K"}</p>
         </div>
         <div className="bg-card border border-border rounded-xl p-4">
           <div className="flex items-center gap-2 mb-1">
             <ArrowUpRight className="w-4 h-4 text-yellow-500" />
             <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Withdrawals</span>
           </div>
-          <p className="text-xl font-bold">${totals.withdrawals.toLocaleString()}</p>
+          <p className="text-xl font-bold">${totals.withdrawals < 1000 ? totals.withdrawals.toFixed(2) : (totals.withdrawals / 1000).toFixed(1) + "K"}</p>
         </div>
         <div className="bg-card border border-border rounded-xl p-4">
           <div className="flex items-center gap-2 mb-1">
