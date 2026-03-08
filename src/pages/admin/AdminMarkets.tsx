@@ -74,7 +74,7 @@ const AdminMarkets = () => {
   const [markets, setMarkets] = useState<MarketRow[]>([]);
   const [pendingMarkets, setPendingMarkets] = useState<MarketRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "pending" | "active" | "resolved" | "cancelled" | "polymarket">("all");
+  const [filter, setFilter] = useState<"all" | "pending" | "active" | "ended" | "resolved" | "cancelled" | "polymarket">("all");
   const [resolveState, setResolveState] = useState<ResolveState | null>(null);
   const [resolving, setResolving] = useState(false);
   const [editState, setEditState] = useState<EditState | null>(null);
@@ -351,7 +351,7 @@ const AdminMarkets = () => {
         </div>
       </div>
       <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 overflow-x-auto scrollbar-hide">
-        {(["all", "pending", "active", "resolved", "cancelled", "polymarket"] as const).map((f) => (
+        {(["all", "pending", "active", "ended", "resolved", "cancelled", "polymarket"] as const).map((f) => (
           <button
             key={f}
             onClick={() => { setLoading(true); setFilter(f); }}
@@ -583,7 +583,9 @@ const AdminMarkets = () => {
                         <div className="flex items-center gap-1.5">
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                             m.status === "active" ? "bg-green-500/10 text-green-500" :
+                            m.status === "ended" ? "bg-orange-500/10 text-orange-500" :
                             m.status === "resolved" ? "bg-blue-500/10 text-blue-500" :
+                            m.status === "cancelled" ? "bg-red-500/10 text-red-500" :
                             "bg-yellow-500/10 text-yellow-500"
                           }`}>
                             {m.status}
@@ -660,9 +662,9 @@ const AdminMarkets = () => {
                                   <Check className="w-4 h-4" />
                                 </button>
                               )}
-                              {(m.status === "active" || m.status === "pending") && (
+                              {(m.status === "active" || m.status === "ended" || m.status === "pending") && (
                                 <>
-                                  {m.status === "active" && (
+                                  {(m.status === "active" || m.status === "ended") && (
                                     <button
                                       onClick={() => openResolveModal(m)}
                                       className="p-1.5 rounded-lg hover:bg-green-500/10 text-green-500 transition-colors"
