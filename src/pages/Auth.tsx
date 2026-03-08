@@ -25,6 +25,8 @@ const useIsDappBrowser = () =>
 
 const Auth = () => {
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const [showResetPrompt, setShowResetPrompt] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -70,18 +72,9 @@ const Auth = () => {
           // Detect OAuth-only accounts trying email/password login
           const msg = result.error.message?.toLowerCase() || "";
           if (msg.includes("invalid login credentials") || msg.includes("invalid credentials")) {
-            // Check if this email exists as a Google OAuth account
-            const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-              redirectTo: `${getCanonicalOrigin()}/reset-password`,
-            });
-            if (!resetError) {
-              toast.error(
-                "This email may be registered via Google. We've sent a password reset link so you can set a password for email login.",
-                { duration: 8000 }
-              );
-            } else {
-              toast.error("Invalid credentials. If you signed up with Google, use the Google button below.");
-            }
+            toast.error("Incorrect email or password. Please try again.");
+            setShowResetPrompt(true);
+            setResetEmail(email);
           } else {
             toast.error(result.error.message);
           }
@@ -176,6 +169,40 @@ const Auth = () => {
             {loading ? "Please wait..." : mode === "login" ? "Sign In" : "Sign Up"}
           </button>
         </form>
+
+        {showResetPrompt && mode === "login" && (
+          <div className="mt-3 rounded-xl border border-destructive/20 bg-destructive/5 px-3.5 py-3">
+            <p className="text-xs text-foreground font-medium mb-2">
+              Wrong password? Would you like to reset it?
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+                    redirectTo: `${getCanonicalOrigin()}/reset-password`,
+                  });
+                  if (!error) {
+                    toast.success("Password reset link sent to your email!");
+                    setShowResetPrompt(false);
+                  } else {
+                    toast.error("Failed to send reset email. Try again.");
+                  }
+                }}
+                className="flex-1 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
+              >
+                Yes, reset password
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowResetPrompt(false)}
+                className="flex-1 py-2 rounded-lg bg-muted text-muted-foreground text-xs font-semibold hover:bg-muted/80 transition-colors"
+              >
+                No, try again
+              </button>
+            </div>
+          </div>
+        )}
 
         {!isDapp && mode === "login" && (
           <div className="mt-4 flex items-start gap-2 rounded-xl bg-muted/60 border border-border px-3 py-2.5">
