@@ -136,7 +136,7 @@ async function handleStart(token: string, chatId: number) {
     chat_id: chatId,
     photo: `${APP_URL}/images/opoll-banner.png`,
     caption:
-      "🔮 <b>Welcome to OPoll Market</b>\n" +
+      "🔮 <b>Welcome to OPoll Prediction Market</b>\n" +
       "━━━━━━━━━━━━━━━━━━━━\n" +
       "The World's First Web + Telegram + WhatsApp prediction market protocol.\n\n" +
       "📊 Predict outcomes\n" +
