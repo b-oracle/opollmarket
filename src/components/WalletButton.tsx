@@ -103,6 +103,13 @@ const WalletButton = () => {
                   Open in SafePal
                 </a>
                 <a
+                  href={`https://app.binance.com/cedefi/dapp-browser?url=${encodeURIComponent(window.location.href)}`}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/50 hover:bg-accent transition-colors text-xs font-medium text-foreground"
+                >
+                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="8" fill="#F0B90B"/><path d="M20 8l-3.5 3.5 7.5 7.5-3.5 3.5L20 23.5l-7.5-7.5L9 19.5 20 30.5l11-11L20 8zM12.5 19.5L9 23l3.5 3.5L16 23l-3.5-3.5zM27.5 19.5L24 23l3.5 3.5L31 23l-3.5-3.5z" fill="white"/></svg>
+                  Open in Binance
+                </a>
+                <a
                   href={`https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(window.location.href)}`}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/50 hover:bg-accent transition-colors text-xs font-medium text-foreground"
                 >
