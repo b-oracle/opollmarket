@@ -601,18 +601,6 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         </div>
       </div>
 
-      {/* Swipe hint - overlaid on bottom nav padding */}
-      {!isMulti && !isEnded && (
-        <motion.p
-          className="fixed left-0 right-0 text-[10px] text-muted-foreground/60 text-center z-50 pointer-events-none"
-          style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px) + 2px)' }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: [0, 1, 1, 0], y: [4, 0, 0, -4] }}
-          transition={{ delay: 1.5, duration: 3, ease: "easeInOut", repeat: Infinity, repeatDelay: 5 }}
-        >
-          ← Swipe left for NO · Swipe right for YES →
-        </motion.p>
-      )}
 
       <BetModal
         open={betModal.open}
