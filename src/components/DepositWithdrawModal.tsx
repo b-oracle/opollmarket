@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 
 type Tab = "deposit" | "withdraw";
-type FlowStep = "input" | "confirm" | "executing" | "awaiting_payment" | "success" | "error";
+type FlowStep = "input" | "confirm" | "executing" | "awaiting_payment" | "success" | "partial_success" | "error";
 
 interface DepositWithdrawModalProps {
   open: boolean;
@@ -38,6 +38,12 @@ interface PaymentInfo {
   pay_amount: number;
   pay_currency: string;
   expiration_estimate_date?: string;
+}
+
+interface PartialInfo {
+  credited: number;
+  requested: number;
+  shortfall: number;
 }
 
 const PRESET_AMOUNTS = [25, 50, 100, 250];
