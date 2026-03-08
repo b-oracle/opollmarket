@@ -31,13 +31,14 @@ const BottomSheet = ({ open, onClose, children, maxHeight = "85dvh", className =
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 100, scale: 0.95 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-[60] max-w-lg mx-auto md:left-60"
+            className="fixed left-0 right-0 z-[60] max-w-lg mx-auto md:left-60 md:bottom-0"
+            style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
           >
             <div
-              className={`glass-strong rounded-t-3xl overflow-y-auto ${className}`}
+              className={`glass-strong rounded-t-3xl overflow-y-auto md:pb-0 ${className}`}
               style={{
                 maxHeight,
-                paddingBottom: "calc(env(safe-area-inset-bottom) + 5.5rem)",
+                paddingBottom: "0.75rem",
               }}
             >
               {children}
