@@ -662,9 +662,9 @@ const AdminMarkets = () => {
                                   <Check className="w-4 h-4" />
                                 </button>
                               )}
-                              {(m.status === "active" || m.status === "pending") && (
+                              {(m.status === "active" || m.status === "ended" || m.status === "pending") && (
                                 <>
-                                  {m.status === "active" && (
+                                  {(m.status === "active" || m.status === "ended") && (
                                     <button
                                       onClick={() => openResolveModal(m)}
                                       className="p-1.5 rounded-lg hover:bg-green-500/10 text-green-500 transition-colors"
