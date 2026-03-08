@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 
 type Tab = "deposit" | "withdraw";
-type FlowStep = "input" | "confirm" | "executing" | "awaiting_payment" | "success" | "error";
+type FlowStep = "input" | "confirm" | "executing" | "awaiting_payment" | "success" | "partial_success" | "error";
 
 interface DepositWithdrawModalProps {
   open: boolean;
@@ -38,6 +38,12 @@ interface PaymentInfo {
   pay_amount: number;
   pay_currency: string;
   expiration_estimate_date?: string;
+}
+
+interface PartialInfo {
+  credited: number;
+  requested: number;
+  shortfall: number;
 }
 
 const PRESET_AMOUNTS = [25, 50, 100, 250];
@@ -68,6 +74,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
   const [copied, setCopied] = useState(false);
   const [pollInterval, setPollInterval] = useState<ReturnType<typeof setInterval> | null>(null);
+  const [partialInfo, setPartialInfo] = useState<PartialInfo | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -79,6 +86,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
       setErrorMsg("");
       setPaymentInfo(null);
       setCopied(false);
+      setPartialInfo(null);
     }
     return () => {
       if (pollInterval) clearInterval(pollInterval);
@@ -181,7 +189,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
       if (!user) return;
       const { data } = await supabase
         .from("transactions")
-        .select("status")
+        .select("status, amount")
         .eq("user_id", user.id)
         .eq("nowpayments_payment_id", paymentId)
         .single();
@@ -192,10 +200,22 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
         queryClient.invalidateQueries({ queryKey: ["balance"] });
         queryClient.invalidateQueries({ queryKey: ["has_deposit"] });
         setStep("success");
+      } else if (data?.status === "partial") {
+        clearInterval(interval);
+        setPollInterval(null);
+        queryClient.invalidateQueries({ queryKey: ["balance"] });
+        queryClient.invalidateQueries({ queryKey: ["has_deposit"] });
+        const credited = Number(data.amount);
+        setPartialInfo({
+          credited,
+          requested: numAmount,
+          shortfall: Math.max(0, numAmount - credited),
+        });
+        setStep("partial_success");
       }
-    }, 10000); // every 10 seconds
+    }, 10000);
     setPollInterval(interval);
-  }, [user, queryClient]);
+  }, [user, queryClient, numAmount]);
 
   const handleDeposit = useCallback(async () => {
     setStep("executing");
@@ -254,6 +274,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
     setStep("input");
     setErrorMsg("");
     setPaymentInfo(null);
+    setPartialInfo(null);
     onClose();
   };
 
@@ -266,6 +287,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
     setStep("input");
     setErrorMsg("");
     setPaymentInfo(null);
+    setPartialInfo(null);
   };
 
   if (!open) return null;
@@ -658,7 +680,66 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                   </motion.div>
                 )}
 
-                {/* ERROR */}
+                {/* PARTIAL SUCCESS */}
+                {step === "partial_success" && partialInfo && (
+                  <motion.div
+                    key="partial"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex flex-col items-center py-6"
+                  >
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", damping: 10 }}
+                      className="w-16 h-16 rounded-full bg-yellow-500/20 border border-yellow-500/40 flex items-center justify-center mb-4"
+                    >
+                      <AlertTriangle className="w-8 h-8 text-yellow-500" />
+                    </motion.div>
+                    <h3 className="text-lg font-bold mb-1">Partial Deposit Received</h3>
+                    <p className="text-sm text-muted-foreground text-center mb-4">
+                      We received <span className="font-bold text-foreground">${partialInfo.credited.toFixed(2)}</span> of your <span className="font-bold text-foreground">${partialInfo.requested.toFixed(2)}</span> deposit. The received amount has been credited to your balance.
+                    </p>
+
+                    <div className="w-full rounded-xl bg-muted/50 border border-border p-3 mb-4">
+                      <div className="flex justify-between text-sm mb-1.5">
+                        <span className="text-muted-foreground">Requested</span>
+                        <span className="font-semibold">${partialInfo.requested.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm mb-1.5">
+                        <span className="text-muted-foreground">Received</span>
+                        <span className="font-semibold text-primary">${partialInfo.credited.toFixed(2)}</span>
+                      </div>
+                      <div className="border-t border-border my-1.5" />
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Shortfall</span>
+                        <span className="font-bold text-yellow-500">${partialInfo.shortfall.toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 w-full">
+                      <button
+                        onClick={handleClose}
+                        className="flex-1 glass py-3 rounded-xl font-semibold text-sm transition-all active:scale-95"
+                      >
+                        Done
+                      </button>
+                      <button
+                        onClick={() => {
+                          setAmount(partialInfo.shortfall.toFixed(2));
+                          setPartialInfo(null);
+                          setPaymentInfo(null);
+                          setStep("input");
+                        }}
+                        className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm transition-all active:scale-95"
+                      >
+                        Top Up ${partialInfo.shortfall.toFixed(2)}
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+
+
                 {step === "error" && (
                   <motion.div
                     key="error"
