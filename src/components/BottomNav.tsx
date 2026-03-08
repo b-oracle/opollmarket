@@ -16,6 +16,7 @@ const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isFeatureEnabled } = useFeatureToggles();
   const [moreOpen, setMoreOpen] = useState(false);
 
   const filteredBase = baseNavItems.filter(
