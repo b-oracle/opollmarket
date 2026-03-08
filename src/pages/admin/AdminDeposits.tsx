@@ -225,11 +225,9 @@ const AdminDeposits = () => {
         </div>
       )}
 
-      {totalPages > 1 && (
-        <div className="mt-4">
-          <AdminPagination page={page} totalPages={totalPages} onPageChange={setPage} />
-        </div>
-      )}
+      <div className="mt-4">
+        <AdminPagination page={page} totalItems={data?.total || 0} pageSize={PAGE_SIZE} onPageChange={setPage} />
+      </div>
     </div>
   );
 };
