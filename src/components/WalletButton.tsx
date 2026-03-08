@@ -12,7 +12,8 @@ const isNormalMobileBrowser = () => {
   if (typeof window === "undefined") return false;
   const ua = navigator.userAgent;
   const isMobile = /iPhone|iPad|Android|Mobile/i.test(ua);
-  const hasInjected = !!(window as any).ethereum;
+  const w = window as any;
+  const hasInjected = !!(w.ethereum || w.BinanceChain || w.rabby);
   return isMobile && !hasInjected;
 };
 
@@ -100,6 +101,13 @@ const WalletButton = () => {
                 >
                   <svg className="w-4 h-4 shrink-0" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="8" fill="#4A21EF"/><path d="M20 8l-9 5v9c0 5.5 3.8 10.6 9 12 5.2-1.4 9-6.5 9-12v-9l-9-5z" fill="white"/><path d="M20 12.5l-5.5 3v5.5c0 3.4 2.3 6.5 5.5 7.3 3.2-.8 5.5-3.9 5.5-7.3v-5.5l-5.5-3z" fill="#4A21EF"/></svg>
                   Open in SafePal
+                </a>
+                <a
+                  href={`https://app.binance.com/cedefi/dapp-browser?url=${encodeURIComponent(window.location.href)}`}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/50 hover:bg-accent transition-colors text-xs font-medium text-foreground"
+                >
+                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="8" fill="#F0B90B"/><path d="M20 8l-3.5 3.5 7.5 7.5-3.5 3.5L20 23.5l-7.5-7.5L9 19.5 20 30.5l11-11L20 8zM12.5 19.5L9 23l3.5 3.5L16 23l-3.5-3.5zM27.5 19.5L24 23l3.5 3.5L31 23l-3.5-3.5z" fill="white"/></svg>
+                  Open in Binance
                 </a>
                 <a
                   href={`https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(window.location.href)}`}
