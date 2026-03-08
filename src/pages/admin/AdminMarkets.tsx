@@ -90,6 +90,7 @@ const AdminMarkets = () => {
   const [moderatorReviewingId, setModeratorReviewingId] = useState<string | null>(null);
   const [moderatorNameMap, setModeratorNameMap] = useState<Map<string, string>>(new Map());
   const [endedCount, setEndedCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
 
   const canFinalApprove = isSuperAdmin || isAdmin;
   const isModeratorOnly = isModerator && !isSuperAdmin && !isAdmin;
@@ -106,9 +107,13 @@ const AdminMarkets = () => {
     }
     const { data, error } = await query;
     if (!error && data) setMarkets(data);
-    // Always fetch ended count regardless of current filter
-    const { count } = await supabase.from("markets").select("id", { count: "exact", head: true }).eq("status", "ended");
-    setEndedCount(count ?? 0);
+    // Always fetch ended + pending counts regardless of current filter
+    const [{ count: endedC }, { count: pendingC }] = await Promise.all([
+      supabase.from("markets").select("id", { count: "exact", head: true }).eq("status", "ended"),
+      supabase.from("markets").select("id", { count: "exact", head: true }).eq("status", "pending"),
+    ]);
+    setEndedCount(endedC ?? 0);
+    setPendingCount(pendingC ?? 0);
     setLoading(false);
   };
 
@@ -367,6 +372,11 @@ const AdminMarkets = () => {
             {f === "ended" && endedCount > 0 && (
               <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold bg-orange-500 text-white">
                 {endedCount}
+              </span>
+            )}
+            {f === "pending" && pendingCount > 0 && (
+              <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold bg-yellow-500 text-white">
+                {pendingCount}
               </span>
             )}
           </button>
