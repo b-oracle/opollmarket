@@ -510,7 +510,7 @@ const Feed = () => {
         </div>
       }
       {/* Fill any remaining gap between feed and BottomNav */}
-      <div className="flex-1 bg-background px-0 py-[4px]" />
+      <div className="flex-1 bg-background px-0 py-0" />
       {/* Swipe hint - fixed above bottom nav */}
       {sortedMarkets.length > 0 && (() => {
         const currentMarket = sortedMarkets[activeIndex];
