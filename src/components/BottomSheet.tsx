@@ -38,7 +38,7 @@ const BottomSheet = ({ open, onClose, children, maxHeight = "85dvh", className =
               className={`glass-strong rounded-t-3xl overflow-y-auto md:pb-0 ${className}`}
               style={{
                 maxHeight,
-                paddingBottom: "1.5rem",
+                paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))",
               }}
             >
               {children}
