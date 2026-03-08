@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
 
     // Add link to market if available
     if (market_id) {
-      const appUrl = Deno.env.get("APP_URL") || "https://opollmarket.lovable.app";
+      const appUrl = Deno.env.get("APP_URL") || "https://opoll.org";
       text += `\n\n<a href="${appUrl}/market/${market_id}">View Market →</a>`;
     }
 
