@@ -375,7 +375,46 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                       )}
                     </div>
 
-                    {/* Amount */}
+                    {/* Stale pending deposits banner */}
+                    {isDeposit && stalePending.length > 0 && (
+                      <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/5 p-3 mb-5">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Clock className="w-4 h-4 text-yellow-500 shrink-0" />
+                          <p className="text-xs font-semibold">
+                            {stalePending.length} pending deposit{stalePending.length > 1 ? "s" : ""}
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          {stalePending.map((tx) => {
+                            const age = Math.round((Date.now() - new Date(tx.created_at).getTime()) / 60000);
+                            const ageLabel = age < 60 ? `${age}m ago` : age < 1440 ? `${Math.round(age / 60)}h ago` : `${Math.round(age / 1440)}d ago`;
+                            return (
+                              <div key={tx.id} className="flex items-center justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <span className="text-xs font-bold">${Number(tx.amount).toFixed(2)}</span>
+                                  <span className="text-[10px] text-muted-foreground ml-1.5">
+                                    {tx.status === "partial" ? "Partial" : "Pending"} · {ageLabel}
+                                  </span>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    setAmount(Number(tx.amount).toFixed(2));
+                                    if (tx.nowpayments_payment_id) {
+                                      startPolling(tx.nowpayments_payment_id);
+                                    }
+                                    setStep("confirm");
+                                  }}
+                                  className="text-[10px] font-semibold text-primary px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors shrink-0"
+                                >
+                                  {tx.status === "partial" ? "Top Up" : "Resume"}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="mb-3">
                       <div className="flex items-center justify-between mb-1.5">
                         <label className="text-xs text-muted-foreground">Amount (USD)</label>
