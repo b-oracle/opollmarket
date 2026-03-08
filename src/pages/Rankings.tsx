@@ -832,6 +832,7 @@ const Rankings = () => {
                     <Podium
                       items={sortedReferrers}
                       currentUserId={currentUserId}
+                      onUserClick={(id) => navigate(`/user/${id}`)}
                       valueLabel={(r) => ({
                         text: `+${formatDollar(r.totalEarned)}`,
                         positive: true,
