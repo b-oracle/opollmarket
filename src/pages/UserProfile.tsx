@@ -5,6 +5,7 @@ import ActivityFeed from "@/components/ActivityFeed";
 import SocialSection from "@/components/SocialSection";
 import MutualFollowers from "@/components/MutualFollowers";
 import ShareModal from "@/components/ShareModal";
+import ProfileShareCard from "@/components/ProfileShareCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFollow, useFollowCounts } from "@/hooks/useFollow";
@@ -283,6 +284,20 @@ const UserProfile = () => {
           </button>
         </div>
 
+        <ProfileShareCard
+          ref={profileCardRef}
+          displayName={displayName}
+          bio={profile.bio}
+          avatarUrl={profile.avatar_url}
+          followersCount={followCounts.followers}
+          followingCount={followCounts.following}
+          likesCount={likesCount}
+          referralCount={referralCount}
+          marketsCount={userMarkets.length}
+          positionsCount={userPositions.length}
+          leaderboardRanks={leaderboardRanks}
+        />
+
         <ShareModal
           open={shareOpen}
           onOpenChange={setShareOpen}
@@ -293,7 +308,7 @@ const UserProfile = () => {
         />
 
         {/* Profile Card */}
-        <div ref={profileCardRef} className="glass rounded-2xl p-5 mb-4">
+        <div className="glass rounded-2xl p-5 mb-4">
           <div className="flex items-start gap-4">
             {/* Avatar */}
             <div className="relative shrink-0">

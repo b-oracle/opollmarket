@@ -203,7 +203,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
 
         {/* Screenshot preview */}
         <div className="px-4 py-3">
-          <div className="rounded-xl overflow-hidden bg-muted/30 border border-border/20 aspect-video flex items-center justify-center">
+          <div className="rounded-xl overflow-hidden bg-muted/30 border border-border/20 max-h-[50vh] flex items-center justify-center">
             {capturing ? (
               <div className="flex flex-col items-center gap-2">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
