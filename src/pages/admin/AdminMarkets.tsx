@@ -351,7 +351,7 @@ const AdminMarkets = () => {
         </div>
       </div>
       <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 overflow-x-auto scrollbar-hide">
-        {(["all", "pending", "active", "resolved", "cancelled", "polymarket"] as const).map((f) => (
+        {(["all", "pending", "active", "ended", "resolved", "cancelled", "polymarket"] as const).map((f) => (
           <button
             key={f}
             onClick={() => { setLoading(true); setFilter(f); }}
