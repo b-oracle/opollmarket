@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { useConfetti } from "@/hooks/useConfetti";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, MessageCircle, Users, Bookmark, ArrowRight, ArrowLeft, Sparkles, UserPlus, Globe } from "lucide-react";
@@ -134,6 +135,7 @@ interface SocialTutorialProps {
 const SocialTutorial = ({ onComplete }: SocialTutorialProps) => {
   const [step, setStep] = useState(0);
   const navigate = useNavigate();
+  const { fireWinConfetti } = useConfetti();
   const location = useLocation();
   const current = steps[step];
   const isLast = step === steps.length - 1;
@@ -149,6 +151,7 @@ const SocialTutorial = ({ onComplete }: SocialTutorialProps) => {
     if (isLast) {
       haptic.success();
       playCompleteSound();
+      fireWinConfetti();
       markTutorialSeen();
       navigate("/", { replace: true });
       onComplete();
