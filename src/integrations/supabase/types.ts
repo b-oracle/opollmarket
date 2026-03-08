@@ -473,6 +473,8 @@ export type Database = {
           no_price: number
           participants: number
           pinned_trending: boolean
+          polymarket_event_slug: string | null
+          polymarket_id: string | null
           resolution_source: string
           resolved_side: string | null
           sport_league: string | null
@@ -514,6 +516,8 @@ export type Database = {
           no_price?: number
           participants?: number
           pinned_trending?: boolean
+          polymarket_event_slug?: string | null
+          polymarket_id?: string | null
           resolution_source: string
           resolved_side?: string | null
           sport_league?: string | null
@@ -555,6 +559,8 @@ export type Database = {
           no_price?: number
           participants?: number
           pinned_trending?: boolean
+          polymarket_event_slug?: string | null
+          polymarket_id?: string | null
           resolution_source?: string
           resolved_side?: string | null
           sport_league?: string | null
@@ -666,6 +672,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      polymarket_presets: {
+        Row: {
+          auto_approve: boolean
+          category: string
+          created_at: string
+          created_by: string
+          enabled: boolean
+          id: string
+          max_days_ahead: number
+          updated_at: string
+        }
+        Insert: {
+          auto_approve?: boolean
+          category: string
+          created_at?: string
+          created_by: string
+          enabled?: boolean
+          id?: string
+          max_days_ahead?: number
+          updated_at?: string
+        }
+        Update: {
+          auto_approve?: boolean
+          category?: string
+          created_at?: string
+          created_by?: string
+          enabled?: boolean
+          id?: string
+          max_days_ahead?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       positions: {
         Row: {

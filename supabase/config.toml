@@ -25,3 +25,7 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.check-auto-resolve]
     verify_jwt = false
+  [functions.import-polymarkets]
+    verify_jwt = false
+  [functions.check-poly-resolve]
+    verify_jwt = false
