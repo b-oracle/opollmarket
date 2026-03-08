@@ -147,6 +147,7 @@ const AdminDeposits = () => {
         </div>
         <div className="flex gap-1.5">
           {[
+            { value: "all", label: "All" },
             { value: "pending,partial", label: "Active" },
             { value: "pending", label: "Pending" },
             { value: "partial", label: "Partial" },
