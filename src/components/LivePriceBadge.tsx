@@ -3,46 +3,11 @@ import { TrendingUp, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
 import { getAssetClass } from "@/data/assetClasses";
+import { fetchAssetPrice } from "@/lib/cryptoPriceProvider";
 
-const ASSET_GECKO_MAP: Record<string, string> = {
-  BTC: "bitcoin", ETH: "ethereum", BNB: "binancecoin", SOL: "solana",
-  XRP: "ripple", ADA: "cardano", DOGE: "dogecoin", MATIC: "matic-network",
-  AVAX: "avalanche-2", DOT: "polkadot", LINK: "chainlink", SHIB: "shiba-inu",
+const OP_LABELS: Record<string, string> = {
+  above: ">", below: "<", at_or_above: "≥", at_or_below: "≤",
 };
-
-const METAL_MAP: Record<string, string> = {
-  XAU: "gold", XAG: "silver", XPT: "platinum", XPD: "palladium",
-};
-
-import { fetchCryptoPrice } from "@/lib/cryptoPriceProvider";
-
-async function fetchPrice(asset: string): Promise<number | null> {
-  const cls = getAssetClass(asset);
-  try {
-    if (cls === "crypto") {
-      return fetchCryptoPrice(asset);
-    }
-    if (cls === "commodity") {
-      const metal = METAL_MAP[asset];
-      if (!metal) return null;
-      const r = await fetch(`https://api.metals.dev/v1/latest?api_key=demo&currency=USD&unit=toz`);
-      if (!r.ok) return null;
-      const d = await r.json();
-      return d?.metals?.[metal] ?? null;
-    }
-    if (cls === "forex") {
-      const [base, quote] = asset.split("/");
-      if (!base || !quote) return null;
-      const r = await fetch(`https://api.frankfurter.app/latest?from=${base}&to=${quote}`);
-      if (!r.ok) return null;
-      const d = await r.json();
-      return d?.rates?.[quote] ?? null;
-    }
-  } catch {
-    // silent
-  }
-  return null;
-}
 
 interface LivePriceBadgeProps {
   asset: string;
@@ -50,26 +15,24 @@ interface LivePriceBadgeProps {
   operator?: string;
 }
 
-const OP_LABELS: Record<string, string> = {
-  above: ">", below: "<", at_or_above: "≥", at_or_below: "≤",
-};
-
 const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) => {
   const [price, setPrice] = useState<number | null>(null);
   const [prev, setPrev] = useState<number | null>(null);
   const [flash, setFlash] = useState<"up" | "down" | null>(null);
   const toastFiredRef = useRef(false);
   const metToastFiredRef = useRef(false);
+  const priceRef = useRef<number | null>(null);
 
   const cls = getAssetClass(asset);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      const p = await fetchPrice(asset);
+      const p = await fetchAssetPrice(asset);
       if (p != null && !cancelled) {
-        setPrev(price);
+        setPrev(priceRef.current);
         setPrice(p);
+        priceRef.current = p;
 
         // Fire a one-time toast when crossing the 95% threshold
         if (!toastFiredRef.current && targetPrice != null && targetPrice > 0 && operator) {
@@ -85,12 +48,12 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
             : operator === "at_or_below" ? p <= targetPrice
             : false;
 
-          const isForex = getAssetClass(asset) === "forex";
+          const isForex = cls === "forex";
           const targetLabel = isForex ? targetPrice.toFixed(4) : `$${targetPrice.toLocaleString()}`;
 
           if (met && !metToastFiredRef.current) {
             metToastFiredRef.current = true;
-            toastFiredRef.current = true; // skip 95% toast if already met
+            toastFiredRef.current = true;
             toast.success(`✅ ${asset} hit the target — resolution eligible!`, {
               description: `Target: ${targetLabel}`,
               duration: 10000,
@@ -142,7 +105,6 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
     false
   );
 
-  // Progress toward target (0–100%)
   const progress = targetPrice != null && targetPrice > 0
     ? (operator === "above" || operator === "at_or_above")
       ? Math.min(Math.round((price / targetPrice) * 100), 100)
@@ -171,7 +133,6 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
                   : "bg-primary/10 border border-primary/20 text-primary"
       }`}
     >
-      {/* Proximity alert banner */}
       {proximityTier === "imminent" && !conditionMet && (
         <div className="flex items-center justify-center gap-1 px-2 py-0.5 bg-amber-500/25 text-amber-600 dark:text-amber-300 text-[9px] font-bold animate-pulse">
           🔥 Almost there! {progress}% to target
