@@ -816,7 +816,7 @@ async function handleQuickTrade(
       `⏱️ Round duration: <b>5 minutes</b>\n\n` +
       `Select an asset to trade:`,
     parse_mode: "HTML",
-    reply_markup: { inline_keyboard: keyboard },
+    reply_markup: { inline_keyboard: [...keyboard, [{ text: "🏠 Home", callback_data: "cmd_home" }]] },
   });
 }
 
