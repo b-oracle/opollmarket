@@ -395,7 +395,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
 
         {/* Side actions */}
-        <div className="absolute right-4 bottom-2 z-10 flex flex-col items-center gap-4">
+        <div className="absolute right-3 bottom-2 z-10 flex flex-col items-center gap-2.5">
           {isBoosted && (
             <div className="flex flex-col items-center gap-1">
               <div className="w-10 h-10 rounded-full glass flex items-center justify-center bg-orange-500/20 animate-pulse">
