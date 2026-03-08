@@ -83,6 +83,8 @@ Deno.serve(async (req) => {
       await handleHelp(token, chatId);
     } else if (text === "/unlink") {
       await handleUnlink(token, supabase, chatId);
+    } else if (text === "/stats") {
+      await handleStats(token, supabase, chatId);
     } else {
       await tg(token, "sendMessage", {
         chat_id: chatId,
@@ -123,6 +125,7 @@ async function handleHelp(token: string, chatId: number) {
       "/portfolio — View your positions\n" +
       "/balance — Check your balance\n" +
       "/quicktrade — Play Quick Trade\n" +
+      "/stats — Platform-wide stats\n" +
       "/help — Show this message",
     parse_mode: "HTML",
   });
