@@ -478,9 +478,6 @@ const Index = () => {
       <BoostMarketModal open={!!boostModalMarket} onClose={() => setBoostModalMarket(null)} marketId={boostModalMarket?.id || ""} marketTitle={boostModalMarket?.title || ""} />
       
       <BottomNav />
-      <AnimatePresence>
-        {showTutorial && <SocialTutorial onComplete={() => setShowTutorial(false)} />}
-      </AnimatePresence>
     </div>
   );
 };
