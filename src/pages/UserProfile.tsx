@@ -387,7 +387,7 @@ const UserProfile = () => {
 
         {/* Content Tabs */}
         <div className="flex gap-1 p-1 rounded-xl bg-muted/50 mb-4">
-          {(["markets", "predictions", "activity"] as const).map((t) => (
+          {(["markets", "predictions", "rank"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setActiveTab(t)}
@@ -395,7 +395,7 @@ const UserProfile = () => {
                 activeTab === t ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
               }`}
             >
-              {t === "markets" ? `Markets (${userMarkets.length})` : t === "predictions" ? "Predictions" : "Activity"}
+              {t === "markets" ? `Markets (${userMarkets.length})` : t === "predictions" ? "Predictions" : "Rank"}
             </button>
           ))}
         </div>
