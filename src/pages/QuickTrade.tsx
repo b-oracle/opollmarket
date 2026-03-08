@@ -15,6 +15,8 @@ import {
   BarChart3,
   LineChart as LineChartIcon,
   Info,
+  Volume2,
+  VolumeOff,
 } from "lucide-react";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -180,6 +182,16 @@ export default function QuickTrade() {
   const prevStreakRef = useRef<number>(0);
   const chartCardRef = useRef<HTMLDivElement>(null);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [soundMuted, setSoundMuted] = useState(() => {
+    try { return localStorage.getItem("qt-sound-muted") === "true"; } catch { return false; }
+  });
+  const toggleMute = useCallback(() => {
+    setSoundMuted(prev => {
+      const next = !prev;
+      try { localStorage.setItem("qt-sound-muted", String(next)); } catch {}
+      return next;
+    });
+  }, []);
 
   // Ensure selected timeframe is in the enabled list
   useEffect(() => {
@@ -592,12 +604,12 @@ export default function QuickTrade() {
               setResolveFlash(won ? "win" : "lose");
               setTimeout(() => setResolveFlash(null), 1500);
               if (won) {
-                playWinSound();
+                if (!soundMuted) playWinSound();
                 fireWinConfetti();
                 haptic("success");
                 toast({ title: "You won! 🎉", description: `The round resolved ${resolvedResult?.toUpperCase()}` });
               } else {
-                playLoseSound();
+                if (!soundMuted) playLoseSound();
                 haptic("error");
               }
             } else {
@@ -867,6 +879,13 @@ export default function QuickTrade() {
                     TV
                   </button>
                 </div>
+                <button
+                  onClick={toggleMute}
+                  className={`p-1.5 rounded transition-all ${soundMuted ? "text-muted-foreground hover:text-foreground" : "text-primary"}`}
+                  title={soundMuted ? "Unmute sounds" : "Mute sounds"}
+                >
+                  {soundMuted ? <VolumeOff className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                </button>
               </div>
               <div className="relative overflow-hidden">
                 {/* Resolution flash/glow overlay */}
