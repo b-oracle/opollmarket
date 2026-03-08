@@ -361,7 +361,7 @@ const MarketDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: market, isLoading } = useMarket(id);
+  const { data: market, isLoading, isError } = useMarket(id);
   const { boostDetails } = useActiveBoosts();
   const activeBoost = id ? boostDetails.get(id) : undefined;
   const { track } = useAnalytics();
