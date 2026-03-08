@@ -1,0 +1,1 @@
+ALTER TABLE public.polymarket_presets ADD COLUMN max_imports_per_run integer NOT NULL DEFAULT 10;
