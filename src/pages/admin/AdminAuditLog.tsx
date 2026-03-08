@@ -1,11 +1,14 @@
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Input } from "@/components/ui/input";
+import AdminPagination from "@/components/admin/AdminPagination";
 import {
   Loader2, History, ShieldCheck, ShieldMinus, CheckCircle, XCircle,
   Trash2, Pencil, Gavel, RotateCcw, MessageSquare,
-  Zap, ArrowUpFromLine, DollarSign,
+  Zap, ArrowUpFromLine, DollarSign, Search, RefreshCw,
 } from "lucide-react";
-import AdminPagination from "@/components/admin/AdminPagination";
+import { Button } from "@/components/ui/button";
 
 interface AuditEntry {
   id: string;
@@ -40,74 +43,96 @@ const actionConfig: Record<string, { label: string; verb: string; icon: typeof S
   withdrawal_rejected: { label: "Withdrawal Rejected", verb: "rejected withdrawal", icon: ArrowUpFromLine, colorClass: "text-destructive bg-destructive/10" },
   balance_adjusted: { label: "Balance Adjusted", verb: "adjusted balance for", icon: DollarSign, colorClass: "text-blue-400 bg-blue-400/10" },
   settings_updated: { label: "Settings Updated", verb: "updated platform settings", icon: Pencil, colorClass: "text-blue-400 bg-blue-400/10" },
+  manual_deposit_confirm: { label: "Manual Deposit", verb: "manually confirmed deposit for", icon: DollarSign, colorClass: "text-emerald-400 bg-emerald-400/10" },
+  duplicate_payout_correction: { label: "Payout Correction", verb: "corrected duplicate payout for", icon: DollarSign, colorClass: "text-amber-400 bg-amber-400/10" },
 };
 
 const fallbackConfig = { label: "Action", verb: "performed action on", icon: History, colorClass: "text-muted-foreground bg-muted" };
 
 const AdminAuditLog = () => {
-  const [logs, setLogs] = useState<AuditEntry[]>([]);
-  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
 
-  useEffect(() => {
-    const fetchLogs = async () => {
-      const { data, error } = await supabase
-        .from("audit_logs" as any)
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(500);
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ["admin-audit-log", page, typeFilter, search],
+    queryFn: async () => {
+      const trimmed = search.trim().toLowerCase();
 
-      if (error || !data) {
-        setLoading(false);
-        return;
+      // Resolve actor IDs from search term
+      let searchActorIds: string[] | null = null;
+      if (trimmed) {
+        const { data: matchedProfiles } = await supabase
+          .from("profiles")
+          .select("id")
+          .or(`email.ilike.%${trimmed}%,display_name.ilike.%${trimmed}%`);
+        searchActorIds = (matchedProfiles || []).map((p) => p.id);
       }
 
+      let query = supabase
+        .from("audit_logs" as any)
+        .select("*", { count: "exact" })
+        .order("created_at", { ascending: false });
+
+      if (typeFilter !== "all") {
+        query = query.eq("action", typeFilter);
+      }
+
+      if (trimmed && searchActorIds && searchActorIds.length > 0) {
+        query = query.in("actor_id", searchActorIds);
+      } else if (trimmed && searchActorIds && searchActorIds.length === 0) {
+        // No matching users, try action name search
+        const matchingActions = Object.keys(actionConfig).filter(k =>
+          actionConfig[k].label.toLowerCase().includes(trimmed) || k.includes(trimmed)
+        );
+        if (matchingActions.length > 0) {
+          query = query.in("action", matchingActions);
+        } else {
+          return { logs: [], total: 0, actionTypes: [] };
+        }
+      }
+
+      query = query.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+
+      const { data: rawLogs, count, error } = await query;
+      if (error || !rawLogs) return { logs: [], total: 0, actionTypes: [] };
+
+      // Fetch all action types for filter dropdown
+      const { data: allLogs } = await supabase
+        .from("audit_logs" as any)
+        .select("action")
+        .limit(1000);
+      const actionTypes = [...new Set((allLogs || []).map((l: any) => l.action))].sort();
+
+      // Resolve names
       const userIds = new Set<string>();
-      (data as any[]).forEach((l: any) => {
+      (rawLogs as any[]).forEach((l: any) => {
         if (l.actor_id) userIds.add(l.actor_id);
         if (l.target_id && l.target_type === "user") userIds.add(l.target_id);
       });
 
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, display_name, email")
-        .in("id", Array.from(userIds));
+      const { data: profiles } = userIds.size > 0
+        ? await supabase.from("profiles").select("id, display_name, email").in("id", Array.from(userIds))
+        : { data: [] };
 
       const nameMap = new Map<string, string>();
       profiles?.forEach((p) => {
         nameMap.set(p.id, p.display_name || p.email || p.id.slice(0, 8));
       });
 
-      setLogs(
-        (data as any[]).map((l: any) => ({
-          ...l,
-          actor_name: nameMap.get(l.actor_id) || l.actor_id?.slice(0, 8),
-          target_name: l.target_id
-            ? l.target_type === "user"
-              ? nameMap.get(l.target_id) || l.target_id?.slice(0, 8)
-              : (l.details as any)?.title || l.target_id?.slice(0, 8)
-            : null,
-        }))
-      );
-      setLoading(false);
-    };
-    fetchLogs();
-  }, []);
+      const logs: AuditEntry[] = (rawLogs as any[]).map((l: any) => ({
+        ...l,
+        actor_name: nameMap.get(l.actor_id) || l.actor_id?.slice(0, 8),
+        target_name: l.target_id
+          ? l.target_type === "user"
+            ? nameMap.get(l.target_id) || l.target_id?.slice(0, 8)
+            : (l.details as any)?.title || l.target_id?.slice(0, 8)
+          : null,
+      }));
 
-  const actionTypes = useMemo(() => {
-    const types = new Set(logs.map(l => l.action));
-    return Array.from(types).sort();
-  }, [logs]);
-
-  const filteredLogs = useMemo(() =>
-    typeFilter === "all" ? logs : logs.filter(l => l.action === typeFilter),
-  [logs, typeFilter]);
-
-  const paginatedLogs = useMemo(
-    () => filteredLogs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    [filteredLogs, page]
-  );
+      return { logs, total: count || 0, actionTypes };
+    },
+  });
 
   const formatDetails = (log: AuditEntry) => {
     const config = actionConfig[log.action] || fallbackConfig;
@@ -178,21 +203,29 @@ const AdminAuditLog = () => {
     );
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="w-6 h-6 text-primary animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <History className="w-5 h-5 text-primary" />
           <h2 className="text-xl sm:text-2xl font-bold">Audit Log</h2>
-          <span className="text-xs text-muted-foreground">{filteredLogs.length} entries</span>
+          <span className="text-xs text-muted-foreground">{data?.total || 0} entries</span>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <RefreshCw className="w-4 h-4 mr-1" /> Refresh
+        </Button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by admin name, email, or action..."
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            className="pl-9"
+          />
         </div>
         <select
           value={typeFilter}
@@ -200,7 +233,7 @@ const AdminAuditLog = () => {
           className="bg-muted/50 border border-border rounded-lg px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
         >
           <option value="all">All Actions</option>
-          {actionTypes.map(type => (
+          {(data?.actionTypes || []).map((type: string) => (
             <option key={type} value={type}>
               {(actionConfig[type] || fallbackConfig).label}
             </option>
@@ -208,43 +241,50 @@ const AdminAuditLog = () => {
         </select>
       </div>
 
-      <div className="space-y-2">
-        {paginatedLogs.map((log) => {
-          const config = actionConfig[log.action] || fallbackConfig;
-          const Icon = config.icon;
+      {/* Content */}
+      {isLoading ? (
+        <div className="flex justify-center py-20">
+          <Loader2 className="w-6 h-6 text-primary animate-spin" />
+        </div>
+      ) : !data?.logs.length ? (
+        <div className="text-center py-16 text-muted-foreground">
+          <History className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p className="text-sm font-medium">No audit entries found</p>
+          <p className="text-xs mt-1">Try adjusting your search or filter.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {data.logs.map((log) => {
+            const config = actionConfig[log.action] || fallbackConfig;
+            const Icon = config.icon;
 
-          return (
-            <div
-              key={log.id}
-              className="bg-card border border-border rounded-xl p-4 flex items-start gap-3"
-            >
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${config.colorClass}`}>
-                <Icon className="w-4 h-4" />
+            return (
+              <div
+                key={log.id}
+                className="bg-card border border-border rounded-xl p-4 flex items-start gap-3"
+              >
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${config.colorClass}`}>
+                  <Icon className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm">
+                    <span className="font-semibold">{log.actor_name}</span>{" "}
+                    {formatDetails(log)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {new Date(log.created_at).toLocaleDateString()}{" "}
+                    {new Date(log.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm">
-                  <span className="font-semibold">{log.actor_name}</span>{" "}
-                  {formatDetails(log)}
-                </p>
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  {new Date(log.created_at).toLocaleDateString()}{" "}
-                  {new Date(log.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                </p>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+      )}
 
-        {filteredLogs.length === 0 && (
-          <div className="text-center py-16 text-muted-foreground">
-            <History className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="text-sm font-medium">No audit entries yet</p>
-            <p className="text-xs mt-1">Admin actions will be logged here.</p>
-          </div>
-        )}
+      <div className="mt-4">
+        <AdminPagination page={page} totalItems={data?.total || 0} pageSize={PAGE_SIZE} onPageChange={setPage} />
       </div>
-
-      <AdminPagination page={page} totalItems={filteredLogs.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
     </div>
   );
 };
