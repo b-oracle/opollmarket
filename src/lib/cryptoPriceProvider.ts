@@ -1,6 +1,7 @@
 /**
  * Multi-provider crypto price fetcher with automatic fallback.
  * Order: CoinGecko → CoinCap → CryptoCompare (all free, no API key needed).
+ * Includes Binance WebSocket streaming for real-time sub-second updates.
  */
 
 // ── ID maps per provider ──
