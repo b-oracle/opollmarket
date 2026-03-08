@@ -227,7 +227,7 @@ const AdminTransactions = () => {
             <BarChart3 className="w-4 h-4 text-primary" />
             <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Bets</span>
           </div>
-          <p className="text-xl font-bold">${totals.bets.toLocaleString()}</p>
+          <p className="text-xl font-bold">${totals.bets < 1000 ? totals.bets.toFixed(2) : (totals.bets / 1000).toFixed(1) + "K"}</p>
         </div>
       </div>
 
