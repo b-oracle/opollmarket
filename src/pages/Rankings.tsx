@@ -564,45 +564,56 @@ const Rankings = () => {
                         />
                       );
                     })()}
-                    <div className="space-y-2">
-                      {sortedTraders.map((trader, i) => {
-                        const isMe = currentUserId === trader.userId;
-                        return (
-                          <motion.div
-                            key={trader.userId}
-                            initial={{ opacity: 0, x: -12 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: i * 0.04 }}
-                            className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : ""}`}
-                          >
-                            <div className="w-8 flex justify-center shrink-0">{rankBadge(i + 1)}</div>
-                            <AvatarCircle avatar={trader.avatar} name={trader.name} />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                <span className={`text-sm font-bold truncate ${isMe ? "text-primary" : ""}`}>{isMe ? "You" : trader.name}</span>
-                                {isMe && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
-                              </div>
-                              <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
-                                <span>{trader.trades} trade{trader.trades !== 1 ? "s" : ""}</span>
-                                <span>·</span>
-                                <span>{formatDollar(trader.volume)} vol</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <p className={`text-sm font-bold flex items-center gap-1 ${trader.pnl >= 0 ? "text-primary" : "text-destructive"}`}>
-                                {trader.pnl >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                                {trader.pnl >= 0 ? "+" : "-"}{formatDollar(trader.pnl)}
-                              </p>
-                              {isMe && (
-                                <button onClick={() => shareRank(i + 1, trader.name, trader.avatar, `${trader.pnl >= 0 ? "+" : "-"}${formatDollar(trader.pnl)}`, trader.pnl >= 0, `${trader.trades} prediction${trader.trades !== 1 ? "s" : ""} · ${formatDollar(trader.volume)} vol`, "Predictions", sortedTraders.length)} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
-                                  <Share2 className="w-3.5 h-3.5 text-primary" />
-                                </button>
-                              )}
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </div>
+                    {(() => {
+                      const totalPages = Math.ceil(sortedTraders.length / ITEMS_PER_PAGE);
+                      const start = (page - 1) * ITEMS_PER_PAGE;
+                      const pageItems = sortedTraders.slice(start, start + ITEMS_PER_PAGE);
+                      return (
+                        <>
+                          <div className="space-y-2">
+                            {pageItems.map((trader, i) => {
+                              const rank = start + i + 1;
+                              const isMe = currentUserId === trader.userId;
+                              return (
+                                <motion.div
+                                  key={trader.userId}
+                                  initial={{ opacity: 0, x: -12 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ delay: i * 0.04 }}
+                                  className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : ""}`}
+                                >
+                                  <div className="w-8 flex justify-center shrink-0">{rankBadge(rank)}</div>
+                                  <AvatarCircle avatar={trader.avatar} name={trader.name} />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className={`text-sm font-bold truncate ${isMe ? "text-primary" : ""}`}>{isMe ? "You" : trader.name}</span>
+                                      {isMe && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                                      <span>{trader.trades} trade{trader.trades !== 1 ? "s" : ""}</span>
+                                      <span>·</span>
+                                      <span>{formatDollar(trader.volume)} vol</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <p className={`text-sm font-bold flex items-center gap-1 ${trader.pnl >= 0 ? "text-primary" : "text-destructive"}`}>
+                                      {trader.pnl >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                                      {trader.pnl >= 0 ? "+" : "-"}{formatDollar(trader.pnl)}
+                                    </p>
+                                    {isMe && (
+                                      <button onClick={() => shareRank(rank, trader.name, trader.avatar, `${trader.pnl >= 0 ? "+" : "-"}${formatDollar(trader.pnl)}`, trader.pnl >= 0, `${trader.trades} prediction${trader.trades !== 1 ? "s" : ""} · ${formatDollar(trader.volume)} vol`, "Predictions", sortedTraders.length)} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+                                        <Share2 className="w-3.5 h-3.5 text-primary" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </motion.div>
+                              );
+                            })}
+                          </div>
+                          <LeaderboardPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+                        </>
+                      );
+                    })()}
                   </>
                 )}
               </>
