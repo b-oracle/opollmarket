@@ -72,18 +72,9 @@ const Auth = () => {
           // Detect OAuth-only accounts trying email/password login
           const msg = result.error.message?.toLowerCase() || "";
           if (msg.includes("invalid login credentials") || msg.includes("invalid credentials")) {
-            // Check if this email exists as a Google OAuth account
-            const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-              redirectTo: `${getCanonicalOrigin()}/reset-password`,
-            });
-            if (!resetError) {
-              toast.error(
-                "This email may be registered via Google. We've sent a password reset link so you can set a password for email login.",
-                { duration: 8000 }
-              );
-            } else {
-              toast.error("Invalid credentials. If you signed up with Google, use the Google button below.");
-            }
+            toast.error("Incorrect email or password. Please try again.");
+            setShowResetPrompt(true);
+            setResetEmail(email);
           } else {
             toast.error(result.error.message);
           }
