@@ -21,6 +21,22 @@ function escapeHtml(text: string): string {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+function progressBar(pct: number, length = 10): string {
+  const filled = Math.round((pct / 100) * length);
+  const empty = length - filled;
+  return "▓".repeat(filled) + "░".repeat(empty);
+}
+
+function categoryEmoji(cat: string): string {
+  const map: Record<string, string> = {
+    crypto: "₿", politics: "🏛️", sports: "⚽", economy: "📈",
+    entertainment: "🎬", science: "🔬", technology: "💻", ai: "🤖",
+  };
+  return map[cat?.toLowerCase()] || "🔮";
+}
+
+const APP_URL = "https://opollmarket.lovable.app";
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -36,7 +52,6 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  // Handle GET requests (e.g. webhook verification) gracefully
   if (req.method === "GET") {
     return new Response(JSON.stringify({ ok: true, message: "Telegram bot webhook is active" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -102,15 +117,31 @@ Deno.serve(async (req) => {
 // --- Command handlers ---
 
 async function handleStart(token: string, chatId: number) {
-  await tg(token, "sendMessage", {
+  // Send logo image with welcome message
+  await tg(token, "sendPhoto", {
     chat_id: chatId,
-    text:
-      "🔮 <b>Welcome to OPoll Market</b> | The World's First Web + Telegram + WhatsApp prediction market protocol.\n\n" +
-      "Predict outcomes, trade markets, and win rewards — all from Telegram.\n\n" +
+    photo: `${APP_URL}/logo.png`,
+    caption:
+      "🔮 <b>Welcome to OPoll Market</b>\n" +
+      "━━━━━━━━━━━━━━━━━━━━\n" +
+      "The World's First Web + Telegram + WhatsApp prediction market protocol.\n\n" +
+      "📊 Predict outcomes\n" +
+      "💹 Trade markets\n" +
+      "🏆 Win rewards\n\n" +
       "To get started, link your account:\n" +
-      "<code>/link your@email.com yourpassword</code>\n\n" +
-      "Type /help for all commands.",
+      "<code>/link your@email.com yourpassword</code>",
     parse_mode: "HTML",
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: "📖 Help", callback_data: "cmd_help" },
+          { text: "🔮 Markets", callback_data: "cmd_markets" },
+        ],
+        [
+          { text: "🌐 Open Web App", url: APP_URL },
+        ],
+      ],
+    },
   });
 }
 
@@ -118,16 +149,32 @@ async function handleHelp(token: string, chatId: number) {
   await tg(token, "sendMessage", {
     chat_id: chatId,
     text:
-      "📖 <b>Commands</b>\n\n" +
-      "/link email password — Link your account\n" +
-      "/unlink — Unlink your account\n" +
-      "/markets — Browse active markets\n" +
-      "/portfolio — View your positions\n" +
-      "/balance — Check your balance\n" +
-      "/quicktrade — Play Quick Trade\n" +
-      "/stats — Platform-wide stats\n" +
-      "/help — Show this message",
+      "📖 <b>OPoll Market — Commands</b>\n" +
+      "━━━━━━━━━━━━━━━━━━━━\n\n" +
+      "🔗 <b>Account</b>\n" +
+      "  /link <i>email password</i> — Link account\n" +
+      "  /unlink — Unlink account\n\n" +
+      "📊 <b>Trading</b>\n" +
+      "  /markets — Browse active markets\n" +
+      "  /portfolio — View your positions\n" +
+      "  /balance — Check your balance\n\n" +
+      "⚡ <b>Quick Trade</b>\n" +
+      "  /quicktrade — Predict crypto prices\n\n" +
+      "📈 <b>Info</b>\n" +
+      "  /stats — Platform statistics\n" +
+      "  /help — Show this message",
     parse_mode: "HTML",
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: "🔮 Markets", callback_data: "cmd_markets" },
+          { text: "💰 Balance", callback_data: "cmd_balance" },
+        ],
+        [
+          { text: "🌐 Open Web App", url: APP_URL },
+        ],
+      ],
+    },
   });
 }
 
@@ -152,12 +199,22 @@ async function handleStats(
     await tg(token, "sendMessage", {
       chat_id: chatId,
       text:
-        "📊 <b>oPoll Platform Stats</b>\n\n" +
+        "📊 <b>OPoll Platform Stats</b>\n" +
+        "━━━━━━━━━━━━━━━━━━━━\n\n" +
         `🏛️ Active Markets: <b>${activeMarkets}</b>\n` +
         `👥 Total Users: <b>${totalUsers}</b>\n` +
         `💰 Total Volume: <b>$${totalVolume.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b>\n` +
-        `⚡ Quick Trade Bets: <b>${totalQuickBets.toLocaleString()}</b>`,
+        `⚡ Quick Trade Bets: <b>${totalQuickBets.toLocaleString()}</b>\n\n` +
+        "━━━━━━━━━━━━━━━━━━━━",
       parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "🔮 Browse Markets", callback_data: "cmd_markets" },
+            { text: "⚡ Quick Trade", callback_data: "cmd_quicktrade" },
+          ],
+        ],
+      },
     });
   } catch (err) {
     console.error("handleStats error:", err);
@@ -187,13 +244,11 @@ async function handleLink(
   const email = parts[1];
   const password = parts.slice(2).join(" ");
 
-  // Use a separate client for auth sign-in so the service role client isn't tainted
   const authClient = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || Deno.env.get("SUPABASE_ANON_KEY")!
   );
 
-  // Sign in to verify credentials
   const { data: signInData, error: signInError } = await authClient.auth.signInWithPassword({
     email,
     password,
@@ -208,11 +263,8 @@ async function handleLink(
   }
 
   const userId = signInData.user.id;
-
-  // Sign out from the temp client to clean up
   await authClient.auth.signOut();
 
-  // Upsert telegram link using the service-role client (bypasses RLS)
   const { error: upsertError } = await supabase
     .from("telegram_users")
     .upsert(
@@ -234,23 +286,45 @@ async function handleLink(
     return;
   }
 
-  // Delete the message containing credentials for security
   try {
     await tg(token, "deleteMessage", {
       chat_id: chatId,
-      message_id: (await supabase).toString(), // we need the original message id
+      message_id: (await supabase).toString(),
     });
   } catch {
-    // Best effort — bot may not have delete permission
+    // Best effort
   }
+
+  // Get display name for personalized greeting
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", userId)
+    .single();
+
+  const name = profile?.display_name || email.split("@")[0];
 
   await tg(token, "sendMessage", {
     chat_id: chatId,
     text:
-      "✅ <b>Account linked successfully!</b>\n\n" +
-      "⚠️ For security, please delete your /link message.\n\n" +
-      "You can now use /markets, /portfolio, /balance, and /quicktrade.",
+      `✅ <b>Account linked successfully!</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `Welcome, <b>${escapeHtml(name)}</b>! 👋\n\n` +
+      `⚠️ For security, please delete your /link message.\n\n` +
+      `You're all set! Here's what you can do:`,
     parse_mode: "HTML",
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: "🔮 Markets", callback_data: "cmd_markets" },
+          { text: "📊 Portfolio", callback_data: "cmd_portfolio" },
+        ],
+        [
+          { text: "💰 Balance", callback_data: "cmd_balance" },
+          { text: "⚡ Quick Trade", callback_data: "cmd_quicktrade" },
+        ],
+      ],
+    },
   });
 }
 
@@ -263,6 +337,11 @@ async function handleUnlink(
   await tg(token, "sendMessage", {
     chat_id: chatId,
     text: "✅ Account unlinked. Use /link to connect again.",
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "🔗 Link Account Again", callback_data: "cmd_help" }],
+      ],
+    },
   });
 }
 
@@ -285,28 +364,72 @@ async function handleMarkets(
 ) {
   const { data: markets } = await supabase
     .from("markets")
-    .select("id, title, yes_price, volume, category, market_type, end_date")
+    .select("id, title, yes_price, volume, category, market_type, end_date, image_url, participants")
     .eq("status", "active")
     .order("volume", { ascending: false })
-    .limit(8);
+    .limit(5);
 
   if (!markets || markets.length === 0) {
     await tg(token, "sendMessage", { chat_id: chatId, text: "No active markets right now." });
     return;
   }
 
-  const buttons = markets.map((m) => [
-    {
-      text: `${escapeHtml(m.title.slice(0, 40))} (${Math.round(m.yes_price * 100)}% Yes)`,
-      callback_data: `mkt_${m.id.slice(0, 30)}`,
-    },
-  ]);
+  // Send each market as a rich card with image
+  for (const m of markets) {
+    const yesP = Math.round(m.yes_price * 100);
+    const noP = 100 - yesP;
+    const emoji = categoryEmoji(m.category);
+    const yesBar = progressBar(yesP, 10);
+    const vol = Number(m.volume).toFixed(0);
 
+    const caption =
+      `${emoji} <b>${escapeHtml(m.title)}</b>\n\n` +
+      `✅ Yes: <b>${yesP}%</b> ${yesBar}\n` +
+      `❌ No:  <b>${noP}%</b> ${progressBar(noP, 10)}\n\n` +
+      `💰 Vol: $${vol} · 👥 ${m.participants}\n` +
+      `📅 Ends: ${m.end_date}`;
+
+    const buttons = [
+      [
+        { text: `✅ Yes (${yesP}¢)`, callback_data: `mkt_${m.id.slice(0, 30)}` },
+        { text: `❌ No (${noP}¢)`, callback_data: `mkt_${m.id.slice(0, 30)}` },
+      ],
+      [
+        { text: "📊 View Details", callback_data: `mkt_${m.id.slice(0, 30)}` },
+        { text: "🌐 Open on Web", url: `${APP_URL}/market/${m.id}` },
+      ],
+    ];
+
+    if (m.image_url) {
+      await tg(token, "sendPhoto", {
+        chat_id: chatId,
+        photo: m.image_url,
+        caption,
+        parse_mode: "HTML",
+        reply_markup: { inline_keyboard: buttons },
+      });
+    } else {
+      await tg(token, "sendMessage", {
+        chat_id: chatId,
+        text: caption,
+        parse_mode: "HTML",
+        reply_markup: { inline_keyboard: buttons },
+      });
+    }
+  }
+
+  // Navigation footer
   await tg(token, "sendMessage", {
     chat_id: chatId,
-    text: "🔮 <b>Active Markets</b>\nTap a market to predict:",
-    parse_mode: "HTML",
-    reply_markup: { inline_keyboard: buttons },
+    text: `📋 Showing top ${markets.length} markets by volume`,
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: "⚡ Quick Trade", callback_data: "cmd_quicktrade" },
+          { text: "🌐 All Markets", url: APP_URL },
+        ],
+      ],
+    },
   });
 }
 
@@ -320,20 +443,45 @@ async function handlePortfolio(
     await tg(token, "sendMessage", {
       chat_id: chatId,
       text: "❌ Account not linked. Use /link email password first.",
+      reply_markup: {
+        inline_keyboard: [[{ text: "📖 How to Link", callback_data: "cmd_help" }]],
+      },
     });
     return;
   }
 
-  const { data: positions } = await supabase
-    .from("positions")
-    .select("side, shares, avg_price, market_id, option_id")
-    .eq("user_id", userId)
-    .gt("shares", 0);
+  // Fetch positions, balance and profile in parallel
+  const [posRes, balRes, profileRes] = await Promise.all([
+    supabase.from("positions").select("side, shares, avg_price, market_id, option_id").eq("user_id", userId).gt("shares", 0),
+    supabase.from("balances").select("amount, bonus_balance").eq("user_id", userId).eq("currency", "USDT").single(),
+    supabase.from("profiles").select("display_name").eq("id", userId).single(),
+  ]);
+
+  const positions = posRes.data;
+  const bal = balRes.data;
+  const displayName = profileRes.data?.display_name || "Trader";
+  const mainBal = Number(bal?.amount || 0);
+  const bonusBal = Number(bal?.bonus_balance || 0);
 
   if (!positions || positions.length === 0) {
     await tg(token, "sendMessage", {
       chat_id: chatId,
-      text: "📂 You have no active positions. Browse /markets to start predicting!",
+      text:
+        `📊 <b>${escapeHtml(displayName)}'s Portfolio</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `💰 Balance: <b>$${mainBal.toFixed(2)}</b>\n` +
+        `🎁 Bonus: <b>$${bonusBal.toFixed(2)}</b>\n\n` +
+        `📂 No active positions yet.\n` +
+        `Start predicting to build your portfolio!`,
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "🔮 Browse Markets", callback_data: "cmd_markets" },
+            { text: "⚡ Quick Trade", callback_data: "cmd_quicktrade" },
+          ],
+        ],
+      },
     });
     return;
   }
@@ -342,31 +490,66 @@ async function handlePortfolio(
   const marketIds = [...new Set(positions.map((p) => p.market_id))];
   const { data: marketsData } = await supabase
     .from("markets")
-    .select("id, title, yes_price, no_price, status")
+    .select("id, title, yes_price, no_price, status, category")
     .in("id", marketIds);
 
   const marketMap = new Map((marketsData || []).map((m) => [m.id, m]));
 
-  let text = "📊 <b>Your Portfolio</b>\n\n";
-  for (const pos of positions.slice(0, 10)) {
+  let totalValue = 0;
+  let totalPnl = 0;
+
+  let positionLines = "";
+  for (const pos of positions.slice(0, 8)) {
     const mkt = marketMap.get(pos.market_id);
-    const title = mkt ? escapeHtml(mkt.title.slice(0, 35)) : "Unknown";
+    const title = mkt ? escapeHtml(mkt.title.slice(0, 30)) : "Unknown";
+    const emoji = mkt ? categoryEmoji(mkt.category) : "🔮";
     const currentPrice = mkt
-      ? pos.side === "yes"
-        ? mkt.yes_price
-        : mkt.no_price
+      ? pos.side === "yes" ? mkt.yes_price : mkt.no_price
       : pos.avg_price;
+    const value = currentPrice * pos.shares;
     const pnl = (currentPrice - pos.avg_price) * pos.shares;
+    totalValue += value;
+    totalPnl += pnl;
+
     const pnlEmoji = pnl >= 0 ? "🟢" : "🔴";
-    text += `${pnlEmoji} <b>${title}</b>\n`;
-    text += `  ${pos.side.toUpperCase()} × ${pos.shares.toFixed(1)} @ $${pos.avg_price.toFixed(2)} → $${currentPrice.toFixed(2)} (${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)})\n\n`;
+    const pnlStr = pnl >= 0 ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`;
+
+    positionLines += `${emoji} <b>${title}</b>\n`;
+    positionLines += `   ${pos.side.toUpperCase()} × ${pos.shares.toFixed(1)} · ${pnlEmoji} ${pnlStr}\n\n`;
   }
 
-  if (positions.length > 10) {
-    text += `<i>...and ${positions.length - 10} more positions</i>`;
+  const pnlEmoji = totalPnl >= 0 ? "📈" : "📉";
+  const pnlColor = totalPnl >= 0 ? "+" : "";
+
+  let text =
+    `📊 <b>${escapeHtml(displayName)}'s Portfolio</b>\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `💰 Cash: <b>$${mainBal.toFixed(2)}</b> · 🎁 Bonus: <b>$${bonusBal.toFixed(2)}</b>\n` +
+    `📦 Positions Value: <b>$${totalValue.toFixed(2)}</b>\n` +
+    `${pnlEmoji} Total P&L: <b>${pnlColor}$${totalPnl.toFixed(2)}</b>\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    positionLines;
+
+  if (positions.length > 8) {
+    text += `<i>...and ${positions.length - 8} more positions</i>\n`;
   }
 
-  await tg(token, "sendMessage", { chat_id: chatId, text, parse_mode: "HTML" });
+  await tg(token, "sendMessage", {
+    chat_id: chatId,
+    text,
+    parse_mode: "HTML",
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: "🔮 Markets", callback_data: "cmd_markets" },
+          { text: "💰 Deposit", url: `${APP_URL}/portfolio` },
+        ],
+        [
+          { text: "🌐 Full Portfolio", url: `${APP_URL}/portfolio` },
+        ],
+      ],
+    },
+  });
 }
 
 async function handleBalance(
@@ -379,6 +562,9 @@ async function handleBalance(
     await tg(token, "sendMessage", {
       chat_id: chatId,
       text: "❌ Account not linked. Use /link email password first.",
+      reply_markup: {
+        inline_keyboard: [[{ text: "📖 How to Link", callback_data: "cmd_help" }]],
+      },
     });
     return;
   }
@@ -392,15 +578,34 @@ async function handleBalance(
 
   const main = Number(bal?.amount || 0);
   const bonus = Number(bal?.bonus_balance || 0);
+  const total = main + bonus;
+
+  // Visual balance bar
+  const mainPct = total > 0 ? Math.round((main / total) * 100) : 0;
 
   await tg(token, "sendMessage", {
     chat_id: chatId,
     text:
-      `💰 <b>Your Balance</b>\n\n` +
-      `Main: <b>$${main.toFixed(2)}</b>\n` +
-      `Bonus: <b>$${bonus.toFixed(2)}</b>\n` +
-      `Total: <b>$${(main + bonus).toFixed(2)}</b>`,
+      `💰 <b>Your Balance</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `💵 Main:  <b>$${main.toFixed(2)}</b>\n` +
+      `🎁 Bonus: <b>$${bonus.toFixed(2)}</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `💎 Total: <b>$${total.toFixed(2)}</b>\n\n` +
+      `${progressBar(mainPct, 15)} ${mainPct}% main`,
     parse_mode: "HTML",
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: "💳 Deposit", url: `${APP_URL}/portfolio` },
+          { text: "💸 Withdraw", url: `${APP_URL}/portfolio` },
+        ],
+        [
+          { text: "📊 Portfolio", callback_data: "cmd_portfolio" },
+          { text: "🔮 Markets", callback_data: "cmd_markets" },
+        ],
+      ],
+    },
   });
 }
 
@@ -414,11 +619,13 @@ async function handleQuickTrade(
     await tg(token, "sendMessage", {
       chat_id: chatId,
       text: "❌ Account not linked. Use /link email password first.",
+      reply_markup: {
+        inline_keyboard: [[{ text: "📖 How to Link", callback_data: "cmd_help" }]],
+      },
     });
     return;
   }
 
-  // Get commission settings for available assets
   const { data: settings } = await supabase
     .from("commission_settings")
     .select("qt_enabled_assets, qt_min_bet, qt_max_bet")
@@ -429,12 +636,16 @@ async function handleQuickTrade(
   const minBet = settings?.qt_min_bet || 1;
   const maxBet = settings?.qt_max_bet || 500;
 
+  // Asset emojis
+  const assetEmojis: Record<string, string> = {
+    BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
+  };
+
   const buttons = assets.slice(0, 6).map((asset: string) => ({
-    text: asset.trim(),
+    text: `${assetEmojis[asset.trim()] || "📊"} ${asset.trim()}`,
     callback_data: `qt_asset_${asset.trim()}`,
   }));
 
-  // Split into rows of 3
   const keyboard: Array<Array<{ text: string; callback_data: string }>> = [];
   for (let i = 0; i < buttons.length; i += 3) {
     keyboard.push(buttons.slice(i, i + 3));
@@ -443,10 +654,12 @@ async function handleQuickTrade(
   await tg(token, "sendMessage", {
     chat_id: chatId,
     text:
-      `⚡ <b>Quick Trade</b>\n\n` +
-      `Predict if a crypto price goes UP or DOWN!\n` +
-      `Bet: $${minBet} – $${maxBet}\n\n` +
-      `Select an asset:`,
+      `⚡ <b>Quick Trade</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `Predict if a crypto price goes 📈 UP or 📉 DOWN!\n\n` +
+      `💰 Bet range: <b>$${minBet} – $${maxBet}</b>\n` +
+      `⏱️ Round duration: <b>5 minutes</b>\n\n` +
+      `Select an asset to trade:`,
     parse_mode: "HTML",
     reply_markup: { inline_keyboard: keyboard },
   });
@@ -463,6 +676,24 @@ async function handleCallback(
   const data = callback.data;
 
   await tg(token, "answerCallbackQuery", { callback_query_id: callback.id });
+
+  // Handle command shortcuts from inline buttons
+  if (data === "cmd_help") {
+    await handleHelp(token, chatId);
+    return;
+  } else if (data === "cmd_markets") {
+    await handleMarkets(token, supabase, chatId);
+    return;
+  } else if (data === "cmd_portfolio") {
+    await handlePortfolio(token, supabase, chatId);
+    return;
+  } else if (data === "cmd_balance") {
+    await handleBalance(token, supabase, chatId);
+    return;
+  } else if (data === "cmd_quicktrade") {
+    await handleQuickTrade(token, supabase, chatId);
+    return;
+  }
 
   if (data.startsWith("mkt_")) {
     await handleMarketDetail(token, supabase, chatId, data);
@@ -481,12 +712,11 @@ async function handleMarketDetail(
   chatId: number,
   data: string
 ) {
-  // data = mkt_<partial-uuid>
   const partialId = data.replace("mkt_", "");
 
   const { data: markets } = await supabase
     .from("markets")
-    .select("id, title, description, yes_price, no_price, volume, participants, end_date, market_type, category")
+    .select("id, title, description, yes_price, no_price, volume, participants, end_date, market_type, category, image_url, details")
     .eq("status", "active")
     .like("id", `${partialId}%`)
     .limit(1);
@@ -498,36 +728,56 @@ async function handleMarketDetail(
   }
 
   const yesP = Math.round(mkt.yes_price * 100);
-  const noP = Math.round(mkt.no_price * 100);
+  const noP = 100 - yesP;
+  const emoji = categoryEmoji(mkt.category);
+
+  const caption =
+    `${emoji} <b>${escapeHtml(mkt.title)}</b>\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `${escapeHtml(mkt.description.slice(0, 250))}\n\n` +
+    `📊 <b>Market Data</b>\n` +
+    `✅ Yes: <b>${yesP}%</b> ${progressBar(yesP)}\n` +
+    `❌ No:  <b>${noP}%</b> ${progressBar(noP)}\n\n` +
+    `💰 Volume: <b>$${Number(mkt.volume).toFixed(0)}</b>\n` +
+    `👥 Participants: <b>${mkt.participants}</b>\n` +
+    `📅 Ends: <b>${mkt.end_date}</b>\n\n` +
+    `Choose your prediction:`;
 
   const buttons = [
     [
-      { text: `✅ Yes ($5 @ ${yesP}¢)`, callback_data: `bet_yes_5_${mkt.id.slice(0, 20)}` },
-      { text: `❌ No ($5 @ ${noP}¢)`, callback_data: `bet_no_5_${mkt.id.slice(0, 20)}` },
+      { text: `✅ Yes $5 (${yesP}¢)`, callback_data: `bet_yes_5_${mkt.id.slice(0, 20)}` },
+      { text: `❌ No $5 (${noP}¢)`, callback_data: `bet_no_5_${mkt.id.slice(0, 20)}` },
     ],
     [
-      { text: `✅ Yes ($10)`, callback_data: `bet_yes_10_${mkt.id.slice(0, 20)}` },
-      { text: `❌ No ($10)`, callback_data: `bet_no_10_${mkt.id.slice(0, 20)}` },
+      { text: `✅ Yes $10`, callback_data: `bet_yes_10_${mkt.id.slice(0, 20)}` },
+      { text: `❌ No $10`, callback_data: `bet_no_10_${mkt.id.slice(0, 20)}` },
     ],
     [
-      { text: `✅ Yes ($25)`, callback_data: `bet_yes_25_${mkt.id.slice(0, 20)}` },
-      { text: `❌ No ($25)`, callback_data: `bet_no_25_${mkt.id.slice(0, 20)}` },
+      { text: `✅ Yes $25`, callback_data: `bet_yes_25_${mkt.id.slice(0, 20)}` },
+      { text: `❌ No $25`, callback_data: `bet_no_25_${mkt.id.slice(0, 20)}` },
+    ],
+    [
+      { text: "🌐 View on Web", url: `${APP_URL}/market/${mkt.id}` },
     ],
   ];
 
-  await tg(token, "sendMessage", {
-    chat_id: chatId,
-    text:
-      `🔮 <b>${escapeHtml(mkt.title)}</b>\n\n` +
-      `${escapeHtml(mkt.description.slice(0, 200))}\n\n` +
-      `📊 Yes: <b>${yesP}%</b> | No: <b>${noP}%</b>\n` +
-      `💰 Volume: $${Number(mkt.volume).toFixed(0)}\n` +
-      `👥 ${mkt.participants} participants\n` +
-      `📅 Ends: ${mkt.end_date}\n\n` +
-      `Choose your prediction:`,
-    parse_mode: "HTML",
-    reply_markup: { inline_keyboard: buttons },
-  });
+  // Send with image if available
+  if (mkt.image_url) {
+    await tg(token, "sendPhoto", {
+      chat_id: chatId,
+      photo: mkt.image_url,
+      caption,
+      parse_mode: "HTML",
+      reply_markup: { inline_keyboard: buttons },
+    });
+  } else {
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text: caption,
+      parse_mode: "HTML",
+      reply_markup: { inline_keyboard: buttons },
+    });
+  }
 }
 
 async function handleBetConfirm(
@@ -545,16 +795,14 @@ async function handleBetConfirm(
     return;
   }
 
-  // data = bet_yes_10_<partial-market-id>
   const parts = data.replace("bet_", "").split("_");
-  const side = parts[0]; // yes or no
+  const side = parts[0];
   const amount = Number(parts[1]);
   const partialMarketId = parts.slice(2).join("_");
 
-  // Find market
   const { data: markets } = await supabase
     .from("markets")
-    .select("id, yes_price, no_price, status, market_type")
+    .select("id, title, yes_price, no_price, status, market_type, category")
     .eq("status", "active")
     .like("id", `${partialMarketId}%`)
     .limit(1);
@@ -569,20 +817,7 @@ async function handleBetConfirm(
   const priceInCents = Math.round(price * 100);
   const shares = amount / price;
 
-  // Call place-bet edge function
-  // First create a temporary auth token for this user
-  const { data: tokenData, error: tokenError } = await supabase.auth.admin.generateLink({
-    type: "magiclink",
-    email: "", // we need user email
-  });
-
-  // Instead, call place-bet directly with service role since we've verified the user
-  const placeBetUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/place-bet`;
-
-  // Generate a session for the user to call place-bet
-  // Since place-bet validates auth, we'll replicate the core logic here for Telegram bets
   try {
-    // Check balance
     const { data: bal } = await supabase
       .from("balances")
       .select("amount, bonus_balance")
@@ -594,17 +829,25 @@ async function handleBetConfirm(
     if (currentBalance < amount) {
       await tg(token, "sendMessage", {
         chat_id: chatId,
-        text: `❌ Insufficient balance. You have $${currentBalance.toFixed(2)}, need $${amount}.`,
+        text:
+          `❌ <b>Insufficient balance</b>\n\n` +
+          `You have: <b>$${currentBalance.toFixed(2)}</b>\n` +
+          `Need: <b>$${amount}</b>`,
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "💳 Deposit Funds", url: `${APP_URL}/portfolio` }],
+          ],
+        },
       });
       return;
     }
 
-    // Call place-bet via internal service call
+    const placeBetUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/place-bet`;
     const response = await fetch(placeBetUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        // Create a short-lived token for the user
         "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
       },
       body: JSON.stringify({
@@ -616,27 +859,35 @@ async function handleBetConfirm(
       }),
     });
 
-    // place-bet requires user auth, not service role. Let's call it differently.
-    // We need to impersonate the user. Since we can't do that easily, let's replicate
-    // the core betting logic here for Telegram.
-
     if (!response.ok) {
-      // Fallback: do the bet inline
       await executeBetInline(supabase, userId, mkt.id, null, side, amount, priceInCents, shares);
     }
 
-    const yesP = side === "yes" ? Math.round(price * 100) : Math.round((1 - price) * 100);
+    const emoji = categoryEmoji(mkt.category);
 
     await tg(token, "sendMessage", {
       chat_id: chatId,
       text:
-        `✅ <b>Prediction placed!</b>\n\n` +
-        `Side: <b>${side.toUpperCase()}</b>\n` +
-        `Amount: <b>$${amount}</b>\n` +
-        `Price: <b>${priceInCents}¢</b>\n` +
-        `Shares: <b>${shares.toFixed(2)}</b>\n\n` +
+        `✅ <b>Prediction Placed!</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `${emoji} ${escapeHtml(mkt.title.slice(0, 40))}\n\n` +
+        `📍 Side: <b>${side.toUpperCase()}</b>\n` +
+        `💵 Amount: <b>$${amount}</b>\n` +
+        `💲 Price: <b>${priceInCents}¢</b>\n` +
+        `📦 Shares: <b>${shares.toFixed(2)}</b>\n\n` +
         `Good luck! 🍀`,
       parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "📊 My Portfolio", callback_data: "cmd_portfolio" },
+            { text: "🔮 More Markets", callback_data: "cmd_markets" },
+          ],
+          [
+            { text: "🌐 View Market", url: `${APP_URL}/market/${mkt.id}` },
+          ],
+        ],
+      },
     });
   } catch (err) {
     console.error("Bet error:", err);
@@ -657,7 +908,6 @@ async function executeBetInline(
   price: number,
   shares: number
 ) {
-  // Fetch commission settings
   const { data: commData } = await supabase
     .from("commission_settings")
     .select("admin_fee_percent, creator_fee_percent")
@@ -670,7 +920,6 @@ async function executeBetInline(
   const creatorAmount = amount * creatorFeePercent;
   const totalFees = adminAmount + creatorAmount;
 
-  // Check & deduct balance
   const { data: bal } = await supabase
     .from("balances")
     .select("amount, bonus_balance")
@@ -697,7 +946,6 @@ async function executeBetInline(
     .eq("user_id", userId)
     .eq("currency", "USDT");
 
-  // Insert position
   await supabase.from("positions").insert({
     user_id: userId,
     market_id: marketId,
@@ -707,7 +955,6 @@ async function executeBetInline(
     avg_price: price / 100,
   });
 
-  // Insert transaction
   await supabase.from("transactions").insert({
     user_id: userId,
     type: "buy",
@@ -720,7 +967,6 @@ async function executeBetInline(
     status: "confirmed",
   });
 
-  // Update market volume
   const poolAmount = amount - adminAmount - creatorAmount;
   const { data: mkt } = await supabase
     .from("markets")
@@ -748,7 +994,6 @@ async function executeBetInline(
       .eq("id", marketId);
   }
 
-  // Credit admin commission
   const { data: adminRole } = await supabase
     .from("user_roles")
     .select("user_id")
@@ -785,7 +1030,6 @@ async function executeBetInline(
     });
   }
 
-  // Credit creator
   if (creatorAmount > 0) {
     const { data: market } = await supabase
       .from("markets")
@@ -828,6 +1072,10 @@ async function executeBetInline(
 async function handleQTAssetSelected(token: string, chatId: number, data: string) {
   const asset = data.replace("qt_asset_", "");
 
+  const assetEmojis: Record<string, string> = {
+    BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
+  };
+
   const buttons = [
     [
       { text: "📈 UP ($5)", callback_data: `qt_side_up_5_${asset}` },
@@ -841,12 +1089,16 @@ async function handleQTAssetSelected(token: string, chatId: number, data: string
       { text: "📈 UP ($25)", callback_data: `qt_side_up_25_${asset}` },
       { text: "📉 DOWN ($25)", callback_data: `qt_side_down_25_${asset}` },
     ],
+    [
+      { text: "⬅️ Back to Assets", callback_data: "cmd_quicktrade" },
+    ],
   ];
 
   await tg(token, "sendMessage", {
     chat_id: chatId,
     text:
-      `⚡ <b>Quick Trade — ${asset}</b>\n\n` +
+      `⚡ <b>Quick Trade — ${assetEmojis[asset] || "📊"} ${asset}</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `Will <b>${asset}</b> go UP 📈 or DOWN 📉 in the next 5 minutes?\n\n` +
       `Choose your prediction and amount:`,
     parse_mode: "HTML",
@@ -869,13 +1121,11 @@ async function handleQTSideSelected(
     return;
   }
 
-  // data = qt_side_up_10_BTC
   const parts = data.replace("qt_side_", "").split("_");
-  const side = parts[0]; // up or down
+  const side = parts[0];
   const amount = Number(parts[1]);
   const asset = parts.slice(2).join("_");
 
-  // Check balance
   const { data: bal } = await supabase
     .from("balances")
     .select("amount")
@@ -886,15 +1136,22 @@ async function handleQTSideSelected(
   if (Number(bal?.amount || 0) < amount) {
     await tg(token, "sendMessage", {
       chat_id: chatId,
-      text: `❌ Insufficient balance. You have $${Number(bal?.amount || 0).toFixed(2)}.`,
+      text:
+        `❌ <b>Insufficient balance</b>\n\n` +
+        `You have: <b>$${Number(bal?.amount || 0).toFixed(2)}</b>\n` +
+        `Need: <b>$${amount}</b>`,
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "💳 Deposit Funds", url: `${APP_URL}/portfolio` }],
+        ],
+      },
     });
     return;
   }
 
-  // Create a quick round and place the bet via the resolve function
   const resolveUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/resolve-quick-round`;
 
-  // Create round
   const { data: round, error: roundErr } = await supabase
     .from("quick_rounds")
     .insert({
@@ -913,7 +1170,6 @@ async function handleQTSideSelected(
     return;
   }
 
-  // Deduct balance
   await supabase
     .from("balances")
     .update({
@@ -923,7 +1179,6 @@ async function handleQTSideSelected(
     .eq("user_id", userId)
     .eq("currency", "USDT");
 
-  // Place bet
   await supabase.from("quick_bets").insert({
     user_id: userId,
     round_id: round.id,
@@ -933,18 +1188,32 @@ async function handleQTSideSelected(
     streak: 0,
   });
 
+  const assetEmojis: Record<string, string> = {
+    BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
+  };
+  const sideEmoji = side === "up" ? "📈" : "📉";
+
   await tg(token, "sendMessage", {
     chat_id: chatId,
     text:
-      `⚡ <b>Quick Trade placed!</b>\n\n` +
-      `Asset: <b>${asset}</b>\n` +
-      `Prediction: <b>${side.toUpperCase()}</b>\n` +
-      `Amount: <b>$${amount}</b>\n\n` +
-      `⏳ Result in ~5 minutes. You'll be notified!`,
+      `⚡ <b>Quick Trade Placed!</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `${assetEmojis[asset] || "📊"} Asset: <b>${asset}</b>\n` +
+      `${sideEmoji} Prediction: <b>${side.toUpperCase()}</b>\n` +
+      `💵 Amount: <b>$${amount}</b>\n\n` +
+      `⏳ Result in ~5 minutes.\n` +
+      `You'll be notified when the round resolves!`,
     parse_mode: "HTML",
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: "⚡ Trade Again", callback_data: "cmd_quicktrade" },
+          { text: "📊 Portfolio", callback_data: "cmd_portfolio" },
+        ],
+      ],
+    },
   });
 
-  // Trigger resolution after delay
   try {
     await fetch(resolveUrl, {
       method: "POST",
