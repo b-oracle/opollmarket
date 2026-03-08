@@ -167,7 +167,7 @@ const AdminTransactions = () => {
     fetchData();
   }, [filter, statusFilter, page, debouncedSearch]);
 
-  // totals are now computed server-side in the useEffect above
+  
 
   const exportCSV = () => {
     const headers = ["Date", "Type", "User", "Amount", "Side", "Market", "Status"];
