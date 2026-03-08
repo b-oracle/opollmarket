@@ -239,6 +239,9 @@ async function handleStats(
             { text: "🔮 Browse Markets", callback_data: "cmd_markets" },
             { text: "⚡ Quick Trade", callback_data: "cmd_quicktrade" },
           ],
+          [
+            { text: "🏠 Home", callback_data: "cmd_home" },
+          ],
         ],
       },
     });
