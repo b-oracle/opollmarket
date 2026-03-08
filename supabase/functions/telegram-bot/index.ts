@@ -540,7 +540,7 @@ async function handleMarkets(
     text += `   ✅ ${yesP}% · 💰 $${vol} · 👥 ${m.participants}\n\n`;
 
     // Two markets per row of buttons
-    const btn = { text: `${num}. ${emoji} ${m.title.slice(0, 20)}`, callback_data: `mkt_${m.id.slice(0, 30)}` };
+    const btn = { text: `${num}. ${emoji} ${m.title.slice(0, 20)}`, callback_data: `mkt_${m.id}` };
     if (i % 2 === 0) {
       marketButtons.push([btn]);
     } else {
@@ -861,7 +861,7 @@ async function handleCallback(
     await handleMarkets(token, supabase, chatId, page);
   } else if (data.startsWith("mkt_")) {
     await handleMarketDetail(token, supabase, chatId, data);
-  } else if (data.startsWith("bet_")) {
+  } else if (data.startsWith("bet_") || data.startsWith("b_")) {
     await handleBetConfirm(token, supabase, chatId, data);
   } else if (data.startsWith("qt_asset_")) {
     await handleQTAssetSelected(token, chatId, data);
@@ -876,13 +876,13 @@ async function handleMarketDetail(
   chatId: number,
   data: string
 ) {
-  const partialId = data.replace("mkt_", "");
+  const marketId = data.replace("mkt_", "");
 
   const { data: markets } = await supabase
     .from("markets")
     .select("id, title, description, yes_price, no_price, volume, participants, end_date, market_type, category, image_url, details, status")
     .in("status", ["active", "ended"])
-    .like("id", `${partialId}%`)
+    .eq("id", marketId)
     .limit(1);
 
   const mkt = markets?.[0];
@@ -909,16 +909,16 @@ async function handleMarketDetail(
 
   const buttons = [
     [
-      { text: `✅ Yes $5 (${yesP}¢)`, callback_data: `bet_yes_5_${mkt.id.slice(0, 20)}` },
-      { text: `❌ No $5 (${noP}¢)`, callback_data: `bet_no_5_${mkt.id.slice(0, 20)}` },
+      { text: `✅ Yes $5 (${yesP}¢)`, callback_data: `b_y_5_${mkt.id}` },
+      { text: `❌ No $5 (${noP}¢)`, callback_data: `b_n_5_${mkt.id}` },
     ],
     [
-      { text: `✅ Yes $10`, callback_data: `bet_yes_10_${mkt.id.slice(0, 20)}` },
-      { text: `❌ No $10`, callback_data: `bet_no_10_${mkt.id.slice(0, 20)}` },
+      { text: `✅ Yes $10`, callback_data: `b_y_10_${mkt.id}` },
+      { text: `❌ No $10`, callback_data: `b_n_10_${mkt.id}` },
     ],
     [
-      { text: `✅ Yes $25`, callback_data: `bet_yes_25_${mkt.id.slice(0, 20)}` },
-      { text: `❌ No $25`, callback_data: `bet_no_25_${mkt.id.slice(0, 20)}` },
+      { text: `✅ Yes $25`, callback_data: `b_y_25_${mkt.id}` },
+      { text: `❌ No $25`, callback_data: `b_n_25_${mkt.id}` },
     ],
     [
       { text: "🌐 View on Web", url: `${APP_URL}/market/${mkt.id}` },
@@ -963,16 +963,28 @@ async function handleBetConfirm(
     return;
   }
 
-  const parts = data.replace("bet_", "").split("_");
-  const side = parts[0];
-  const amount = Number(parts[1]);
-  const partialMarketId = parts.slice(2).join("_");
+  // Support both old "bet_yes_5_ID" and new "b_y_5_UUID" formats
+  let side: string;
+  let amount: number;
+  let marketId: string;
+
+  if (data.startsWith("b_")) {
+    const parts = data.split("_");
+    side = parts[1] === "y" ? "yes" : "no";
+    amount = Number(parts[2]);
+    marketId = parts.slice(3).join("_");
+  } else {
+    const parts = data.replace("bet_", "").split("_");
+    side = parts[0];
+    amount = Number(parts[1]);
+    marketId = parts.slice(2).join("_");
+  }
 
   const { data: markets } = await supabase
     .from("markets")
     .select("id, title, yes_price, no_price, status, market_type, category, end_date")
     .in("status", ["active", "ended"])
-    .like("id", `${partialMarketId}%`)
+    .eq("id", marketId)
     .limit(1);
 
   const mkt = markets?.[0];
