@@ -248,7 +248,7 @@ const AdminUsers = () => {
                             <Eye className="w-4 h-4" />
                           </button>
                         )}
-                        {canEdit && !isSelf ? (
+                        {isSuperAdmin && !isSelf ? (
                           <>
                             <button
                               onClick={() => setBalanceModal({ userId: u.id, name: u.display_name || u.email || "User", current: u.balance })}
@@ -275,23 +275,21 @@ const AdminUsers = () => {
                             >
                               {isAdmin ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
                             </button>
-                            {isSuperAdmin && (
-                              <button
-                                onClick={() => setRoleConfirm({ userId: u.id, name: u.display_name || u.email || "User", role: "super_admin", hasRole: isSA })}
-                                className={`p-1.5 rounded-lg transition-colors ${
-                                  isSA ? "hover:bg-destructive/10 text-primary" : "hover:bg-primary/10 text-muted-foreground"
-                                }`}
-                                title={isSA ? "Remove Super Admin" : "Make Super Admin"}
-                              >
-                                <Crown className="w-4 h-4" />
-                              </button>
-                            )}
+                            <button
+                              onClick={() => setRoleConfirm({ userId: u.id, name: u.display_name || u.email || "User", role: "super_admin", hasRole: isSA })}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                isSA ? "hover:bg-destructive/10 text-primary" : "hover:bg-primary/10 text-muted-foreground"
+                              }`}
+                              title={isSA ? "Remove Super Admin" : "Make Super Admin"}
+                            >
+                              <Crown className="w-4 h-4" />
+                            </button>
                           </>
                         ) : isSelf ? (
                           <span className="text-[10px] text-muted-foreground">You</span>
-                        ) : !isSuperAdmin ? (
+                        ) : (
                           <span className="text-[10px] text-muted-foreground">View only</span>
-                        ) : null}
+                        )}
                       </div>
                     </td>
                   </tr>
