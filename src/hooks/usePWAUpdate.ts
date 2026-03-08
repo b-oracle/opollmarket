@@ -13,7 +13,7 @@ export const usePWAUpdate = () => {
       if (registration) {
         setInterval(() => {
           registration.update();
-        }, 60 * 1000);
+        }, 30 * 1000);
       }
     },
   });
