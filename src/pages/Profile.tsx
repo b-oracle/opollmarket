@@ -425,11 +425,11 @@ const Profile = () => {
           <div className="w-full h-full rounded-l-full bg-gradient-to-l from-primary/40 via-primary/15 to-transparent blur-md" />
           <motion.div
             className="absolute right-1 top-1/2 -translate-y-1/2"
-            animate={{ x: [0, -6, 0] }}
+            animate={{ x: [0, 6, 0] }}
             transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
           >
             <svg width="14" height="24" viewBox="0 0 14 24" fill="none" className="text-primary opacity-60">
-              <path d="M12 2L2 12L12 22" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M2 2L12 12L2 22" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </motion.div>
         </motion.div>
