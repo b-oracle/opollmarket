@@ -71,8 +71,18 @@ const Index = () => {
   const [boostModalMarket, setBoostModalMarket] = useState<{ id: string; title: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const { track } = useAnalytics();
+  const { user } = useAuth();
+  const [showTutorial, setShowTutorial] = useState(false);
 
   useEffect(() => { track("page_view", { page: "home" }); }, []);
+
+  // Show social tutorial once after first login
+  useEffect(() => {
+    if (user && shouldShowTutorial()) {
+      const timer = setTimeout(() => setShowTutorial(true), 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [user]);
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
 
   // Capture referral param on landing
