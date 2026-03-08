@@ -162,6 +162,8 @@ const App = () => (
                           <Route path="moderation" element={<AdminModeration />} />
                           <Route path="checklist" element={<AdminChecklist />} />
                           <Route path="audit-log" element={<AdminAuditLog />} />
+                          <Route path="quick-trade" element={<AdminQuickTrade />} />
+                          <Route path="social" element={<AdminSocial />} />
                         </Route>
                         <Route path="*" element={<NotFound />} />
                       </Routes>
