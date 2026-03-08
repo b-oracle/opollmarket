@@ -412,6 +412,8 @@ const Profile = () => {
           <button
             onClick={() => {
               setEditName(profile?.display_name || authDisplayName);
+              setEditBio((profile as any)?.bio || "");
+              setEditIsPublic((profile as any)?.is_public ?? true);
               setAvatarPreview(null);
               setAvatarFile(null);
               setSelectedNftUrl(null);
