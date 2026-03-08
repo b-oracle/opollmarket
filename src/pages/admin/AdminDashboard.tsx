@@ -64,6 +64,7 @@ const AdminDashboard = () => {
 
       const totalVolume = marketRows?.reduce((sum, m) => sum + Number(m.volume), 0) ?? 0;
       const totalRewardsPaid = referrals.data?.reduce((sum, r) => sum + Number(r.amount), 0) ?? 0;
+      const quickTradeVolume = (qtBets.data || []).reduce((sum, b) => sum + Number(b.amount), 0);
 
       setStats({
         totalMarkets: markets.count ?? 0,
@@ -74,6 +75,11 @@ const AdminDashboard = () => {
         totalTransactions: txns.count ?? 0,
         totalReferrals: referrals.data?.length ?? 0,
         totalRewardsPaid,
+        quickTradeRounds: qtRounds.count ?? 0,
+        quickTradeBets: qtBets.data?.length ?? 0,
+        quickTradeVolume,
+        totalFollows: follows.count ?? 0,
+        totalLikes: likes.count ?? 0,
       });
 
       // Category breakdown
