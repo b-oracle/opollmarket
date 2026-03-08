@@ -599,7 +599,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background via-background/60 to-transparent pointer-events-none z-10" />
 
           {/* Swipe hint - positioned above the black bottom padding */}
-          {!isMulti && (
+          {!isMulti && !isEnded && (
             <motion.p
               className="absolute bottom-2 left-0 right-0 text-[10px] text-muted-foreground/60 text-center z-20"
               initial={{ opacity: 0 }}
