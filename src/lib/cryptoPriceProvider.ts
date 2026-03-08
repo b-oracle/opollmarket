@@ -116,7 +116,50 @@ export async function fetchCryptoPrice(
   }
 
   failCount++;
-  return cached?.price ?? null;
+}
+
+// ── Commodity & Forex price fetchers ──
+
+const METAL_MAP: Record<string, string> = {
+  XAU: "gold", XAG: "silver", XPT: "platinum", XPD: "palladium",
+};
+
+async function fetchCommodityPrice(asset: string): Promise<number | null> {
+  const metalName = METAL_MAP[asset];
+  if (!metalName) return null;
+  try {
+    const resp = await fetch(`https://api.metals.dev/v1/latest?api_key=demo&currency=USD&unit=toz`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data?.metals?.[metalName] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchForexPrice(asset: string): Promise<number | null> {
+  const [base, quote] = asset.split("/");
+  if (!base || !quote) return null;
+  try {
+    const resp = await fetch(`https://api.frankfurter.app/latest?from=${base}&to=${quote}`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data?.rates?.[quote] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetch price for any supported asset (crypto, commodity, or forex).
+ * Routes to the appropriate provider based on asset class.
+ */
+export async function fetchAssetPrice(asset: string): Promise<number | null> {
+  const assetClass = getAssetClass(asset);
+  if (assetClass === "crypto") return fetchCryptoPrice(asset);
+  if (assetClass === "commodity") return fetchCommodityPrice(asset);
+  if (assetClass === "forex") return fetchForexPrice(asset);
+  return null;
 }
 
 // ── Historical price data with fallback ──
