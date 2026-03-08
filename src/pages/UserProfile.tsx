@@ -284,6 +284,20 @@ const UserProfile = () => {
           </button>
         </div>
 
+        <ProfileShareCard
+          ref={profileCardRef}
+          displayName={displayName}
+          bio={profile.bio}
+          avatarUrl={profile.avatar_url}
+          followersCount={followCounts.followers}
+          followingCount={followCounts.following}
+          likesCount={likesCount}
+          referralCount={referralCount}
+          marketsCount={userMarkets.length}
+          positionsCount={userPositions.length}
+          leaderboardRanks={leaderboardRanks}
+        />
+
         <ShareModal
           open={shareOpen}
           onOpenChange={setShareOpen}
