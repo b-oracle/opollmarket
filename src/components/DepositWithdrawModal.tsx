@@ -1,5 +1,5 @@
 import LogoLoader from "@/components/LogoLoader";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import HoldToConfirmButton from "@/components/HoldToConfirmButton";
 import BottomSheet from "@/components/BottomSheet";
 
@@ -75,6 +75,8 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
   const [copied, setCopied] = useState(false);
   const [pollInterval, setPollInterval] = useState<ReturnType<typeof setInterval> | null>(null);
   const [partialInfo, setPartialInfo] = useState<PartialInfo | null>(null);
+  const [depositCreatedAt, setDepositCreatedAt] = useState<number | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<string>("");
 
   useEffect(() => {
     if (open) {
@@ -87,11 +89,37 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
       setPaymentInfo(null);
       setCopied(false);
       setPartialInfo(null);
+      setDepositCreatedAt(null);
+      setTimeRemaining("");
     }
     return () => {
       if (pollInterval) clearInterval(pollInterval);
     };
   }, [initialTab, open]);
+
+  // Countdown timer for deposit expiry (2 hours)
+  useEffect(() => {
+    if (step !== "awaiting_payment" || !depositCreatedAt) {
+      setTimeRemaining("");
+      return;
+    }
+    const EXPIRY_MS = 2 * 60 * 60 * 1000; // 2 hours
+    const tick = () => {
+      const elapsed = Date.now() - depositCreatedAt;
+      const remaining = EXPIRY_MS - elapsed;
+      if (remaining <= 0) {
+        setTimeRemaining("Expired");
+        return;
+      }
+      const h = Math.floor(remaining / (1000 * 60 * 60));
+      const m = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+      const s = Math.floor((remaining % (1000 * 60)) / 1000);
+      setTimeRemaining(`${h}h ${m.toString().padStart(2, "0")}m ${s.toString().padStart(2, "0")}s`);
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [step, depositCreatedAt]);
 
   const { data: hasDeposit = false } = useQuery({
     queryKey: ["has_deposit", user?.id],
@@ -252,6 +280,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
         pay_currency: data.pay_currency,
         expiration_estimate_date: data.expiration_estimate_date,
       });
+      setDepositCreatedAt(Date.now());
       setStep("awaiting_payment");
       startPolling(String(data.payment_id));
     } catch (err: any) {
@@ -672,9 +701,25 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                       <p className="text-[11px] text-muted-foreground mb-1">
                         Send the exact amount below to the address provided
                       </p>
-                      <p className="text-[10px] text-primary/70 font-medium mb-4">
-                        ⏱ Payment typically confirms in 5–15 minutes
-                      </p>
+
+                      {/* Countdown timer */}
+                      {timeRemaining && (
+                        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold mb-4 ${
+                          timeRemaining === "Expired"
+                            ? "bg-destructive/10 text-destructive border border-destructive/20"
+                            : timeRemaining.startsWith("0h")
+                              ? "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20"
+                              : "bg-primary/10 text-primary border border-primary/20"
+                        }`}>
+                          <Clock className="w-3.5 h-3.5" />
+                          {timeRemaining === "Expired" ? "Payment window expired" : `${timeRemaining} remaining`}
+                        </div>
+                      )}
+                      {!timeRemaining && (
+                        <p className="text-[10px] text-primary/70 font-medium mb-4">
+                          ⏱ Payment typically confirms in 5–15 minutes
+                        </p>
+                      )}
 
                       {/* QR Code */}
                       <div className="rounded-xl bg-white p-3 mb-3 inline-block mx-auto">
