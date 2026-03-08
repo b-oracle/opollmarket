@@ -531,7 +531,7 @@ const Feed = () => {
         if (isMulti || isEnded) return null;
         return (
           <motion.p
-            className="fixed left-0 right-0 max-w-3xl mx-auto text-[11px] text-muted-foreground/50 font-medium text-center z-[999] pointer-events-none lg:hidden"
+            className="fixed left-1/2 -translate-x-[30%] text-[11px] text-muted-foreground/50 font-medium text-center z-[999] pointer-events-none lg:hidden whitespace-nowrap"
             style={{ bottom: 'calc(4.5rem + 2px + env(safe-area-inset-bottom, 0px))' }}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: scrollNudge ? 1 : 0, y: scrollNudge ? 0 : 8 }}
