@@ -287,6 +287,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
     setStep("input");
     setErrorMsg("");
     setPaymentInfo(null);
+    setPartialInfo(null);
   };
 
   if (!open) return null;
