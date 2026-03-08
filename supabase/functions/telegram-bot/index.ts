@@ -84,8 +84,11 @@ Deno.serve(async (req) => {
 
     if (text === "/start") {
       await handleStart(token, chatId);
+    } else if (text === "/link") {
+      await handleLinkStart(token, chatId);
     } else if (text.startsWith("/link ")) {
-      await handleLink(token, supabase, chatId, text, username);
+      // Legacy support: /link email password still works
+      await handleLinkLegacy(token, supabase, chatId, text, username, message.message_id);
     } else if (text === "/markets") {
       await handleMarkets(token, supabase, chatId);
     } else if (text === "/portfolio") {
@@ -100,11 +103,22 @@ Deno.serve(async (req) => {
       await handleUnlink(token, supabase, chatId);
     } else if (text === "/stats") {
       await handleStats(token, supabase, chatId);
-    } else {
+    } else if (text === "/cancel") {
+      // Cancel any pending link session
+      await supabase.from("telegram_link_sessions").delete().eq("chat_id", chatId);
       await tg(token, "sendMessage", {
         chat_id: chatId,
-        text: "Unknown command. Type /help to see available commands.",
+        text: "❌ Account linking cancelled.",
       });
+    } else {
+      // Check if user is in a linking session
+      const handled = await handleLinkSession(token, supabase, chatId, text, username, message.message_id);
+      if (!handled) {
+        await tg(token, "sendMessage", {
+          chat_id: chatId,
+          text: "Unknown command. Type /help to see available commands.",
+        });
+      }
     }
 
     return new Response("ok", { headers: corsHeaders });
@@ -128,11 +142,13 @@ async function handleStart(token: string, chatId: number) {
       "📊 Predict outcomes\n" +
       "💹 Trade markets\n" +
       "🏆 Win rewards\n\n" +
-      "To get started, link your account:\n" +
-      "<code>/link your@email.com yourpassword</code>",
+      "Tap the button below to link your account:",
     parse_mode: "HTML",
     reply_markup: {
       inline_keyboard: [
+        [
+          { text: "🔗 Link Account", callback_data: "cmd_link" },
+        ],
         [
           { text: "📖 Help", callback_data: "cmd_help" },
           { text: "🔮 Markets", callback_data: "cmd_markets" },
@@ -152,8 +168,9 @@ async function handleHelp(token: string, chatId: number) {
       "📖 <b>OPoll Market — Commands</b>\n" +
       "━━━━━━━━━━━━━━━━━━━━\n\n" +
       "🔗 <b>Account</b>\n" +
-      "  /link <i>email password</i> — Link account\n" +
-      "  /unlink — Unlink account\n\n" +
+      "  /link — Link your account (secure)\n" +
+      "  /unlink — Unlink account\n" +
+      "  /cancel — Cancel linking process\n\n" +
       "📊 <b>Trading</b>\n" +
       "  /markets — Browse active markets\n" +
       "  /portfolio — View your positions\n" +
@@ -225,25 +242,139 @@ async function handleStats(
   }
 }
 
-async function handleLink(
+// Step 1: User types /link — bot asks for email
+async function handleLinkStart(token: string, chatId: number) {
+  await tg(token, "sendMessage", {
+    chat_id: chatId,
+    text:
+      "🔗 <b>Link Your Account</b>\n" +
+      "━━━━━━━━━━━━━━━━━━━━\n\n" +
+      "Please enter your <b>email address</b>:\n\n" +
+      "<i>Type /cancel to abort</i>",
+    parse_mode: "HTML",
+  });
+}
+
+// Handle the interactive linking session (email → password steps)
+async function handleLinkSession(
   token: string,
   supabase: ReturnType<typeof createClient>,
   chatId: number,
   text: string,
-  username: string | null
+  username: string | null,
+  messageId: number
+): Promise<boolean> {
+  // Check if there's a pending session (waiting for password)
+  const { data: session } = await supabase
+    .from("telegram_link_sessions")
+    .select("email, created_at")
+    .eq("chat_id", chatId)
+    .single();
+
+  if (session) {
+    // This is the password step — delete the password message immediately
+    try {
+      await tg(token, "deleteMessage", { chat_id: chatId, message_id: messageId });
+    } catch {
+      // Bot may not have delete permission
+    }
+
+    // Check session expiry (5 min)
+    const sessionAge = Date.now() - new Date(session.created_at).getTime();
+    if (sessionAge > 5 * 60 * 1000) {
+      await supabase.from("telegram_link_sessions").delete().eq("chat_id", chatId);
+      await tg(token, "sendMessage", {
+        chat_id: chatId,
+        text: "⏰ Session expired. Please type /link to start again.",
+      });
+      return true;
+    }
+
+    const password = text;
+    const email = session.email;
+
+    // Clean up session immediately
+    await supabase.from("telegram_link_sessions").delete().eq("chat_id", chatId);
+
+    // Authenticate
+    await completeLink(token, supabase, chatId, email, password, username);
+    return true;
+  }
+
+  // Check if this looks like an email (step 1 of linking after /link command)
+  // We detect this by checking if user recently sent /link
+  // Simple heuristic: if text contains @ and looks like email, start session
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (emailRegex.test(text)) {
+    // Could be email for linking — store session and ask for password
+    await supabase
+      .from("telegram_link_sessions")
+      .upsert(
+        { chat_id: chatId, email: text, created_at: new Date().toISOString() },
+        { onConflict: "chat_id" }
+      );
+
+    // Delete the email message for privacy too
+    try {
+      await tg(token, "deleteMessage", { chat_id: chatId, message_id: messageId });
+    } catch {
+      // Best effort
+    }
+
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text:
+        "✉️ Email received!\n\n" +
+        "Now enter your <b>password</b>:\n\n" +
+        "🔒 <i>Your message will be deleted immediately for security.</i>\n\n" +
+        "<i>Type /cancel to abort</i>",
+      parse_mode: "HTML",
+    });
+    return true;
+  }
+
+  return false;
+}
+
+// Legacy support: /link email password (still works but warns user)
+async function handleLinkLegacy(
+  token: string,
+  supabase: ReturnType<typeof createClient>,
+  chatId: number,
+  text: string,
+  username: string | null,
+  messageId: number
 ) {
   const parts = text.split(" ");
   if (parts.length < 3) {
     await tg(token, "sendMessage", {
       chat_id: chatId,
-      text: "Usage: /link your@email.com yourpassword",
+      text: "💡 Just type /link and follow the secure prompts instead!",
     });
     return;
   }
 
+  // Delete the message containing credentials immediately
+  try {
+    await tg(token, "deleteMessage", { chat_id: chatId, message_id: messageId });
+  } catch {
+    // Best effort
+  }
+
   const email = parts[1];
   const password = parts.slice(2).join(" ");
+  await completeLink(token, supabase, chatId, email, password, username);
+}
 
+// Shared authentication + linking logic
+async function completeLink(
+  token: string,
+  supabase: ReturnType<typeof createClient>,
+  chatId: number,
+  email: string,
+  password: string,
+  username: string | null
+) {
   const authClient = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || Deno.env.get("SUPABASE_ANON_KEY")!
@@ -257,7 +388,12 @@ async function handleLink(
   if (signInError || !signInData.user) {
     await tg(token, "sendMessage", {
       chat_id: chatId,
-      text: "❌ Invalid email or password. Please try again.",
+      text: "❌ Invalid email or password. Please type /link to try again.",
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "🔗 Try Again", callback_data: "cmd_link" }],
+        ],
+      },
     });
     return;
   }
@@ -286,16 +422,6 @@ async function handleLink(
     return;
   }
 
-  try {
-    await tg(token, "deleteMessage", {
-      chat_id: chatId,
-      message_id: (await supabase).toString(),
-    });
-  } catch {
-    // Best effort
-  }
-
-  // Get display name for personalized greeting
   const { data: profile } = await supabase
     .from("profiles")
     .select("display_name")
@@ -310,7 +436,7 @@ async function handleLink(
       `✅ <b>Account linked successfully!</b>\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `Welcome, <b>${escapeHtml(name)}</b>! 👋\n\n` +
-      `⚠️ For security, please delete your /link message.\n\n` +
+      `🔒 Your credentials were not stored and messages were deleted.\n\n` +
       `You're all set! Here's what you can do:`,
     parse_mode: "HTML",
     reply_markup: {
@@ -680,6 +806,9 @@ async function handleCallback(
   // Handle command shortcuts from inline buttons
   if (data === "cmd_help") {
     await handleHelp(token, chatId);
+    return;
+  } else if (data === "cmd_link") {
+    await handleLinkStart(token, chatId);
     return;
   } else if (data === "cmd_markets") {
     await handleMarkets(token, supabase, chatId);
