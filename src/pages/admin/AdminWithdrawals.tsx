@@ -74,6 +74,45 @@ const AdminWithdrawals = () => {
     );
   });
 
+  const processMutation = useMutation({
+    mutationFn: async ({
+      withdrawal_id,
+      action,
+      admin_note,
+      tx_hash,
+    }: {
+      withdrawal_id: string;
+      action: string;
+      admin_note?: string;
+      tx_hash?: string;
+    }) => {
+      setProcessingId(withdrawal_id);
+      const { data, error } = await supabase.functions.invoke(
+        "process-withdrawal",
+        { body: { withdrawal_id, action, admin_note, tx_hash } }
+      );
+      if (error || data?.error)
+        throw new Error(data?.error || error?.message);
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      logAuditEvent({
+        action: variables.action === "approve" ? "withdrawal_approved" : "withdrawal_rejected",
+        targetId: variables.withdrawal_id,
+        targetType: "withdrawal",
+        details: { action: variables.action, note: variables.admin_note, tx_hash: variables.tx_hash },
+      });
+      queryClient.invalidateQueries({ queryKey: ["admin_withdrawals"] });
+      setShowActionModal(null);
+      setNoteInput("");
+      setTxHashInput("");
+      setProcessingId(null);
+    },
+    onError: () => {
+      setProcessingId(null);
+    },
+  });
+
   const paginatedWd = useMemo(() => filtered.slice((wdPage - 1) * WD_PAGE_SIZE, wdPage * WD_PAGE_SIZE), [filtered, wdPage]);
   return (
     <div>
