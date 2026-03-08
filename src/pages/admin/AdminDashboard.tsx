@@ -21,6 +21,8 @@ interface Stats {
   totalWithdrawals: number;
   depositCount: number;
   withdrawalCount: number;
+  pendingDepositCount: number;
+  pendingWithdrawalCount: number;
 }
 
 interface MarketRow {
