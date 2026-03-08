@@ -373,9 +373,10 @@ const Feed = () => {
       <SEOHead title="Feed" description="Swipe through prediction markets like TikTok. Vote YES or NO on real-world events." path="/feed" />
       <TopBar />
 
-      {/* Feed tab bar - compact, non-overlapping */}
+      {/* Feed tab bar - fixed below TopBar */}
       <div
-        className="relative z-20 flex items-center justify-center py-1.5 bg-background/80 backdrop-blur-md border-b border-border/20"
+        className="fixed left-0 right-0 z-30 flex items-center justify-center py-1.5 bg-background/80 backdrop-blur-md border-b border-border/20"
+        style={{ top: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}
       >
         <div className="relative flex rounded-full bg-muted/50 p-0.5">
           <motion.div
