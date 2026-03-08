@@ -186,8 +186,14 @@ async function handleStats(
   const email = parts[1];
   const password = parts.slice(2).join(" ");
 
+  // Use a separate client for auth sign-in so the service role client isn't tainted
+  const authClient = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || Deno.env.get("SUPABASE_ANON_KEY")!
+  );
+
   // Sign in to verify credentials
-  const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+  const { data: signInData, error: signInError } = await authClient.auth.signInWithPassword({
     email,
     password,
   });
@@ -202,7 +208,10 @@ async function handleStats(
 
   const userId = signInData.user.id;
 
-  // Upsert telegram link
+  // Sign out from the temp client to clean up
+  await authClient.auth.signOut();
+
+  // Upsert telegram link using the service-role client (bypasses RLS)
   const { error: upsertError } = await supabase
     .from("telegram_users")
     .upsert(
