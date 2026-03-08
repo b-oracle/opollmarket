@@ -534,6 +534,30 @@ const Profile = () => {
                       maxLength={50}
                     />
                   </div>
+                  {/* Bio */}
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Bio</label>
+                    <textarea
+                      value={editBio}
+                      onChange={(e) => setEditBio(e.target.value)}
+                      className="w-full bg-muted/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                      placeholder="Tell people about yourself..."
+                      maxLength={160}
+                      rows={2}
+                    />
+                    <p className="text-[10px] text-muted-foreground text-right mt-0.5">{editBio.length}/160</p>
+                  </div>
+                  {/* Profile Visibility */}
+                  <div className="flex items-center justify-between py-2">
+                    <div className="flex items-center gap-2">
+                      {editIsPublic ? <Globe className="w-4 h-4 text-primary" /> : <EyeOff className="w-4 h-4 text-muted-foreground" />}
+                      <div>
+                        <p className="text-sm font-medium">{editIsPublic ? "Public Profile" : "Private Profile"}</p>
+                        <p className="text-[10px] text-muted-foreground">{editIsPublic ? "Anyone can view your profile" : "Only you can see your profile"}</p>
+                      </div>
+                    </div>
+                    <Switch checked={editIsPublic} onCheckedChange={setEditIsPublic} />
+                  </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setEditingProfile(false)}
