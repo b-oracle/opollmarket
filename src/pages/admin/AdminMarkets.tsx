@@ -74,7 +74,7 @@ const AdminMarkets = () => {
   const [markets, setMarkets] = useState<MarketRow[]>([]);
   const [pendingMarkets, setPendingMarkets] = useState<MarketRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "pending" | "active" | "resolved" | "cancelled" | "polymarket">("all");
+  const [filter, setFilter] = useState<"all" | "pending" | "active" | "ended" | "resolved" | "cancelled" | "polymarket">("all");
   const [resolveState, setResolveState] = useState<ResolveState | null>(null);
   const [resolving, setResolving] = useState(false);
   const [editState, setEditState] = useState<EditState | null>(null);
