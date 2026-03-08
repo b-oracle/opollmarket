@@ -202,10 +202,9 @@ const Profile = () => {
   const [selectedNftUrl, setSelectedNftUrl] = useState<string | null>(null);
   const [editBio, setEditBio] = useState("");
   const [editIsPublic, setEditIsPublic] = useState(true);
-  const [socialOpen, setSocialOpen] = useState(false);
   const [swipeHintDismissed, setSwipeHintDismissed] = useState(() => localStorage.getItem("social_swipe_used") === "1");
 
-  // Swipe-right detection for social page — edge swipe from left 40px zone
+  // Swipe-right detection — navigate to own public profile
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const touchStartedInEdge = useRef(false);
@@ -215,18 +214,23 @@ const Profile = () => {
     touchStartY.current = e.touches[0].clientY;
     touchStartedInEdge.current = x < 40;
   }, []);
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (!touchStartedInEdge.current || socialOpen) return;
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+  const handleTouchEnd = useCallback(() => {
+    if (!touchStartedInEdge.current || !user) return;
+    const dx = (window as any).__lastTouchEndX - touchStartX.current;
+    const dy = Math.abs((window as any).__lastTouchEndY - touchStartY.current);
     if (dx > 60 && dy < 80) {
-      setSocialOpen(true);
       if (!swipeHintDismissed) {
         localStorage.setItem("social_swipe_used", "1");
         setSwipeHintDismissed(true);
       }
+      navigate(`/user/${user.id}`);
     }
-  }, [socialOpen, swipeHintDismissed]);
+  }, [swipeHintDismissed, user, navigate]);
+  const handleTouchEndCapture = useCallback((e: React.TouchEvent) => {
+    (window as any).__lastTouchEndX = e.changedTouches[0].clientX;
+    (window as any).__lastTouchEndY = e.changedTouches[0].clientY;
+    handleTouchEnd();
+  }, [handleTouchEnd]);
 
   // Fetch profile data
   const { data: profile } = useQuery({
