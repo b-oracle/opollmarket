@@ -986,6 +986,30 @@ export type Database = {
           },
         ]
       }
+      telegram_users: {
+        Row: {
+          id: string
+          linked_at: string
+          telegram_chat_id: number
+          telegram_username: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          linked_at?: string
+          telegram_chat_id: number
+          telegram_username?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          linked_at?: string
+          telegram_chat_id?: number
+          telegram_username?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number
