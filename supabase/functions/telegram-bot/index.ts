@@ -565,6 +565,9 @@ async function handleMarkets(
     { text: "⚡ Quick Trade", callback_data: "cmd_quicktrade" },
     { text: "🌐 Open Web", url: APP_URL } as any,
   ]);
+  marketButtons.push([
+    { text: "🏠 Home", callback_data: "cmd_home" },
+  ]);
 
   text += `<i>Tap a market below to see details & predict</i>`;
 
