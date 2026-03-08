@@ -629,8 +629,10 @@ const Profile = () => {
                           // Update profile table first (more reliable)
                           const { error: profileError } = await supabase.from("profiles").update({
                             display_name: editName.trim(),
+                            bio: editBio.trim(),
+                            is_public: editIsPublic,
                             ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
-                          }).eq("id", user!.id);
+                          } as any).eq("id", user!.id);
                           if (profileError) {
                             if (profileError.message?.includes("unique_display_name") || profileError.code === "23505") {
                               toast.error("This username is already taken. Please choose a different one.");
