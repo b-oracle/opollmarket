@@ -77,12 +77,33 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (market.status === "cancelled") {
-      return new Response(JSON.stringify({ error: "Market already cancelled" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+  if (market.status === "cancelled") {
+    return new Response(JSON.stringify({ error: "Market already cancelled" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  if (market.status === "resolved") {
+    return new Response(JSON.stringify({ error: "Cannot cancel a resolved market. Payouts have already been distributed." }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Prevent re-cancellation: check for existing refund transactions
+  const { count: existingRefunds } = await adminClient
+    .from("transactions")
+    .select("id", { count: "exact", head: true })
+    .eq("market_id", market_id)
+    .in("type", ["refund", "payout"]);
+
+  if (existingRefunds && existingRefunds > 0) {
+    return new Response(JSON.stringify({ error: `Market already has ${existingRefunds} payout/refund transactions. Cannot cancel to avoid duplicate refunds.` }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
     // Find all buy transactions for this market and refund them
     const { data: transactions } = await adminClient
