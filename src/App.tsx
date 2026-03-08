@@ -1,5 +1,6 @@
 // App root
 import { lazy, Suspense, useState, useEffect } from "react";
+import { Navigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -18,6 +19,7 @@ import LogoLoader from "./components/LogoLoader";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { SidebarStateProvider, useSidebarState } from "./hooks/useSidebarState";
 import SocialTutorial, { shouldShowTutorial } from "./components/SocialTutorial";
+import { useFeatureToggles } from "./hooks/useFeatureToggles";
 
 // Lazy-loaded pages
 const Index = lazy(() => import("./pages/Index"));
@@ -90,6 +92,12 @@ const PageFallback = () => (
   </div>
 );
 
+const FeatureGate = ({ featureKey, children }: { featureKey: string; children: React.ReactNode }) => {
+  const { isFeatureEnabled } = useFeatureToggles();
+  if (!isFeatureEnabled(featureKey)) return <Navigate to="/" replace />;
+  return <>{children}</>;
+};
+
 const SocialTutorialTrigger = () => {
   const { user } = useAuth();
   const [show, setShow] = useState(false);
@@ -127,22 +135,22 @@ const App = () => (
                     <Suspense fallback={<PageFallback />}>
                       <Routes>
                         <Route path="/" element={<Index />} />
-                        <Route path="/feed" element={<Feed />} />
+                        <Route path="/feed" element={<FeatureGate featureKey="feed"><Feed /></FeatureGate>} />
                         <Route path="/market/:id" element={<MarketDetail />} />
-                        <Route path="/create" element={<Create />} />
-                        <Route path="/rankings" element={<Rankings />} />
-                        <Route path="/portfolio" element={<Portfolio />} />
+                        <Route path="/create" element={<FeatureGate featureKey="create_market"><Create /></FeatureGate>} />
+                        <Route path="/rankings" element={<FeatureGate featureKey="rankings"><Rankings /></FeatureGate>} />
+                        <Route path="/portfolio" element={<FeatureGate featureKey="portfolio"><Portfolio /></FeatureGate>} />
                         <Route path="/profile" element={<Profile />} />
                         <Route path="/auth" element={<Auth />} />
                         <Route path="/reset-password" element={<ResetPassword />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
-                        <Route path="/referrals" element={<Referrals />} />
-                        <Route path="/faq" element={<FAQ />} />
+                        <Route path="/referrals" element={<FeatureGate featureKey="referrals"><Referrals /></FeatureGate>} />
+                        <Route path="/faq" element={<FeatureGate featureKey="faq"><FAQ /></FeatureGate>} />
                         <Route path="/disclaimer" element={<Disclaimer />} />
                         <Route path="/terms" element={<Terms />} />
                         <Route path="/privacy" element={<Privacy />} />
                         <Route path="/maintenance" element={<Maintenance />} />
-                        <Route path="/quick-trade" element={<QuickTrade />} />
+                        <Route path="/quick-trade" element={<FeatureGate featureKey="quick_trade"><QuickTrade /></FeatureGate>} />
                         <Route path="/user/:id" element={<UserProfile />} />
                         <Route path="/followers" element={<Followers />} />
                         <Route path="/admin" element={<AdminLayout />}>
