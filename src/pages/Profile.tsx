@@ -203,6 +203,7 @@ const Profile = () => {
   const [editBio, setEditBio] = useState("");
   const [editIsPublic, setEditIsPublic] = useState(true);
   const [socialOpen, setSocialOpen] = useState(false);
+  const [swipeHintDismissed, setSwipeHintDismissed] = useState(() => localStorage.getItem("social_swipe_used") === "1");
 
   // Swipe-right detection for social page — edge swipe from left 40px zone
   const touchStartX = useRef(0);
@@ -212,7 +213,7 @@ const Profile = () => {
     const x = e.touches[0].clientX;
     touchStartX.current = x;
     touchStartY.current = e.touches[0].clientY;
-    touchStartedInEdge.current = x < 40; // only trigger from left edge
+    touchStartedInEdge.current = x < 40;
   }, []);
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
     if (!touchStartedInEdge.current || socialOpen) return;
@@ -220,8 +221,12 @@ const Profile = () => {
     const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
     if (dx > 60 && dy < 80) {
       setSocialOpen(true);
+      if (!swipeHintDismissed) {
+        localStorage.setItem("social_swipe_used", "1");
+        setSwipeHintDismissed(true);
+      }
     }
-  }, [socialOpen]);
+  }, [socialOpen, swipeHintDismissed]);
 
   // Fetch profile data
   const { data: profile } = useQuery({
@@ -406,7 +411,7 @@ const Profile = () => {
   return (
     <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       {/* Swipe hint indicator on left edge */}
-      {!socialOpen && (
+      {!socialOpen && !swipeHintDismissed && (
         <motion.div
           className="fixed left-0 top-1/2 -translate-y-1/2 z-30 flex items-center pointer-events-none"
           initial={{ opacity: 0 }}
