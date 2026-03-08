@@ -465,7 +465,7 @@ async function handleUnlink(
     text: "✅ Account unlinked. Use /link to connect again.",
     reply_markup: {
       inline_keyboard: [
-        [{ text: "🔗 Link Account Again", callback_data: "cmd_help" }],
+        [{ text: "🔗 Link Account", callback_data: "cmd_link" }],
       ],
     },
   });
