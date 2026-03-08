@@ -4,7 +4,7 @@ import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { Trophy, TrendingUp, TrendingDown, Medal, Crown, Award, Users, Star, Calendar, Share2, ArrowLeft, Zap, Flame, ChevronLeft, ChevronRight } from "lucide-react";
 import { Loader2 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -478,6 +478,29 @@ const Rankings = () => {
 
   const loading = tab === "referrers" ? refLoading : tab === "quick" ? (quickSubTab === "streaks" ? streakLoading : quickLoading) : tradeLoading;
 
+  // Compute user's rank index in the current active list
+  const myRankIndex = useMemo(() => {
+    if (!currentUserId) return -1;
+    if (tab === "traders") return sortedTraders.findIndex((t) => t.userId === currentUserId);
+    if (tab === "quick" && quickSubTab === "profit") return quickTraders.findIndex((t) => t.userId === currentUserId);
+    if (tab === "quick" && quickSubTab === "streaks") return streakUsers.findIndex((t) => t.userId === currentUserId);
+    if (tab === "referrers") return sortedReferrers.findIndex((r) => r.userId === currentUserId);
+    return -1;
+  }, [currentUserId, tab, quickSubTab, sortedTraders, quickTraders, streakUsers, sortedReferrers]);
+
+  const myRankPage = myRankIndex >= 0 ? Math.ceil((myRankIndex + 1) / ITEMS_PER_PAGE) : -1;
+  const isOnMyPage = myRankPage === page;
+
+  const scrollToMyRank = useCallback(() => {
+    if (myRankPage < 1) return;
+    setPage(myRankPage);
+    // Scroll to list area after a tick
+    setTimeout(() => {
+      const el = document.querySelector(`[data-user-rank="${currentUserId}"]`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
+  }, [myRankPage, currentUserId]);
+
   return (
     <div className="min-h-dvh bg-background overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
       <TopBar />
@@ -586,6 +609,7 @@ const Rankings = () => {
                               return (
                                 <motion.div
                                   key={trader.userId}
+                                  data-user-rank={trader.userId}
                                   initial={{ opacity: 0, x: -12 }}
                                   animate={{ opacity: 1, x: 0 }}
                                   transition={{ delay: i * 0.04 }}
@@ -700,6 +724,7 @@ const Rankings = () => {
                                   const winRate = qt.totalBets > 0 ? Math.round((qt.wins / qt.totalBets) * 100) : 0;
                                   return (
                                     <motion.div
+                                      data-user-rank={qt.userId}
                                       key={qt.userId}
                                       initial={{ opacity: 0, x: -12 }}
                                       animate={{ opacity: 1, x: 0 }}
@@ -767,6 +792,7 @@ const Rankings = () => {
                                   const streakMultiplier = su.currentStreak >= 5 ? "1.25x" : su.currentStreak >= 4 ? "1.15x" : su.currentStreak >= 3 ? "1.10x" : su.currentStreak >= 2 ? "1.05x" : "1.0x";
                                   return (
                                     <motion.div
+                                      data-user-rank={su.userId}
                                       key={su.userId}
                                       initial={{ opacity: 0, x: -12 }}
                                       animate={{ opacity: 1, x: 0 }}
@@ -872,6 +898,7 @@ const Rankings = () => {
                               const isMe = currentUserId === ref.userId;
                               return (
                                 <motion.div
+                                  data-user-rank={ref.userId}
                                   key={ref.userId}
                                   initial={{ opacity: 0, x: -12 }}
                                   animate={{ opacity: 1, x: 0 }}
@@ -917,6 +944,22 @@ const Rankings = () => {
           </>
         )}
       </div>
+      {/* Floating "Find Your Rank" button */}
+      <AnimatePresence>
+        {currentUserId && myRankIndex >= 0 && !isOnMyPage && !loading && (
+          <motion.button
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            onClick={scrollToMyRank}
+            className="fixed bottom-24 right-4 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 transition-opacity text-xs font-semibold"
+            style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+          >
+            <Star className="w-3.5 h-3.5 fill-current" />
+            Your Rank: #{myRankIndex + 1}
+          </motion.button>
+        )}
+      </AnimatePresence>
       <BottomNav />
       {shareModal && (
         <RankShareModal
