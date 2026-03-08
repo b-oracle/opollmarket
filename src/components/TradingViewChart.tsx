@@ -380,7 +380,14 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   const pnlPositive = pnl !== null && pnl >= 0;
 
   return (
-    <div className={`${isFullscreen ? "fixed inset-0 z-50 bg-background flex flex-col" : "relative"} overflow-hidden`}>
+    <div 
+      className={`${isFullscreen ? "fixed inset-0 z-50 bg-background flex flex-col" : "relative"} overflow-hidden`}
+      style={isFullscreen ? { 
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingLeft: 'env(safe-area-inset-left, 0px)',
+        paddingRight: 'env(safe-area-inset-right, 0px)',
+      } : undefined}
+    >
       {/* Resolution flash/glow overlay */}
       {resolveFlash && (
         <div
