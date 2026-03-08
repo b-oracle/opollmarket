@@ -342,7 +342,7 @@ const Portfolio = () => {
     return (
       <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
         <TopBar />
-        <div className="max-w-lg md:max-w-4xl mx-auto px-4 pt-20 flex flex-col items-center justify-center min-h-[60dvh]">
+        <div className="max-w-lg md:max-w-4xl mx-auto px-4 flex flex-col items-center justify-center min-h-[60dvh]" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top, 0px))' }}>
           <div className="glass rounded-2xl p-8 text-center max-w-sm">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
               <Wallet className="w-8 h-8 text-primary" />
