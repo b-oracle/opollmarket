@@ -25,6 +25,8 @@ const useIsDappBrowser = () =>
 
 const Auth = () => {
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const [showResetPrompt, setShowResetPrompt] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
