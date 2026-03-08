@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import ActivityFeed from "@/components/ActivityFeed";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFollow, useFollowCounts } from "@/hooks/useFollow";
@@ -233,11 +234,11 @@ const UserProfile = () => {
 
               {/* Stats Row */}
               <div className="flex items-center gap-4 text-xs">
-                <div className="text-center">
+              <div className="text-center cursor-pointer hover:opacity-80" onClick={() => navigate(`/followers`)}>
                   <p className="font-bold">{followCounts.followers}</p>
                   <p className="text-muted-foreground text-[10px]">Followers</p>
                 </div>
-                <div className="text-center">
+                <div className="text-center cursor-pointer hover:opacity-80" onClick={() => navigate(`/followers`)}>
                   <p className="font-bold">{followCounts.following}</p>
                   <p className="text-muted-foreground text-[10px]">Following</p>
                 </div>
@@ -466,13 +467,8 @@ const UserProfile = () => {
           </div>
         )}
 
-        {/* Activity Tab placeholder */}
-        {activeTab === "activity" && (
-          <div className="text-center py-12">
-            <MessageCircle className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">Recent activity coming soon</p>
-          </div>
-        )}
+        {/* Activity Tab */}
+        {activeTab === "activity" && <ActivityFeed userId={id!} isOwnProfile={isOwnProfile} isPublic={!!profile?.is_public} />}
       </div>
       <BottomNav />
     </div>
