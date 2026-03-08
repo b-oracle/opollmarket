@@ -58,17 +58,16 @@ const MutualFollowers = ({ targetUserId }: MutualFollowersProps) => {
   const remaining = totalCount - displayProfiles.length;
 
   return (
-    <div
-      className="flex items-center gap-2 mt-3 px-1 cursor-pointer hover:opacity-80 transition-opacity"
-      onClick={() => navigate(`/followers`)}
-    >
-      {/* Stacked avatars */}
+    <div className="flex items-center gap-2 mt-3 px-1">
+      {/* Stacked avatars — each clickable */}
       <div className="flex -space-x-2">
         {displayProfiles.map((p, i) => (
-          <div
+          <button
             key={p.id}
-            className="w-6 h-6 rounded-full border-2 border-background bg-primary/20 overflow-hidden flex items-center justify-center"
+            onClick={(e) => { e.stopPropagation(); navigate(`/user/${p.id}`); }}
+            className="w-6 h-6 rounded-full border-2 border-background bg-primary/20 overflow-hidden flex items-center justify-center hover:ring-2 hover:ring-primary/40 transition-all cursor-pointer"
             style={{ zIndex: displayProfiles.length - i }}
+            aria-label={`View ${p.display_name || "user"}'s profile`}
           >
             {p.avatar_url ? (
               <img src={p.avatar_url} alt={p.display_name || ""} className="w-full h-full object-cover" />
@@ -77,15 +76,23 @@ const MutualFollowers = ({ targetUserId }: MutualFollowersProps) => {
                 {(p.display_name || "?").charAt(0).toUpperCase()}
               </span>
             )}
-          </div>
+          </button>
         ))}
       </div>
       <p className="text-[11px] text-muted-foreground leading-tight">
-        <span className="font-semibold text-foreground">
-          {displayProfiles.map((p) => p.display_name || "Anonymous").join(", ")}
-        </span>
+        {displayProfiles.map((p, i) => (
+          <span key={p.id}>
+            {i > 0 && ", "}
+            <button
+              onClick={() => navigate(`/user/${p.id}`)}
+              className="font-semibold text-foreground hover:text-primary transition-colors cursor-pointer"
+            >
+              {p.display_name || "Anonymous"}
+            </button>
+          </span>
+        ))}
         {remaining > 0 && (
-          <span> and <span className="font-semibold text-foreground">{remaining} other{remaining > 1 ? "s" : ""}</span></span>
+          <span> and <button onClick={() => navigate("/followers")} className="font-semibold text-foreground hover:text-primary transition-colors cursor-pointer">{remaining} other{remaining > 1 ? "s" : ""}</button></span>
         )}
         {" "}you both follow
       </p>
