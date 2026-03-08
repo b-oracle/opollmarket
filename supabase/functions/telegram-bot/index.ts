@@ -807,6 +807,9 @@ async function handleCallback(
   if (data === "cmd_help") {
     await handleHelp(token, chatId);
     return;
+  } else if (data === "cmd_link") {
+    await handleLinkStart(token, chatId);
+    return;
   } else if (data === "cmd_markets") {
     await handleMarkets(token, supabase, chatId);
     return;
