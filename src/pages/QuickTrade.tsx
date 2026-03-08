@@ -36,6 +36,7 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import StreakMilestoneModal from "@/components/StreakMilestoneModal";
 import ShareModal from "@/components/ShareModal";
+import ProfitShareCard from "@/components/ProfitShareCard";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
 import { playWinSound, playLoseSound } from "@/lib/sounds";
@@ -185,6 +186,9 @@ export default function QuickTrade() {
   const prevStreakRef = useRef<number>(0);
   const chartCardRef = useRef<HTMLDivElement>(null);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showWinShare, setShowWinShare] = useState(false);
+  const [winShareData, setWinShareData] = useState<{ profit: number; payout: number; side: string; asset: string } | null>(null);
+  const profitCardRef = useRef<HTMLDivElement>(null);
   const [soundMuted, setSoundMuted] = useState(() => {
     try { return localStorage.getItem("qt-sound-muted") === "true"; } catch { return false; }
   });
@@ -610,7 +614,12 @@ export default function QuickTrade() {
                 if (!soundMuted) playWinSound();
                 fireWinConfetti();
                 haptic("success");
-                toast({ title: "You won! 🎉", description: `The round resolved ${resolvedResult?.toUpperCase()}` });
+                // Calculate profit: for quick trades, payout is typically 2x minus fee
+                const betAmt = myBets[0].side === "up" || myBets[0].side === "down" ? parseFloat(betAmount) || 10 : 10;
+                const estimatedPayout = betAmt * 2 * (1 - (commissionSettings?.quick_trade_fee_percent ?? 5) / 100);
+                const estimatedProfit = estimatedPayout - betAmt;
+                setWinShareData({ profit: estimatedProfit, payout: estimatedPayout, side: myBets[0].side, asset: selectedAsset.symbol });
+                toast({ title: "You won! 🎉", description: `The round resolved ${resolvedResult?.toUpperCase()}`, action: <button onClick={() => setShowWinShare(true)} className="text-xs font-bold text-primary underline">Share Win</button> });
               } else {
                 if (!soundMuted) playLoseSound();
                 haptic("error");
@@ -1050,6 +1059,27 @@ export default function QuickTrade() {
         description={`${selectedTimeframe.label} UP/DOWN prediction on ${selectedAsset.label}`}
         marketUrl={`${window.location.origin}/quick-trade`}
         captureRef={chartCardRef}
+      />
+
+      {/* Win profit share */}
+      {winShareData && (
+        <ProfitShareCard
+          ref={profitCardRef}
+          market={`${winShareData.asset} Quick Trade — ${winShareData.side.toUpperCase()} prediction`}
+          side={winShareData.side === "up" ? "YES" : "NO"}
+          profit={winShareData.profit}
+          payout={winShareData.payout}
+          displayName={user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Trader"}
+          referralCode={user?.user_metadata?.display_name || user?.id || ""}
+        />
+      )}
+      <ShareModal
+        open={showWinShare}
+        onOpenChange={(open) => { setShowWinShare(open); if (!open) setWinShareData(null); }}
+        title={winShareData ? `I just won +$${winShareData.profit.toFixed(2)} on oPoll Quick Trade! 🔥` : ""}
+        description={winShareData ? `${winShareData.asset} ${winShareData.side.toUpperCase()} prediction` : ""}
+        marketUrl={`${window.location.origin}/quick-trade${user ? `?ref=${user.user_metadata?.display_name || user.id}` : ""}`}
+        captureRef={profitCardRef}
       />
     </>
   );
