@@ -518,7 +518,7 @@ const Feed = () => {
         return (
           <motion.p
             key={`swipe-hint-${activeIndex}`}
-            className="fixed left-0 right-0 text-[11px] text-muted-foreground font-medium text-center z-[999] pointer-events-none"
+            className="fixed left-0 right-0 text-[11px] text-primary/70 font-medium text-center z-[999] pointer-events-none"
             style={{ bottom: 'calc(4rem + 6px)' }}
             initial={{ opacity: 0 }}
             animate={{ opacity: [0, 0.7, 0.7, 0] }}
