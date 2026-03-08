@@ -396,8 +396,16 @@ const Index = () => {
                 transition={{ delay: 0.6 + i * 0.08 }}
                 whileHover={{ y: -4, boxShadow: "0 8px 30px -8px hsl(var(--primary) / 0.15)" }}
                 onClick={() => navigate(`/market/${market.id}`)}
-                className={`glass rounded-xl p-3 cursor-pointer transition-all active:scale-[0.98] flex items-center gap-3 group md:p-4 md:rounded-2xl hover:border-primary/20 hover:bg-accent/20 ${isBoosted ? 'ring-1 ring-primary/30 bg-primary/5' : ''}`}
+                className={`relative glass rounded-xl p-3 cursor-pointer transition-all active:scale-[0.98] flex items-center gap-3 group md:p-4 md:rounded-2xl hover:border-primary/20 hover:bg-accent/20 ${isBoosted ? 'ring-1 ring-primary/30 bg-primary/5' : ''} ${market.status === 'ended' ? 'opacity-75' : ''}`}
               >
+                {market.status === 'ended' && (
+                  <div className="absolute inset-0 z-10 rounded-xl md:rounded-2xl bg-background/60 backdrop-blur-[2px] flex items-center justify-center">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted border border-border text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      <Clock className="w-3.5 h-3.5" />
+                      Awaiting Resolution
+                    </span>
+                  </div>
+                )}
                 <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-secondary/80 border border-border shrink-0 relative overflow-hidden transition-transform duration-300 group-hover:scale-105 group-hover:shadow-md">
                   {market.imageUrl ? (
                     <img src={market.imageUrl} alt={market.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
