@@ -483,79 +483,84 @@ async function getUserId(
   return data?.user_id || null;
 }
 
+const MARKETS_PER_PAGE = 5;
+
 async function handleMarkets(
   token: string,
   supabase: ReturnType<typeof createClient>,
-  chatId: number
+  chatId: number,
+  page = 0
 ) {
-  const { data: markets } = await supabase
+  const from = page * MARKETS_PER_PAGE;
+  const to = from + MARKETS_PER_PAGE - 1;
+
+  const { data: markets, count } = await supabase
     .from("markets")
-    .select("id, title, yes_price, volume, category, market_type, end_date, image_url, participants")
+    .select("id, title, yes_price, volume, category, participants", { count: "exact" })
     .eq("status", "active")
     .order("volume", { ascending: false })
-    .limit(5);
+    .range(from, to);
 
   if (!markets || markets.length === 0) {
-    await tg(token, "sendMessage", { chat_id: chatId, text: "No active markets right now." });
+    if (page === 0) {
+      await tg(token, "sendMessage", { chat_id: chatId, text: "No active markets right now." });
+    } else {
+      await tg(token, "sendMessage", { chat_id: chatId, text: "No more markets." });
+    }
     return;
   }
 
-  // Send each market as a rich card with image
-  for (const m of markets) {
+  const totalPages = Math.ceil((count || 0) / MARKETS_PER_PAGE);
+
+  // Build compact numbered list
+  let text = `📋 <b>Markets</b> (Page ${page + 1}/${totalPages})\n━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+  const marketButtons: Array<Array<{ text: string; callback_data: string }>> = [];
+
+  markets.forEach((m, i) => {
+    const num = from + i + 1;
     const yesP = Math.round(m.yes_price * 100);
-    const noP = 100 - yesP;
     const emoji = categoryEmoji(m.category);
-    const yesBar = progressBar(yesP, 10);
     const vol = Number(m.volume).toFixed(0);
+    const title = m.title.length > 45 ? m.title.slice(0, 42) + "..." : m.title;
 
-    const caption =
-      `${emoji} <b>${escapeHtml(m.title)}</b>\n\n` +
-      `✅ Yes: <b>${yesP}%</b> ${yesBar}\n` +
-      `❌ No:  <b>${noP}%</b> ${progressBar(noP, 10)}\n\n` +
-      `💰 Vol: $${vol} · 👥 ${m.participants}\n` +
-      `📅 Ends: ${m.end_date}`;
+    text += `<b>${num}.</b> ${emoji} ${escapeHtml(title)}\n`;
+    text += `   ✅ ${yesP}% · 💰 $${vol} · 👥 ${m.participants}\n\n`;
 
-    const buttons = [
-      [
-        { text: `✅ Yes (${yesP}¢)`, callback_data: `mkt_${m.id.slice(0, 30)}` },
-        { text: `❌ No (${noP}¢)`, callback_data: `mkt_${m.id.slice(0, 30)}` },
-      ],
-      [
-        { text: "📊 View Details", callback_data: `mkt_${m.id.slice(0, 30)}` },
-        { text: "🌐 Open on Web", url: `${APP_URL}/market/${m.id}` },
-      ],
-    ];
-
-    if (m.image_url) {
-      await tg(token, "sendPhoto", {
-        chat_id: chatId,
-        photo: m.image_url,
-        caption,
-        parse_mode: "HTML",
-        reply_markup: { inline_keyboard: buttons },
-      });
+    // Two markets per row of buttons
+    const btn = { text: `${num}. ${emoji} ${m.title.slice(0, 20)}`, callback_data: `mkt_${m.id.slice(0, 30)}` };
+    if (i % 2 === 0) {
+      marketButtons.push([btn]);
     } else {
-      await tg(token, "sendMessage", {
-        chat_id: chatId,
-        text: caption,
-        parse_mode: "HTML",
-        reply_markup: { inline_keyboard: buttons },
-      });
+      marketButtons[marketButtons.length - 1].push(btn);
     }
+  });
+
+  // Pagination buttons
+  const navRow: Array<{ text: string; callback_data: string }> = [];
+  if (page > 0) {
+    navRow.push({ text: "⬅️ Previous", callback_data: `mktpage_${page - 1}` });
+  }
+  if (page + 1 < totalPages) {
+    navRow.push({ text: "Next ➡️", callback_data: `mktpage_${page + 1}` });
+  }
+  if (navRow.length > 0) {
+    marketButtons.push(navRow);
   }
 
-  // Navigation footer
+  // Footer row
+  marketButtons.push([
+    { text: "⚡ Quick Trade", callback_data: "cmd_quicktrade" },
+    { text: "🌐 Open Web", url: APP_URL } as any,
+  ]);
+
+  text += `<i>Tap a market below to see details & predict</i>`;
+
   await tg(token, "sendMessage", {
     chat_id: chatId,
-    text: `📋 Showing top ${markets.length} markets by volume`,
-    reply_markup: {
-      inline_keyboard: [
-        [
-          { text: "⚡ Quick Trade", callback_data: "cmd_quicktrade" },
-          { text: "🌐 All Markets", url: APP_URL },
-        ],
-      ],
-    },
+    text,
+    parse_mode: "HTML",
+    reply_markup: { inline_keyboard: marketButtons },
   });
 }
 
@@ -824,7 +829,10 @@ async function handleCallback(
     return;
   }
 
-  if (data.startsWith("mkt_")) {
+  if (data.startsWith("mktpage_")) {
+    const page = parseInt(data.replace("mktpage_", ""), 10) || 0;
+    await handleMarkets(token, supabase, chatId, page);
+  } else if (data.startsWith("mkt_")) {
     await handleMarketDetail(token, supabase, chatId, data);
   } else if (data.startsWith("bet_")) {
     await handleBetConfirm(token, supabase, chatId, data);
