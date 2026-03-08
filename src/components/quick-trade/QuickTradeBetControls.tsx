@@ -35,9 +35,9 @@ export default function QuickTradeBetControls({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 mb-4">
+    <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 mb-4">
       <div className="mb-3">
-        <label className="text-xs text-muted-foreground uppercase tracking-wide mb-1 block">Amount ($)</label>
+        <label className="text-xs text-muted-foreground uppercase tracking-wide mb-1.5 block">Amount ($)</label>
         <Input
           type="number"
           value={betAmount}
@@ -45,15 +45,15 @@ export default function QuickTradeBetControls({
           min={String(qtMinBet)}
           max={String(qtMaxBet)}
           step="1"
-          className="text-lg font-bold text-center"
+          className="text-lg font-bold text-center h-12"
           disabled={isLocked || timeLeft === 0}
         />
-        <div className="flex gap-2 mt-2">
+        <div className="flex gap-1.5 sm:gap-2 mt-2">
           {amountPresets.map((p) => (
             <button
               key={p}
               onClick={() => setBetAmount(String(p))}
-              className="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-muted/50 hover:bg-muted text-muted-foreground transition-colors"
+              className="flex-1 py-2 rounded-lg text-xs font-semibold bg-muted/50 hover:bg-muted text-muted-foreground transition-colors"
             >
               ${p}
             </button>
@@ -61,11 +61,11 @@ export default function QuickTradeBetControls({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <Button
           onClick={() => onPlaceBet("up")}
           disabled={placing || isLocked || timeLeft === 0}
-          className="h-14 text-lg font-bold bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-[0_0_20px_hsl(142_71%_45%/0.3)]"
+          className="h-14 sm:h-16 text-lg font-bold bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-[0_0_20px_hsl(142_71%_45%/0.3)]"
         >
           <ArrowUp className="w-5 h-5 mr-2" />
           UP
@@ -73,7 +73,7 @@ export default function QuickTradeBetControls({
         <Button
           onClick={() => onPlaceBet("down")}
           disabled={placing || isLocked || timeLeft === 0}
-          className="h-14 text-lg font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-[0_0_20px_hsl(0_84%_60%/0.3)]"
+          className="h-14 sm:h-16 text-lg font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-[0_0_20px_hsl(0_84%_60%/0.3)]"
         >
           <ArrowDown className="w-5 h-5 mr-2" />
           DOWN

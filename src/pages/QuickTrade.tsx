@@ -727,8 +727,8 @@ export default function QuickTrade() {
     <>
       <SEOHead title="Quick Trade — Fast Predictions" description="Predict if crypto goes UP or DOWN in 5 minutes" />
       <TopBar />
-      <div className="min-h-screen bg-background pb-24 md:pb-8 pt-[calc(3.5rem+env(safe-area-inset-top))]">
-        <div className="max-w-xl mx-auto px-4 pt-4">
+      <div className="min-h-screen bg-background pt-[calc(3.5rem+env(safe-area-inset-top))]" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
+        <div className="max-w-xl mx-auto px-3 sm:px-4 pt-3 sm:pt-4">
 
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
@@ -786,7 +786,7 @@ export default function QuickTrade() {
           </div>
 
           {/* Price display */}
-          <div ref={chartCardRef} className="relative rounded-2xl border border-border bg-card p-5 mb-4">
+          <div ref={chartCardRef} className="relative rounded-2xl border border-border bg-card p-3 sm:p-5 mb-3 sm:mb-4">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">{selectedAsset.label} / USD</p>
@@ -984,15 +984,15 @@ export default function QuickTrade() {
           </div>
 
           {/* Pool info */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="rounded-xl border border-green-500/20 bg-green-500/5 p-3 text-center">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
+            <div className="rounded-xl border border-green-500/20 bg-green-500/5 p-2.5 sm:p-3 text-center">
               <ArrowUp className="w-4 h-4 text-green-500 mx-auto mb-1" />
-              <p className="text-lg font-bold text-green-500">${poolUp.toFixed(2)}</p>
+              <p className="text-base sm:text-lg font-bold text-green-500">${poolUp.toFixed(2)}</p>
               <p className="text-[10px] text-muted-foreground uppercase">UP Pool</p>
             </div>
-            <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-center">
+            <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-2.5 sm:p-3 text-center">
               <ArrowDown className="w-4 h-4 text-destructive mx-auto mb-1" />
-              <p className="text-lg font-bold text-destructive">${poolDown.toFixed(2)}</p>
+              <p className="text-base sm:text-lg font-bold text-destructive">${poolDown.toFixed(2)}</p>
               <p className="text-[10px] text-muted-foreground uppercase">DOWN Pool</p>
             </div>
           </div>
