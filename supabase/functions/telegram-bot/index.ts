@@ -120,7 +120,7 @@ async function handleStart(token: string, chatId: number) {
   // Send logo image with welcome message
   await tg(token, "sendPhoto", {
     chat_id: chatId,
-    photo: `${APP_URL}/logo.png`,
+    photo: `${APP_URL}/images/opoll-banner.png`,
     caption:
       "🔮 <b>Welcome to OPoll Market</b>\n" +
       "━━━━━━━━━━━━━━━━━━━━\n" +
