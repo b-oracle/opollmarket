@@ -845,8 +845,8 @@ async function handleMarketDetail(
 
   const { data: markets } = await supabase
     .from("markets")
-    .select("id, title, description, yes_price, no_price, volume, participants, end_date, market_type, category, image_url, details")
-    .eq("status", "active")
+    .select("id, title, description, yes_price, no_price, volume, participants, end_date, market_type, category, image_url, details, status")
+    .in("status", ["active", "ended"])
     .like("id", `${partialId}%`)
     .limit(1);
 
@@ -931,14 +931,19 @@ async function handleBetConfirm(
 
   const { data: markets } = await supabase
     .from("markets")
-    .select("id, title, yes_price, no_price, status, market_type, category")
-    .eq("status", "active")
+    .select("id, title, yes_price, no_price, status, market_type, category, end_date")
+    .in("status", ["active", "ended"])
     .like("id", `${partialMarketId}%`)
     .limit(1);
 
   const mkt = markets?.[0];
   if (!mkt) {
     await tg(token, "sendMessage", { chat_id: chatId, text: "Market not found or closed." });
+    return;
+  }
+
+  if (mkt.status !== "active" || new Date(mkt.end_date).getTime() < Date.now()) {
+    await tg(token, "sendMessage", { chat_id: chatId, text: "⏰ This market has ended and is no longer accepting predictions." });
     return;
   }
 
