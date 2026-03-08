@@ -15,13 +15,12 @@ interface SocialSectionProps {
   userId: string;
   isOwnProfile: boolean;
   isPublic: boolean;
-  defaultExpanded?: boolean;
 }
 
-const SocialSection = ({ userId, isOwnProfile, isPublic, defaultExpanded = false }: SocialSectionProps) => {
+const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [expanded, setExpanded] = useState(defaultExpanded);
+  const [expanded, setExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<"activity" | "followers" | "following" | "suggestions">("activity");
 
   const { data: followers = [], isLoading: loadingFollowers } = useQuery({

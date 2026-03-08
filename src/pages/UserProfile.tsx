@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import ActivityFeed from "@/components/ActivityFeed";
 import SocialSection from "@/components/SocialSection";
@@ -29,8 +29,6 @@ const formatDollar = (v: number) => {
 
 const UserProfile = () => {
   const { id } = useParams<{ id: string }>();
-  const [searchParams] = useSearchParams();
-  const socialOpen = searchParams.get("social") === "open";
   const navigate = useNavigate();
   const { user } = useAuth();
   const isOwnProfile = user?.id === id;
@@ -365,7 +363,7 @@ const UserProfile = () => {
 
         {/* Social Section (collapsible) */}
         {(isOwnProfile || profile?.is_public) && (
-          <SocialSection userId={id!} isOwnProfile={isOwnProfile} isPublic={!!profile?.is_public} defaultExpanded={socialOpen} />
+          <SocialSection userId={id!} isOwnProfile={isOwnProfile} isPublic={!!profile?.is_public} />
         )}
 
         {/* Content Tabs */}
