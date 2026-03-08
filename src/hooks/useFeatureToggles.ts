@@ -2,12 +2,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
-interface FeatureToggle {
+export interface FeatureToggle {
   id: string;
   feature_key: string;
   label: string;
   enabled: boolean;
   updated_at: string;
+  scheduled_start: string | null;
+  scheduled_end: string | null;
 }
 
 export const useFeatureToggles = () => {
@@ -28,11 +30,25 @@ export const useFeatureToggles = () => {
   });
 
   const isFeatureEnabled = (key: string): boolean => {
-    // Admins and super admins always bypass
     if (isAdmin || isSuperAdmin) return true;
     const toggle = toggles.find((t) => t.feature_key === key);
-    // Default to enabled if not found (safety)
     return toggle ? toggle.enabled : true;
+  };
+
+  /** Check if maintenance is active (respects client-side schedule too) */
+  const isMaintenanceActive = (): boolean => {
+    const toggle = toggles.find((t) => t.feature_key === "maintenance_mode");
+    if (!toggle) return false;
+    // If already enabled by cron or manual toggle
+    if (toggle.enabled) return true;
+    // Client-side fallback: check if we're within the scheduled window
+    if (toggle.scheduled_start && toggle.scheduled_end) {
+      const now = Date.now();
+      const start = new Date(toggle.scheduled_start).getTime();
+      const end = new Date(toggle.scheduled_end).getTime();
+      if (now >= start && now <= end) return true;
+    }
+    return false;
   };
 
   const setToggle = async (key: string, enabled: boolean) => {
@@ -44,5 +60,18 @@ export const useFeatureToggles = () => {
     queryClient.invalidateQueries({ queryKey: ["feature-toggles"] });
   };
 
-  return { toggles, isLoading, isFeatureEnabled, setToggle };
+  const setSchedule = async (key: string, start: string | null, end: string | null) => {
+    const { error } = await supabase
+      .from("feature_toggles" as any)
+      .update({
+        scheduled_start: start,
+        scheduled_end: end,
+        updated_at: new Date().toISOString(),
+      } as any)
+      .eq("feature_key", key);
+    if (error) throw error;
+    queryClient.invalidateQueries({ queryKey: ["feature-toggles"] });
+  };
+
+  return { toggles, isLoading, isFeatureEnabled, isMaintenanceActive, setToggle, setSchedule };
 };
