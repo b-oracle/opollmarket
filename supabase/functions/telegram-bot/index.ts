@@ -687,17 +687,20 @@ async function handlePortfolio(
     chat_id: chatId,
     text,
     parse_mode: "HTML",
-    reply_markup: {
-      inline_keyboard: [
-        [
-          { text: "🔮 Markets", callback_data: "cmd_markets" },
-          { text: "💰 Deposit", url: `${APP_URL}/portfolio` },
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "🔮 Markets", callback_data: "cmd_markets" },
+            { text: "💰 Deposit", url: `${APP_URL}/portfolio` },
+          ],
+          [
+            { text: "🌐 Full Portfolio", url: `${APP_URL}/portfolio` },
+          ],
+          [
+            { text: "🏠 Home", callback_data: "cmd_home" },
+          ],
         ],
-        [
-          { text: "🌐 Full Portfolio", url: `${APP_URL}/portfolio` },
-        ],
-      ],
-    },
+      },
   });
 }
 
