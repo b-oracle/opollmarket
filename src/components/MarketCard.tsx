@@ -593,7 +593,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
           {!isMulti && (
             <motion.p
-              className="text-[10px] text-muted-foreground/50 text-center mt-3 pb-1"
+              className="text-[10px] text-muted-foreground/50 text-center mt-1"
               initial={{ y: 0 }}
               animate={{ y: [0, -8, 0] }}
               transition={{ delay: 1.5, duration: 1.2, ease: "easeInOut", repeat: 1, repeatDelay: 3 }}
@@ -601,8 +601,6 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
               ← Swipe left for NO · Swipe right for YES →
             </motion.p>
           )}
-          {/* Small bottom padding */}
-          <div className="h-[2px] shrink-0" />
         </div>
       </div>
 
