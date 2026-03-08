@@ -1,9 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import ActivityFeed from "@/components/ActivityFeed";
 import SocialSection from "@/components/SocialSection";
 import MutualFollowers from "@/components/MutualFollowers";
+import ShareModal from "@/components/ShareModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFollow, useFollowCounts } from "@/hooks/useFollow";
@@ -15,10 +16,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Users, Heart, Trophy, Gift, UserPlus, UserMinus, Loader2,
   Crown, Medal, Award, Copy, Eye, EyeOff, Settings, Hexagon, ChevronRight,
-  TrendingUp, TrendingDown, MessageCircle, Bookmark, Lock
+  TrendingUp, TrendingDown, MessageCircle, Bookmark, Lock, Share2
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { getCanonicalOrigin } from "@/lib/canonical";
 
 const formatDollar = (v: number) => {
   const abs = Math.abs(v);
