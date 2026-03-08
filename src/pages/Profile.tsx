@@ -16,7 +16,7 @@ import { bsc } from "wagmi/chains";
 import {
   Wallet, Gift, ArrowDownToLine, ArrowUpFromLine, ArrowUpRight, ArrowDownLeft,
   Repeat, LogIn, Send, MessageCircle, ExternalLink, ChevronRight,
-  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image, BarChart3, Globe, EyeOff, Users,
+  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image, BarChart3, Globe, EyeOff, Users, Sparkles,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import NftBadge, { isNftAvatar } from "@/components/NftBadge";
@@ -1015,16 +1015,21 @@ const Profile = () => {
           <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Resources</h3>
           <div className="space-y-2">
             {[
+              { icon: Sparkles, label: "Replay Social Tour", href: "__social_tour__" },
               { icon: Video, label: "How-to Video Tutorials", href: "#", comingSoon: true },
               { icon: HelpCircle, label: "Frequently Asked Questions", href: "/faq" },
               { icon: Download, label: "Download App", href: "__install__" },
             ].map((item) => (
-              item.comingSoon || item.href === "__install__" ? (
+              item.comingSoon || item.href === "__install__" || item.href === "__social_tour__" ? (
                 <button
                   key={item.label}
                   onClick={() => {
                     if (item.href === "__install__") {
                       setInstallOpen(true);
+                    } else if (item.href === "__social_tour__") {
+                      localStorage.removeItem("social_tutorial_seen");
+                      navigate("/");
+                      toast.success("Social tour will start momentarily!");
                     } else {
                       toast.info(`${item.label} — Coming Soon!`);
                     }
