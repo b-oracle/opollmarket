@@ -611,18 +611,21 @@ const UserProfile = () => {
                       {item.icon}
                       <span className="text-sm font-medium">{item.label}</span>
                     </div>
-                    {item.rank ? (
-                      <div className="flex items-center gap-1.5">
-                        {item.rank <= 3 ? (
-                          item.rank === 1 ? <Crown className="w-4 h-4" style={{ color: "hsl(45, 93%, 58%)" }} /> :
-                          item.rank === 2 ? <Medal className="w-4 h-4" style={{ color: "hsl(0, 0%, 78%)" }} /> :
-                          <Award className="w-4 h-4" style={{ color: "hsl(30, 75%, 40%)" }} />
-                        ) : null}
-                        <span className={`text-sm font-bold ${item.rank <= 3 ? "text-primary" : "text-foreground"}`}>#{item.rank}</span>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">Unranked</span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {item.rank ? (
+                        <div className="flex items-center gap-1.5">
+                          {item.rank <= 3 ? (
+                            item.rank === 1 ? <Crown className="w-4 h-4" style={{ color: "hsl(45, 93%, 58%)" }} /> :
+                            item.rank === 2 ? <Medal className="w-4 h-4" style={{ color: "hsl(0, 0%, 78%)" }} /> :
+                            <Award className="w-4 h-4" style={{ color: "hsl(30, 75%, 40%)" }} />
+                          ) : null}
+                          <span className={`text-sm font-bold ${item.rank <= 3 ? "text-primary" : "text-foreground"}`}>#{item.rank}</span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Unranked</span>
+                      )}
+                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                    </div>
                   </div>
                 ))}
               </div>
