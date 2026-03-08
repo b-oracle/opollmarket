@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { Trophy, TrendingUp, TrendingDown, Medal, Crown, Award, Users, Star, Calendar, Share2, ArrowLeft, Zap, Flame, ChevronLeft, ChevronRight } from "lucide-react";
