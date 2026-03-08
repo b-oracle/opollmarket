@@ -602,7 +602,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             </motion.p>
           )}
           {/* Small bottom padding */}
-          <div className="h-2 shrink-0" />
+          <div className="h-[2px] shrink-0" />
         </div>
       </div>
 
