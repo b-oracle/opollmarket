@@ -509,6 +509,8 @@ const Feed = () => {
           })}
         </div>
       )}
+      {/* Fill any remaining gap between feed and BottomNav */}
+      <div className="flex-1 bg-background" />
       <BottomNav />
     </div>
   );
