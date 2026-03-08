@@ -413,7 +413,7 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+    <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEndCapture}>
       {/* Swipe hint indicator on left edge */}
       {!socialOpen && !swipeHintDismissed && (
         <motion.div
