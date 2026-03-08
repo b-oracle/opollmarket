@@ -84,8 +84,11 @@ Deno.serve(async (req) => {
 
     if (text === "/start") {
       await handleStart(token, chatId);
+    } else if (text === "/link") {
+      await handleLinkStart(token, chatId);
     } else if (text.startsWith("/link ")) {
-      await handleLink(token, supabase, chatId, text, username);
+      // Legacy support: /link email password still works
+      await handleLinkLegacy(token, supabase, chatId, text, username, message.message_id);
     } else if (text === "/markets") {
       await handleMarkets(token, supabase, chatId);
     } else if (text === "/portfolio") {
@@ -100,11 +103,22 @@ Deno.serve(async (req) => {
       await handleUnlink(token, supabase, chatId);
     } else if (text === "/stats") {
       await handleStats(token, supabase, chatId);
-    } else {
+    } else if (text === "/cancel") {
+      // Cancel any pending link session
+      await supabase.from("telegram_link_sessions").delete().eq("chat_id", chatId);
       await tg(token, "sendMessage", {
         chat_id: chatId,
-        text: "Unknown command. Type /help to see available commands.",
+        text: "❌ Account linking cancelled.",
       });
+    } else {
+      // Check if user is in a linking session
+      const handled = await handleLinkSession(token, supabase, chatId, text, username, message.message_id);
+      if (!handled) {
+        await tg(token, "sendMessage", {
+          chat_id: chatId,
+          text: "Unknown command. Type /help to see available commands.",
+        });
+      }
     }
 
     return new Response("ok", { headers: corsHeaders });
