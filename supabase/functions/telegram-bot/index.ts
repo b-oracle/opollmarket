@@ -927,6 +927,8 @@ async function handleCallback(
     await handleMarketDetail(token, supabase, chatId, data);
   } else if (data.startsWith("bet_") || data.startsWith("b_")) {
     await handleBetConfirm(token, supabase, chatId, data);
+  } else if (data.startsWith("mkt_cust_")) {
+    await handleMarketCustomAmount(token, supabase, chatId, data);
   } else if (data.startsWith("qt_asset_")) {
     await handleQTAssetSelected(token, chatId, data);
   } else if (data.startsWith("qt_custom_")) {
@@ -985,6 +987,9 @@ async function handleMarketDetail(
     [
       { text: `✅ Yes $25`, callback_data: `b_y_25_${mkt.id}` },
       { text: `❌ No $25`, callback_data: `b_n_25_${mkt.id}` },
+    ],
+    [
+      { text: "💲 Custom Amount", callback_data: `mkt_cust_${mkt.id}` },
     ],
     [
       { text: "🌐 View on Web", url: `${APP_URL}/market/${mkt.id}` },
@@ -1556,21 +1561,24 @@ async function handleQTCustomAmount(
   });
 }
 
-// Handle numeric input for custom QT amount
+// Handle numeric input for custom amount (QT or Market)
 async function handleQTCustomInput(
   token: string,
   supabase: ReturnType<typeof createClient>,
   chatId: number,
   text: string
 ): Promise<boolean> {
-  // Check if there's a pending QT custom session
   const { data: session } = await supabase
     .from("telegram_link_sessions")
     .select("email, created_at")
     .eq("chat_id", chatId)
     .single();
 
-  if (!session || !session.email.startsWith("qt_custom:")) return false;
+  if (!session) return false;
+
+  const isQT = session.email.startsWith("qt_custom:");
+  const isMkt = session.email.startsWith("mkt_custom:");
+  if (!isQT && !isMkt) return false;
 
   // Check expiry (5 min)
   const sessionAge = Date.now() - new Date(session.created_at).getTime();
@@ -1578,78 +1586,149 @@ async function handleQTCustomInput(
     await supabase.from("telegram_link_sessions").delete().eq("chat_id", chatId);
     await tg(token, "sendMessage", {
       chat_id: chatId,
-      text: "⏰ Session expired. Please try again from Quick Trade.",
+      text: "⏰ Session expired. Please try again.",
       reply_markup: {
-        inline_keyboard: [[{ text: "⚡ Quick Trade", callback_data: "cmd_quicktrade" }]],
+        inline_keyboard: [[{ text: "🏠 Home", callback_data: "cmd_home" }]],
       },
     });
     return true;
   }
 
-  const asset = session.email.replace("qt_custom:", "");
+  const identifier = session.email.replace("qt_custom:", "").replace("mkt_custom:", "");
   const amount = Number(text.replace("$", "").trim());
 
   // Clean up session
   await supabase.from("telegram_link_sessions").delete().eq("chat_id", chatId);
 
   if (isNaN(amount) || amount <= 0) {
+    const retryData = isQT ? `qt_custom_${identifier}` : `mkt_cust_${identifier}`;
     await tg(token, "sendMessage", {
       chat_id: chatId,
       text: "❌ Invalid amount. Please enter a number.",
       reply_markup: {
-        inline_keyboard: [[{ text: "🔄 Try Again", callback_data: `qt_custom_${asset}` }]],
+        inline_keyboard: [[{ text: "🔄 Try Again", callback_data: retryData }]],
       },
     });
     return true;
   }
 
-  // Get bet limits
-  const { data: settings } = await supabase
-    .from("commission_settings")
-    .select("qt_min_bet, qt_max_bet")
-    .limit(1)
-    .single();
-
-  const minBet = settings?.qt_min_bet || 1;
-  const maxBet = settings?.qt_max_bet || 500;
-
-  if (amount < minBet || amount > maxBet) {
+  if (amount < 1 || amount > 500) {
+    const retryData = isQT ? `qt_custom_${identifier}` : `mkt_cust_${identifier}`;
     await tg(token, "sendMessage", {
       chat_id: chatId,
-      text: `❌ Amount must be between <b>$${minBet}</b> and <b>$${maxBet}</b>.`,
+      text: `❌ Amount must be between <b>$1</b> and <b>$500</b>.`,
       parse_mode: "HTML",
       reply_markup: {
-        inline_keyboard: [[{ text: "🔄 Try Again", callback_data: `qt_custom_${asset}` }]],
+        inline_keyboard: [[{ text: "🔄 Try Again", callback_data: retryData }]],
       },
     });
     return true;
   }
 
-  const assetEmojis: Record<string, string> = {
-    BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
-  };
+  if (isQT) {
+    // Quick Trade: show UP/DOWN
+    const asset = identifier;
+    const assetEmojis: Record<string, string> = {
+      BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
+    };
 
-  // Show UP/DOWN buttons with the custom amount
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text:
+        `⚡ <b>Quick Trade — ${assetEmojis[asset] || "📊"} ${asset} ($${amount})</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `Will <b>${asset}</b> go UP 📈 or DOWN 📉?\n\n` +
+        `💵 Amount: <b>$${amount}</b>`,
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: `📈 UP ($${amount})`, callback_data: `qt_side_up_${amount}_${asset}` },
+            { text: `📉 DOWN ($${amount})`, callback_data: `qt_side_down_${amount}_${asset}` },
+          ],
+          [
+            { text: "⬅️ Back to Assets", callback_data: "cmd_quicktrade" },
+            { text: "🏠 Home", callback_data: "cmd_home" },
+          ],
+        ],
+      },
+    });
+  } else {
+    // Market bet: show Yes/No with custom amount
+    const marketId = identifier;
+
+    const { data: markets } = await supabase
+      .from("markets")
+      .select("id, title, yes_price, no_price, category")
+      .eq("id", marketId)
+      .limit(1);
+
+    const mkt = markets?.[0];
+    if (!mkt) {
+      await tg(token, "sendMessage", { chat_id: chatId, text: "Market not found." });
+      return true;
+    }
+
+    const yesP = Math.round(mkt.yes_price * 100);
+    const noP = 100 - yesP;
+    const emoji = categoryEmoji(mkt.category);
+
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text:
+        `${emoji} <b>${escapeHtml(mkt.title.slice(0, 60))}</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `💵 Custom Amount: <b>$${amount}</b>\n\n` +
+        `Choose your prediction:`,
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: `✅ Yes $${amount} (${yesP}¢)`, callback_data: `b_y_${amount}_${mkt.id}` },
+            { text: `❌ No $${amount} (${noP}¢)`, callback_data: `b_n_${amount}_${mkt.id}` },
+          ],
+          [
+            { text: "⬅️ Back to Market", callback_data: `mkt_${mkt.id}` },
+            { text: "🏠 Home", callback_data: "cmd_home" },
+          ],
+        ],
+      },
+    });
+  }
+
+  return true;
+}
+
+// Handle "Custom Amount" for market predictions
+async function handleMarketCustomAmount(
+  token: string,
+  supabase: ReturnType<typeof createClient>,
+  chatId: number,
+  data: string
+) {
+  const marketId = data.replace("mkt_cust_", "");
+
+  // Store state
+  await supabase
+    .from("telegram_link_sessions")
+    .upsert(
+      { chat_id: chatId, email: `mkt_custom:${marketId}`, created_at: new Date().toISOString() },
+      { onConflict: "chat_id" }
+    );
+
   await tg(token, "sendMessage", {
     chat_id: chatId,
     text:
-      `⚡ <b>Quick Trade — ${assetEmojis[asset] || "📊"} ${asset} ($${amount})</b>\n` +
+      `💲 <b>Custom Prediction Amount</b>\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `Will <b>${asset}</b> go UP 📈 or DOWN 📉?\n\n` +
-      `💵 Amount: <b>$${amount}</b>`,
+      `Type the amount you want to predict with:\n\n` +
+      `💰 Min: <b>$1</b> | Max: <b>$500</b>\n\n` +
+      `<i>Example: Type <b>50</b> to bet $50</i>\n\n` +
+      `<i>Type /cancel to abort</i>`,
     parse_mode: "HTML",
     reply_markup: {
-      inline_keyboard: [
-        [
-          { text: `📈 UP ($${amount})`, callback_data: `qt_side_up_${amount}_${asset}` },
-          { text: `📉 DOWN ($${amount})`, callback_data: `qt_side_down_${amount}_${asset}` },
-        ],
-        [
-          { text: "⬅️ Back to Assets", callback_data: "cmd_quicktrade" },
-          { text: "🏠 Home", callback_data: "cmd_home" },
-        ],
-      ],
+      force_reply: true,
+      input_field_placeholder: "Enter amount ($1-$500)",
     },
   });
-  return true;
 }
