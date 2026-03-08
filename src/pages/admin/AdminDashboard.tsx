@@ -283,7 +283,7 @@ const AdminDashboard = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-medium truncate">{cat.name}</span>
-                    <span className="text-xs text-muted-foreground">${(cat.volume / 1000).toFixed(1)}K</span>
+                    <span className="text-xs text-muted-foreground">{cat.volume >= 1000 ? `$${(cat.volume / 1000).toFixed(1)}K` : `$${cat.volume.toFixed(2)}`}</span>
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
