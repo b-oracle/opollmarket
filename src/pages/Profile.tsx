@@ -223,7 +223,7 @@ const Profile = () => {
         localStorage.setItem("social_swipe_used", "1");
         setSwipeHintDismissed(true);
       }
-      navigate(`/user/${user.id}`);
+      navigate(`/user/${user.id}?social=open`);
     }
   }, [swipeHintDismissed, user, navigate]);
   const handleTouchEndCapture = useCallback((e: React.TouchEvent) => {
