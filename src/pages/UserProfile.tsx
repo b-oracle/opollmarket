@@ -222,7 +222,7 @@ const UserProfile = () => {
     return (
       <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
         <TopBar />
-        <div className="max-w-lg mx-auto px-4 flex flex-col items-center justify-center" style={{ minHeight: "60vh", paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
+        <div className="max-w-lg md:max-w-4xl mx-auto px-4 flex flex-col items-center justify-center" style={{ minHeight: "60vh", paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
           <Lock className="w-12 h-12 text-muted-foreground mb-4" />
           <h2 className="text-lg font-bold mb-2">Profile Not Found</h2>
           <p className="text-sm text-muted-foreground mb-4">This user doesn't exist or their profile is private.</p>
