@@ -942,6 +942,11 @@ async function handleBetConfirm(
     return;
   }
 
+  if (mkt.status !== "active" || new Date(mkt.end_date).getTime() < Date.now()) {
+    await tg(token, "sendMessage", { chat_id: chatId, text: "⏰ This market has ended and is no longer accepting predictions." });
+    return;
+  }
+
   const price = side === "yes" ? mkt.yes_price : mkt.no_price;
   const priceInCents = Math.round(price * 100);
   const shares = amount / price;
