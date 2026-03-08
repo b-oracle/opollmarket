@@ -295,10 +295,10 @@ const Referrals = () => {
           <h3 className="text-sm font-semibold mb-3">How It Works</h3>
           <div className="space-y-3">
             {[
-              { step: "1", text: "Share your unique referral link with friends" },
-              { step: "2", text: "They sign up using your link" },
-              { step: "3", text: `When they place their first prediction, you earn $${rewardAmount}` },
-              { step: "4", text: "Bonus balance can be used to make predictions (non-withdrawable)" },
+              { step: "1", text: "Share your referral link or username code with friends" },
+              { step: "2", text: "Your friend signs up and creates an account" },
+              { step: "3", text: `When they place their first prediction, you earn a $${rewardAmount} bonus credit` },
+              { step: "4", text: "Bonus credits are applied as fee credits on your future predictions" },
             ].map((item) => (
               <div key={item.step} className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
