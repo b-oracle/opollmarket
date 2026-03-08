@@ -68,12 +68,14 @@ const AdminDashboard = () => {
       const { data: txnRows } = await supabase.from("transactions").select("created_at, amount");
 
       // For monetary totals, we need ALL rows — fetch in batches to avoid 1000-row cap
-      const fetchAllAmounts = async (table: "referral_rewards" | "quick_bets"): Promise<{ amount: number }[]> => {
+      const fetchAllAmounts = async (table: "referral_rewards" | "quick_bets" | "transactions", filters?: { column: string; value: string }[]): Promise<{ amount: number }[]> => {
         const allRows: { amount: number }[] = [];
         let from = 0;
         const batchSize = 1000;
         while (true) {
-          const { data, error } = await supabase.from(table).select("amount").range(from, from + batchSize - 1);
+          let q = supabase.from(table).select("amount").range(from, from + batchSize - 1);
+          if (filters) filters.forEach(f => { q = q.eq(f.column, f.value) as any; });
+          const { data, error } = await q;
           if (error || !data || data.length === 0) break;
           allRows.push(...data);
           if (data.length < batchSize) break;
