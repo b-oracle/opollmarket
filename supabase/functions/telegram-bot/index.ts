@@ -141,8 +141,9 @@ async function handleStart(token: string, chatId: number) {
       "The World's First Web + Telegram + WhatsApp prediction market protocol.\n\n" +
       "📊 Predict outcomes\n" +
       "💹 Trade markets\n" +
+      "⚡ Quick Trade crypto prices\n" +
       "🏆 Win rewards\n\n" +
-      "Tap the button below to link your account:",
+      "Tap a button below to get started:",
     parse_mode: "HTML",
     reply_markup: {
       inline_keyboard: [
@@ -150,10 +151,11 @@ async function handleStart(token: string, chatId: number) {
           { text: "🔗 Link Account", callback_data: "cmd_link" },
         ],
         [
-          { text: "📖 Help", callback_data: "cmd_help" },
           { text: "🔮 Markets", callback_data: "cmd_markets" },
+          { text: "⚡ Quick Trade", callback_data: "cmd_quicktrade" },
         ],
         [
+          { text: "📖 Help", callback_data: "cmd_help" },
           { text: "🌐 Open Web App", url: APP_URL },
         ],
       ],
