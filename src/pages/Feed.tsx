@@ -247,6 +247,18 @@ const Feed = () => {
 
   useEffect(() => {track("page_view", { page: "feed" });}, []);
 
+  // Pulse when bookmarks increase
+  useEffect(() => {
+    const prev = prevBookmarkCount.current;
+    if (prev !== null && bookmarkedIds.size > prev) {
+      setWatchlistPulse(true);
+      const t = setTimeout(() => setWatchlistPulse(false), 2000);
+      prevBookmarkCount.current = bookmarkedIds.size;
+      return () => clearTimeout(t);
+    }
+    prevBookmarkCount.current = bookmarkedIds.size;
+  }, [bookmarkedIds.size]);
+
   // Reset to first card when switching tabs
   useEffect(() => {
     setActiveIndex(0);
