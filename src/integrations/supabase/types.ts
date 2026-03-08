@@ -986,6 +986,24 @@ export type Database = {
           },
         ]
       }
+      telegram_link_sessions: {
+        Row: {
+          chat_id: number
+          created_at: string
+          email: string
+        }
+        Insert: {
+          chat_id: number
+          created_at?: string
+          email: string
+        }
+        Update: {
+          chat_id?: number
+          created_at?: string
+          email?: string
+        }
+        Relationships: []
+      }
       telegram_users: {
         Row: {
           id: string
