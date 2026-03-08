@@ -29,6 +29,7 @@ const AdminTransactions = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "deposit" | "withdrawal" | "bet" | "payout">("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "confirmed" | "pending" | "failed">("all");
+  const [totals, setTotals] = useState({ deposits: 0, withdrawals: 0, bets: 0 });
   const [page, setPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [search, setSearch] = useState("");
@@ -64,6 +65,7 @@ const AdminTransactions = () => {
         if (matchingUserIds.length === 0 && matchingMarketIds.length === 0) {
           setTxns([]);
           setTotalCount(0);
+          setTotals({ deposits: 0, withdrawals: 0, bets: 0 });
           setLoading(false);
           return;
         }
@@ -87,6 +89,32 @@ const AdminTransactions = () => {
       countQuery = applySearchFilter(countQuery);
       const { count } = await countQuery;
       setTotalCount(count ?? 0);
+
+      // Compute totals across ALL matching rows (not just current page)
+      const applyStatusFilterQ = (q: any) => {
+        if (statusFilter === "all") return q;
+        if (statusFilter === "failed") return q.in("status", ["failed", "expired"]);
+        return q.eq("status", statusFilter);
+      };
+
+      const buildTotalQuery = (type: string) => {
+        let q = supabase.from("transactions").select("amount").eq("type", type);
+        q = applyStatusFilterQ(q);
+        q = applySearchFilter(q);
+        return q;
+      };
+
+      const [depRes, wdRes, betRes] = await Promise.all([
+        buildTotalQuery("deposit"),
+        buildTotalQuery("withdrawal"),
+        buildTotalQuery("bet"),
+      ]);
+
+      setTotals({
+        deposits: (depRes.data || []).reduce((s, r) => s + Number(r.amount), 0),
+        withdrawals: (wdRes.data || []).reduce((s, r) => s + Number(r.amount), 0),
+        bets: (betRes.data || []).reduce((s, r) => s + Number(r.amount), 0),
+      });
 
       // Get page
       const from = page * PAGE_SIZE;
@@ -139,11 +167,7 @@ const AdminTransactions = () => {
     fetchData();
   }, [filter, statusFilter, page, debouncedSearch]);
 
-  const totals = {
-    deposits: txns.filter((t) => t.type === "deposit").reduce((s, t) => s + Number(t.amount), 0),
-    withdrawals: txns.filter((t) => t.type === "withdrawal").reduce((s, t) => s + Number(t.amount), 0),
-    bets: txns.filter((t) => t.type === "bet").reduce((s, t) => s + Number(t.amount), 0),
-  };
+  
 
   const exportCSV = () => {
     const headers = ["Date", "Type", "User", "Amount", "Side", "Market", "Status"];
@@ -189,21 +213,21 @@ const AdminTransactions = () => {
             <ArrowDownLeft className="w-4 h-4 text-green-500" />
             <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Deposits</span>
           </div>
-          <p className="text-xl font-bold">${totals.deposits.toLocaleString()}</p>
+          <p className="text-xl font-bold">${totals.deposits < 1000 ? totals.deposits.toFixed(2) : (totals.deposits / 1000).toFixed(1) + "K"}</p>
         </div>
         <div className="bg-card border border-border rounded-xl p-4">
           <div className="flex items-center gap-2 mb-1">
             <ArrowUpRight className="w-4 h-4 text-yellow-500" />
             <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Withdrawals</span>
           </div>
-          <p className="text-xl font-bold">${totals.withdrawals.toLocaleString()}</p>
+          <p className="text-xl font-bold">${totals.withdrawals < 1000 ? totals.withdrawals.toFixed(2) : (totals.withdrawals / 1000).toFixed(1) + "K"}</p>
         </div>
         <div className="bg-card border border-border rounded-xl p-4">
           <div className="flex items-center gap-2 mb-1">
             <BarChart3 className="w-4 h-4 text-primary" />
             <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Bets</span>
           </div>
-          <p className="text-xl font-bold">${totals.bets.toLocaleString()}</p>
+          <p className="text-xl font-bold">${totals.bets < 1000 ? totals.bets.toFixed(2) : (totals.bets / 1000).toFixed(1) + "K"}</p>
         </div>
       </div>
 
