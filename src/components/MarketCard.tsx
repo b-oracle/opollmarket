@@ -601,6 +601,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
               ← Swipe left for NO · Swipe right for YES →
             </motion.p>
           )}
+          {/* Bottom gradient fade */}
+          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background via-background/60 to-transparent pointer-events-none z-10" />
         </div>
       </div>
 
