@@ -165,7 +165,7 @@ const Referrals = () => {
   return (
     <div className="min-h-dvh bg-background overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
       <TopBar />
-      <div className="max-w-lg mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
+      <div className="max-w-lg md:max-w-3xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <button onClick={() => navigate("/profile")} className="p-2 rounded-lg glass hover:bg-accent/50 transition-colors">
