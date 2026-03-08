@@ -228,6 +228,10 @@ const AdminSettings = () => {
     <div>
       <h1 className="text-2xl font-bold mb-6">Platform Settings</h1>
 
+      {/* ─── Feature Toggles (Super Admin only) ─── */}
+      <FeatureTogglesCard />
+
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl">
         {/* ─── Market Prediction Fees ─── */}
         <Card>
