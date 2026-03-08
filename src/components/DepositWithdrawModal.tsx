@@ -107,6 +107,24 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
     enabled: !!user,
   });
 
+  // Fetch stale pending/partial deposits
+  const { data: stalePending = [] } = useQuery({
+    queryKey: ["stale_pending_deposits", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase
+        .from("transactions")
+        .select("id, amount, status, nowpayments_payment_id, created_at")
+        .eq("user_id", user.id)
+        .eq("type", "deposit")
+        .in("status", ["pending", "partial"])
+        .order("created_at", { ascending: false })
+        .limit(5);
+      return data || [];
+    },
+    enabled: !!user && open,
+  });
+
   const { data: withdrawSettings } = useQuery({
     queryKey: ["withdrawal_settings"],
     queryFn: async () => {
