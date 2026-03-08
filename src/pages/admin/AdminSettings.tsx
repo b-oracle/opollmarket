@@ -161,6 +161,7 @@ const AdminSettings = () => {
           min_withdrawal_amount: minWithdrawNum,
           withdrawal_cooldown_minutes: withdrawalCooldownNum,
           withdrawal_multiplier: withdrawalMultiplierNum,
+          withdrawal_limit_enabled: withdrawalLimitEnabled,
           exit_fee_percent: exitFeeNum,
           quick_trade_fee_percent: quickTradeFeeNum,
           qt_min_bet: qtMinBetNum,
