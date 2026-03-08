@@ -987,6 +987,9 @@ async function handleMarketDetail(
       { text: `❌ No $25`, callback_data: `b_n_25_${mkt.id}` },
     ],
     [
+      { text: "💲 Custom Amount", callback_data: `mkt_cust_${mkt.id}` },
+    ],
+    [
       { text: "🌐 View on Web", url: `${APP_URL}/market/${mkt.id}` },
     ],
     [
