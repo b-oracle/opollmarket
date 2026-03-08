@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, MessageCircle, Users, Bookmark, ArrowRight, Sparkles, UserPlus } from "lucide-react";
+import { Heart, MessageCircle, Users, Bookmark, ArrowRight, ArrowLeft, Sparkles, UserPlus, Globe } from "lucide-react";
 
 const TUTORIAL_KEY = "social_tutorial_seen";
 
@@ -110,6 +110,13 @@ const steps: TutorialStep[] = [
     color: "from-amber-500 to-yellow-400",
     route: "/portfolio",
   },
+  {
+    icon: Globe,
+    title: "Your Social Page",
+    description: "Your social page is where it all comes together — followers, activity feed, and suggested traders. Visit it now!",
+    color: "from-sky-500 to-indigo-400",
+    route: "/profile",
+  },
 ];
 
 export const shouldShowTutorial = (): boolean => {
@@ -151,6 +158,14 @@ const SocialTutorial = ({ onComplete }: SocialTutorialProps) => {
       setStep((s) => s + 1);
     }
   }, [isLast, onComplete, navigate]);
+
+  const handleBack = useCallback(() => {
+    if (step > 0) {
+      haptic.light();
+      playTickSound();
+      setStep((s) => s - 1);
+    }
+  }, [step]);
 
   const handleSkip = useCallback(() => {
     haptic.light();
@@ -222,12 +237,23 @@ const SocialTutorial = ({ onComplete }: SocialTutorialProps) => {
 
             {/* Actions */}
             <div className="flex items-center justify-between mt-5">
-              <button
-                onClick={handleSkip}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1"
-              >
-                Skip tour
-              </button>
+              <div className="flex items-center gap-2">
+                {step > 0 ? (
+                  <button
+                    onClick={handleBack}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1"
+                  >
+                    <ArrowLeft className="w-3 h-3" /> Back
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleSkip}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1"
+                  >
+                    Skip tour
+                  </button>
+                )}
+              </div>
               <button
                 onClick={handleNext}
                 className="flex items-center gap-1.5 bg-primary text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-all active:scale-[0.97]"
