@@ -118,6 +118,7 @@ const App = () => (
                 <Sonner />
                 <PWAUpdatePrompt />
                 <BrowserRouter>
+                <SocialTutorialTrigger />
                 <ConditionalSidebar />
                 <ConditionalLayout>
                   <div className="flex-1">
