@@ -300,13 +300,31 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
           crypto_currency: selectedCrypto,
         },
       });
-      // Edge functions return error details in data even on non-2xx
-      const errorMsg = data?.error || error?.message;
-      if (errorMsg) {
-        throw new Error(errorMsg);
+
+      // Extract specific error from response body or FunctionsHttpError context
+      if (error) {
+        let specificMsg = "";
+        try {
+          // FunctionsHttpError contains the response context
+          const ctx = (error as any).context;
+          if (ctx && typeof ctx.json === "function") {
+            const body = await ctx.json();
+            specificMsg = body?.error || "";
+          }
+        } catch {}
+        if (!specificMsg && data?.error) {
+          specificMsg = data.error;
+        }
+        throw new Error(specificMsg || error.message || "Withdrawal request failed");
       }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
       queryClient.invalidateQueries({ queryKey: ["balance"] });
       queryClient.invalidateQueries({ queryKey: ["eligible_withdrawal"] });
+      setStep("success");
     } catch (err: any) {
       setErrorMsg(err.message || "Something went wrong");
       setStep("error");
