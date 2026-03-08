@@ -318,6 +318,8 @@ export type Database = {
           feature_key: string
           id: string
           label: string
+          scheduled_end: string | null
+          scheduled_start: string | null
           updated_at: string
           updated_by: string | null
         }
@@ -326,6 +328,8 @@ export type Database = {
           feature_key: string
           id?: string
           label: string
+          scheduled_end?: string | null
+          scheduled_start?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -334,6 +338,8 @@ export type Database = {
           feature_key?: string
           id?: string
           label?: string
+          scheduled_end?: string | null
+          scheduled_start?: string | null
           updated_at?: string
           updated_by?: string | null
         }
