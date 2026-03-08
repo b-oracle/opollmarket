@@ -466,13 +466,8 @@ const UserProfile = () => {
           </div>
         )}
 
-        {/* Activity Tab placeholder */}
-        {activeTab === "activity" && (
-          <div className="text-center py-12">
-            <MessageCircle className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">Recent activity coming soon</p>
-          </div>
-        )}
+        {/* Activity Tab */}
+        {activeTab === "activity" && <ActivityFeed userId={id!} isOwnProfile={isOwnProfile} isPublic={!!profile?.is_public} />}
       </div>
       <BottomNav />
     </div>
