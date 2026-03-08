@@ -35,6 +35,7 @@ export interface Market {
   sportPredictedOutcome?: string;
   sportLeague?: string;
   polymarketEventSlug?: string;
+  status?: string;
 }
 
 export const mockMarkets: Market[] = [
