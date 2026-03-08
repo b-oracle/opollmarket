@@ -198,6 +198,8 @@ const Profile = () => {
   const [loadingNfts, setLoadingNfts] = useState(false);
   const [walletNfts, setWalletNfts] = useState<Array<{ token_address: string; token_id: string; name: string; image_url: string; collection_name: string }>>([]);
   const [selectedNftUrl, setSelectedNftUrl] = useState<string | null>(null);
+  const [editBio, setEditBio] = useState("");
+  const [editIsPublic, setEditIsPublic] = useState(true);
 
   // Fetch profile data
   const { data: profile } = useQuery({
