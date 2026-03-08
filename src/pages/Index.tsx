@@ -21,15 +21,6 @@ import useAnalytics from "@/hooks/useAnalytics";
 import { useLikeCount } from "@/hooks/useLikeCount";
 import { useAuth } from "@/hooks/useAuth";
 import SocialTutorial, { shouldShowTutorial } from "@/components/SocialTutorial";
-import BoostCountdown from "@/components/BoostCountdown";
-import BoostedCarousel from "@/components/BoostedCarousel";
-import CategoryCarousel from "@/components/CategoryCarousel";
-import LivePriceBadge from "@/components/LivePriceBadge";
-import { Gem, ArrowLeftRight } from "lucide-react";
-import BoostMarketModal from "@/components/BoostMarketModal";
-import { useCommentCount } from "@/hooks/useCommentCount";
-import useAnalytics from "@/hooks/useAnalytics";
-import { useLikeCount } from "@/hooks/useLikeCount";
 
 
 const formatVolume = (v: number) => {
