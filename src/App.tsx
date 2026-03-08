@@ -121,6 +121,7 @@ const App = () => (
                         <Route path="/maintenance" element={<Maintenance />} />
                         <Route path="/quick-trade" element={<QuickTrade />} />
                         <Route path="/user/:id" element={<UserProfile />} />
+                        <Route path="/followers" element={<Followers />} />
                         <Route path="/admin" element={<AdminLayout />}>
                           <Route index element={<AdminDashboard />} />
                           <Route path="markets" element={<AdminMarkets />} />
