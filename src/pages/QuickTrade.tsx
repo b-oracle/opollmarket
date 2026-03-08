@@ -1147,7 +1147,7 @@ export default function QuickTrade() {
                         <YAxis domain={["dataMin", "dataMax"]} hide />
                         <XAxis dataKey="ts" hide />
                         <RechartsTooltip content={tooltipContent} cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '3 3' }} />
-                        {activeRound?.open_price && (
+                        {userBet && activeRound?.open_price && (
                           <ReferenceLine
                             y={Number(activeRound.open_price)}
                             stroke="#f59e0b"
