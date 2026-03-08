@@ -597,12 +597,16 @@ const UserProfile = () => {
             ) : (
               <div className="space-y-3">
                 {[
-                  { icon: <TrendingUp className="w-4 h-4 text-emerald-500" />, label: "Prediction PnL", rank: leaderboardRanks?.predictionRank },
-                  { icon: <Gift className="w-4 h-4 text-amber-500" />, label: "Referrals", rank: leaderboardRanks?.referralRank },
-                  { icon: <Zap className="w-4 h-4 text-blue-500" />, label: "Quick Trade Profit", rank: leaderboardRanks?.qtProfitRank },
-                  { icon: <Flame className="w-4 h-4 text-orange-500" />, label: "Win Streak", rank: leaderboardRanks?.streakRank },
+                  { icon: <TrendingUp className="w-4 h-4 text-emerald-500" />, label: "Prediction PnL", rank: leaderboardRanks?.predictionRank, link: "/rankings?tab=traders" },
+                  { icon: <Gift className="w-4 h-4 text-amber-500" />, label: "Referrals", rank: leaderboardRanks?.referralRank, link: "/rankings?tab=referrers" },
+                  { icon: <Zap className="w-4 h-4 text-blue-500" />, label: "Quick Trade Profit", rank: leaderboardRanks?.qtProfitRank, link: "/rankings?tab=quick&sub=profit" },
+                  { icon: <Flame className="w-4 h-4 text-orange-500" />, label: "Win Streak", rank: leaderboardRanks?.streakRank, link: "/rankings?tab=quick&sub=streaks" },
                 ].map((item) => (
-                  <div key={item.label} className="flex items-center justify-between rounded-xl bg-muted/30 border border-border/20 p-3">
+                  <div
+                    key={item.label}
+                    onClick={() => navigate(item.link)}
+                    className="flex items-center justify-between rounded-xl bg-muted/30 border border-border/20 p-3 cursor-pointer hover:bg-muted/50 active:scale-[0.98] transition-all"
+                  >
                     <div className="flex items-center gap-2.5">
                       {item.icon}
                       <span className="text-sm font-medium">{item.label}</span>
