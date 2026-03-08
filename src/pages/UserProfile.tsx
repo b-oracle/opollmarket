@@ -208,7 +208,22 @@ const UserProfile = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h2 className="text-lg font-bold truncate flex-1">{displayName}</h2>
+          <button
+            onClick={() => setShareOpen(true)}
+            className="w-9 h-9 rounded-full glass flex items-center justify-center hover:bg-muted transition-colors"
+          >
+            <Share2 className="w-4.5 h-4.5" />
+          </button>
         </div>
+
+        <ShareModal
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          title={`${displayName} on OPoll`}
+          description={`Join me on OPoll — the social prediction platform. Predict and earn! 🔥`}
+          marketUrl={`${getCanonicalOrigin()}/user/${id}${profile?.display_name ? `?ref=${encodeURIComponent(profile.display_name)}` : ""}`}
+          captureRef={profileCardRef}
+        />
 
         {/* Profile Card */}
         <div className="glass rounded-2xl p-5 mb-4">
