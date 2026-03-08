@@ -980,7 +980,7 @@ export default function QuickTrade() {
                   entryPrice={userBet && activeRound?.open_price ? Number(activeRound.open_price) : null}
                   entrySide={userBet ? (userBet.side as "up" | "down") : null}
                   roundEndTime={activeRound ? new Date(activeRound.created_at).getTime() + activeRound.duration_seconds * 1000 : null}
-                  targetPrice={activeRound?.open_price ? Number(activeRound.open_price) : null}
+                  targetPrice={userBet && activeRound?.open_price ? Number(activeRound.open_price) : null}
                   resolveFlash={resolveFlash}
                 />
               ) : (() => {
