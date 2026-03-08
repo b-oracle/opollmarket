@@ -52,6 +52,32 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Validate market is active and not expired
+    const { data: marketCheck, error: marketCheckErr } = await supabase
+      .from("markets")
+      .select("status, end_date")
+      .eq("id", marketId)
+      .single();
+
+    if (marketCheckErr || !marketCheck) {
+      return new Response(JSON.stringify({ error: "Market not found" }), {
+        status: 404, headers: corsHeaders,
+      });
+    }
+
+    if (marketCheck.status !== "active") {
+      return new Response(JSON.stringify({ error: "Market is no longer active" }), {
+        status: 400, headers: corsHeaders,
+      });
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+    if (marketCheck.end_date < today) {
+      return new Response(JSON.stringify({ error: "Market has ended" }), {
+        status: 400, headers: corsHeaders,
+      });
+    }
+
     // Fetch commission settings
     const { data: commData } = await supabase
       .from("commission_settings")
