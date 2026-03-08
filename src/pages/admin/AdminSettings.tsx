@@ -68,6 +68,7 @@ const AdminSettings = () => {
         setMinWithdrawalAmount(String(d.min_withdrawal_amount ?? 5));
         setWithdrawalCooldown(String(d.withdrawal_cooldown_minutes ?? 5));
         setWithdrawalMultiplier(String(d.withdrawal_multiplier ?? 2));
+        setWithdrawalLimitEnabled(d.withdrawal_limit_enabled !== false);
         setExitFee(String(d.exit_fee_percent ?? 5));
         setQuickTradeFee(String(d.quick_trade_fee_percent ?? 5));
         setQtMinBet(String(d.qt_min_bet ?? 1));
