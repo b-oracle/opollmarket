@@ -34,6 +34,8 @@ interface TradingViewChartProps {
   entryPrice?: number | null;
   /** Bet side for coloring the entry line */
   entrySide?: "up" | "down" | null;
+  /** Target / "Price to beat" — shown as dashed line like Polymarket */
+  targetPrice?: number | null;
   /** Unix ms timestamp when the active round ends */
   roundEndTime?: number | null;
   /** Flash effect on round resolution */
@@ -50,6 +52,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   streamingPrice,
   entryPrice,
   entrySide,
+  targetPrice,
   roundEndTime,
   resolveFlash,
 }, _ref) {
