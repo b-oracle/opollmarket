@@ -7,7 +7,7 @@ import { useMarkets } from "@/hooks/useMarkets";
 import { TrendingUp, Users, Zap, MessageCircle, Search, X, Heart } from "lucide-react";
 import CategoryIcon from "@/components/CategoryIcon";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
 import { useMemo, useState, useEffect } from "react";
 import BoostCountdown from "@/components/BoostCountdown";
