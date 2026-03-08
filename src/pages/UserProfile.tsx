@@ -597,28 +597,35 @@ const UserProfile = () => {
             ) : (
               <div className="space-y-3">
                 {[
-                  { icon: <TrendingUp className="w-4 h-4 text-emerald-500" />, label: "Prediction PnL", rank: leaderboardRanks?.predictionRank },
-                  { icon: <Gift className="w-4 h-4 text-amber-500" />, label: "Referrals", rank: leaderboardRanks?.referralRank },
-                  { icon: <Zap className="w-4 h-4 text-blue-500" />, label: "Quick Trade Profit", rank: leaderboardRanks?.qtProfitRank },
-                  { icon: <Flame className="w-4 h-4 text-orange-500" />, label: "Win Streak", rank: leaderboardRanks?.streakRank },
+                  { icon: <TrendingUp className="w-4 h-4 text-emerald-500" />, label: "Prediction PnL", rank: leaderboardRanks?.predictionRank, link: "/rankings?tab=traders" },
+                  { icon: <Gift className="w-4 h-4 text-amber-500" />, label: "Referrals", rank: leaderboardRanks?.referralRank, link: "/rankings?tab=referrers" },
+                  { icon: <Zap className="w-4 h-4 text-blue-500" />, label: "Quick Trade Profit", rank: leaderboardRanks?.qtProfitRank, link: "/rankings?tab=quick&sub=profit" },
+                  { icon: <Flame className="w-4 h-4 text-orange-500" />, label: "Win Streak", rank: leaderboardRanks?.streakRank, link: "/rankings?tab=quick&sub=streaks" },
                 ].map((item) => (
-                  <div key={item.label} className="flex items-center justify-between rounded-xl bg-muted/30 border border-border/20 p-3">
+                  <div
+                    key={item.label}
+                    onClick={() => navigate(item.link)}
+                    className="flex items-center justify-between rounded-xl bg-muted/30 border border-border/20 p-3 cursor-pointer hover:bg-muted/50 active:scale-[0.98] transition-all"
+                  >
                     <div className="flex items-center gap-2.5">
                       {item.icon}
                       <span className="text-sm font-medium">{item.label}</span>
                     </div>
-                    {item.rank ? (
-                      <div className="flex items-center gap-1.5">
-                        {item.rank <= 3 ? (
-                          item.rank === 1 ? <Crown className="w-4 h-4" style={{ color: "hsl(45, 93%, 58%)" }} /> :
-                          item.rank === 2 ? <Medal className="w-4 h-4" style={{ color: "hsl(0, 0%, 78%)" }} /> :
-                          <Award className="w-4 h-4" style={{ color: "hsl(30, 75%, 40%)" }} />
-                        ) : null}
-                        <span className={`text-sm font-bold ${item.rank <= 3 ? "text-primary" : "text-foreground"}`}>#{item.rank}</span>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">Unranked</span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {item.rank ? (
+                        <div className="flex items-center gap-1.5">
+                          {item.rank <= 3 ? (
+                            item.rank === 1 ? <Crown className="w-4 h-4" style={{ color: "hsl(45, 93%, 58%)" }} /> :
+                            item.rank === 2 ? <Medal className="w-4 h-4" style={{ color: "hsl(0, 0%, 78%)" }} /> :
+                            <Award className="w-4 h-4" style={{ color: "hsl(30, 75%, 40%)" }} />
+                          ) : null}
+                          <span className={`text-sm font-bold ${item.rank <= 3 ? "text-primary" : "text-foreground"}`}>#{item.rank}</span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Unranked</span>
+                      )}
+                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                    </div>
                   </div>
                 ))}
               </div>

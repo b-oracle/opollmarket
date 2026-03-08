@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { Trophy, TrendingUp, TrendingDown, Medal, Crown, Award, Users, Star, Calendar, Share2, ArrowLeft, Zap, Flame, ChevronLeft, ChevronRight } from "lucide-react";
@@ -433,8 +434,11 @@ const TimePeriodSelector = ({ value, onChange }: { value: TimePeriod; onChange: 
 
 // ── Main Component ────────────────────────────────────────────────────
 const Rankings = () => {
-  const [tab, setTab] = useState<Tab>("traders");
-  const [quickSubTab, setQuickSubTab] = useState<QuickSubTab>("profit");
+  const [searchParams] = useSearchParams();
+  const initialTab = (searchParams.get("tab") as Tab) || "traders";
+  const initialSubTab = (searchParams.get("sub") as QuickSubTab) || "profit";
+  const [tab, setTab] = useState<Tab>(initialTab);
+  const [quickSubTab, setQuickSubTab] = useState<QuickSubTab>(initialSubTab);
   const [referralSort, setReferralSort] = useState<ReferralSort>("totalEarned");
   const [traderSort, setTraderSort] = useState<TraderSort>("pnl");
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("all");
