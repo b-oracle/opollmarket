@@ -110,6 +110,13 @@ const steps: TutorialStep[] = [
     color: "from-amber-500 to-yellow-400",
     route: "/portfolio",
   },
+  {
+    icon: Globe,
+    title: "Your Social Page",
+    description: "Your social page is where it all comes together — followers, activity feed, and suggested traders. Visit it now!",
+    color: "from-sky-500 to-indigo-400",
+    route: "/profile",
+  },
 ];
 
 export const shouldShowTutorial = (): boolean => {
