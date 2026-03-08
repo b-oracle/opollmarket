@@ -35,7 +35,7 @@ function categoryEmoji(cat: string): string {
   return map[cat?.toLowerCase()] || "🔮";
 }
 
-const APP_URL = "https://opollmarket.lovable.app";
+const APP_URL = "https://opoll.org";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
