@@ -27,6 +27,7 @@ const AdminWithdrawals = () => {
   const { canEdit } = useAdminContext();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [wdPage, setWdPage] = useState(1);
   const WD_PAGE_SIZE = 20;
   const [processingId, setProcessingId] = useState<string | null>(null);
