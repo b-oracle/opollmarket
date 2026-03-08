@@ -102,7 +102,7 @@ export const useMarkets = () => {
       const { data, error } = await supabase
         .from("markets")
         .select("*, market_options!market_options_market_id_fkey(*)")
-        .eq("status", "active")
+        .in("status", ["active", "ended"])
         .order("created_at", { ascending: false });
 
       if (error) throw error;
