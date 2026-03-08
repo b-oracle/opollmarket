@@ -357,6 +357,11 @@ const UserProfile = () => {
           )}
         </AnimatePresence>
 
+        {/* Social Section (collapsible) */}
+        {(isOwnProfile || profile?.is_public) && (
+          <SocialSection userId={id!} isOwnProfile={isOwnProfile} isPublic={!!profile?.is_public} />
+        )}
+
         {/* Content Tabs */}
         <div className="flex gap-1 p-1 rounded-xl bg-muted/50 mb-4">
           {(["markets", "predictions", "activity"] as const).map((t) => (
