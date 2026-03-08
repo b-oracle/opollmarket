@@ -701,9 +701,25 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                       <p className="text-[11px] text-muted-foreground mb-1">
                         Send the exact amount below to the address provided
                       </p>
-                      <p className="text-[10px] text-primary/70 font-medium mb-4">
-                        ⏱ Payment typically confirms in 5–15 minutes
-                      </p>
+
+                      {/* Countdown timer */}
+                      {timeRemaining && (
+                        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold mb-4 ${
+                          timeRemaining === "Expired"
+                            ? "bg-destructive/10 text-destructive border border-destructive/20"
+                            : timeRemaining.startsWith("0h")
+                              ? "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20"
+                              : "bg-primary/10 text-primary border border-primary/20"
+                        }`}>
+                          <Clock className="w-3.5 h-3.5" />
+                          {timeRemaining === "Expired" ? "Payment window expired" : `${timeRemaining} remaining`}
+                        </div>
+                      )}
+                      {!timeRemaining && (
+                        <p className="text-[10px] text-primary/70 font-medium mb-4">
+                          ⏱ Payment typically confirms in 5–15 minutes
+                        </p>
+                      )}
 
                       {/* QR Code */}
                       <div className="rounded-xl bg-white p-3 mb-3 inline-block mx-auto">
