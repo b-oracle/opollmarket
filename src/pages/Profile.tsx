@@ -789,7 +789,17 @@ const Profile = () => {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Transaction History</h3>
-            <Repeat className="w-4 h-4 text-muted-foreground" />
+            <motion.button
+              onClick={async () => {
+                await queryClient.invalidateQueries({ queryKey: ["transactions", user?.id] });
+                toast.success("Transactions refreshed");
+              }}
+              whileTap={{ rotate: 360 }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="w-8 h-8 rounded-full glass flex items-center justify-center hover:bg-muted transition-colors"
+            >
+              <Repeat className="w-4 h-4 text-muted-foreground" />
+            </motion.button>
           </div>
           <div className="flex gap-2 mb-3 flex-wrap">
             {(["all", "trades", "deposits"] as FilterType[]).map((f) => (
