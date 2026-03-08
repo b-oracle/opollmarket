@@ -1,8 +1,10 @@
 /**
- * Multi-provider crypto price fetcher with automatic fallback.
- * Order: CoinGecko → CoinCap → CryptoCompare (all free, no API key needed).
+ * Multi-provider asset price fetcher with automatic fallback.
+ * Supports crypto (CoinGecko → CoinCap → CryptoCompare), commodities (metals.dev), and forex (Frankfurter).
  * Includes Binance WebSocket streaming for real-time sub-second updates.
  */
+
+import { getAssetClass } from "@/data/assetClasses";
 
 // ── ID maps per provider ──
 const GECKO_IDS: Record<string, string> = {
