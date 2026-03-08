@@ -38,11 +38,7 @@ import StreakMilestoneModal from "@/components/StreakMilestoneModal";
 import ShareModal from "@/components/ShareModal";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
-import TradingViewChart from "@/components/TradingViewChart";
 import { playWinSound, playLoseSound } from "@/lib/sounds";
-import QuickTradeChart from "@/components/quick-trade/QuickTradeChart";
-import QuickTradeHistory from "@/components/quick-trade/QuickTradeHistory";
-import QuickTradeBetControls from "@/components/quick-trade/QuickTradeBetControls";
 import { playWinSound, playLoseSound } from "@/lib/sounds";
 // ── Asset config ──
 const ALL_ASSETS = [
