@@ -368,6 +368,7 @@ const MarketDetail = () => {
 
   const isCreator = !!(user && market && market.creatorAddress === user.id);
   const needsFirstPrediction = isCreator && market && market.participants === 0;
+  const isEnded = !!(market && (market.status === "ended" || market.status === "resolved" || market.status === "cancelled" || new Date(market.endDate).getTime() < Date.now()));
 
   useEffect(() => { if (id) track("page_view", { page: "market_detail", marketId: id }); }, [id]);
 
