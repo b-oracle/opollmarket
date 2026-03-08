@@ -496,8 +496,46 @@ const UserProfile = () => {
           </div>
         )}
 
-        {/* Activity Tab */}
-        {activeTab === "activity" && <ActivityFeed userId={id!} isOwnProfile={isOwnProfile} isPublic={!!profile?.is_public} />}
+        {/* Rank Tab */}
+        {activeTab === "rank" && (
+          <div className="glass rounded-2xl p-5 mb-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Trophy className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold">Ranking Stats</h4>
+                <p className="text-[10px] text-muted-foreground">Performance overview</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
+                <p className="text-lg font-bold text-primary">{userMarkets.length}</p>
+                <p className="text-[10px] text-muted-foreground">Markets Created</p>
+              </div>
+              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
+                <p className="text-lg font-bold text-primary">{userPositions.length}</p>
+                <p className="text-[10px] text-muted-foreground">Active Positions</p>
+              </div>
+              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
+                <p className="text-lg font-bold">{likesCount}</p>
+                <p className="text-[10px] text-muted-foreground">Likes Given</p>
+              </div>
+              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
+                <p className="text-lg font-bold">{referralCount}</p>
+                <p className="text-[10px] text-muted-foreground">Referrals</p>
+              </div>
+              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
+                <p className="text-lg font-bold">{followCounts.followers}</p>
+                <p className="text-[10px] text-muted-foreground">Followers</p>
+              </div>
+              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
+                <p className="text-lg font-bold">{followCounts.following}</p>
+                <p className="text-[10px] text-muted-foreground">Following</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       <BottomNav />
     </div>
