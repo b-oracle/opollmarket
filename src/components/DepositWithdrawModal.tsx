@@ -158,21 +158,26 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
     queryFn: async () => {
       const { data } = await supabase
         .from("commission_settings")
-        .select("withdrawal_cooldown_minutes, withdrawal_multiplier")
+        .select("withdrawal_cooldown_minutes, withdrawal_multiplier, withdrawal_limit_enabled")
         .limit(1)
         .single();
       return {
         cooldown: (data as any)?.withdrawal_cooldown_minutes ?? 5,
         multiplier: (data as any)?.withdrawal_multiplier ?? 2,
+        limitEnabled: (data as any)?.withdrawal_limit_enabled ?? true,
       };
     },
     enabled: tab === "withdraw",
   });
 
   const { data: eligibleWithdrawal } = useQuery({
-    queryKey: ["eligible_withdrawal", user?.id],
+    queryKey: ["eligible_withdrawal", user?.id, withdrawSettings?.limitEnabled],
     queryFn: async () => {
-      if (!user) return 0;
+      if (!user) return null;
+
+      // If withdrawal limit is disabled, return null (no cap)
+      if (withdrawSettings?.limitEnabled === false) return null;
+
       const { data: deposits } = await supabase
         .from("transactions")
         .select("amount")
@@ -194,7 +199,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
       const multiplier = withdrawSettings?.multiplier ?? 2;
       return Math.max(0, (multiplier * totalDeposits) - totalWithdrawn);
     },
-    enabled: !!user && tab === "withdraw",
+    enabled: !!user && tab === "withdraw" && withdrawSettings !== undefined,
   });
 
   const numAmount = parseFloat(amount) || 0;
@@ -576,7 +581,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                         <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                         <div className="text-[10px] text-muted-foreground">
                           <p>Withdrawals are processed instantly and sent directly to your wallet. Bonus balance cannot be withdrawn.</p>
-                          {eligibleWithdrawal !== undefined && (
+                          {eligibleWithdrawal !== undefined && eligibleWithdrawal !== null && (
                             <p className="mt-1 font-semibold text-foreground">
                               Eligible withdrawal remaining: ${eligibleWithdrawal.toFixed(2)}
                             </p>

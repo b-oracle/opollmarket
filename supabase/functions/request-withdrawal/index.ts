@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
     // Fetch min withdrawal from settings
     const { data: settings } = await adminClient
       .from("commission_settings")
-      .select("min_withdrawal_amount, withdrawal_cooldown_minutes, withdrawal_multiplier")
+      .select("min_withdrawal_amount, withdrawal_cooldown_minutes, withdrawal_multiplier, withdrawal_limit_enabled")
       .limit(1)
       .single();
 
@@ -136,35 +136,39 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 2x deposit withdrawal cap
-    const { data: depositSum } = await adminClient
-      .from("transactions")
-      .select("amount")
-      .eq("user_id", userId)
-      .eq("type", "deposit")
-      .eq("status", "confirmed");
+    // Withdrawal cap (configurable — can be toggled off by admin)
+    const withdrawalLimitEnabled = settings?.withdrawal_limit_enabled !== false;
 
-    const totalDeposits = (depositSum || []).reduce((sum: number, r: any) => sum + Number(r.amount), 0);
+    if (withdrawalLimitEnabled) {
+      const { data: depositSum } = await adminClient
+        .from("transactions")
+        .select("amount")
+        .eq("user_id", userId)
+        .eq("type", "deposit")
+        .eq("status", "confirmed");
 
-    const { data: withdrawnSum } = await adminClient
-      .from("transactions")
-      .select("amount")
-      .eq("user_id", userId)
-      .eq("type", "withdrawal")
-      .eq("status", "confirmed");
+      const totalDeposits = (depositSum || []).reduce((sum: number, r: any) => sum + Number(r.amount), 0);
 
-    const totalWithdrawn = (withdrawnSum || []).reduce((sum: number, r: any) => sum + Number(r.amount), 0);
+      const { data: withdrawnSum } = await adminClient
+        .from("transactions")
+        .select("amount")
+        .eq("user_id", userId)
+        .eq("type", "withdrawal")
+        .eq("status", "confirmed");
 
-    const withdrawalMultiplier = Math.max(1, Number(settings?.withdrawal_multiplier) || 2);
-    const maxEligible = Math.max(0, (withdrawalMultiplier * totalDeposits) - totalWithdrawn);
+      const totalWithdrawn = (withdrawnSum || []).reduce((sum: number, r: any) => sum + Number(r.amount), 0);
 
-    if (amount > maxEligible) {
-      return new Response(
-        JSON.stringify({
-          error: `Withdrawal exceeds your eligible limit. You can withdraw up to $${maxEligible.toFixed(2)} more. Deposit additional funds to increase your limit.`,
-        }),
-        { status: 400, headers: corsHeaders }
-      );
+      const withdrawalMultiplier = Math.max(1, Number(settings?.withdrawal_multiplier) || 2);
+      const maxEligible = Math.max(0, (withdrawalMultiplier * totalDeposits) - totalWithdrawn);
+
+      if (amount > maxEligible) {
+        return new Response(
+          JSON.stringify({
+            error: `Withdrawal exceeds your eligible limit. You can withdraw up to $${maxEligible.toFixed(2)} more. Deposit additional funds to increase your limit.`,
+          }),
+          { status: 400, headers: corsHeaders }
+        );
+      }
     }
 
     // Cooldown: prevent rapid repeated withdrawals (configurable)
