@@ -88,6 +88,24 @@ const PageFallback = () => (
   </div>
 );
 
+const SocialTutorialTrigger = () => {
+  const { user } = useAuth();
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    if (user && shouldShowTutorial()) {
+      const timer = setTimeout(() => setShow(true), 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [user]);
+
+  return (
+    <AnimatePresence>
+      {show && <SocialTutorial onComplete={() => setShow(false)} />}
+    </AnimatePresence>
+  );
+};
+
 const App = () => (
   <ErrorBoundary>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
