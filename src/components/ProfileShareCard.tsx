@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useState } from "react";
+import { forwardRef, useMemo } from "react";
 import { isNftAvatar } from "@/components/NftBadge";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
@@ -43,26 +43,15 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
   ({ displayName, bio, avatarUrl, followersCount, followingCount, likesCount, referralCount, marketsCount, positionsCount, leaderboardRanks }, ref) => {
     const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
 
-    // Resolve all theme colors upfront so html2canvas sees real values
-    const [colors, setColors] = useState({
-      bg: "#0a0a0a",
-      fg: "#fafafa",
-      primary: "#02C7FC",
-      muted: "#1a1a2e",
-      mutedFg: "#a1a1aa",
-      border: "#27272a",
-    });
-
-    useEffect(() => {
-      setColors({
-        bg: resolveColor("--background", isDark ? "#0a0a0a" : "#ffffff"),
-        fg: resolveColor("--foreground", isDark ? "#fafafa" : "#0a0a0a"),
-        primary: resolveColor("--primary", "#02C7FC"),
-        muted: resolveColor("--muted", isDark ? "#1a1a2e" : "#f4f4f5"),
-        mutedFg: resolveColor("--muted-foreground", isDark ? "#a1a1aa" : "#71717a"),
-        border: resolveColor("--border", isDark ? "#27272a" : "#e4e4e7"),
-      });
-    }, [isDark]);
+    // Resolve colors synchronously so they're available on first render for html2canvas
+    const colors = useMemo(() => ({
+      bg: resolveColor("--background", isDark ? "#0a0a0a" : "#ffffff"),
+      fg: resolveColor("--foreground", isDark ? "#fafafa" : "#0a0a0a"),
+      primary: resolveColor("--primary", "#02C7FC"),
+      muted: resolveColor("--muted", isDark ? "#1a1a2e" : "#f4f4f5"),
+      mutedFg: resolveColor("--muted-foreground", isDark ? "#a1a1aa" : "#71717a"),
+      border: resolveColor("--border", isDark ? "#27272a" : "#e4e4e7"),
+    }), [isDark]);
 
     const rankItems = leaderboardRanks
       ? [
