@@ -365,7 +365,7 @@ const UserProfile = () => {
 
         {/* Social Section (collapsible) */}
         {(isOwnProfile || profile?.is_public) && (
-          <SocialSection userId={id!} isOwnProfile={isOwnProfile} isPublic={!!profile?.is_public} />
+          <SocialSection userId={id!} isOwnProfile={isOwnProfile} isPublic={!!profile?.is_public} defaultExpanded={socialOpen} />
         )}
 
         {/* Content Tabs */}
