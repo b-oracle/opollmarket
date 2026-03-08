@@ -121,17 +121,37 @@ const AdminWithdrawals = () => {
   const paginatedWd = useMemo(() => filtered.slice((wdPage - 1) * WD_PAGE_SIZE, wdPage * WD_PAGE_SIZE), [filtered, wdPage]);
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <h1 className="text-xl sm:text-2xl font-bold">Withdrawals</h1>
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search by email, name, wallet, status..."
+            placeholder="Search by email, name, wallet..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setWdPage(1); }}
             className="pl-9"
           />
         </div>
+      </div>
+
+      <div className="flex gap-1.5 mb-4">
+        {[
+          { value: "all", label: "All" },
+          { value: "pending", label: "Pending" },
+          { value: "processing", label: "Processing" },
+          { value: "completed", label: "Completed" },
+          { value: "rejected", label: "Rejected" },
+        ].map((f) => (
+          <Button
+            key={f.value}
+            variant={statusFilter === f.value ? "default" : "outline"}
+            size="sm"
+            onClick={() => { setStatusFilter(f.value); setWdPage(1); }}
+            className="text-xs"
+          >
+            {f.label}
+          </Button>
+        ))}
       </div>
 
       {isLoading ? (
