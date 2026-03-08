@@ -234,11 +234,11 @@ const UserProfile = () => {
 
               {/* Stats Row */}
               <div className="flex items-center gap-4 text-xs">
-                <div className="text-center">
+              <div className="text-center cursor-pointer hover:opacity-80" onClick={() => navigate(`/followers`)}>
                   <p className="font-bold">{followCounts.followers}</p>
                   <p className="text-muted-foreground text-[10px]">Followers</p>
                 </div>
-                <div className="text-center">
+                <div className="text-center cursor-pointer hover:opacity-80" onClick={() => navigate(`/followers`)}>
                   <p className="font-bold">{followCounts.following}</p>
                   <p className="text-muted-foreground text-[10px]">Following</p>
                 </div>
