@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, MessageCircle, Users, Bookmark, ArrowRight, Sparkles, UserPlus } from "lucide-react";
+import { Heart, MessageCircle, Users, Bookmark, ArrowRight, ArrowLeft, Sparkles, UserPlus, Globe } from "lucide-react";
 
 const TUTORIAL_KEY = "social_tutorial_seen";
 
