@@ -19,8 +19,7 @@ import BoostMarketModal from "@/components/BoostMarketModal";
 import { useCommentCount } from "@/hooks/useCommentCount";
 import useAnalytics from "@/hooks/useAnalytics";
 import { useLikeCount } from "@/hooks/useLikeCount";
-import { useAuth } from "@/hooks/useAuth";
-import SocialTutorial, { shouldShowTutorial } from "@/components/SocialTutorial";
+import { useLikeCount } from "@/hooks/useLikeCount";
 
 
 const formatVolume = (v: number) => {
