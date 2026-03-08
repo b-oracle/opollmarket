@@ -950,19 +950,7 @@ export default function QuickTrade() {
                         );
                       })()}
                     </div>
-                    {/* Countdown timer */}
-                    {activeRound && (() => {
-                      const isUrgent = timeLeft <= 10;
-                      const isWarning = timeLeft <= 30 && timeLeft > 10;
-                      return timeLeft > 0 ? (
-                        <div className="absolute top-1 right-1 z-10">
-                          <div className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono font-bold backdrop-blur-sm border ${isUrgent ? "bg-red-500/15 text-red-500 border-red-500/30 animate-pulse" : isWarning ? "bg-yellow-500/15 text-yellow-500 border-yellow-500/30" : "bg-muted/60 text-foreground border-border"}`}>
-                            <span className="text-[9px]">⏱</span>
-                            <span>{timeLeft >= 60 ? `${Math.floor(timeLeft / 60)}:${String(timeLeft % 60).padStart(2, "0")}` : `${timeLeft}s`}</span>
-                          </div>
-                        </div>
-                      ) : null;
-                    })()}
+                    {/* Countdown timer removed — already shown prominently in header above */}
                     {/* "Price to beat" badge — only when user has an active bet */}
                     {userBet && activeRound?.open_price && (
                       <div className="absolute bottom-2 right-2 z-10">
