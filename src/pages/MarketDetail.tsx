@@ -434,7 +434,13 @@ const MarketDetail = () => {
             {isMulti && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/15 text-primary">{market.marketType === "range" ? "Range" : "Multi"}</span>}
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setBoostOpen(true)} className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors" title="Boost Market">
+            <button onClick={() => {
+              if (market.status === "ended" || market.status === "resolved" || market.status === "cancelled") {
+                toast.info("This market has ended and is no longer available for boosting");
+                return;
+              }
+              setBoostOpen(true);
+            }} className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors" title="Boost Market">
               <Zap className="w-5 h-5 text-primary" />
             </button>
             <button onClick={toggleBookmark} className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">

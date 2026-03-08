@@ -168,6 +168,10 @@ const BoostedCarousel = ({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (market.status === "ended" || market.status === "resolved" || market.status === "cancelled") {
+                      toast.info("This market has ended and is no longer available for boosting");
+                      return;
+                    }
                     onBoost(market);
                   }}
                   className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-semibold transition-all active:scale-95 hover:bg-primary/20"

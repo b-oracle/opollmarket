@@ -452,7 +452,7 @@ const Index = () => {
                   </div>
                 </div>
                 <button
-                  onClick={(e) => { e.stopPropagation(); setBoostModalMarket({ id: market.id, title: market.title }); }}
+                  onClick={(e) => { e.stopPropagation(); if (market.status === "ended" || market.status === "resolved" || market.status === "cancelled") { toast.info("This market has ended and is no longer available for boosting"); return; } setBoostModalMarket({ id: market.id, title: market.title }); }}
                   className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-90 md:opacity-0 md:group-hover:opacity-100 ${
                     isBoosted ? 'bg-primary/20 text-primary md:opacity-100' : 'glass hover:bg-primary/10 text-muted-foreground hover:text-primary'
                   }`}
