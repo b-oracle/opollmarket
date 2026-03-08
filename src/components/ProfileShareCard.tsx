@@ -115,17 +115,17 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
                 </div>
               )}
             </div>
-            <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
                 <div style={{
                   fontSize: "20px",
                   fontWeight: 800,
                   color: colors.fg,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
+                  overflow: "visible",
                   whiteSpace: "nowrap",
                   maxWidth: "280px",
-                  lineHeight: "1.3",
+                  lineHeight: "1.5",
+                  height: "30px",
                 }}>
                   {displayName}
                 </div>
