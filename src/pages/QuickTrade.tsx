@@ -1070,7 +1070,13 @@ export default function QuickTrade() {
                           <XAxis dataKey="ts" hide />
                           <RechartsTooltip content={tooltipContent} cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '3 3' }} />
                           {activeRound?.open_price && (
-                            <ReferenceLine y={Number(activeRound.open_price)} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.4} />
+                            <ReferenceLine
+                              y={Number(activeRound.open_price)}
+                              stroke="#f59e0b"
+                              strokeDasharray="4 3"
+                              strokeOpacity={0.7}
+                              label={{ value: `Target $${Number(activeRound.open_price).toLocaleString()}`, position: "right", fill: "#f59e0b", fontSize: 9, fontWeight: 600 }}
+                            />
                           )}
                           <Bar dataKey="body" shape={renderCandlestick} isAnimationActive={false}>
                             {withMA.map((c, i) => (
@@ -1114,7 +1120,13 @@ export default function QuickTrade() {
                         <XAxis dataKey="ts" hide />
                         <RechartsTooltip content={tooltipContent} cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '3 3' }} />
                         {activeRound?.open_price && (
-                          <ReferenceLine y={Number(activeRound.open_price)} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.4} />
+                          <ReferenceLine
+                            y={Number(activeRound.open_price)}
+                            stroke="#f59e0b"
+                            strokeDasharray="4 3"
+                            strokeOpacity={0.7}
+                            label={{ value: `Target $${Number(activeRound.open_price).toLocaleString()}`, position: "right", fill: "#f59e0b", fontSize: 9, fontWeight: 600 }}
+                          />
                         )}
                         <Area type="monotone" dataKey="price" stroke={color} strokeWidth={2} fill="url(#priceGradient)" dot={false} isAnimationActive={false} />
                       </AreaChart>
