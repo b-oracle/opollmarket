@@ -64,16 +64,14 @@ const AdminDashboard = () => {
       const { data: txnRows } = await supabase.from("transactions").select("created_at, amount");
 
       // For monetary totals, we need ALL rows — fetch in batches to avoid 1000-row cap
-      const fetchAllRows = async <T,>(table: string, select: string, filters?: (q: any) => any): Promise<T[]> => {
-        const allRows: T[] = [];
+      const fetchAllAmounts = async (table: "referral_rewards" | "quick_bets"): Promise<{ amount: number }[]> => {
+        const allRows: { amount: number }[] = [];
         let from = 0;
         const batchSize = 1000;
         while (true) {
-          let q = supabase.from(table).select(select).range(from, from + batchSize - 1);
-          if (filters) q = filters(q);
-          const { data, error } = await q;
+          const { data, error } = await supabase.from(table).select("amount").range(from, from + batchSize - 1);
           if (error || !data || data.length === 0) break;
-          allRows.push(...(data as T[]));
+          allRows.push(...data);
           if (data.length < batchSize) break;
           from += batchSize;
         }
@@ -81,8 +79,8 @@ const AdminDashboard = () => {
       };
 
       const [rewardRows, qtBetRows] = await Promise.all([
-        fetchAllRows<{ amount: number }>("referral_rewards", "amount"),
-        fetchAllRows<{ amount: number }>("quick_bets", "amount"),
+        fetchAllAmounts("referral_rewards"),
+        fetchAllAmounts("quick_bets"),
       ]);
 
       const totalVolume = marketRows?.reduce((sum, m) => sum + Number(m.volume), 0) ?? 0;
