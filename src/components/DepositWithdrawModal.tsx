@@ -89,11 +89,37 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
       setPaymentInfo(null);
       setCopied(false);
       setPartialInfo(null);
+      setDepositCreatedAt(null);
+      setTimeRemaining("");
     }
     return () => {
       if (pollInterval) clearInterval(pollInterval);
     };
   }, [initialTab, open]);
+
+  // Countdown timer for deposit expiry (2 hours)
+  useEffect(() => {
+    if (step !== "awaiting_payment" || !depositCreatedAt) {
+      setTimeRemaining("");
+      return;
+    }
+    const EXPIRY_MS = 2 * 60 * 60 * 1000; // 2 hours
+    const tick = () => {
+      const elapsed = Date.now() - depositCreatedAt;
+      const remaining = EXPIRY_MS - elapsed;
+      if (remaining <= 0) {
+        setTimeRemaining("Expired");
+        return;
+      }
+      const h = Math.floor(remaining / (1000 * 60 * 60));
+      const m = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+      const s = Math.floor((remaining % (1000 * 60)) / 1000);
+      setTimeRemaining(`${h}h ${m.toString().padStart(2, "0")}m ${s.toString().padStart(2, "0")}s`);
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [step, depositCreatedAt]);
 
   const { data: hasDeposit = false } = useQuery({
     queryKey: ["has_deposit", user?.id],
