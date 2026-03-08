@@ -18,11 +18,14 @@ const BottomNav = () => {
   const { user } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
 
+  const filteredBase = baseNavItems.filter(
+    (item) => !item.featureKey || isFeatureEnabled(item.featureKey)
+  );
   const navItems = [
-    ...baseNavItems,
+    ...filteredBase,
     user
-      ? { icon: User, label: "Profile", path: "/profile" }
-      : { icon: MoreHorizontal, label: "More", path: "__more__" },
+      ? { icon: User, label: "Profile", path: "/profile", featureKey: null }
+      : { icon: MoreHorizontal, label: "More", path: "__more__", featureKey: null },
   ];
 
   return (

@@ -829,4 +829,74 @@ const PolymarketPresetsSection = ({ canEdit }: { canEdit: boolean }) => {
   );
 };
 
+/* ─── Feature Toggles Card ─── */
+const FeatureTogglesCard = () => {
+  const { toggles, isLoading, setToggle } = useFeatureToggles();
+  const { canEdit } = useAdminContext();
+  const [togglingKey, setTogglingKey] = useState<string | null>(null);
+
+  const handleToggle = async (key: string, label: string, newVal: boolean) => {
+    setTogglingKey(key);
+    try {
+      await setToggle(key, newVal);
+      logAuditEvent({
+        action: "settings_updated",
+        targetType: "feature_toggle",
+        details: { feature_key: key, label, enabled: newVal },
+      });
+      toast.success(`${label} ${newVal ? "enabled" : "disabled"}`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update toggle");
+    } finally {
+      setTogglingKey(null);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card className="mb-6">
+        <CardContent className="flex items-center justify-center py-10">
+          <Loader2 className="w-5 h-5 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="mb-6">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <ToggleLeft className="w-5 h-5" /> Feature Toggles
+        </CardTitle>
+        <CardDescription>
+          Enable or disable platform features. Disabled features are hidden from public users but remain accessible to admins.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {toggles.map((t: any) => (
+          <div
+            key={t.feature_key}
+            className="flex items-center justify-between rounded-lg border border-border p-3"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium">{t.label}</span>
+              <Badge variant={t.enabled ? "default" : "secondary"} className="text-[10px]">
+                {t.enabled ? "Live" : "Hidden"}
+              </Badge>
+            </div>
+            <Switch
+              checked={t.enabled}
+              disabled={!canEdit || togglingKey === t.feature_key}
+              onCheckedChange={(val) => handleToggle(t.feature_key, t.label, val)}
+            />
+          </div>
+        ))}
+        {toggles.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-4">No feature toggles found.</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 export default AdminSettings;

@@ -25,6 +25,11 @@ const DesktopSidebar = () => {
   const { user } = useAuth();
   const [signOutOpen, setSignOutOpen] = useState(false);
   const { collapsed, toggle } = useSidebarState();
+  const { isFeatureEnabled } = useFeatureToggles();
+
+  const navItems = allNavItems.filter(
+    (item) => !item.featureKey || isFeatureEnabled(item.featureKey)
+  );
 
   return (
     <aside
