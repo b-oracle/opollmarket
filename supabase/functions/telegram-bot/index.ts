@@ -196,6 +196,9 @@ async function handleHelp(token: string, chatId: number) {
           { text: "🌐 Open Web App", url: APP_URL },
           { text: "🐦 Follow on X", url: "https://x.com/opollmarket" },
         ],
+        [
+          { text: "🏠 Home", callback_data: "cmd_home" },
+        ],
       ],
     },
   });
