@@ -514,11 +514,11 @@ async function handleMarkets(
     .range(from, to);
 
   if (!markets || markets.length === 0) {
-    if (page === 0) {
-      await tg(token, "sendMessage", { chat_id: chatId, text: "No active markets right now." });
-    } else {
-      await tg(token, "sendMessage", { chat_id: chatId, text: "No more markets." });
-    }
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text: page === 0 ? "No active markets right now." : "No more markets.",
+      reply_markup: { inline_keyboard: [[{ text: "🏠 Home", callback_data: "cmd_home" }]] },
+    });
     return;
   }
 
