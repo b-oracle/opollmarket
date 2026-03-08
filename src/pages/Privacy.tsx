@@ -36,7 +36,7 @@ const Privacy = () => {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 pt-6 space-y-6 text-sm text-muted-foreground leading-relaxed">
+      <div className="max-w-lg md:max-w-3xl mx-auto px-4 pt-6 space-y-6 text-sm text-muted-foreground leading-relaxed">
         <LegalTableOfContents items={tocItems} />
 
         <section id="introduction" className="space-y-2 scroll-mt-20">
