@@ -125,9 +125,11 @@ Deno.serve(async (req) => {
           if (!Array.isArray(events)) continue;
 
           for (const event of events) {
+            if (presetImported >= maxImports) break;
             if (!event.markets || !Array.isArray(event.markets)) continue;
 
             for (const market of event.markets) {
+              if (presetImported >= maxImports) break;
               // Skip if no condition_id
               if (!market.conditionId && !market.id) continue;
               const polyId = market.conditionId || market.id;
