@@ -213,6 +213,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           withdrawal_cooldown_minutes: number
+          withdrawal_limit_enabled: boolean
           withdrawal_multiplier: number
         }
         Insert: {
@@ -241,6 +242,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           withdrawal_cooldown_minutes?: number
+          withdrawal_limit_enabled?: boolean
           withdrawal_multiplier?: number
         }
         Update: {
@@ -269,6 +271,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           withdrawal_cooldown_minutes?: number
+          withdrawal_limit_enabled?: boolean
           withdrawal_multiplier?: number
         }
         Relationships: []

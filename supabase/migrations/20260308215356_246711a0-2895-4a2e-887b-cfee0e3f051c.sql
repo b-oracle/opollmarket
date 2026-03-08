@@ -1,0 +1,1 @@
+ALTER TABLE public.commission_settings ADD COLUMN withdrawal_limit_enabled boolean NOT NULL DEFAULT true;
