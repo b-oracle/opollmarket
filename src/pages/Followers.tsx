@@ -1,22 +1,27 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import FollowButton from "@/components/FollowButton";
-import { ArrowLeft, Users, UserCheck, Loader2, Search, Bell } from "lucide-react";
+import { ArrowLeft, Users, UserCheck, Loader2, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import NftBadge, { isNftAvatar } from "@/components/NftBadge";
 
 const LAST_SEEN_KEY = "followers_last_seen";
+const ITEMS_PER_PAGE = 10;
 
 const Followers = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [tab, setTab] = useState<"followers" | "following">("followers");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+
+  // Reset page on tab/search change
+  useEffect(() => { setPage(1); }, [tab, search]);
 
   // Track last seen timestamp for new follower badge
   const [lastSeen, setLastSeen] = useState<string | null>(() => {
@@ -82,6 +87,9 @@ const Followers = () => {
       )
     : list;
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const paginatedList = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
   // Count new followers since last seen
   const newFollowerCount = useMemo(() => {
     if (!lastSeen || tab !== "followers") return 0;
@@ -94,7 +102,7 @@ const Followers = () => {
   }
 
   return (
-    <div className="min-h-dvh bg-background" style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom))" }}>
+    <div className="min-h-dvh bg-background overflow-y-auto overscroll-contain" style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom))" }}>
       <TopBar />
       <div className="max-w-lg md:max-w-2xl mx-auto px-3 sm:px-4" style={{ paddingTop: "calc(5rem + env(safe-area-inset-top))" }}>
         {/* Header */}
@@ -159,44 +167,69 @@ const Followers = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-1.5">
-            {filtered.map((item: any, i: number) => {
-              const profile = item.profile;
-              const userId = tab === "followers" ? item.follower_id : item.following_id;
-              const name = profile?.display_name || "Anonymous";
-              const hasNft = isNftAvatar(profile?.avatar_url);
-              return (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.03 }}
-                  className="glass rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-accent/30 transition-colors"
-                  onClick={() => navigate(`/user/${userId}`)}
-                >
-                  <div className="relative shrink-0">
-                    <div className="w-11 h-11 rounded-full bg-primary/20 border border-primary/30 overflow-hidden flex items-center justify-center">
-                      {profile?.avatar_url ? (
-                        <img src={profile.avatar_url} alt={name} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
-                      )}
+          <>
+            <div className="space-y-1.5">
+              {paginatedList.map((item: any, i: number) => {
+                const profile = item.profile;
+                const userId = tab === "followers" ? item.follower_id : item.following_id;
+                const name = profile?.display_name || "Anonymous";
+                const hasNft = isNftAvatar(profile?.avatar_url);
+                return (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.03 }}
+                    className="glass rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-accent/30 transition-colors"
+                    onClick={() => navigate(`/user/${userId}`)}
+                  >
+                    <div className="relative shrink-0">
+                      <div className="w-11 h-11 rounded-full bg-primary/20 border border-primary/30 overflow-hidden flex items-center justify-center">
+                        {profile?.avatar_url ? (
+                          <img src={profile.avatar_url} alt={name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
+                        )}
+                      </div>
+                      {hasNft && <NftBadge className="absolute -bottom-0.5 -right-0.5 scale-75" />}
                     </div>
-                    {hasNft && <NftBadge className="absolute -bottom-0.5 -right-0.5 scale-75" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">{name}</p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {new Date(item.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <FollowButton userId={userId} size="sm" />
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate">{name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {new Date(item.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <FollowButton userId={userId} size="sm" />
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-3 py-4">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="w-8 h-8 rounded-lg glass flex items-center justify-center disabled:opacity-30 hover:bg-muted transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="text-xs font-medium text-muted-foreground">
+                  {page} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="w-8 h-8 rounded-lg glass flex items-center justify-center disabled:opacity-30 hover:bg-muted transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
       <BottomNav />

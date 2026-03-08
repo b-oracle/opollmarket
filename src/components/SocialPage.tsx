@@ -10,8 +10,10 @@ import NftBadge, { isNftAvatar } from "@/components/NftBadge";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Users, UserCheck, Heart, Gift, Trophy,
-  Sparkles, ChevronRight, Loader2, X,
+  Sparkles, ChevronRight, ChevronLeft, Loader2, X,
 } from "lucide-react";
+
+const ITEMS_PER_PAGE = 10;
 
 interface SocialPageProps {
   open: boolean;
@@ -23,6 +25,9 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
   const { user } = useAuth();
   const followCounts = useFollowCounts(user?.id);
   const [activeTab, setActiveTab] = useState<"activity" | "followers" | "following" | "suggestions">("activity");
+  const [followersPage, setFollowersPage] = useState(1);
+  const [followingPage, setFollowingPage] = useState(1);
+  const [suggestionsPage, setSuggestionsPage] = useState(1);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -47,8 +52,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
         .from("follows")
         .select("id, follower_id, created_at")
         .eq("following_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
+        .order("created_at", { ascending: false });
       if (!data || data.length === 0) return [];
       const ids = data.map((f: any) => f.follower_id);
       const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", ids);
@@ -67,8 +71,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
         .from("follows")
         .select("id, following_id, created_at")
         .eq("follower_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
+        .order("created_at", { ascending: false });
       if (!data || data.length === 0) return [];
       const ids = data.map((f: any) => f.following_id);
       const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", ids);
@@ -84,7 +87,6 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
     queryKey: ["follow-suggestions", user?.id, followingIds.join(",")],
     queryFn: async () => {
       if (!user) return [];
-      // Get active traders (users with recent transactions)
       const { data: recentTraders } = await supabase
         .from("transactions")
         .select("user_id")
@@ -95,9 +97,8 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
 
       if (!recentTraders) return [];
 
-      // Get unique user IDs excluding self and already-followed
       const exclude = new Set([user.id, ...followingIds]);
-      const uniqueIds = [...new Set(recentTraders.map((t: any) => t.user_id))].filter(id => !exclude.has(id)).slice(0, 15);
+      const uniqueIds = [...new Set(recentTraders.map((t: any) => t.user_id))].filter(id => !exclude.has(id)).slice(0, 30);
 
       if (uniqueIds.length === 0) return [];
 
@@ -114,6 +115,39 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
 
   const hasNft = isNftAvatar(profile?.avatar_url);
   const displayName = profile?.display_name || "Anonymous";
+
+  const followersTotalPages = Math.max(1, Math.ceil(followers.length / ITEMS_PER_PAGE));
+  const followingTotalPages = Math.max(1, Math.ceil(following.length / ITEMS_PER_PAGE));
+  const suggestionsTotalPages = Math.max(1, Math.ceil(suggestions.length / ITEMS_PER_PAGE));
+
+  const paginatedFollowers = followers.slice((followersPage - 1) * ITEMS_PER_PAGE, followersPage * ITEMS_PER_PAGE);
+  const paginatedFollowing = following.slice((followingPage - 1) * ITEMS_PER_PAGE, followingPage * ITEMS_PER_PAGE);
+  const paginatedSuggestions = suggestions.slice((suggestionsPage - 1) * ITEMS_PER_PAGE, suggestionsPage * ITEMS_PER_PAGE);
+
+  const PaginationControls = ({ page, totalPages, setPage }: { page: number; totalPages: number; setPage: (fn: (p: number) => number) => void }) => {
+    if (totalPages <= 1) return null;
+    return (
+      <div className="flex items-center justify-center gap-3 py-3">
+        <button
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          disabled={page === 1}
+          className="w-8 h-8 rounded-lg glass flex items-center justify-center disabled:opacity-30 hover:bg-muted transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <span className="text-xs font-medium text-muted-foreground">
+          {page} / {totalPages}
+        </span>
+        <button
+          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          disabled={page === totalPages}
+          className="w-8 h-8 rounded-lg glass flex items-center justify-center disabled:opacity-30 hover:bg-muted transition-colors"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  };
 
   const renderUserRow = (userId: string, prof: any, index: number) => {
     const name = prof?.display_name || "Anonymous";
@@ -250,7 +284,10 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
                       <p className="text-sm text-muted-foreground">No followers yet</p>
                     </div>
                   ) : (
-                    followers.map((f: any, i: number) => renderUserRow(f.follower_id, f.profile, i))
+                    <>
+                      {paginatedFollowers.map((f: any, i: number) => renderUserRow(f.follower_id, f.profile, i))}
+                      <PaginationControls page={followersPage} totalPages={followersTotalPages} setPage={setFollowersPage} />
+                    </>
                   )}
                 </div>
               )}
@@ -271,7 +308,10 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
                       </button>
                     </div>
                   ) : (
-                    following.map((f: any, i: number) => renderUserRow(f.following_id, f.profile, i))
+                    <>
+                      {paginatedFollowing.map((f: any, i: number) => renderUserRow(f.following_id, f.profile, i))}
+                      <PaginationControls page={followingPage} totalPages={followingTotalPages} setPage={setFollowingPage} />
+                    </>
                   )}
                 </div>
               )}
@@ -287,7 +327,10 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
                       <p className="text-sm text-muted-foreground">No suggestions right now</p>
                     </div>
                   ) : (
-                    suggestions.map((s: any, i: number) => renderUserRow(s.id, s, i))
+                    <>
+                      {paginatedSuggestions.map((s: any, i: number) => renderUserRow(s.id, s, i))}
+                      <PaginationControls page={suggestionsPage} totalPages={suggestionsTotalPages} setPage={setSuggestionsPage} />
+                    </>
                   )}
                 </div>
               )}
