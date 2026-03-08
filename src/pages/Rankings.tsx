@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import useAnalytics from "@/hooks/useAnalytics";
 import RankShareModal from "@/components/RankShareModal";
 import NftBadge, { isNftAvatar } from "@/components/NftBadge";
+import FollowButton from "@/components/FollowButton";
 
 
 interface Referrer {
