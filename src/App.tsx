@@ -53,6 +53,7 @@ const Privacy = lazy(() => import("./pages/Privacy"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Maintenance = lazy(() => import("./pages/Maintenance"));
 const QuickTrade = lazy(() => import("./pages/QuickTrade"));
+const UserProfile = lazy(() => import("./pages/UserProfile"));
 
 const queryClient = new QueryClient();
 
@@ -118,6 +119,7 @@ const App = () => (
                         <Route path="/privacy" element={<Privacy />} />
                         <Route path="/maintenance" element={<Maintenance />} />
                         <Route path="/quick-trade" element={<QuickTrade />} />
+                        <Route path="/user/:id" element={<UserProfile />} />
                         <Route path="/admin" element={<AdminLayout />}>
                           <Route index element={<AdminDashboard />} />
                           <Route path="markets" element={<AdminMarkets />} />

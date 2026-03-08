@@ -273,6 +273,63 @@ export type Database = {
         }
         Relationships: []
       }
+      copy_settings: {
+        Row: {
+          auto_copy: boolean
+          copy_predictions: boolean
+          copy_quick_trades: boolean
+          created_at: string
+          id: string
+          max_amount: number
+          target_user_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_copy?: boolean
+          copy_predictions?: boolean
+          copy_quick_trades?: boolean
+          created_at?: string
+          id?: string
+          max_amount?: number
+          target_user_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_copy?: boolean
+          copy_predictions?: boolean
+          copy_quick_trades?: boolean
+          created_at?: string
+          id?: string
+          max_amount?: number
+          target_user_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
       limit_orders: {
         Row: {
           amount: number
@@ -763,30 +820,36 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
           created_at: string
           display_name: string | null
           email: string | null
           id: string
+          is_public: boolean
           referred_by: string | null
           updated_at: string
           wallet_address: string | null
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           display_name?: string | null
           email?: string | null
           id: string
+          is_public?: boolean
           referred_by?: string | null
           updated_at?: string
           wallet_address?: string | null
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           display_name?: string | null
           email?: string | null
           id?: string
+          is_public?: boolean
           referred_by?: string | null
           updated_at?: string
           wallet_address?: string | null
@@ -1160,6 +1223,13 @@ export type Database = {
     }
     Functions: {
       expire_stale_pending_deposits: { Args: never; Returns: undefined }
+      get_follow_counts: {
+        Args: { _user_id: string }
+        Returns: {
+          followers_count: number
+          following_count: number
+        }[]
+      }
       get_quick_trade_leaderboard:
         | {
             Args: { _limit?: number }
