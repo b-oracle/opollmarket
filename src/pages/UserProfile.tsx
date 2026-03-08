@@ -38,7 +38,9 @@ const UserProfile = () => {
   const followCounts = useFollowCounts(id);
   const { settings: copySettings, updateSettings } = useCopySettings(id);
   const [showCopySettings, setShowCopySettings] = useState(false);
-  const [activeTab, setActiveTab] = useState<"markets" | "predictions" | "activity">("markets");
+  const [activeTab, setActiveTab] = useState<"markets" | "predictions" | "rank">("markets");
+  const [shareOpen, setShareOpen] = useState(false);
+  const profileCardRef = useRef<HTMLDivElement>(null);
 
   // Profile data
   const { data: profile, isLoading: profileLoading } = useQuery({
