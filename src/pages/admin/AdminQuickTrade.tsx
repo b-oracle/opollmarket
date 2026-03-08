@@ -334,7 +334,7 @@ const AdminQuickTrade = () => {
           </div>
           {rounds.length > PAGE_SIZE && (
             <div className="p-4 border-t border-border">
-              <AdminPagination page={roundPage} totalPages={Math.ceil(rounds.length / PAGE_SIZE)} onPageChange={setRoundPage} />
+              <AdminPagination page={roundPage} totalItems={rounds.length} pageSize={PAGE_SIZE} onPageChange={setRoundPage} />
             </div>
           )}
         </div>
