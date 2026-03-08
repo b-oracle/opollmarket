@@ -918,6 +918,15 @@ export default function QuickTrade() {
                         </div>
                       ) : null;
                     })()}
+                    {/* "Price to beat" badge */}
+                    {activeRound?.open_price && (
+                      <div className="absolute bottom-2 right-2 z-10">
+                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold backdrop-blur-sm border bg-amber-500/10 text-amber-500 border-amber-500/30">
+                          <span>🎯</span>
+                          <span>Target ${Number(activeRound.open_price).toLocaleString()}</span>
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
               {historyLoading ? (
