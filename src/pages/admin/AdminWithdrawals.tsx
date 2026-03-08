@@ -46,8 +46,32 @@ const AdminWithdrawals = () => {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+
+      // Enrich with profile info
+      const userIds = [...new Set((data || []).map((w) => w.user_id))];
+      const { data: profiles } = userIds.length
+        ? await supabase.from("profiles").select("id, display_name, email").in("id", userIds)
+        : { data: [] };
+      const profileMap = Object.fromEntries((profiles || []).map((p) => [p.id, p]));
+
+      return (data || []).map((w) => ({
+        ...w,
+        display_name: profileMap[w.user_id]?.display_name || "Unknown",
+        email: profileMap[w.user_id]?.email || "",
+      }));
     },
+  });
+
+  const filtered = withdrawals.filter((w: any) => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return (
+      w.wallet_address?.toLowerCase().includes(s) ||
+      w.user_id?.toLowerCase().includes(s) ||
+      w.status?.toLowerCase().includes(s) ||
+      w.email?.toLowerCase().includes(s) ||
+      w.display_name?.toLowerCase().includes(s)
+    );
   });
 
   const processMutation = useMutation({
@@ -89,13 +113,6 @@ const AdminWithdrawals = () => {
     },
   });
 
-  const filtered = withdrawals.filter((w: any) =>
-    !search ||
-    w.wallet_address?.toLowerCase().includes(search.toLowerCase()) ||
-    w.user_id?.toLowerCase().includes(search.toLowerCase()) ||
-    w.status?.toLowerCase().includes(search.toLowerCase())
-  );
-
   const paginatedWd = useMemo(() => filtered.slice((wdPage - 1) * WD_PAGE_SIZE, wdPage * WD_PAGE_SIZE), [filtered, wdPage]);
   return (
     <div>
@@ -104,7 +121,7 @@ const AdminWithdrawals = () => {
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search by wallet, user, status..."
+            placeholder="Search by email, name, wallet, status..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -126,6 +143,7 @@ const AdminWithdrawals = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>User</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Wallet</TableHead>
@@ -137,6 +155,10 @@ const AdminWithdrawals = () => {
               <TableBody>
                 {paginatedWd.map((w: any) => (
                   <TableRow key={w.id}>
+                    <TableCell>
+                      <div className="font-medium text-sm">{w.display_name}</div>
+                      <div className="text-[10px] text-muted-foreground truncate max-w-[160px]">{w.email || w.user_id.slice(0, 8)}</div>
+                    </TableCell>
                     <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                       {format(new Date(w.created_at), "MMM d, yyyy HH:mm")}
                     </TableCell>
