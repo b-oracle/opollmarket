@@ -228,18 +228,6 @@ const AdminAnalytics = () => {
     users: usersByDay.get(date)?.size || 0,
   }));
 
-  // Popular markets from bet events
-  const marketBets = new Map<string, number>();
-  events
-    .filter((e) => e.event_name === "bet_placed" || e.event_name === "bet_confirmed")
-    .forEach((e) => {
-      const mid = (e.properties as any)?.marketId;
-      if (mid) marketBets.set(mid, (marketBets.get(mid) || 0) + 1);
-    });
-  const popularMarkets = Array.from(marketBets.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
-
   const statCards = [
     { label: "Total Events", value: totalEvents, icon: MousePointerClick, color: "text-primary" },
     { label: "Active Users", value: uniqueUsers, icon: Users, color: "text-blue-500" },
