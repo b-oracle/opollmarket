@@ -204,18 +204,21 @@ const Profile = () => {
   const [editIsPublic, setEditIsPublic] = useState(true);
   const [socialOpen, setSocialOpen] = useState(false);
 
-  // Swipe-right detection for social page
+  // Swipe-right detection for social page — edge swipe from left 40px zone
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
+  const touchStartedInEdge = useRef(false);
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
+    const x = e.touches[0].clientX;
+    touchStartX.current = x;
     touchStartY.current = e.touches[0].clientY;
+    touchStartedInEdge.current = x < 40; // only trigger from left edge
   }, []);
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchStartedInEdge.current || socialOpen) return;
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
-    // Swipe right: dx > 80px and mostly horizontal
-    if (dx > 80 && dy < 60 && !socialOpen) {
+    if (dx > 60 && dy < 80) {
       setSocialOpen(true);
     }
   }, [socialOpen]);
