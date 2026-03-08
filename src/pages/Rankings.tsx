@@ -478,6 +478,29 @@ const Rankings = () => {
 
   const loading = tab === "referrers" ? refLoading : tab === "quick" ? (quickSubTab === "streaks" ? streakLoading : quickLoading) : tradeLoading;
 
+  // Compute user's rank index in the current active list
+  const myRankIndex = useMemo(() => {
+    if (!currentUserId) return -1;
+    if (tab === "traders") return sortedTraders.findIndex((t) => t.userId === currentUserId);
+    if (tab === "quick" && quickSubTab === "profit") return quickTraders.findIndex((t) => t.userId === currentUserId);
+    if (tab === "quick" && quickSubTab === "streaks") return streakUsers.findIndex((t) => t.userId === currentUserId);
+    if (tab === "referrers") return sortedReferrers.findIndex((r) => r.userId === currentUserId);
+    return -1;
+  }, [currentUserId, tab, quickSubTab, sortedTraders, quickTraders, streakUsers, sortedReferrers]);
+
+  const myRankPage = myRankIndex >= 0 ? Math.ceil((myRankIndex + 1) / ITEMS_PER_PAGE) : -1;
+  const isOnMyPage = myRankPage === page;
+
+  const scrollToMyRank = useCallback(() => {
+    if (myRankPage < 1) return;
+    setPage(myRankPage);
+    // Scroll to list area after a tick
+    setTimeout(() => {
+      const el = document.querySelector(`[data-user-rank="${currentUserId}"]`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
+  }, [myRankPage, currentUserId]);
+
   return (
     <div className="min-h-dvh bg-background overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
       <TopBar />
