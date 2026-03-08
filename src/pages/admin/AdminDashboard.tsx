@@ -46,15 +46,16 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const fetchAll = async () => {
+      // Use count queries for all counts (avoids 1000-row limit)
       const [markets, comments, boosts, users, txns, referrals, qtRounds, qtBets, follows, likes] = await Promise.all([
         supabase.from("markets").select("*", { count: "exact", head: true }),
         supabase.from("comments").select("*", { count: "exact", head: true }),
         supabase.from("market_boosts").select("*", { count: "exact", head: true }).eq("status", "active"),
         supabase.from("profiles").select("*", { count: "exact", head: true }),
         supabase.from("transactions").select("*", { count: "exact", head: true }),
-        supabase.from("referral_rewards").select("amount"),
+        supabase.from("referral_rewards").select("*", { count: "exact", head: true }),
         supabase.from("quick_rounds").select("*", { count: "exact", head: true }),
-        supabase.from("quick_bets").select("amount, status"),
+        supabase.from("quick_bets").select("*", { count: "exact", head: true }),
         supabase.from("follows").select("*", { count: "exact", head: true }),
         supabase.from("market_likes").select("*", { count: "exact", head: true }),
       ]);
@@ -62,9 +63,29 @@ const AdminDashboard = () => {
       const { data: marketRows } = await supabase.from("markets").select("category, volume, status, created_at");
       const { data: txnRows } = await supabase.from("transactions").select("created_at, amount");
 
+      // For monetary totals, we need ALL rows — fetch in batches to avoid 1000-row cap
+      const fetchAllAmounts = async (table: "referral_rewards" | "quick_bets"): Promise<{ amount: number }[]> => {
+        const allRows: { amount: number }[] = [];
+        let from = 0;
+        const batchSize = 1000;
+        while (true) {
+          const { data, error } = await supabase.from(table).select("amount").range(from, from + batchSize - 1);
+          if (error || !data || data.length === 0) break;
+          allRows.push(...data);
+          if (data.length < batchSize) break;
+          from += batchSize;
+        }
+        return allRows;
+      };
+
+      const [rewardRows, qtBetRows] = await Promise.all([
+        fetchAllAmounts("referral_rewards"),
+        fetchAllAmounts("quick_bets"),
+      ]);
+
       const totalVolume = marketRows?.reduce((sum, m) => sum + Number(m.volume), 0) ?? 0;
-      const totalRewardsPaid = referrals.data?.reduce((sum, r) => sum + Number(r.amount), 0) ?? 0;
-      const quickTradeVolume = (qtBets.data || []).reduce((sum, b) => sum + Number(b.amount), 0);
+      const totalRewardsPaid = rewardRows.reduce((sum, r) => sum + Number(r.amount), 0);
+      const quickTradeVolume = qtBetRows.reduce((sum, b) => sum + Number(b.amount), 0);
 
       setStats({
         totalMarkets: markets.count ?? 0,
@@ -73,10 +94,10 @@ const AdminDashboard = () => {
         activeBoosts: boosts.count ?? 0,
         totalUsers: users.count ?? 0,
         totalTransactions: txns.count ?? 0,
-        totalReferrals: referrals.data?.length ?? 0,
+        totalReferrals: referrals.count ?? 0,
         totalRewardsPaid,
         quickTradeRounds: qtRounds.count ?? 0,
-        quickTradeBets: qtBets.data?.length ?? 0,
+        quickTradeBets: qtBets.count ?? 0,
         quickTradeVolume,
         totalFollows: follows.count ?? 0,
         totalLikes: likes.count ?? 0,
