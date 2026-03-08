@@ -364,6 +364,11 @@ const AdminMarkets = () => {
             }`}
           >
             {f === "polymarket" ? "🔮 Polymarket" : f}
+            {f === "ended" && endedCount > 0 && (
+              <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold bg-orange-500 text-white">
+                {endedCount}
+              </span>
+            )}
           </button>
         ))}
       </div>
