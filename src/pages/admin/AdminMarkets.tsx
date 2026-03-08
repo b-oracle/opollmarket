@@ -74,7 +74,7 @@ const AdminMarkets = () => {
   const [markets, setMarkets] = useState<MarketRow[]>([]);
   const [pendingMarkets, setPendingMarkets] = useState<MarketRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "pending" | "active" | "resolved" | "cancelled">("all");
+  const [filter, setFilter] = useState<"all" | "pending" | "active" | "resolved" | "cancelled" | "polymarket">("all");
   const [resolveState, setResolveState] = useState<ResolveState | null>(null);
   const [resolving, setResolving] = useState(false);
   const [editState, setEditState] = useState<EditState | null>(null);
@@ -96,9 +96,13 @@ const AdminMarkets = () => {
   const fetchMarkets = async () => {
     let query = supabase
       .from("markets")
-      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending, creator_wallet, moderator_decision, moderator_id, moderator_reviewed_at")
+      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending, creator_wallet, moderator_decision, moderator_id, moderator_reviewed_at, polymarket_id")
       .order("created_at", { ascending: false });
-    if (filter !== "all") query = query.eq("status", filter);
+    if (filter === "polymarket") {
+      query = query.not("polymarket_id", "is", null);
+    } else if (filter !== "all") {
+      query = query.eq("status", filter);
+    }
     const { data, error } = await query;
     if (!error && data) setMarkets(data);
     setLoading(false);
@@ -347,7 +351,7 @@ const AdminMarkets = () => {
         </div>
       </div>
       <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 overflow-x-auto scrollbar-hide">
-        {(["all", "pending", "active", "resolved", "cancelled"] as const).map((f) => (
+        {(["all", "pending", "active", "resolved", "cancelled", "polymarket"] as const).map((f) => (
           <button
             key={f}
             onClick={() => { setLoading(true); setFilter(f); }}
@@ -355,7 +359,7 @@ const AdminMarkets = () => {
               filter === f ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            {f}
+            {f === "polymarket" ? "🔮 Polymarket" : f}
           </button>
         ))}
       </div>
