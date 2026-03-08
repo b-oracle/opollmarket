@@ -280,6 +280,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
         pay_currency: data.pay_currency,
         expiration_estimate_date: data.expiration_estimate_date,
       });
+      setDepositCreatedAt(Date.now());
       setStep("awaiting_payment");
       startPolling(String(data.payment_id));
     } catch (err: any) {
