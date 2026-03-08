@@ -833,7 +833,10 @@ async function handleCallback(
   await tg(token, "answerCallbackQuery", { callback_query_id: callback.id });
 
   // Handle command shortcuts from inline buttons
-  if (data === "cmd_help") {
+  if (data === "cmd_home") {
+    await handleStart(token, chatId);
+    return;
+  } else if (data === "cmd_help") {
     await handleHelp(token, chatId);
     return;
   } else if (data === "cmd_link") {
