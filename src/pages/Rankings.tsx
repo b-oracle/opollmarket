@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
-import { Trophy, TrendingUp, TrendingDown, Medal, Crown, Award, Users, Star, Calendar, Share2, ArrowLeft, Zap, Flame } from "lucide-react";
+import { Trophy, TrendingUp, TrendingDown, Medal, Crown, Award, Users, Star, Calendar, Share2, ArrowLeft, Zap, Flame, ChevronLeft, ChevronRight } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -87,6 +87,32 @@ const EmptyState = ({ message, sub }: { message: string; sub: string }) => (
 
 // ── Your Rank Card ────────────────────────────────────────────────────
 const VISIBLE_COUNT = 10;
+const ITEMS_PER_PAGE = 10;
+
+const LeaderboardPagination = ({ page, totalPages, onPageChange }: { page: number; totalPages: number; onPageChange: (p: number) => void }) => {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex items-center justify-center gap-2 mt-4 mb-2">
+      <button
+        onClick={() => onPageChange(page - 1)}
+        disabled={page === 1}
+        className="w-8 h-8 rounded-lg glass flex items-center justify-center disabled:opacity-30 hover:bg-muted transition-colors"
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </button>
+      <span className="text-xs font-medium text-muted-foreground px-2">
+        {page} / {totalPages}
+      </span>
+      <button
+        onClick={() => onPageChange(page + 1)}
+        disabled={page === totalPages}
+        className="w-8 h-8 rounded-lg glass flex items-center justify-center disabled:opacity-30 hover:bg-muted transition-colors"
+      >
+        <ChevronRight className="w-4 h-4" />
+      </button>
+    </div>
+  );
+};
 
 const YourRankCard = ({
   rank,
@@ -408,12 +434,14 @@ const Rankings = () => {
   const [referralSort, setReferralSort] = useState<ReferralSort>("totalEarned");
   const [traderSort, setTraderSort] = useState<TraderSort>("pnl");
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("all");
+  const [page, setPage] = useState(1);
   const { user } = useAuth();
   const navigate = useNavigate();
   const currentUserId = user?.id;
   const { track } = useAnalytics();
 
   useEffect(() => { track("page_view", { page: "rankings" }); }, []);
+  useEffect(() => { setPage(1); }, [tab, quickSubTab, referralSort, traderSort, timePeriod]);
 
   const [shareModal, setShareModal] = useState<{
     rank: number; name: string; avatar: string | null;
@@ -536,45 +564,56 @@ const Rankings = () => {
                         />
                       );
                     })()}
-                    <div className="space-y-2">
-                      {sortedTraders.map((trader, i) => {
-                        const isMe = currentUserId === trader.userId;
-                        return (
-                          <motion.div
-                            key={trader.userId}
-                            initial={{ opacity: 0, x: -12 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: i * 0.04 }}
-                            className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : ""}`}
-                          >
-                            <div className="w-8 flex justify-center shrink-0">{rankBadge(i + 1)}</div>
-                            <AvatarCircle avatar={trader.avatar} name={trader.name} />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                <span className={`text-sm font-bold truncate ${isMe ? "text-primary" : ""}`}>{isMe ? "You" : trader.name}</span>
-                                {isMe && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
-                              </div>
-                              <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
-                                <span>{trader.trades} trade{trader.trades !== 1 ? "s" : ""}</span>
-                                <span>·</span>
-                                <span>{formatDollar(trader.volume)} vol</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <p className={`text-sm font-bold flex items-center gap-1 ${trader.pnl >= 0 ? "text-primary" : "text-destructive"}`}>
-                                {trader.pnl >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                                {trader.pnl >= 0 ? "+" : "-"}{formatDollar(trader.pnl)}
-                              </p>
-                              {isMe && (
-                                <button onClick={() => shareRank(i + 1, trader.name, trader.avatar, `${trader.pnl >= 0 ? "+" : "-"}${formatDollar(trader.pnl)}`, trader.pnl >= 0, `${trader.trades} prediction${trader.trades !== 1 ? "s" : ""} · ${formatDollar(trader.volume)} vol`, "Predictions", sortedTraders.length)} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
-                                  <Share2 className="w-3.5 h-3.5 text-primary" />
-                                </button>
-                              )}
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </div>
+                    {(() => {
+                      const totalPages = Math.ceil(sortedTraders.length / ITEMS_PER_PAGE);
+                      const start = (page - 1) * ITEMS_PER_PAGE;
+                      const pageItems = sortedTraders.slice(start, start + ITEMS_PER_PAGE);
+                      return (
+                        <>
+                          <div className="space-y-2">
+                            {pageItems.map((trader, i) => {
+                              const rank = start + i + 1;
+                              const isMe = currentUserId === trader.userId;
+                              return (
+                                <motion.div
+                                  key={trader.userId}
+                                  initial={{ opacity: 0, x: -12 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ delay: i * 0.04 }}
+                                  className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : ""}`}
+                                >
+                                  <div className="w-8 flex justify-center shrink-0">{rankBadge(rank)}</div>
+                                  <AvatarCircle avatar={trader.avatar} name={trader.name} />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className={`text-sm font-bold truncate ${isMe ? "text-primary" : ""}`}>{isMe ? "You" : trader.name}</span>
+                                      {isMe && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                                      <span>{trader.trades} trade{trader.trades !== 1 ? "s" : ""}</span>
+                                      <span>·</span>
+                                      <span>{formatDollar(trader.volume)} vol</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <p className={`text-sm font-bold flex items-center gap-1 ${trader.pnl >= 0 ? "text-primary" : "text-destructive"}`}>
+                                      {trader.pnl >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                                      {trader.pnl >= 0 ? "+" : "-"}{formatDollar(trader.pnl)}
+                                    </p>
+                                    {isMe && (
+                                      <button onClick={() => shareRank(rank, trader.name, trader.avatar, `${trader.pnl >= 0 ? "+" : "-"}${formatDollar(trader.pnl)}`, trader.pnl >= 0, `${trader.trades} prediction${trader.trades !== 1 ? "s" : ""} · ${formatDollar(trader.volume)} vol`, "Predictions", sortedTraders.length)} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+                                        <Share2 className="w-3.5 h-3.5 text-primary" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </motion.div>
+                              );
+                            })}
+                          </div>
+                          <LeaderboardPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+                        </>
+                      );
+                    })()}
                   </>
                 )}
               </>
@@ -635,48 +674,59 @@ const Rankings = () => {
                             />
                           );
                         })()}
-                        <div className="space-y-2">
-                          {quickTraders.map((qt, i) => {
-                            const isMe = currentUserId === qt.userId;
-                            const winRate = qt.totalBets > 0 ? Math.round((qt.wins / qt.totalBets) * 100) : 0;
-                            return (
-                              <motion.div
-                                key={qt.userId}
-                                initial={{ opacity: 0, x: -12 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: i * 0.04 }}
-                                className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : ""}`}
-                              >
-                                <div className="w-8 flex justify-center shrink-0">{rankBadge(i + 1)}</div>
-                                <AvatarCircle avatar={qt.avatar} name={qt.name} />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className={`text-sm font-bold truncate ${isMe ? "text-primary" : ""}`}>{isMe ? "You" : qt.name}</span>
-                                    {isMe && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
-                                  </div>
-                                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
-                                    <span>{qt.wins}W/{qt.totalBets - qt.wins}L</span>
-                                    <span>·</span>
-                                    <span>{winRate}% WR</span>
-                                    <span>·</span>
-                                    <span>{formatDollar(qt.totalWagered)} vol</span>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2 shrink-0">
-                                  <p className={`text-sm font-bold flex items-center gap-1 ${qt.profit >= 0 ? "text-primary" : "text-destructive"}`}>
-                                    {qt.profit >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                                    {qt.profit >= 0 ? "+" : "-"}{formatDollar(qt.profit)}
-                                  </p>
-                                  {isMe && (
-                                    <button onClick={() => shareRank(i + 1, qt.name, qt.avatar, `${qt.profit >= 0 ? "+" : "-"}${formatDollar(qt.profit)}`, qt.profit >= 0, `${qt.wins}W/${qt.totalBets - qt.wins}L · ${winRate}% WR`, "Quick Trade", quickTraders.length)} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
-                                      <Share2 className="w-3.5 h-3.5 text-primary" />
-                                    </button>
-                                  )}
-                                </div>
-                              </motion.div>
-                            );
-                          })}
-                        </div>
+                        {(() => {
+                          const totalPages = Math.ceil(quickTraders.length / ITEMS_PER_PAGE);
+                          const start = (page - 1) * ITEMS_PER_PAGE;
+                          const pageItems = quickTraders.slice(start, start + ITEMS_PER_PAGE);
+                          return (
+                            <>
+                              <div className="space-y-2">
+                                {pageItems.map((qt, i) => {
+                                  const rank = start + i + 1;
+                                  const isMe = currentUserId === qt.userId;
+                                  const winRate = qt.totalBets > 0 ? Math.round((qt.wins / qt.totalBets) * 100) : 0;
+                                  return (
+                                    <motion.div
+                                      key={qt.userId}
+                                      initial={{ opacity: 0, x: -12 }}
+                                      animate={{ opacity: 1, x: 0 }}
+                                      transition={{ delay: i * 0.04 }}
+                                      className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : ""}`}
+                                    >
+                                      <div className="w-8 flex justify-center shrink-0">{rankBadge(rank)}</div>
+                                      <AvatarCircle avatar={qt.avatar} name={qt.name} />
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className={`text-sm font-bold truncate ${isMe ? "text-primary" : ""}`}>{isMe ? "You" : qt.name}</span>
+                                          {isMe && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                                          <span>{qt.wins}W/{qt.totalBets - qt.wins}L</span>
+                                          <span>·</span>
+                                          <span>{winRate}% WR</span>
+                                          <span>·</span>
+                                          <span>{formatDollar(qt.totalWagered)} vol</span>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-2 shrink-0">
+                                        <p className={`text-sm font-bold flex items-center gap-1 ${qt.profit >= 0 ? "text-primary" : "text-destructive"}`}>
+                                          {qt.profit >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                                          {qt.profit >= 0 ? "+" : "-"}{formatDollar(qt.profit)}
+                                        </p>
+                                        {isMe && (
+                                          <button onClick={() => shareRank(rank, qt.name, qt.avatar, `${qt.profit >= 0 ? "+" : "-"}${formatDollar(qt.profit)}`, qt.profit >= 0, `${qt.wins}W/${qt.totalBets - qt.wins}L · ${winRate}% WR`, "Quick Trade", quickTraders.length)} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+                                            <Share2 className="w-3.5 h-3.5 text-primary" />
+                                          </button>
+                                        )}
+                                      </div>
+                                    </motion.div>
+                                  );
+                                })}
+                              </div>
+                              <LeaderboardPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+                            </>
+                          );
+                        })()}
                       </>
                     )}
                   </>
@@ -687,41 +737,54 @@ const Rankings = () => {
                     {streakUsers.length === 0 ? (
                       <EmptyState message="No active win streaks" sub="Win consecutive quick trades to appear here!" />
                     ) : (
-                      <div className="space-y-2">
-                        {streakUsers.map((su, i) => {
-                          const isMe = currentUserId === su.userId;
-                          const streakMultiplier = su.currentStreak >= 5 ? "1.25x" : su.currentStreak >= 4 ? "1.15x" : su.currentStreak >= 3 ? "1.10x" : su.currentStreak >= 2 ? "1.05x" : "1.0x";
+                      <>
+                        {(() => {
+                          const totalPages = Math.ceil(streakUsers.length / ITEMS_PER_PAGE);
+                          const start = (page - 1) * ITEMS_PER_PAGE;
+                          const pageItems = streakUsers.slice(start, start + ITEMS_PER_PAGE);
                           return (
-                            <motion.div
-                              key={su.userId}
-                              initial={{ opacity: 0, x: -12 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: i * 0.04 }}
-                              className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : ""}`}
-                            >
-                              <div className="w-8 flex justify-center shrink-0">{rankBadge(i + 1)}</div>
-                              <AvatarCircle avatar={su.avatar} name={su.name} />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5">
-                                  <span className={`text-sm font-bold truncate ${isMe ? "text-primary" : ""}`}>{isMe ? "You" : su.name}</span>
-                                  {isMe && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
-                                </div>
-                                <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
-                                  <span>Best: {su.bestStreak} 🏆</span>
-                                  <span>·</span>
-                                  <span>{streakMultiplier} bonus</span>
-                                </div>
+                            <>
+                              <div className="space-y-2">
+                                {pageItems.map((su, i) => {
+                                  const rank = start + i + 1;
+                                  const isMe = currentUserId === su.userId;
+                                  const streakMultiplier = su.currentStreak >= 5 ? "1.25x" : su.currentStreak >= 4 ? "1.15x" : su.currentStreak >= 3 ? "1.10x" : su.currentStreak >= 2 ? "1.05x" : "1.0x";
+                                  return (
+                                    <motion.div
+                                      key={su.userId}
+                                      initial={{ opacity: 0, x: -12 }}
+                                      animate={{ opacity: 1, x: 0 }}
+                                      transition={{ delay: i * 0.04 }}
+                                      className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : ""}`}
+                                    >
+                                      <div className="w-8 flex justify-center shrink-0">{rankBadge(rank)}</div>
+                                      <AvatarCircle avatar={su.avatar} name={su.name} />
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className={`text-sm font-bold truncate ${isMe ? "text-primary" : ""}`}>{isMe ? "You" : su.name}</span>
+                                          {isMe && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                                          <span>Best: {su.bestStreak} 🏆</span>
+                                          <span>·</span>
+                                          <span>{streakMultiplier} bonus</span>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30">
+                                          <Flame className="w-4 h-4 text-amber-500" />
+                                          <span className="text-sm font-bold text-amber-500">{su.currentStreak}</span>
+                                        </div>
+                                      </div>
+                                    </motion.div>
+                                  );
+                                })}
                               </div>
-                              <div className="flex items-center gap-1.5 shrink-0">
-                                <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30">
-                                  <Flame className="w-4 h-4 text-amber-500" />
-                                  <span className="text-sm font-bold text-amber-500">{su.currentStreak}</span>
-                                </div>
-                              </div>
-                            </motion.div>
+                              <LeaderboardPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+                            </>
                           );
-                        })}
-                      </div>
+                        })()}
+                      </>
                     )}
                   </>
                 )}
@@ -778,42 +841,53 @@ const Rankings = () => {
                         />
                       );
                     })()}
-                    <div className="space-y-2">
-                      {sortedReferrers.map((ref, i) => {
-                        const isMe = currentUserId === ref.userId;
-                        return (
-                          <motion.div
-                            key={ref.userId}
-                            initial={{ opacity: 0, x: -12 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: i * 0.04 }}
-                            className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : ""}`}
-                          >
-                            <div className="w-8 flex justify-center shrink-0">{rankBadge(i + 1)}</div>
-                            <AvatarCircle avatar={ref.avatar} name={ref.name} />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                <span className={`text-sm font-bold truncate ${isMe ? "text-primary" : ""}`}>{isMe ? "You" : ref.name}</span>
-                                {isMe && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
-                              </div>
-                              <div className="text-[10px] text-muted-foreground mt-0.5">
-                                {ref.totalReferrals} referral{ref.totalReferrals !== 1 ? "s" : ""}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <p className="text-sm font-bold text-primary flex items-center gap-1">
-                                <TrendingUp className="w-3.5 h-3.5" />+{ref.totalEarned.toFixed(0)}
-                              </p>
-                              {isMe && (
-                                <button onClick={() => shareRank(i + 1, ref.name, ref.avatar, `+${formatDollar(ref.totalEarned)}`, true, `${ref.totalReferrals} referral${ref.totalReferrals !== 1 ? "s" : ""}`, "Referrals", sortedReferrers.length)} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
-                                  <Share2 className="w-3.5 h-3.5 text-primary" />
-                                </button>
-                              )}
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </div>
+                    {(() => {
+                      const totalPages = Math.ceil(sortedReferrers.length / ITEMS_PER_PAGE);
+                      const start = (page - 1) * ITEMS_PER_PAGE;
+                      const pageItems = sortedReferrers.slice(start, start + ITEMS_PER_PAGE);
+                      return (
+                        <>
+                          <div className="space-y-2">
+                            {pageItems.map((ref, i) => {
+                              const rank = start + i + 1;
+                              const isMe = currentUserId === ref.userId;
+                              return (
+                                <motion.div
+                                  key={ref.userId}
+                                  initial={{ opacity: 0, x: -12 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ delay: i * 0.04 }}
+                                  className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : ""}`}
+                                >
+                                  <div className="w-8 flex justify-center shrink-0">{rankBadge(rank)}</div>
+                                  <AvatarCircle avatar={ref.avatar} name={ref.name} />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className={`text-sm font-bold truncate ${isMe ? "text-primary" : ""}`}>{isMe ? "You" : ref.name}</span>
+                                      {isMe && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                                      {ref.totalReferrals} referral{ref.totalReferrals !== 1 ? "s" : ""}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <p className="text-sm font-bold text-primary flex items-center gap-1">
+                                      <TrendingUp className="w-3.5 h-3.5" />+{ref.totalEarned.toFixed(0)}
+                                    </p>
+                                    {isMe && (
+                                      <button onClick={() => shareRank(rank, ref.name, ref.avatar, `+${formatDollar(ref.totalEarned)}`, true, `${ref.totalReferrals} referral${ref.totalReferrals !== 1 ? "s" : ""}`, "Referrals", sortedReferrers.length)} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+                                        <Share2 className="w-3.5 h-3.5 text-primary" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </motion.div>
+                              );
+                            })}
+                          </div>
+                          <LeaderboardPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+                        </>
+                      );
+                    })()}
                   </>
                 )}
               </>
