@@ -29,6 +29,7 @@ const AdminTransactions = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "deposit" | "withdrawal" | "bet" | "payout">("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "confirmed" | "pending" | "failed">("all");
+  const [totals, setTotals] = useState({ deposits: 0, withdrawals: 0, bets: 0 });
   const [page, setPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [search, setSearch] = useState("");
