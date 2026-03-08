@@ -25,6 +25,7 @@ const AdminAnalytics = () => {
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [timeRange, setTimeRange] = useState<7 | 14 | 30>(7);
+  const [popularMarkets, setPopularMarkets] = useState<{ id: string; title: string; count: number }[]>([]);
   const [polyFees, setPolyFees] = useState<{ adminFees: number; creatorFees: number; totalVolume: number; marketCount: number; feesByMarket: { title: string; adminFee: number; creatorFee: number }[] }>({
     adminFees: 0, creatorFees: 0, totalVolume: 0, marketCount: 0, feesByMarket: [],
   });
