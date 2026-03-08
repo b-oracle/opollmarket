@@ -155,10 +155,10 @@ const App = () => (
                 <ConditionalLayout>
                   <div className="flex-1">
                     <Suspense fallback={<PageFallback />}>
+                      <MaintenanceGuard>
                       <Routes>
                         <Route path="/" element={<Index />} />
                         <Route path="/feed" element={<FeatureGate featureKey="feed"><Feed /></FeatureGate>} />
-                        <Route path="/market/:id" element={<MarketDetail />} />
                         <Route path="/create" element={<FeatureGate featureKey="create_market"><Create /></FeatureGate>} />
                         <Route path="/rankings" element={<FeatureGate featureKey="rankings"><Rankings /></FeatureGate>} />
                         <Route path="/portfolio" element={<FeatureGate featureKey="portfolio"><Portfolio /></FeatureGate>} />
