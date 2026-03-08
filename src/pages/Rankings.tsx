@@ -362,10 +362,12 @@ const Podium = <T extends { userId: string; name: string; avatar: string | null 
   items,
   valueLabel,
   currentUserId,
+  onUserClick,
 }: {
   items: T[];
   valueLabel: (item: T) => { text: string; positive: boolean };
   currentUserId?: string;
+  onUserClick?: (userId: string) => void;
 }) => {
   if (items.length < 3) return null;
   const order = [items[1], items[0], items[2]];
@@ -384,7 +386,8 @@ const Podium = <T extends { userId: string; name: string; avatar: string | null 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            className="flex flex-col items-center"
+            className={`flex flex-col items-center ${!isMe ? "cursor-pointer" : ""}`}
+            onClick={() => !isMe && onUserClick?.(item.userId)}
           >
             <div className="relative">
               <div className={`${sizes[i]} rounded-full glass border-2 ${isMe ? "border-primary ring-2 ring-primary/30" : i === 1 ? "border-primary" : "border-border"} flex items-center justify-center overflow-hidden`}>
