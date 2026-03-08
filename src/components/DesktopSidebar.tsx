@@ -4,18 +4,19 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import SignOutConfirmDialog from "@/components/SignOutConfirmDialog";
 import { useSidebarState } from "@/hooks/useSidebarState";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import logo from "@/assets/logo.png";
 
-const navItems = [
-  { icon: Home, label: "Home", path: "/" },
-  { icon: Compass, label: "Feed", path: "/feed" },
-  { icon: Zap, label: "Quick Trade", path: "/quick-trade" },
-  { icon: PlusCircle, label: "Create", path: "/create" },
-  { icon: BarChart3, label: "Portfolio", path: "/portfolio" },
-  { icon: User, label: "Profile", path: "/profile" },
-  { icon: Trophy, label: "Leaderboard", path: "/rankings" },
-  { icon: Gift, label: "Referrals", path: "/referrals" },
-  { icon: HelpCircle, label: "FAQ", path: "/faq" },
+const allNavItems = [
+  { icon: Home, label: "Home", path: "/", featureKey: null },
+  { icon: Compass, label: "Feed", path: "/feed", featureKey: "feed" },
+  { icon: Zap, label: "Quick Trade", path: "/quick-trade", featureKey: "quick_trade" },
+  { icon: PlusCircle, label: "Create", path: "/create", featureKey: "create_market" },
+  { icon: BarChart3, label: "Portfolio", path: "/portfolio", featureKey: "portfolio" },
+  { icon: User, label: "Profile", path: "/profile", featureKey: "social_profiles" },
+  { icon: Trophy, label: "Leaderboard", path: "/rankings", featureKey: "rankings" },
+  { icon: Gift, label: "Referrals", path: "/referrals", featureKey: "referrals" },
+  { icon: HelpCircle, label: "FAQ", path: "/faq", featureKey: "faq" },
 ];
 
 const DesktopSidebar = () => {
