@@ -152,6 +152,25 @@ Deno.serve(async (req) => {
 
           copiedCount++;
         }
+
+        if (trade_type === "quick_trade" && side) {
+          // For quick trades, notify followers about the trade
+          const { data: traderProfile } = await supabase
+            .from("profiles")
+            .select("display_name")
+            .eq("id", trader_user_id)
+            .single();
+          const traderName = traderProfile?.display_name || "A trader";
+
+          await supabase.from("notifications").insert({
+            user_id: copier.user_id,
+            title: `${traderName} placed a Quick Trade 🚀`,
+            message: `${traderName} bet $${copyAmount.toFixed(2)} on ${side.toUpperCase()} in Quick Trade.`,
+            type: "info",
+          });
+
+          copiedCount++;
+        }
       } catch (err) {
         console.error(`Copy trade failed for user ${copier.user_id}:`, err);
       }

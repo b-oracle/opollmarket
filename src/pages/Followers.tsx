@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,15 +6,31 @@ import { useAuth } from "@/hooks/useAuth";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import FollowButton from "@/components/FollowButton";
-import { ArrowLeft, Users, UserCheck, Loader2, Search } from "lucide-react";
+import { ArrowLeft, Users, UserCheck, Loader2, Search, Bell } from "lucide-react";
 import { motion } from "framer-motion";
 import NftBadge, { isNftAvatar } from "@/components/NftBadge";
+
+const LAST_SEEN_KEY = "followers_last_seen";
 
 const Followers = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [tab, setTab] = useState<"followers" | "following">("followers");
   const [search, setSearch] = useState("");
+
+  // Track last seen timestamp for new follower badge
+  const [lastSeen, setLastSeen] = useState<string | null>(() => {
+    try { return localStorage.getItem(LAST_SEEN_KEY); } catch { return null; }
+  });
+
+  // Mark as seen when viewing followers tab
+  useEffect(() => {
+    if (tab === "followers" && user) {
+      const now = new Date().toISOString();
+      localStorage.setItem(LAST_SEEN_KEY, now);
+      setLastSeen(now);
+    }
+  }, [tab, user]);
 
   const { data: followers = [], isLoading: loadingFollowers } = useQuery({
     queryKey: ["my-followers", user?.id],
@@ -66,6 +82,12 @@ const Followers = () => {
       )
     : list;
 
+  // Count new followers since last seen
+  const newFollowerCount = useMemo(() => {
+    if (!lastSeen || tab !== "followers") return 0;
+    return followers.filter((f: any) => new Date(f.created_at) > new Date(lastSeen)).length;
+  }, [followers, lastSeen, tab]);
+
   if (!user) {
     navigate("/auth");
     return null;
@@ -92,7 +114,14 @@ const Followers = () => {
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            Followers ({followers.length})
+            <span className="relative">
+              Followers ({followers.length})
+              {newFollowerCount > 0 && tab !== "followers" && (
+                <span className="absolute -top-2 -right-4 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">
+                  {newFollowerCount}
+                </span>
+              )}
+            </span>
           </button>
           <button
             onClick={() => setTab("following")}

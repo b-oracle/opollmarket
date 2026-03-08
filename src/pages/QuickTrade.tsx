@@ -698,6 +698,20 @@ export default function QuickTrade() {
       haptic("success");
       toast({ title: `${side.toUpperCase()} bet placed!`, description: `$${amt} on ${selectedAsset.symbol}` });
 
+      // Trigger copy-trade for followers (fire-and-forget)
+      supabase.functions.invoke("copy-trade", {
+        body: {
+          trader_user_id: user.id,
+          trade_type: "quick_trade",
+          market_id: null,
+          option_id: null,
+          side,
+          amount: amt,
+          price: 0,
+          shares: 0,
+        },
+      }).catch(() => {});
+
       // Reload bet state
       const { data: newBet } = await supabase
         .from("quick_bets")
