@@ -833,23 +833,39 @@ async function handleQuickTrade(
     .limit(1)
     .single();
 
-  const assets = (settings?.qt_enabled_assets || "BTC,ETH,BNB").split(",");
+  const assets = (settings?.qt_enabled_assets || "BTC,ETH,BNB").split(",").map((a: string) => a.trim());
   const minBet = settings?.qt_min_bet || 1;
   const maxBet = settings?.qt_max_bet || 500;
 
-  // Asset emojis
   const assetEmojis: Record<string, string> = {
     BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
   };
 
-  const buttons = assets.slice(0, 6).map((asset: string) => ({
-    text: `${assetEmojis[asset.trim()] || "📊"} ${asset.trim()}`,
-    callback_data: `qt_asset_${asset.trim()}`,
-  }));
+  // Fetch live prices for all enabled assets
+  const prices = await fetchCryptoPrices(assets.slice(0, 6));
 
+  let priceList = "";
+  for (const asset of assets.slice(0, 6)) {
+    const emoji = assetEmojis[asset] || "📊";
+    const price = prices[asset];
+    priceList += price
+      ? `${emoji} <b>${asset}</b>: ${formatPrice(price)}\n`
+      : `${emoji} <b>${asset}</b>\n`;
+  }
+
+  const buttons = assets.slice(0, 6).map((asset: string) => {
+    const price = prices[asset];
+    const priceLabel = price ? ` ${formatPrice(price)}` : "";
+    return {
+      text: `${assetEmojis[asset] || "📊"} ${asset}${priceLabel}`,
+      callback_data: `qt_asset_${asset}`,
+    };
+  });
+
+  // 2 per row so price labels fit
   const keyboard: Array<Array<{ text: string; callback_data: string }>> = [];
-  for (let i = 0; i < buttons.length; i += 3) {
-    keyboard.push(buttons.slice(i, i + 3));
+  for (let i = 0; i < buttons.length; i += 2) {
+    keyboard.push(buttons.slice(i, i + 2));
   }
 
   await tg(token, "sendMessage", {
@@ -858,6 +874,8 @@ async function handleQuickTrade(
       `⚡ <b>Quick Trade</b>\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `Predict if a crypto price goes 📈 UP or 📉 DOWN!\n\n` +
+      `📊 <b>Live Prices</b>\n` +
+      `${priceList}\n` +
       `💰 Bet range: <b>$${minBet} – $${maxBet}</b>\n` +
       `⏱️ Round duration: <b>5 minutes</b>\n\n` +
       `Select an asset to trade:`,
