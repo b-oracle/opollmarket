@@ -3,12 +3,13 @@ import { Home, Compass, PlusCircle, Zap, User, MoreHorizontal } from "lucide-rea
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import MoreMenu from "@/components/MoreMenu";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 
 const baseNavItems = [
-  { icon: Home, label: "Home", path: "/" },
-  { icon: Compass, label: "Feed", path: "/feed" },
-  { icon: PlusCircle, label: "Create", path: "/create" },
-  { icon: Zap, label: "Quick Trade", path: "/quick-trade" },
+  { icon: Home, label: "Home", path: "/", featureKey: null },
+  { icon: Compass, label: "Feed", path: "/feed", featureKey: "feed" },
+  { icon: PlusCircle, label: "Create", path: "/create", featureKey: "create_market" },
+  { icon: Zap, label: "Quick Trade", path: "/quick-trade", featureKey: "quick_trade" },
 ];
 
 const BottomNav = () => {
