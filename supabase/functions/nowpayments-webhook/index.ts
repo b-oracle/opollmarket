@@ -48,7 +48,7 @@ async function verifySignature(
 }
 
 async function handleDeposit(supabase: ReturnType<typeof createClient>, payload: Record<string, unknown>, orderId: string) {
-  const { payment_id, actually_paid, outcome_amount } = payload;
+  const { payment_id, actually_paid, outcome_amount, pay_amount } = payload;
   const paymentIdStr = String(payment_id);
 
   const parts = orderId.split("_");
@@ -61,9 +61,9 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
   // 1. Check if already credited (idempotency)
   const { data: confirmedTx } = await supabase
     .from("transactions")
-    .select("id")
+    .select("id, status")
     .eq("nowpayments_payment_id", paymentIdStr)
-    .eq("status", "confirmed")
+    .in("status", ["confirmed", "partial"])
     .maybeSingle();
 
   if (confirmedTx) {
@@ -71,7 +71,7 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
     return;
   }
 
-  // 2. Find the matching transaction — first by payment_id (any status), then by user pending
+  // 2. Find the matching transaction
   const { data: matchByPaymentId } = await supabase
     .from("transactions")
     .select("id, amount, status")
@@ -93,11 +93,15 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
     : { data: null };
 
   const matchedTx = matchByPaymentId || matchByUserPending;
+  const requestedAmount = matchedTx?.amount || pay_amount || outcome_amount || actually_paid;
 
-  // Use the original requested amount if we found a matching tx, otherwise use what was actually paid
-  const creditAmount = matchedTx?.amount || outcome_amount || actually_paid;
+  // Determine if this is a partial payment
+  // Use outcome_amount (USD value of what was received) for comparison
+  const creditAmount = outcome_amount || actually_paid;
+  const isPartial = Number(creditAmount) < Number(requestedAmount) * 0.98; // 2% tolerance for exchange rate fluctuations
+  const finalStatus = isPartial ? "partial" : "confirmed";
 
-  // 3. Credit the user's balance
+  // 3. Credit the user's balance with whatever was actually received
   const { data: balance } = await supabase
     .from("balances")
     .select("amount")
@@ -124,34 +128,47 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
     return;
   }
 
-  // 4. Update the transaction record to confirmed
+  // 4. Update the transaction record
   if (matchedTx) {
     await supabase
       .from("transactions")
-      .update({ status: "confirmed", nowpayments_payment_id: paymentIdStr })
+      .update({
+        status: finalStatus,
+        nowpayments_payment_id: paymentIdStr,
+        amount: Number(creditAmount), // Update to actual credited amount
+      })
       .eq("id", matchedTx.id);
   } else {
-    // No matching transaction at all — create a confirmed one (safety net)
     await supabase
       .from("transactions")
       .insert({
         user_id: userId,
         type: "deposit",
         amount: Number(creditAmount),
-        status: "confirmed",
+        status: finalStatus,
         nowpayments_payment_id: paymentIdStr,
       });
   }
 
   // 5. Notify user
-  await supabase.from("notifications").insert({
-    user_id: userId,
-    title: "Deposit Confirmed ✅",
-    message: `Your deposit of $${Number(creditAmount).toFixed(2)} has been confirmed.`,
-    type: "deposit",
-  });
+  const shortfall = Number(requestedAmount) - Number(creditAmount);
+  if (isPartial) {
+    await supabase.from("notifications").insert({
+      user_id: userId,
+      title: "Partial Deposit Received ⚠️",
+      message: `$${Number(creditAmount).toFixed(2)} of your $${Number(requestedAmount).toFixed(2)} deposit has been credited. You can top up the remaining $${shortfall.toFixed(2)}.`,
+      type: "deposit",
+    });
+  } else {
+    await supabase.from("notifications").insert({
+      user_id: userId,
+      title: "Deposit Confirmed ✅",
+      message: `Your deposit of $${Number(creditAmount).toFixed(2)} has been confirmed.`,
+      type: "deposit",
+    });
+  }
 
-  console.log(`Credited $${creditAmount} to user ${userId}`);
+  console.log(`Credited $${creditAmount} (${finalStatus}) to user ${userId}`);
 }
 
 async function handleBoost(supabase: ReturnType<typeof createClient>, payload: Record<string, unknown>, orderId: string) {
