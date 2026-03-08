@@ -65,6 +65,7 @@ const AdminTransactions = () => {
         if (matchingUserIds.length === 0 && matchingMarketIds.length === 0) {
           setTxns([]);
           setTotalCount(0);
+          setTotals({ deposits: 0, withdrawals: 0, bets: 0 });
           setLoading(false);
           return;
         }
