@@ -73,7 +73,7 @@ const haptic = (style: "light" | "medium" | "heavy" | "success" | "error" = "med
 };
 const AMOUNT_PRESETS = [5, 10, 25, 50, 100];
 
-import { fetchCryptoPrice, fetchCryptoHistory, fetchOHLCData, type OHLCCandle } from "@/lib/cryptoPriceProvider";
+import { fetchCryptoPrice, fetchCryptoHistory, fetchOHLCData, subscribeToPriceStream, type OHLCCandle } from "@/lib/cryptoPriceProvider";
 
 // Wrapper to keep existing call signatures (geckoId-based)
 async function fetchPrice(geckoId: string): Promise<number | null> {
@@ -314,57 +314,108 @@ export default function QuickTrade() {
     return () => { cancelled = true; };
   }, [selectedAsset.geckoId, chartTimeframe]);
 
-  // ── Fetch price (streaming: poll every 2s for live chart feel) ──
+  // ── Stream price via WebSocket (sub-second) with HTTP polling fallback ──
   const lastFetchTimeRef = useRef(0);
   const [streamingPrice, setStreamingPrice] = useState<number | null>(null);
+  const wsActiveRef = useRef(false);
   
   useEffect(() => {
     let mounted = true;
+    let pollIv: ReturnType<typeof setInterval> | null = null;
     
-    const poll = async () => {
-      // Rate-limit actual API calls to every 5s, but interpolate between
+    // Throttle WS updates to ~100ms to avoid React re-render storm
+    let lastWsUpdate = 0;
+    let pendingRaf: number | null = null;
+    
+    const handleWsTick = (price: number) => {
+      if (!mounted) return;
       const now = Date.now();
-      const shouldFetch = now - lastFetchTimeRef.current >= 5000;
+      if (now - lastWsUpdate < 100) return; // throttle to 10 updates/sec
+      lastWsUpdate = now;
+      wsActiveRef.current = true;
       
-      if (shouldFetch) {
-        lastFetchTimeRef.current = now;
-        const p = await fetchPrice(selectedAsset.geckoId);
-        if (p != null && mounted) {
-          setPrevPrice(currentPrice);
-          setCurrentPrice(p);
-          setStreamingPrice(p);
-
-          // Add to raw cache and price history
-          const maxCutoff = now - 4 * 60 * 60 * 1000;
-          const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
-          const rawCached = rawDataRef.current.get(selectedAsset.geckoId) || [];
-          rawDataRef.current.set(selectedAsset.geckoId, [...rawCached, [now, p] as [number, number]].filter(([ts]) => ts >= maxCutoff));
-          setPriceHistory((prev) => {
-            const updated = [...prev, { time: timeLabel, price: p, ts: now }];
-            return updated.filter((pt) => pt.ts >= maxCutoff);
-          });
-        }
-      } else if (currentPrice != null && mounted) {
-        // Micro-interpolation: add tiny random movement to simulate tick streaming
-        const jitter = currentPrice * (Math.random() - 0.5) * 0.0001; // ±0.005% noise
-        const tickPrice = currentPrice + jitter;
-        setStreamingPrice(tickPrice);
+      if (pendingRaf) cancelAnimationFrame(pendingRaf);
+      pendingRaf = requestAnimationFrame(() => {
+        if (!mounted) return;
+        setPrevPrice(currentPrice);
+        setCurrentPrice(price);
+        setStreamingPrice(price);
         
-        // Also append to price history for recharts
-        const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
+        // Append to price history (throttled to every 500ms for chart perf)
+        const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
         setPriceHistory((prev) => {
           const maxCutoff = now - 4 * 60 * 60 * 1000;
-          const updated = [...prev, { time: timeLabel, price: tickPrice, ts: now }];
-          // Keep max 500 points to avoid perf issues with recharts
+          // Only add if last point was >500ms ago
+          if (prev.length > 0 && now - prev[prev.length - 1].ts < 500) {
+            // Update last point in place
+            const updated = [...prev];
+            updated[updated.length - 1] = { time: timeLabel, price, ts: now };
+            return updated;
+          }
+          const updated = [...prev, { time: timeLabel, price, ts: now }];
           const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
-          return filtered.length > 500 ? filtered.slice(-500) : filtered;
+          return filtered.length > 600 ? filtered.slice(-600) : filtered;
         });
-      }
+        
+        // Update raw cache
+        const rawCached = rawDataRef.current.get(selectedAsset.geckoId) || [];
+        const maxCutoff = now - 4 * 60 * 60 * 1000;
+        rawDataRef.current.set(selectedAsset.geckoId, [...rawCached, [now, price] as [number, number]].filter(([ts]) => ts >= maxCutoff));
+      });
     };
     
-    poll();
-    const iv = setInterval(poll, 2000); // poll every 2 seconds
-    return () => { mounted = false; clearInterval(iv); };
+    // Try WebSocket first
+    const unsubWs = subscribeToPriceStream(selectedAsset.symbol, handleWsTick);
+    
+    // Fallback: HTTP polling if WS doesn't fire within 3s
+    const fallbackTimer = setTimeout(() => {
+      if (!wsActiveRef.current && mounted) {
+        const poll = async () => {
+          const now = Date.now();
+          const shouldFetch = now - lastFetchTimeRef.current >= 5000;
+          
+          if (shouldFetch) {
+            lastFetchTimeRef.current = now;
+            const p = await fetchPrice(selectedAsset.geckoId);
+            if (p != null && mounted && !wsActiveRef.current) {
+              setPrevPrice(currentPrice);
+              setCurrentPrice(p);
+              setStreamingPrice(p);
+              const maxCutoff = now - 4 * 60 * 60 * 1000;
+              const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
+              const rawCached = rawDataRef.current.get(selectedAsset.geckoId) || [];
+              rawDataRef.current.set(selectedAsset.geckoId, [...rawCached, [now, p] as [number, number]].filter(([ts]) => ts >= maxCutoff));
+              setPriceHistory((prev) => {
+                const updated = [...prev, { time: timeLabel, price: p, ts: now }];
+                return updated.filter((pt) => pt.ts >= maxCutoff);
+              });
+            }
+          } else if (currentPrice != null && mounted && !wsActiveRef.current) {
+            const jitter = currentPrice * (Math.random() - 0.5) * 0.0001;
+            const tickPrice = currentPrice + jitter;
+            setStreamingPrice(tickPrice);
+            const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
+            setPriceHistory((prev) => {
+              const maxCutoff = now - 4 * 60 * 60 * 1000;
+              const updated = [...prev, { time: timeLabel, price: tickPrice, ts: now }];
+              const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
+              return filtered.length > 500 ? filtered.slice(-500) : filtered;
+            });
+          }
+        };
+        poll();
+        pollIv = setInterval(poll, 1000); // faster polling as fallback
+      }
+    }, 3000);
+    
+    return () => {
+      mounted = false;
+      wsActiveRef.current = false;
+      unsubWs();
+      if (pendingRaf) cancelAnimationFrame(pendingRaf);
+      clearTimeout(fallbackTimer);
+      if (pollIv) clearInterval(pollIv);
+    };
   }, [selectedAsset]);
 
   // ── Fetch / create active round ──
@@ -896,6 +947,7 @@ export default function QuickTrade() {
                   entryPrice={userBet && activeRound?.open_price ? Number(activeRound.open_price) : null}
                   entrySide={userBet ? (userBet.side as "up" | "down") : null}
                   roundEndTime={activeRound ? new Date(activeRound.created_at).getTime() + activeRound.duration_seconds * 1000 : null}
+                  targetPrice={activeRound?.open_price ? Number(activeRound.open_price) : null}
                   resolveFlash={resolveFlash}
                 />
               ) : (() => {

@@ -1,6 +1,7 @@
 /**
  * Multi-provider crypto price fetcher with automatic fallback.
  * Order: CoinGecko → CoinCap → CryptoCompare (all free, no API key needed).
+ * Includes Binance WebSocket streaming for real-time sub-second updates.
  */
 
 // ── ID maps per provider ──
@@ -337,4 +338,122 @@ export async function fetchOHLCData(
   }
 
   return cached?.candles ?? [];
+}
+
+// ── Binance WebSocket real-time streaming ──
+
+const BINANCE_WS_SYMBOLS: Record<string, string> = {
+  BTC: "btcusdt", ETH: "ethusdt", BNB: "bnbusdt", SOL: "solusdt",
+  XRP: "xrpusdt", DOGE: "dogeusdt", ADA: "adausdt", MATIC: "maticusdt",
+  AVAX: "avaxusdt", DOT: "dotusdt", LINK: "linkusdt", SHIB: "shibusdt",
+};
+
+// Reverse lookup: geckoId → symbol for WS
+const GECKO_TO_SYM_WS: Record<string, string> = {
+  bitcoin: "BTC", ethereum: "ETH", binancecoin: "BNB", solana: "SOL",
+  ripple: "XRP", cardano: "ADA", dogecoin: "DOGE", "matic-network": "MATIC",
+  "avalanche-2": "AVAX", polkadot: "DOT", chainlink: "LINK", "shiba-inu": "SHIB",
+};
+
+interface WSSubscription {
+  ws: WebSocket;
+  listeners: Set<(price: number) => void>;
+  lastPrice: number | null;
+  reconnectTimer?: ReturnType<typeof setTimeout>;
+}
+
+const wsSubscriptions = new Map<string, WSSubscription>();
+
+function createBinanceWS(symbol: string): WSSubscription {
+  const binanceSymbol = BINANCE_WS_SYMBOLS[symbol];
+  if (!binanceSymbol) throw new Error(`No Binance symbol for ${symbol}`);
+  
+  const sub: WSSubscription = {
+    ws: null as any,
+    listeners: new Set(),
+    lastPrice: null,
+  };
+
+  function connect() {
+    try {
+      const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${binanceSymbol}@trade`);
+      sub.ws = ws;
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          const price = parseFloat(data.p);
+          if (!isNaN(price)) {
+            sub.lastPrice = price;
+            // Also update the HTTP cache so other consumers stay in sync
+            const cacheKey = symbol.toUpperCase();
+            cache.set(cacheKey, { price, fetchedAt: Date.now(), provider: "binance-ws" });
+            sub.listeners.forEach((cb) => cb(price));
+          }
+        } catch {}
+      };
+
+      ws.onerror = () => {
+        ws.close();
+      };
+
+      ws.onclose = () => {
+        // Reconnect after 2s if there are still listeners
+        if (sub.listeners.size > 0) {
+          sub.reconnectTimer = setTimeout(connect, 2000);
+        }
+      };
+    } catch {
+      // Fallback: WS not available, listeners will rely on HTTP polling
+      sub.reconnectTimer = setTimeout(connect, 5000);
+    }
+  }
+
+  connect();
+  return sub;
+}
+
+/**
+ * Subscribe to real-time price updates via Binance WebSocket.
+ * Returns an unsubscribe function. Falls back gracefully if WS unavailable.
+ * @param symbolOrGeckoId - Asset symbol (BTC) or CoinGecko ID (bitcoin)
+ * @param callback - Called on each price tick (multiple times per second)
+ */
+export function subscribeToPriceStream(
+  symbolOrGeckoId: string,
+  callback: (price: number) => void
+): () => void {
+  // Resolve to uppercase symbol
+  let sym = symbolOrGeckoId.toUpperCase();
+  if (GECKO_TO_SYM_WS[symbolOrGeckoId]) {
+    sym = GECKO_TO_SYM_WS[symbolOrGeckoId];
+  }
+
+  if (!BINANCE_WS_SYMBOLS[sym]) {
+    // No WS available for this symbol — caller should fall back to polling
+    return () => {};
+  }
+
+  let sub = wsSubscriptions.get(sym);
+  if (!sub) {
+    sub = createBinanceWS(sym);
+    wsSubscriptions.set(sym, sub);
+  }
+
+  sub.listeners.add(callback);
+
+  // If we already have a cached price, emit it immediately
+  if (sub.lastPrice !== null) {
+    callback(sub.lastPrice);
+  }
+
+  return () => {
+    sub!.listeners.delete(callback);
+    // Clean up WS if no more listeners
+    if (sub!.listeners.size === 0) {
+      clearTimeout(sub!.reconnectTimer);
+      try { sub!.ws?.close(); } catch {}
+      wsSubscriptions.delete(sym);
+    }
+  };
 }

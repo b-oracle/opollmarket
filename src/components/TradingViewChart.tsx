@@ -34,6 +34,8 @@ interface TradingViewChartProps {
   entryPrice?: number | null;
   /** Bet side for coloring the entry line */
   entrySide?: "up" | "down" | null;
+  /** Target / "Price to beat" — shown as dashed line like Polymarket */
+  targetPrice?: number | null;
   /** Unix ms timestamp when the active round ends */
   roundEndTime?: number | null;
   /** Flash effect on round resolution */
@@ -50,6 +52,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   streamingPrice,
   entryPrice,
   entrySide,
+  targetPrice,
   roundEndTime,
   resolveFlash,
 }, _ref) {
@@ -276,6 +279,27 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
       try { series.removePriceLine(priceLine); } catch {}
     };
   }, [entryPrice, entrySide, chartStyle]);
+
+  // Target "Price to beat" line (Polymarket-style dashed line)
+  useEffect(() => {
+    if (!targetPrice || !chartRef.current) return;
+    
+    const series = chartStyle === "candle" ? candleSeriesRef.current : areaSeriesRef.current;
+    if (!series) return;
+    
+    const priceLine = series.createPriceLine({
+      price: targetPrice,
+      color: "#f59e0b",
+      lineWidth: 1,
+      lineStyle: 2, // Dashed
+      axisLabelVisible: true,
+      title: "Target",
+    });
+    
+    return () => {
+      try { series.removePriceLine(priceLine); } catch {}
+    };
+  }, [targetPrice, chartStyle]);
 
   useEffect(() => {
     if (!streamingPrice || !chartRef.current) return;
