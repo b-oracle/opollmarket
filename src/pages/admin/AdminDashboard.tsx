@@ -46,13 +46,17 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [markets, comments, boosts, users, txns, referrals] = await Promise.all([
+      const [markets, comments, boosts, users, txns, referrals, qtRounds, qtBets, follows, likes] = await Promise.all([
         supabase.from("markets").select("*", { count: "exact", head: true }),
         supabase.from("comments").select("*", { count: "exact", head: true }),
         supabase.from("market_boosts").select("*", { count: "exact", head: true }).eq("status", "active"),
         supabase.from("profiles").select("*", { count: "exact", head: true }),
         supabase.from("transactions").select("*", { count: "exact", head: true }),
         supabase.from("referral_rewards").select("amount"),
+        supabase.from("quick_rounds").select("*", { count: "exact", head: true }),
+        supabase.from("quick_bets").select("amount, status"),
+        supabase.from("follows").select("*", { count: "exact", head: true }),
+        supabase.from("market_likes").select("*", { count: "exact", head: true }),
       ]);
 
       const { data: marketRows } = await supabase.from("markets").select("category, volume, status, created_at");
