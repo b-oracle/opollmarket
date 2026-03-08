@@ -142,7 +142,7 @@ const Referrals = () => {
     return (
       <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
         <TopBar />
-        <div className="max-w-lg mx-auto px-4 flex flex-col items-center justify-center" style={{ minHeight: "60vh", paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
+        <div className="max-w-lg md:max-w-3xl mx-auto px-4 flex flex-col items-center justify-center" style={{ minHeight: "60vh", paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
           <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-4">
             <Gift className="w-8 h-8 text-muted-foreground" />
           </div>
