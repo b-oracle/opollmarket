@@ -542,7 +542,9 @@ const PolymarketPresetsSection = ({ canEdit }: { canEdit: boolean }) => {
 
   const handleAdd = async () => {
     const maxDays = parseInt(addMaxDays) || 14;
+    const maxImports = parseInt(addMaxImports) || 10;
     if (maxDays < 1 || maxDays > 365) { toast.error("Max days must be 1-365"); return; }
+    if (maxImports < 1 || maxImports > 200) { toast.error("Max imports must be 1-200"); return; }
 
     // Check if preset already exists for this category
     if (presets.some(p => p.category === addCategory)) {
@@ -557,6 +559,7 @@ const PolymarketPresetsSection = ({ canEdit }: { canEdit: boolean }) => {
       .insert({
         category: addCategory,
         max_days_ahead: maxDays,
+        max_imports_per_run: maxImports,
         enabled: true,
         auto_approve: addAutoApprove,
         created_by: user?.id,
