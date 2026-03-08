@@ -505,13 +505,15 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
               <Trash2 className="w-3 h-3" />
             </button>
           </div>
-          <button
-            onClick={() => setIsFullscreen((p) => !p)}
-            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-            title={isFullscreen ? "Exit fullscreen" : "Expand chart"}
-          >
-            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-          </button>
+          {isFullscreen && (
+            <button
+              onClick={() => setIsFullscreen(false)}
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              title="Exit fullscreen"
+            >
+              <Minimize2 className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -535,6 +537,31 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
             />
           </span>
         </div>
+
+        {/* Expand button – bottom center of chart */}
+        {!isFullscreen && (
+          <button
+            onClick={() => setIsFullscreen(true)}
+            className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-all shadow-md active:scale-95"
+            title="Expand chart"
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-semibold">Expand</span>
+          </button>
+        )}
+
+        {/* Fullscreen close button – prominent, mobile-friendly, bottom center */}
+        {isFullscreen && (
+          <button
+            onClick={() => setIsFullscreen(false)}
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm shadow-lg active:scale-95 transition-transform"
+            style={{ paddingBottom: "calc(0.625rem + env(safe-area-inset-bottom, 0px))" }}
+            title="Exit fullscreen"
+          >
+            <Minimize2 className="w-4 h-4" />
+            <span>Close Fullscreen</span>
+          </button>
+        )}
       </div>
     </div>
   );
