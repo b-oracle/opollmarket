@@ -240,7 +240,7 @@ const FAQ = () => {
     <div className="min-h-screen bg-background text-foreground" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
       <SEOHead title="FAQ – OPollMarket" description="Frequently asked questions about OPollMarket — deposits, withdrawals, market creation, boosts, Telegram & WhatsApp integration, and more." path="/faq" />
       <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
+        <div className="max-w-lg md:max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-muted transition">
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -248,7 +248,7 @@ const FAQ = () => {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 pt-4 space-y-4">
+      <div className="max-w-lg md:max-w-3xl mx-auto px-4 pt-4 space-y-4">
         {/* AI Search Bar */}
         <div className="space-y-3">
           <div className="relative">
