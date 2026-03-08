@@ -158,12 +158,13 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
     queryFn: async () => {
       const { data } = await supabase
         .from("commission_settings")
-        .select("withdrawal_cooldown_minutes, withdrawal_multiplier")
+        .select("withdrawal_cooldown_minutes, withdrawal_multiplier, withdrawal_limit_enabled")
         .limit(1)
         .single();
       return {
         cooldown: (data as any)?.withdrawal_cooldown_minutes ?? 5,
         multiplier: (data as any)?.withdrawal_multiplier ?? 2,
+        limitEnabled: (data as any)?.withdrawal_limit_enabled ?? true,
       };
     },
     enabled: tab === "withdraw",
