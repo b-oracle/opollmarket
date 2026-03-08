@@ -737,41 +737,52 @@ const Rankings = () => {
                     {streakUsers.length === 0 ? (
                       <EmptyState message="No active win streaks" sub="Win consecutive quick trades to appear here!" />
                     ) : (
-                      <div className="space-y-2">
-                        {streakUsers.map((su, i) => {
-                          const isMe = currentUserId === su.userId;
-                          const streakMultiplier = su.currentStreak >= 5 ? "1.25x" : su.currentStreak >= 4 ? "1.15x" : su.currentStreak >= 3 ? "1.10x" : su.currentStreak >= 2 ? "1.05x" : "1.0x";
-                          return (
-                            <motion.div
-                              key={su.userId}
-                              initial={{ opacity: 0, x: -12 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: i * 0.04 }}
-                              className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : ""}`}
-                            >
-                              <div className="w-8 flex justify-center shrink-0">{rankBadge(i + 1)}</div>
-                              <AvatarCircle avatar={su.avatar} name={su.name} />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5">
-                                  <span className={`text-sm font-bold truncate ${isMe ? "text-primary" : ""}`}>{isMe ? "You" : su.name}</span>
-                                  {isMe && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
-                                </div>
-                                <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
-                                  <span>Best: {su.bestStreak} 🏆</span>
-                                  <span>·</span>
-                                  <span>{streakMultiplier} bonus</span>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-1.5 shrink-0">
-                                <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30">
-                                  <Flame className="w-4 h-4 text-amber-500" />
-                                  <span className="text-sm font-bold text-amber-500">{su.currentStreak}</span>
-                                </div>
-                              </div>
-                            </motion.div>
-                          );
-                        })}
-                      </div>
+                      {(() => {
+                        const totalPages = Math.ceil(streakUsers.length / ITEMS_PER_PAGE);
+                        const start = (page - 1) * ITEMS_PER_PAGE;
+                        const pageItems = streakUsers.slice(start, start + ITEMS_PER_PAGE);
+                        return (
+                          <>
+                            <div className="space-y-2">
+                              {pageItems.map((su, i) => {
+                                const rank = start + i + 1;
+                                const isMe = currentUserId === su.userId;
+                                const streakMultiplier = su.currentStreak >= 5 ? "1.25x" : su.currentStreak >= 4 ? "1.15x" : su.currentStreak >= 3 ? "1.10x" : su.currentStreak >= 2 ? "1.05x" : "1.0x";
+                                return (
+                                  <motion.div
+                                    key={su.userId}
+                                    initial={{ opacity: 0, x: -12 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: i * 0.04 }}
+                                    className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : ""}`}
+                                  >
+                                    <div className="w-8 flex justify-center shrink-0">{rankBadge(rank)}</div>
+                                    <AvatarCircle avatar={su.avatar} name={su.name} />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className={`text-sm font-bold truncate ${isMe ? "text-primary" : ""}`}>{isMe ? "You" : su.name}</span>
+                                        {isMe && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
+                                      </div>
+                                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                                        <span>Best: {su.bestStreak} 🏆</span>
+                                        <span>·</span>
+                                        <span>{streakMultiplier} bonus</span>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                      <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30">
+                                        <Flame className="w-4 h-4 text-amber-500" />
+                                        <span className="text-sm font-bold text-amber-500">{su.currentStreak}</span>
+                                      </div>
+                                    </div>
+                                  </motion.div>
+                                );
+                              })}
+                            </div>
+                            <LeaderboardPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+                          </>
+                        );
+                      })()}
                     )}
                   </>
                 )}
