@@ -189,7 +189,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
       if (!user) return;
       const { data } = await supabase
         .from("transactions")
-        .select("status")
+        .select("status, amount")
         .eq("user_id", user.id)
         .eq("nowpayments_payment_id", paymentId)
         .single();
@@ -200,10 +200,22 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
         queryClient.invalidateQueries({ queryKey: ["balance"] });
         queryClient.invalidateQueries({ queryKey: ["has_deposit"] });
         setStep("success");
+      } else if (data?.status === "partial") {
+        clearInterval(interval);
+        setPollInterval(null);
+        queryClient.invalidateQueries({ queryKey: ["balance"] });
+        queryClient.invalidateQueries({ queryKey: ["has_deposit"] });
+        const credited = Number(data.amount);
+        setPartialInfo({
+          credited,
+          requested: numAmount,
+          shortfall: Math.max(0, numAmount - credited),
+        });
+        setStep("partial_success");
       }
-    }, 10000); // every 10 seconds
+    }, 10000);
     setPollInterval(interval);
-  }, [user, queryClient]);
+  }, [user, queryClient, numAmount]);
 
   const handleDeposit = useCallback(async () => {
     setStep("executing");
