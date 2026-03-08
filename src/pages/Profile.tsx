@@ -22,7 +22,7 @@ import { Switch } from "@/components/ui/switch";
 import NftBadge, { isNftAvatar } from "@/components/NftBadge";
 import { AnimatePresence, motion } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import SocialPage from "@/components/SocialPage";
+
 
 
 type TxType = "buy" | "sell" | "deposit" | "withdraw";
