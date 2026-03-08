@@ -178,8 +178,12 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
       const triggered = Math.abs(dx) > SWIPE_THRESHOLD || (velocity > 400 && Math.abs(dx) > 25);
 
       if (triggered) {
-        const side = dx > 0 ? "yes" : "no";
-        setBetModal({ open: true, side });
+        if (isEnded) {
+          toast.info("This market has ended and is no longer available for predictions");
+        } else {
+          const side = dx > 0 ? "yes" : "no";
+          setBetModal({ open: true, side });
+        }
       }
       setDragX(0);
       setSwiping(false);
