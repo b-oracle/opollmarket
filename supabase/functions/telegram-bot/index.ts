@@ -105,7 +105,7 @@ async function handleStart(token: string, chatId: number) {
   await tg(token, "sendMessage", {
     chat_id: chatId,
     text:
-      "🔮 <b>Welcome to oPoll Predict!</b>\n\n" +
+      "🔮 <b>Welcome to OPoll Market</b> | The World's First Web + Telegram + WhatsApp prediction market protocol.\n\n" +
       "Predict outcomes, trade markets, and win rewards — all from Telegram.\n\n" +
       "To get started, link your account:\n" +
       "<code>/link your@email.com yourpassword</code>\n\n" +
