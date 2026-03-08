@@ -271,6 +271,7 @@ const Feed = () => {
   const touchStartY = useRef(0);
   const isPulling = useRef(false);
   const hapticFired = useRef(false);
+  const [scrollNudge, setScrollNudge] = useState(false);
   const spinControls = useAnimation();
 
   const sortedMarkets = useMemo(() => {
