@@ -38,8 +38,11 @@ import StreakMilestoneModal from "@/components/StreakMilestoneModal";
 import ShareModal from "@/components/ShareModal";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
-import TradingViewChart from "@/components/TradingViewChart";
 import { playWinSound, playLoseSound } from "@/lib/sounds";
+import TradingViewChart from "@/components/TradingViewChart";
+import QuickTradeChart from "@/components/quick-trade/QuickTradeChart";
+import QuickTradeHistory from "@/components/quick-trade/QuickTradeHistory";
+import QuickTradeBetControls from "@/components/quick-trade/QuickTradeBetControls";
 // ── Asset config ──
 const ALL_ASSETS = [
   { symbol: "BTC", label: "Bitcoin", geckoId: "bitcoin" },
@@ -948,223 +951,19 @@ export default function QuickTrade() {
                     )}
                   </>
                 )}
-              {historyLoading ? (
-                <div className="relative h-[100px] overflow-hidden rounded-lg bg-muted/30">
-                  {/* Skeleton wave lines */}
-                  <div className="absolute inset-0 flex items-end gap-[3px] px-2 pb-2">
-                    {Array.from({ length: 40 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className="flex-1 rounded-sm bg-muted/50 animate-pulse"
-                        style={{
-                          height: `${20 + Math.sin(i * 0.4) * 15 + Math.random() * 10}%`,
-                          animationDelay: `${i * 50}ms`,
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-background/80 backdrop-blur-sm">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
-                      <span className="text-[10px] font-medium text-muted-foreground">Loading chart...</span>
-                    </div>
-                  </div>
-                </div>
-              ) : chartType === "tv" ? (
-                <TradingViewChart
-                  priceHistory={priceHistory}
-                  ohlcData={ohlcData}
-                  chartMs={chartMs}
-                  timeframeLabel={CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.label}
-                  streamingPrice={streamingPrice}
-                  entryPrice={userBet && activeRound?.open_price ? Number(activeRound.open_price) : null}
-                  entrySide={userBet ? (userBet.side as "up" | "down") : null}
-                  roundEndTime={activeRound ? new Date(activeRound.created_at).getTime() + activeRound.duration_seconds * 1000 : null}
-                  targetPrice={userBet && activeRound?.open_price ? Number(activeRound.open_price) : null}
-                  resolveFlash={resolveFlash}
-                />
-              ) : (() => {
-                const cutoff = Date.now() - chartMs;
-                const filtered = priceHistory.filter(pt => pt.ts >= cutoff);
-                if (filtered.length < 2) return (
-                  <div className="flex items-center justify-center h-[120px]">
-                    <p className="text-[10px] text-muted-foreground">Waiting for price data...</p>
-                  </div>
-                );
-                const isUp = filtered[filtered.length - 1].price >= filtered[0].price;
-                const upColor = "hsl(142, 76%, 36%)";
-                const downColor = "hsl(0, 84%, 60%)";
-                const color = isUp ? upColor : downColor;
-
-                // Build candlestick data by grouping into buckets
-                const buildCandles = () => {
-                  const bucketMs = Math.max(Math.floor(chartMs / 30), 5000);
-                  const candles: { ts: number; open: number; high: number; low: number; close: number; volume: number; body: [number, number] }[] = [];
-                  if (!filtered.length) return candles;
-                  let bucketStart = filtered[0].ts;
-                  let bucket: number[] = [];
-                  for (const pt of filtered) {
-                    if (pt.ts - bucketStart >= bucketMs && bucket.length) {
-                      const o = bucket[0], c = bucket[bucket.length - 1];
-                      candles.push({ ts: bucketStart, open: o, high: Math.max(...bucket), low: Math.min(...bucket), close: c, volume: bucket.length, body: [Math.min(o, c), Math.max(o, c)] });
-                      bucketStart = pt.ts;
-                      bucket = [];
-                    }
-                    bucket.push(pt.price);
-                  }
-                  if (bucket.length) {
-                    const o = bucket[0], c = bucket[bucket.length - 1];
-                    candles.push({ ts: bucketStart, open: o, high: Math.max(...bucket), low: Math.min(...bucket), close: c, volume: bucket.length, body: [Math.min(o, c), Math.max(o, c)] });
-                  }
-                  return candles;
-                };
-
-                const tooltipContent = ({ active, payload }: any) => {
-                  if (!active || !payload?.length) return null;
-                  const d = payload[0].payload;
-                  if (chartType === "candle") {
-                    return (
-                      <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg text-[11px]">
-                        <p className="text-muted-foreground mb-1">{new Date(d.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
-                        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
-                          <span className="text-muted-foreground">O</span><span className="font-mono font-semibold text-foreground">${d.open.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                          <span className="text-muted-foreground">H</span><span className="font-mono font-semibold text-foreground">${d.high.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                          <span className="text-muted-foreground">L</span><span className="font-mono font-semibold text-foreground">${d.low.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                          <span className="text-muted-foreground">C</span><span className="font-mono font-semibold text-foreground">${d.close.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                          <span className="text-muted-foreground">Vol</span><span className="font-mono font-semibold text-foreground">{d.volume}</span>
-                          {d.ma7 != null && <><span className="text-muted-foreground">MA7</span><span className="font-mono font-semibold" style={{ color: 'hsl(45, 93%, 58%)' }}>${d.ma7.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></>}
-                          {d.ma14 != null && <><span className="text-muted-foreground">MA14</span><span className="font-mono font-semibold" style={{ color: 'hsl(280, 80%, 65%)' }}>${d.ma14.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></>}
-                        </div>
-                      </div>
-                    );
-                  }
-                  return (
-                    <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg text-[11px]">
-                      <p className="font-semibold text-foreground">${Number(d.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                      <p className="text-muted-foreground">{new Date(d.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
-                    </div>
-                  );
-                };
-
-                if (chartType === "candle") {
-                  const candles = buildCandles();
-                  if (candles.length < 2) return (
-                    <div className="flex items-center justify-center h-[120px]">
-                      <p className="text-[10px] text-muted-foreground">Not enough data for candles</p>
-                    </div>
-                  );
-                  const allLows = candles.map(c => c.low);
-                  const allHighs = candles.map(c => c.high);
-                  const yMin = Math.min(...allLows);
-                  const yMax = Math.max(...allHighs);
-                  const padding = (yMax - yMin) * 0.1 || 1;
-
-                  // Custom candlestick shape render function (not a component to avoid forwardRef warning)
-                  const renderCandlestick = (props: any) => {
-                    const { x, y, width, height, payload } = props;
-                    if (!payload) return null;
-                    const isBullish = payload.close >= payload.open;
-                    const fill = isBullish ? upColor : downColor;
-                    const wickX = x + width / 2;
-
-                    const yScale = (val: number) => {
-                      const domain = [yMin - padding, yMax + padding];
-                      const range = [120 - 4, 4];
-                      return range[0] + ((val - domain[0]) / (domain[1] - domain[0])) * (range[1] - range[0]);
-                    };
-                    const wickTop = yScale(payload.high);
-                    const wickBottom = yScale(payload.low);
-
-                    return (
-                      <g>
-                        <line x1={wickX} y1={wickTop} x2={wickX} y2={wickBottom} stroke={fill} strokeWidth={1} />
-                        <rect x={x + 1} y={y} width={Math.max(width - 2, 2)} height={Math.max(height, 1)} fill={fill} rx={1} />
-                      </g>
-                    );
-                  };
-
-                  // Compute moving averages (7-period and 14-period)
-                  const withMA = candles.map((c, i) => {
-                    const ma7 = i >= 6 ? candles.slice(i - 6, i + 1).reduce((s, x) => s + x.close, 0) / 7 : undefined;
-                    const ma14 = i >= 13 ? candles.slice(i - 13, i + 1).reduce((s, x) => s + x.close, 0) / 14 : undefined;
-                    return { ...c, ma7, ma14 };
-                  });
-
-                  return (
-                    <>
-                      <ResponsiveContainer width="100%" height={120}>
-                        <ComposedChart data={withMA} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
-                          <YAxis domain={[yMin - padding, yMax + padding]} hide />
-                          <XAxis dataKey="ts" hide />
-                          <RechartsTooltip content={tooltipContent} cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '3 3' }} />
-                          {userBet && activeRound?.open_price && (
-                            <ReferenceLine
-                              y={Number(activeRound.open_price)}
-                              stroke="#f59e0b"
-                              strokeDasharray="4 3"
-                              strokeOpacity={0.7}
-                              label={{ value: `Target $${Number(activeRound.open_price).toLocaleString()}`, position: "right", fill: "#f59e0b", fontSize: 9, fontWeight: 600 }}
-                            />
-                          )}
-                          <Bar dataKey="body" shape={renderCandlestick} isAnimationActive={false}>
-                            {withMA.map((c, i) => (
-                              <Cell key={i} fill={c.close >= c.open ? upColor : downColor} />
-                            ))}
-                          </Bar>
-                          <Line type="monotone" dataKey="ma7" stroke="hsl(45, 93%, 58%)" strokeWidth={1.5} dot={false} isAnimationActive={false} connectNulls />
-                          <Line type="monotone" dataKey="ma14" stroke="hsl(280, 80%, 65%)" strokeWidth={1.5} dot={false} isAnimationActive={false} connectNulls />
-                        </ComposedChart>
-                      </ResponsiveContainer>
-                      {/* Volume bars */}
-                      <ResponsiveContainer width="100%" height={30}>
-                        <ComposedChart data={candles} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                          <XAxis dataKey="ts" hide />
-                          <YAxis domain={[0, 'dataMax']} hide />
-                          <Bar dataKey="volume" isAnimationActive={false} radius={[1, 1, 0, 0]}>
-                            {candles.map((c, i) => (
-                              <Cell key={i} fill={c.close >= c.open ? upColor : downColor} fillOpacity={0.35} />
-                            ))}
-                          </Bar>
-                        </ComposedChart>
-                      </ResponsiveContainer>
-                      <p className="text-[10px] text-muted-foreground text-center mt-1">
-                        Last {CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.label}
-                      </p>
-                    </>
-                  );
-                }
-
-                return (
-                  <>
-                    <ResponsiveContainer width="100%" height={120}>
-                      <AreaChart data={filtered} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
-                        <defs>
-                          <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor={color} stopOpacity={0.3} />
-                            <stop offset="100%" stopColor={color} stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <YAxis domain={["dataMin", "dataMax"]} hide />
-                        <XAxis dataKey="ts" hide />
-                        <RechartsTooltip content={tooltipContent} cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '3 3' }} />
-                        {userBet && activeRound?.open_price && (
-                          <ReferenceLine
-                            y={Number(activeRound.open_price)}
-                            stroke="#f59e0b"
-                            strokeDasharray="4 3"
-                            strokeOpacity={0.7}
-                            label={{ value: `Target $${Number(activeRound.open_price).toLocaleString()}`, position: "right", fill: "#f59e0b", fontSize: 9, fontWeight: 600 }}
-                          />
-                        )}
-                        <Area type="monotone" dataKey="price" stroke={color} strokeWidth={2} fill="url(#priceGradient)" dot={false} isAnimationActive={false} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                    <p className="text-[10px] text-muted-foreground text-center mt-1">
-                      Last {CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.label}
-                    </p>
-                  </>
-                );
-              })()}
+              <QuickTradeChart
+                chartType={chartType}
+                chartTimeframe={chartTimeframe}
+                chartMs={chartMs}
+                priceHistory={priceHistory}
+                ohlcData={ohlcData}
+                streamingPrice={streamingPrice}
+                historyLoading={historyLoading}
+                activeRound={activeRound}
+                userBet={userBet}
+                resolveFlash={resolveFlash}
+                timeframeLabel={CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.label}
+              />
               </div>
             </div>
 
@@ -1198,218 +997,28 @@ export default function QuickTrade() {
             </div>
           </div>
 
-          {/* Bet controls */}
-          {userBet ? (
-            <div className={`rounded-2xl border p-4 mb-4 text-center ${
-              userBet.side === "up" ? "border-green-500/30 bg-green-500/5" : "border-destructive/30 bg-destructive/5"
-            }`}>
-              <p className="text-sm font-semibold text-foreground mb-1">
-                Your bet: <span className={userBet.side === "up" ? "text-green-500" : "text-destructive"}>
-                  {userBet.side.toUpperCase()}
-                </span> — ${Number(userBet.amount).toFixed(2)}
-              </p>
-              <p className="text-xs text-muted-foreground">Waiting for round to resolve...</p>
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-border bg-card p-4 mb-4">
-              {/* Amount input */}
-              <div className="mb-3">
-                <label className="text-xs text-muted-foreground uppercase tracking-wide mb-1 block">Amount ($)</label>
-                <Input
-                  type="number"
-                  value={betAmount}
-                  onChange={(e) => setBetAmount(e.target.value)}
-                  min={String(qtMinBet)}
-                  max={String(qtMaxBet)}
-                  step="1"
-                  className="text-lg font-bold text-center"
-                  disabled={isLocked || timeLeft === 0}
-                />
-                <div className="flex gap-2 mt-2">
-                  {AMOUNT_PRESETS.map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => setBetAmount(String(p))}
-                      className="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-muted/50 hover:bg-muted text-muted-foreground transition-colors"
-                    >
-                      ${p}
-                    </button>
-                  ))}
-                </div>
-              </div>
+          <QuickTradeBetControls
+            userBet={userBet}
+            betAmount={betAmount}
+            setBetAmount={setBetAmount}
+            placing={placing}
+            isLocked={isLocked}
+            timeLeft={timeLeft}
+            qtMinBet={qtMinBet}
+            qtMaxBet={qtMaxBet}
+            onPlaceBet={placeBet}
+            amountPresets={AMOUNT_PRESETS}
+          />
 
-              {/* UP / DOWN buttons */}
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  onClick={() => placeBet("up")}
-                  disabled={placing || isLocked || timeLeft === 0}
-                  className="h-14 text-lg font-bold bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-[0_0_20px_hsl(142_71%_45%/0.3)]"
-                >
-                  <ArrowUp className="w-5 h-5 mr-2" />
-                  UP
-                </Button>
-                <Button
-                  onClick={() => placeBet("down")}
-                  disabled={placing || isLocked || timeLeft === 0}
-                  className="h-14 text-lg font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-[0_0_20px_hsl(0_84%_60%/0.3)]"
-                >
-                  <ArrowDown className="w-5 h-5 mr-2" />
-                  DOWN
-                </Button>
-              </div>
-
-              {placing && (
-                <div className="flex items-center justify-center gap-2 mt-3">
-                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Placing bet...</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Results History — always visible */}
-          <div className="rounded-2xl border border-border bg-card p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                <History className="w-4 h-4 text-muted-foreground" />
-                Results History
-              </h3>
-              <div className="flex items-center gap-1">
-                {recentRounds.slice(0, 8).map((r) => (
-                  <div
-                    key={r.id}
-                    className={`w-2.5 h-2.5 rounded-full ${
-                      r.result === "up" ? "bg-green-500" : r.result === "down" ? "bg-destructive" : "bg-muted-foreground/40"
-                    }`}
-                    title={`${r.result?.toUpperCase() || "FLAT"}`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* User's bet history */}
-            {userBets.length > 0 ? (
-              <div className="space-y-2">
-                {userBets.map((b) => {
-                  const round = recentRounds.find((r) => r.id === b.round_id);
-                  const won = b.status === "won";
-                  const lost = b.status === "lost";
-                  const pnl = won ? Number(b.payout) - Number(b.amount) : lost ? -Number(b.amount) : 0;
-                  const priceDelta = round?.open_price && round?.close_price
-                    ? ((Number(round.close_price) - Number(round.open_price)) / Number(round.open_price) * 100)
-                    : null;
-
-                  return (
-                    <div key={b.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                      <div className="flex items-center gap-2.5">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                          won ? "bg-green-500/15" : lost ? "bg-destructive/15" : "bg-muted"
-                        }`}>
-                          {b.side === "up" ? (
-                            <ArrowUp className={`w-4 h-4 ${won ? "text-green-500" : "text-destructive"}`} />
-                          ) : (
-                            <ArrowDown className={`w-4 h-4 ${won ? "text-green-500" : "text-destructive"}`} />
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold text-foreground">
-                            {b.side.toUpperCase()} · ${Number(b.amount).toFixed(2)}
-                            {b.streak > 1 && <span className="ml-1 text-amber-500">🔥{b.streak}</span>}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground">
-                            {round?.asset || selectedAsset.symbol}
-                            {priceDelta !== null && (
-                              <span className={priceDelta >= 0 ? "text-green-500 ml-1" : "text-destructive ml-1"}>
-                                {priceDelta >= 0 ? "+" : ""}{priceDelta.toFixed(2)}%
-                              </span>
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className={`text-xs font-bold ${won ? "text-green-500" : lost ? "text-destructive" : "text-muted-foreground"}`}>
-                          {won ? `+$${pnl.toFixed(2)}` : lost ? `-$${Number(b.amount).toFixed(2)}` : "Pending"}
-                        </p>
-                        {won && b.payout && (
-                          <p className="text-[10px] text-muted-foreground">
-                            Payout: ${Number(b.payout).toFixed(2)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              /* Round results (no personal bets yet) */
-              recentRounds.length > 0 ? (
-                <div className="space-y-2">
-                  {recentRounds.map((r) => {
-                    const priceDelta = r.open_price && r.close_price
-                      ? ((Number(r.close_price) - Number(r.open_price)) / Number(r.open_price) * 100)
-                      : null;
-                    return (
-                      <div key={r.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                        <div className="flex items-center gap-2.5">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                            r.result === "up" ? "bg-green-500/15" : r.result === "down" ? "bg-destructive/15" : "bg-muted"
-                          }`}>
-                            {r.result === "up" ? (
-                              <ArrowUp className="w-4 h-4 text-green-500" />
-                            ) : (
-                              <ArrowDown className="w-4 h-4 text-destructive" />
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-xs font-semibold text-foreground">
-                              {r.result?.toUpperCase() || "—"} · {r.asset}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground">
-                              {new Date(r.resolved_at || r.created_at).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true })}
-                              {priceDelta !== null && (
-                                <span className={priceDelta >= 0 ? "text-green-500 ml-1" : "text-destructive ml-1"}>
-                                  {priceDelta >= 0 ? "+" : ""}{priceDelta.toFixed(2)}%
-                                </span>
-                              )}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] text-muted-foreground">
-                            ${Number(r.open_price || 0).toLocaleString()} → ${Number(r.close_price || 0).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground text-center py-4">No rounds resolved yet</p>
-              )
-            )}
-
-            {historyTotal > HISTORY_PER_PAGE && (
-              <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/50">
-                <button
-                  onClick={() => setHistoryPage(p => Math.max(0, p - 1))}
-                  disabled={historyPage === 0}
-                  className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
-                >
-                  ← Prev
-                </button>
-                <span className="text-[10px] text-muted-foreground">
-                  {historyPage + 1} / {Math.ceil(historyTotal / HISTORY_PER_PAGE)}
-                </span>
-                <button
-                  onClick={() => setHistoryPage(p => p + 1)}
-                  disabled={(historyPage + 1) * HISTORY_PER_PAGE >= historyTotal}
-                  className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
-                >
-                  Next →
-                </button>
-              </div>
-            )}
-          </div>
+          <QuickTradeHistory
+            recentRounds={recentRounds as any}
+            userBets={userBets as any}
+            selectedAssetSymbol={selectedAsset.symbol}
+            historyPage={historyPage}
+            historyTotal={historyTotal}
+            historyPerPage={HISTORY_PER_PAGE}
+            onPageChange={setHistoryPage}
+          />
 
         </div>
       </div>

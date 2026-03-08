@@ -1,29 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Zap, TrendingUp, TrendingDown, Radio, BarChart3, ArrowLeftRight } from "lucide-react";
-import { getAssetClass, type AssetClass } from "@/data/assetClasses";
-
-const ASSET_GECKO_MAP: Record<string, string> = {
-  BTC: "bitcoin",
-  ETH: "ethereum",
-  BNB: "binancecoin",
-  SOL: "solana",
-  XRP: "ripple",
-  ADA: "cardano",
-  DOGE: "dogecoin",
-  MATIC: "matic-network",
-  AVAX: "avalanche-2",
-  DOT: "polkadot",
-  LINK: "chainlink",
-  SHIB: "shiba-inu",
-};
-
-const METAL_MAP: Record<string, string> = {
-  XAU: "gold",
-  XAG: "silver",
-  XPT: "platinum",
-  XPD: "palladium",
-};
+import { getAssetClass } from "@/data/assetClasses";
+import { fetchAssetPrice } from "@/lib/cryptoPriceProvider";
 
 const OP_LABELS: Record<string, string> = {
   above: ">",
@@ -39,46 +18,6 @@ const OP_TEXT: Record<string, string> = {
   at_or_below: "drops to or below",
 };
 
-import { fetchCryptoPrice } from "@/lib/cryptoPriceProvider";
-
-async function fetchAssetPrice(asset: string): Promise<number | null> {
-  const assetClass = getAssetClass(asset);
-  
-  if (assetClass === "crypto") {
-    return fetchCryptoPrice(asset);
-  }
-  
-  if (assetClass === "commodity") {
-    const metalName = METAL_MAP[asset];
-    if (metalName) {
-      try {
-        const resp = await fetch(`https://api.metals.dev/v1/latest?api_key=demo&currency=USD&unit=toz`);
-        if (!resp.ok) return null;
-        const data = await resp.json();
-        return data?.metals?.[metalName] ?? null;
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  }
-  
-  if (assetClass === "forex") {
-    const [base, quote] = asset.split("/");
-    if (!base || !quote) return null;
-    try {
-      const resp = await fetch(`https://api.frankfurter.app/latest?from=${base}&to=${quote}`);
-      if (!resp.ok) return null;
-      const data = await resp.json();
-      return data?.rates?.[quote] ?? null;
-    } catch {
-      return null;
-    }
-  }
-  
-  return null;
-}
-
 interface CryptoPriceTickerProps {
   asset: string;
   targetPrice: number;
@@ -90,6 +29,7 @@ export default function CryptoPriceTicker({ asset, targetPrice, operator, deadli
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [prevPrice, setPrevPrice] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const currentPriceRef = useRef<number | null>(null);
 
   const assetClass = getAssetClass(asset);
 
@@ -98,8 +38,9 @@ export default function CryptoPriceTicker({ asset, targetPrice, operator, deadli
       try {
         const price = await fetchAssetPrice(asset);
         if (price != null) {
-          setPrevPrice(currentPrice);
+          setPrevPrice(currentPriceRef.current);
           setCurrentPrice(price);
+          currentPriceRef.current = price;
         }
       } catch {
         // silently fail
@@ -135,20 +76,16 @@ export default function CryptoPriceTicker({ asset, targetPrice, operator, deadli
     ? new Date(deadline).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }) + " UTC"
     : null;
 
-  // Dynamic labels based on asset class
   const headerLabel = assetClass === "forex" ? "Forex Auto-Resolve" : assetClass === "commodity" ? "Commodity Auto-Resolve" : "Auto-Resolve";
   const HeaderIcon = assetClass === "forex" ? ArrowLeftRight : assetClass === "commodity" ? BarChart3 : Zap;
   const priceLabel = assetClass === "forex" ? asset : `${asset}/USD`;
   const formatPrice = (p: number) => {
-    if (assetClass === "forex") {
-      return p.toFixed(4);
-    }
+    if (assetClass === "forex") return p.toFixed(4);
     return p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   return (
     <div className="rounded-xl border border-primary/20 bg-primary/5 overflow-hidden mb-4">
-      {/* Header with LIVE badge */}
       <div className="flex items-center justify-between px-4 pt-3 pb-1">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center">
@@ -162,7 +99,6 @@ export default function CryptoPriceTicker({ asset, targetPrice, operator, deadli
         </div>
       </div>
 
-      {/* Price ticker */}
       <div className="px-4 py-3">
         <div className="flex items-end justify-between mb-3">
           <div>
@@ -197,7 +133,6 @@ export default function CryptoPriceTicker({ asset, targetPrice, operator, deadli
           </div>
         </div>
 
-        {/* Progress bar */}
         <div className="relative h-2 rounded-full bg-muted/50 overflow-hidden mb-2">
           <motion.div
             className={`absolute inset-y-0 left-0 rounded-full ${conditionMet ? "bg-green-500" : "bg-primary"}`}
@@ -208,7 +143,6 @@ export default function CryptoPriceTicker({ asset, targetPrice, operator, deadli
           <div className="absolute top-0 bottom-0 w-0.5 bg-foreground/50" style={{ left: "100%" }} />
         </div>
 
-        {/* Condition summary */}
         <div className="flex items-center justify-between">
           <p className="text-[10px] text-muted-foreground">
             Resolves <span className="font-semibold text-foreground">YES</span> if {priceLabel} {OP_TEXT[operator] || operator}{" "}
