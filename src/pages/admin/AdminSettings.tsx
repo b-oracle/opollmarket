@@ -831,9 +831,22 @@ const PolymarketPresetsSection = ({ canEdit }: { canEdit: boolean }) => {
 
 /* ─── Feature Toggles Card ─── */
 const FeatureTogglesCard = () => {
-  const { toggles, isLoading, setToggle } = useFeatureToggles();
+  const { toggles, isLoading, setToggle, setSchedule } = useFeatureToggles();
   const { canEdit } = useAdminContext();
   const [togglingKey, setTogglingKey] = useState<string | null>(null);
+  const [scheduleStart, setScheduleStart] = useState("");
+  const [scheduleEnd, setScheduleEnd] = useState("");
+  const [savingSchedule, setSavingSchedule] = useState(false);
+
+  const maintenanceToggle = toggles.find((t: any) => t.feature_key === "maintenance_mode");
+
+  // Sync schedule inputs when data loads
+  useEffect(() => {
+    if (maintenanceToggle) {
+      setScheduleStart(maintenanceToggle.scheduled_start ? maintenanceToggle.scheduled_start.slice(0, 16) : "");
+      setScheduleEnd(maintenanceToggle.scheduled_end ? maintenanceToggle.scheduled_end.slice(0, 16) : "");
+    }
+  }, [maintenanceToggle?.scheduled_start, maintenanceToggle?.scheduled_end]);
 
   const handleToggle = async (key: string, label: string, newVal: boolean) => {
     setTogglingKey(key);
@@ -849,6 +862,47 @@ const FeatureTogglesCard = () => {
       toast.error(err.message || "Failed to update toggle");
     } finally {
       setTogglingKey(null);
+    }
+  };
+
+  const handleSaveSchedule = async () => {
+    if (!scheduleStart || !scheduleEnd) {
+      toast.error("Both start and end times are required");
+      return;
+    }
+    const start = new Date(scheduleStart);
+    const end = new Date(scheduleEnd);
+    if (end <= start) {
+      toast.error("End time must be after start time");
+      return;
+    }
+    setSavingSchedule(true);
+    try {
+      await setSchedule("maintenance_mode", start.toISOString(), end.toISOString());
+      logAuditEvent({
+        action: "settings_updated",
+        targetType: "feature_toggle",
+        details: { feature_key: "maintenance_mode", scheduled_start: start.toISOString(), scheduled_end: end.toISOString() },
+      });
+      toast.success("Maintenance schedule saved");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save schedule");
+    } finally {
+      setSavingSchedule(false);
+    }
+  };
+
+  const handleClearSchedule = async () => {
+    setSavingSchedule(true);
+    try {
+      await setSchedule("maintenance_mode", null, null);
+      setScheduleStart("");
+      setScheduleEnd("");
+      toast.success("Schedule cleared");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to clear schedule");
+    } finally {
+      setSavingSchedule(false);
     }
   };
 
@@ -874,21 +928,94 @@ const FeatureTogglesCard = () => {
       </CardHeader>
       <CardContent className="space-y-3">
         {toggles.map((t: any) => (
-          <div
-            key={t.feature_key}
-            className="flex items-center justify-between rounded-lg border border-border p-3"
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium">{t.label}</span>
-              <Badge variant={t.enabled ? "default" : "secondary"} className="text-[10px]">
-                {t.enabled ? "Live" : "Hidden"}
-              </Badge>
+          <div key={t.feature_key} className="space-y-2">
+            <div className="flex items-center justify-between rounded-lg border border-border p-3">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium">{t.label}</span>
+                <Badge variant={t.enabled ? "default" : "secondary"} className="text-[10px]">
+                  {t.feature_key === "maintenance_mode"
+                    ? t.enabled ? "Active" : "Inactive"
+                    : t.enabled ? "Live" : "Hidden"}
+                </Badge>
+                {t.feature_key === "maintenance_mode" && t.scheduled_start && t.scheduled_end && (
+                  <Badge variant="outline" className="text-[10px]">
+                    Scheduled
+                  </Badge>
+                )}
+              </div>
+              <Switch
+                checked={t.enabled}
+                disabled={!canEdit || togglingKey === t.feature_key}
+                onCheckedChange={(val) => handleToggle(t.feature_key, t.label, val)}
+              />
             </div>
-            <Switch
-              checked={t.enabled}
-              disabled={!canEdit || togglingKey === t.feature_key}
-              onCheckedChange={(val) => handleToggle(t.feature_key, t.label, val)}
-            />
+
+            {/* Maintenance schedule section */}
+            {t.feature_key === "maintenance_mode" && (
+              <Card className="border-dashed ml-2">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Timer className="w-4 h-4" /> Scheduled Maintenance Window
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Set a start and end time. Maintenance mode will auto-activate and deactivate on schedule (checked every minute).
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Start Time</Label>
+                      <Input
+                        type="datetime-local"
+                        value={scheduleStart}
+                        onChange={(e) => setScheduleStart(e.target.value)}
+                        disabled={!canEdit}
+                        className="text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">End Time</Label>
+                      <Input
+                        type="datetime-local"
+                        value={scheduleEnd}
+                        onChange={(e) => setScheduleEnd(e.target.value)}
+                        disabled={!canEdit}
+                        className="text-xs"
+                      />
+                    </div>
+                  </div>
+                  {maintenanceToggle?.scheduled_start && maintenanceToggle?.scheduled_end && (
+                    <div className="rounded-lg bg-muted/50 p-2 text-[11px] text-muted-foreground">
+                      Current schedule: <span className="font-medium text-foreground">{new Date(maintenanceToggle.scheduled_start).toLocaleString()}</span>
+                      {" → "}
+                      <span className="font-medium text-foreground">{new Date(maintenanceToggle.scheduled_end).toLocaleString()}</span>
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={handleSaveSchedule}
+                      disabled={!canEdit || savingSchedule || !scheduleStart || !scheduleEnd}
+                      className="text-xs"
+                    >
+                      {savingSchedule ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Save className="w-3 h-3 mr-1" />}
+                      Save Schedule
+                    </Button>
+                    {maintenanceToggle?.scheduled_start && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleClearSchedule}
+                        disabled={!canEdit || savingSchedule}
+                        className="text-xs"
+                      >
+                        Clear Schedule
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         ))}
         {toggles.length === 0 && (
