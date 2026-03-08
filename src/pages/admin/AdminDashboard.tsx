@@ -250,7 +250,12 @@ const AdminDashboard = () => {
                   <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Total Deposits</span>
                 </div>
                 <p className="text-xl font-bold text-green-500">{fmt(dep)}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{stats.depositCount} confirmed</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-[10px] text-muted-foreground">{stats.depositCount} confirmed</p>
+                  {stats.pendingDepositCount > 0 && (
+                    <span className="text-[10px] font-semibold text-yellow-500 bg-yellow-500/10 rounded px-1 py-0.5">{stats.pendingDepositCount} pending</span>
+                  )}
+                </div>
               </div>
               <div className="rounded-lg bg-yellow-500/5 border border-yellow-500/10 p-3">
                 <div className="flex items-center gap-1.5 mb-1">
@@ -258,7 +263,12 @@ const AdminDashboard = () => {
                   <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Total Withdrawals</span>
                 </div>
                 <p className="text-xl font-bold text-yellow-500">{fmt(wd)}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{stats.withdrawalCount} confirmed</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-[10px] text-muted-foreground">{stats.withdrawalCount} confirmed</p>
+                  {stats.pendingWithdrawalCount > 0 && (
+                    <span className="text-[10px] font-semibold text-orange-500 bg-orange-500/10 rounded px-1 py-0.5">{stats.pendingWithdrawalCount} pending</span>
+                  )}
+                </div>
               </div>
               <div className={`rounded-lg p-3 ${net >= 0 ? 'bg-primary/5 border border-primary/10' : 'bg-destructive/5 border border-destructive/10'}`}>
                 <div className="flex items-center gap-1.5 mb-1">
