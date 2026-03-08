@@ -4,6 +4,7 @@ import { Zap } from "lucide-react";
 import { Market } from "@/data/markets";
 import { ActiveBoost } from "@/hooks/useActiveBoosts";
 import BoostCountdown from "@/components/BoostCountdown";
+import { toast } from "sonner";
 
 const GAP = 16;
 const AUTO_SCROLL_INTERVAL = 3500;
