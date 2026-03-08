@@ -89,6 +89,7 @@ const AdminMarkets = () => {
   const [cancellingPendingId, setCancellingPendingId] = useState<string | null>(null);
   const [moderatorReviewingId, setModeratorReviewingId] = useState<string | null>(null);
   const [moderatorNameMap, setModeratorNameMap] = useState<Map<string, string>>(new Map());
+  const [endedCount, setEndedCount] = useState(0);
 
   const canFinalApprove = isSuperAdmin || isAdmin;
   const isModeratorOnly = isModerator && !isSuperAdmin && !isAdmin;
