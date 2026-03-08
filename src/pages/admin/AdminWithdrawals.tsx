@@ -46,55 +46,33 @@ const AdminWithdrawals = () => {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+
+      // Enrich with profile info
+      const userIds = [...new Set((data || []).map((w) => w.user_id))];
+      const { data: profiles } = userIds.length
+        ? await supabase.from("profiles").select("id, display_name, email").in("id", userIds)
+        : { data: [] };
+      const profileMap = Object.fromEntries((profiles || []).map((p) => [p.id, p]));
+
+      return (data || []).map((w) => ({
+        ...w,
+        display_name: profileMap[w.user_id]?.display_name || "Unknown",
+        email: profileMap[w.user_id]?.email || "",
+      }));
     },
   });
 
-  const processMutation = useMutation({
-    mutationFn: async ({
-      withdrawal_id,
-      action,
-      admin_note,
-      tx_hash,
-    }: {
-      withdrawal_id: string;
-      action: string;
-      admin_note?: string;
-      tx_hash?: string;
-    }) => {
-      setProcessingId(withdrawal_id);
-      const { data, error } = await supabase.functions.invoke(
-        "process-withdrawal",
-        { body: { withdrawal_id, action, admin_note, tx_hash } }
-      );
-      if (error || data?.error)
-        throw new Error(data?.error || error?.message);
-      return data;
-    },
-    onSuccess: (_, variables) => {
-      logAuditEvent({
-        action: variables.action === "approve" ? "withdrawal_approved" : "withdrawal_rejected",
-        targetId: variables.withdrawal_id,
-        targetType: "withdrawal",
-        details: { action: variables.action, note: variables.admin_note, tx_hash: variables.tx_hash },
-      });
-      queryClient.invalidateQueries({ queryKey: ["admin_withdrawals"] });
-      setShowActionModal(null);
-      setNoteInput("");
-      setTxHashInput("");
-      setProcessingId(null);
-    },
-    onError: () => {
-      setProcessingId(null);
-    },
+  const filtered = withdrawals.filter((w: any) => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return (
+      w.wallet_address?.toLowerCase().includes(s) ||
+      w.user_id?.toLowerCase().includes(s) ||
+      w.status?.toLowerCase().includes(s) ||
+      w.email?.toLowerCase().includes(s) ||
+      w.display_name?.toLowerCase().includes(s)
+    );
   });
-
-  const filtered = withdrawals.filter((w: any) =>
-    !search ||
-    w.wallet_address?.toLowerCase().includes(search.toLowerCase()) ||
-    w.user_id?.toLowerCase().includes(search.toLowerCase()) ||
-    w.status?.toLowerCase().includes(search.toLowerCase())
-  );
 
   const paginatedWd = useMemo(() => filtered.slice((wdPage - 1) * WD_PAGE_SIZE, wdPage * WD_PAGE_SIZE), [filtered, wdPage]);
   return (
