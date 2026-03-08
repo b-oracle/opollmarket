@@ -203,8 +203,9 @@ const Profile = () => {
   const [editBio, setEditBio] = useState("");
   const [editIsPublic, setEditIsPublic] = useState(true);
   const [swipeHintDismissed, setSwipeHintDismissed] = useState(() => localStorage.getItem("social_swipe_used") === "1");
+  const [socialOpen, setSocialOpen] = useState(false);
 
-  // Swipe-right detection — navigate to own public profile
+  // Swipe-right detection — open social overlay
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const touchStartedInEdge = useRef(false);
@@ -223,9 +224,9 @@ const Profile = () => {
         localStorage.setItem("social_swipe_used", "1");
         setSwipeHintDismissed(true);
       }
-      navigate(`/user/${user.id}`);
+      setSocialOpen(true);
     }
-  }, [swipeHintDismissed, user, navigate]);
+  }, [swipeHintDismissed, user]);
   const handleTouchEndCapture = useCallback((e: React.TouchEvent) => {
     (window as any).__lastTouchEndX = e.changedTouches[0].clientX;
     (window as any).__lastTouchEndY = e.changedTouches[0].clientY;
