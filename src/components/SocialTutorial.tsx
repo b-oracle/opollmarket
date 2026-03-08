@@ -159,6 +159,14 @@ const SocialTutorial = ({ onComplete }: SocialTutorialProps) => {
     }
   }, [isLast, onComplete, navigate]);
 
+  const handleBack = useCallback(() => {
+    if (step > 0) {
+      haptic.light();
+      playTickSound();
+      setStep((s) => s - 1);
+    }
+  }, [step]);
+
   const handleSkip = useCallback(() => {
     haptic.light();
     markTutorialSeen();
