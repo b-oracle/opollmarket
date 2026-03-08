@@ -201,6 +201,23 @@ const Profile = () => {
   const [selectedNftUrl, setSelectedNftUrl] = useState<string | null>(null);
   const [editBio, setEditBio] = useState("");
   const [editIsPublic, setEditIsPublic] = useState(true);
+  const [socialOpen, setSocialOpen] = useState(false);
+
+  // Swipe-right detection for social page
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  }, []);
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+    // Swipe right: dx > 80px and mostly horizontal
+    if (dx > 80 && dy < 60 && !socialOpen) {
+      setSocialOpen(true);
+    }
+  }, [socialOpen]);
 
   // Fetch profile data
   const { data: profile } = useQuery({
