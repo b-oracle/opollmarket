@@ -142,11 +142,13 @@ async function handleStart(token: string, chatId: number) {
       "📊 Predict outcomes\n" +
       "💹 Trade markets\n" +
       "🏆 Win rewards\n\n" +
-      "To get started, link your account:\n" +
-      "<code>/link your@email.com yourpassword</code>",
+      "Tap the button below to link your account:",
     parse_mode: "HTML",
     reply_markup: {
       inline_keyboard: [
+        [
+          { text: "🔗 Link Account", callback_data: "cmd_link" },
+        ],
         [
           { text: "📖 Help", callback_data: "cmd_help" },
           { text: "🔮 Markets", callback_data: "cmd_markets" },
