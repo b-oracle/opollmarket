@@ -92,6 +92,12 @@ const PageFallback = () => (
   </div>
 );
 
+const FeatureGate = ({ featureKey, children }: { featureKey: string; children: React.ReactNode }) => {
+  const { isFeatureEnabled } = useFeatureToggles();
+  if (!isFeatureEnabled(featureKey)) return <Navigate to="/" replace />;
+  return <>{children}</>;
+};
+
 const SocialTutorialTrigger = () => {
   const { user } = useAuth();
   const [show, setShow] = useState(false);
