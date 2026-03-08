@@ -158,6 +158,9 @@ async function handleStart(token: string, chatId: number) {
           { text: "📖 Help", callback_data: "cmd_help" },
           { text: "🌐 Open Web App", url: APP_URL },
         ],
+        [
+          { text: "🐦 Follow us on X", url: "https://x.com/opollmarket" },
+        ],
       ],
     },
   });
