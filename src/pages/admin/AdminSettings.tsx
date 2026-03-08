@@ -681,7 +681,7 @@ const PolymarketPresetsSection = ({ canEdit }: { canEdit: boolean }) => {
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Max {preset.max_days_ahead} days ahead
+                    Max {preset.max_days_ahead} days ahead · Limit {preset.max_imports_per_run} per run
                   </p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
