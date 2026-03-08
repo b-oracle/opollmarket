@@ -405,6 +405,21 @@ const Profile = () => {
 
   return (
     <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      {/* Swipe hint indicator on left edge */}
+      {!socialOpen && (
+        <motion.div
+          className="fixed left-0 top-1/2 -translate-y-1/2 z-30 flex items-center pointer-events-none"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.5, duration: 0.6 }}
+        >
+          <motion.div
+            className="w-1 h-10 rounded-r-full bg-primary/30"
+            animate={{ x: [0, 4, 0] }}
+            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut", repeatDelay: 3 }}
+          />
+        </motion.div>
+      )}
       <TopBar />
       <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
         {/* Avatar & Profile Edit */}
