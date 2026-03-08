@@ -34,10 +34,11 @@ export const useBookmark = (marketId: string | undefined) => {
       });
       return;
     }
-    if (!marketId) return;
+    if (!marketId || loading) return;
 
     const prev = bookmarked;
     setBookmarked(!prev);
+    setLoading(true);
 
     try {
       if (prev) {
@@ -60,8 +61,10 @@ export const useBookmark = (marketId: string | undefined) => {
     } catch {
       setBookmarked(prev);
       toast.error("Failed to update watchlist");
+    } finally {
+      setLoading(false);
     }
-  }, [user, marketId, bookmarked]);
+  }, [user, marketId, bookmarked, loading]);
 
   return { bookmarked, loading, toggleBookmark };
 };
