@@ -33,22 +33,61 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
   useEffect(() => {
     if (!open) {
       setScreenshot(null);
+      setCapturing(false);
       return;
     }
+
+    let cancelled = false;
 
     const capture = async () => {
       setCapturing(true);
       try {
         const target = captureRef?.current || document.querySelector("main") || document.body;
-        const canvas = await html2canvas(target as HTMLElement, {
+
+        // Temporarily make the offscreen card visible for html2canvas
+        const origStyles = {
+          left: (target as HTMLElement).style.left,
+          position: (target as HTMLElement).style.position,
+          zIndex: (target as HTMLElement).style.zIndex,
+          opacity: (target as HTMLElement).style.opacity,
+        };
+        const isOffscreen = origStyles.left === "-9999px";
+        if (isOffscreen) {
+          (target as HTMLElement).style.left = "0px";
+          (target as HTMLElement).style.position = "fixed";
+          (target as HTMLElement).style.zIndex = "-1";
+          (target as HTMLElement).style.opacity = "1";
+        }
+
+        // Allow a frame for styles to apply
+        await new Promise((r) => requestAnimationFrame(r));
+
+        const canvasPromise = html2canvas(target as HTMLElement, {
           useCORS: true,
           allowTaint: true,
           scale: 2,
           backgroundColor: null,
           logging: false,
-          windowWidth: target.scrollWidth,
-          windowHeight: target.scrollHeight,
+          windowWidth: (target as HTMLElement).scrollWidth || 440,
+          windowHeight: (target as HTMLElement).scrollHeight || 600,
         });
+
+        // Add a 10s timeout to prevent getting stuck
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Screenshot timeout")), 10000)
+        );
+
+        const canvas = await Promise.race([canvasPromise, timeoutPromise]);
+
+        // Restore original offscreen positioning
+        if (isOffscreen) {
+          (target as HTMLElement).style.left = origStyles.left;
+          (target as HTMLElement).style.position = origStyles.position;
+          (target as HTMLElement).style.zIndex = origStyles.zIndex;
+          (target as HTMLElement).style.opacity = origStyles.opacity;
+        }
+
+        if (cancelled) return;
 
         const ctx = canvas.getContext("2d");
         if (ctx) {
@@ -78,37 +117,44 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
 
           // Draw watermark logo
           const logo = new Image();
+          logo.crossOrigin = "anonymous";
           logo.src = document.documentElement.classList.contains('dark') ? watermarkLogo : blueLogo;
           await new Promise<void>((resolve) => {
             logo.onload = () => {
               const logoSize = Math.min(canvas.width, canvas.height) * 0.15;
               const aspect = logo.naturalWidth / logo.naturalHeight;
-              const w = logoSize * aspect;
-              const h = logoSize;
-              const x = canvas.width - w - 20;
-              const y = canvas.height - h - 20;
+              const lw = logoSize * aspect;
+              const lh = logoSize;
+              const x = canvas.width - lw - 20;
+              const y = canvas.height - lh - 20;
               ctx.globalAlpha = 0.4;
-              ctx.drawImage(logo, x, y, w, h);
+              ctx.drawImage(logo, x, y, lw, lh);
               ctx.globalAlpha = 1;
               resolve();
             };
             logo.onerror = () => resolve();
+            // Timeout for logo loading
+            setTimeout(resolve, 3000);
           });
         }
 
-        canvasRef.current = canvas;
-        setScreenshot(canvas.toDataURL("image/png"));
+        if (!cancelled) {
+          canvasRef.current = canvas;
+          setScreenshot(canvas.toDataURL("image/png"));
+        }
       } catch (err) {
         console.error("Screenshot failed:", err);
-        toast.error("Could not capture screenshot");
+        if (!cancelled) toast.error("Could not capture screenshot");
       } finally {
-        setCapturing(false);
+        if (!cancelled) setCapturing(false);
       }
     };
 
-    // Small delay to let the UI settle
-    const timer = setTimeout(capture, 300);
-    return () => clearTimeout(timer);
+    const timer = setTimeout(capture, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [open, captureRef]);
 
   const getBlob = useCallback(async (): Promise<Blob | null> => {
