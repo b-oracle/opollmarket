@@ -301,6 +301,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     };
   }, [targetPrice, chartStyle]);
 
+  useEffect(() => {
     if (!streamingPrice || !chartRef.current) return;
     
     const nowSec = Math.floor(Date.now() / 1000) as UTCTimestamp;
