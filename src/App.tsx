@@ -44,6 +44,7 @@ const AdminChecklist = lazy(() => import("./pages/admin/AdminChecklist"));
 const AdminContracts = lazy(() => import("./pages/admin/AdminContracts"));
 const AdminModeration = lazy(() => import("./pages/admin/AdminModeration"));
 const AdminAuditLog = lazy(() => import("./pages/admin/AdminAuditLog"));
+const AdminDeposits = lazy(() => import("./pages/admin/AdminDeposits"));
 const Referrals = lazy(() => import("./pages/Referrals"));
 const FAQ = lazy(() => import("./pages/FAQ"));
 const Disclaimer = lazy(() => import("./pages/Disclaimer"));
