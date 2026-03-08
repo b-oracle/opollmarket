@@ -233,10 +233,11 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
       />
 
       {/* Modal */}
-      <div className="fixed inset-x-0 bottom-0 top-0 z-50 flex items-end sm:items-center justify-center p-4 pointer-events-none">
+      <div className="fixed inset-x-0 z-50 flex items-center justify-center pointer-events-none"
+        style={{ top: "env(safe-area-inset-top)", bottom: "calc(4rem + env(safe-area-inset-bottom))", padding: "1rem" }}>
         <div
           className="pointer-events-auto w-full max-w-sm bg-card border border-border rounded-2xl shadow-xl overflow-hidden flex flex-col"
-          style={{ maxHeight: "calc(100dvh - 2rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))" }}
+          style={{ maxHeight: "100%" }}
         >
           {/* Sticky header with close button */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 shrink-0">
