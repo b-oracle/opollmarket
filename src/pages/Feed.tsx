@@ -516,16 +516,12 @@ const Feed = () => {
         const isEnded = currentMarket?.status === "ended" || currentMarket?.status === "resolved" || currentMarket?.status === "cancelled" || (currentMarket && new Date(currentMarket.endDate).getTime() < Date.now());
         if (isMulti || isEnded) return null;
         return (
-          <motion.p
-            key={`swipe-hint-${activeIndex}`}
+          <p
             className="fixed left-0 right-0 text-[11px] text-primary/70 font-medium text-center z-[999] pointer-events-none"
             style={{ bottom: 'calc(4.5rem + env(safe-area-inset-bottom, 0px))' }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.7, 0.7, 0] }}
-            transition={{ delay: 2, duration: 4, ease: "easeInOut", repeat: Infinity, repeatDelay: 4 }}
           >
             ← Swipe left for NO · Swipe right for YES →
-          </motion.p>
+          </p>
         );
       })()}
       {/* Fill any remaining gap between feed and BottomNav */}
