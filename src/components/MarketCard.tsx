@@ -601,8 +601,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
               ← Swipe left for NO · Swipe right for YES →
             </motion.p>
           )}
-          {/* Spacer to push swipe hint behind BottomNav */}
-          <div className="h-16 shrink-0 md:h-4" />
+          {/* Small bottom padding */}
+          <div className="h-2 shrink-0" />
         </div>
       </div>
 
