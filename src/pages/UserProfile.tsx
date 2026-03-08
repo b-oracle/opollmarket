@@ -296,6 +296,9 @@ const UserProfile = () => {
               <Settings className="w-4 h-4" /> Edit Profile
             </button>
           )}
+
+          {/* Mutual Followers */}
+          {!isOwnProfile && <MutualFollowers targetUserId={id!} />}
         </div>
 
         {/* Copy Trading Settings */}
