@@ -39,7 +39,10 @@ import ShareModal from "@/components/ShareModal";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
 import { playWinSound, playLoseSound } from "@/lib/sounds";
-import { playWinSound, playLoseSound } from "@/lib/sounds";
+import TradingViewChart from "@/components/TradingViewChart";
+import QuickTradeChart from "@/components/quick-trade/QuickTradeChart";
+import QuickTradeHistory from "@/components/quick-trade/QuickTradeHistory";
+import QuickTradeBetControls from "@/components/quick-trade/QuickTradeBetControls";
 // ── Asset config ──
 const ALL_ASSETS = [
   { symbol: "BTC", label: "Bitcoin", geckoId: "bitcoin" },
