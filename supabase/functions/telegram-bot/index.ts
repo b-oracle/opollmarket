@@ -131,7 +131,43 @@ async function handleHelp(token: string, chatId: number) {
   });
 }
 
-async function handleLink(
+async function handleStats(
+  token: string,
+  supabase: ReturnType<typeof createClient>,
+  chatId: number
+) {
+  try {
+    const [marketsRes, profilesRes, volumeRes, quickBetsRes] = await Promise.all([
+      supabase.from("markets").select("id", { count: "exact", head: true }).eq("status", "active"),
+      supabase.from("profiles").select("id", { count: "exact", head: true }),
+      supabase.from("markets").select("volume").eq("status", "active"),
+      supabase.from("quick_bets").select("id", { count: "exact", head: true }).in("status", ["won", "lost"]),
+    ]);
+
+    const activeMarkets = marketsRes.count ?? 0;
+    const totalUsers = profilesRes.count ?? 0;
+    const totalVolume = (volumeRes.data || []).reduce((sum: number, m: { volume: number }) => sum + (m.volume || 0), 0);
+    const totalQuickBets = quickBetsRes.count ?? 0;
+
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text:
+        "📊 <b>oPoll Platform Stats</b>\n\n" +
+        `🏛️ Active Markets: <b>${activeMarkets}</b>\n` +
+        `👥 Total Users: <b>${totalUsers}</b>\n` +
+        `💰 Total Volume: <b>$${totalVolume.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b>\n` +
+        `⚡ Quick Trade Bets: <b>${totalQuickBets.toLocaleString()}</b>`,
+      parse_mode: "HTML",
+    });
+  } catch (err) {
+    console.error("handleStats error:", err);
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text: "❌ Failed to fetch stats. Please try again.",
+    });
+  }
+}
+
   token: string,
   supabase: ReturnType<typeof createClient>,
   chatId: number,
