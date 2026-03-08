@@ -434,6 +434,7 @@ const Rankings = () => {
   const [referralSort, setReferralSort] = useState<ReferralSort>("totalEarned");
   const [traderSort, setTraderSort] = useState<TraderSort>("pnl");
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("all");
+  const [page, setPage] = useState(1);
   const { user } = useAuth();
   const navigate = useNavigate();
   const currentUserId = user?.id;
