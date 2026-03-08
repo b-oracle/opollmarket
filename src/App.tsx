@@ -197,6 +197,7 @@ const App = () => (
                         </Route>
                         <Route path="*" element={<NotFound />} />
                       </Routes>
+                      </MaintenanceGuard>
                     </Suspense>
                   </div>
                   
