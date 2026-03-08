@@ -476,7 +476,7 @@ const Feed = () => {
 
       {/* Empty bookmarks state */}
       {feedTab === "bookmarks" && sortedMarkets.length === 0 ?
-      <div className="flex-1 flex items-center justify-center px-4">
+      <div className="flex-1 flex items-center justify-center px-4" style={{ marginTop: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}>
           <div className="text-center space-y-3">
             <Bookmark className="w-12 h-12 text-muted-foreground/30 mx-auto" />
             <p className="text-sm font-medium text-muted-foreground">Your watchlist is empty</p>
@@ -494,6 +494,7 @@ const Feed = () => {
         ref={containerRef}
         className="snap-feed w-full max-w-3xl mx-auto"
         style={{ 
+          marginTop: 'calc(3.5rem + env(safe-area-inset-top, 0px))',
           height: 'calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px) - 4rem - env(safe-area-inset-bottom, 0px))',
           ['--feed-card-height' as any]: 'calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px) - 4rem - env(safe-area-inset-bottom, 0px))'
         }}
