@@ -1015,11 +1015,12 @@ const Profile = () => {
           <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Resources</h3>
           <div className="space-y-2">
             {[
+              { icon: Sparkles, label: "Replay Social Tour", href: "__social_tour__" },
               { icon: Video, label: "How-to Video Tutorials", href: "#", comingSoon: true },
               { icon: HelpCircle, label: "Frequently Asked Questions", href: "/faq" },
               { icon: Download, label: "Download App", href: "__install__" },
             ].map((item) => (
-              item.comingSoon || item.href === "__install__" ? (
+              item.comingSoon || item.href === "__install__" || item.href === "__social_tour__" ? (
                 <button
                   key={item.label}
                   onClick={() => {
