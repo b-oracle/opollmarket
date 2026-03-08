@@ -44,6 +44,129 @@ const formatTimeAgo = (date: string) => {
 type FilterType = "all" | "trades" | "deposits";
 type StatusFilter = "all" | "confirmed" | "pending" | "failed";
 
+const TelegramSection = ({ userId }: { userId?: string }) => {
+  const [unlinking, setUnlinking] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data: telegramLink, isLoading } = useQuery({
+    queryKey: ["telegram-link", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data } = await supabase
+        .from("telegram_users")
+        .select("telegram_username, linked_at")
+        .eq("user_id", userId)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!userId,
+  });
+
+  const handleUnlink = async () => {
+    if (!userId) return;
+    setUnlinking(true);
+    try {
+      const { error } = await supabase
+        .from("telegram_users")
+        .delete()
+        .eq("user_id", userId);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["telegram-link", userId] });
+      toast.success("Telegram account unlinked");
+    } catch {
+      toast.error("Failed to unlink Telegram");
+    } finally {
+      setUnlinking(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="glass rounded-xl p-4 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0 text-sky-400">
+          <Send className="w-5 h-5" />
+        </div>
+        <span className="text-sm font-medium flex-1">Telegram</span>
+        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (telegramLink) {
+    return (
+      <div className="glass rounded-xl p-4 space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-sky-500/10 flex items-center justify-center shrink-0 text-sky-400">
+            <Send className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
+              Telegram Linked
+            </p>
+            <p className="text-xs text-muted-foreground truncate">
+              {telegramLink.telegram_username ? `@${telegramLink.telegram_username}` : "Linked account"}
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <a
+            href="https://t.me/opoll_predict_bot"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-muted/50 border border-border text-xs font-semibold hover:bg-accent/50 transition-colors"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            Open Bot
+          </a>
+          <button
+            onClick={handleUnlink}
+            disabled={unlinking}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-destructive/10 border border-destructive/20 text-xs font-semibold text-destructive hover:bg-destructive/20 transition-colors disabled:opacity-50"
+          >
+            {unlinking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Unlink className="w-3.5 h-3.5" />}
+            Unlink
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="glass rounded-xl p-4 space-y-3">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0 text-sky-400">
+          <Send className="w-5 h-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold">Predict via Telegram</p>
+          <p className="text-xs text-muted-foreground">Link your account to trade from Telegram</p>
+        </div>
+      </div>
+      <div className="bg-muted/30 rounded-lg p-3">
+        <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+          1. Open <a href="https://t.me/opoll_predict_bot" target="_blank" rel="noopener noreferrer" className="text-primary font-semibold hover:underline">@opoll_predict_bot</a> on Telegram
+        </p>
+        <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+          2. Send <code className="px-1.5 py-0.5 rounded bg-muted text-foreground text-[11px] font-mono">/link your@email.com password</code>
+        </p>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          3. Start browsing markets and placing predictions! 🎯
+        </p>
+      </div>
+      <a
+        href="https://t.me/opoll_predict_bot"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sm font-semibold text-sky-400 hover:bg-sky-500/20 transition-colors"
+      >
+        <Send className="w-4 h-4" />
+        Open Telegram Bot
+      </a>
+    </div>
+  );
+};
+
 const Profile = () => {
   
   const { user, loading: authLoading, isAdmin, displayName: authDisplayName } = useAuth();
@@ -767,17 +890,12 @@ const Profile = () => {
           )}
         </div>
 
-        {/* Social / Predict via */}
+        {/* Telegram & Connect */}
         <div className="mb-6">
           <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Connect</h3>
           <div className="space-y-2">
-            <a href="https://t.me/opoll_predict_bot" target="_blank" rel="noopener noreferrer" className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
-              <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0 text-sky-400">
-                <Send className="w-5 h-5" />
-              </div>
-              <span className="text-sm font-medium flex-1">Predict via Telegram</span>
-              <ExternalLink className="w-4 h-4 text-muted-foreground" />
-            </a>
+            {/* Telegram Section */}
+            <TelegramSection userId={user?.id} />
             <button onClick={() => toast.info("Predict via WhatsApp will be available soon!")} className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98] text-left">
               <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0 text-green-500">
                 <MessageCircle className="w-5 h-5" />
