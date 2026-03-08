@@ -532,9 +532,9 @@ const Feed = () => {
         return (
           <motion.p
             className="fixed left-0 right-0 max-w-3xl mx-auto text-[11px] text-muted-foreground/50 font-medium text-center z-[999] pointer-events-none lg:hidden"
-            style={{ top: '50%', transform: 'translateY(-50%)' }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: scrollNudge ? 1 : 0 }}
+            style={{ bottom: 'calc(4.5rem + 2px + env(safe-area-inset-bottom, 0px))' }}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: scrollNudge ? 1 : 0, y: scrollNudge ? 0 : 8 }}
             transition={{ duration: 0.2, ease: "easeOut" }}>
             ← Swipe left for NO · Swipe right for YES →
           </motion.p>);
