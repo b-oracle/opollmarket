@@ -866,7 +866,8 @@ const Rankings = () => {
                                   initial={{ opacity: 0, x: -12 }}
                                   animate={{ opacity: 1, x: 0 }}
                                   transition={{ delay: i * 0.04 }}
-                                  className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : ""}`}
+                                  onClick={() => !isMe && navigate(`/user/${ref.userId}`)}
+                                  className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : "cursor-pointer hover:bg-accent/30"}`}
                                 >
                                   <div className="w-8 flex justify-center shrink-0">{rankBadge(rank)}</div>
                                   <AvatarCircle avatar={ref.avatar} name={ref.name} />
@@ -883,10 +884,12 @@ const Rankings = () => {
                                     <p className="text-sm font-bold text-primary flex items-center gap-1">
                                       <TrendingUp className="w-3.5 h-3.5" />+{ref.totalEarned.toFixed(0)}
                                     </p>
-                                    {isMe && (
-                                      <button onClick={() => shareRank(rank, ref.name, ref.avatar, `+${formatDollar(ref.totalEarned)}`, true, `${ref.totalReferrals} referral${ref.totalReferrals !== 1 ? "s" : ""}`, "Referrals", sortedReferrers.length)} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+                                    {isMe ? (
+                                      <button onClick={(e) => { e.stopPropagation(); shareRank(rank, ref.name, ref.avatar, `+${formatDollar(ref.totalEarned)}`, true, `${ref.totalReferrals} referral${ref.totalReferrals !== 1 ? "s" : ""}`, "Referrals", sortedReferrers.length); }} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
                                         <Share2 className="w-3.5 h-3.5 text-primary" />
                                       </button>
+                                    ) : (
+                                      <FollowButton userId={ref.userId} />
                                     )}
                                   </div>
                                 </motion.div>
