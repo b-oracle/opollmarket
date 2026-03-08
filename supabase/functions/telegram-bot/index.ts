@@ -920,6 +920,10 @@ async function handleMarketDetail(
     [
       { text: "🌐 View on Web", url: `${APP_URL}/market/${mkt.id}` },
     ],
+    [
+      { text: "⬅️ Back to Markets", callback_data: "cmd_markets" },
+      { text: "🏠 Home", callback_data: "cmd_home" },
+    ],
   ];
 
   // Send with image if available
