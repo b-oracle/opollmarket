@@ -238,7 +238,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
     <>
       <div
         ref={cardRef}
-        className={`snap-item relative w-full flex items-end px-3 sm:px-4 pb-1 overflow-hidden shrink-0 ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}
+        className={`snap-item relative w-full flex items-end px-3 sm:px-4 pb-2 overflow-hidden shrink-0 ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}
         style={{ 
           height: 'var(--feed-card-height, calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px) - 4rem - env(safe-area-inset-bottom, 0px)))',
           maxHeight: 'var(--feed-card-height, calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px) - 4rem - env(safe-area-inset-bottom, 0px)))',
