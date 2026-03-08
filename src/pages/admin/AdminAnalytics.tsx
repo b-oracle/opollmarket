@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, BarChart3, Users, TrendingUp, MousePointerClick } from "lucide-react";
+import { Loader2, BarChart3, Users, TrendingUp, MousePointerClick, DollarSign } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from "recharts";
 
 interface EventRow {
@@ -25,24 +25,94 @@ const AdminAnalytics = () => {
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [timeRange, setTimeRange] = useState<7 | 14 | 30>(7);
+  const [polyFees, setPolyFees] = useState<{ adminFees: number; creatorFees: number; totalVolume: number; marketCount: number; feesByMarket: { title: string; adminFee: number; creatorFee: number }[] }>({
+    adminFees: 0, creatorFees: 0, totalVolume: 0, marketCount: 0, feesByMarket: [],
+  });
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchAll = async () => {
       setLoading(true);
       const since = new Date();
       since.setDate(since.getDate() - timeRange);
+      const sinceISO = since.toISOString();
 
-      const { data } = await supabase
+      // Fetch analytics events
+      const eventsPromise = supabase
         .from("analytics_events")
         .select("event_name, user_id, created_at, properties")
-        .gte("created_at", since.toISOString())
+        .gte("created_at", sinceISO)
         .order("created_at", { ascending: false })
         .limit(1000);
 
-      setEvents((data || []) as EventRow[]);
+      // Fetch Polymarket-linked markets
+      const marketsPromise = supabase
+        .from("markets")
+        .select("id, title, polymarket_id")
+        .not("polymarket_id", "is", null);
+
+      const [eventsRes, marketsRes] = await Promise.all([eventsPromise, marketsPromise]);
+      setEvents((eventsRes.data || []) as EventRow[]);
+
+      const polyMarkets = marketsRes.data || [];
+      if (polyMarkets.length > 0) {
+        const polyMarketIds = polyMarkets.map((m) => m.id);
+        const titleMap = new Map(polyMarkets.map((m) => [m.id, m.title]));
+
+        // Fetch fee transactions for these markets
+        const { data: feeTxns } = await supabase
+          .from("transactions")
+          .select("market_id, type, amount, created_at")
+          .in("market_id", polyMarketIds)
+          .in("type", ["admin_fee", "creator_fee", "buy"])
+          .eq("status", "confirmed")
+          .gte("created_at", sinceISO)
+          .limit(1000);
+
+        let adminTotal = 0;
+        let creatorTotal = 0;
+        let volume = 0;
+        const marketFeeMap = new Map<string, { adminFee: number; creatorFee: number }>();
+
+        for (const tx of feeTxns || []) {
+          const mid = tx.market_id as string;
+          if (!marketFeeMap.has(mid)) marketFeeMap.set(mid, { adminFee: 0, creatorFee: 0 });
+          const entry = marketFeeMap.get(mid)!;
+
+          if (tx.type === "admin_fee") {
+            adminTotal += Number(tx.amount);
+            entry.adminFee += Number(tx.amount);
+          } else if (tx.type === "creator_fee") {
+            creatorTotal += Number(tx.amount);
+            entry.creatorFee += Number(tx.amount);
+          } else if (tx.type === "buy") {
+            volume += Number(tx.amount);
+          }
+        }
+
+        const feesByMarket = Array.from(marketFeeMap.entries())
+          .map(([mid, fees]) => ({
+            title: titleMap.get(mid) || mid.slice(0, 8) + "…",
+            adminFee: fees.adminFee,
+            creatorFee: fees.creatorFee,
+          }))
+          .filter((m) => m.adminFee > 0 || m.creatorFee > 0)
+          .sort((a, b) => (b.adminFee + b.creatorFee) - (a.adminFee + a.creatorFee))
+          .slice(0, 8);
+
+        setPolyFees({
+          adminFees: adminTotal,
+          creatorFees: creatorTotal,
+          totalVolume: volume,
+          marketCount: polyMarkets.length,
+          feesByMarket,
+        });
+      } else {
+        setPolyFees({ adminFees: 0, creatorFees: 0, totalVolume: 0, marketCount: 0, feesByMarket: [] });
+      }
+
       setLoading(false);
     };
-    fetch();
+    fetchAll();
   }, [timeRange]);
 
   if (loading) {
@@ -247,8 +317,70 @@ const AdminAnalytics = () => {
           <p className="text-sm text-muted-foreground text-center py-4">No bet events recorded yet</p>
         )}
       </div>
+
+      {/* Polymarket Fee Earnings */}
+      <div className="bg-card border border-border rounded-xl p-5">
+        <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+          <span>🔮</span> Polymarket Fee Earnings
+        </h3>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+          {[
+            { label: "Admin Fees", value: `$${polyFees.adminFees.toFixed(2)}`, color: "text-green-500", icon: DollarSign },
+            { label: "Creator Fees", value: `$${polyFees.creatorFees.toFixed(2)}`, color: "text-blue-500", icon: DollarSign },
+            { label: "Total Fees", value: `$${(polyFees.adminFees + polyFees.creatorFees).toFixed(2)}`, color: "text-primary", icon: TrendingUp },
+            { label: "Poly Volume", value: `$${polyFees.totalVolume.toFixed(2)}`, color: "text-purple-500", icon: BarChart3 },
+          ].map((card) => (
+            <div key={card.label} className="bg-muted/30 border border-border rounded-lg p-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{card.label}</span>
+                <card.icon className={`w-3.5 h-3.5 ${card.color}`} />
+              </div>
+              <span className="text-lg font-bold">{card.value}</span>
+            </div>
+          ))}
+        </div>
+
+        {polyFees.feesByMarket.length > 0 ? (
+          <div>
+            <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Fee Breakdown by Market</h4>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={polyFees.feesByMarket} layout="vertical">
+                  <XAxis type="number" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
+                  <YAxis type="category" dataKey="title" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={120} tickFormatter={(v) => v.length > 20 ? v.slice(0, 20) + "…" : v} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                    }}
+                    formatter={(value: number, name: string) => [`$${value.toFixed(2)}`, name === "adminFee" ? "Admin Fee" : "Creator Fee"]}
+                  />
+                  <Bar dataKey="adminFee" stackId="fees" fill="hsl(var(--chart-3))" radius={[0, 0, 0, 0]} name="Admin Fee" />
+                  <Bar dataKey="creatorFee" stackId="fees" fill="hsl(var(--chart-2))" radius={[0, 4, 4, 0]} name="Creator Fee" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "hsl(var(--chart-3))" }} />
+                <span className="text-[10px] text-muted-foreground">Admin Fee</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "hsl(var(--chart-2))" }} />
+                <span className="text-[10px] text-muted-foreground">Creator Fee</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground text-center py-4">No Polymarket fee data for this period</p>
+        )}
+      </div>
     </div>
   );
+
 };
 
 export default AdminAnalytics;
