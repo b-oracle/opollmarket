@@ -25,24 +25,94 @@ const AdminAnalytics = () => {
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [timeRange, setTimeRange] = useState<7 | 14 | 30>(7);
+  const [polyFees, setPolyFees] = useState<{ adminFees: number; creatorFees: number; totalVolume: number; marketCount: number; feesByMarket: { title: string; adminFee: number; creatorFee: number }[] }>({
+    adminFees: 0, creatorFees: 0, totalVolume: 0, marketCount: 0, feesByMarket: [],
+  });
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchAll = async () => {
       setLoading(true);
       const since = new Date();
       since.setDate(since.getDate() - timeRange);
+      const sinceISO = since.toISOString();
 
-      const { data } = await supabase
+      // Fetch analytics events
+      const eventsPromise = supabase
         .from("analytics_events")
         .select("event_name, user_id, created_at, properties")
-        .gte("created_at", since.toISOString())
+        .gte("created_at", sinceISO)
         .order("created_at", { ascending: false })
         .limit(1000);
 
-      setEvents((data || []) as EventRow[]);
+      // Fetch Polymarket-linked markets
+      const marketsPromise = supabase
+        .from("markets")
+        .select("id, title, polymarket_id")
+        .not("polymarket_id", "is", null);
+
+      const [eventsRes, marketsRes] = await Promise.all([eventsPromise, marketsPromise]);
+      setEvents((eventsRes.data || []) as EventRow[]);
+
+      const polyMarkets = marketsRes.data || [];
+      if (polyMarkets.length > 0) {
+        const polyMarketIds = polyMarkets.map((m) => m.id);
+        const titleMap = new Map(polyMarkets.map((m) => [m.id, m.title]));
+
+        // Fetch fee transactions for these markets
+        const { data: feeTxns } = await supabase
+          .from("transactions")
+          .select("market_id, type, amount, created_at")
+          .in("market_id", polyMarketIds)
+          .in("type", ["admin_fee", "creator_fee", "buy"])
+          .eq("status", "confirmed")
+          .gte("created_at", sinceISO)
+          .limit(1000);
+
+        let adminTotal = 0;
+        let creatorTotal = 0;
+        let volume = 0;
+        const marketFeeMap = new Map<string, { adminFee: number; creatorFee: number }>();
+
+        for (const tx of feeTxns || []) {
+          const mid = tx.market_id as string;
+          if (!marketFeeMap.has(mid)) marketFeeMap.set(mid, { adminFee: 0, creatorFee: 0 });
+          const entry = marketFeeMap.get(mid)!;
+
+          if (tx.type === "admin_fee") {
+            adminTotal += Number(tx.amount);
+            entry.adminFee += Number(tx.amount);
+          } else if (tx.type === "creator_fee") {
+            creatorTotal += Number(tx.amount);
+            entry.creatorFee += Number(tx.amount);
+          } else if (tx.type === "buy") {
+            volume += Number(tx.amount);
+          }
+        }
+
+        const feesByMarket = Array.from(marketFeeMap.entries())
+          .map(([mid, fees]) => ({
+            title: titleMap.get(mid) || mid.slice(0, 8) + "…",
+            adminFee: fees.adminFee,
+            creatorFee: fees.creatorFee,
+          }))
+          .filter((m) => m.adminFee > 0 || m.creatorFee > 0)
+          .sort((a, b) => (b.adminFee + b.creatorFee) - (a.adminFee + a.creatorFee))
+          .slice(0, 8);
+
+        setPolyFees({
+          adminFees: adminTotal,
+          creatorFees: creatorTotal,
+          totalVolume: volume,
+          marketCount: polyMarkets.length,
+          feesByMarket,
+        });
+      } else {
+        setPolyFees({ adminFees: 0, creatorFees: 0, totalVolume: 0, marketCount: 0, feesByMarket: [] });
+      }
+
       setLoading(false);
     };
-    fetch();
+    fetchAll();
   }, [timeRange]);
 
   if (loading) {
