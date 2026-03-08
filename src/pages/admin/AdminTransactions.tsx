@@ -90,6 +90,32 @@ const AdminTransactions = () => {
       const { count } = await countQuery;
       setTotalCount(count ?? 0);
 
+      // Compute totals across ALL matching rows (not just current page)
+      const applyStatusFilterQ = (q: any) => {
+        if (statusFilter === "all") return q;
+        if (statusFilter === "failed") return q.in("status", ["failed", "expired"]);
+        return q.eq("status", statusFilter);
+      };
+
+      const buildTotalQuery = (type: string) => {
+        let q = supabase.from("transactions").select("amount").eq("type", type);
+        q = applyStatusFilterQ(q);
+        q = applySearchFilter(q);
+        return q;
+      };
+
+      const [depRes, wdRes, betRes] = await Promise.all([
+        buildTotalQuery("deposit"),
+        buildTotalQuery("withdrawal"),
+        buildTotalQuery("bet"),
+      ]);
+
+      setTotals({
+        deposits: (depRes.data || []).reduce((s, r) => s + Number(r.amount), 0),
+        withdrawals: (wdRes.data || []).reduce((s, r) => s + Number(r.amount), 0),
+        bets: (betRes.data || []).reduce((s, r) => s + Number(r.amount), 0),
+      });
+
       // Get page
       const from = page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
