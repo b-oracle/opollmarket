@@ -1,45 +1,114 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, MessageCircle, Users, Bookmark, ArrowRight, Sparkles, UserPlus, SwatchBook } from "lucide-react";
+import { Heart, MessageCircle, Users, Bookmark, ArrowRight, Sparkles, UserPlus } from "lucide-react";
 
 const TUTORIAL_KEY = "social_tutorial_seen";
 
-const steps = [
+/** Haptic patterns matching the project standard */
+const haptic = {
+  light: () => navigator.vibrate?.(10),
+  medium: () => navigator.vibrate?.(30),
+  success: () => navigator.vibrate?.([30, 50, 30]),
+};
+
+/** Subtle tick sound via Web Audio API */
+function playTickSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.06);
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.12);
+  } catch {
+    // silent
+  }
+}
+
+function playCompleteSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const now = ctx.currentTime;
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(0.1, now);
+    master.gain.linearRampToValueAtTime(0, now + 0.5);
+    master.connect(ctx.destination);
+
+    [523.25, 659.25, 783.99].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, now + i * 0.1);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, now + i * 0.1);
+      g.gain.linearRampToValueAtTime(0.2, now + i * 0.1 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.2);
+      osc.connect(g);
+      g.connect(master);
+      osc.start(now + i * 0.1);
+      osc.stop(now + i * 0.1 + 0.25);
+    });
+  } catch {
+    // silent
+  }
+}
+
+interface TutorialStep {
+  icon: typeof Sparkles;
+  title: string;
+  description: string;
+  color: string;
+  route: string;
+}
+
+const steps: TutorialStep[] = [
   {
     icon: Sparkles,
     title: "Welcome to Social!",
     description: "We've added social features so you can connect with other traders. Let us show you around!",
     color: "from-primary to-primary/60",
+    route: "/",
   },
   {
     icon: Heart,
     title: "Like Markets",
     description: "Tap the heart icon on any market to show your support. See what's popular based on community likes.",
     color: "from-rose-500 to-pink-400",
+    route: "/",
   },
   {
     icon: MessageCircle,
     title: "Comment & Discuss",
     description: "Share your thoughts on any market. Reply to others and build threaded conversations.",
     color: "from-blue-500 to-cyan-400",
+    route: "/feed",
   },
   {
     icon: UserPlus,
     title: "Follow Traders",
     description: "Follow other users to keep up with their predictions. See mutual connections on profiles.",
     color: "from-emerald-500 to-green-400",
+    route: "/rankings",
   },
   {
     icon: Users,
     title: "Social Profiles",
     description: "Swipe right on your Profile page to visit your public profile — see followers, activity, and more.",
     color: "from-violet-500 to-purple-400",
+    route: "/profile",
   },
   {
     icon: Bookmark,
     title: "Watchlist",
     description: "Bookmark markets you want to track. Access your watchlist anytime from your profile.",
     color: "from-amber-500 to-yellow-400",
+    route: "/portfolio",
   },
 ];
 
@@ -57,86 +126,107 @@ interface SocialTutorialProps {
 
 const SocialTutorial = ({ onComplete }: SocialTutorialProps) => {
   const [step, setStep] = useState(0);
+  const navigate = useNavigate();
+  const location = useLocation();
   const current = steps[step];
   const isLast = step === steps.length - 1;
 
+  // Navigate to the step's route when step changes
+  useEffect(() => {
+    if (location.pathname !== current.route) {
+      navigate(current.route, { replace: true });
+    }
+  }, [step, current.route, navigate, location.pathname]);
+
   const handleNext = useCallback(() => {
     if (isLast) {
+      haptic.success();
+      playCompleteSound();
       markTutorialSeen();
+      navigate("/", { replace: true });
       onComplete();
     } else {
+      haptic.light();
+      playTickSound();
       setStep((s) => s + 1);
     }
-  }, [isLast, onComplete]);
+  }, [isLast, onComplete, navigate]);
 
   const handleSkip = useCallback(() => {
+    haptic.light();
     markTutorialSeen();
+    navigate("/", { replace: true });
     onComplete();
-  }, [onComplete]);
+  }, [onComplete, navigate]);
 
   return (
     <motion.div
-      className="fixed inset-0 z-[100] flex items-center justify-center px-6"
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center px-4 pb-24 sm:pb-0"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
     >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={handleSkip} />
+      {/* Backdrop — semi-transparent so the page behind is visible */}
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={handleSkip} />
 
       {/* Card */}
       <AnimatePresence mode="wait">
         <motion.div
           key={step}
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          initial={{ opacity: 0, scale: 0.9, y: 30 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: -10 }}
+          exit={{ opacity: 0, scale: 0.95, y: -15 }}
           transition={{ duration: 0.25 }}
           className="relative w-full max-w-sm rounded-2xl border border-border bg-card shadow-2xl overflow-hidden"
         >
           {/* Gradient header */}
-          <div className={`bg-gradient-to-br ${current.color} p-8 flex flex-col items-center gap-3`}>
+          <div className={`bg-gradient-to-br ${current.color} p-7 flex flex-col items-center gap-3`}>
             <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
+              initial={{ scale: 0, rotate: -90 }}
+              animate={{ scale: 1, rotate: 0 }}
               transition={{ delay: 0.15, type: "spring", stiffness: 200 }}
-              className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center"
+              className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center"
             >
-              <current.icon className="w-8 h-8 text-white" />
+              <current.icon className="w-7 h-7 text-white" />
             </motion.div>
-            <h2 className="text-xl font-bold text-white text-center">{current.title}</h2>
+            <h2 className="text-lg font-bold text-white text-center">{current.title}</h2>
           </div>
 
           {/* Body */}
-          <div className="p-6">
+          <div className="p-5">
             <p className="text-sm text-muted-foreground text-center leading-relaxed">
               {current.description}
             </p>
 
+            {/* Step counter */}
+            <p className="text-[10px] text-muted-foreground/60 text-center mt-3 font-medium tracking-wide">
+              {step + 1} of {steps.length}
+            </p>
+
             {/* Progress dots */}
-            <div className="flex items-center justify-center gap-1.5 mt-5">
+            <div className="flex items-center justify-center gap-1.5 mt-2">
               {steps.map((_, i) => (
-                <div
+                <motion.div
                   key={i}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    i === step
-                      ? "w-6 bg-primary"
-                      : i < step
-                        ? "w-1.5 bg-primary/40"
-                        : "w-1.5 bg-muted"
+                  animate={{
+                    width: i === step ? 24 : 6,
+                    opacity: i === step ? 1 : i < step ? 0.6 : 0.3,
+                  }}
+                  className={`h-1.5 rounded-full ${
+                    i <= step ? "bg-primary" : "bg-muted"
                   }`}
                 />
               ))}
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-between mt-6">
+            <div className="flex items-center justify-between mt-5">
               <button
                 onClick={handleSkip}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1"
               >
-                Skip
+                Skip tour
               </button>
               <button
                 onClick={handleNext}
