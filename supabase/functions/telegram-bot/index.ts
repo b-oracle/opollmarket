@@ -35,6 +35,48 @@ function categoryEmoji(cat: string): string {
   return map[cat?.toLowerCase()] || "🔮";
 }
 
+// ── Crypto price helpers ──
+const GECKO_IDS: Record<string, string> = {
+  BTC: "bitcoin", ETH: "ethereum", BNB: "binancecoin", SOL: "solana",
+  XRP: "ripple", DOGE: "dogecoin", ADA: "cardano", MATIC: "matic-network",
+  AVAX: "avalanche-2", DOT: "polkadot", LINK: "chainlink", SHIB: "shiba-inu",
+};
+
+async function fetchCryptoPrices(symbols: string[]): Promise<Record<string, number>> {
+  const ids = symbols.map(s => GECKO_IDS[s]).filter(Boolean).join(",");
+  if (!ids) return {};
+  try {
+    const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`);
+    if (!r.ok) return {};
+    const data = await r.json();
+    const result: Record<string, number> = {};
+    for (const sym of symbols) {
+      const gId = GECKO_IDS[sym];
+      if (gId && data[gId]?.usd) result[sym] = data[gId].usd;
+    }
+    return result;
+  } catch { return {}; }
+}
+
+async function fetchCryptoPrice(symbol: string): Promise<{ price: number; change24h: number } | null> {
+  const gId = GECKO_IDS[symbol];
+  if (!gId) return null;
+  try {
+    const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${gId}&vs_currencies=usd&include_24hr_change=true`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    if (!data[gId]?.usd) return null;
+    return { price: data[gId].usd, change24h: data[gId].usd_24h_change ?? 0 };
+  } catch { return null; }
+}
+
+function formatPrice(price: number): string {
+  if (price >= 1000) return `$${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (price >= 1) return `$${price.toFixed(2)}`;
+  if (price >= 0.01) return `$${price.toFixed(4)}`;
+  return `$${price.toFixed(8)}`;
+}
+
 const APP_URL = "https://opoll.org";
 
 Deno.serve(async (req) => {
@@ -791,23 +833,39 @@ async function handleQuickTrade(
     .limit(1)
     .single();
 
-  const assets = (settings?.qt_enabled_assets || "BTC,ETH,BNB").split(",");
+  const assets = (settings?.qt_enabled_assets || "BTC,ETH,BNB").split(",").map((a: string) => a.trim());
   const minBet = settings?.qt_min_bet || 1;
   const maxBet = settings?.qt_max_bet || 500;
 
-  // Asset emojis
   const assetEmojis: Record<string, string> = {
     BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
   };
 
-  const buttons = assets.slice(0, 6).map((asset: string) => ({
-    text: `${assetEmojis[asset.trim()] || "📊"} ${asset.trim()}`,
-    callback_data: `qt_asset_${asset.trim()}`,
-  }));
+  // Fetch live prices for all enabled assets
+  const prices = await fetchCryptoPrices(assets.slice(0, 6));
 
+  let priceList = "";
+  for (const asset of assets.slice(0, 6)) {
+    const emoji = assetEmojis[asset] || "📊";
+    const price = prices[asset];
+    priceList += price
+      ? `${emoji} <b>${asset}</b>: ${formatPrice(price)}\n`
+      : `${emoji} <b>${asset}</b>\n`;
+  }
+
+  const buttons = assets.slice(0, 6).map((asset: string) => {
+    const price = prices[asset];
+    const priceLabel = price ? ` ${formatPrice(price)}` : "";
+    return {
+      text: `${assetEmojis[asset] || "📊"} ${asset}${priceLabel}`,
+      callback_data: `qt_asset_${asset}`,
+    };
+  });
+
+  // 2 per row so price labels fit
   const keyboard: Array<Array<{ text: string; callback_data: string }>> = [];
-  for (let i = 0; i < buttons.length; i += 3) {
-    keyboard.push(buttons.slice(i, i + 3));
+  for (let i = 0; i < buttons.length; i += 2) {
+    keyboard.push(buttons.slice(i, i + 2));
   }
 
   await tg(token, "sendMessage", {
@@ -816,6 +874,8 @@ async function handleQuickTrade(
       `⚡ <b>Quick Trade</b>\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `Predict if a crypto price goes 📈 UP or 📉 DOWN!\n\n` +
+      `📊 <b>Live Prices</b>\n` +
+      `${priceList}\n` +
       `💰 Bet range: <b>$${minBet} – $${maxBet}</b>\n` +
       `⏱️ Round duration: <b>5 minutes</b>\n\n` +
       `Select an asset to trade:`,
@@ -1270,17 +1330,18 @@ async function handleQTAssetSelected(token: string, chatId: number, data: string
     BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
   };
 
-  // CoinGecko IDs for chart links
-  const geckoIds: Record<string, string> = {
-    BTC: "bitcoin", ETH: "ethereum", BNB: "binancecoin", SOL: "solana",
-    XRP: "ripple", DOGE: "dogecoin", ADA: "cardano", MATIC: "matic-network",
-    AVAX: "avalanche-2", DOT: "polkadot", LINK: "chainlink", SHIB: "shiba-inu",
-  };
-
   const chartUrl = `${APP_URL}/quick-trade?asset=${asset}`;
-  const geckoChartUrl = geckoIds[asset]
-    ? `https://www.coingecko.com/en/coins/${geckoIds[asset]}`
-    : `https://www.tradingview.com/chart/?symbol=${asset}USDT`;
+
+  // Fetch live price with 24h change
+  const priceData = await fetchCryptoPrice(asset);
+  let priceText = "";
+  if (priceData) {
+    const changeEmoji = priceData.change24h >= 0 ? "🟢" : "🔴";
+    const changeSign = priceData.change24h >= 0 ? "+" : "";
+    priceText =
+      `\n💲 <b>Current Price</b>: ${formatPrice(priceData.price)}\n` +
+      `${changeEmoji} <b>24h Change</b>: ${changeSign}${priceData.change24h.toFixed(2)}%\n`;
+  }
 
   const buttons = [
     [
@@ -1312,7 +1373,8 @@ async function handleQTAssetSelected(token: string, chatId: number, data: string
     chat_id: chatId,
     text:
       `⚡ <b>Quick Trade — ${assetEmojis[asset] || "📊"} ${asset}</b>\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `${priceText}\n` +
       `Will <b>${asset}</b> go UP 📈 or DOWN 📉 in the next 5 minutes?\n\n` +
       `📊 View the chart before deciding!\n\n` +
       `Choose your prediction and amount:`,
