@@ -151,6 +151,7 @@ const SocialTutorial = ({ onComplete }: SocialTutorialProps) => {
     if (isLast) {
       haptic.success();
       playCompleteSound();
+      fireWinConfetti();
       markTutorialSeen();
       navigate("/", { replace: true });
       onComplete();
