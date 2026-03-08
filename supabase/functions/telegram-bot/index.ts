@@ -1264,6 +1264,7 @@ async function handleQTAssetSelected(token: string, chatId: number, data: string
     ],
     [
       { text: "⬅️ Back to Assets", callback_data: "cmd_quicktrade" },
+      { text: "🏠 Home", callback_data: "cmd_home" },
     ],
   ];
 
