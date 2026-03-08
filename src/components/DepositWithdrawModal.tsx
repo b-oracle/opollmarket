@@ -581,7 +581,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                         <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                         <div className="text-[10px] text-muted-foreground">
                           <p>Withdrawals are processed instantly and sent directly to your wallet. Bonus balance cannot be withdrawn.</p>
-                          {eligibleWithdrawal !== undefined && (
+                          {eligibleWithdrawal !== undefined && eligibleWithdrawal !== null && (
                             <p className="mt-1 font-semibold text-foreground">
                               Eligible withdrawal remaining: ${eligibleWithdrawal.toFixed(2)}
                             </p>
