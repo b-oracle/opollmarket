@@ -898,6 +898,7 @@ const Rankings = () => {
                               const isMe = currentUserId === ref.userId;
                               return (
                                 <motion.div
+                                  data-user-rank={ref.userId}
                                   key={ref.userId}
                                   initial={{ opacity: 0, x: -12 }}
                                   animate={{ opacity: 1, x: 0 }}
