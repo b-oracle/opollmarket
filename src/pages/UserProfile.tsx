@@ -16,7 +16,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Users, Heart, Trophy, Gift, UserPlus, UserMinus, Loader2,
   Crown, Medal, Award, Copy, Eye, EyeOff, Settings, Hexagon, ChevronRight,
-  TrendingUp, TrendingDown, MessageCircle, Bookmark, Lock, Share2
+  TrendingUp, TrendingDown, MessageCircle, Bookmark, Lock, Share2, Zap, Flame
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -116,6 +116,73 @@ const UserProfile = () => {
       return count || 0;
     },
     enabled: !!id,
+  });
+
+  // Leaderboard ranks
+  const { data: leaderboardRanks, isLoading: ranksLoading } = useQuery({
+    queryKey: ["user-leaderboard-ranks", id],
+    queryFn: async () => {
+      if (!id) return null;
+
+      // Prediction PnL rank: compute from positions
+      const { data: allTraders } = await supabase
+        .from("transactions")
+        .select("user_id, amount, side, type, status")
+        .in("type", ["buy", "sell", "payout", "refund"])
+        .eq("status", "confirmed");
+
+      let predictionRank: number | null = null;
+      if (allTraders) {
+        const pnlMap = new Map<string, number>();
+        for (const t of allTraders) {
+          const uid = t.user_id;
+          const cur = pnlMap.get(uid) || 0;
+          if (t.type === "payout" || t.type === "sell" || t.type === "refund") {
+            pnlMap.set(uid, cur + Number(t.amount));
+          } else if (t.type === "buy") {
+            pnlMap.set(uid, cur - Number(t.amount));
+          }
+        }
+        const sorted = [...pnlMap.entries()].sort((a, b) => b[1] - a[1]);
+        const idx = sorted.findIndex(([uid]) => uid === id);
+        predictionRank = idx >= 0 ? idx + 1 : null;
+      }
+
+      // Referral rank
+      const { data: allReferrers } = await supabase
+        .from("referral_rewards")
+        .select("referrer_id, amount");
+      let referralRank: number | null = null;
+      if (allReferrers) {
+        const refMap = new Map<string, number>();
+        for (const r of allReferrers) {
+          refMap.set(r.referrer_id, (refMap.get(r.referrer_id) || 0) + Number(r.amount));
+        }
+        const sorted = [...refMap.entries()].sort((a, b) => b[1] - a[1]);
+        const idx = sorted.findIndex(([uid]) => uid === id);
+        referralRank = idx >= 0 ? idx + 1 : null;
+      }
+
+      // Quick Trade profit rank
+      const { data: qtLeaderboard } = await supabase.rpc("get_quick_trade_leaderboard", { _limit: 500 });
+      let qtProfitRank: number | null = null;
+      if (qtLeaderboard && Array.isArray(qtLeaderboard)) {
+        const idx = qtLeaderboard.findIndex((r: any) => r.user_id === id);
+        qtProfitRank = idx >= 0 ? idx + 1 : null;
+      }
+
+      // Streak rank
+      const { data: streakLeaderboard } = await supabase.rpc("get_streak_leaderboard", { _limit: 500 });
+      let streakRank: number | null = null;
+      if (streakLeaderboard && Array.isArray(streakLeaderboard)) {
+        const idx = streakLeaderboard.findIndex((r: any) => r.user_id === id);
+        streakRank = idx >= 0 ? idx + 1 : null;
+      }
+
+      return { predictionRank, referralRank, qtProfitRank, streakRank };
+    },
+    enabled: !!id,
+    staleTime: 60_000,
   });
 
   // Markets data for positions
@@ -504,36 +571,43 @@ const UserProfile = () => {
                 <Trophy className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h4 className="text-sm font-bold">Ranking Stats</h4>
-                <p className="text-[10px] text-muted-foreground">Performance overview</p>
+                <h4 className="text-sm font-bold">Leaderboard Rankings</h4>
+                <p className="text-[10px] text-muted-foreground">Position across all leaderboards</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
-                <p className="text-lg font-bold text-primary">{userMarkets.length}</p>
-                <p className="text-[10px] text-muted-foreground">Markets Created</p>
+            {ranksLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
               </div>
-              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
-                <p className="text-lg font-bold text-primary">{userPositions.length}</p>
-                <p className="text-[10px] text-muted-foreground">Active Positions</p>
+            ) : (
+              <div className="space-y-3">
+                {[
+                  { icon: <TrendingUp className="w-4 h-4 text-emerald-500" />, label: "Prediction PnL", rank: leaderboardRanks?.predictionRank },
+                  { icon: <Gift className="w-4 h-4 text-amber-500" />, label: "Referrals", rank: leaderboardRanks?.referralRank },
+                  { icon: <Zap className="w-4 h-4 text-blue-500" />, label: "Quick Trade Profit", rank: leaderboardRanks?.qtProfitRank },
+                  { icon: <Flame className="w-4 h-4 text-orange-500" />, label: "Win Streak", rank: leaderboardRanks?.streakRank },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-center justify-between rounded-xl bg-muted/30 border border-border/20 p-3">
+                    <div className="flex items-center gap-2.5">
+                      {item.icon}
+                      <span className="text-sm font-medium">{item.label}</span>
+                    </div>
+                    {item.rank ? (
+                      <div className="flex items-center gap-1.5">
+                        {item.rank <= 3 ? (
+                          item.rank === 1 ? <Crown className="w-4 h-4" style={{ color: "hsl(45, 93%, 58%)" }} /> :
+                          item.rank === 2 ? <Medal className="w-4 h-4" style={{ color: "hsl(0, 0%, 78%)" }} /> :
+                          <Award className="w-4 h-4" style={{ color: "hsl(30, 75%, 40%)" }} />
+                        ) : null}
+                        <span className={`text-sm font-bold ${item.rank <= 3 ? "text-primary" : "text-foreground"}`}>#{item.rank}</span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Unranked</span>
+                    )}
+                  </div>
+                ))}
               </div>
-              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
-                <p className="text-lg font-bold">{likesCount}</p>
-                <p className="text-[10px] text-muted-foreground">Likes Given</p>
-              </div>
-              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
-                <p className="text-lg font-bold">{referralCount}</p>
-                <p className="text-[10px] text-muted-foreground">Referrals</p>
-              </div>
-              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
-                <p className="text-lg font-bold">{followCounts.followers}</p>
-                <p className="text-[10px] text-muted-foreground">Followers</p>
-              </div>
-              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
-                <p className="text-lg font-bold">{followCounts.following}</p>
-                <p className="text-[10px] text-muted-foreground">Following</p>
-              </div>
-            </div>
+            )}
           </div>
         )}
       </div>
