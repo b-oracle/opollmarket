@@ -171,9 +171,13 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
   });
 
   const { data: eligibleWithdrawal } = useQuery({
-    queryKey: ["eligible_withdrawal", user?.id],
+    queryKey: ["eligible_withdrawal", user?.id, withdrawSettings?.limitEnabled],
     queryFn: async () => {
-      if (!user) return 0;
+      if (!user) return null;
+
+      // If withdrawal limit is disabled, return null (no cap)
+      if (withdrawSettings?.limitEnabled === false) return null;
+
       const { data: deposits } = await supabase
         .from("transactions")
         .select("amount")
@@ -195,7 +199,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
       const multiplier = withdrawSettings?.multiplier ?? 2;
       return Math.max(0, (multiplier * totalDeposits) - totalWithdrawn);
     },
-    enabled: !!user && tab === "withdraw",
+    enabled: !!user && tab === "withdraw" && withdrawSettings !== undefined,
   });
 
   const numAmount = parseFloat(amount) || 0;
