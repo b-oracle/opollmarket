@@ -540,7 +540,7 @@ async function handleMarkets(
     text += `   ✅ ${yesP}% · 💰 $${vol} · 👥 ${m.participants}\n\n`;
 
     // Two markets per row of buttons
-    const btn = { text: `${num}. ${emoji} ${m.title.slice(0, 20)}`, callback_data: `mkt_${m.id.slice(0, 30)}` };
+    const btn = { text: `${num}. ${emoji} ${m.title.slice(0, 20)}`, callback_data: `mkt_${m.id}` };
     if (i % 2 === 0) {
       marketButtons.push([btn]);
     } else {
