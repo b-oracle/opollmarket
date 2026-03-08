@@ -92,7 +92,6 @@ const AdminDeposits = () => {
     },
   });
 
-  const totalPages = Math.ceil((data?.total || 0) / PAGE_SIZE);
 
   return (
     <div>
