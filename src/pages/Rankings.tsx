@@ -441,6 +441,7 @@ const Rankings = () => {
   const { track } = useAnalytics();
 
   useEffect(() => { track("page_view", { page: "rankings" }); }, []);
+  useEffect(() => { setPage(1); }, [tab, quickSubTab, referralSort, traderSort, timePeriod]);
 
   const [shareModal, setShareModal] = useState<{
     rank: number; name: string; avatar: string | null;
