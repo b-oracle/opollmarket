@@ -607,6 +607,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         side={betModal.side}
         price={betModal.optionPrice ?? (betModal.side === "yes" ? yesPercent : noPercent)}
         marketTitle={betModal.optionLabel ? `${market.title} — ${betModal.optionLabel}` : market.title}
+        marketId={market.id}
         optionLabel={betModal.optionLabel}
         optionColor={betModal.optionColor}
       />
