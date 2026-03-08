@@ -703,9 +703,10 @@ const AdminMarkets = () => {
                               )}
                               {(m.status === "resolved" || m.status === "cancelled") && (
                                 <button
-                                  onClick={() => handleReactivate(m.id)}
-                                  className="p-1.5 rounded-lg hover:bg-blue-500/10 text-blue-500 transition-colors"
-                                  title="Reactivate"
+                                  onClick={() => m.status !== "resolved" && handleReactivate(m.id)}
+                                  disabled={m.status === "resolved"}
+                                  className={`p-1.5 rounded-lg transition-colors ${m.status === "resolved" ? "opacity-30 cursor-not-allowed text-muted-foreground" : "hover:bg-blue-500/10 text-blue-500"}`}
+                                  title={m.status === "resolved" ? "Resolved markets cannot be reactivated" : "Reactivate"}
                                 >
                                   <CheckCircle className="w-4 h-4" />
                                 </button>
