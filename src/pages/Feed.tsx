@@ -509,6 +509,25 @@ const Feed = () => {
           })}
         </div>
       )}
+      {/* Swipe hint - overlaid on bottom nav */}
+      {sortedMarkets.length > 0 && (() => {
+        const currentMarket = sortedMarkets[activeIndex];
+        const isMulti = currentMarket?.marketType === "multi" || currentMarket?.marketType === "range";
+        const isEnded = currentMarket?.status === "ended" || currentMarket?.status === "resolved" || currentMarket?.status === "cancelled" || (currentMarket && new Date(currentMarket.endDate).getTime() < Date.now());
+        if (isMulti || isEnded) return null;
+        return (
+          <motion.p
+            key={`swipe-hint-${activeIndex}`}
+            className="absolute left-0 right-0 text-[10px] text-muted-foreground text-center z-[60] pointer-events-none"
+            style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px) + 4px)' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 0.8, 0.8, 0] }}
+            transition={{ delay: 1.5, duration: 3, ease: "easeInOut", repeat: Infinity, repeatDelay: 5 }}
+          >
+            ← Swipe left for NO · Swipe right for YES →
+          </motion.p>
+        );
+      })()}
       {/* Fill any remaining gap between feed and BottomNav */}
       <div className="flex-1 bg-background" />
       <BottomNav />
