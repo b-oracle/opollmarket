@@ -68,13 +68,27 @@ const AdminDashboard = () => {
       const { data: txnRows } = await supabase.from("transactions").select("created_at, amount");
 
       // For monetary totals, we need ALL rows — fetch in batches to avoid 1000-row cap
-      const fetchAllAmounts = async (table: "referral_rewards" | "quick_bets" | "transactions", filters?: { column: string; value: string }[]): Promise<{ amount: number }[]> => {
+      const fetchAllAmounts = async (table: "referral_rewards" | "quick_bets"): Promise<{ amount: number }[]> => {
         const allRows: { amount: number }[] = [];
         let from = 0;
         const batchSize = 1000;
         while (true) {
-          let q = supabase.from(table).select("amount").range(from, from + batchSize - 1);
-          if (filters) filters.forEach(f => { q = q.eq(f.column, f.value) as any; });
+          const { data, error } = await supabase.from(table).select("amount").range(from, from + batchSize - 1);
+          if (error || !data || data.length === 0) break;
+          allRows.push(...data);
+          if (data.length < batchSize) break;
+          from += batchSize;
+        }
+        return allRows;
+      };
+
+      const fetchTxAmounts = async (type: string, status?: string): Promise<{ amount: number }[]> => {
+        const allRows: { amount: number }[] = [];
+        let from = 0;
+        const batchSize = 1000;
+        while (true) {
+          let q = supabase.from("transactions").select("amount").eq("type", type).range(from, from + batchSize - 1);
+          if (status) q = q.eq("status", status);
           const { data, error } = await q;
           if (error || !data || data.length === 0) break;
           allRows.push(...data);
@@ -84,9 +98,13 @@ const AdminDashboard = () => {
         return allRows;
       };
 
-      const [rewardRows, qtBetRows] = await Promise.all([
+      const [rewardRows, qtBetRows, depositRows, withdrawalRows, depositCount, withdrawalCount] = await Promise.all([
         fetchAllAmounts("referral_rewards"),
         fetchAllAmounts("quick_bets"),
+        fetchTxAmounts("deposit", "confirmed"),
+        fetchTxAmounts("withdrawal", "confirmed"),
+        supabase.from("transactions").select("*", { count: "exact", head: true }).eq("type", "deposit").eq("status", "confirmed"),
+        supabase.from("transactions").select("*", { count: "exact", head: true }).eq("type", "withdrawal").eq("status", "confirmed"),
       ]);
 
       const totalVolume = marketRows?.reduce((sum, m) => sum + Number(m.volume), 0) ?? 0;
