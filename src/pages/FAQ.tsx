@@ -248,7 +248,7 @@ const FAQ = () => {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 pt-4 space-y-4">
+      <div className="max-w-lg md:max-w-3xl mx-auto px-4 pt-4 space-y-4">
         {/* AI Search Bar */}
         <div className="space-y-3">
           <div className="relative">

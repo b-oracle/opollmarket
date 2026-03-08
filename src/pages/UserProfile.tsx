@@ -237,7 +237,7 @@ const UserProfile = () => {
     return (
       <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
         <TopBar />
-        <div className="max-w-lg mx-auto px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
+        <div className="max-w-lg md:max-w-4xl mx-auto px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
           <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full glass flex items-center justify-center mb-4">
             <ArrowLeft className="w-5 h-5" />
           </button>
