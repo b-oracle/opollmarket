@@ -927,6 +927,8 @@ async function handleCallback(
     await handleMarketDetail(token, supabase, chatId, data);
   } else if (data.startsWith("bet_") || data.startsWith("b_")) {
     await handleBetConfirm(token, supabase, chatId, data);
+  } else if (data.startsWith("mkt_cust_")) {
+    await handleMarketCustomAmount(token, supabase, chatId, data);
   } else if (data.startsWith("qt_asset_")) {
     await handleQTAssetSelected(token, chatId, data);
   } else if (data.startsWith("qt_custom_")) {
