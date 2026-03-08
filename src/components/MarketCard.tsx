@@ -289,7 +289,20 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           {/* Strong bottom-heavy gradient for text readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-background from-10% via-background/80 via-40% to-background/30" />
           <div className={`absolute inset-0 ${isBoosted ? 'bg-gradient-to-br from-primary/15 via-primary/5 to-transparent' : ''}`} />
+          {isEnded && (
+            <div className="absolute inset-0 bg-background/40 z-10" />
+          )}
         </div>
+
+        {/* Ended badge */}
+        {isEnded && (
+          <div className="absolute top-3 right-3 z-20">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-destructive/90 text-destructive-foreground text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm">
+              <Clock className="w-3 h-3" />
+              Ended
+            </span>
+          </div>
+        )}
 
         {/* Chance badge removed from here — now inline with title */}
 
@@ -503,7 +516,11 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           </div>
 
           {/* Prediction buttons */}
-          {(
+          {isEnded ? (
+            <div className="w-full text-center py-3 rounded-xl bg-muted/50 border border-border/50">
+              <span className="text-sm font-semibold text-muted-foreground">Market Ended — Awaiting Resolution</span>
+            </div>
+          ) : (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
