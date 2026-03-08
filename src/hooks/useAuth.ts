@@ -209,6 +209,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!error) localStorage.removeItem("social_swipe_used");
     return { error };
   }, []);
 
