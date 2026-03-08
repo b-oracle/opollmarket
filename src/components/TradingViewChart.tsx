@@ -280,7 +280,27 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     };
   }, [entryPrice, entrySide, chartStyle]);
 
+  // Target "Price to beat" line (Polymarket-style dashed line)
   useEffect(() => {
+    if (!targetPrice || !chartRef.current) return;
+    
+    const series = chartStyle === "candle" ? candleSeriesRef.current : areaSeriesRef.current;
+    if (!series) return;
+    
+    const priceLine = series.createPriceLine({
+      price: targetPrice,
+      color: "#f59e0b",
+      lineWidth: 1,
+      lineStyle: 2, // Dashed
+      axisLabelVisible: true,
+      title: "Target",
+    });
+    
+    return () => {
+      try { series.removePriceLine(priceLine); } catch {}
+    };
+  }, [targetPrice, chartStyle]);
+
     if (!streamingPrice || !chartRef.current) return;
     
     const nowSec = Math.floor(Date.now() / 1000) as UTCTimestamp;
