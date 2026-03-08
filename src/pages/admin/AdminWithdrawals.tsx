@@ -143,6 +143,7 @@ const AdminWithdrawals = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>User</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Wallet</TableHead>
@@ -154,6 +155,10 @@ const AdminWithdrawals = () => {
               <TableBody>
                 {paginatedWd.map((w: any) => (
                   <TableRow key={w.id}>
+                    <TableCell>
+                      <div className="font-medium text-sm">{w.display_name}</div>
+                      <div className="text-[10px] text-muted-foreground truncate max-w-[160px]">{w.email || w.user_id.slice(0, 8)}</div>
+                    </TableCell>
                     <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                       {format(new Date(w.created_at), "MMM d, yyyy HH:mm")}
                     </TableCell>
