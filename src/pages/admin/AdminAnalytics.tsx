@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, BarChart3, Users, TrendingUp, MousePointerClick } from "lucide-react";
+import { Loader2, BarChart3, Users, TrendingUp, MousePointerClick, DollarSign } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from "recharts";
 
 interface EventRow {
