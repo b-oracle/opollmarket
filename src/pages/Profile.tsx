@@ -16,8 +16,9 @@ import { bsc } from "wagmi/chains";
 import {
   Wallet, Gift, ArrowDownToLine, ArrowUpFromLine, ArrowUpRight, ArrowDownLeft,
   Repeat, LogIn, Send, MessageCircle, ExternalLink, ChevronRight,
-  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image, BarChart3,
+  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image, BarChart3, Globe, EyeOff,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import NftBadge, { isNftAvatar } from "@/components/NftBadge";
 import { AnimatePresence, motion } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -198,6 +199,8 @@ const Profile = () => {
   const [loadingNfts, setLoadingNfts] = useState(false);
   const [walletNfts, setWalletNfts] = useState<Array<{ token_address: string; token_id: string; name: string; image_url: string; collection_name: string }>>([]);
   const [selectedNftUrl, setSelectedNftUrl] = useState<string | null>(null);
+  const [editBio, setEditBio] = useState("");
+  const [editIsPublic, setEditIsPublic] = useState(true);
 
   // Fetch profile data
   const { data: profile } = useQuery({
@@ -206,7 +209,7 @@ const Profile = () => {
       if (!user) return null;
       const { data } = await supabase
         .from("profiles")
-        .select("wallet_address, avatar_url, display_name")
+        .select("wallet_address, avatar_url, display_name, is_public, bio")
         .eq("id", user.id)
         .single();
       return data;
@@ -410,6 +413,8 @@ const Profile = () => {
           <button
             onClick={() => {
               setEditName(profile?.display_name || authDisplayName);
+              setEditBio((profile as any)?.bio || "");
+              setEditIsPublic((profile as any)?.is_public ?? true);
               setAvatarPreview(null);
               setAvatarFile(null);
               setSelectedNftUrl(null);
@@ -529,6 +534,30 @@ const Profile = () => {
                       maxLength={50}
                     />
                   </div>
+                  {/* Bio */}
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Bio</label>
+                    <textarea
+                      value={editBio}
+                      onChange={(e) => setEditBio(e.target.value)}
+                      className="w-full bg-muted/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                      placeholder="Tell people about yourself..."
+                      maxLength={160}
+                      rows={2}
+                    />
+                    <p className="text-[10px] text-muted-foreground text-right mt-0.5">{editBio.length}/160</p>
+                  </div>
+                  {/* Profile Visibility */}
+                  <div className="flex items-center justify-between py-2">
+                    <div className="flex items-center gap-2">
+                      {editIsPublic ? <Globe className="w-4 h-4 text-primary" /> : <EyeOff className="w-4 h-4 text-muted-foreground" />}
+                      <div>
+                        <p className="text-sm font-medium">{editIsPublic ? "Public Profile" : "Private Profile"}</p>
+                        <p className="text-[10px] text-muted-foreground">{editIsPublic ? "Anyone can view your profile" : "Only you can see your profile"}</p>
+                      </div>
+                    </div>
+                    <Switch checked={editIsPublic} onCheckedChange={setEditIsPublic} />
+                  </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setEditingProfile(false)}
@@ -600,8 +629,10 @@ const Profile = () => {
                           // Update profile table first (more reliable)
                           const { error: profileError } = await supabase.from("profiles").update({
                             display_name: editName.trim(),
+                            bio: editBio.trim(),
+                            is_public: editIsPublic,
                             ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
-                          }).eq("id", user!.id);
+                          } as any).eq("id", user!.id);
                           if (profileError) {
                             if (profileError.message?.includes("unique_display_name") || profileError.code === "23505") {
                               toast.error("This username is already taken. Please choose a different one.");
