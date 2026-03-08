@@ -34,7 +34,7 @@ const AdminDeposits = () => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("pending,partial");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-deposits", page, statusFilter, search],
