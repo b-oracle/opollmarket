@@ -508,6 +508,7 @@ const PolymarketPresetsSection = ({ canEdit }: { canEdit: boolean }) => {
   const [loading, setLoading] = useState(true);
   const [addCategory, setAddCategory] = useState(PRESET_CATEGORIES[0]);
   const [addMaxDays, setAddMaxDays] = useState("14");
+  const [addMaxImports, setAddMaxImports] = useState("10");
   const [addAutoApprove, setAddAutoApprove] = useState(true);
   const [adding, setAdding] = useState(false);
   const [importingId, setImportingId] = useState<string | null>(null);
