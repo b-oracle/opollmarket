@@ -488,8 +488,8 @@ const Feed = () => {
       ) : (
         <div
           ref={containerRef}
-          className="snap-feed w-full max-w-3xl mx-auto flex-1"
-          style={{ ['--feed-card-height' as any]: 'calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px) - 4rem - env(safe-area-inset-bottom, 0px))' }}
+          className="snap-feed w-full max-w-3xl mx-auto"
+          style={{ height: 'calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px) - 4rem - env(safe-area-inset-bottom, 0px))', ['--feed-card-height' as any]: 'calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px) - 4rem - env(safe-area-inset-bottom, 0px))' }}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
