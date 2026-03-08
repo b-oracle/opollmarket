@@ -1,5 +1,6 @@
 // App root
 import { lazy, Suspense, useState, useEffect } from "react";
+import { Navigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
