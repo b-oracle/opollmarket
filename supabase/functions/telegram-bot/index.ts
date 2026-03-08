@@ -1330,17 +1330,18 @@ async function handleQTAssetSelected(token: string, chatId: number, data: string
     BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
   };
 
-  // CoinGecko IDs for chart links
-  const geckoIds: Record<string, string> = {
-    BTC: "bitcoin", ETH: "ethereum", BNB: "binancecoin", SOL: "solana",
-    XRP: "ripple", DOGE: "dogecoin", ADA: "cardano", MATIC: "matic-network",
-    AVAX: "avalanche-2", DOT: "polkadot", LINK: "chainlink", SHIB: "shiba-inu",
-  };
-
   const chartUrl = `${APP_URL}/quick-trade?asset=${asset}`;
-  const geckoChartUrl = geckoIds[asset]
-    ? `https://www.coingecko.com/en/coins/${geckoIds[asset]}`
-    : `https://www.tradingview.com/chart/?symbol=${asset}USDT`;
+
+  // Fetch live price with 24h change
+  const priceData = await fetchCryptoPrice(asset);
+  let priceText = "";
+  if (priceData) {
+    const changeEmoji = priceData.change24h >= 0 ? "🟢" : "🔴";
+    const changeSign = priceData.change24h >= 0 ? "+" : "";
+    priceText =
+      `\n💲 <b>Current Price</b>: ${formatPrice(priceData.price)}\n` +
+      `${changeEmoji} <b>24h Change</b>: ${changeSign}${priceData.change24h.toFixed(2)}%\n`;
+  }
 
   const buttons = [
     [
@@ -1372,7 +1373,8 @@ async function handleQTAssetSelected(token: string, chatId: number, data: string
     chat_id: chatId,
     text:
       `⚡ <b>Quick Trade — ${assetEmojis[asset] || "📊"} ${asset}</b>\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `${priceText}\n` +
       `Will <b>${asset}</b> go UP 📈 or DOWN 📉 in the next 5 minutes?\n\n` +
       `📊 View the chart before deciding!\n\n` +
       `Choose your prediction and amount:`,
