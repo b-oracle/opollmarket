@@ -16,7 +16,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Users, Heart, Trophy, Gift, UserPlus, UserMinus, Loader2,
   Crown, Medal, Award, Copy, Eye, EyeOff, Settings, Hexagon, ChevronRight,
-  TrendingUp, TrendingDown, MessageCircle, Bookmark, Lock, Share2
+  TrendingUp, TrendingDown, MessageCircle, Bookmark, Lock, Share2, Zap, Flame
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
