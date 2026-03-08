@@ -720,8 +720,8 @@ const MarketDetail = () => {
               const color = optionColors[i % optionColors.length];
               return (
                 <motion.button key={opt.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                  onClick={() => { setSelectedOption(opt.label); setBetSide("yes"); setBetOpen(true); }}
-                  className="w-full relative rounded-xl px-4 py-3.5 flex items-center justify-between transition-all active:scale-[0.98] overflow-hidden cursor-pointer"
+                  onClick={() => { if (!isEnded) { setSelectedOption(opt.label); setBetSide("yes"); setBetOpen(true); } }}
+                  className={`w-full relative rounded-xl px-4 py-3.5 flex items-center justify-between transition-all overflow-hidden ${isEnded ? "opacity-50 cursor-not-allowed" : "active:scale-[0.98] cursor-pointer"}`}
                   style={{ background: colorAlpha(color, 0.1) }}>
                   <div className="absolute inset-0 rounded-xl" style={{ background: `linear-gradient(90deg, ${colorAlpha(color, 0.12)} 0%, ${colorAlpha(color, 0.04)} ${pct}%, transparent ${pct}%)` }} />
                   <div className="flex items-center gap-2.5 relative z-10">
@@ -754,8 +754,14 @@ const MarketDetail = () => {
           {!isMulti && commentsReached && (
             <div className="px-0 pb-4 pt-3">
               <div className="w-full flex gap-3">
-                <button onClick={() => { setBetSide("yes"); setBetOpen(true); }} className="flex-1 min-w-0 btn-yes py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy Yes {yesPercent}¢</button>
-                <button onClick={() => { setBetSide("no"); setBetOpen(true); }} className="flex-1 min-w-0 btn-no py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy No {noPercent}¢</button>
+                {isEnded ? (
+                  <div className="flex-1 text-center py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base bg-muted text-muted-foreground">Market Ended — Awaiting Resolution</div>
+                ) : (
+                  <>
+                    <button onClick={() => { setBetSide("yes"); setBetOpen(true); }} className="flex-1 min-w-0 btn-yes py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy Yes {yesPercent}¢</button>
+                    <button onClick={() => { setBetSide("no"); setBetOpen(true); }} className="flex-1 min-w-0 btn-no py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy No {noPercent}¢</button>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -765,8 +771,14 @@ const MarketDetail = () => {
       {!isMulti && !commentsReached && (
         <div className="fixed left-0 right-0 md:left-60 z-[60] px-4 pb-4 pt-3 bg-gradient-to-t from-background via-background to-transparent md:bottom-0" style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}>
           <div className="w-full max-w-lg md:max-w-2xl mx-auto flex gap-3">
-            <button onClick={() => { setBetSide("yes"); setBetOpen(true); }} className="flex-1 min-w-0 btn-yes py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy Yes {yesPercent}¢</button>
-            <button onClick={() => { setBetSide("no"); setBetOpen(true); }} className="flex-1 min-w-0 btn-no py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy No {noPercent}¢</button>
+            {isEnded ? (
+              <div className="flex-1 text-center py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base bg-muted text-muted-foreground">Market Ended — Awaiting Resolution</div>
+            ) : (
+              <>
+                <button onClick={() => { setBetSide("yes"); setBetOpen(true); }} className="flex-1 min-w-0 btn-yes py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy Yes {yesPercent}¢</button>
+                <button onClick={() => { setBetSide("no"); setBetOpen(true); }} className="flex-1 min-w-0 btn-no py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy No {noPercent}¢</button>
+              </>
+            )}
           </div>
         </div>
       )}
