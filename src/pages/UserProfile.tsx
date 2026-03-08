@@ -29,6 +29,8 @@ const formatDollar = (v: number) => {
 
 const UserProfile = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const socialOpen = searchParams.get("social") === "open";
   const navigate = useNavigate();
   const { user } = useAuth();
   const isOwnProfile = user?.id === id;
