@@ -876,13 +876,13 @@ async function handleMarketDetail(
   chatId: number,
   data: string
 ) {
-  const partialId = data.replace("mkt_", "");
+  const marketId = data.replace("mkt_", "");
 
   const { data: markets } = await supabase
     .from("markets")
     .select("id, title, description, yes_price, no_price, volume, participants, end_date, market_type, category, image_url, details, status")
     .in("status", ["active", "ended"])
-    .like("id", `${partialId}%`)
+    .eq("id", marketId)
     .limit(1);
 
   const mkt = markets?.[0];
