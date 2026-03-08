@@ -595,18 +595,20 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             </motion.div>
           )}
 
+          {/* Bottom gradient fade */}
+          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background via-background/60 to-transparent pointer-events-none z-10" />
+
+          {/* Swipe hint - positioned above the black bottom padding */}
           {!isMulti && (
             <motion.p
-              className="text-[10px] text-muted-foreground/50 text-center mt-1"
-              initial={{ y: 0 }}
-              animate={{ y: [0, -8, 0] }}
-              transition={{ delay: 1.5, duration: 1.2, ease: "easeInOut", repeat: 1, repeatDelay: 3 }}
+              className="absolute bottom-2 left-0 right-0 text-[10px] text-muted-foreground/60 text-center z-20"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 1, 1, 0], y: [4, 0, 0, -4] }}
+              transition={{ delay: 1.5, duration: 3, ease: "easeInOut", repeat: Infinity, repeatDelay: 5 }}
             >
               ← Swipe left for NO · Swipe right for YES →
             </motion.p>
           )}
-          {/* Bottom gradient fade */}
-          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background via-background/60 to-transparent pointer-events-none z-10" />
         </div>
       </div>
 
