@@ -148,7 +148,7 @@ const TelegramSection = ({ userId }: { userId?: string }) => {
           1. Open <a href="https://t.me/OPoll_market_bot" target="_blank" rel="noopener noreferrer" className="text-primary font-semibold hover:underline">@OPoll_market_bot</a> on Telegram
         </p>
         <p className="text-xs text-muted-foreground leading-relaxed mb-2">
-          2. Send <code className="px-1.5 py-0.5 rounded bg-muted text-foreground text-[11px] font-mono">/link your@email.com password</code>
+          2. Send <code className="px-1.5 py-0.5 rounded bg-muted text-foreground text-[11px] font-mono">/link</code> and follow the secure prompts
         </p>
         <p className="text-xs text-muted-foreground leading-relaxed">
           3. Start browsing markets and placing predictions! 🎯
