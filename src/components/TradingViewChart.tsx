@@ -505,13 +505,15 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
               <Trash2 className="w-3 h-3" />
             </button>
           </div>
-          <button
-            onClick={() => setIsFullscreen((p) => !p)}
-            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-            title={isFullscreen ? "Exit fullscreen" : "Expand chart"}
-          >
-            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-          </button>
+          {isFullscreen && (
+            <button
+              onClick={() => setIsFullscreen(false)}
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              title="Exit fullscreen"
+            >
+              <Minimize2 className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
