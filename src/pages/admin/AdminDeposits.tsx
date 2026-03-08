@@ -55,8 +55,14 @@ const AdminDeposits = () => {
       let query = supabase
         .from("transactions")
         .select("id, user_id, amount, status, nowpayments_payment_id, created_at", { count: "exact" })
-        .eq("type", "deposit")
-        .in("status", statuses)
+        .eq("type", "deposit");
+
+      if (statusFilter !== "all") {
+        const statuses = statusFilter.split(",").filter(Boolean);
+        query = query.in("status", statuses);
+      }
+
+      query = query
         .order("created_at", { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
