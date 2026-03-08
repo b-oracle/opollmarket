@@ -35,6 +35,48 @@ function categoryEmoji(cat: string): string {
   return map[cat?.toLowerCase()] || "🔮";
 }
 
+// ── Crypto price helpers ──
+const GECKO_IDS: Record<string, string> = {
+  BTC: "bitcoin", ETH: "ethereum", BNB: "binancecoin", SOL: "solana",
+  XRP: "ripple", DOGE: "dogecoin", ADA: "cardano", MATIC: "matic-network",
+  AVAX: "avalanche-2", DOT: "polkadot", LINK: "chainlink", SHIB: "shiba-inu",
+};
+
+async function fetchCryptoPrices(symbols: string[]): Promise<Record<string, number>> {
+  const ids = symbols.map(s => GECKO_IDS[s]).filter(Boolean).join(",");
+  if (!ids) return {};
+  try {
+    const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`);
+    if (!r.ok) return {};
+    const data = await r.json();
+    const result: Record<string, number> = {};
+    for (const sym of symbols) {
+      const gId = GECKO_IDS[sym];
+      if (gId && data[gId]?.usd) result[sym] = data[gId].usd;
+    }
+    return result;
+  } catch { return {}; }
+}
+
+async function fetchCryptoPrice(symbol: string): Promise<{ price: number; change24h: number } | null> {
+  const gId = GECKO_IDS[symbol];
+  if (!gId) return null;
+  try {
+    const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${gId}&vs_currencies=usd&include_24hr_change=true`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    if (!data[gId]?.usd) return null;
+    return { price: data[gId].usd, change24h: data[gId].usd_24h_change ?? 0 };
+  } catch { return null; }
+}
+
+function formatPrice(price: number): string {
+  if (price >= 1000) return `$${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (price >= 1) return `$${price.toFixed(2)}`;
+  if (price >= 0.01) return `$${price.toFixed(4)}`;
+  return `$${price.toFixed(8)}`;
+}
+
 const APP_URL = "https://opoll.org";
 
 Deno.serve(async (req) => {
