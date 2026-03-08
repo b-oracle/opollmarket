@@ -186,6 +186,9 @@ export default function QuickTrade() {
   const prevStreakRef = useRef<number>(0);
   const chartCardRef = useRef<HTMLDivElement>(null);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showWinShare, setShowWinShare] = useState(false);
+  const [winShareData, setWinShareData] = useState<{ profit: number; payout: number; side: string; asset: string } | null>(null);
+  const profitCardRef = useRef<HTMLDivElement>(null);
   const [soundMuted, setSoundMuted] = useState(() => {
     try { return localStorage.getItem("qt-sound-muted") === "true"; } catch { return false; }
   });
