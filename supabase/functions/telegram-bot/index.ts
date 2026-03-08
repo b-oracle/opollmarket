@@ -196,6 +196,9 @@ async function handleHelp(token: string, chatId: number) {
           { text: "🌐 Open Web App", url: APP_URL },
           { text: "🐦 Follow on X", url: "https://x.com/opollmarket" },
         ],
+        [
+          { text: "🏠 Home", callback_data: "cmd_home" },
+        ],
       ],
     },
   });
@@ -235,6 +238,9 @@ async function handleStats(
           [
             { text: "🔮 Browse Markets", callback_data: "cmd_markets" },
             { text: "⚡ Quick Trade", callback_data: "cmd_quicktrade" },
+          ],
+          [
+            { text: "🏠 Home", callback_data: "cmd_home" },
           ],
         ],
       },
@@ -508,11 +514,11 @@ async function handleMarkets(
     .range(from, to);
 
   if (!markets || markets.length === 0) {
-    if (page === 0) {
-      await tg(token, "sendMessage", { chat_id: chatId, text: "No active markets right now." });
-    } else {
-      await tg(token, "sendMessage", { chat_id: chatId, text: "No more markets." });
-    }
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text: page === 0 ? "No active markets right now." : "No more markets.",
+      reply_markup: { inline_keyboard: [[{ text: "🏠 Home", callback_data: "cmd_home" }]] },
+    });
     return;
   }
 
@@ -558,6 +564,9 @@ async function handleMarkets(
   marketButtons.push([
     { text: "⚡ Quick Trade", callback_data: "cmd_quicktrade" },
     { text: "🌐 Open Web", url: APP_URL } as any,
+  ]);
+  marketButtons.push([
+    { text: "🏠 Home", callback_data: "cmd_home" },
   ]);
 
   text += `<i>Tap a market below to see details & predict</i>`;
@@ -617,6 +626,9 @@ async function handlePortfolio(
             { text: "🔮 Browse Markets", callback_data: "cmd_markets" },
             { text: "⚡ Quick Trade", callback_data: "cmd_quicktrade" },
           ],
+          [
+            { text: "🏠 Home", callback_data: "cmd_home" },
+          ],
         ],
       },
     });
@@ -675,17 +687,20 @@ async function handlePortfolio(
     chat_id: chatId,
     text,
     parse_mode: "HTML",
-    reply_markup: {
-      inline_keyboard: [
-        [
-          { text: "🔮 Markets", callback_data: "cmd_markets" },
-          { text: "💰 Deposit", url: `${APP_URL}/portfolio` },
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "🔮 Markets", callback_data: "cmd_markets" },
+            { text: "💰 Deposit", url: `${APP_URL}/portfolio` },
+          ],
+          [
+            { text: "🌐 Full Portfolio", url: `${APP_URL}/portfolio` },
+          ],
+          [
+            { text: "🏠 Home", callback_data: "cmd_home" },
+          ],
         ],
-        [
-          { text: "🌐 Full Portfolio", url: `${APP_URL}/portfolio` },
-        ],
-      ],
-    },
+      },
   });
 }
 
@@ -731,18 +746,21 @@ async function handleBalance(
       `💎 Total: <b>$${total.toFixed(2)}</b>\n\n` +
       `${progressBar(mainPct, 15)} ${mainPct}% main`,
     parse_mode: "HTML",
-    reply_markup: {
-      inline_keyboard: [
-        [
-          { text: "💳 Deposit", url: `${APP_URL}/portfolio` },
-          { text: "💸 Withdraw", url: `${APP_URL}/portfolio` },
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "💳 Deposit", url: `${APP_URL}/portfolio` },
+            { text: "💸 Withdraw", url: `${APP_URL}/portfolio` },
+          ],
+          [
+            { text: "📊 Portfolio", callback_data: "cmd_portfolio" },
+            { text: "🔮 Markets", callback_data: "cmd_markets" },
+          ],
+          [
+            { text: "🏠 Home", callback_data: "cmd_home" },
+          ],
         ],
-        [
-          { text: "📊 Portfolio", callback_data: "cmd_portfolio" },
-          { text: "🔮 Markets", callback_data: "cmd_markets" },
-        ],
-      ],
-    },
+      },
   });
 }
 
@@ -798,7 +816,7 @@ async function handleQuickTrade(
       `⏱️ Round duration: <b>5 minutes</b>\n\n` +
       `Select an asset to trade:`,
     parse_mode: "HTML",
-    reply_markup: { inline_keyboard: keyboard },
+    reply_markup: { inline_keyboard: [...keyboard, [{ text: "🏠 Home", callback_data: "cmd_home" }]] },
   });
 }
 
@@ -815,7 +833,10 @@ async function handleCallback(
   await tg(token, "answerCallbackQuery", { callback_query_id: callback.id });
 
   // Handle command shortcuts from inline buttons
-  if (data === "cmd_help") {
+  if (data === "cmd_home") {
+    await handleStart(token, chatId);
+    return;
+  } else if (data === "cmd_help") {
     await handleHelp(token, chatId);
     return;
   } else if (data === "cmd_link") {
@@ -901,6 +922,10 @@ async function handleMarketDetail(
     ],
     [
       { text: "🌐 View on Web", url: `${APP_URL}/market/${mkt.id}` },
+    ],
+    [
+      { text: "⬅️ Back to Markets", callback_data: "cmd_markets" },
+      { text: "🏠 Home", callback_data: "cmd_home" },
     ],
   ];
 
@@ -1033,6 +1058,9 @@ async function handleBetConfirm(
           ],
           [
             { text: "🌐 View Market", url: `${APP_URL}/market/${mkt.id}` },
+          ],
+          [
+            { text: "🏠 Home", callback_data: "cmd_home" },
           ],
         ],
       },
@@ -1239,6 +1267,7 @@ async function handleQTAssetSelected(token: string, chatId: number, data: string
     ],
     [
       { text: "⬅️ Back to Assets", callback_data: "cmd_quicktrade" },
+      { text: "🏠 Home", callback_data: "cmd_home" },
     ],
   ];
 
@@ -1352,14 +1381,17 @@ async function handleQTSideSelected(
       `⏳ Result in ~5 minutes.\n` +
       `You'll be notified when the round resolves!`,
     parse_mode: "HTML",
-    reply_markup: {
-      inline_keyboard: [
-        [
-          { text: "⚡ Trade Again", callback_data: "cmd_quicktrade" },
-          { text: "📊 Portfolio", callback_data: "cmd_portfolio" },
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "⚡ Trade Again", callback_data: "cmd_quicktrade" },
+            { text: "📊 Portfolio", callback_data: "cmd_portfolio" },
+          ],
+          [
+            { text: "🏠 Home", callback_data: "cmd_home" },
+          ],
         ],
-      ],
-    },
+      },
   });
 
   try {
