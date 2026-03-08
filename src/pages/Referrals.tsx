@@ -19,6 +19,7 @@ const Referrals = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const [page, setPage] = useState(1);
   const { track } = useAnalytics();
 
   useEffect(() => { track("page_view", { page: "referrals" }); }, []);
