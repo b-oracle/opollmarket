@@ -110,6 +110,8 @@ const AdminDashboard = () => {
       const totalVolume = marketRows?.reduce((sum, m) => sum + Number(m.volume), 0) ?? 0;
       const totalRewardsPaid = rewardRows.reduce((sum, r) => sum + Number(r.amount), 0);
       const quickTradeVolume = qtBetRows.reduce((sum, b) => sum + Number(b.amount), 0);
+      const totalDeposits = depositRows.reduce((sum, r) => sum + Number(r.amount), 0);
+      const totalWithdrawals = withdrawalRows.reduce((sum, r) => sum + Number(r.amount), 0);
 
       setStats({
         totalMarkets: markets.count ?? 0,
@@ -125,6 +127,10 @@ const AdminDashboard = () => {
         quickTradeVolume,
         totalFollows: follows.count ?? 0,
         totalLikes: likes.count ?? 0,
+        totalDeposits,
+        totalWithdrawals,
+        depositCount: depositCount.count ?? 0,
+        withdrawalCount: withdrawalCount.count ?? 0,
       });
 
       // Category breakdown
