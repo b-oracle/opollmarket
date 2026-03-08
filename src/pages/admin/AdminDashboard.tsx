@@ -17,6 +17,10 @@ interface Stats {
   quickTradeVolume: number;
   totalFollows: number;
   totalLikes: number;
+  totalDeposits: number;
+  totalWithdrawals: number;
+  depositCount: number;
+  withdrawalCount: number;
 }
 
 interface MarketRow {
