@@ -1,17 +1,20 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
-const REMIND_AFTER_MS = 5 * 60 * 1000; // Re-show after 5 minutes if dismissed
+const REMIND_AFTER_MS = 2 * 60 * 1000; // Re-show after 2 minutes if dismissed
 
 export const usePWAUpdate = () => {
   const [showUpdate, setShowUpdate] = useState(false);
   const dismissTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
 
   const {
     needRefresh: [needRefresh],
     updateServiceWorker,
   } = useRegisterSW({
     onRegisteredSW(_swUrl, registration) {
+      registrationRef.current = registration ?? null;
+      
       // Check for updates every 30 seconds
       if (registration) {
         setInterval(() => {
@@ -21,8 +24,28 @@ export const usePWAUpdate = () => {
     },
   });
 
+  // Check for updates when page becomes visible (user returns to app)
+  const checkForUpdates = useCallback(() => {
+    registrationRef.current?.update();
+  }, []);
+
   useEffect(() => {
-    if (needRefresh) setShowUpdate(true);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        checkForUpdates();
+      }
+    };
+    
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [checkForUpdates]);
+
+  useEffect(() => {
+    if (needRefresh) {
+      setShowUpdate(true);
+      // Clear any pending reminder since we're showing now
+      if (dismissTimeoutRef.current) clearTimeout(dismissTimeoutRef.current);
+    }
   }, [needRefresh]);
 
   // Cleanup timeout on unmount
