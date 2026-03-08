@@ -86,6 +86,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
       setErrorMsg("");
       setPaymentInfo(null);
       setCopied(false);
+      setPartialInfo(null);
     }
     return () => {
       if (pollInterval) clearInterval(pollInterval);
