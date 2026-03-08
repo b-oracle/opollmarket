@@ -148,6 +148,10 @@ const AdminDashboard = () => {
     { label: "Transactions", value: stats?.totalTransactions ?? 0, icon: DollarSign, color: "text-yellow-500" },
     { label: "Comments", value: stats?.totalComments ?? 0, icon: MessageSquare, color: "text-purple-500" },
     { label: "Active Boosts", value: stats?.activeBoosts ?? 0, icon: Activity, color: "text-pink-500" },
+    { label: "QT Rounds", value: stats?.quickTradeRounds ?? 0, icon: Zap, color: "text-cyan-500" },
+    { label: "QT Volume", value: (stats?.quickTradeVolume ?? 0) >= 1000 ? `$${((stats?.quickTradeVolume ?? 0) / 1000).toFixed(1)}K` : `$${(stats?.quickTradeVolume ?? 0).toFixed(2)}`, icon: Zap, color: "text-amber-500" },
+    { label: "Follows", value: stats?.totalFollows ?? 0, icon: UserCheck, color: "text-emerald-500" },
+    { label: "Likes", value: stats?.totalLikes ?? 0, icon: Heart, color: "text-pink-500" },
     { label: "Referrals", value: stats?.totalReferrals ?? 0, icon: UserPlus, color: "text-cyan-500" },
     { label: "Rewards Paid", value: `$${(stats?.totalRewardsPaid ?? 0).toFixed(0)}`, icon: Gift, color: "text-orange-500" },
   ];
