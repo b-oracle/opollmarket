@@ -581,7 +581,8 @@ const Rankings = () => {
                                   initial={{ opacity: 0, x: -12 }}
                                   animate={{ opacity: 1, x: 0 }}
                                   transition={{ delay: i * 0.04 }}
-                                  className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : ""}`}
+                                  onClick={() => !isMe && navigate(`/user/${trader.userId}`)}
+                                  className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : "cursor-pointer hover:bg-accent/30"}`}
                                 >
                                   <div className="w-8 flex justify-center shrink-0">{rankBadge(rank)}</div>
                                   <AvatarCircle avatar={trader.avatar} name={trader.name} />
@@ -601,10 +602,12 @@ const Rankings = () => {
                                       {trader.pnl >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
                                       {trader.pnl >= 0 ? "+" : "-"}{formatDollar(trader.pnl)}
                                     </p>
-                                    {isMe && (
-                                      <button onClick={() => shareRank(rank, trader.name, trader.avatar, `${trader.pnl >= 0 ? "+" : "-"}${formatDollar(trader.pnl)}`, trader.pnl >= 0, `${trader.trades} prediction${trader.trades !== 1 ? "s" : ""} · ${formatDollar(trader.volume)} vol`, "Predictions", sortedTraders.length)} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+                                    {isMe ? (
+                                      <button onClick={(e) => { e.stopPropagation(); shareRank(rank, trader.name, trader.avatar, `${trader.pnl >= 0 ? "+" : "-"}${formatDollar(trader.pnl)}`, trader.pnl >= 0, `${trader.trades} prediction${trader.trades !== 1 ? "s" : ""} · ${formatDollar(trader.volume)} vol`, "Predictions", sortedTraders.length); }} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
                                         <Share2 className="w-3.5 h-3.5 text-primary" />
                                       </button>
+                                    ) : (
+                                      <FollowButton userId={trader.userId} />
                                     )}
                                   </div>
                                 </motion.div>
