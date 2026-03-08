@@ -571,36 +571,43 @@ const UserProfile = () => {
                 <Trophy className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h4 className="text-sm font-bold">Ranking Stats</h4>
-                <p className="text-[10px] text-muted-foreground">Performance overview</p>
+                <h4 className="text-sm font-bold">Leaderboard Rankings</h4>
+                <p className="text-[10px] text-muted-foreground">Position across all leaderboards</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
-                <p className="text-lg font-bold text-primary">{userMarkets.length}</p>
-                <p className="text-[10px] text-muted-foreground">Markets Created</p>
+            {ranksLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
               </div>
-              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
-                <p className="text-lg font-bold text-primary">{userPositions.length}</p>
-                <p className="text-[10px] text-muted-foreground">Active Positions</p>
+            ) : (
+              <div className="space-y-3">
+                {[
+                  { icon: <TrendingUp className="w-4 h-4 text-emerald-500" />, label: "Prediction PnL", rank: leaderboardRanks?.predictionRank },
+                  { icon: <Gift className="w-4 h-4 text-amber-500" />, label: "Referrals", rank: leaderboardRanks?.referralRank },
+                  { icon: <Zap className="w-4 h-4 text-blue-500" />, label: "Quick Trade Profit", rank: leaderboardRanks?.qtProfitRank },
+                  { icon: <Flame className="w-4 h-4 text-orange-500" />, label: "Win Streak", rank: leaderboardRanks?.streakRank },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-center justify-between rounded-xl bg-muted/30 border border-border/20 p-3">
+                    <div className="flex items-center gap-2.5">
+                      {item.icon}
+                      <span className="text-sm font-medium">{item.label}</span>
+                    </div>
+                    {item.rank ? (
+                      <div className="flex items-center gap-1.5">
+                        {item.rank <= 3 ? (
+                          item.rank === 1 ? <Crown className="w-4 h-4" style={{ color: "hsl(45, 93%, 58%)" }} /> :
+                          item.rank === 2 ? <Medal className="w-4 h-4" style={{ color: "hsl(0, 0%, 78%)" }} /> :
+                          <Award className="w-4 h-4" style={{ color: "hsl(30, 75%, 40%)" }} />
+                        ) : null}
+                        <span className={`text-sm font-bold ${item.rank <= 3 ? "text-primary" : "text-foreground"}`}>#{item.rank}</span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Unranked</span>
+                    )}
+                  </div>
+                ))}
               </div>
-              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
-                <p className="text-lg font-bold">{likesCount}</p>
-                <p className="text-[10px] text-muted-foreground">Likes Given</p>
-              </div>
-              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
-                <p className="text-lg font-bold">{referralCount}</p>
-                <p className="text-[10px] text-muted-foreground">Referrals</p>
-              </div>
-              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
-                <p className="text-lg font-bold">{followCounts.followers}</p>
-                <p className="text-[10px] text-muted-foreground">Followers</p>
-              </div>
-              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
-                <p className="text-lg font-bold">{followCounts.following}</p>
-                <p className="text-[10px] text-muted-foreground">Following</p>
-              </div>
-            </div>
+            )}
           </div>
         )}
       </div>
