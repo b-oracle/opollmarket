@@ -984,15 +984,15 @@ export default function QuickTrade() {
           </div>
 
           {/* Pool info */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="rounded-xl border border-green-500/20 bg-green-500/5 p-3 text-center">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
+            <div className="rounded-xl border border-green-500/20 bg-green-500/5 p-2.5 sm:p-3 text-center">
               <ArrowUp className="w-4 h-4 text-green-500 mx-auto mb-1" />
-              <p className="text-lg font-bold text-green-500">${poolUp.toFixed(2)}</p>
+              <p className="text-base sm:text-lg font-bold text-green-500">${poolUp.toFixed(2)}</p>
               <p className="text-[10px] text-muted-foreground uppercase">UP Pool</p>
             </div>
-            <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-center">
+            <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-2.5 sm:p-3 text-center">
               <ArrowDown className="w-4 h-4 text-destructive mx-auto mb-1" />
-              <p className="text-lg font-bold text-destructive">${poolDown.toFixed(2)}</p>
+              <p className="text-base sm:text-lg font-bold text-destructive">${poolDown.toFixed(2)}</p>
               <p className="text-[10px] text-muted-foreground uppercase">DOWN Pool</p>
             </div>
           </div>
