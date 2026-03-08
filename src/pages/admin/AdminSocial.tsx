@@ -253,7 +253,7 @@ const AdminSocial = () => {
             </div>
             {totalCount > PAGE_SIZE && (
               <div className="p-4 border-t border-border">
-                <AdminPagination page={page} totalPages={Math.ceil(totalCount / PAGE_SIZE)} onPageChange={setPage} />
+                <AdminPagination page={page} totalItems={totalCount} pageSize={PAGE_SIZE} onPageChange={setPage} />
               </div>
             )}
           </div>

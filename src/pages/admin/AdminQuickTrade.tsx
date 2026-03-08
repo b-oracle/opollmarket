@@ -378,7 +378,7 @@ const AdminQuickTrade = () => {
           </div>
           {bets.length > PAGE_SIZE && (
             <div className="p-4 border-t border-border">
-              <AdminPagination page={betPage} totalPages={Math.ceil(bets.length / PAGE_SIZE)} onPageChange={setBetPage} />
+              <AdminPagination page={betPage} totalItems={bets.length} pageSize={PAGE_SIZE} onPageChange={setBetPage} />
             </div>
           )}
         </div>
