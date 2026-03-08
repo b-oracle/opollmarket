@@ -98,13 +98,15 @@ const AdminDashboard = () => {
         return allRows;
       };
 
-      const [rewardRows, qtBetRows, depositRows, withdrawalRows, depositCount, withdrawalCount] = await Promise.all([
+      const [rewardRows, qtBetRows, depositRows, withdrawalRows, depositCount, withdrawalCount, pendingDepositCount, pendingWithdrawalCount] = await Promise.all([
         fetchAllAmounts("referral_rewards"),
         fetchAllAmounts("quick_bets"),
         fetchTxAmounts("deposit", "confirmed"),
         fetchTxAmounts("withdrawal", "confirmed"),
         supabase.from("transactions").select("*", { count: "exact", head: true }).eq("type", "deposit").eq("status", "confirmed"),
         supabase.from("transactions").select("*", { count: "exact", head: true }).eq("type", "withdrawal").eq("status", "confirmed"),
+        supabase.from("transactions").select("*", { count: "exact", head: true }).eq("type", "deposit").eq("status", "pending"),
+        supabase.from("withdrawal_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
       ]);
 
       const totalVolume = marketRows?.reduce((sum, m) => sum + Number(m.volume), 0) ?? 0;
