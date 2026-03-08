@@ -682,6 +682,7 @@ export type Database = {
           enabled: boolean
           id: string
           max_days_ahead: number
+          max_imports_per_run: number
           updated_at: string
         }
         Insert: {
@@ -692,6 +693,7 @@ export type Database = {
           enabled?: boolean
           id?: string
           max_days_ahead?: number
+          max_imports_per_run?: number
           updated_at?: string
         }
         Update: {
@@ -702,6 +704,7 @@ export type Database = {
           enabled?: boolean
           id?: string
           max_days_ahead?: number
+          max_imports_per_run?: number
           updated_at?: string
         }
         Relationships: []

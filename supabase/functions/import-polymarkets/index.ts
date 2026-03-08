@@ -108,8 +108,11 @@ Deno.serve(async (req) => {
       const tags = CATEGORY_TO_TAGS[preset.category] || [preset.category.toLowerCase()];
       const maxEndDate = new Date();
       maxEndDate.setDate(maxEndDate.getDate() + preset.max_days_ahead);
+      const maxImports = preset.max_imports_per_run || 10;
+      let presetImported = 0;
 
       for (const tag of tags) {
+        if (presetImported >= maxImports) break;
         try {
           const url = `${GAMMA_API}/events?tag=${encodeURIComponent(tag)}&active=true&closed=false&limit=50`;
           const resp = await fetch(url);
@@ -122,9 +125,11 @@ Deno.serve(async (req) => {
           if (!Array.isArray(events)) continue;
 
           for (const event of events) {
+            if (presetImported >= maxImports) break;
             if (!event.markets || !Array.isArray(event.markets)) continue;
 
             for (const market of event.markets) {
+              if (presetImported >= maxImports) break;
               // Skip if no condition_id
               if (!market.conditionId && !market.id) continue;
               const polyId = market.conditionId || market.id;
@@ -176,6 +181,7 @@ Deno.serve(async (req) => {
                 }
               } else {
                 totalImported++;
+                presetImported++;
               }
             }
           }

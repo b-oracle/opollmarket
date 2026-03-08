@@ -497,6 +497,7 @@ interface PolyPreset {
   id: string;
   category: string;
   max_days_ahead: number;
+  max_imports_per_run: number;
   enabled: boolean;
   auto_approve: boolean;
   created_at: string;
@@ -507,6 +508,7 @@ const PolymarketPresetsSection = ({ canEdit }: { canEdit: boolean }) => {
   const [loading, setLoading] = useState(true);
   const [addCategory, setAddCategory] = useState(PRESET_CATEGORIES[0]);
   const [addMaxDays, setAddMaxDays] = useState("14");
+  const [addMaxImports, setAddMaxImports] = useState("10");
   const [addAutoApprove, setAddAutoApprove] = useState(true);
   const [adding, setAdding] = useState(false);
   const [importingId, setImportingId] = useState<string | null>(null);
@@ -540,7 +542,9 @@ const PolymarketPresetsSection = ({ canEdit }: { canEdit: boolean }) => {
 
   const handleAdd = async () => {
     const maxDays = parseInt(addMaxDays) || 14;
+    const maxImports = parseInt(addMaxImports) || 10;
     if (maxDays < 1 || maxDays > 365) { toast.error("Max days must be 1-365"); return; }
+    if (maxImports < 1 || maxImports > 200) { toast.error("Max imports must be 1-200"); return; }
 
     // Check if preset already exists for this category
     if (presets.some(p => p.category === addCategory)) {
@@ -555,6 +559,7 @@ const PolymarketPresetsSection = ({ canEdit }: { canEdit: boolean }) => {
       .insert({
         category: addCategory,
         max_days_ahead: maxDays,
+        max_imports_per_run: maxImports,
         enabled: true,
         auto_approve: addAutoApprove,
         created_by: user?.id,
@@ -676,7 +681,7 @@ const PolymarketPresetsSection = ({ canEdit }: { canEdit: boolean }) => {
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Max {preset.max_days_ahead} days ahead
+                    Max {preset.max_days_ahead} days ahead · Limit {preset.max_imports_per_run} per run
                   </p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
@@ -737,7 +742,7 @@ const PolymarketPresetsSection = ({ canEdit }: { canEdit: boolean }) => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Category</Label>
                   <select
@@ -759,6 +764,17 @@ const PolymarketPresetsSection = ({ canEdit }: { canEdit: boolean }) => {
                     value={addMaxDays}
                     onChange={(e) => setAddMaxDays(e.target.value)}
                     placeholder="14"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Max Imports Per Run</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={200}
+                    value={addMaxImports}
+                    onChange={(e) => setAddMaxImports(e.target.value)}
+                    placeholder="10"
                   />
                 </div>
                 <div className="space-y-1.5">
