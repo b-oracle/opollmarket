@@ -21,6 +21,8 @@ interface Stats {
   totalWithdrawals: number;
   depositCount: number;
   withdrawalCount: number;
+  pendingDepositCount: number;
+  pendingWithdrawalCount: number;
 }
 
 interface MarketRow {
@@ -98,13 +100,15 @@ const AdminDashboard = () => {
         return allRows;
       };
 
-      const [rewardRows, qtBetRows, depositRows, withdrawalRows, depositCount, withdrawalCount] = await Promise.all([
+      const [rewardRows, qtBetRows, depositRows, withdrawalRows, depositCount, withdrawalCount, pendingDepositCount, pendingWithdrawalCount] = await Promise.all([
         fetchAllAmounts("referral_rewards"),
         fetchAllAmounts("quick_bets"),
         fetchTxAmounts("deposit", "confirmed"),
         fetchTxAmounts("withdrawal", "confirmed"),
         supabase.from("transactions").select("*", { count: "exact", head: true }).eq("type", "deposit").eq("status", "confirmed"),
         supabase.from("transactions").select("*", { count: "exact", head: true }).eq("type", "withdrawal").eq("status", "confirmed"),
+        supabase.from("transactions").select("*", { count: "exact", head: true }).eq("type", "deposit").eq("status", "pending"),
+        supabase.from("withdrawal_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
       ]);
 
       const totalVolume = marketRows?.reduce((sum, m) => sum + Number(m.volume), 0) ?? 0;
@@ -131,6 +135,8 @@ const AdminDashboard = () => {
         totalWithdrawals,
         depositCount: depositCount.count ?? 0,
         withdrawalCount: withdrawalCount.count ?? 0,
+        pendingDepositCount: pendingDepositCount.count ?? 0,
+        pendingWithdrawalCount: pendingWithdrawalCount.count ?? 0,
       });
 
       // Category breakdown
@@ -244,7 +250,12 @@ const AdminDashboard = () => {
                   <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Total Deposits</span>
                 </div>
                 <p className="text-xl font-bold text-green-500">{fmt(dep)}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{stats.depositCount} confirmed</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-[10px] text-muted-foreground">{stats.depositCount} confirmed</p>
+                  {stats.pendingDepositCount > 0 && (
+                    <span className="text-[10px] font-semibold text-yellow-500 bg-yellow-500/10 rounded px-1 py-0.5">{stats.pendingDepositCount} pending</span>
+                  )}
+                </div>
               </div>
               <div className="rounded-lg bg-yellow-500/5 border border-yellow-500/10 p-3">
                 <div className="flex items-center gap-1.5 mb-1">
@@ -252,7 +263,12 @@ const AdminDashboard = () => {
                   <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Total Withdrawals</span>
                 </div>
                 <p className="text-xl font-bold text-yellow-500">{fmt(wd)}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{stats.withdrawalCount} confirmed</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-[10px] text-muted-foreground">{stats.withdrawalCount} confirmed</p>
+                  {stats.pendingWithdrawalCount > 0 && (
+                    <span className="text-[10px] font-semibold text-orange-500 bg-orange-500/10 rounded px-1 py-0.5">{stats.pendingWithdrawalCount} pending</span>
+                  )}
+                </div>
               </div>
               <div className={`rounded-lg p-3 ${net >= 0 ? 'bg-primary/5 border border-primary/10' : 'bg-destructive/5 border border-destructive/10'}`}>
                 <div className="flex items-center gap-1.5 mb-1">
