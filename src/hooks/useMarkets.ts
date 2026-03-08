@@ -65,6 +65,7 @@ const mapDbToMarket = (db: DbMarket): Market => ({
   sportPredictedOutcome: db.sport_predicted_outcome || undefined,
   sportLeague: db.sport_league || undefined,
   polymarketEventSlug: db.polymarket_event_slug || undefined,
+  status: db.status,
   options: db.market_options?.length
     ? db.market_options
         .sort((a, b) => a.sort_order - b.sort_order)
