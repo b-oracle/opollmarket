@@ -5,6 +5,7 @@ import ActivityFeed from "@/components/ActivityFeed";
 import SocialSection from "@/components/SocialSection";
 import MutualFollowers from "@/components/MutualFollowers";
 import ShareModal from "@/components/ShareModal";
+import ProfileShareCard from "@/components/ProfileShareCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFollow, useFollowCounts } from "@/hooks/useFollow";
