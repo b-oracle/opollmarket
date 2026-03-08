@@ -361,7 +361,7 @@ const MarketDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: market, isLoading } = useMarket(id);
+  const { data: market, isLoading, isError } = useMarket(id);
   const { boostDetails } = useActiveBoosts();
   const activeBoost = id ? boostDetails.get(id) : undefined;
   const { track } = useAnalytics();
@@ -416,6 +416,7 @@ const MarketDetail = () => {
   }, [market]);
 
   if (isLoading) return <div className="h-dvh flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
+  if (isError) return <div className="h-dvh flex items-center justify-center text-muted-foreground">Failed to load market. Please try again.</div>;
   if (!market) return <div className="h-dvh flex items-center justify-center text-muted-foreground">Market not found</div>;
 
   const selectedOptionIdx = selectedOption ? market.options?.findIndex(o => o.label === selectedOption) ?? -1 : -1;
