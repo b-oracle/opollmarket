@@ -11,6 +11,7 @@ import {
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import useAnalytics from "@/hooks/useAnalytics";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Referrals = () => {
   const { user, loading: authLoading } = useAuth();
@@ -21,7 +22,7 @@ const Referrals = () => {
   useEffect(() => { track("page_view", { page: "referrals" }); }, []);
 
   // Fetch profile display_name for referral link
-  const { data: profileName } = useQuery({
+  const { data: profileName, isLoading: profileLoading } = useQuery({
     queryKey: ["profile_display_name", user?.id],
     queryFn: async () => {
       if (!user) return null;
@@ -30,16 +31,17 @@ const Referrals = () => {
         .select("display_name")
         .eq("id", user.id)
         .single();
-      // Fall back to auth metadata if profiles table doesn't have it yet
       return data?.display_name || user.user_metadata?.display_name || null;
     },
     enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const referralLink = user && profileName ? `${window.location.origin}/?ref=${encodeURIComponent(profileName)}` : "";
 
   // Fetch referral rewards
-  const { data: rewards = [] } = useQuery({
+  const { data: rewards = [], isLoading: rewardsLoading } = useQuery({
     queryKey: ["referral_rewards", user?.id],
     queryFn: async () => {
       if (!user) return [];
@@ -51,6 +53,8 @@ const Referrals = () => {
       return data || [];
     },
     enabled: !!user,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   // Fetch bonus balance
@@ -66,6 +70,8 @@ const Referrals = () => {
       return Number(data?.bonus_balance ?? 0);
     },
     enabled: !!user,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 
   // Fetch referral reward amount setting
@@ -79,6 +85,8 @@ const Referrals = () => {
         .single();
       return Number(data?.referral_reward_amount ?? 5);
     },
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   });
 
   // Fetch referred user profiles
@@ -94,6 +102,7 @@ const Referrals = () => {
       return data || [];
     },
     enabled: rewards.length > 0,
+    staleTime: 5 * 60 * 1000,
   });
 
   const totalEarned = rewards.reduce((sum: number, r: any) => sum + Number(r.amount), 0);
@@ -123,6 +132,8 @@ const Referrals = () => {
       handleCopy();
     }
   };
+
+  const isDataLoading = authLoading || profileLoading || rewardsLoading;
 
   if (!authLoading && !user) {
     return (
@@ -165,28 +176,42 @@ const Referrals = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3 mb-6">
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}
-            className="glass rounded-xl p-4 text-center">
-            <Users className="w-5 h-5 text-primary mx-auto mb-1" />
-            <p className="text-xl font-bold">{totalReferrals}</p>
-            <p className="text-[10px] text-muted-foreground">Referrals</p>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-            className="glass rounded-xl p-4 text-center">
-            <DollarSign className="w-5 h-5 text-primary mx-auto mb-1" />
-            <p className="text-xl font-bold">${totalEarned.toFixed(2)}</p>
-            <p className="text-[10px] text-muted-foreground">Total Earned</p>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-            className="glass rounded-xl p-4 text-center">
-            <Gift className="w-5 h-5 text-primary mx-auto mb-1" />
-            <p className="text-xl font-bold">${bonusBalance.toFixed(2)}</p>
-            <p className="text-[10px] text-muted-foreground">Bonus Balance</p>
-          </motion.div>
+          {isDataLoading ? (
+            <>
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="glass rounded-xl p-4 text-center space-y-2">
+                  <Skeleton className="w-5 h-5 rounded-full mx-auto" />
+                  <Skeleton className="h-6 w-12 mx-auto" />
+                  <Skeleton className="h-3 w-14 mx-auto" />
+                </div>
+              ))}
+            </>
+          ) : (
+            <>
+              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}
+                className="glass rounded-xl p-4 text-center">
+                <Users className="w-5 h-5 text-primary mx-auto mb-1" />
+                <p className="text-xl font-bold">{totalReferrals}</p>
+                <p className="text-[10px] text-muted-foreground">Referrals</p>
+              </motion.div>
+              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+                className="glass rounded-xl p-4 text-center">
+                <DollarSign className="w-5 h-5 text-primary mx-auto mb-1" />
+                <p className="text-xl font-bold">${totalEarned.toFixed(2)}</p>
+                <p className="text-[10px] text-muted-foreground">Total Earned</p>
+              </motion.div>
+              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+                className="glass rounded-xl p-4 text-center">
+                <Gift className="w-5 h-5 text-primary mx-auto mb-1" />
+                <p className="text-xl font-bold">${bonusBalance.toFixed(2)}</p>
+                <p className="text-[10px] text-muted-foreground">Bonus Balance</p>
+              </motion.div>
+            </>
+          )}
         </div>
 
-        {/* Username Warning */}
-        {!profileName && (
+        {/* Username Warning - only show after loading */}
+        {!isDataLoading && !profileName && (
           <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4 mb-4 flex items-start gap-3">
             <Gift className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
             <div>
@@ -208,11 +233,15 @@ const Referrals = () => {
         <div className="glass rounded-xl p-5 mb-4">
           <h3 className="text-sm font-semibold mb-3">Your Referral Code</h3>
           <div className="flex items-center gap-2">
-            <div className="bg-muted/50 rounded-lg px-3 py-2.5 text-xs text-muted-foreground font-mono select-all w-fit max-w-full truncate">
-              {profileName || "—"}
-            </div>
+            {profileLoading ? (
+              <Skeleton className="h-10 w-32 rounded-lg" />
+            ) : (
+              <div className="bg-muted/50 rounded-lg px-4 py-2.5 text-sm text-foreground font-mono select-all min-w-[3rem] max-w-full truncate">
+                {profileName || "—"}
+              </div>
+            )}
             <button
-              disabled={!profileName}
+              disabled={!profileName || profileLoading}
               onClick={async () => {
                 if (!profileName) return;
                 try {
@@ -234,19 +263,24 @@ const Referrals = () => {
         <div className="glass rounded-xl p-5 mb-6">
           <h3 className="text-sm font-semibold mb-3">Your Referral Link</h3>
           <div className="flex items-center gap-2">
-            <div className="flex-1 bg-muted/50 rounded-lg px-3 py-2.5 text-xs text-muted-foreground truncate font-mono">
-              {referralLink || "Set a display name to generate your link"}
-            </div>
+            {profileLoading ? (
+              <Skeleton className="h-10 flex-1 rounded-lg" />
+            ) : (
+              <div className="flex-1 bg-muted/50 rounded-lg px-3 py-2.5 text-xs text-muted-foreground truncate font-mono">
+                {referralLink || "Set a display name to generate your link"}
+              </div>
+            )}
             <button
-              disabled={!referralLink}
+              disabled={!referralLink || profileLoading}
               onClick={handleCopy}
-              className="shrink-0 p-2.5 rounded-lg bg-primary text-primary-foreground transition-all active:scale-95"
+              className="shrink-0 p-2.5 rounded-lg bg-primary text-primary-foreground transition-all active:scale-95 disabled:opacity-50"
             >
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </button>
             <button
+              disabled={profileLoading}
               onClick={handleShare}
-              className="shrink-0 p-2.5 rounded-lg glass hover:bg-accent/50 transition-all active:scale-95"
+              className="shrink-0 p-2.5 rounded-lg glass hover:bg-accent/50 transition-all active:scale-95 disabled:opacity-50"
             >
               <Share2 className="w-4 h-4" />
             </button>
@@ -279,7 +313,20 @@ const Referrals = () => {
         {/* Referral History */}
         <div className="mb-6">
           <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Referral History</h3>
-          {rewards.length === 0 ? (
+          {rewardsLoading ? (
+            <div className="space-y-2">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="glass rounded-xl p-3.5 flex items-center gap-3">
+                  <Skeleton className="w-9 h-9 rounded-lg shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                  <Skeleton className="h-4 w-14" />
+                </div>
+              ))}
+            </div>
+          ) : rewards.length === 0 ? (
             <div className="glass rounded-xl p-8 text-center">
               <Gift className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">No referrals yet. Share your link to start earning!</p>
