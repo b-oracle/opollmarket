@@ -140,7 +140,7 @@ export const useMarket = (id: string | undefined) => {
     return () => { supabase.removeChannel(channel); };
   }, [id, queryClient]);
 
-  return useQuery({
+    return useQuery({
     queryKey: ["market", id],
     queryFn: async (): Promise<Market | null> => {
       if (!id) return null;
@@ -148,11 +148,13 @@ export const useMarket = (id: string | undefined) => {
         .from("markets")
         .select("*, market_options!market_options_market_id_fkey(*)")
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
-      if (error) return null;
+      if (error) throw error; // let react-query retry on network errors
+      if (!data) return null;
       return mapDbToMarket(data as unknown as DbMarket);
     },
     enabled: !!id,
+    retry: 3,
   });
 };
