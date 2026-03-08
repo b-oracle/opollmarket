@@ -135,6 +135,8 @@ const AdminDashboard = () => {
         totalWithdrawals,
         depositCount: depositCount.count ?? 0,
         withdrawalCount: withdrawalCount.count ?? 0,
+        pendingDepositCount: pendingDepositCount.count ?? 0,
+        pendingWithdrawalCount: pendingWithdrawalCount.count ?? 0,
       });
 
       // Category breakdown
