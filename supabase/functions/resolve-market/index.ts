@@ -117,6 +117,30 @@ async function handleResolve(
     });
   }
 
+  // Prevent re-resolution: if a market was previously resolved (has payout history), block it
+  if (market.resolved_side || market.winning_option_id) {
+    console.error("resolve-market: Market has prior resolution data", { resolved_side: market.resolved_side, winning_option_id: market.winning_option_id });
+    return new Response(JSON.stringify({ error: "Market was previously resolved. Clear resolution data before re-resolving." }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Check for existing payout transactions (catches edge cases where status was reset)
+  const { count: existingPayouts } = await adminClient
+    .from("transactions")
+    .select("id", { count: "exact", head: true })
+    .eq("market_id", market_id)
+    .in("type", ["payout", "refund"]);
+
+  if (existingPayouts && existingPayouts > 0) {
+    console.error("resolve-market: Market already has payout/refund transactions", { count: existingPayouts });
+    return new Response(JSON.stringify({ error: `Market already has ${existingPayouts} payout/refund transactions. Cannot re-resolve to avoid duplicate payments.` }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   // Update market status
   const updateData: Record<string, unknown> = {
     status: "resolved",
