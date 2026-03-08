@@ -101,6 +101,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
+        // Reset swipe hint on any new sign-in (email or OAuth)
+        if (event === "SIGNED_IN") {
+          localStorage.removeItem("social_swipe_used");
+        }
+
         lastSessionRef.current = newSession;
         setSession(newSession);
         setUser(newSession?.user ?? null);
