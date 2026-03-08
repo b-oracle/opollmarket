@@ -114,10 +114,14 @@ Deno.serve(async (req) => {
       // Check if user is in a linking session
       const handled = await handleLinkSession(token, supabase, chatId, text, username, message.message_id);
       if (!handled) {
-        await tg(token, "sendMessage", {
-          chat_id: chatId,
-          text: "Unknown command. Type /help to see available commands.",
-        });
+        // Check if this is a custom QT amount (number input)
+        const qtHandled = await handleQTCustomInput(token, supabase, chatId, text);
+        if (!qtHandled) {
+          await tg(token, "sendMessage", {
+            chat_id: chatId,
+            text: "Unknown command. Type /help to see available commands.",
+          });
+        }
       }
     }
 
@@ -865,6 +869,8 @@ async function handleCallback(
     await handleBetConfirm(token, supabase, chatId, data);
   } else if (data.startsWith("qt_asset_")) {
     await handleQTAssetSelected(token, chatId, data);
+  } else if (data.startsWith("qt_custom_")) {
+    await handleQTCustomAmount(token, supabase, chatId, data);
   } else if (data.startsWith("qt_side_")) {
     await handleQTSideSelected(token, supabase, chatId, data);
   }
@@ -1264,7 +1270,23 @@ async function handleQTAssetSelected(token: string, chatId: number, data: string
     BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
   };
 
+  // CoinGecko IDs for chart links
+  const geckoIds: Record<string, string> = {
+    BTC: "bitcoin", ETH: "ethereum", BNB: "binancecoin", SOL: "solana",
+    XRP: "ripple", DOGE: "dogecoin", ADA: "cardano", MATIC: "matic-network",
+    AVAX: "avalanche-2", DOT: "polkadot", LINK: "chainlink", SHIB: "shiba-inu",
+  };
+
+  const chartUrl = `${APP_URL}/quick-trade?asset=${asset}`;
+  const geckoChartUrl = geckoIds[asset]
+    ? `https://www.coingecko.com/en/coins/${geckoIds[asset]}`
+    : `https://www.tradingview.com/chart/?symbol=${asset}USDT`;
+
   const buttons = [
+    [
+      { text: "📊 View Chart", url: chartUrl },
+      { text: "📈 TradingView", url: `https://www.tradingview.com/chart/?symbol=BINANCE:${asset}USDT` },
+    ],
     [
       { text: "📈 UP ($5)", callback_data: `qt_side_up_5_${asset}` },
       { text: "📉 DOWN ($5)", callback_data: `qt_side_down_5_${asset}` },
@@ -1278,6 +1300,9 @@ async function handleQTAssetSelected(token: string, chatId: number, data: string
       { text: "📉 DOWN ($25)", callback_data: `qt_side_down_25_${asset}` },
     ],
     [
+      { text: "💲 Custom Amount", callback_data: `qt_custom_${asset}` },
+    ],
+    [
       { text: "⬅️ Back to Assets", callback_data: "cmd_quicktrade" },
       { text: "🏠 Home", callback_data: "cmd_home" },
     ],
@@ -1289,6 +1314,7 @@ async function handleQTAssetSelected(token: string, chatId: number, data: string
       `⚡ <b>Quick Trade — ${assetEmojis[asset] || "📊"} ${asset}</b>\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `Will <b>${asset}</b> go UP 📈 or DOWN 📉 in the next 5 minutes?\n\n` +
+      `📊 View the chart before deciding!\n\n` +
       `Choose your prediction and amount:`,
     parse_mode: "HTML",
     reply_markup: { inline_keyboard: buttons },
@@ -1418,4 +1444,150 @@ async function handleQTSideSelected(
   } catch {
     // resolve-quick-round handles its own timing
   }
+}
+
+// Handle "Custom Amount" button click — prompt user to type an amount
+async function handleQTCustomAmount(
+  token: string,
+  supabase: ReturnType<typeof createClient>,
+  chatId: number,
+  data: string
+) {
+  const asset = data.replace("qt_custom_", "");
+
+  const assetEmojis: Record<string, string> = {
+    BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
+  };
+
+  // Get bet limits
+  const { data: settings } = await supabase
+    .from("commission_settings")
+    .select("qt_min_bet, qt_max_bet")
+    .limit(1)
+    .single();
+
+  const minBet = settings?.qt_min_bet || 1;
+  const maxBet = settings?.qt_max_bet || 500;
+
+  // Store state: reuse telegram_link_sessions with special prefix
+  await supabase
+    .from("telegram_link_sessions")
+    .upsert(
+      { chat_id: chatId, email: `qt_custom:${asset}`, created_at: new Date().toISOString() },
+      { onConflict: "chat_id" }
+    );
+
+  await tg(token, "sendMessage", {
+    chat_id: chatId,
+    text:
+      `💲 <b>Custom Amount — ${assetEmojis[asset] || "📊"} ${asset}</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `Type the amount you want to predict with:\n\n` +
+      `💰 Min: <b>$${minBet}</b> | Max: <b>$${maxBet}</b>\n\n` +
+      `<i>Example: Type <b>15</b> to bet $15</i>\n\n` +
+      `<i>Type /cancel to abort</i>`,
+    parse_mode: "HTML",
+    reply_markup: {
+      force_reply: true,
+      input_field_placeholder: `Enter amount ($${minBet}-$${maxBet})`,
+    },
+  });
+}
+
+// Handle numeric input for custom QT amount
+async function handleQTCustomInput(
+  token: string,
+  supabase: ReturnType<typeof createClient>,
+  chatId: number,
+  text: string
+): Promise<boolean> {
+  // Check if there's a pending QT custom session
+  const { data: session } = await supabase
+    .from("telegram_link_sessions")
+    .select("email, created_at")
+    .eq("chat_id", chatId)
+    .single();
+
+  if (!session || !session.email.startsWith("qt_custom:")) return false;
+
+  // Check expiry (5 min)
+  const sessionAge = Date.now() - new Date(session.created_at).getTime();
+  if (sessionAge > 5 * 60 * 1000) {
+    await supabase.from("telegram_link_sessions").delete().eq("chat_id", chatId);
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text: "⏰ Session expired. Please try again from Quick Trade.",
+      reply_markup: {
+        inline_keyboard: [[{ text: "⚡ Quick Trade", callback_data: "cmd_quicktrade" }]],
+      },
+    });
+    return true;
+  }
+
+  const asset = session.email.replace("qt_custom:", "");
+  const amount = Number(text.replace("$", "").trim());
+
+  // Clean up session
+  await supabase.from("telegram_link_sessions").delete().eq("chat_id", chatId);
+
+  if (isNaN(amount) || amount <= 0) {
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text: "❌ Invalid amount. Please enter a number.",
+      reply_markup: {
+        inline_keyboard: [[{ text: "🔄 Try Again", callback_data: `qt_custom_${asset}` }]],
+      },
+    });
+    return true;
+  }
+
+  // Get bet limits
+  const { data: settings } = await supabase
+    .from("commission_settings")
+    .select("qt_min_bet, qt_max_bet")
+    .limit(1)
+    .single();
+
+  const minBet = settings?.qt_min_bet || 1;
+  const maxBet = settings?.qt_max_bet || 500;
+
+  if (amount < minBet || amount > maxBet) {
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text: `❌ Amount must be between <b>$${minBet}</b> and <b>$${maxBet}</b>.`,
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [[{ text: "🔄 Try Again", callback_data: `qt_custom_${asset}` }]],
+      },
+    });
+    return true;
+  }
+
+  const assetEmojis: Record<string, string> = {
+    BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
+  };
+
+  // Show UP/DOWN buttons with the custom amount
+  await tg(token, "sendMessage", {
+    chat_id: chatId,
+    text:
+      `⚡ <b>Quick Trade — ${assetEmojis[asset] || "📊"} ${asset} ($${amount})</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `Will <b>${asset}</b> go UP 📈 or DOWN 📉?\n\n` +
+      `💵 Amount: <b>$${amount}</b>`,
+    parse_mode: "HTML",
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: `📈 UP ($${amount})`, callback_data: `qt_side_up_${amount}_${asset}` },
+          { text: `📉 DOWN ($${amount})`, callback_data: `qt_side_down_${amount}_${asset}` },
+        ],
+        [
+          { text: "⬅️ Back to Assets", callback_data: "cmd_quicktrade" },
+          { text: "🏠 Home", callback_data: "cmd_home" },
+        ],
+      ],
+    },
+  });
+  return true;
 }
