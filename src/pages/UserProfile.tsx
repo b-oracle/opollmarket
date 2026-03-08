@@ -1,9 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import ActivityFeed from "@/components/ActivityFeed";
 import SocialSection from "@/components/SocialSection";
 import MutualFollowers from "@/components/MutualFollowers";
+import ShareModal from "@/components/ShareModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFollow, useFollowCounts } from "@/hooks/useFollow";
@@ -15,10 +16,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Users, Heart, Trophy, Gift, UserPlus, UserMinus, Loader2,
   Crown, Medal, Award, Copy, Eye, EyeOff, Settings, Hexagon, ChevronRight,
-  TrendingUp, TrendingDown, MessageCircle, Bookmark, Lock
+  TrendingUp, TrendingDown, MessageCircle, Bookmark, Lock, Share2
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { getCanonicalOrigin } from "@/lib/canonical";
 
 const formatDollar = (v: number) => {
   const abs = Math.abs(v);
@@ -36,7 +38,9 @@ const UserProfile = () => {
   const followCounts = useFollowCounts(id);
   const { settings: copySettings, updateSettings } = useCopySettings(id);
   const [showCopySettings, setShowCopySettings] = useState(false);
-  const [activeTab, setActiveTab] = useState<"markets" | "predictions" | "activity">("markets");
+  const [activeTab, setActiveTab] = useState<"markets" | "predictions" | "rank">("markets");
+  const [shareOpen, setShareOpen] = useState(false);
+  const profileCardRef = useRef<HTMLDivElement>(null);
 
   // Profile data
   const { data: profile, isLoading: profileLoading } = useQuery({
@@ -204,10 +208,25 @@ const UserProfile = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h2 className="text-lg font-bold truncate flex-1">{displayName}</h2>
+          <button
+            onClick={() => setShareOpen(true)}
+            className="w-9 h-9 rounded-full glass flex items-center justify-center hover:bg-muted transition-colors"
+          >
+            <Share2 className="w-4.5 h-4.5" />
+          </button>
         </div>
 
+        <ShareModal
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          title={`${displayName} on OPoll`}
+          description={`Join me on OPoll — the social prediction platform. Predict and earn! 🔥`}
+          marketUrl={`${getCanonicalOrigin()}/user/${id}${profile?.display_name ? `?ref=${encodeURIComponent(profile.display_name)}` : ""}`}
+          captureRef={profileCardRef}
+        />
+
         {/* Profile Card */}
-        <div className="glass rounded-2xl p-5 mb-4">
+        <div ref={profileCardRef} className="glass rounded-2xl p-5 mb-4">
           <div className="flex items-start gap-4">
             {/* Avatar */}
             <div className="relative shrink-0">
@@ -368,7 +387,7 @@ const UserProfile = () => {
 
         {/* Content Tabs */}
         <div className="flex gap-1 p-1 rounded-xl bg-muted/50 mb-4">
-          {(["markets", "predictions", "activity"] as const).map((t) => (
+          {(["markets", "predictions", "rank"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setActiveTab(t)}
@@ -376,7 +395,7 @@ const UserProfile = () => {
                 activeTab === t ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
               }`}
             >
-              {t === "markets" ? `Markets (${userMarkets.length})` : t === "predictions" ? "Predictions" : "Activity"}
+              {t === "markets" ? `Markets (${userMarkets.length})` : t === "predictions" ? "Predictions" : "Rank"}
             </button>
           ))}
         </div>
@@ -477,8 +496,46 @@ const UserProfile = () => {
           </div>
         )}
 
-        {/* Activity Tab */}
-        {activeTab === "activity" && <ActivityFeed userId={id!} isOwnProfile={isOwnProfile} isPublic={!!profile?.is_public} />}
+        {/* Rank Tab */}
+        {activeTab === "rank" && (
+          <div className="glass rounded-2xl p-5 mb-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Trophy className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold">Ranking Stats</h4>
+                <p className="text-[10px] text-muted-foreground">Performance overview</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
+                <p className="text-lg font-bold text-primary">{userMarkets.length}</p>
+                <p className="text-[10px] text-muted-foreground">Markets Created</p>
+              </div>
+              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
+                <p className="text-lg font-bold text-primary">{userPositions.length}</p>
+                <p className="text-[10px] text-muted-foreground">Active Positions</p>
+              </div>
+              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
+                <p className="text-lg font-bold">{likesCount}</p>
+                <p className="text-[10px] text-muted-foreground">Likes Given</p>
+              </div>
+              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
+                <p className="text-lg font-bold">{referralCount}</p>
+                <p className="text-[10px] text-muted-foreground">Referrals</p>
+              </div>
+              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
+                <p className="text-lg font-bold">{followCounts.followers}</p>
+                <p className="text-[10px] text-muted-foreground">Followers</p>
+              </div>
+              <div className="rounded-xl bg-muted/30 border border-border/20 p-3 text-center">
+                <p className="text-lg font-bold">{followCounts.following}</p>
+                <p className="text-[10px] text-muted-foreground">Following</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       <BottomNav />
     </div>
