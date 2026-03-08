@@ -614,7 +614,12 @@ export default function QuickTrade() {
                 if (!soundMuted) playWinSound();
                 fireWinConfetti();
                 haptic("success");
-                toast({ title: "You won! 🎉", description: `The round resolved ${resolvedResult?.toUpperCase()}` });
+                // Calculate profit: for quick trades, payout is typically 2x minus fee
+                const betAmt = myBets[0].side === "up" || myBets[0].side === "down" ? parseFloat(betAmount) || 10 : 10;
+                const estimatedPayout = betAmt * 2 * (1 - (commissionSettings?.quick_trade_fee_percent ?? 5) / 100);
+                const estimatedProfit = estimatedPayout - betAmt;
+                setWinShareData({ profit: estimatedProfit, payout: estimatedPayout, side: myBets[0].side, asset: selectedAsset.symbol });
+                toast({ title: "You won! 🎉", description: `The round resolved ${resolvedResult?.toUpperCase()}`, action: <button onClick={() => setShowWinShare(true)} className="text-xs font-bold text-primary underline">Share Win</button> });
               } else {
                 if (!soundMuted) playLoseSound();
                 haptic("error");
