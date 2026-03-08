@@ -25,6 +25,7 @@ const AdminAnalytics = () => {
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [timeRange, setTimeRange] = useState<7 | 14 | 30>(7);
+  const [popularMarkets, setPopularMarkets] = useState<{ id: string; title: string; count: number }[]>([]);
   const [polyFees, setPolyFees] = useState<{ adminFees: number; creatorFees: number; totalVolume: number; marketCount: number; feesByMarket: { title: string; adminFee: number; creatorFee: number }[] }>({
     adminFees: 0, creatorFees: 0, totalVolume: 0, marketCount: 0, feesByMarket: [],
   });
@@ -36,54 +37,120 @@ const AdminAnalytics = () => {
       since.setDate(since.getDate() - timeRange);
       const sinceISO = since.toISOString();
 
-      // Fetch analytics events
-      const eventsPromise = supabase
-        .from("analytics_events")
-        .select("event_name, user_id, created_at, properties")
-        .gte("created_at", sinceISO)
-        .order("created_at", { ascending: false })
-        .limit(1000);
+      // Fetch analytics events with pagination
+      const fetchAllEvents = async () => {
+        let eventsData: any[] = [];
+        let page = 0;
+        let hasMore = true;
+        while (hasMore) {
+          const { data } = await supabase
+            .from("analytics_events")
+            .select("event_name, user_id, created_at, properties")
+            .gte("created_at", sinceISO)
+            .order("created_at", { ascending: false })
+            .range(page * 1000, (page + 1) * 1000 - 1);
+          if (data && data.length > 0) {
+            eventsData = [...eventsData, ...data];
+            page++;
+            if (data.length < 1000) hasMore = false;
+          } else {
+            hasMore = false;
+          }
+        }
+        return eventsData as EventRow[];
+      };
 
       // Fetch Polymarket-linked markets
-      const marketsPromise = supabase
-        .from("markets")
-        .select("id, title, polymarket_id")
-        .not("polymarket_id", "is", null);
+      const fetchPolyMarkets = async () => {
+        const { data } = await supabase
+          .from("markets")
+          .select("id, title, polymarket_id")
+          .not("polymarket_id", "is", null);
+        return data || [];
+      };
 
-      const [eventsRes, marketsRes] = await Promise.all([eventsPromise, marketsPromise]);
-      setEvents((eventsRes.data || []) as EventRow[]);
+      const [eventsData, polyMarkets, { data: adminRoles }] = await Promise.all([
+        fetchAllEvents(),
+        fetchPolyMarkets(),
+        supabase.from("user_roles").select("user_id").eq("role", "admin"),
+      ]);
+      
+      setEvents(eventsData);
+      const adminIds = new Set((adminRoles || []).map(r => r.user_id));
 
-      const polyMarkets = marketsRes.data || [];
+      // Compute popular markets
+      const marketBets = new Map<string, number>();
+      eventsData
+        .filter((e) => e.event_name === "bet_placed" || e.event_name === "bet_confirmed")
+        .forEach((e) => {
+          const mid = (e.properties as any)?.marketId;
+          if (mid) marketBets.set(mid, (marketBets.get(mid) || 0) + 1);
+        });
+        
+      const popularMarketIdsCount = Array.from(marketBets.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+        
+      const popularIds = popularMarketIdsCount.map(e => e[0]);
+      let popularTitles = new Map<string, string>();
+      if (popularIds.length > 0) {
+        const { data: titleData } = await supabase.from("markets").select("id, title").in("id", popularIds);
+        if (titleData) {
+          titleData.forEach(d => popularTitles.set(d.id, d.title));
+        }
+      }
+      
+      setPopularMarkets(popularMarketIdsCount.map(([id, count]) => ({
+        id,
+        title: popularTitles.get(id) || id.slice(0, 8) + "…",
+        count
+      })));
+
       if (polyMarkets.length > 0) {
         const polyMarketIds = polyMarkets.map((m) => m.id);
         const titleMap = new Map(polyMarkets.map((m) => [m.id, m.title]));
 
-        // Fetch fee transactions for these markets
-        const { data: feeTxns } = await supabase
-          .from("transactions")
-          .select("market_id, type, amount, created_at")
-          .in("market_id", polyMarketIds)
-          .in("type", ["admin_fee", "creator_fee", "buy"])
-          .eq("status", "confirmed")
-          .gte("created_at", sinceISO)
-          .limit(1000);
+        // Fetch fee transactions for these markets with pagination
+        let feeTxns: any[] = [];
+        let txPage = 0;
+        let txHasMore = true;
+        while (txHasMore) {
+          const { data } = await supabase
+            .from("transactions")
+            .select("market_id, type, amount, created_at, user_id")
+            .in("market_id", polyMarketIds)
+            .in("type", ["commission", "buy"])
+            .eq("status", "confirmed")
+            .gte("created_at", sinceISO)
+            .range(txPage * 1000, (txPage + 1) * 1000 - 1);
+            
+          if (data && data.length > 0) {
+            feeTxns = [...feeTxns, ...data];
+            txPage++;
+            if (data.length < 1000) txHasMore = false;
+          } else {
+            txHasMore = false;
+          }
+        }
 
         let adminTotal = 0;
         let creatorTotal = 0;
         let volume = 0;
         const marketFeeMap = new Map<string, { adminFee: number; creatorFee: number }>();
 
-        for (const tx of feeTxns || []) {
+        for (const tx of feeTxns) {
           const mid = tx.market_id as string;
           if (!marketFeeMap.has(mid)) marketFeeMap.set(mid, { adminFee: 0, creatorFee: 0 });
           const entry = marketFeeMap.get(mid)!;
 
-          if (tx.type === "admin_fee") {
-            adminTotal += Number(tx.amount);
-            entry.adminFee += Number(tx.amount);
-          } else if (tx.type === "creator_fee") {
-            creatorTotal += Number(tx.amount);
-            entry.creatorFee += Number(tx.amount);
+          if (tx.type === "commission") {
+            if (adminIds.has(tx.user_id)) {
+              adminTotal += Number(tx.amount);
+              entry.adminFee += Number(tx.amount);
+            } else {
+              creatorTotal += Number(tx.amount);
+              entry.creatorFee += Number(tx.amount);
+            }
           } else if (tx.type === "buy") {
             volume += Number(tx.amount);
           }
@@ -160,18 +227,6 @@ const AdminAnalytics = () => {
     events: eventsByDay.get(date) || 0,
     users: usersByDay.get(date)?.size || 0,
   }));
-
-  // Popular markets from bet events
-  const marketBets = new Map<string, number>();
-  events
-    .filter((e) => e.event_name === "bet_placed" || e.event_name === "bet_confirmed")
-    .forEach((e) => {
-      const mid = (e.properties as any)?.marketId;
-      if (mid) marketBets.set(mid, (marketBets.get(mid) || 0) + 1);
-    });
-  const popularMarkets = Array.from(marketBets.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
 
   const statCards = [
     { label: "Total Events", value: totalEvents, icon: MousePointerClick, color: "text-primary" },
@@ -292,19 +347,19 @@ const AdminAnalytics = () => {
         <h3 className="text-sm font-semibold mb-4">Most Active Markets (by bets)</h3>
         {popularMarkets.length > 0 ? (
           <div className="space-y-3">
-            {popularMarkets.map(([marketId, count], i) => (
-              <div key={marketId} className="flex items-center gap-3">
+            {popularMarkets.map((market, i) => (
+              <div key={market.id} className="flex items-center gap-3">
                 <span className="text-xs font-bold text-muted-foreground w-5">{i + 1}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium truncate font-mono">{marketId.slice(0, 8)}…</span>
-                    <span className="text-xs text-muted-foreground">{count} bets</span>
+                    <span className="text-xs font-medium truncate" title={market.title}>{market.title}</span>
+                    <span className="text-xs text-muted-foreground">{market.count} bets</span>
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full"
                       style={{
-                        width: `${(count / (popularMarkets[0]?.[1] || 1)) * 100}%`,
+                        width: `${(market.count / (popularMarkets[0]?.count || 1)) * 100}%`,
                         backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
                       }}
                     />

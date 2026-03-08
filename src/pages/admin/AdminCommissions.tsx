@@ -39,12 +39,32 @@ const AdminCommissions = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [{ data: txns }, { data: adminRoles }] = await Promise.all([
-        supabase
-          .from("transactions")
-          .select("amount, created_at, user_id, market_id")
-          .eq("type", "commission")
-          .order("created_at", { ascending: true }),
+      const fetchAllTxns = async () => {
+        let fetchedTxns: any[] = [];
+        let page = 0;
+        let hasMore = true;
+        while (hasMore) {
+          const { data } = await supabase
+            .from("transactions")
+            .select("amount, created_at, user_id, market_id")
+            .eq("type", "commission")
+            .eq("status", "confirmed")
+            .order("created_at", { ascending: true })
+            .range(page * 1000, (page + 1) * 1000 - 1);
+            
+          if (data && data.length > 0) {
+            fetchedTxns = [...fetchedTxns, ...data];
+            page++;
+            if (data.length < 1000) hasMore = false;
+          } else {
+            hasMore = false;
+          }
+        }
+        return fetchedTxns;
+      };
+
+      const [txns, { data: adminRoles }] = await Promise.all([
+        fetchAllTxns(),
         supabase
           .from("user_roles")
           .select("user_id")
