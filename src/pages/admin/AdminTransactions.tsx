@@ -139,11 +139,7 @@ const AdminTransactions = () => {
     fetchData();
   }, [filter, statusFilter, page, debouncedSearch]);
 
-  const totals = {
-    deposits: txns.filter((t) => t.type === "deposit").reduce((s, t) => s + Number(t.amount), 0),
-    withdrawals: txns.filter((t) => t.type === "withdrawal").reduce((s, t) => s + Number(t.amount), 0),
-    bets: txns.filter((t) => t.type === "bet").reduce((s, t) => s + Number(t.amount), 0),
-  };
+  // totals are now computed server-side in the useEffect above
 
   const exportCSV = () => {
     const headers = ["Date", "Type", "User", "Amount", "Side", "Market", "Status"];
