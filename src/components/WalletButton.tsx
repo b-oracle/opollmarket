@@ -12,7 +12,8 @@ const isNormalMobileBrowser = () => {
   if (typeof window === "undefined") return false;
   const ua = navigator.userAgent;
   const isMobile = /iPhone|iPad|Android|Mobile/i.test(ua);
-  const hasInjected = !!(window as any).ethereum;
+  const w = window as any;
+  const hasInjected = !!(w.ethereum || w.BinanceChain || w.rabby);
   return isMobile && !hasInjected;
 };
 
