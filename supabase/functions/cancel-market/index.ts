@@ -24,7 +24,8 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     // Verify caller is admin
-    const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!, {
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
+    const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user } } = await userClient.auth.getUser();
@@ -37,12 +38,16 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
+    const { data: isAdmin } = await adminClient.rpc("has_role", {
+      _user_id: user.id,
+      _role: "admin",
+    });
     const { data: isSuperAdmin } = await adminClient.rpc("has_role", {
       _user_id: user.id,
       _role: "super_admin",
     });
-    if (!isSuperAdmin) {
-      return new Response(JSON.stringify({ error: "Super Admin access required" }), {
+    if (!isAdmin && !isSuperAdmin) {
+      return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
