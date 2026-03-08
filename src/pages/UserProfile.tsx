@@ -308,7 +308,7 @@ const UserProfile = () => {
         />
 
         {/* Profile Card */}
-        <div ref={profileCardRef} className="glass rounded-2xl p-5 mb-4">
+        <div className="glass rounded-2xl p-5 mb-4">
           <div className="flex items-start gap-4">
             {/* Avatar */}
             <div className="relative shrink-0">
