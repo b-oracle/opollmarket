@@ -561,8 +561,8 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
         {isFullscreen && (
           <button
             onClick={() => setIsFullscreen(false)}
-            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm shadow-lg active:scale-95 transition-transform"
-            style={{ paddingBottom: "calc(0.625rem + env(safe-area-inset-bottom, 0px))" }}
+            className="absolute left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm shadow-lg active:scale-95 transition-transform"
+            style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
             title="Exit fullscreen"
           >
             <Minimize2 className="w-4 h-4" />
