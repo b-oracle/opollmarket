@@ -963,16 +963,28 @@ async function handleBetConfirm(
     return;
   }
 
-  const parts = data.replace("bet_", "").split("_");
-  const side = parts[0];
-  const amount = Number(parts[1]);
-  const partialMarketId = parts.slice(2).join("_");
+  // Support both old "bet_yes_5_ID" and new "b_y_5_UUID" formats
+  let side: string;
+  let amount: number;
+  let marketId: string;
+
+  if (data.startsWith("b_")) {
+    const parts = data.split("_");
+    side = parts[1] === "y" ? "yes" : "no";
+    amount = Number(parts[2]);
+    marketId = parts.slice(3).join("_");
+  } else {
+    const parts = data.replace("bet_", "").split("_");
+    side = parts[0];
+    amount = Number(parts[1]);
+    marketId = parts.slice(2).join("_");
+  }
 
   const { data: markets } = await supabase
     .from("markets")
     .select("id, title, yes_price, no_price, status, market_type, category, end_date")
     .in("status", ["active", "ended"])
-    .like("id", `${partialMarketId}%`)
+    .eq("id", marketId)
     .limit(1);
 
   const mkt = markets?.[0];
