@@ -545,6 +545,7 @@ const Rankings = () => {
                     <Podium
                       items={sortedTraders}
                       currentUserId={currentUserId}
+                      onUserClick={(id) => navigate(`/user/${id}`)}
                       valueLabel={(t) => ({
                         text: `${t.pnl >= 0 ? "+" : "-"}${formatDollar(t.pnl)}`,
                         positive: t.pnl >= 0,
