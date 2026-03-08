@@ -458,7 +458,6 @@ const AdminSettings = () => {
                   {withdrawalMultiplierNum < 1 && <p className="text-xs text-destructive">Multiplier must be at least 1×.</p>}
                 </div>
                 )}
-                </div>
               </CardContent>
             </Card>
           </CardContent>
