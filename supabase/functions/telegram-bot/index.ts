@@ -36,8 +36,21 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
+  // Handle GET requests (e.g. webhook verification) gracefully
+  if (req.method === "GET") {
+    return new Response(JSON.stringify({ ok: true, message: "Telegram bot webhook is active" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
-    const update = await req.json();
+    const body = await req.text();
+    if (!body) {
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const update = JSON.parse(body);
     const message = update.message;
     const callback = update.callback_query;
 
