@@ -168,6 +168,7 @@ async function handleStats(
   }
 }
 
+async function handleLink(
   token: string,
   supabase: ReturnType<typeof createClient>,
   chatId: number,
