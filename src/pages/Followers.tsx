@@ -1,13 +1,13 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import FollowButton from "@/components/FollowButton";
-import { ArrowLeft, Users, UserCheck, Loader2, Search, ChevronLeft, ChevronRight } from "lucide-react";
-import { motion } from "framer-motion";
+import { ArrowLeft, Users, UserCheck, Loader2, Search, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import NftBadge, { isNftAvatar } from "@/components/NftBadge";
 
 const LAST_SEEN_KEY = "followers_last_seen";
