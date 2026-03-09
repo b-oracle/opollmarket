@@ -237,7 +237,7 @@ const Index = () => {
               <div className="hidden lg:grid grid-cols-3 gap-3 shrink-0">
                 {[
                   { icon: TrendingUp, label: "Volume", value: formatVolume(totalVolume) },
-                  { icon: Users, label: "Traders", value: totalTraders.toLocaleString() },
+                  { icon: Users, label: "Users", value: totalTraders.toLocaleString() },
                   { icon: Zap, label: "Markets", value: markets.length.toString() },
                 ].map(({ icon: Icon, label, value }, i) => (
                   <motion.div
