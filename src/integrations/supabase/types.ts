@@ -1346,7 +1346,9 @@ export type Database = {
           last_verified_at: string | null
           pin_enabled: boolean
           pin_hash: string | null
+          require_pin_login: boolean
           require_pin_withdrawal: boolean
+          require_totp_login: boolean
           require_totp_withdrawal: boolean
           security_setup_complete: boolean
           totp_enabled: boolean
@@ -1359,7 +1361,9 @@ export type Database = {
           last_verified_at?: string | null
           pin_enabled?: boolean
           pin_hash?: string | null
+          require_pin_login?: boolean
           require_pin_withdrawal?: boolean
+          require_totp_login?: boolean
           require_totp_withdrawal?: boolean
           security_setup_complete?: boolean
           totp_enabled?: boolean
@@ -1372,7 +1376,9 @@ export type Database = {
           last_verified_at?: string | null
           pin_enabled?: boolean
           pin_hash?: string | null
+          require_pin_login?: boolean
           require_pin_withdrawal?: boolean
+          require_totp_login?: boolean
           require_totp_withdrawal?: boolean
           security_setup_complete?: boolean
           totp_enabled?: boolean
