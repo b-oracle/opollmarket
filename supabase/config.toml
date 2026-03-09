@@ -39,3 +39,9 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.np-reconcile]
     verify_jwt = false
+  [functions.setup-security-pin]
+    verify_jwt = false
+  [functions.setup-totp]
+    verify_jwt = false
+  [functions.verify-security]
+    verify_jwt = false

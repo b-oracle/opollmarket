@@ -90,6 +90,31 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Server-side security verification check
+    const { data: secSettings } = await adminClient
+      .from("user_security_settings")
+      .select("pin_enabled, totp_enabled, require_pin_withdrawal, require_totp_withdrawal, last_verified_at")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (secSettings) {
+      const needsVerification = 
+        (secSettings.pin_enabled && secSettings.require_pin_withdrawal) ||
+        (secSettings.totp_enabled && secSettings.require_totp_withdrawal);
+
+      if (needsVerification) {
+        const lastVerified = secSettings.last_verified_at ? new Date(secSettings.last_verified_at).getTime() : 0;
+        const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+
+        if (lastVerified < fiveMinutesAgo) {
+          return new Response(
+            JSON.stringify({ error: "Security verification required. Please verify your identity before withdrawing." }),
+            { status: 403, headers: corsHeaders }
+          );
+        }
+      }
+    }
+
     // Fetch min withdrawal from settings
     const { data: settings } = await adminClient
       .from("commission_settings")

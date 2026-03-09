@@ -62,6 +62,7 @@ const Maintenance = lazy(() => import("./pages/Maintenance"));
 const QuickTrade = lazy(() => import("./pages/QuickTrade"));
 const UserProfile = lazy(() => import("./pages/UserProfile"));
 const Followers = lazy(() => import("./pages/Followers"));
+const SetupSecurity = lazy(() => import("./pages/SetupSecurity"));
 
 const queryClient = new QueryClient();
 
@@ -115,6 +116,36 @@ const MaintenanceGuard = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+  const [checked, setChecked] = useState(false);
+  const [needsSetup, setNeedsSetup] = useState(false);
+
+  useEffect(() => {
+    if (!user || loading) { setChecked(true); return; }
+    const allowedPaths = ["/setup-security", "/auth", "/reset-password", "/forgot-password", "/terms", "/privacy", "/disclaimer"];
+    if (allowedPaths.some(p => location.pathname.startsWith(p))) { setChecked(true); return; }
+
+    import("@/integrations/supabase/client").then(({ supabase }) => {
+      supabase
+        .from("user_security_settings" as any)
+        .select("security_setup_complete")
+        .eq("user_id", user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          const d = data as any;
+          setNeedsSetup(d && d.security_setup_complete === false);
+          setChecked(true);
+        });
+    });
+  }, [user, loading, location.pathname]);
+
+  if (!checked) return null;
+  if (needsSetup) return <Navigate to="/setup-security" replace />;
+  return <>{children}</>;
+};
+
 const SocialTutorialTrigger = () => {
   const { user } = useAuth();
   const [show, setShow] = useState(false);
@@ -152,6 +183,7 @@ const App = () => (
                   <div className="flex-1">
                     <Suspense fallback={<PageFallback />}>
                       <MaintenanceGuard>
+                      <SecuritySetupGuard>
                       <Routes>
                         <Route path="/" element={<Index />} />
                         <Route path="/market/:id" element={<MarketDetail />} />
@@ -163,6 +195,7 @@ const App = () => (
                         <Route path="/auth" element={<Auth />} />
                         <Route path="/reset-password" element={<ResetPassword />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
+                        <Route path="/setup-security" element={<SetupSecurity />} />
                         <Route path="/referrals" element={<FeatureGate featureKey="referrals"><Referrals /></FeatureGate>} />
                         <Route path="/faq" element={<FeatureGate featureKey="faq"><FAQ /></FeatureGate>} />
                         <Route path="/disclaimer" element={<Disclaimer />} />
@@ -194,6 +227,7 @@ const App = () => (
                         </Route>
                         <Route path="*" element={<NotFound />} />
                       </Routes>
+                      </SecuritySetupGuard>
                       </MaintenanceGuard>
                     </Suspense>
                   </div>

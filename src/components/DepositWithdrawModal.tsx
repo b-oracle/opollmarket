@@ -2,6 +2,7 @@ import LogoLoader from "@/components/LogoLoader";
 import { useState, useCallback, useEffect, useRef } from "react";
 import HoldToConfirmButton from "@/components/HoldToConfirmButton";
 import BottomSheet from "@/components/BottomSheet";
+import SecurityVerificationModal from "@/components/SecurityVerificationModal";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
@@ -77,6 +78,8 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
   const [partialInfo, setPartialInfo] = useState<PartialInfo | null>(null);
   const [depositCreatedAt, setDepositCreatedAt] = useState<number | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<string>("");
+  const [showSecurityModal, setShowSecurityModal] = useState(false);
+  const [securitySettings, setSecuritySettings] = useState<{ require_pin: boolean; require_totp: boolean } | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -294,7 +297,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
     }
   }, [numAmount, selectedCrypto, startPolling]);
 
-  const handleWithdraw = useCallback(async () => {
+  const executeWithdraw = useCallback(async () => {
     setStep("executing");
     setErrorMsg("");
     try {
@@ -306,11 +309,9 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
         },
       });
 
-      // Extract specific error from response body or FunctionsHttpError context
       if (error) {
         let specificMsg = "";
         try {
-          // FunctionsHttpError contains the response context
           const ctx = (error as any).context;
           if (ctx && typeof ctx.json === "function") {
             const body = await ctx.json();
@@ -335,6 +336,31 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
       setStep("error");
     }
   }, [numAmount, walletAddress, selectedCrypto, queryClient]);
+
+  const handleWithdraw = useCallback(async () => {
+    // Check if user has security requirements
+    if (!user) return;
+    try {
+      const { data: secData } = await supabase
+        .from("user_security_settings" as any)
+        .select("pin_enabled, totp_enabled, require_pin_withdrawal, require_totp_withdrawal")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const sec = secData as unknown as { pin_enabled: boolean; totp_enabled: boolean; require_pin_withdrawal: boolean; require_totp_withdrawal: boolean } | null;
+      const needPin = sec?.pin_enabled && sec?.require_pin_withdrawal;
+      const needTotp = sec?.totp_enabled && sec?.require_totp_withdrawal;
+
+      if (needPin || needTotp) {
+        setSecuritySettings({ require_pin: !!needPin, require_totp: !!needTotp });
+        setShowSecurityModal(true);
+        return;
+      }
+    } catch {
+      // If can't fetch settings, proceed without verification
+    }
+    executeWithdraw();
+  }, [user, executeWithdraw]);
 
   const handleClose = () => {
     if (pollInterval) clearInterval(pollInterval);
@@ -363,6 +389,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
   if (!open) return null;
 
   return (
+    <>
     <BottomSheet open={open} onClose={handleClose} className="p-5">
               <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-4" />
 
@@ -952,6 +979,14 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                 )}
               </AnimatePresence>
     </BottomSheet>
+    <SecurityVerificationModal
+      open={showSecurityModal}
+      onClose={() => setShowSecurityModal(false)}
+      onVerified={() => { setShowSecurityModal(false); executeWithdraw(); }}
+      requirePin={securitySettings?.require_pin ?? false}
+      requireTotp={securitySettings?.require_totp ?? false}
+    />
+    </>
   );
 };
 
