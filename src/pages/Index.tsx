@@ -56,7 +56,7 @@ const LikeBadge = ({ marketId }: { marketId: string }) => {
 const Index = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { data: markets = [], isLoading, isError } = useMarkets();
+  const { data: markets = [], isLoading, isError, refetch } = useMarkets();
   const { boostedMarketIds, boostDetails } = useActiveBoosts();
   const [filter, setFilter] = useState<"trending" | "boosted" | "new" | "all" | "live">("all");
   const [boostModalMarket, setBoostModalMarket] = useState<{ id: string; title: string } | null>(null);
