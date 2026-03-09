@@ -42,7 +42,6 @@ const SecurityVerificationModal = ({ open, onClose, onVerified, requirePin, requ
       }
 
       onVerified();
-      onClose();
     } catch {
       setError("Verification failed. Try again.");
       setCode("");
