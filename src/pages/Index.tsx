@@ -189,21 +189,32 @@ const Index = () => {
     });
   }, [markets, boostedMarketIds, filter, searchQuery, categoryFilter]);
 
-  const { data: quickTradeVolume = 0 } = useQuery({
-    queryKey: ["quick-trade-volume"],
+  const { data: platformStats } = useQuery({
+    queryKey: ["platform-stats"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("quick_bets")
-        .select("amount")
-        .in("status", ["won", "lost", "refunded"]);
-      if (error) return 0;
-      return (data ?? []).reduce((s, b) => s + Number(b.amount), 0);
+      const [marketsRes, usersRes, volumeRes, qtRes] = await Promise.all([
+        supabase.from("markets").select("*", { count: "exact", head: true }),
+        supabase.from("profiles").select("*", { count: "exact", head: true }),
+        supabase.from("markets").select("volume"),
+        supabase.from("quick_bets").select("amount").in("status", ["won", "lost", "refunded"]),
+      ]);
+      const marketVolume = (volumeRes.data ?? []).reduce((s, m) => s + Number(m.volume), 0);
+      const qtVolume = (qtRes.data ?? []).reduce((s, b) => s + Number(b.amount), 0);
+      return {
+        totalVolume: marketVolume + qtVolume,
+        totalUsers: usersRes.count ?? 0,
+        totalMarkets: marketsRes.count ?? 0,
+        lastUpdated: new Date(),
+      };
     },
     staleTime: 60_000,
+    refetchInterval: 60_000,
   });
 
-  const totalVolume = markets.reduce((s, m) => s + m.volume, 0) + quickTradeVolume;
-  const totalTraders = markets.reduce((s, m) => s + m.participants, 0);
+  const totalVolume = platformStats?.totalVolume ?? 0;
+  const totalUsers = platformStats?.totalUsers ?? 0;
+  const totalMarkets = platformStats?.totalMarkets ?? 0;
+  const statsLastUpdated = platformStats?.lastUpdated;
   const liveCount = useMemo(() => markets.filter((m) => m.autoResolve && ((m.sportType && m.sportMatchId) || m.autoResolveAsset)).length, [markets]);
 
   // No blocking loader — render page immediately, show inline spinner in content area
@@ -328,8 +339,8 @@ const Index = () => {
               <div className="hidden lg:grid grid-cols-3 gap-3 shrink-0">
                 {[
                   { icon: TrendingUp, label: "Volume", value: formatVolume(totalVolume) },
-                  { icon: Users, label: "Users", value: totalTraders.toLocaleString() },
-                  { icon: Zap, label: "Markets", value: markets.length.toString() },
+                  { icon: Users, label: "Users", value: totalUsers.toLocaleString() },
+                  { icon: Zap, label: "Markets", value: totalMarkets.toString() },
                 ].map(({ icon: Icon, label, value }, i) => (
                   <motion.div
                     key={label}
@@ -343,6 +354,11 @@ const Index = () => {
                     <p className="text-[11px] text-muted-foreground">{label}</p>
                   </motion.div>
                 ))}
+                {statsLastUpdated && (
+                  <p className="col-span-3 text-[9px] text-muted-foreground/50 text-center mt-1">
+                    Updated {statsLastUpdated.toLocaleTimeString()}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -352,8 +368,8 @@ const Index = () => {
         <div className="grid grid-cols-3 gap-3 mb-8 lg:hidden">
           {[
             { icon: TrendingUp, label: "Volume", value: formatVolume(totalVolume) },
-            { icon: Users, label: "Users", value: totalTraders.toLocaleString() },
-            { icon: Zap, label: "Markets", value: markets.length.toString() },
+            { icon: Users, label: "Users", value: totalUsers.toLocaleString() },
+            { icon: Zap, label: "Markets", value: totalMarkets.toString() },
           ].map(({ icon: Icon, label, value }, i) => (
             <motion.div key={label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.1 }} className="glass rounded-xl p-3 text-center">
               <Icon className="w-4 h-4 text-primary mx-auto mb-1" />
@@ -361,6 +377,11 @@ const Index = () => {
               <p className="text-[10px] text-muted-foreground">{label}</p>
             </motion.div>
           ))}
+          {statsLastUpdated && (
+            <p className="col-span-3 text-[9px] text-muted-foreground/50 text-center -mt-2">
+              Updated {statsLastUpdated.toLocaleTimeString()}
+            </p>
+          )}
         </div>
 
         <motion.button
