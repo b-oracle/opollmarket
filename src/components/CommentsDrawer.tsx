@@ -165,14 +165,14 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
 
       // Fetch avatar URLs for comment authors
       const authorIds = [...new Set((allComments || []).map(c => c.author_wallet).filter(Boolean))] as string[];
-      const avatarMap = new Map<string, string | null>();
+      const profileMap = new Map<string, { avatar_url: string | null; verification_level: string }>();
       if (authorIds.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("id, avatar_url")
+          .select("id, avatar_url, verification_level")
           .in("id", authorIds);
         for (const p of profiles || []) {
-          avatarMap.set(p.id, p.avatar_url);
+          profileMap.set(p.id, { avatar_url: p.avatar_url, verification_level: p.verification_level });
         }
       }
 
