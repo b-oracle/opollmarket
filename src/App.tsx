@@ -149,17 +149,26 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
 const SocialTutorialTrigger = () => {
   const { user } = useAuth();
   const [show, setShow] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
+    if (dismissed) return;
     if (user && shouldShowTutorial(user.id)) {
       const timer = setTimeout(() => setShow(true), 1200);
       return () => clearTimeout(timer);
+    } else {
+      setShow(false);
     }
-  }, [user]);
+  }, [user, dismissed]);
+
+  const handleComplete = () => {
+    setShow(false);
+    setDismissed(true);
+  };
 
   return (
     <AnimatePresence>
-      {show && <SocialTutorial onComplete={() => setShow(false)} userId={user?.id} />}
+      {show && <SocialTutorial onComplete={handleComplete} userId={user?.id} />}
     </AnimatePresence>
   );
 };
