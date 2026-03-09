@@ -448,7 +448,7 @@ const UserProfile = () => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="text-lg font-bold truncate">{displayName}</h3>
-                {hasNftAvatar && <Hexagon className="w-4 h-4 text-primary fill-primary/20 shrink-0" />}
+                {hasNftAvatar && <NftBadge size={18} className="shrink-0" />}
               </div>
               {profile.bio && <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{profile.bio}</p>}
 
