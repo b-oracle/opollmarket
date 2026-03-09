@@ -1,0 +1,1 @@
+ALTER TABLE public.commission_settings ADD COLUMN IF NOT EXISTS withdrawal_fee_percent numeric NOT NULL DEFAULT 0;
