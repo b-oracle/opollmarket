@@ -571,21 +571,6 @@ const Profile = () => {
             >
               <Users className="w-3 h-3" /> Social
             </button>
-            <div className="w-1 h-1 rounded-full bg-muted-foreground/30"></div>
-            <button
-              onClick={() => {
-                import("@/components/SocialTutorial").then(({ resetTutorial }) => {
-                  if (user) {
-                    resetTutorial(user.id);
-                    // trigger reload or let the user click
-                    window.location.reload();
-                  }
-                });
-              }}
-              className="text-xs text-muted-foreground font-semibold hover:text-primary flex items-center gap-1 transition-colors"
-            >
-              <Sparkles className="w-3 h-3" /> Replay Tour
-            </button>
           </div>
         </div>
 
