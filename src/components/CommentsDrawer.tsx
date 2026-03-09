@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import BottomSheet from "@/components/BottomSheet";
 import { X, Send, ChevronDown, Heart, CornerDownRight, Loader2 } from "lucide-react";
-import NftBadge, { isNftAvatar } from "@/components/NftBadge";
+import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccount } from "wagmi";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,6 +21,7 @@ interface Comment {
   liked?: boolean;
   replies?: Comment[];
   avatar_url?: string | null;
+  verification_level?: VerificationLevel;
 }
 
 interface CommentsDrawerProps {
@@ -68,11 +69,16 @@ const CommentItem = ({
               </span>
             )}
           </div>
-          {isNftAvatar(comment.avatar_url) && <NftBadge className="absolute -bottom-0.5 -right-0.5" />}
+          {comment.verification_level && comment.verification_level !== "none" && (
+            <NftBadge level={comment.verification_level} className="absolute -bottom-0.5 -right-0.5" size={14} />
+          )}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
+          <div className="flex items-center gap-1 mb-0.5">
             <span className="text-xs font-semibold">@{comment.author_name}</span>
+            {comment.verification_level && comment.verification_level !== "none" && (
+              <NftBadge level={comment.verification_level} size={14} />
+            )}
             <span className="text-[10px] text-muted-foreground">{formatTimeAgo(comment.created_at)}</span>
           </div>
           <p className="text-sm text-foreground/90 leading-relaxed break-words">{comment.content}</p>
@@ -162,14 +168,14 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
 
       // Fetch avatar URLs for comment authors
       const authorIds = [...new Set((allComments || []).map(c => c.author_wallet).filter(Boolean))] as string[];
-      const avatarMap = new Map<string, string | null>();
+      const profileMap = new Map<string, { avatar_url: string | null; verification_level: string }>();
       if (authorIds.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("id, avatar_url")
+          .select("id, avatar_url, verification_level")
           .in("id", authorIds);
         for (const p of profiles || []) {
-          avatarMap.set(p.id, p.avatar_url);
+          profileMap.set(p.id, { avatar_url: p.avatar_url, verification_level: p.verification_level });
         }
       }
 
@@ -178,11 +184,13 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
       const topLevel: Comment[] = [];
 
       for (const c of allComments || []) {
+        const profile = c.author_wallet ? profileMap.get(c.author_wallet) : null;
         const comment: Comment = {
           ...c,
           liked: likedIds.has(c.id),
           replies: [],
-          avatar_url: c.author_wallet ? avatarMap.get(c.author_wallet) || null : null,
+          avatar_url: profile?.avatar_url || null,
+          verification_level: (profile?.verification_level || "none") as VerificationLevel,
         };
         commentMap.set(c.id, comment);
       }
