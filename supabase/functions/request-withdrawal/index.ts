@@ -118,11 +118,12 @@ Deno.serve(async (req) => {
     // Fetch min withdrawal from settings
     const { data: settings } = await adminClient
       .from("commission_settings")
-      .select("min_withdrawal_amount, withdrawal_cooldown_minutes, withdrawal_multiplier, withdrawal_limit_enabled")
+      .select("min_withdrawal_amount, withdrawal_cooldown_minutes, withdrawal_multiplier, withdrawal_limit_enabled, withdrawal_fee_percent")
       .limit(1)
       .single();
 
     const minWithdrawal = settings?.min_withdrawal_amount ?? 5;
+    const withdrawalFeePercent = Math.max(0, Math.min(100, Number(settings?.withdrawal_fee_percent) || 0));
 
     if (!amount || amount < minWithdrawal || amount > 50000) {
       return new Response(
@@ -245,6 +246,10 @@ Deno.serve(async (req) => {
 
     const payCurrency = crypto_currency || "usdtbsc";
 
+    // Calculate fee and net payout
+    const feeAmount = withdrawalFeePercent > 0 ? (amount * withdrawalFeePercent) / 100 : 0;
+    const netAmount = amount - feeAmount;
+
     // JWT-based payout flow
     let payoutSuccess = false;
     let payoutId = null;
@@ -255,9 +260,9 @@ Deno.serve(async (req) => {
       // Step 1: Authenticate with NOWPayments to get JWT
       const jwtToken = await getNowPaymentsJwt();
 
-      // Step 2: Get estimated crypto amount
+      // Step 2: Get estimated crypto amount (based on net amount after fee)
       const estimateRes = await fetch(
-        `https://api.nowpayments.io/v1/estimate?amount=${amount}&currency_from=usd&currency_to=${payCurrency}`,
+        `https://api.nowpayments.io/v1/estimate?amount=${netAmount}&currency_from=usd&currency_to=${payCurrency}`,
         { headers: { "x-api-key": apiKey } }
       );
 
@@ -352,10 +357,11 @@ Deno.serve(async (req) => {
         status: "pending",
       });
 
+      const feeNote = feeAmount > 0 ? ` (Fee: $${feeAmount.toFixed(2)}, Net: $${netAmount.toFixed(2)})` : "";
       await adminClient.from("notifications").insert({
         user_id: userId,
         title: "Withdrawal Pending",
-        message: `Your withdrawal of $${Number(amount).toFixed(2)} is being processed manually and will be completed shortly.`,
+        message: `Your withdrawal of $${Number(amount).toFixed(2)}${feeNote} is being processed manually and will be completed shortly.`,
         type: "withdrawal",
       });
 
@@ -402,10 +408,11 @@ Deno.serve(async (req) => {
     });
 
     // Notify user
+    const feeNote = feeAmount > 0 ? ` (Fee: $${feeAmount.toFixed(2)}, Net: $${netAmount.toFixed(2)})` : "";
     await adminClient.from("notifications").insert({
       user_id: userId,
       title: "Withdrawal Sent",
-      message: `Your withdrawal of $${Number(amount).toFixed(2)} has been sent to ${wallet_address.trim().slice(0, 8)}...`,
+      message: `Your withdrawal of $${Number(amount).toFixed(2)}${feeNote} has been sent to ${wallet_address.trim().slice(0, 8)}...`,
       type: "withdrawal",
     });
 

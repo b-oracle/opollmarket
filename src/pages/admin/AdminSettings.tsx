@@ -40,6 +40,7 @@ const AdminSettings = () => {
   const [withdrawalMultiplier, setWithdrawalMultiplier] = useState("");
   const [withdrawalLimitEnabled, setWithdrawalLimitEnabled] = useState(true);
   const [exitFee, setExitFee] = useState("");
+  const [withdrawalFee, setWithdrawalFee] = useState("");
   const [copyTradeCommission, setCopyTradeCommission] = useState("");
   const [quickTradeFee, setQuickTradeFee] = useState("");
   const [qtMinBet, setQtMinBet] = useState("");
@@ -73,6 +74,7 @@ const AdminSettings = () => {
         setWithdrawalMultiplier(String(d.withdrawal_multiplier ?? 2));
         setWithdrawalLimitEnabled(d.withdrawal_limit_enabled !== false);
         setExitFee(String(d.exit_fee_percent ?? 5));
+        setWithdrawalFee(String(d.withdrawal_fee_percent ?? 0));
         setCopyTradeCommission(String(d.copy_trade_commission_percent ?? 10));
         setQuickTradeFee(String(d.quick_trade_fee_percent ?? 5));
         setQtMinBet(String(d.qt_min_bet ?? 1));
@@ -102,6 +104,7 @@ const AdminSettings = () => {
   const withdrawalCooldownNum = parseInt(withdrawalCooldown) || 5;
   const withdrawalMultiplierNum = parseFloat(withdrawalMultiplier) || 2;
   const exitFeeNum = parseFloat(exitFee) || 0;
+  const withdrawalFeeNum = parseFloat(withdrawalFee) || 0;
   const copyTradeCommissionNum = parseFloat(copyTradeCommission) || 0;
   const quickTradeFeeNum = parseFloat(quickTradeFee) || 0;
   const qtMinBetNum = parseFloat(qtMinBet) || 0;
@@ -115,7 +118,7 @@ const AdminSettings = () => {
   const isValid =
     adminNum >= 0 && creatorNum >= 0 && totalFee <= 100 &&
     referralNum >= 0 && tokenNum >= 0 && nftNum >= 0 &&
-    minWithdrawNum >= 0 && withdrawalCooldownNum >= 0 && withdrawalMultiplierNum >= 1 && exitFeeNum >= 0 && exitFeeNum <= 100 && copyTradeCommissionNum >= 0 && copyTradeCommissionNum <= 100 &&
+    minWithdrawNum >= 0 && withdrawalCooldownNum >= 0 && withdrawalMultiplierNum >= 1 && exitFeeNum >= 0 && exitFeeNum <= 100 && withdrawalFeeNum >= 0 && withdrawalFeeNum <= 100 && copyTradeCommissionNum >= 0 && copyTradeCommissionNum <= 100 &&
     quickTradeFeeNum >= 0 && quickTradeFeeNum <= 100 &&
     qtMinBetNum >= 0 && qtMaxBetNum > 0 && qtMaxBetNum >= qtMinBetNum &&
     qtStreak2Num >= 1 && qtStreak3Num >= 1 && qtStreak4Num >= 1 && qtStreak5Num >= 1 &&
@@ -167,7 +170,8 @@ const AdminSettings = () => {
           withdrawal_cooldown_minutes: withdrawalCooldownNum,
           withdrawal_multiplier: withdrawalMultiplierNum,
           withdrawal_limit_enabled: withdrawalLimitEnabled,
-          exit_fee_percent: exitFeeNum,
+           exit_fee_percent: exitFeeNum,
+           withdrawal_fee_percent: withdrawalFeeNum,
           copy_trade_commission_percent: copyTradeCommissionNum,
           quick_trade_fee_percent: quickTradeFeeNum,
           qt_min_bet: qtMinBetNum,
@@ -193,7 +197,8 @@ const AdminSettings = () => {
         details: {
           admin_fee_percent: adminNum,
           creator_fee_percent: creatorNum,
-          exit_fee_percent: exitFeeNum,
+           exit_fee_percent: exitFeeNum,
+           withdrawal_fee_percent: withdrawalFeeNum,
           copy_trade_commission_percent: copyTradeCommissionNum,
           min_withdrawal_amount: minWithdrawNum,
           withdrawal_cooldown_minutes: withdrawalCooldownNum,
@@ -458,6 +463,11 @@ const AdminSettings = () => {
                 <CardDescription className="text-xs">Minimum amount users must withdraw. Set to 0 for any amount.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="withdrawalFee">Withdrawal Fee (%)</Label>
+                  <Input id="withdrawalFee" type="number" min={0} max={100} step={0.5} value={withdrawalFee} onChange={(e) => setWithdrawalFee(e.target.value)} placeholder="0" />
+                  <p className="text-[10px] text-muted-foreground">Current: {withdrawalFeeNum}%. Deducted from withdrawal amount before sending. Set to 0 for no fee.</p>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="minWithdrawalAmount">Minimum Withdrawal ($)</Label>
                   <Input id="minWithdrawalAmount" type="number" min={0} step={1} value={minWithdrawalAmount} onChange={(e) => setMinWithdrawalAmount(e.target.value)} placeholder="5" />
