@@ -19,6 +19,7 @@ interface Referrer {
   userId: string;
   name: string;
   avatar: string | null;
+  verificationLevel: VerificationLevel;
   totalReferrals: number;
   totalEarned: number;
 }
