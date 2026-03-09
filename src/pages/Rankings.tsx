@@ -306,12 +306,16 @@ const useQuickTradeLeaderboard = (period: TimePeriod) => {
         _limit: 20,
         ...(cutoff ? { _cutoff: cutoff } : {}),
       } as any);
-      if (data) {
+      if (data && (data as any[]).length > 0) {
+        const userIds = (data as any[]).map((d) => d.user_id);
+        const { data: profiles } = await supabase.from("profiles").select("id, verification_level").in("id", userIds);
+        const vMap = new Map((profiles || []).map((p: any) => [p.id, p.verification_level]));
         setQuickTraders(
           (data as any[]).map((d) => ({
             userId: d.user_id,
             name: d.display_name || "Anonymous",
             avatar: d.avatar_url,
+            verificationLevel: (vMap.get(d.user_id) || "none") as VerificationLevel,
             profit: Number(d.profit),
             wins: Number(d.wins),
             totalBets: Number(d.total_bets),
