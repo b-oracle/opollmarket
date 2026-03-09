@@ -178,10 +178,10 @@ const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
       if (!userId) return null;
       const { data } = await supabase
         .from("user_security_settings" as any)
-        .select("pin_enabled, totp_enabled, require_pin_withdrawal, require_totp_withdrawal")
+        .select("pin_enabled, totp_enabled, require_pin_withdrawal, require_totp_withdrawal, require_pin_login, require_totp_login")
         .eq("user_id", userId)
         .maybeSingle();
-      return data as unknown as { pin_enabled: boolean; totp_enabled: boolean; require_pin_withdrawal: boolean; require_totp_withdrawal: boolean } | null;
+      return data as unknown as { pin_enabled: boolean; totp_enabled: boolean; require_pin_withdrawal: boolean; require_totp_withdrawal: boolean; require_pin_login: boolean; require_totp_login: boolean } | null;
     },
     enabled: !!userId,
   });
