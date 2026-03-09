@@ -1,4 +1,4 @@
-// App root
+// App root – v2
 import { lazy, Suspense, useState, useEffect, useRef } from "react";
 import { Navigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
