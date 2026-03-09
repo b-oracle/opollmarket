@@ -122,6 +122,7 @@
     height: 100%;
     height: -webkit-fill-available;
     overscroll-behavior: none;
+    overscroll-behavior-x: none;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
     -webkit-user-select: none;

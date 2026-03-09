@@ -390,7 +390,7 @@ const Feed = () => {
   const pullProgress = Math.min(pullDistance / PULL_THRESHOLD, 1);
 
   return (
-    <div className="h-dvh flex flex-col bg-background relative">
+    <div className="h-dvh flex flex-col bg-background relative" style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}>
       <SEOHead title="Feed" description="Swipe through prediction markets like TikTok. Vote YES or NO on real-world events." path="/feed" />
       <TopBar />
 
