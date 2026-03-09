@@ -51,6 +51,10 @@ const AdminSettings = () => {
   const [qtStreak5, setQtStreak5] = useState("");
   const [qtEnabledAssets, setQtEnabledAssets] = useState<Set<string>>(new Set(ALL_ASSETS.map(a => a.symbol)));
   const [qtEnabledTimeframes, setQtEnabledTimeframes] = useState<Set<number>>(new Set(ALL_TIMEFRAMES.map(t => t.seconds)));
+  const [blueRevenueShare, setBlueRevenueShare] = useState("");
+  const [goldRevenueShare, setGoldRevenueShare] = useState("");
+  const [blueTrendingMult, setBlueTrendingMult] = useState("");
+  const [goldTrendingMult, setGoldTrendingMult] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
