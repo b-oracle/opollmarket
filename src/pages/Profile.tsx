@@ -197,11 +197,11 @@ const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
     toast.success("Updated");
   };
 
-  if (isLoading || !secSettings) return null;
+  if (isLoading) return null;
 
-  const pinActive = secSettings.pin_enabled;
-  const totpActive = secSettings.totp_enabled;
-  const anyLoginSec = secSettings.require_pin_login || secSettings.require_totp_login;
+  const pinActive = secSettings?.pin_enabled ?? false;
+  const totpActive = secSettings?.totp_enabled ?? false;
+  const anyLoginSec = (secSettings?.require_pin_login ?? false) || (secSettings?.require_totp_login ?? false);
 
   return (
     <div className="mb-6">
@@ -224,7 +224,7 @@ const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
         )}
       </div>
       <div className="space-y-2">
-        {secSettings.pin_enabled && (
+        {secSettings?.pin_enabled && (
           <>
             <div className="glass rounded-xl p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -235,7 +235,7 @@ const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
                 <p className="text-xs text-muted-foreground">Require PIN after signing in</p>
               </div>
               <Switch
-                checked={secSettings.require_pin_login}
+                checked={secSettings?.require_pin_login ?? false}
                 onCheckedChange={(v) => updateToggle("require_pin_login", v)}
               />
             </div>
@@ -248,13 +248,13 @@ const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
                 <p className="text-xs text-muted-foreground">Require PIN before withdrawing</p>
               </div>
               <Switch
-                checked={secSettings.require_pin_withdrawal}
+                checked={secSettings?.require_pin_withdrawal ?? false}
                 onCheckedChange={(v) => updateToggle("require_pin_withdrawal", v)}
               />
             </div>
           </>
         )}
-        {secSettings.totp_enabled && (
+        {secSettings?.totp_enabled && (
           <>
             <div className="glass rounded-xl p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -265,7 +265,7 @@ const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
                 <p className="text-xs text-muted-foreground">Require authenticator code after signing in</p>
               </div>
               <Switch
-                checked={secSettings.require_totp_login}
+                checked={secSettings?.require_totp_login ?? false}
                 onCheckedChange={(v) => updateToggle("require_totp_login", v)}
               />
             </div>
@@ -278,13 +278,13 @@ const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
                 <p className="text-xs text-muted-foreground">Require Google Authenticator code</p>
               </div>
               <Switch
-                checked={secSettings.require_totp_withdrawal}
+                checked={secSettings?.require_totp_withdrawal ?? false}
                 onCheckedChange={(v) => updateToggle("require_totp_withdrawal", v)}
               />
             </div>
           </>
         )}
-        {!secSettings.pin_enabled && !secSettings.totp_enabled && (
+        {!secSettings?.pin_enabled && !secSettings?.totp_enabled && (
           <div className="glass rounded-xl p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0">
               <Shield className="w-5 h-5 text-muted-foreground" />
