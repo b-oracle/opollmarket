@@ -290,6 +290,8 @@ const UserProfile = () => {
 
   // User rank (simple: count users with more profit)
   const hasNftAvatar = isNftAvatar(profile?.avatar_url);
+  const verificationLevel = (profile as any)?.verification_level || (hasNftAvatar ? "blue" : "none");
+  const isVerified = verificationLevel !== "none";
   const displayName = profile?.display_name || "Anonymous";
 
   if (profileLoading) {
