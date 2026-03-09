@@ -107,7 +107,21 @@ const AdminDashboard = () => {
         return allRows;
       };
 
-      const [rewardRows, qtBetRows, depositRows, withdrawalRows, depositCount, withdrawalCount, pendingDepositCount, pendingWithdrawalCount] = await Promise.all([
+      const fetchTxAmountsByStatuses = async (type: string, statuses: string[]): Promise<{ amount: number }[]> => {
+        const allRows: { amount: number }[] = [];
+        let from = 0;
+        const batchSize = 1000;
+        while (true) {
+          const { data, error } = await supabase.from("transactions").select("amount").eq("type", type).in("status", statuses).range(from, from + batchSize - 1);
+          if (error || !data || data.length === 0) break;
+          allRows.push(...data);
+          if (data.length < batchSize) break;
+          from += batchSize;
+        }
+        return allRows;
+      };
+
+      const [rewardRows, qtBetRows, depositRows, withdrawalRows, depositCount, withdrawalCount, pendingDepositCount, pendingWithdrawalCount, grossDepositRows, grossDepositCount, pendingDepositRows, expiredDepositRows, expiredDepositCount, partialDepositRows, partialDepositCount] = await Promise.all([
         fetchAllAmounts("referral_rewards"),
         fetchAllAmounts("quick_bets"),
         fetchTxAmounts("deposit", "confirmed"),
@@ -116,6 +130,14 @@ const AdminDashboard = () => {
         supabase.from("transactions").select("*", { count: "exact", head: true }).eq("type", "withdrawal").eq("status", "confirmed"),
         supabase.from("transactions").select("*", { count: "exact", head: true }).eq("type", "deposit").eq("status", "pending"),
         supabase.from("withdrawal_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
+        // Reconciliation data
+        fetchTxAmountsByStatuses("deposit", ["confirmed", "partial", "pending", "expired"]),
+        supabase.from("transactions").select("*", { count: "exact", head: true }).eq("type", "deposit"),
+        fetchTxAmounts("deposit", "pending"),
+        fetchTxAmounts("deposit", "expired"),
+        supabase.from("transactions").select("*", { count: "exact", head: true }).eq("type", "deposit").eq("status", "expired"),
+        fetchTxAmounts("deposit", "partial"),
+        supabase.from("transactions").select("*", { count: "exact", head: true }).eq("type", "deposit").eq("status", "partial"),
       ]);
 
       const totalVolume = marketRows?.reduce((sum, m) => sum + Number(m.volume), 0) ?? 0;
@@ -123,6 +145,10 @@ const AdminDashboard = () => {
       const quickTradeVolume = qtBetRows.reduce((sum, b) => sum + Number(b.amount), 0);
       const totalDeposits = depositRows.reduce((sum, r) => sum + Number(r.amount), 0);
       const totalWithdrawals = withdrawalRows.reduce((sum, r) => sum + Number(r.amount), 0);
+      const grossDeposits = grossDepositRows.reduce((sum, r) => sum + Number(r.amount), 0);
+      const pendingDepositsAmount = pendingDepositRows.reduce((sum, r) => sum + Number(r.amount), 0);
+      const expiredDepositsAmount = expiredDepositRows.reduce((sum, r) => sum + Number(r.amount), 0);
+      const partialDepositsAmount = partialDepositRows.reduce((sum, r) => sum + Number(r.amount), 0);
 
       setStats({
         totalMarkets: markets.count ?? 0,
