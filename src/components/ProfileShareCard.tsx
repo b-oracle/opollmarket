@@ -165,7 +165,7 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
             {[
               { label: "Followers", value: followersCount },
               { label: "Following", value: followingCount },
-              { label: "Likes", value: likesCount },
+              { label: "Trades", value: tradesCount },
               { label: "Referrals", value: referralCount },
             ].map((s) => (
               <div key={s.label} style={{ textAlign: "center" }}>

@@ -461,8 +461,8 @@ const UserProfile = () => {
                   <p className="text-muted-foreground text-[10px]">Following</p>
                 </div>
                 <div className="text-center">
-                  <p className="font-bold">{likesCount}</p>
-                  <p className="text-muted-foreground text-[10px]">Likes</p>
+                  <p className="font-bold">{tradesCount}</p>
+                  <p className="text-muted-foreground text-[10px]">Trades</p>
                 </div>
                 <div className="text-center">
                   <p className="font-bold">{referralCount}</p>
