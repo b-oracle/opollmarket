@@ -35,3 +35,5 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.copy-trade]
     verify_jwt = false
+  [functions.approve-copy-trade]
+    verify_jwt = false

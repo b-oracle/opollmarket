@@ -20,6 +20,7 @@ import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { SidebarStateProvider, useSidebarState } from "./hooks/useSidebarState";
 import SocialTutorial, { shouldShowTutorial } from "./components/SocialTutorial";
 import { useFeatureToggles } from "./hooks/useFeatureToggles";
+import PendingCopyTrades from "./components/PendingCopyTrades";
 
 // Lazy-loaded pages
 const Index = lazy(() => import("./pages/Index"));
@@ -145,6 +146,7 @@ const App = () => (
                 <PWAUpdatePrompt />
                 <BrowserRouter>
                 <SocialTutorialTrigger />
+                <PendingCopyTrades />
                 <ConditionalSidebar />
                 <ConditionalLayout>
                   <div className="flex-1">

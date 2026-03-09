@@ -41,142 +41,70 @@ Deno.serve(async (req) => {
       });
     }
 
-    let copiedCount = 0;
+    // Get trader name for notifications
+    const { data: traderProfile } = await supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", trader_user_id)
+      .single();
+    const traderName = traderProfile?.display_name || "A trader";
+
+    // Get market title if applicable
+    let marketTitle = "";
+    if (market_id) {
+      const { data: market } = await supabase
+        .from("markets")
+        .select("title")
+        .eq("id", market_id)
+        .single();
+      marketTitle = market?.title || "";
+    }
+
+    let queuedCount = 0;
 
     for (const copier of copiers) {
       try {
-        // Check copier balance
-        const { data: bal } = await supabase
-          .from("balances")
-          .select("amount")
-          .eq("user_id", copier.user_id)
-          .eq("currency", "USDT")
-          .single();
-
-        const balance = Number(bal?.amount || 0);
         const maxAmount = Number(copier.max_amount || 10);
         const copyAmount = Math.min(amount, maxAmount);
 
-        if (balance < copyAmount || copyAmount <= 0) {
-          // Notify insufficient balance
-          await supabase.from("notifications").insert({
-            user_id: copier.user_id,
-            title: "Copy Trade Failed 💸",
-            message: `Insufficient balance to copy trade ($${copyAmount.toFixed(2)} needed).`,
-            type: "info",
-            market_id: market_id || null,
-          });
-          continue;
-        }
+        if (copyAmount <= 0) continue;
 
-        if (trade_type === "prediction" && market_id && side) {
-          // Copy prediction via place-bet function
-          const copyShares = (copyAmount / amount) * shares;
-          const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/place-bet`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-              "x-copy-user-id": copier.user_id,
-            },
-            body: JSON.stringify({
-              marketId: market_id,
-              optionId: option_id || null,
-              side,
-              amount: copyAmount,
-              price,
-              shares: Math.max(0.01, Number(copyShares.toFixed(2))),
-            }),
-          });
+        // Queue a pending copy trade instead of executing immediately
+        const copyShares = shares ? (copyAmount / amount) * shares : null;
 
-          // Fallback: place bet directly if place-bet doesn't support service-role user override
-          if (!res.ok) {
-            // Direct placement
-            const { data: commData } = await supabase
-              .from("commission_settings")
-              .select("admin_fee_percent, creator_fee_percent")
-              .limit(1)
-              .single();
+        await supabase.from("pending_copy_trades").insert({
+          user_id: copier.user_id,
+          trader_user_id,
+          trade_type,
+          market_id: market_id || null,
+          option_id: option_id || null,
+          side: side || null,
+          amount: copyAmount,
+          price: price || null,
+          shares: copyShares ? Math.max(0.01, Number(copyShares.toFixed(2))) : null,
+          status: "pending",
+        });
 
-            const adminFee = copyAmount * (Number(commData?.admin_fee_percent ?? 2) / 100);
-            const creatorFee = copyAmount * (Number(commData?.creator_fee_percent ?? 3) / 100);
-            const totalDeduct = copyAmount;
-            const copySharesFinal = Math.max(0.01, Number(((copyAmount - adminFee - creatorFee) / (price / 100)).toFixed(2)));
+        // Notify the copier to approve the trade
+        const tradeDesc = trade_type === "quick_trade"
+          ? `$${copyAmount.toFixed(2)} on ${(side || "").toUpperCase()} in Quick Trade`
+          : `$${copyAmount.toFixed(2)} on ${(side || "").toUpperCase()}${marketTitle ? ` — "${marketTitle}"` : ""}`;
 
-            // Deduct balance
-            await supabase
-              .from("balances")
-              .update({ amount: balance - totalDeduct, updated_at: new Date().toISOString() })
-              .eq("user_id", copier.user_id)
-              .eq("currency", "USDT");
+        await supabase.from("notifications").insert({
+          user_id: copier.user_id,
+          title: "Copy Trade Pending ⏳",
+          message: `${traderName} placed a trade: ${tradeDesc}. Approve within 2 min or it expires.`,
+          type: "copy_trade",
+          market_id: market_id || null,
+        });
 
-            // Create position
-            await supabase.from("positions").insert({
-              user_id: copier.user_id,
-              market_id,
-              option_id: option_id || null,
-              side,
-              shares: copySharesFinal,
-              avg_price: price / 100,
-            });
-
-            // Create transaction
-            await supabase.from("transactions").insert({
-              user_id: copier.user_id,
-              type: "buy",
-              amount: totalDeduct,
-              market_id,
-              option_id: option_id || null,
-              side,
-              shares: copySharesFinal,
-              price: price / 100,
-              status: "confirmed",
-            });
-          }
-
-          // Get trader name for notification
-          const { data: traderProfile } = await supabase
-            .from("profiles")
-            .select("display_name")
-            .eq("id", trader_user_id)
-            .single();
-          const traderName = traderProfile?.display_name || "A trader";
-
-          await supabase.from("notifications").insert({
-            user_id: copier.user_id,
-            title: "Trade Copied! 📋",
-            message: `Copied ${traderName}'s prediction: $${copyAmount.toFixed(2)} on ${side.toUpperCase()}`,
-            type: "info",
-            market_id,
-          });
-
-          copiedCount++;
-        }
-
-        if (trade_type === "quick_trade" && side) {
-          // For quick trades, notify followers about the trade
-          const { data: traderProfile } = await supabase
-            .from("profiles")
-            .select("display_name")
-            .eq("id", trader_user_id)
-            .single();
-          const traderName = traderProfile?.display_name || "A trader";
-
-          await supabase.from("notifications").insert({
-            user_id: copier.user_id,
-            title: `${traderName} placed a Quick Trade 🚀`,
-            message: `${traderName} bet $${copyAmount.toFixed(2)} on ${side.toUpperCase()} in Quick Trade.`,
-            type: "info",
-          });
-
-          copiedCount++;
-        }
+        queuedCount++;
       } catch (err) {
-        console.error(`Copy trade failed for user ${copier.user_id}:`, err);
+        console.error(`Failed to queue copy trade for ${copier.user_id}:`, err);
       }
     }
 
-    return new Response(JSON.stringify({ copied: copiedCount }), {
+    return new Response(JSON.stringify({ queued: queuedCount }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {

@@ -1,0 +1,191 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Authenticate the user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: corsHeaders,
+      });
+    }
+
+    const { data: { user }, error: authErr } = await supabase.auth.getUser(
+      authHeader.replace("Bearer ", "")
+    );
+    if (authErr || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: corsHeaders,
+      });
+    }
+
+    const { pending_trade_id, action } = await req.json();
+
+    if (!pending_trade_id || !["accept", "reject"].includes(action)) {
+      return new Response(JSON.stringify({ error: "Missing pending_trade_id or invalid action" }), {
+        status: 400, headers: corsHeaders,
+      });
+    }
+
+    // Get the pending trade
+    const { data: trade, error: tradeErr } = await supabase
+      .from("pending_copy_trades")
+      .select("*")
+      .eq("id", pending_trade_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (tradeErr || !trade) {
+      return new Response(JSON.stringify({ error: "Pending trade not found" }), {
+        status: 404, headers: corsHeaders,
+      });
+    }
+
+    if (trade.status !== "pending") {
+      return new Response(JSON.stringify({ error: "Trade already processed", status: trade.status }), {
+        status: 400, headers: corsHeaders,
+      });
+    }
+
+    // Check if expired
+    if (new Date(trade.expires_at) < new Date()) {
+      await supabase
+        .from("pending_copy_trades")
+        .update({ status: "expired", updated_at: new Date().toISOString() })
+        .eq("id", pending_trade_id);
+
+      return new Response(JSON.stringify({ error: "Trade has expired" }), {
+        status: 400, headers: corsHeaders,
+      });
+    }
+
+    if (action === "reject") {
+      await supabase
+        .from("pending_copy_trades")
+        .update({ status: "rejected", updated_at: new Date().toISOString() })
+        .eq("id", pending_trade_id);
+
+      return new Response(JSON.stringify({ success: true, status: "rejected" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // action === "accept" — execute the trade
+    const { data: bal } = await supabase
+      .from("balances")
+      .select("amount")
+      .eq("user_id", user.id)
+      .eq("currency", "USDT")
+      .single();
+
+    const balance = Number(bal?.amount || 0);
+
+    if (balance < trade.amount) {
+      await supabase
+        .from("pending_copy_trades")
+        .update({ status: "failed", updated_at: new Date().toISOString() })
+        .eq("id", pending_trade_id);
+
+      await supabase.from("notifications").insert({
+        user_id: user.id,
+        title: "Copy Trade Failed 💸",
+        message: `Insufficient balance ($${trade.amount.toFixed(2)} needed, $${balance.toFixed(2)} available).`,
+        type: "info",
+      });
+
+      return new Response(JSON.stringify({ error: "Insufficient balance" }), {
+        status: 400, headers: corsHeaders,
+      });
+    }
+
+    if (trade.trade_type === "prediction" && trade.market_id && trade.side) {
+      // Get commission settings
+      const { data: commData } = await supabase
+        .from("commission_settings")
+        .select("admin_fee_percent, creator_fee_percent")
+        .limit(1)
+        .single();
+
+      const adminFee = trade.amount * (Number(commData?.admin_fee_percent ?? 2) / 100);
+      const creatorFee = trade.amount * (Number(commData?.creator_fee_percent ?? 3) / 100);
+      const totalDeduct = trade.amount;
+      const tradePrice = trade.price || 50;
+      const finalShares = trade.shares || Math.max(0.01, Number(((trade.amount - adminFee - creatorFee) / (tradePrice / 100)).toFixed(2)));
+
+      // Deduct balance
+      await supabase
+        .from("balances")
+        .update({ amount: balance - totalDeduct, updated_at: new Date().toISOString() })
+        .eq("user_id", user.id)
+        .eq("currency", "USDT");
+
+      // Create position
+      await supabase.from("positions").insert({
+        user_id: user.id,
+        market_id: trade.market_id,
+        option_id: trade.option_id || null,
+        side: trade.side,
+        shares: finalShares,
+        avg_price: tradePrice / 100,
+      });
+
+      // Create transaction
+      await supabase.from("transactions").insert({
+        user_id: user.id,
+        type: "buy",
+        amount: totalDeduct,
+        market_id: trade.market_id,
+        option_id: trade.option_id || null,
+        side: trade.side,
+        shares: finalShares,
+        price: tradePrice / 100,
+        status: "confirmed",
+      });
+    }
+
+    // Mark as accepted
+    await supabase
+      .from("pending_copy_trades")
+      .update({ status: "accepted", updated_at: new Date().toISOString() })
+      .eq("id", pending_trade_id);
+
+    // Get trader name
+    const { data: traderProfile } = await supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", trade.trader_user_id)
+      .single();
+
+    await supabase.from("notifications").insert({
+      user_id: user.id,
+      title: "Trade Copied! 📋",
+      message: `Copied ${traderProfile?.display_name || "trader"}'s trade: $${trade.amount.toFixed(2)} on ${(trade.side || "").toUpperCase()}`,
+      type: "info",
+      market_id: trade.market_id || null,
+    });
+
+    return new Response(JSON.stringify({ success: true, status: "accepted" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    console.error("approve-copy-trade error:", err);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500, headers: corsHeaders,
+    });
+  }
+});
