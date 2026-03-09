@@ -516,8 +516,7 @@ const Profile = () => {
         .from("transactions")
         .select("*")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
+        .order("created_at", { ascending: false });
       return data || [];
     },
     enabled: !!user,
