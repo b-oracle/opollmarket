@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
     const { action } = body; // "audit" or "apply"
 
     // Step 1: Authenticate with NP
-    const npJwt = await getNpJwt(npEmail, npPassword);
+    const npJwt = await getNpJwt(npApiKey, npEmail, npPassword);
 
     // Step 2: Fetch ALL payments from NP
     const npPayments = await fetchAllNpPayments(npApiKey, npJwt);
