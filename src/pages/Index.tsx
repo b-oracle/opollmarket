@@ -213,7 +213,7 @@ const Index = () => {
                   Predict the <span className="text-primary">future</span>,<br />earn from it.
                 </h1>
                 <p className="text-base text-muted-foreground mb-6 max-w-md">
-                  Trade on real-world events across crypto, sports, politics & more. Join thousands of traders making predictions that pay.
+                  Trade on real-world events across crypto, sports, politics & more. Join thousands of users making predictions that pay.
                 </p>
                 <div className="flex items-center gap-3">
                   <motion.button
