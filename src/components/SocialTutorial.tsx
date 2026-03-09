@@ -187,7 +187,7 @@ const SocialTutorial = ({ onComplete, userId }: SocialTutorialProps) => {
 
   return (
     <motion.div
-      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center px-4 pb-24 sm:pb-0"
+      className="fixed inset-0 z-[100] flex items-center justify-center px-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
