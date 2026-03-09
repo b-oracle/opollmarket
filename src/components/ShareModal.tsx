@@ -64,28 +64,7 @@ const addWatermark = async (canvas: HTMLCanvasElement) => {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
-  // Gradient border
-  const bw = 8;
   const { width: w, height: h } = canvas;
-  const grad = ctx.createLinearGradient(0, 0, w, h);
-  grad.addColorStop(0, "#02C7FC");
-  grad.addColorStop(0.5, "#A855F7");
-  grad.addColorStop(1, "#02C7FC");
-  ctx.strokeStyle = grad;
-  ctx.lineWidth = bw;
-  const r = 24;
-  ctx.beginPath();
-  ctx.moveTo(r, 0);
-  ctx.lineTo(w - r, 0);
-  ctx.quadraticCurveTo(w, 0, w, r);
-  ctx.lineTo(w, h - r);
-  ctx.quadraticCurveTo(w, h, w - r, h);
-  ctx.lineTo(r, h);
-  ctx.quadraticCurveTo(0, h, 0, h - r);
-  ctx.lineTo(0, r);
-  ctx.quadraticCurveTo(0, 0, r, 0);
-  ctx.closePath();
-  ctx.stroke();
 
   // Logo watermark
   const isDark = document.documentElement.classList.contains("dark");
