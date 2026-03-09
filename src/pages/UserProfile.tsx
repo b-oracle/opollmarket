@@ -56,6 +56,7 @@ const UserProfile = () => {
   const [activeTab, setActiveTab] = useState<"markets" | "predictions" | "rank">("markets");
   const [shareOpen, setShareOpen] = useState(false);
   const profileCardRef = useRef<HTMLDivElement>(null);
+  const [showUnfollowConfirm, setShowUnfollowConfirm] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Pull-to-refresh state
