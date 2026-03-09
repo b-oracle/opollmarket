@@ -35,6 +35,7 @@ const AdminWithdrawals = () => {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [noteInput, setNoteInput] = useState("");
   const [txHashInput, setTxHashInput] = useState("");
+  const [qrAddress, setQrAddress] = useState<string | null>(null);
   const [showActionModal, setShowActionModal] = useState<{
     id: string;
     action: "approve" | "reject";
