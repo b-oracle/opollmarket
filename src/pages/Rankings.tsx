@@ -815,11 +815,12 @@ const Rankings = () => {
                                       className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : "cursor-pointer hover:bg-accent/30"}`}
                                     >
                                       <div className="w-8 flex justify-center shrink-0">{rankBadge(rank)}</div>
-                                      <AvatarCircle avatar={su.avatar} name={su.name} />
+                                      <AvatarCircle avatar={su.avatar} name={su.name} verificationLevel={su.verificationLevel} />
                                       <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-1.5">
                                           <span className={`text-sm font-bold truncate ${isMe ? "text-primary" : ""}`}>{isMe ? "You" : su.name}</span>
                                           {isMe && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
+                                          {!isMe && su.verificationLevel !== "none" && <NftBadge level={su.verificationLevel} size={14} />}
                                         </div>
                                         <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
                                           <span>Best: {su.bestStreak} 🏆</span>
