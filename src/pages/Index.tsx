@@ -64,6 +64,66 @@ const Index = () => {
   const { track } = useAnalytics();
 
   useEffect(() => { track("page_view", { page: "home" }); }, []);
+
+  // Pull-to-refresh state
+  const PULL_THRESHOLD = 80;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const touchStartY = useRef(0);
+  const isPulling = useRef(false);
+  const hapticFired = useRef(false);
+  const [pulling, setPulling] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const spinControls = useAnimation();
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (refreshing) return;
+    const scrollTop = scrollRef.current?.scrollTop ?? window.scrollY;
+    if (scrollTop > 5) return;
+    touchStartY.current = e.touches[0].clientY;
+    isPulling.current = true;
+  }, [refreshing]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isPulling.current || refreshing) return;
+    const scrollTop = scrollRef.current?.scrollTop ?? window.scrollY;
+    if (scrollTop > 5) {
+      isPulling.current = false;
+      setPulling(false);
+      setPullDistance(0);
+      return;
+    }
+    const deltaY = e.touches[0].clientY - touchStartY.current;
+    if (deltaY > 0) {
+      const dampened = Math.min(deltaY * 0.45, 120);
+      setPulling(true);
+      setPullDistance(dampened);
+      if (dampened >= PULL_THRESHOLD && !hapticFired.current) {
+        navigator.vibrate?.(15);
+        hapticFired.current = true;
+      }
+    }
+  }, [refreshing]);
+
+  const handleTouchEnd = useCallback(async () => {
+    if (!isPulling.current) return;
+    isPulling.current = false;
+
+    if (pullDistance >= PULL_THRESHOLD && !refreshing) {
+      setRefreshing(true);
+      setPullDistance(50);
+      spinControls.start({ rotate: 360, transition: { repeat: Infinity, duration: 0.8, ease: "linear" } });
+      await refetch();
+      spinControls.stop();
+      setRefreshing(false);
+    }
+
+    setPulling(false);
+    setPullDistance(0);
+    hapticFired.current = false;
+  }, [pullDistance, refreshing, spinControls]);
+
+  const pullProgress = Math.min(pullDistance / PULL_THRESHOLD, 1);
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
 
   // Capture referral param on landing
