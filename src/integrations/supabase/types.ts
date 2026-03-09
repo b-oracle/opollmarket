@@ -766,6 +766,72 @@ export type Database = {
           },
         ]
       }
+      pending_copy_trades: {
+        Row: {
+          amount: number
+          created_at: string
+          expires_at: string
+          id: string
+          market_id: string | null
+          option_id: string | null
+          price: number | null
+          shares: number | null
+          side: string | null
+          status: string
+          trade_type: string
+          trader_user_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          expires_at?: string
+          id?: string
+          market_id?: string | null
+          option_id?: string | null
+          price?: number | null
+          shares?: number | null
+          side?: string | null
+          status?: string
+          trade_type?: string
+          trader_user_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          expires_at?: string
+          id?: string
+          market_id?: string | null
+          option_id?: string | null
+          price?: number | null
+          shares?: number | null
+          side?: string | null
+          status?: string
+          trade_type?: string
+          trader_user_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_copy_trades_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_copy_trades_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "market_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       polymarket_presets: {
         Row: {
           auto_approve: boolean
