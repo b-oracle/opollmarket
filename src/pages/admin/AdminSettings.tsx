@@ -464,6 +464,11 @@ const AdminSettings = () => {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="space-y-2">
+                  <Label htmlFor="withdrawalFee">Withdrawal Fee (%)</Label>
+                  <Input id="withdrawalFee" type="number" min={0} max={100} step={0.5} value={withdrawalFee} onChange={(e) => setWithdrawalFee(e.target.value)} placeholder="0" />
+                  <p className="text-[10px] text-muted-foreground">Current: {withdrawalFeeNum}%. Deducted from withdrawal amount before sending. Set to 0 for no fee.</p>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="minWithdrawalAmount">Minimum Withdrawal ($)</Label>
                   <Input id="minWithdrawalAmount" type="number" min={0} step={1} value={minWithdrawalAmount} onChange={(e) => setMinWithdrawalAmount(e.target.value)} placeholder="5" />
                   <p className="text-[10px] text-muted-foreground">Current: ${minWithdrawNum.toFixed(2)}</p>
