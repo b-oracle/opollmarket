@@ -189,9 +189,13 @@ export type Database = {
       commission_settings: {
         Row: {
           admin_fee_percent: number
+          blue_revenue_share_percent: number
+          blue_trending_multiplier: number
           copy_trade_commission_percent: number
           creator_fee_percent: number
           exit_fee_percent: number
+          gold_revenue_share_percent: number
+          gold_trending_multiplier: number
           id: string
           market_creation_fee: number | null
           min_nft_balance: number
@@ -220,9 +224,13 @@ export type Database = {
         }
         Insert: {
           admin_fee_percent?: number
+          blue_revenue_share_percent?: number
+          blue_trending_multiplier?: number
           copy_trade_commission_percent?: number
           creator_fee_percent?: number
           exit_fee_percent?: number
+          gold_revenue_share_percent?: number
+          gold_trending_multiplier?: number
           id?: string
           market_creation_fee?: number | null
           min_nft_balance?: number
@@ -251,9 +259,13 @@ export type Database = {
         }
         Update: {
           admin_fee_percent?: number
+          blue_revenue_share_percent?: number
+          blue_trending_multiplier?: number
           copy_trade_commission_percent?: number
           creator_fee_percent?: number
           exit_fee_percent?: number
+          gold_revenue_share_percent?: number
+          gold_trending_multiplier?: number
           id?: string
           market_creation_fee?: number | null
           min_nft_balance?: number
@@ -1181,6 +1193,44 @@ export type Database = {
           referrer_id?: string
         }
         Relationships: []
+      }
+      revenue_shares: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          market_id: string
+          share_percent: number
+          user_id: string
+          verification_tier: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          market_id: string
+          share_percent?: number
+          user_id: string
+          verification_tier?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          market_id?: string
+          share_percent?: number
+          user_id?: string
+          verification_tier?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revenue_shares_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sport_score_cache: {
         Row: {
