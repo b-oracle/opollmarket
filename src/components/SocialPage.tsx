@@ -214,7 +214,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
                 overscrollBehavior: "contain",
                 willChange: "scroll-position",
               } as React.CSSProperties}
-          >
+            >
             {/* Header */}
             <div
               className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-border px-4 flex items-center gap-3"
