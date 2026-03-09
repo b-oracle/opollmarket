@@ -762,7 +762,12 @@ const MarketDetail = () => {
             <div className="px-0 pb-4 pt-3">
               <div className="w-full flex gap-3">
                 {isEnded ? (
-                  <div className="flex-1 text-center py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base bg-muted text-muted-foreground">{market?.status === "resolved" ? "Market Ended — Resolution Completed" : market?.status === "cancelled" ? "Market Cancelled" : "Market Ended — Awaiting Resolution"}</div>
+                  <div className={`flex-1 text-center py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 ${
+                    market?.status === "resolved" ? "bg-primary/10 text-primary" : market?.status === "cancelled" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"
+                  }`}>
+                    {market?.status === "resolved" ? <CheckCircle2 className="w-5 h-5" /> : market?.status === "cancelled" ? <XCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                    {market?.status === "resolved" ? "Market Ended — Resolution Completed" : market?.status === "cancelled" ? "Market Cancelled" : "Market Ended — Awaiting Resolution"}
+                  </div>
                 ) : (
                   <>
                     <button onClick={() => { setBetSide("yes"); setBetOpen(true); }} className="flex-1 min-w-0 btn-yes py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy Yes {yesPercent}¢</button>
