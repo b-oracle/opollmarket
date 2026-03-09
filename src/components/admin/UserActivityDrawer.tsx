@@ -387,6 +387,7 @@ const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDra
               <div>
                 <h3 className="text-lg font-bold">User Activities</h3>
                 <p className="text-sm text-muted-foreground">{userName}</p>
+                <SecuritySummary userId={userId} />
               </div>
               <button onClick={onClose} className="p-2 rounded-lg hover:bg-muted transition-colors">
                 <X className="w-5 h-5" />
