@@ -170,6 +170,86 @@ const TelegramSection = ({ userId }: { userId?: string }) => {
   );
 };
 
+const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
+  const queryClient = useQueryClient();
+  const { data: secSettings, isLoading } = useQuery({
+    queryKey: ["security_settings", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data } = await supabase
+        .from("user_security_settings" as any)
+        .select("pin_enabled, totp_enabled, require_pin_withdrawal, require_totp_withdrawal")
+        .eq("user_id", userId)
+        .maybeSingle();
+      return data as { pin_enabled: boolean; totp_enabled: boolean; require_pin_withdrawal: boolean; require_totp_withdrawal: boolean } | null;
+    },
+    enabled: !!userId,
+  });
+
+  const updateToggle = async (field: string, value: boolean) => {
+    if (!userId) return;
+    const { error } = await supabase
+      .from("user_security_settings" as any)
+      .update({ [field]: value, updated_at: new Date().toISOString() } as any)
+      .eq("user_id", userId);
+    if (error) { toast.error("Failed to update"); return; }
+    queryClient.invalidateQueries({ queryKey: ["security_settings", userId] });
+    toast.success("Updated");
+  };
+
+  if (isLoading || !secSettings) return null;
+
+  return (
+    <div className="mb-6">
+      <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Security</h3>
+      <div className="space-y-2">
+        {secSettings.pin_enabled && (
+          <div className="glass rounded-xl p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <Lock className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">PIN for Withdrawals</p>
+              <p className="text-xs text-muted-foreground">Require PIN before withdrawing</p>
+            </div>
+            <Switch
+              checked={secSettings.require_pin_withdrawal}
+              onCheckedChange={(v) => updateToggle("require_pin_withdrawal", v)}
+            />
+          </div>
+        )}
+        {secSettings.totp_enabled && (
+          <div className="glass rounded-xl p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <Shield className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">2FA for Withdrawals</p>
+              <p className="text-xs text-muted-foreground">Require Google Authenticator code</p>
+            </div>
+            <Switch
+              checked={secSettings.require_totp_withdrawal}
+              onCheckedChange={(v) => updateToggle("require_totp_withdrawal", v)}
+            />
+          </div>
+        )}
+        {!secSettings.pin_enabled && !secSettings.totp_enabled && (
+          <div className="glass rounded-xl p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0">
+              <Shield className="w-5 h-5 text-muted-foreground" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">No security methods set up</p>
+              <p className="text-xs text-muted-foreground">Set up a PIN or 2FA to secure withdrawals</p>
+            </div>
+            <a href="/setup-security" className="text-xs text-primary font-semibold">Set Up</a>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const Profile = () => {
   
   const { user, loading: authLoading, isAdmin, displayName: authDisplayName } = useAuth();
