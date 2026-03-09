@@ -12,6 +12,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Clock,
+  Copy,
   BarChart3,
   DollarSign,
   Target,
@@ -34,6 +35,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import useAnalytics from "@/hooks/useAnalytics";
 import { useUserLimitOrders, useCancelLimitOrder } from "@/hooks/useLimitOrders";
+import CopySubscriptions from "@/components/CopySubscriptions";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import { useUserBalance } from "@/hooks/useUserBalance";
 
@@ -75,7 +77,7 @@ interface EnrichedPosition {
 }
 
 type FilterType = "all" | "profit" | "loss";
-type PortfolioTab = "positions" | "orders";
+type PortfolioTab = "positions" | "orders" | "copy";
 
 const Sparkline = ({ avgPrice, currentPrice, seed }: { avgPrice: number; currentPrice: number; seed: string }) => {
   const count = 20;
@@ -446,12 +448,23 @@ const Portfolio = () => {
             }`}
           >
             <Clock className="w-3 h-3" />
-            Open Orders
+            Orders
             {userLimitOrders.filter(o => o.status === "pending").length > 0 && (
               <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-500 text-[9px] font-bold">
                 {userLimitOrders.filter(o => o.status === "pending").length}
               </span>
             )}
+          </button>
+          <button
+            onClick={() => setActiveTab("copy")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-xs font-semibold transition-all ${
+              activeTab === "copy"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Copy className="w-3 h-3" />
+            Copy Trades
           </button>
         </div>
 
@@ -710,6 +723,11 @@ const Portfolio = () => {
               );
             })}
           </div>
+        )}
+
+        {/* Copy Trades Tab */}
+        {activeTab === "copy" && (
+          <CopySubscriptions />
         )}
       </div>
 
