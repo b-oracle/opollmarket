@@ -17,7 +17,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Users, Heart, Trophy, Gift, UserPlus, UserMinus, Loader2,
   Crown, Medal, Award, Copy, Eye, EyeOff, Settings, Hexagon, ChevronRight,
-  TrendingUp, TrendingDown, MessageCircle, Bookmark, Lock, Share2, Zap, Flame
+  TrendingUp, TrendingDown, MessageCircle, Bookmark, Lock, Share2, Zap, Flame, ShieldCheck
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -412,9 +412,22 @@ const UserProfile = () => {
               className="overflow-hidden mb-4"
             >
               <div className="glass rounded-xl p-4 space-y-3">
-                <h4 className="text-sm font-bold flex items-center gap-2">
-                  <Copy className="w-4 h-4 text-primary" /> Copy Trading Settings
-                </h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-bold flex items-center gap-2">
+                    <Copy className="w-4 h-4 text-primary" /> Copy Trading Settings
+                  </h4>
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                    copySettings?.auto_copy
+                      ? "bg-primary/15 text-primary border-primary/20"
+                      : "bg-muted text-muted-foreground border-border"
+                  }`}>
+                    {copySettings?.auto_copy ? (
+                      <><Zap className="w-3 h-3" /> Auto</>
+                    ) : (
+                      <><ShieldCheck className="w-3 h-3" /> Manual</>
+                    )}
+                  </span>
+                </div>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium">Copy Predictions</p>
