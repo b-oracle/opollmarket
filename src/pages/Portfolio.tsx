@@ -12,6 +12,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Clock,
+  Copy,
   BarChart3,
   DollarSign,
   Target,
