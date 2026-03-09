@@ -169,16 +169,24 @@ const UserProfile = () => {
     enabled: !!id && (isOwnProfile || !!profile?.is_public),
   });
 
-  // Likes count
-  const { data: likesCount = 0 } = useQuery({
-    queryKey: ["user-likes-count", id],
+  // Total trades count (predictions + quick trades)
+  const { data: tradesCount = 0 } = useQuery({
+    queryKey: ["user-trades-count", id],
     queryFn: async () => {
       if (!id) return 0;
-      const { count } = await supabase
-        .from("market_likes")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", id);
-      return count || 0;
+      const [predictions, quickTrades] = await Promise.all([
+        supabase
+          .from("transactions")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", id)
+          .eq("type", "buy")
+          .eq("status", "confirmed"),
+        supabase
+          .from("quick_bets")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", id),
+      ]);
+      return (predictions.count || 0) + (quickTrades.count || 0);
     },
     enabled: !!id,
   });
