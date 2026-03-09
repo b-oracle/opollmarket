@@ -54,8 +54,8 @@ Deno.serve(async (req) => {
     }
 
     // Hash the PIN
-    const salt = await bcrypt.genSalt(10);
-    const pinHash = await bcrypt.hash(pin, salt);
+    const salt = bcrypt.genSaltSync(10);
+    const pinHash = bcrypt.hashSync(pin, salt);
 
     // Update security settings
     const { error: updateError } = await adminClient
