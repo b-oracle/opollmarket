@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback, Fragment } from "react";
 import { toast } from "sonner";
 import useAnalytics from "@/hooks/useAnalytics";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -21,6 +21,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import NftBadge, { isNftAvatar } from "@/components/NftBadge";
 import { AnimatePresence, motion } from "framer-motion";
+import { QRCodeSVG } from "qrcode.react";
+import PinInput from "@/components/PinInput";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import CopyTradeStats from "@/components/CopyTradeStats";
@@ -197,6 +199,61 @@ const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
     toast.success("Updated");
   };
 
+  // Inline 2FA setup state
+  const [totpSetupStep, setTotpSetupStep] = useState<"idle" | "loading" | "verify">("idle");
+  const [totpUri, setTotpUri] = useState("");
+  const [totpSecret, setTotpSecret] = useState("");
+  const [totpCode, setTotpCode] = useState("");
+  const [totpError, setTotpError] = useState("");
+  const [totpLoading, setTotpLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleGenerateTotp = async () => {
+    setTotpSetupStep("loading");
+    try {
+      const { data, error } = await supabase.functions.invoke("setup-totp", {
+        body: { action: "generate" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setTotpSecret(data.secret);
+      setTotpUri(data.otpauth_uri);
+      setTotpSetupStep("verify");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to generate 2FA");
+      setTotpSetupStep("idle");
+    }
+  };
+
+  const handleVerifyTotp = async () => {
+    setTotpLoading(true);
+    setTotpError("");
+    try {
+      const { data, error } = await supabase.functions.invoke("setup-totp", {
+        body: { action: "verify", code: totpCode },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("2FA enabled successfully!");
+      setTotpSetupStep("idle");
+      setTotpCode("");
+      setTotpUri("");
+      setTotpSecret("");
+      queryClient.invalidateQueries({ queryKey: ["security_settings", userId] });
+    } catch (err: any) {
+      setTotpError(err.message || "Invalid code");
+      setTotpCode("");
+    } finally {
+      setTotpLoading(false);
+    }
+  };
+
+  const copySecret = () => {
+    navigator.clipboard.writeText(totpSecret);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   if (isLoading) return null;
 
   const pinActive = secSettings?.pin_enabled ?? false;
@@ -284,14 +341,74 @@ const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
             </div>
           </>
         )}
-        {!secSettings?.pin_enabled && !secSettings?.totp_enabled && (
+
+        {/* Inline 2FA Setup (when not yet enabled) */}
+        {!secSettings?.totp_enabled && totpSetupStep === "idle" && (
           <div className="glass rounded-xl p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0">
               <Shield className="w-5 h-5 text-muted-foreground" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold">No security methods set up</p>
-              <p className="text-xs text-muted-foreground">Set up a PIN or 2FA to secure withdrawals</p>
+              <p className="text-sm font-semibold">Google Authenticator</p>
+              <p className="text-xs text-muted-foreground">Enable 2FA for extra security</p>
+            </div>
+            <button onClick={handleGenerateTotp} className="text-xs text-primary font-semibold">Enable</button>
+          </div>
+        )}
+
+        {!secSettings?.totp_enabled && totpSetupStep === "loading" && (
+          <div className="glass rounded-xl p-6 flex items-center justify-center">
+            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          </div>
+        )}
+
+        {!secSettings?.totp_enabled && totpSetupStep === "verify" && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-xl p-4 space-y-4">
+            <p className="text-sm font-semibold text-center">Scan with Google Authenticator</p>
+            {totpUri && (
+              <div className="flex justify-center">
+                <div className="bg-white p-3 rounded-xl">
+                  <QRCodeSVG value={totpUri} size={160} level="M" />
+                </div>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground text-center">Or enter this secret manually:</p>
+            <div className="bg-muted rounded-lg p-3 flex items-center gap-2">
+              <code className="flex-1 text-xs font-mono break-all select-all">{totpSecret}</code>
+              <button onClick={copySecret} className="shrink-0 p-2 rounded-lg hover:bg-background">
+                {copied ? <span className="text-primary text-xs">✓</span> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground text-center">Enter the 6-digit code from the app:</p>
+            <PinInput value={totpCode} onChange={setTotpCode} error={!!totpError} />
+            {totpError && <p className="text-destructive text-xs text-center">{totpError}</p>}
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setTotpSetupStep("idle"); setTotpCode(""); setTotpError(""); }}
+                className="flex-1 py-2 rounded-xl border border-border text-sm text-muted-foreground"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleVerifyTotp}
+                disabled={totpCode.length !== 6 || totpLoading}
+                className="flex-1 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {totpLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                Verify
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {!secSettings?.pin_enabled && !secSettings?.totp_enabled && totpSetupStep === "idle" && (
+          <div className="glass rounded-xl p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0">
+              <Lock className="w-5 h-5 text-muted-foreground" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">Set up a PIN</p>
+              <p className="text-xs text-muted-foreground">Quick numeric passcode for withdrawals</p>
             </div>
             <a href="/setup-security" className="text-xs text-primary font-semibold">Set Up</a>
           </div>
