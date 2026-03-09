@@ -69,7 +69,9 @@ const CommentItem = ({
               </span>
             )}
           </div>
-          {isNftAvatar(comment.avatar_url) && <NftBadge className="absolute -bottom-0.5 -right-0.5" />}
+          {comment.verification_level && comment.verification_level !== "none" && (
+            <NftBadge level={comment.verification_level} className="absolute -bottom-0.5 -right-0.5" size={14} />
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
