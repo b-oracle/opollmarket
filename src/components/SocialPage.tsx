@@ -202,7 +202,8 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
-            className="fixed inset-y-0 right-0 w-full max-w-md bg-background z-[61] overflow-y-auto overscroll-contain"
+            className="fixed inset-y-0 right-0 w-full max-w-md bg-background z-[61] overflow-y-auto overscroll-contain touch-auto"
+            style={{ ...{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }, WebkitOverflowScrolling: "touch" } as React.CSSProperties}
             style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}
           >
             {/* Header */}
