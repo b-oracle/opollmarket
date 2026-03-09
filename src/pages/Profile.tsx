@@ -203,57 +203,8 @@ const Profile = () => {
   const [selectedNftUrl, setSelectedNftUrl] = useState<string | null>(null);
   const [editBio, setEditBio] = useState("");
   const [editIsPublic, setEditIsPublic] = useState(true);
-    touchStartX.current = x;
-    touchStartY.current = e.touches[0].clientY;
-    touchStartedInEdge.current = x > window.innerWidth - 40;
-    touchLockedDir.current = null;
-    isDragging.current = false;
-  }, []);
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!touchStartedInEdge.current || !user || revealAnimating.current) return;
-    const dx = touchStartX.current - e.touches[0].clientX; // positive = swiped left
-    const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
-    if (!touchLockedDir.current) {
-      if (Math.abs(dx) > 10 || dy > 10) {
-        touchLockedDir.current = Math.abs(dx) > dy ? "horizontal" : "vertical";
-      }
-      return;
-    }
-    if (touchLockedDir.current !== "horizontal") return;
-    if (dx > 0) {
-      isDragging.current = true;
-      setRevealX(Math.min(dx, window.innerWidth));
-    }
-  }, [user]);
 
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (!isDragging.current) {
-      touchStartedInEdge.current = false;
-      return;
-    }
-    const endX = e.changedTouches[0].clientX;
-    const dx = touchStartX.current - endX;
-    if (dx > 100) {
-      // Commit: animate panel fully open, then navigate
-      if (!swipeHintDismissed) {
-        localStorage.setItem("social_swipe_used", "1");
-        setSwipeHintDismissed(true);
-      }
-      revealAnimating.current = true;
-      setRevealX(window.innerWidth);
-      setTimeout(() => {
-        navigate(`/user/${user!.id}`);
-        setRevealX(0);
-        revealAnimating.current = false;
-      }, 250);
-    } else {
-      // Snap back
-      setRevealX(0);
-    }
-    isDragging.current = false;
-    touchStartedInEdge.current = false;
-  }, [swipeHintDismissed, user, navigate]);
 
   // Fetch profile data
   const { data: profile } = useQuery({
