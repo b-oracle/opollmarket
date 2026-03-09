@@ -1,5 +1,5 @@
 // App root
-import { lazy, Suspense, useState, useEffect } from "react";
+import { lazy, Suspense, useState, useEffect, useRef } from "react";
 import { Navigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
@@ -121,11 +121,15 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const [checked, setChecked] = useState(false);
   const [needsSetup, setNeedsSetup] = useState(false);
+  const checkedUserRef = useRef<string | null>(null);
+
+  const allowedPaths = ["/setup-security", "/auth", "/reset-password", "/forgot-password", "/terms", "/privacy", "/disclaimer"];
+  const isAllowed = allowedPaths.some(p => location.pathname.startsWith(p));
 
   useEffect(() => {
-    if (!user || loading) { setChecked(true); return; }
-    const allowedPaths = ["/setup-security", "/auth", "/reset-password", "/forgot-password", "/terms", "/privacy", "/disclaimer"];
-    if (allowedPaths.some(p => location.pathname.startsWith(p))) { setChecked(true); return; }
+    if (!user || loading) { setChecked(true); setNeedsSetup(false); return; }
+    // Only check once per user session
+    if (checkedUserRef.current === user.id) { setChecked(true); return; }
 
     import("@/integrations/supabase/client").then(({ supabase }) => {
       supabase
@@ -136,13 +140,14 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
         .then(({ data }) => {
           const d = data as any;
           setNeedsSetup(d && d.security_setup_complete === false);
+          checkedUserRef.current = user.id;
           setChecked(true);
         });
     });
-  }, [user, loading, location.pathname]);
+  }, [user, loading]);
 
   if (!checked) return null;
-  if (needsSetup) return <Navigate to="/setup-security" replace />;
+  if (needsSetup && !isAllowed) return <Navigate to="/setup-security" replace />;
   return <>{children}</>;
 };
 
