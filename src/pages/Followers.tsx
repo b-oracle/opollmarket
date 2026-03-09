@@ -12,10 +12,12 @@ import NftBadge, { isNftAvatar } from "@/components/NftBadge";
 
 const LAST_SEEN_KEY = "followers_last_seen";
 const ITEMS_PER_PAGE = 10;
+const PULL_THRESHOLD = 60;
 
 const Followers = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState<"followers" | "following">("followers");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
