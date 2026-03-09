@@ -169,24 +169,14 @@ const UserProfile = () => {
     enabled: !!id && (isOwnProfile || !!profile?.is_public),
   });
 
-  // Total trades count (predictions + quick trades)
+  // Total trades count (predictions + quick trades) via security-definer function
   const { data: tradesCount = 0 } = useQuery({
     queryKey: ["user-trades-count", id],
     queryFn: async () => {
       if (!id) return 0;
-      const [predictions, quickTrades] = await Promise.all([
-        supabase
-          .from("transactions")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", id)
-          .eq("type", "buy")
-          .eq("status", "confirmed"),
-        supabase
-          .from("quick_bets")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", id),
-      ]);
-      return (predictions.count || 0) + (quickTrades.count || 0);
+      const { data, error } = await supabase.rpc("get_user_trade_count", { _user_id: id });
+      if (error) return 0;
+      return Number(data) || 0;
     },
     enabled: !!id,
   });
