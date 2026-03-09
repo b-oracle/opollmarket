@@ -203,11 +203,72 @@ const Profile = () => {
   const [selectedNftUrl, setSelectedNftUrl] = useState<string | null>(null);
   const [editBio, setEditBio] = useState("");
   const [editIsPublic, setEditIsPublic] = useState(true);
+  const [swipeHintDismissed, setSwipeHintDismissed] = useState(() => localStorage.getItem("social_swipe_used") === "1");
+  const [revealX, setRevealX] = useState(0);
+  const revealAnimating = useRef(false);
 
+  // Slide-to-reveal from right edge — reveals social profile panel
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const touchStartedInEdge = useRef(false);
+  const touchLockedDir = useRef<"horizontal" | "vertical" | null>(null);
+  const isDragging = useRef(false);
+  const screenW = typeof window !== "undefined" ? window.innerWidth : 400;
 
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (revealAnimating.current) return;
+    const x = e.touches[0].clientX;
+    touchStartX.current = x;
+    touchStartY.current = e.touches[0].clientY;
+    touchStartedInEdge.current = x > window.innerWidth - 40;
+    touchLockedDir.current = null;
+    isDragging.current = false;
+  }, []);
 
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStartedInEdge.current || !user || revealAnimating.current) return;
+    const dx = touchStartX.current - e.touches[0].clientX; // positive = swiped left
+    const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
+    if (!touchLockedDir.current) {
+      if (Math.abs(dx) > 10 || dy > 10) {
+        touchLockedDir.current = Math.abs(dx) > dy ? "horizontal" : "vertical";
+      }
+      return;
+    }
+    if (touchLockedDir.current !== "horizontal") return;
+    if (dx > 0) {
+      isDragging.current = true;
+      setRevealX(Math.min(dx, window.innerWidth));
+    }
+  }, [user]);
 
-
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!isDragging.current) {
+      touchStartedInEdge.current = false;
+      return;
+    }
+    const endX = e.changedTouches[0].clientX;
+    const dx = touchStartX.current - endX;
+    if (dx > 100) {
+      // Commit: animate panel fully open, then navigate
+      if (!swipeHintDismissed) {
+        localStorage.setItem("social_swipe_used", "1");
+        setSwipeHintDismissed(true);
+      }
+      revealAnimating.current = true;
+      setRevealX(window.innerWidth);
+      setTimeout(() => {
+        navigate(`/user/${user!.id}`);
+        setRevealX(0);
+        revealAnimating.current = false;
+      }, 250);
+    } else {
+      // Snap back
+      setRevealX(0);
+    }
+    isDragging.current = false;
+    touchStartedInEdge.current = false;
+  }, [swipeHintDismissed, user, navigate]);
 
   // Fetch profile data
   const { data: profile } = useQuery({
@@ -393,7 +454,75 @@ const Profile = () => {
     <div
       className="min-h-dvh bg-background"
       style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
+      {/* Swipe hint glow on right edge */}
+      {!swipeHintDismissed && (
+        <motion.div
+          className="fixed right-0 top-1/3 bottom-1/3 z-30 pointer-events-none w-12"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0, 0.7, 0.3, 0.7, 0] }}
+          transition={{ delay: 1.2, duration: 3, repeat: 2, repeatDelay: 2 }}
+        >
+          <div className="w-full h-full rounded-l-full bg-gradient-to-l from-primary/40 via-primary/15 to-transparent blur-md" />
+          <motion.div
+            className="absolute right-1 top-1/2 -translate-y-1/2"
+            animate={{ x: [0, 6, 0] }}
+            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+          >
+            <svg width="14" height="24" viewBox="0 0 14 24" fill="none" className="text-primary opacity-60">
+              <path d="M2 2L12 12L2 22" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Slide-to-reveal overlay panel */}
+      {revealX > 0 && (
+        <div
+          className="fixed inset-0 z-40 pointer-events-none"
+          style={{ backgroundColor: `rgba(0,0,0,${Math.min(revealX / screenW * 0.5, 0.5)})` }}
+        />
+      )}
+      {revealX > 0 && (
+        <div
+          className="fixed inset-y-0 right-0 z-50 bg-background/95 backdrop-blur-xl shadow-2xl border-l border-border/50"
+          style={{
+            width: '100%',
+            maxWidth: '100vw',
+            transform: `translateX(${Math.max(screenW - revealX, 0)}px)`,
+            transition: isDragging.current ? 'none' : 'transform 0.25s ease-out',
+          }}
+        >
+          <div className="flex items-center justify-center h-full">
+            <div className="flex flex-col items-center gap-4 text-center px-8">
+              {/* Glow ring behind avatar */}
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl scale-150" />
+                <div className="relative w-20 h-20 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center overflow-hidden ring-4 ring-primary/10">
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-2xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
+                  )}
+                </div>
+                {isNftAvatar(profile?.avatar_url) && <NftBadge className="absolute -bottom-0.5 -right-0.5" />}
+              </div>
+              <div className="space-y-1">
+                <p className="text-base font-bold">{displayName}</p>
+                <p className="text-xs text-muted-foreground font-medium tracking-wide uppercase">Social Profile</p>
+              </div>
+              <div className="flex items-center gap-1.5 text-primary">
+                <Users className="w-4 h-4" />
+                <ChevronRight className="w-3.5 h-3.5 animate-pulse" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <TopBar />
       <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
         {/* Avatar & Profile Edit */}
