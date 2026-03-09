@@ -213,6 +213,26 @@ const AdminWithdrawals = () => {
                       </div>
                     </TableCell>
                     <TableCell>
+                      {w.tx_hash ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-xs max-w-[80px] truncate" title={w.tx_hash}>
+                            {w.tx_hash}
+                          </span>
+                          <a
+                            href={`https://bscscan.com/tx/${w.tx_hash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1 rounded hover:bg-muted transition-colors shrink-0"
+                            title="View on BscScan"
+                          >
+                            <ExternalLink className="w-3 h-3 text-primary" />
+                          </a>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       <span
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${
                           statusColors[w.status] || ""
