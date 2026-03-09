@@ -124,7 +124,6 @@ Deno.serve(async (req) => {
               avg_price: tradePrice / 100,
             });
 
-            // Create transaction
             await supabase.from("transactions").insert({
               user_id: copier.user_id,
               type: "buy",
@@ -135,6 +134,7 @@ Deno.serve(async (req) => {
               shares: finalShares,
               price: tradePrice / 100,
               status: "confirmed",
+              is_copy_trade: true,
             });
 
             // Record copy trade earning entry
