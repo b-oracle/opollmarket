@@ -527,6 +527,7 @@ const AdminSettings = () => {
             <CardDescription>Configure trending multipliers and revenue sharing for verified creators.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <BulkVerificationRefresh />
             <Card className="border-dashed">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2"><Flame className="w-4 h-4" /> Trending Multiplier</CardTitle>
@@ -612,6 +613,62 @@ const AdminSettings = () => {
         <PolymarketPresetsSection canEdit={canEdit} />
       </div>
     </div>
+  );
+};
+
+/* ─── Bulk Verification Refresh ─── */
+
+const BulkVerificationRefresh = () => {
+  const [refreshing, setRefreshing] = useState(false);
+  const [result, setResult] = useState<{ updated: number } | null>(null);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    setResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("bulk-update-verification");
+      if (error) throw error;
+      setResult({ updated: data?.updated || 0 });
+      toast.success(`Verification refreshed for ${data?.updated || 0} users`);
+    } catch (err: any) {
+      console.error("Bulk verification error:", err);
+      toast.error(err.message || "Failed to refresh verifications");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  return (
+    <Card className="border-dashed border-primary/30">
+      <CardContent className="pt-4 pb-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold flex items-center gap-1.5">
+              <RefreshCw className="w-4 h-4 text-primary" />
+              Refresh All Verifications
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              Re-check NFT & token holdings for all users with connected wallets.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="shrink-0"
+          >
+            {refreshing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <RefreshCw className="w-4 h-4 mr-1" />}
+            {refreshing ? "Checking..." : "Refresh"}
+          </Button>
+        </div>
+        {result && (
+          <p className="text-[10px] text-primary mt-2 font-medium">
+            ✓ Updated {result.updated} user(s)
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import FollowButton from "@/components/FollowButton";
 import ActivityFeed from "@/components/ActivityFeed";
-import NftBadge, { isNftAvatar } from "@/components/NftBadge";
+import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, UserCheck, Heart, Sparkles, Loader2, ChevronDown,
@@ -34,7 +34,7 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
         .limit(50);
       if (!data || data.length === 0) return [];
       const ids = data.map((f: any) => f.follower_id);
-      const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url, bio").in("id", ids);
+      const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url, bio, verification_level").in("id", ids);
       const map = new Map((profiles || []).map((p: any) => [p.id, p]));
       return data.map((f: any) => ({ ...f, profile: map.get(f.follower_id) }));
     },
@@ -52,7 +52,7 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
         .limit(50);
       if (!data || data.length === 0) return [];
       const ids = data.map((f: any) => f.following_id);
-      const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url, bio").in("id", ids);
+      const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url, bio, verification_level").in("id", ids);
       const map = new Map((profiles || []).map((p: any) => [p.id, p]));
       return data.map((f: any) => ({ ...f, profile: map.get(f.following_id) }));
     },
@@ -76,7 +76,7 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
       if (uniqueIds.length === 0) return [];
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url, bio, is_public")
+        .select("id, display_name, avatar_url, bio, is_public, verification_level")
         .in("id", uniqueIds)
         .eq("is_public", true);
       return profiles || [];
@@ -86,7 +86,7 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
 
   const renderUserRow = (uid: string, prof: any, index: number) => {
     const name = prof?.display_name || "Anonymous";
-    const nft = isNftAvatar(prof?.avatar_url);
+    const vLevel = (prof?.verification_level || "none") as VerificationLevel;
     return (
       <motion.div
         key={uid}
@@ -104,10 +104,13 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
               <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
             )}
           </div>
-          {nft && <NftBadge className="absolute -bottom-0.5 -right-0.5 scale-75" />}
+          {vLevel !== "none" && <NftBadge level={vLevel} className="absolute -bottom-0.5 -right-0.5 scale-75" />}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold truncate">{name}</p>
+          <p className="text-sm font-semibold truncate flex items-center gap-1">
+            {name}
+            {vLevel !== "none" && <NftBadge level={vLevel} size={14} />}
+          </p>
           {prof?.bio && <p className="text-[10px] text-muted-foreground truncate">{prof.bio}</p>}
         </div>
         <div onClick={(e) => e.stopPropagation()}>
