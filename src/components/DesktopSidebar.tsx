@@ -32,6 +32,7 @@ const DesktopSidebar = () => {
   );
 
   return (
+    <>
     <aside
       className={`hidden md:flex fixed left-0 top-0 bottom-0 z-40 flex-col border-r border-border bg-background/95 backdrop-blur-md transition-all duration-300 ${
         collapsed ? "w-[4.5rem]" : "w-60"
@@ -113,8 +114,9 @@ const DesktopSidebar = () => {
           </button>
         )}
       </div>
-      <SignOutConfirmDialog open={signOutOpen} onClose={() => setSignOutOpen(false)} />
     </aside>
+    <SignOutConfirmDialog open={signOutOpen} onClose={() => setSignOutOpen(false)} />
+    </>
   );
 };
 
