@@ -9,7 +9,7 @@ interface ProfileShareCardProps {
   avatarUrl?: string | null;
   followersCount: number;
   followingCount: number;
-  likesCount: number;
+  tradesCount: number;
   referralCount: number;
   marketsCount: number;
   positionsCount: number;
