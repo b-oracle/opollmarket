@@ -578,19 +578,24 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                   )}
                 </div>
               ) : (
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setBetModal({ open: true, side: "yes" })}
-                    className="flex-1 btn-yes py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all active:scale-95"
-                  >
-                    Buy Yes {yesPercent}¢
-                  </button>
-                  <button
-                    onClick={() => setBetModal({ open: true, side: "no" })}
-                    className="flex-1 btn-no py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all active:scale-95"
-                  >
-                    Buy No {noPercent}¢
-                  </button>
+                <div className="space-y-1">
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setBetModal({ open: true, side: "yes" })}
+                      className="flex-1 btn-yes py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all active:scale-95"
+                    >
+                      Buy Yes {yesPercent}¢
+                    </button>
+                    <button
+                      onClick={() => setBetModal({ open: true, side: "no" })}
+                      className="flex-1 btn-no py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all active:scale-95"
+                    >
+                      Buy No {noPercent}¢
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground/50 font-medium text-center lg:hidden">
+                    ← Swipe left for NO · Swipe right for YES →
+                  </p>
                 </div>
               )}
             </motion.div>
