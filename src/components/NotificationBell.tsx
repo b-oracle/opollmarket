@@ -82,12 +82,27 @@ const NotificationBell = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
-  const handleClick = (n: Notification) => {
+  const handleClick = async (n: Notification) => {
     if (!n.read) {
       supabase.from("notifications").update({ read: true }).eq("id", n.id).then(() => {
         setNotifications((prev) => prev.map((x) => x.id === n.id ? { ...x, read: true } : x));
       });
     }
+
+    // "New Follower" notifications → navigate to the follower's profile
+    if (n.title.includes("Follower")) {
+      const nameMatch = n.message.match(/^(.+?) started following/);
+      if (nameMatch) {
+        const followerName = nameMatch[1];
+        const { data: profileId } = await supabase.rpc("get_user_id_by_username", { _username: followerName });
+        if (profileId) {
+          setOpen(false);
+          navigate(`/user/${profileId}`);
+          return;
+        }
+      }
+    }
+
     if (n.market_id) {
       setOpen(false);
       navigate(`/market/${n.market_id}`);
