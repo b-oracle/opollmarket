@@ -304,6 +304,22 @@ const Auth = () => {
           ← Back to Home
         </button>
       </div>
+      <SecurityVerificationModal
+        open={showLoginSecurity}
+        onClose={() => {
+          setShowLoginSecurity(false);
+          // Sign out if user cancels verification
+          supabase.auth.signOut({ scope: "local" });
+          toast.error("Login cancelled — verification required");
+        }}
+        onVerified={() => {
+          setShowLoginSecurity(false);
+          toast.success("Logged in successfully!");
+          navigate("/");
+        }}
+        requirePin={loginSecReqs.require_pin}
+        requireTotp={loginSecReqs.require_totp}
+      />
     </div>
   );
 };
