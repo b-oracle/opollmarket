@@ -198,6 +198,7 @@ const NotificationBell = () => {
                   })}
                 </div>
               )}
+              </div>
             </motion.div>
           </>
         )}
