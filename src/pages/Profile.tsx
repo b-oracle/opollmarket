@@ -265,7 +265,7 @@ const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
                 <p className="text-xs text-muted-foreground">Require authenticator code after signing in</p>
               </div>
               <Switch
-                checked={secSettings.require_totp_login}
+                checked={secSettings?.require_totp_login ?? false}
                 onCheckedChange={(v) => updateToggle("require_totp_login", v)}
               />
             </div>
