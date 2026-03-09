@@ -8,10 +8,14 @@ const corsHeaders = {
 
 const NP_API = "https://api.nowpayments.io/v1";
 
-async function getNpJwt(email: string, password: string): Promise<string> {
+async function getNpJwt(apiKey: string, email: string, password: string): Promise<string> {
+  console.log("NP auth: requesting JWT...");
   const res = await fetch(`${NP_API}/auth`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+    },
     body: JSON.stringify({ email, password }),
   });
   if (!res.ok) {
@@ -19,6 +23,11 @@ async function getNpJwt(email: string, password: string): Promise<string> {
     throw new Error(`NP auth failed (${res.status}): ${text}`);
   }
   const data = await res.json();
+  if (!data.token) {
+    console.error("NP auth response missing token:", JSON.stringify(data));
+    throw new Error("NP auth returned no token");
+  }
+  console.log("NP auth: JWT obtained, length:", data.token.length);
   return data.token;
 }
 
@@ -47,6 +56,7 @@ async function fetchAllNpPayments(apiKey: string, jwt: string): Promise<NpPaymen
 
   while (true) {
     const url = `${NP_API}/payment/?limit=${limit}&page=${page}&sortBy=created_at&orderBy=asc`;
+    console.log(`Fetching NP payments page ${page}, JWT length: ${jwt.length}`);
     const res = await fetch(url, {
       headers: {
         "x-api-key": apiKey,
@@ -132,7 +142,7 @@ Deno.serve(async (req) => {
     const { action } = body; // "audit" or "apply"
 
     // Step 1: Authenticate with NP
-    const npJwt = await getNpJwt(npEmail, npPassword);
+    const npJwt = await getNpJwt(npApiKey, npEmail, npPassword);
 
     // Step 2: Fetch ALL payments from NP
     const npPayments = await fetchAllNpPayments(npApiKey, npJwt);
