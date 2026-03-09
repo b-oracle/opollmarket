@@ -109,7 +109,7 @@
     overflow: hidden;
     height: 100%;
     height: -webkit-fill-available;
-    touch-action: manipulation;
+    touch-action: pan-y;
     -webkit-text-size-adjust: 100%;
     background-color: hsl(var(--background));
     overscroll-behavior-x: none;
