@@ -183,6 +183,7 @@ const App = () => (
                   <div className="flex-1">
                     <Suspense fallback={<PageFallback />}>
                       <MaintenanceGuard>
+                      <SecuritySetupGuard>
                       <Routes>
                         <Route path="/" element={<Index />} />
                         <Route path="/market/:id" element={<MarketDetail />} />
@@ -194,6 +195,7 @@ const App = () => (
                         <Route path="/auth" element={<Auth />} />
                         <Route path="/reset-password" element={<ResetPassword />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
+                        <Route path="/setup-security" element={<SetupSecurity />} />
                         <Route path="/referrals" element={<FeatureGate featureKey="referrals"><Referrals /></FeatureGate>} />
                         <Route path="/faq" element={<FeatureGate featureKey="faq"><FAQ /></FeatureGate>} />
                         <Route path="/disclaimer" element={<Disclaimer />} />
