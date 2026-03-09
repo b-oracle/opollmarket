@@ -527,6 +527,7 @@ const AdminSettings = () => {
             <CardDescription>Configure trending multipliers and revenue sharing for verified creators.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <BulkVerificationRefresh />
             <Card className="border-dashed">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2"><Flame className="w-4 h-4" /> Trending Multiplier</CardTitle>
