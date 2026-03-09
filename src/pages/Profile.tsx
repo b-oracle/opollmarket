@@ -940,6 +940,10 @@ const Profile = () => {
                           setShowNftPicker(false);
                           toast.success("Profile updated!");
                           setEditingProfile(false);
+
+                          // Refresh verification level in background
+                          supabase.functions.invoke("update-verification").catch(() => {});
+                          setTimeout(() => queryClient.invalidateQueries({ queryKey: ["profile", user!.id] }), 1500);
                         } catch (err) {
                           toast.error("Something went wrong");
                         } finally {
