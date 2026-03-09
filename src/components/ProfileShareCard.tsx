@@ -10,6 +10,8 @@ interface ProfileShareCardProps {
   followersCount: number;
   followingCount: number;
   tradesCount: number;
+  predictionsCount?: number;
+  quickTradesCount?: number;
   referralCount: number;
   marketsCount: number;
   positionsCount: number;
