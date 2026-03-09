@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import ActivityFeed from "@/components/ActivityFeed";
@@ -17,8 +17,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Users, Heart, Trophy, Gift, UserPlus, UserMinus, Loader2,
   Crown, Medal, Award, Copy, Eye, EyeOff, Settings, Hexagon, ChevronRight,
-  TrendingUp, TrendingDown, MessageCircle, Bookmark, Lock, Share2, Zap, Flame, ShieldCheck
+  TrendingUp, TrendingDown, MessageCircle, Bookmark, Lock, Share2, Zap, Flame, ShieldCheck, RefreshCw
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { getCanonicalOrigin } from "@/lib/canonical";
@@ -30,10 +31,13 @@ const formatDollar = (v: number) => {
   return `$${abs.toFixed(2)}`;
 };
 
+const PULL_THRESHOLD = 60;
+
 const UserProfile = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const isOwnProfile = user?.id === id;
   const { isFollowing, loading: followLoading, toggleFollow } = useFollow(id);
   const followCounts = useFollowCounts(id);
@@ -42,6 +46,56 @@ const UserProfile = () => {
   const [activeTab, setActiveTab] = useState<"markets" | "predictions" | "rank">("markets");
   const [shareOpen, setShareOpen] = useState(false);
   const profileCardRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Pull-to-refresh state
+  const [pulling, setPulling] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const touchStartY = useRef(0);
+  const isPulling = useRef(false);
+
+  const handlePullStart = useCallback((e: React.TouchEvent) => {
+    const container = containerRef.current;
+    if (!container || container.scrollTop > 5 || refreshing) return;
+    touchStartY.current = e.touches[0].clientY;
+    isPulling.current = true;
+  }, [refreshing]);
+
+  const handlePullMove = useCallback((e: React.TouchEvent) => {
+    if (!isPulling.current || refreshing) return;
+    const container = containerRef.current;
+    if (!container || container.scrollTop > 5) {
+      isPulling.current = false;
+      setPulling(false);
+      setPullDistance(0);
+      return;
+    }
+    const deltaY = e.touches[0].clientY - touchStartY.current;
+    if (deltaY > 0) {
+      const dampened = Math.min(deltaY * 0.45, 120);
+      setPulling(true);
+      setPullDistance(dampened);
+      if (dampened >= PULL_THRESHOLD) navigator.vibrate?.(15);
+    }
+  }, [refreshing]);
+
+  const handlePullEnd = useCallback(async () => {
+    if (!isPulling.current) return;
+    isPulling.current = false;
+    if (pullDistance >= PULL_THRESHOLD && !refreshing) {
+      setRefreshing(true);
+      setPullDistance(50);
+      await queryClient.invalidateQueries({ queryKey: ["user-profile", id] });
+      await queryClient.invalidateQueries({ queryKey: ["user-markets", id] });
+      await queryClient.invalidateQueries({ queryKey: ["user-positions-public", id] });
+      await queryClient.invalidateQueries({ queryKey: ["user-likes-count", id] });
+      await queryClient.invalidateQueries({ queryKey: ["user-leaderboard-ranks", id] });
+      setRefreshing(false);
+    }
+    setPulling(false);
+    setPullDistance(0);
+  }, [pullDistance, refreshing, queryClient, id]);
 
   // Profile data
   const { data: profile, isLoading: profileLoading } = useQuery({
@@ -268,10 +322,36 @@ const UserProfile = () => {
 
   return (
     <div
+      ref={containerRef}
       className="min-h-dvh bg-background overflow-y-auto overscroll-contain"
       style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
+      onTouchStart={handlePullStart}
+      onTouchMove={handlePullMove}
+      onTouchEnd={handlePullEnd}
     >
       <TopBar />
+
+      {/* Pull-to-refresh indicator */}
+      <AnimatePresence>
+        {(pulling || refreshing) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed left-1/2 -translate-x-1/2 z-50 flex items-center justify-center"
+            style={{ top: 'calc(3.5rem + env(safe-area-inset-top) + 8px)' }}
+          >
+            <motion.div
+              animate={refreshing ? { rotate: 360 } : { rotate: pullDistance * 3 }}
+              transition={refreshing ? { repeat: Infinity, duration: 0.8, ease: "linear" } : { type: "spring" }}
+              className={`w-8 h-8 rounded-full glass flex items-center justify-center shadow-lg ${pullDistance >= PULL_THRESHOLD || refreshing ? 'text-primary' : 'text-muted-foreground'}`}
+            >
+              <RefreshCw className="w-4 h-4" />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">
