@@ -263,7 +263,7 @@ const useTradingLeaderboard = (period: TimePeriod) => {
       const ids = Array.from(userMap.keys());
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url")
+        .select("id, display_name, avatar_url, verification_level")
         .in("id", ids);
 
       const pMap = new Map((profiles || []).map((p) => [p.id, p]));
@@ -272,7 +272,7 @@ const useTradingLeaderboard = (period: TimePeriod) => {
         ids.map((id) => {
           const s = userMap.get(id)!;
           const p = pMap.get(id);
-          return { userId: id, name: p?.display_name || "Anonymous", avatar: p?.avatar_url || null, ...s };
+          return { userId: id, name: p?.display_name || "Anonymous", avatar: p?.avatar_url || null, verificationLevel: (p?.verification_level || "none") as VerificationLevel, ...s };
         })
       );
       setLoading(false);
