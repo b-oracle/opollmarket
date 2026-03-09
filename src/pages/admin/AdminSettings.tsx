@@ -197,7 +197,8 @@ const AdminSettings = () => {
         details: {
           admin_fee_percent: adminNum,
           creator_fee_percent: creatorNum,
-          exit_fee_percent: exitFeeNum,
+           exit_fee_percent: exitFeeNum,
+           withdrawal_fee_percent: withdrawalFeeNum,
           copy_trade_commission_percent: copyTradeCommissionNum,
           min_withdrawal_amount: minWithdrawNum,
           withdrawal_cooldown_minutes: withdrawalCooldownNum,
