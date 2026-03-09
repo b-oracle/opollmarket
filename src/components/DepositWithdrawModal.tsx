@@ -78,6 +78,8 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
   const [partialInfo, setPartialInfo] = useState<PartialInfo | null>(null);
   const [depositCreatedAt, setDepositCreatedAt] = useState<number | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<string>("");
+  const [showSecurityModal, setShowSecurityModal] = useState(false);
+  const [securitySettings, setSecuritySettings] = useState<{ require_pin: boolean; require_totp: boolean } | null>(null);
 
   useEffect(() => {
     if (open) {
