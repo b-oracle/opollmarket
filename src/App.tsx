@@ -119,7 +119,7 @@ const SocialTutorialTrigger = () => {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    if (user && shouldShowTutorial()) {
+    if (user && shouldShowTutorial(user.id)) {
       const timer = setTimeout(() => setShow(true), 1200);
       return () => clearTimeout(timer);
     }
@@ -127,7 +127,7 @@ const SocialTutorialTrigger = () => {
 
   return (
     <AnimatePresence>
-      {show && <SocialTutorial onComplete={() => setShow(false)} />}
+      {show && <SocialTutorial onComplete={() => setShow(false)} userId={user?.id} />}
     </AnimatePresence>
   );
 };

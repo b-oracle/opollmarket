@@ -180,7 +180,7 @@ const SocialTutorial = ({ onComplete, userId }: SocialTutorialProps) => {
 
   const handleSkip = useCallback(() => {
     haptic.light();
-    markTutorialSeen();
+    markTutorialSeen(userId);
     navigate("/", { replace: true });
     onComplete();
   }, [onComplete, navigate]);
