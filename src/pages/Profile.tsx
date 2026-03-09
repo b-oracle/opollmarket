@@ -206,7 +206,7 @@ const Profile = () => {
   const [swipeHintDismissed, setSwipeHintDismissed] = useState(() => localStorage.getItem("social_swipe_used") === "1");
   const [socialOpen, setSocialOpen] = useState(false);
 
-  // Swipe-right detection — open social overlay
+  // Swipe-left from right edge detection — open social overlay
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const touchStartedInEdge = useRef(false);
@@ -214,12 +214,15 @@ const Profile = () => {
     const x = e.touches[0].clientX;
     touchStartX.current = x;
     touchStartY.current = e.touches[0].clientY;
-    touchStartedInEdge.current = x < 40;
+    // Detect touch starting near the right edge of the screen
+    touchStartedInEdge.current = x > window.innerWidth - 40;
   }, []);
-  const handleTouchEnd = useCallback(() => {
+  const handleTouchEndCapture = useCallback((e: React.TouchEvent) => {
     if (!touchStartedInEdge.current || !user) return;
-    const dx = (window as any).__lastTouchEndX - touchStartX.current;
-    const dy = Math.abs((window as any).__lastTouchEndY - touchStartY.current);
+    const endX = e.changedTouches[0].clientX;
+    const endY = e.changedTouches[0].clientY;
+    const dx = touchStartX.current - endX; // positive = swiped left
+    const dy = Math.abs(endY - touchStartY.current);
     if (dx > 60 && dy < 80) {
       if (!swipeHintDismissed) {
         localStorage.setItem("social_swipe_used", "1");
@@ -228,11 +231,6 @@ const Profile = () => {
       setSocialOpen(true);
     }
   }, [swipeHintDismissed, user]);
-  const handleTouchEndCapture = useCallback((e: React.TouchEvent) => {
-    (window as any).__lastTouchEndX = e.changedTouches[0].clientX;
-    (window as any).__lastTouchEndY = e.changedTouches[0].clientY;
-    handleTouchEnd();
-  }, [handleTouchEnd]);
 
   // Fetch profile data
   const { data: profile } = useQuery({
