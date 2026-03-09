@@ -523,7 +523,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           {/* Prediction buttons */}
           {isEnded ? (
             <div className="w-full text-center py-3 rounded-xl bg-muted/50 border border-border/50">
-              <span className="text-sm font-semibold text-muted-foreground">Market Ended — Awaiting Resolution</span>
+              <span className="text-sm font-semibold text-muted-foreground">{market.status === "resolved" ? "Market Ended — Resolution Completed" : market.status === "cancelled" ? "Market Cancelled" : "Market Ended — Awaiting Resolution"}</span>
             </div>
           ) : (
             <motion.div
