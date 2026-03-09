@@ -160,12 +160,18 @@ const SocialTutorialTrigger = () => {
   useEffect(() => {
     if (dismissed) return;
     if (!isFeatureEnabled("social_tutorial")) return;
-    if (user && shouldShowTutorial(user.id)) {
-      const timer = setTimeout(() => setShow(true), 1200);
-      return () => clearTimeout(timer);
-    } else {
-      setShow(false);
-    }
+    if (!user) { setShow(false); return; }
+
+    let cancelled = false;
+    checkTutorialSeenFromDB(user.id).then((seen) => {
+      if (cancelled) return;
+      if (!seen) {
+        setTimeout(() => { if (!cancelled) setShow(true); }, 1200);
+      } else {
+        setShow(false);
+      }
+    });
+    return () => { cancelled = true; };
   }, [user, dismissed, isFeatureEnabled]);
 
   const handleComplete = () => {
