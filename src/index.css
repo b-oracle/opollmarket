@@ -112,6 +112,7 @@
     touch-action: manipulation;
     -webkit-text-size-adjust: 100%;
     background-color: hsl(var(--background));
+    overscroll-behavior-x: none;
   }
 
   body {
@@ -121,6 +122,7 @@
     height: 100%;
     height: -webkit-fill-available;
     overscroll-behavior: none;
+    overscroll-behavior-x: none;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
     -webkit-user-select: none;
