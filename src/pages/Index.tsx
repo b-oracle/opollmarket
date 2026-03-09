@@ -189,21 +189,32 @@ const Index = () => {
     });
   }, [markets, boostedMarketIds, filter, searchQuery, categoryFilter]);
 
-  const { data: quickTradeVolume = 0 } = useQuery({
-    queryKey: ["quick-trade-volume"],
+  const { data: platformStats } = useQuery({
+    queryKey: ["platform-stats"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("quick_bets")
-        .select("amount")
-        .in("status", ["won", "lost", "refunded"]);
-      if (error) return 0;
-      return (data ?? []).reduce((s, b) => s + Number(b.amount), 0);
+      const [marketsRes, usersRes, volumeRes, qtRes] = await Promise.all([
+        supabase.from("markets").select("*", { count: "exact", head: true }),
+        supabase.from("profiles").select("*", { count: "exact", head: true }),
+        supabase.from("markets").select("volume"),
+        supabase.from("quick_bets").select("amount").in("status", ["won", "lost", "refunded"]),
+      ]);
+      const marketVolume = (volumeRes.data ?? []).reduce((s, m) => s + Number(m.volume), 0);
+      const qtVolume = (qtRes.data ?? []).reduce((s, b) => s + Number(b.amount), 0);
+      return {
+        totalVolume: marketVolume + qtVolume,
+        totalUsers: usersRes.count ?? 0,
+        totalMarkets: marketsRes.count ?? 0,
+        lastUpdated: new Date(),
+      };
     },
     staleTime: 60_000,
+    refetchInterval: 60_000,
   });
 
-  const totalVolume = markets.reduce((s, m) => s + m.volume, 0) + quickTradeVolume;
-  const totalTraders = markets.reduce((s, m) => s + m.participants, 0);
+  const totalVolume = platformStats?.totalVolume ?? 0;
+  const totalUsers = platformStats?.totalUsers ?? 0;
+  const totalMarkets = platformStats?.totalMarkets ?? 0;
+  const statsLastUpdated = platformStats?.lastUpdated;
   const liveCount = useMemo(() => markets.filter((m) => m.autoResolve && ((m.sportType && m.sportMatchId) || m.autoResolveAsset)).length, [markets]);
 
   // No blocking loader — render page immediately, show inline spinner in content area
