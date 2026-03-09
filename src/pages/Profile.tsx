@@ -204,24 +204,29 @@ const Profile = () => {
   const [editBio, setEditBio] = useState("");
   const [editIsPublic, setEditIsPublic] = useState(true);
   const [swipeHintDismissed, setSwipeHintDismissed] = useState(() => localStorage.getItem("social_swipe_used") === "1");
-  const [swipeDragX, setSwipeDragX] = useState(0);
-  const swipingActive = useRef(false);
+  const [revealX, setRevealX] = useState(0);
+  const revealAnimating = useRef(false);
 
-  // Swipe-left from right edge detection — navigate to social profile with drag follow
+  // Slide-to-reveal from right edge — reveals social profile panel
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const touchStartedInEdge = useRef(false);
   const touchLockedDir = useRef<"horizontal" | "vertical" | null>(null);
+  const isDragging = useRef(false);
+  const screenW = typeof window !== "undefined" ? window.innerWidth : 400;
+
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (revealAnimating.current) return;
     const x = e.touches[0].clientX;
     touchStartX.current = x;
     touchStartY.current = e.touches[0].clientY;
     touchStartedInEdge.current = x > window.innerWidth - 40;
     touchLockedDir.current = null;
-    swipingActive.current = false;
+    isDragging.current = false;
   }, []);
+
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!touchStartedInEdge.current || !user) return;
+    if (!touchStartedInEdge.current || !user || revealAnimating.current) return;
     const dx = touchStartX.current - e.touches[0].clientX; // positive = swiped left
     const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
     if (!touchLockedDir.current) {
@@ -232,31 +237,36 @@ const Profile = () => {
     }
     if (touchLockedDir.current !== "horizontal") return;
     if (dx > 0) {
-      swipingActive.current = true;
-      setSwipeDragX(-Math.min(dx * 0.6, window.innerWidth * 0.7));
+      isDragging.current = true;
+      setRevealX(Math.min(dx, window.innerWidth));
     }
   }, [user]);
-  const handleTouchEndCapture = useCallback((e: React.TouchEvent) => {
-    if (!swipingActive.current) {
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!isDragging.current) {
       touchStartedInEdge.current = false;
       return;
     }
     const endX = e.changedTouches[0].clientX;
     const dx = touchStartX.current - endX;
-    if (dx > 80) {
+    if (dx > 100) {
+      // Commit: animate panel fully open, then navigate
       if (!swipeHintDismissed) {
         localStorage.setItem("social_swipe_used", "1");
         setSwipeHintDismissed(true);
       }
-      setSwipeDragX(-window.innerWidth);
+      revealAnimating.current = true;
+      setRevealX(window.innerWidth);
       setTimeout(() => {
         navigate(`/user/${user!.id}`);
-        setSwipeDragX(0);
-      }, 200);
+        setRevealX(0);
+        revealAnimating.current = false;
+      }, 250);
     } else {
-      setSwipeDragX(0);
+      // Snap back
+      setRevealX(0);
     }
-    swipingActive.current = false;
+    isDragging.current = false;
     touchStartedInEdge.current = false;
   }, [swipeHintDismissed, user, navigate]);
 
