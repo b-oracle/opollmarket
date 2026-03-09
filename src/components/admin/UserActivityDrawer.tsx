@@ -27,6 +27,66 @@ const TABS: { key: Tab; label: string; icon: any }[] = [
   { key: "referrals", label: "Referrals", icon: Gift },
 ];
 
+const SecuritySummary = ({ userId }: { userId: string }) => {
+  const { data: sec, isLoading } = useQuery({
+    queryKey: ["admin-user-security", userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_security_settings" as any)
+        .select("pin_enabled, totp_enabled, require_pin_login, require_totp_login, require_pin_withdrawal, require_totp_withdrawal")
+        .eq("user_id", userId)
+        .maybeSingle();
+      return data as any;
+    },
+    enabled: !!userId,
+  });
+
+  if (isLoading || !sec) return null;
+
+  const pinOn = sec.pin_enabled;
+  const totpOn = sec.totp_enabled;
+  const loginProtected = sec.require_pin_login || sec.require_totp_login;
+  const withdrawProtected = sec.require_pin_withdrawal || sec.require_totp_withdrawal;
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+      {pinOn ? (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">
+          <Lock className="w-3 h-3" /> PIN
+        </span>
+      ) : (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-semibold">
+          <Lock className="w-3 h-3" /> No PIN
+        </span>
+      )}
+      {totpOn ? (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">
+          <Shield className="w-3 h-3" /> 2FA
+        </span>
+      ) : (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-semibold">
+          <ShieldOff className="w-3 h-3" /> No 2FA
+        </span>
+      )}
+      {loginProtected && (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">
+          Login Protected
+        </span>
+      )}
+      {withdrawProtected && (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">
+          Withdrawal Protected
+        </span>
+      )}
+      {!pinOn && !totpOn && (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-[10px] font-semibold">
+          No Security
+        </span>
+      )}
+    </div>
+  );
+};
+
 const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDrawerProps) => {
   const [activeTab, setActiveTab] = useState<Tab>("transactions");
   const [loading, setLoading] = useState(false);
