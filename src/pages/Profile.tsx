@@ -199,9 +199,9 @@ const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
 
   if (isLoading) return null;
 
-  const pinActive = secSettings.pin_enabled;
-  const totpActive = secSettings.totp_enabled;
-  const anyLoginSec = secSettings.require_pin_login || secSettings.require_totp_login;
+  const pinActive = secSettings?.pin_enabled ?? false;
+  const totpActive = secSettings?.totp_enabled ?? false;
+  const anyLoginSec = (secSettings?.require_pin_login ?? false) || (secSettings?.require_totp_login ?? false);
 
   return (
     <div className="mb-6">
