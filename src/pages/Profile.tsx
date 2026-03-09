@@ -204,7 +204,6 @@ const Profile = () => {
   const [editBio, setEditBio] = useState("");
   const [editIsPublic, setEditIsPublic] = useState(true);
   const [swipeHintDismissed, setSwipeHintDismissed] = useState(() => localStorage.getItem("social_swipe_used") === "1");
-  const [socialOpen, setSocialOpen] = useState(false);
 
   // Swipe-left from right edge detection — open social overlay
   const touchStartX = useRef(0);
