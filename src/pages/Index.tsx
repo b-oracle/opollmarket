@@ -354,6 +354,11 @@ const Index = () => {
                     <p className="text-[11px] text-muted-foreground">{label}</p>
                   </motion.div>
                 ))}
+                {statsLastUpdated && (
+                  <p className="col-span-3 text-[9px] text-muted-foreground/50 text-center mt-1">
+                    Updated {statsLastUpdated.toLocaleTimeString()}
+                  </p>
+                )}
               </div>
             </div>
           </div>
