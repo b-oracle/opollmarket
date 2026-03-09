@@ -363,8 +363,8 @@ const Index = () => {
         <div className="grid grid-cols-3 gap-3 mb-8 lg:hidden">
           {[
             { icon: TrendingUp, label: "Volume", value: formatVolume(totalVolume) },
-            { icon: Users, label: "Users", value: totalTraders.toLocaleString() },
-            { icon: Zap, label: "Markets", value: markets.length.toString() },
+            { icon: Users, label: "Users", value: totalUsers.toLocaleString() },
+            { icon: Zap, label: "Markets", value: totalMarkets.toString() },
           ].map(({ icon: Icon, label, value }, i) => (
             <motion.div key={label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.1 }} className="glass rounded-xl p-3 text-center">
               <Icon className="w-4 h-4 text-primary mx-auto mb-1" />
@@ -372,6 +372,11 @@ const Index = () => {
               <p className="text-[10px] text-muted-foreground">{label}</p>
             </motion.div>
           ))}
+          {statsLastUpdated && (
+            <p className="col-span-3 text-[9px] text-muted-foreground/50 text-center -mt-2">
+              Updated {statsLastUpdated.toLocaleTimeString()}
+            </p>
+          )}
         </div>
 
         <motion.button
