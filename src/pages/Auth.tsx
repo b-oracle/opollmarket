@@ -6,6 +6,7 @@ import { Eye, EyeOff, LogIn, UserPlus, Gift, CheckCircle2, Mail } from "lucide-r
 import { supabase } from "@/integrations/supabase/client";
 import { getCanonicalOrigin } from "@/lib/canonical";
 import { lovable } from "@/integrations/lovable/index";
+import SecurityVerificationModal from "@/components/SecurityVerificationModal";
 
 const useIsDappBrowser = () =>
   useMemo(() => {
