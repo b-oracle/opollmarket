@@ -124,9 +124,9 @@ const NotificationBell = () => {
               initial={{ opacity: 0, y: -8, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.95 }}
-              className="fixed left-2 right-2 sm:left-auto sm:right-0 sm:absolute sm:w-80 top-14 sm:top-12 max-h-[70dvh] overflow-y-auto rounded-xl border border-border shadow-xl z-50 bg-card/95 backdrop-blur-[30px]"
+              className="fixed left-2 right-2 sm:left-auto sm:right-0 sm:absolute sm:w-80 top-14 sm:top-12 max-h-[70dvh] flex flex-col rounded-xl border border-border shadow-xl z-50 bg-card/95 backdrop-blur-[30px]"
             >
-              <div className="flex items-center justify-between p-3 border-b border-border/30">
+              <div className="flex items-center justify-between p-3 border-b border-border/30 shrink-0">
                 <h3 className="text-sm font-bold">Notifications</h3>
                 <div className="flex items-center gap-1">
                   {unreadCount > 0 && (
@@ -142,7 +142,7 @@ const NotificationBell = () => {
 
               {/* Push notification toggle */}
               {pushSupported && (
-                <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-border/30 shrink-0">
                   <div className="flex items-center gap-1.5">
                     <BellRing className="w-3.5 h-3.5 text-muted-foreground" />
                     <span className="text-[11px] text-muted-foreground">Push alerts</span>
@@ -170,6 +170,7 @@ const NotificationBell = () => {
                 </div>
               )}
 
+              <div className="overflow-y-auto flex-1 min-h-0">
               {notifications.length === 0 ? (
                 <div className="p-6 text-center text-sm text-muted-foreground">No notifications yet</div>
               ) : (
