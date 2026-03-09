@@ -50,7 +50,7 @@ const PinInput = ({ length = 6, value, onChange, disabled, autoFocus = true, err
         <input
           key={i}
           ref={(el) => { inputRefs.current[i] = el; }}
-          type="text"
+          type="password"
           inputMode="numeric"
           maxLength={1}
           value={value[i] || ""}
