@@ -340,6 +340,31 @@ const AdminWithdrawals = () => {
           </div>
         </>
       )}
+
+      {/* QR Code Modal */}
+      {qrAddress && (
+        <>
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50" onClick={() => setQrAddress(null)} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-xs bg-card border border-border rounded-2xl p-6 shadow-lg text-center">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold">Wallet QR Code</h3>
+              <button onClick={() => setQrAddress(null)} className="p-1 rounded hover:bg-muted"><X className="w-4 h-4" /></button>
+            </div>
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrAddress)}`}
+              alt="QR Code"
+              className="mx-auto w-48 h-48 rounded-lg bg-white p-2"
+            />
+            <p className="font-mono text-[10px] text-muted-foreground mt-3 break-all">{qrAddress}</p>
+            <button
+              onClick={() => { navigator.clipboard.writeText(qrAddress); toast.success("Copied!"); }}
+              className="mt-3 w-full py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-1.5"
+            >
+              <Copy className="w-3.5 h-3.5" /> Copy Address
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 };
