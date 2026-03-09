@@ -593,9 +593,21 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                       Buy No {noPercent}¢
                     </button>
                   </div>
-                  <p className="text-[10px] text-muted-foreground/50 font-medium text-center lg:hidden">
-                    ← Swipe left for NO · Swipe right for YES →
-                  </p>
+                  {isActive && !localStorage.getItem("feed_swipe_hint_seen") && (
+                    <motion.p
+                      className="text-[10px] text-muted-foreground/50 font-medium text-center lg:hidden"
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 1.2, duration: 0.5, ease: "easeOut" }}
+                      onAnimationComplete={() => {
+                        setTimeout(() => {
+                          localStorage.setItem("feed_swipe_hint_seen", "1");
+                        }, 3000);
+                      }}
+                    >
+                      ← Swipe left for NO · Swipe right for YES →
+                    </motion.p>
+                  )}
                 </div>
               )}
             </motion.div>
