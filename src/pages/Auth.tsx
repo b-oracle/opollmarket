@@ -84,8 +84,29 @@ const Auth = () => {
           return;
         }
         // Remember display name for personalized greeting
-        const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", (await supabase.auth.getUser()).data.user?.id ?? "").single();
-        if (profile?.display_name) localStorage.setItem("remembered_display_name", profile.display_name);
+        const { data: { user: loggedInUser } } = await supabase.auth.getUser();
+        const userId = loggedInUser?.id;
+        if (userId) {
+          const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", userId).single();
+          if (profile?.display_name) localStorage.setItem("remembered_display_name", profile.display_name);
+
+          // Check if login security is required
+          const { data: secData } = await supabase
+            .from("user_security_settings" as any)
+            .select("pin_enabled, totp_enabled, require_pin_login, require_totp_login")
+            .eq("user_id", userId)
+            .maybeSingle();
+
+          const sec = secData as unknown as { pin_enabled: boolean; totp_enabled: boolean; require_pin_login: boolean; require_totp_login: boolean } | null;
+          const needPin = sec?.pin_enabled && sec?.require_pin_login;
+          const needTotp = sec?.totp_enabled && sec?.require_totp_login;
+
+          if (needPin || needTotp) {
+            setLoginSecReqs({ require_pin: !!needPin, require_totp: !!needTotp });
+            setShowLoginSecurity(true);
+            return;
+          }
+        }
         toast.success("Logged in successfully!");
         navigate("/");
         return;
