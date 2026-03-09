@@ -446,6 +446,8 @@ const Profile = () => {
           .update({ wallet_address: address })
           .eq("id", user.id);
         queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
+        // Refresh verification level
+        supabase.functions.invoke("update-verification").catch(() => {});
       })();
     }
   }, [user, isConnected, address, profile]);
