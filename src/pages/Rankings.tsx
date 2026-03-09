@@ -335,6 +335,7 @@ interface StreakUser {
   userId: string;
   name: string;
   avatar: string | null;
+  verificationLevel: VerificationLevel;
   currentStreak: number;
   bestStreak: number;
 }
