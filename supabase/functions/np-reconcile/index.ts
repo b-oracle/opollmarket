@@ -375,7 +375,7 @@ Deno.serve(async (req) => {
         });
 
         await adminClient.from("audit_logs").insert({
-          actor_id: user.id,
+          actor_id: userId,
           action: "np_fee_correction",
           target_type: "balance",
           target_id: userId,
