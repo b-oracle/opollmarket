@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
     // Get user profile
     const { data: profile } = await adminClient
       .from("profiles")
-      .select("wallet_address")
+      .select("wallet_address, avatar_url")
       .eq("id", user.id)
       .single();
 
