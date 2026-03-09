@@ -154,6 +154,7 @@ const App = () => (
                       <MaintenanceGuard>
                       <Routes>
                         <Route path="/" element={<Index />} />
+                        <Route path="/market/:id" element={<MarketDetail />} />
                         <Route path="/feed" element={<FeatureGate featureKey="feed"><Feed /></FeatureGate>} />
                         <Route path="/create" element={<FeatureGate featureKey="create_market"><Create /></FeatureGate>} />
                         <Route path="/rankings" element={<FeatureGate featureKey="rankings"><Rankings /></FeatureGate>} />
