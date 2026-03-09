@@ -129,7 +129,7 @@ const UserProfile = () => {
       if (!id) return null;
       const { data } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url, is_public, bio, created_at, wallet_address")
+        .select("id, display_name, avatar_url, is_public, bio, created_at, wallet_address, verification_level")
         .eq("id", id)
         .maybeSingle();
       return data;
