@@ -22,6 +22,7 @@ const typeConfig: Record<string, { icon: typeof Bell; colorClass: string }> = {
   resolution: { icon: TrendingUp, colorClass: "text-muted-foreground bg-muted/50" },
   refund: { icon: RefreshCw, colorClass: "text-primary bg-primary/10" },
   info: { icon: Info, colorClass: "text-muted-foreground bg-muted/50" },
+  follow: { icon: UserPlus, colorClass: "text-primary bg-primary/10" },
 };
 
 const formatTimeAgo = (date: string) => {
