@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Auth check
+    // Auth check — use getClaims first, fallback to getUser
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -99,18 +99,39 @@ Deno.serve(async (req) => {
       });
     }
 
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
     const userClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
+      anonKey,
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: { user }, error: userError } = await userClient.auth.getUser();
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const token = authHeader.replace("Bearer ", "");
+    let userId: string | null = null;
+
+    // Try getClaims first (works with signing-keys)
+    try {
+      const { data: claimsData, error: claimsError } = await (userClient.auth as any).getClaims(token);
+      if (!claimsError && claimsData?.claims?.sub) {
+        userId = claimsData.claims.sub;
+        console.log("Auth via getClaims, userId:", userId);
+      }
+    } catch (e) {
+      console.log("getClaims not available, falling back to getUser");
+    }
+
+    // Fallback to getUser
+    if (!userId) {
+      const { data: { user }, error: userError } = await userClient.auth.getUser();
+      if (userError || !user) {
+        console.error("Auth failed:", userError?.message);
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      userId = user.id;
+      console.log("Auth via getUser, userId:", userId);
     }
 
     const adminClient = createClient(
@@ -118,8 +139,8 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { data: isAdmin } = await adminClient.rpc("has_role", { _user_id: user.id, _role: "admin" });
-    const { data: isSuperAdmin } = await adminClient.rpc("has_role", { _user_id: user.id, _role: "super_admin" });
+    const { data: isAdmin } = await adminClient.rpc("has_role", { _user_id: userId, _role: "admin" });
+    const { data: isSuperAdmin } = await adminClient.rpc("has_role", { _user_id: userId, _role: "super_admin" });
     if (!isAdmin && !isSuperAdmin) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
