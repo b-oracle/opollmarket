@@ -28,6 +28,7 @@ interface Trader {
   userId: string;
   name: string;
   avatar: string | null;
+  verificationLevel: VerificationLevel;
   pnl: number;
   trades: number;
   volume: number;
