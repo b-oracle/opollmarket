@@ -113,8 +113,8 @@ const DesktopSidebar = () => {
           </button>
         )}
       </div>
-      <SignOutConfirmDialog open={signOutOpen} onClose={() => setSignOutOpen(false)} />
     </aside>
+    <SignOutConfirmDialog open={signOutOpen} onClose={() => setSignOutOpen(false)} />
   );
 };
 
