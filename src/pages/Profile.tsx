@@ -228,7 +228,7 @@ const Profile = () => {
         localStorage.setItem("social_swipe_used", "1");
         setSwipeHintDismissed(true);
       }
-      setSocialOpen(true);
+      navigate(`/user/${user.id}`);
     }
   }, [swipeHintDismissed, user]);
 
