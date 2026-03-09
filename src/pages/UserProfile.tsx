@@ -12,7 +12,7 @@ import { useFollow, useFollowCounts } from "@/hooks/useFollow";
 import { useCopySettings } from "@/hooks/useCopySettings";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
-import NftBadge, { isNftAvatar } from "@/components/NftBadge";
+import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Users, Heart, Trophy, Gift, UserPlus, UserMinus, Loader2,
@@ -289,8 +289,7 @@ const UserProfile = () => {
   );
 
   // User rank (simple: count users with more profit)
-  const hasNftAvatar = isNftAvatar(profile?.avatar_url);
-  const verificationLevel = (profile as any)?.verification_level || (hasNftAvatar ? "blue" : "none");
+  const verificationLevel = ((profile as any)?.verification_level || "none") as VerificationLevel;
   const isVerified = verificationLevel !== "none";
   const displayName = profile?.display_name || "Anonymous";
 
