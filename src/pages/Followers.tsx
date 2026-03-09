@@ -8,7 +8,7 @@ import BottomNav from "@/components/BottomNav";
 import FollowButton from "@/components/FollowButton";
 import { ArrowLeft, Users, UserCheck, Loader2, Search, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import NftBadge, { isNftAvatar } from "@/components/NftBadge";
+import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 
 const LAST_SEEN_KEY = "followers_last_seen";
 const ITEMS_PER_PAGE = 10;
