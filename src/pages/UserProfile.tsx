@@ -468,7 +468,7 @@ const UserProfile = () => {
           {!isOwnProfile && user && (
             <div className="flex gap-2 mt-4">
               <button
-                onClick={toggleFollow}
+                onClick={handleFollowClick}
                 disabled={followLoading}
                 className={`flex-1 py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all ${
                   isFollowing
