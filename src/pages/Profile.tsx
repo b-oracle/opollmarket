@@ -278,7 +278,7 @@ const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
                 <p className="text-xs text-muted-foreground">Require Google Authenticator code</p>
               </div>
               <Switch
-                checked={secSettings.require_totp_withdrawal}
+                checked={secSettings?.require_totp_withdrawal ?? false}
                 onCheckedChange={(v) => updateToggle("require_totp_withdrawal", v)}
               />
             </div>
