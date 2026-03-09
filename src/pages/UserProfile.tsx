@@ -21,6 +21,16 @@ import {
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Switch } from "@/components/ui/switch";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { getCanonicalOrigin } from "@/lib/canonical";
 
@@ -46,6 +56,7 @@ const UserProfile = () => {
   const [activeTab, setActiveTab] = useState<"markets" | "predictions" | "rank">("markets");
   const [shareOpen, setShareOpen] = useState(false);
   const profileCardRef = useRef<HTMLDivElement>(null);
+  const [showUnfollowConfirm, setShowUnfollowConfirm] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Pull-to-refresh state
@@ -54,6 +65,19 @@ const UserProfile = () => {
   const [refreshing, setRefreshing] = useState(false);
   const touchStartY = useRef(0);
   const isPulling = useRef(false);
+
+  const handleFollowClick = useCallback(() => {
+    if (isFollowing) {
+      setShowUnfollowConfirm(true);
+    } else {
+      toggleFollow();
+    }
+  }, [isFollowing, toggleFollow]);
+
+  const handleConfirmUnfollow = useCallback(() => {
+    setShowUnfollowConfirm(false);
+    toggleFollow();
+  }, [toggleFollow]);
 
   const handlePullStart = useCallback((e: React.TouchEvent) => {
     const container = containerRef.current;
@@ -305,7 +329,7 @@ const UserProfile = () => {
             <p className="text-sm text-muted-foreground mt-1">This profile is private</p>
             {!isOwnProfile && user && (
               <button
-                onClick={toggleFollow}
+                onClick={handleFollowClick}
                 disabled={followLoading}
                 className="mt-4 px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center gap-2"
               >
@@ -444,7 +468,7 @@ const UserProfile = () => {
           {!isOwnProfile && user && (
             <div className="flex gap-2 mt-4">
               <button
-                onClick={toggleFollow}
+                onClick={handleFollowClick}
                 disabled={followLoading}
                 className={`flex-1 py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all ${
                   isFollowing
@@ -734,6 +758,26 @@ const UserProfile = () => {
         )}
       </div>
       <BottomNav />
+
+      <AlertDialog open={showUnfollowConfirm} onOpenChange={setShowUnfollowConfirm}>
+        <AlertDialogContent className="max-w-xs rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base">Unfollow {displayName}?</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
+              You will stop receiving notifications about their activity and copy-trade settings will be removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl text-sm">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmUnfollow}
+              className="rounded-xl text-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Unfollow
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
