@@ -514,6 +514,64 @@ const AdminSettings = () => {
           </CardContent>
         </Card>
 
+        {/* ─── Verified Member Benefits ─── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5" /> Verified Member Benefits
+            </CardTitle>
+            <CardDescription>Configure trending multipliers and revenue sharing for verified creators.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Card className="border-dashed">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2"><Flame className="w-4 h-4" /> Trending Multiplier</CardTitle>
+                <CardDescription className="text-xs">Verified creators' markets get a boosted trending score.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Blue Tier (×)</Label>
+                    <Input type="number" min={1} max={5} step={0.1} value={blueTrendingMult} onChange={(e) => setBlueTrendingMult(e.target.value)} placeholder="1.2" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Gold Tier (×)</Label>
+                    <Input type="number" min={1} max={5} step={0.1} value={goldTrendingMult} onChange={(e) => setGoldTrendingMult(e.target.value)} placeholder="1.5" />
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground">A verified creator's market trending score is multiplied by this factor.</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-dashed">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2"><DollarSign className="w-4 h-4" /> Revenue Sharing</CardTitle>
+                <CardDescription className="text-xs">Percentage of creator fees from own markets shared with verified creators as bonus balance.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Blue Tier (%)</Label>
+                    <Input type="number" min={0} max={100} step={0.5} value={blueRevenueShare} onChange={(e) => setBlueRevenueShare(e.target.value)} placeholder="0" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Gold Tier (%)</Label>
+                    <Input type="number" min={0} max={100} step={0.5} value={goldRevenueShare} onChange={(e) => setGoldRevenueShare(e.target.value)} placeholder="0" />
+                  </div>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-2 space-y-0.5">
+                  <p className="text-[10px] text-muted-foreground font-medium">Preview (based on {creatorNum}% creator fee)</p>
+                  <div className="flex flex-wrap gap-2 text-[10px]">
+                    <span className="px-1.5 py-0.5 rounded bg-background border border-blue-500/30 text-blue-600">Blue: {blueRevenueShareNum}% of creator fee</span>
+                    <span className="px-1.5 py-0.5 rounded bg-background border border-yellow-500/30 text-yellow-600">Gold: {goldRevenueShareNum}% of creator fee</span>
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground">Distributed automatically every 24h to verified creators' bonus balance from their own resolved markets.</p>
+              </CardContent>
+            </Card>
+          </CardContent>
+        </Card>
+
         {/* ─── Creator Gate ─── */}
         <Card>
           <CardHeader>
