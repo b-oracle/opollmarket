@@ -516,8 +516,7 @@ const Profile = () => {
         .from("transactions")
         .select("*")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
+        .order("created_at", { ascending: false });
       return data || [];
     },
     enabled: !!user,
@@ -974,16 +973,31 @@ const Profile = () => {
         </div>
 
         <div className="grid grid-cols-3 gap-3 mb-6">
-          {[
-            { label: "Predictions", value: positions.length.toString() },
-            { label: "Win Rate", value: "—" },
-            { label: "PnL", value: "—" },
-          ].map(({ label, value }) => (
-            <div key={label} className="glass rounded-xl p-3 text-center">
-              <p className="text-lg font-bold">{value}</p>
-              <p className="text-[10px] text-muted-foreground">{label}</p>
-            </div>
-          ))}
+          {(() => {
+            const buyTxns = transactions.filter((t: any) => t.type === "buy" && t.status === "confirmed");
+            const sellTxns = transactions.filter((t: any) => t.type === "sell" && t.status === "confirmed");
+            const totalBought = buyTxns.reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
+            const totalSold = sellTxns.reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
+            // PnL from payouts received minus amount spent on buys
+            const payoutTxns = transactions.filter((t: any) => t.type === "payout" && t.status === "confirmed");
+            const totalPayouts = payoutTxns.reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
+            const pnl = totalPayouts + totalSold - totalBought;
+            const totalPredictions = buyTxns.length;
+            // Win rate: payouts count vs total resolved (payouts + losses)
+            const resolvedCount = payoutTxns.length + transactions.filter((t: any) => t.type === "loss").length;
+            const winRate = resolvedCount > 0 ? Math.round((payoutTxns.length / resolvedCount) * 100) : null;
+
+            return [
+              { label: "Predictions", value: totalPredictions.toString() },
+              { label: "Win Rate", value: winRate !== null ? `${winRate}%` : "—" },
+              { label: "PnL", value: pnl !== 0 ? `${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}` : "—" },
+            ].map(({ label, value }) => (
+              <div key={label} className="glass rounded-xl p-3 text-center">
+                <p className={`text-lg font-bold ${label === "PnL" && pnl > 0 ? "text-primary" : label === "PnL" && pnl < 0 ? "text-destructive" : ""}`}>{value}</p>
+                <p className="text-[10px] text-muted-foreground">{label}</p>
+              </div>
+            ));
+          })()}
         </div>
 
         {/* Copy Trade Stats */}
