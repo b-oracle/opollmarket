@@ -114,7 +114,7 @@ STRICT RULES:
 6. Keep answers concise, friendly, and helpful. Use bullet points and short paragraphs.
 7. If you're unsure about something, say so rather than making up information.`;
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
