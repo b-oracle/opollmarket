@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
+import bcrypt from "npm:bcryptjs@2.4.3";
 import { TOTP } from "https://esm.sh/otpauth@9.3.6";
 
 const corsHeaders = {
@@ -93,7 +93,6 @@ Deno.serve(async (req) => {
     }
 
     if (valid) {
-      // Update last_verified_at timestamp
       await adminClient
         .from("user_security_settings")
         .update({ last_verified_at: new Date().toISOString() })
