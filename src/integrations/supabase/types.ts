@@ -994,6 +994,7 @@ export type Database = {
           referred_by: string | null
           social_tutorial_seen: boolean
           updated_at: string
+          verification_level: string
           wallet_address: string | null
         }
         Insert: {
@@ -1007,6 +1008,7 @@ export type Database = {
           referred_by?: string | null
           social_tutorial_seen?: boolean
           updated_at?: string
+          verification_level?: string
           wallet_address?: string | null
         }
         Update: {
@@ -1020,6 +1022,7 @@ export type Database = {
           referred_by?: string | null
           social_tutorial_seen?: boolean
           updated_at?: string
+          verification_level?: string
           wallet_address?: string | null
         }
         Relationships: []
