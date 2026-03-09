@@ -3,9 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Loader2, Receipt, BarChart3, MessageSquare, Bookmark, Gift, TrendingUp, TrendingDown,
-  ArrowUpFromLine, ArrowDownToLine, Zap, Banknote
+  ArrowUpFromLine, ArrowDownToLine, Zap, Banknote, Lock, Shield, ShieldOff
 } from "lucide-react";
 import { format } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
 
 interface UserActivityDrawerProps {
   open: boolean;
