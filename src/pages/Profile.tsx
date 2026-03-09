@@ -204,24 +204,29 @@ const Profile = () => {
   const [editBio, setEditBio] = useState("");
   const [editIsPublic, setEditIsPublic] = useState(true);
   const [swipeHintDismissed, setSwipeHintDismissed] = useState(() => localStorage.getItem("social_swipe_used") === "1");
-  const [swipeDragX, setSwipeDragX] = useState(0);
-  const swipingActive = useRef(false);
+  const [revealX, setRevealX] = useState(0);
+  const revealAnimating = useRef(false);
 
-  // Swipe-left from right edge detection — navigate to social profile with drag follow
+  // Slide-to-reveal from right edge — reveals social profile panel
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const touchStartedInEdge = useRef(false);
   const touchLockedDir = useRef<"horizontal" | "vertical" | null>(null);
+  const isDragging = useRef(false);
+  const screenW = typeof window !== "undefined" ? window.innerWidth : 400;
+
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (revealAnimating.current) return;
     const x = e.touches[0].clientX;
     touchStartX.current = x;
     touchStartY.current = e.touches[0].clientY;
     touchStartedInEdge.current = x > window.innerWidth - 40;
     touchLockedDir.current = null;
-    swipingActive.current = false;
+    isDragging.current = false;
   }, []);
+
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!touchStartedInEdge.current || !user) return;
+    if (!touchStartedInEdge.current || !user || revealAnimating.current) return;
     const dx = touchStartX.current - e.touches[0].clientX; // positive = swiped left
     const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
     if (!touchLockedDir.current) {
@@ -232,31 +237,36 @@ const Profile = () => {
     }
     if (touchLockedDir.current !== "horizontal") return;
     if (dx > 0) {
-      swipingActive.current = true;
-      setSwipeDragX(-Math.min(dx * 0.6, window.innerWidth * 0.7));
+      isDragging.current = true;
+      setRevealX(Math.min(dx, window.innerWidth));
     }
   }, [user]);
-  const handleTouchEndCapture = useCallback((e: React.TouchEvent) => {
-    if (!swipingActive.current) {
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!isDragging.current) {
       touchStartedInEdge.current = false;
       return;
     }
     const endX = e.changedTouches[0].clientX;
     const dx = touchStartX.current - endX;
-    if (dx > 80) {
+    if (dx > 100) {
+      // Commit: animate panel fully open, then navigate
       if (!swipeHintDismissed) {
         localStorage.setItem("social_swipe_used", "1");
         setSwipeHintDismissed(true);
       }
-      setSwipeDragX(-window.innerWidth);
+      revealAnimating.current = true;
+      setRevealX(window.innerWidth);
       setTimeout(() => {
         navigate(`/user/${user!.id}`);
-        setSwipeDragX(0);
-      }, 200);
+        setRevealX(0);
+        revealAnimating.current = false;
+      }, 250);
     } else {
-      setSwipeDragX(0);
+      // Snap back
+      setRevealX(0);
     }
-    swipingActive.current = false;
+    isDragging.current = false;
     touchStartedInEdge.current = false;
   }, [swipeHintDismissed, user, navigate]);
 
@@ -443,14 +453,10 @@ const Profile = () => {
   return (
     <div
       className="min-h-dvh bg-background"
-      style={{
-        paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))',
-        transform: swipeDragX ? `translateX(${swipeDragX}px)` : undefined,
-        transition: swipingActive.current ? 'none' : 'transform 0.25s ease-out',
-      }}
+      style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEndCapture}
+      onTouchEnd={handleTouchEnd}
     >
       {/* Swipe hint glow on right edge */}
       {!swipeHintDismissed && (
@@ -472,6 +478,41 @@ const Profile = () => {
           </motion.div>
         </motion.div>
       )}
+
+      {/* Slide-to-reveal overlay panel */}
+      {revealX > 0 && (
+        <div
+          className="fixed inset-0 z-40 pointer-events-none"
+          style={{ backgroundColor: `rgba(0,0,0,${Math.min(revealX / screenW * 0.5, 0.5)})` }}
+        />
+      )}
+      {revealX > 0 && (
+        <div
+          className="fixed inset-y-0 right-0 z-50 bg-background shadow-2xl"
+          style={{
+            width: '100%',
+            maxWidth: '100vw',
+            transform: `translateX(${Math.max(screenW - revealX, 0)}px)`,
+            transition: isDragging.current ? 'none' : 'transform 0.25s ease-out',
+          }}
+        >
+          <div className="flex items-center justify-center h-full">
+            <div className="flex flex-col items-center gap-3 text-center px-6">
+              <div className="w-16 h-16 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center overflow-hidden">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
+                )}
+              </div>
+              <p className="text-sm font-bold">{displayName}</p>
+              <p className="text-xs text-muted-foreground">Social Profile</p>
+              <Users className="w-5 h-5 text-primary animate-pulse" />
+            </div>
+          </div>
+        </div>
+      )}
+
       <TopBar />
       <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
         {/* Avatar & Profile Edit */}
