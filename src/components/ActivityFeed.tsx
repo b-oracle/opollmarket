@@ -27,7 +27,7 @@ const ActivityFeed = ({ userId, isOwnProfile, isPublic }: ActivityFeedProps) => 
     queryFn: async () => {
       const { data } = await supabase
         .from("transactions")
-        .select("id, type, side, amount, shares, price, market_id, created_at, status")
+        .select("id, type, side, amount, shares, price, market_id, created_at, status, is_copy_trade")
         .eq("user_id", userId)
         .in("type", ["buy", "sell"])
         .eq("status", "confirmed")
@@ -171,6 +171,11 @@ const ActivityFeed = ({ userId, isOwnProfile, isPublic }: ActivityFeedProps) => 
                     </span>{" "}
                     <span className="font-bold">{item.data.side?.toUpperCase()}</span>{" "}
                     · ${Number(item.data.amount).toFixed(2)}
+                    {item.data.is_copy_trade && (
+                      <span className="ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded bg-accent text-accent-foreground border border-border align-middle">
+                        📋 Copied
+                      </span>
+                    )}
                   </p>
                   {marketTitle && (
                     <p className="text-[10px] text-muted-foreground truncate mt-0.5">{marketTitle}</p>

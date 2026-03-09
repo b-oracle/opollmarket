@@ -1258,6 +1258,7 @@ export type Database = {
           amount: number
           created_at: string
           id: string
+          is_copy_trade: boolean
           market_id: string | null
           nowpayments_payment_id: string | null
           option_id: string | null
@@ -1273,6 +1274,7 @@ export type Database = {
           amount: number
           created_at?: string
           id?: string
+          is_copy_trade?: boolean
           market_id?: string | null
           nowpayments_payment_id?: string | null
           option_id?: string | null
@@ -1288,6 +1290,7 @@ export type Database = {
           amount?: number
           created_at?: string
           id?: string
+          is_copy_trade?: boolean
           market_id?: string | null
           nowpayments_payment_id?: string | null
           option_id?: string | null

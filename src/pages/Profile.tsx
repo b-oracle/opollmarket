@@ -947,6 +947,11 @@ const Profile = () => {
                     <div className="flex items-center justify-between mb-0.5">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold">{cfg.label}</span>
+                        {tx.is_copy_trade && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-accent text-accent-foreground border border-border">
+                            📋 Copied
+                          </span>
+                        )}
                         {tx.side && (
                           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${tx.side === "yes" ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive"}`}>
                             {tx.side.toUpperCase()}
