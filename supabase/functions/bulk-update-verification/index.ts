@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
     // Get all profiles with wallet addresses
     const { data: profiles } = await adminClient
       .from("profiles")
-      .select("id, wallet_address")
+      .select("id, wallet_address, avatar_url")
       .not("wallet_address", "is", null)
       .neq("wallet_address", "");
 
