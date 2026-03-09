@@ -209,9 +209,40 @@ const Index = () => {
   // No blocking loader — render page immediately, show inline spinner in content area
 
   return (
-    <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))', touchAction: 'pan-y', overscrollBehaviorX: 'none' }}>
+    <div
+      className="min-h-dvh bg-background"
+      style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))', touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       <SEOHead description="Predict the future, earn from it. Trade on real-world events across Web, Telegram & WhatsApp with OPoll Market." path="/" />
       <TopBar />
+
+      {/* Pull-to-refresh indicator */}
+      <motion.div
+        className="fixed left-0 right-0 z-40 flex items-center justify-center pointer-events-none"
+        style={{ top: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}
+        initial={{ opacity: 0, y: -20 }}
+        animate={{
+          opacity: pulling || refreshing ? 1 : 0,
+          y: pulling || refreshing ? pullDistance * 0.3 : -20
+        }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      >
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full glass-strong">
+          <motion.div
+            animate={refreshing ? spinControls : { rotate: pullProgress * 180 }}
+            transition={{ type: "tween", duration: 0 }}
+          >
+            <Loader2 className="w-4 h-4 text-primary" />
+          </motion.div>
+          <span className="text-xs font-medium text-muted-foreground">
+            {refreshing ? "Refreshing…" : pullProgress >= 1 ? "Release to refresh" : "Pull to refresh"}
+          </span>
+        </div>
+      </motion.div>
+
       <div className="max-w-lg md:max-w-4xl xl:max-w-6xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
         {/* Mobile Hero */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-8 md:hidden">
