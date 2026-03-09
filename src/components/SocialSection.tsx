@@ -34,7 +34,7 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
         .limit(50);
       if (!data || data.length === 0) return [];
       const ids = data.map((f: any) => f.follower_id);
-      const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url, bio").in("id", ids);
+      const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url, bio, verification_level").in("id", ids);
       const map = new Map((profiles || []).map((p: any) => [p.id, p]));
       return data.map((f: any) => ({ ...f, profile: map.get(f.follower_id) }));
     },
