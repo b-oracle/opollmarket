@@ -202,9 +202,19 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
-            className="fixed inset-y-0 right-0 w-full max-w-md bg-background z-[61] overflow-y-auto overscroll-contain touch-auto"
-            style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
+            className="fixed inset-y-0 right-0 w-full max-w-md bg-background z-[61] overscroll-contain"
+            style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" } as React.CSSProperties}
           >
+            {/* Inner scrollable wrapper – isolated scroll context for Chrome/Android */}
+            <div
+              className="h-full overflow-y-auto"
+              style={{
+                WebkitOverflowScrolling: "touch",
+                touchAction: "pan-y",
+                overscrollBehavior: "contain",
+                willChange: "scroll-position",
+              } as React.CSSProperties}
+            >
             {/* Header */}
             <div
               className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-border px-4 flex items-center gap-3"
@@ -334,6 +344,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
                   )}
                 </div>
               )}
+            </div>
             </div>
           </motion.div>
         </>
