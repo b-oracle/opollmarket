@@ -6,6 +6,7 @@ import { Eye, EyeOff, LogIn, UserPlus, Gift, CheckCircle2, Mail } from "lucide-r
 import { supabase } from "@/integrations/supabase/client";
 import { getCanonicalOrigin } from "@/lib/canonical";
 import { lovable } from "@/integrations/lovable/index";
+import SecurityVerificationModal from "@/components/SecurityVerificationModal";
 
 const useIsDappBrowser = () =>
   useMemo(() => {
@@ -35,6 +36,8 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [rememberedName, setRememberedName] = useState<string | null>(null);
+  const [showLoginSecurity, setShowLoginSecurity] = useState(false);
+  const [loginSecReqs, setLoginSecReqs] = useState<{ require_pin: boolean; require_totp: boolean }>({ require_pin: false, require_totp: false });
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -81,8 +84,29 @@ const Auth = () => {
           return;
         }
         // Remember display name for personalized greeting
-        const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", (await supabase.auth.getUser()).data.user?.id ?? "").single();
-        if (profile?.display_name) localStorage.setItem("remembered_display_name", profile.display_name);
+        const { data: { user: loggedInUser } } = await supabase.auth.getUser();
+        const userId = loggedInUser?.id;
+        if (userId) {
+          const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", userId).single();
+          if (profile?.display_name) localStorage.setItem("remembered_display_name", profile.display_name);
+
+          // Check if login security is required
+          const { data: secData } = await supabase
+            .from("user_security_settings" as any)
+            .select("pin_enabled, totp_enabled, require_pin_login, require_totp_login")
+            .eq("user_id", userId)
+            .maybeSingle();
+
+          const sec = secData as unknown as { pin_enabled: boolean; totp_enabled: boolean; require_pin_login: boolean; require_totp_login: boolean } | null;
+          const needPin = sec?.pin_enabled && sec?.require_pin_login;
+          const needTotp = sec?.totp_enabled && sec?.require_totp_login;
+
+          if (needPin || needTotp) {
+            setLoginSecReqs({ require_pin: !!needPin, require_totp: !!needTotp });
+            setShowLoginSecurity(true);
+            return;
+          }
+        }
         toast.success("Logged in successfully!");
         navigate("/");
         return;
@@ -280,6 +304,22 @@ const Auth = () => {
           ← Back to Home
         </button>
       </div>
+      <SecurityVerificationModal
+        open={showLoginSecurity}
+        onClose={() => {
+          setShowLoginSecurity(false);
+          // Sign out if user cancels verification
+          supabase.auth.signOut({ scope: "local" });
+          toast.error("Login cancelled — verification required");
+        }}
+        onVerified={() => {
+          setShowLoginSecurity(false);
+          toast.success("Logged in successfully!");
+          navigate("/");
+        }}
+        requirePin={loginSecReqs.require_pin}
+        requireTotp={loginSecReqs.require_totp}
+      />
     </div>
   );
 };
