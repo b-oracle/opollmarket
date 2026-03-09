@@ -120,19 +120,27 @@ const steps: TutorialStep[] = [
   },
 ];
 
-export const shouldShowTutorial = (): boolean => {
-  return localStorage.getItem(TUTORIAL_KEY) !== "1";
+export const shouldShowTutorial = (userId?: string): boolean => {
+  const key = userId ? `${TUTORIAL_KEY}_${userId}` : TUTORIAL_KEY;
+  return localStorage.getItem(key) !== "1";
 };
 
-export const markTutorialSeen = () => {
-  localStorage.setItem(TUTORIAL_KEY, "1");
+export const markTutorialSeen = (userId?: string) => {
+  const key = userId ? `${TUTORIAL_KEY}_${userId}` : TUTORIAL_KEY;
+  localStorage.setItem(key, "1");
+};
+
+export const resetTutorial = (userId?: string) => {
+  const key = userId ? `${TUTORIAL_KEY}_${userId}` : TUTORIAL_KEY;
+  localStorage.removeItem(key);
 };
 
 interface SocialTutorialProps {
   onComplete: () => void;
+  userId?: string;
 }
 
-const SocialTutorial = ({ onComplete }: SocialTutorialProps) => {
+const SocialTutorial = ({ onComplete, userId }: SocialTutorialProps) => {
   const [step, setStep] = useState(0);
   const navigate = useNavigate();
   const { fireWinConfetti } = useConfetti();
@@ -152,7 +160,7 @@ const SocialTutorial = ({ onComplete }: SocialTutorialProps) => {
       haptic.success();
       playCompleteSound();
       fireWinConfetti();
-      markTutorialSeen();
+      markTutorialSeen(userId);
       navigate("/", { replace: true });
       onComplete();
     } else {
@@ -172,7 +180,7 @@ const SocialTutorial = ({ onComplete }: SocialTutorialProps) => {
 
   const handleSkip = useCallback(() => {
     haptic.light();
-    markTutorialSeen();
+    markTutorialSeen(userId);
     navigate("/", { replace: true });
     onComplete();
   }, [onComplete, navigate]);
