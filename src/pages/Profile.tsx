@@ -204,32 +204,61 @@ const Profile = () => {
   const [editBio, setEditBio] = useState("");
   const [editIsPublic, setEditIsPublic] = useState(true);
   const [swipeHintDismissed, setSwipeHintDismissed] = useState(() => localStorage.getItem("social_swipe_used") === "1");
+  const [swipeDragX, setSwipeDragX] = useState(0);
+  const swipingActive = useRef(false);
 
-  // Swipe-left from right edge detection — open social overlay
+  // Swipe-left from right edge detection — navigate to social profile with drag follow
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const touchStartedInEdge = useRef(false);
+  const touchLockedDir = useRef<"horizontal" | "vertical" | null>(null);
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const x = e.touches[0].clientX;
     touchStartX.current = x;
     touchStartY.current = e.touches[0].clientY;
-    // Detect touch starting near the right edge of the screen
     touchStartedInEdge.current = x > window.innerWidth - 40;
+    touchLockedDir.current = null;
+    swipingActive.current = false;
   }, []);
-  const handleTouchEndCapture = useCallback((e: React.TouchEvent) => {
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!touchStartedInEdge.current || !user) return;
+    const dx = touchStartX.current - e.touches[0].clientX; // positive = swiped left
+    const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
+    if (!touchLockedDir.current) {
+      if (Math.abs(dx) > 10 || dy > 10) {
+        touchLockedDir.current = Math.abs(dx) > dy ? "horizontal" : "vertical";
+      }
+      return;
+    }
+    if (touchLockedDir.current !== "horizontal") return;
+    if (dx > 0) {
+      swipingActive.current = true;
+      setSwipeDragX(-Math.min(dx * 0.6, window.innerWidth * 0.7));
+    }
+  }, [user]);
+  const handleTouchEndCapture = useCallback((e: React.TouchEvent) => {
+    if (!swipingActive.current) {
+      touchStartedInEdge.current = false;
+      return;
+    }
     const endX = e.changedTouches[0].clientX;
-    const endY = e.changedTouches[0].clientY;
-    const dx = touchStartX.current - endX; // positive = swiped left
-    const dy = Math.abs(endY - touchStartY.current);
-    if (dx > 60 && dy < 80) {
+    const dx = touchStartX.current - endX;
+    if (dx > 80) {
       if (!swipeHintDismissed) {
         localStorage.setItem("social_swipe_used", "1");
         setSwipeHintDismissed(true);
       }
-      navigate(`/user/${user.id}`);
+      setSwipeDragX(-window.innerWidth);
+      setTimeout(() => {
+        navigate(`/user/${user!.id}`);
+        setSwipeDragX(0);
+      }, 200);
+    } else {
+      setSwipeDragX(0);
     }
-  }, [swipeHintDismissed, user]);
+    swipingActive.current = false;
+    touchStartedInEdge.current = false;
+  }, [swipeHintDismissed, user, navigate]);
 
   // Fetch profile data
   const { data: profile } = useQuery({
