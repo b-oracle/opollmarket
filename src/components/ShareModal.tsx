@@ -240,7 +240,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
                     <span className="text-xs text-muted-foreground">Generating preview...</span>
                   </div>
                 ) : screenshot ? (
-                  <img src={screenshot} alt="Preview" className="w-full object-contain" />
+                  <img src={screenshot} alt="Preview" className="w-full object-contain max-h-[40vh]" />
                 ) : (
                   <div className="flex flex-col items-center gap-2 py-8">
                     <Share2 className="w-6 h-6 text-muted-foreground" />
