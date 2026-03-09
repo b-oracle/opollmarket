@@ -70,6 +70,13 @@ const NpReconciliation = () => {
   const [anomaliesNp, setAnomaliesNp] = useState<AnomalyNpRecord[]>([]);
   const [applied, setApplied] = useState<ApplyResult[] | null>(null);
   const [tab, setTab] = useState<"matched" | "anomalies">("matched");
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session?.user);
+    });
+  }, []);
 
   const fmt = (v: number) => `$${v.toFixed(2)}`;
 
