@@ -104,6 +104,7 @@ const AdminSettings = () => {
   const withdrawalCooldownNum = parseInt(withdrawalCooldown) || 5;
   const withdrawalMultiplierNum = parseFloat(withdrawalMultiplier) || 2;
   const exitFeeNum = parseFloat(exitFee) || 0;
+  const withdrawalFeeNum = parseFloat(withdrawalFee) || 0;
   const copyTradeCommissionNum = parseFloat(copyTradeCommission) || 0;
   const quickTradeFeeNum = parseFloat(quickTradeFee) || 0;
   const qtMinBetNum = parseFloat(qtMinBet) || 0;
