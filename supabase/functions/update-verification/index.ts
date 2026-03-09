@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
     // Get user profile
     const { data: profile } = await adminClient
       .from("profiles")
-      .select("avatar_url, wallet_address")
+      .select("wallet_address")
       .eq("id", user.id)
       .single();
 
@@ -53,40 +53,59 @@ Deno.serve(async (req) => {
     // Get commission settings for thresholds
     const { data: settings } = await adminClient
       .from("commission_settings")
-      .select("min_token_balance, token_contract_address, token_decimals, nft_contract_address")
+      .select("min_token_balance, token_contract_address, token_decimals, nft_contract_address, min_nft_balance")
       .limit(1)
       .single();
 
     const minTokenBalance = Number(settings?.min_token_balance) || 10_000_000;
     const tokenContractAddress = settings?.token_contract_address || "";
     const tokenDecimals = Number(settings?.token_decimals) || 18;
+    const nftContractAddress = (settings?.nft_contract_address || "").toLowerCase();
+    const minNftBalance = Number(settings?.min_nft_balance) || 1;
 
-    // Check NFT avatar (external URL = NFT)
-    const hasNftAvatar = !!profile.avatar_url && !profile.avatar_url.includes("/storage/v1/");
-
-    // Check token balance if wallet is connected
+    let hasNft = false;
     let hasTokens = false;
-    if (profile.wallet_address && tokenContractAddress) {
-      try {
-        const { data: tokenData } = await adminClient.functions.invoke("check-token-balance", {
-          body: {
-            wallet_address: profile.wallet_address,
-            token_contract_address: tokenContractAddress,
-            token_decimals: tokenDecimals,
-          },
-        });
-        const balance = Number(tokenData?.balance) || 0;
-        hasTokens = balance >= minTokenBalance;
-      } catch (err) {
-        console.error("Token balance check failed:", err);
+
+    if (profile.wallet_address) {
+      // Check NFT ownership in wallet
+      if (nftContractAddress) {
+        try {
+          const { data: nftData } = await adminClient.functions.invoke("fetch-wallet-nfts", {
+            body: { wallet_address: profile.wallet_address },
+          });
+          const nfts = nftData?.nfts || [];
+          const matchingNfts = nfts.filter(
+            (n: any) => n.token_address?.toLowerCase() === nftContractAddress
+          );
+          hasNft = matchingNfts.length >= minNftBalance;
+        } catch (err) {
+          console.error("NFT ownership check failed:", err);
+        }
+      }
+
+      // Check token balance
+      if (tokenContractAddress) {
+        try {
+          const { data: tokenData } = await adminClient.functions.invoke("check-token-balance", {
+            body: {
+              wallet_address: profile.wallet_address,
+              token_contract_address: tokenContractAddress,
+              token_decimals: tokenDecimals,
+            },
+          });
+          const balance = Number(tokenData?.balance) || 0;
+          hasTokens = balance >= minTokenBalance;
+        } catch (err) {
+          console.error("Token balance check failed:", err);
+        }
       }
     }
 
     // Determine verification level
     let level = "none";
-    if (hasNftAvatar && hasTokens) {
+    if (hasNft && hasTokens) {
       level = "gold";
-    } else if (hasNftAvatar || hasTokens) {
+    } else if (hasNft || hasTokens) {
       level = "blue";
     }
 
