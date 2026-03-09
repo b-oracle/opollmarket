@@ -230,7 +230,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
           </div>
 
           {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto overscroll-contain">
+          <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", willChange: "scroll-position" } as React.CSSProperties}>
             {/* Screenshot preview */}
             <div className="px-4 py-3">
               <div className="rounded-xl overflow-hidden bg-muted/30 border border-border/20 flex items-center justify-center min-h-[120px]">

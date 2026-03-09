@@ -374,7 +374,7 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
               </div>
 
               {/* Comments list */}
-              <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-2">
+              <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-2" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain", willChange: "scroll-position" } as React.CSSProperties}>
                 {loading ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-6 h-6 text-primary animate-spin" />

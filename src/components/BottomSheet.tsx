@@ -39,7 +39,11 @@ const BottomSheet = ({ open, onClose, children, maxHeight = "85dvh", className =
               style={{
                 maxHeight,
                 paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))",
-              }}
+                WebkitOverflowScrolling: "touch",
+                touchAction: "pan-y",
+                overscrollBehavior: "contain",
+                willChange: "scroll-position",
+              } as React.CSSProperties}
             >
               {children}
             </div>

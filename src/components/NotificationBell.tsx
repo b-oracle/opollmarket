@@ -179,7 +179,7 @@ const NotificationBell = () => {
                 </div>
               )}
 
-              <div className="overflow-y-auto flex-1 min-h-0">
+              <div className="overflow-y-auto flex-1 min-h-0" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain", willChange: "scroll-position" } as React.CSSProperties}>
               {notifications.length === 0 ? (
                 <div className="p-6 text-center text-sm text-muted-foreground">No notifications yet</div>
               ) : (
