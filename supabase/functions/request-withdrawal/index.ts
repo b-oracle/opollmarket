@@ -224,6 +224,7 @@ Deno.serve(async (req) => {
     let payoutSuccess = false;
     let payoutId = null;
     let payoutError = null;
+    let got403 = false;
 
     try {
       // Step 1: Authenticate with NOWPayments to get JWT
@@ -275,6 +276,13 @@ Deno.serve(async (req) => {
           const errText = await payoutRes.text();
           payoutError = errText;
 
+          // Detect 403 IP restriction — don't retry, fall through to pending
+          if (payoutRes.status === 403) {
+            got403 = true;
+            console.warn("Payout blocked by IP restriction (403), falling back to manual approval");
+            break;
+          }
+
           if ((payoutRes.status >= 500 || payoutRes.status === 429) && attempt < maxPayoutRetries) {
             const delay = Math.min(1000 * Math.pow(2, attempt - 1), 4000);
             console.warn(`Payout attempt ${attempt} failed (${payoutRes.status}), retrying in ${delay}ms...`);
@@ -301,8 +309,39 @@ Deno.serve(async (req) => {
       payoutError = String(payErr);
     }
 
+    if (!payoutSuccess && got403) {
+      // Fallback: create a pending withdrawal for manual admin processing
+      // Balance stays deducted — admin will approve/reject via process-withdrawal
+      await adminClient.from("withdrawal_requests").insert({
+        user_id: userId,
+        amount,
+        wallet_address: wallet_address.trim(),
+        crypto_currency: payCurrency,
+        status: "pending",
+      });
+
+      await adminClient.from("transactions").insert({
+        user_id: userId,
+        type: "withdrawal",
+        amount,
+        status: "pending",
+      });
+
+      await adminClient.from("notifications").insert({
+        user_id: userId,
+        title: "Withdrawal Pending",
+        message: `Your withdrawal of $${Number(amount).toFixed(2)} is being processed manually and will be completed shortly.`,
+        type: "withdrawal",
+      });
+
+      return new Response(
+        JSON.stringify({ success: true, pending: true, message: "Withdrawal submitted for manual processing" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     if (!payoutSuccess) {
-      // Refund balance since payout failed
+      // Non-403 failure: refund balance
       await adminClient
         .from("balances")
         .update({
