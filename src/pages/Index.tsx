@@ -7,9 +7,9 @@ import { useMarkets } from "@/hooks/useMarkets";
 import { TrendingUp, Users, Zap, MessageCircle, Search, X, Heart } from "lucide-react";
 import CategoryIcon from "@/components/CategoryIcon";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, useAnimation } from "framer-motion";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import BoostCountdown from "@/components/BoostCountdown";
 import BoostedCarousel from "@/components/BoostedCarousel";
 import CategoryCarousel from "@/components/CategoryCarousel";
@@ -56,7 +56,7 @@ const LikeBadge = ({ marketId }: { marketId: string }) => {
 const Index = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { data: markets = [], isLoading, isError } = useMarkets();
+  const { data: markets = [], isLoading, isError, refetch } = useMarkets();
   const { boostedMarketIds, boostDetails } = useActiveBoosts();
   const [filter, setFilter] = useState<"trending" | "boosted" | "new" | "all" | "live">("all");
   const [boostModalMarket, setBoostModalMarket] = useState<{ id: string; title: string } | null>(null);
@@ -64,6 +64,66 @@ const Index = () => {
   const { track } = useAnalytics();
 
   useEffect(() => { track("page_view", { page: "home" }); }, []);
+
+  // Pull-to-refresh state
+  const PULL_THRESHOLD = 80;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const touchStartY = useRef(0);
+  const isPulling = useRef(false);
+  const hapticFired = useRef(false);
+  const [pulling, setPulling] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const spinControls = useAnimation();
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (refreshing) return;
+    const scrollTop = scrollRef.current?.scrollTop ?? window.scrollY;
+    if (scrollTop > 5) return;
+    touchStartY.current = e.touches[0].clientY;
+    isPulling.current = true;
+  }, [refreshing]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isPulling.current || refreshing) return;
+    const scrollTop = scrollRef.current?.scrollTop ?? window.scrollY;
+    if (scrollTop > 5) {
+      isPulling.current = false;
+      setPulling(false);
+      setPullDistance(0);
+      return;
+    }
+    const deltaY = e.touches[0].clientY - touchStartY.current;
+    if (deltaY > 0) {
+      const dampened = Math.min(deltaY * 0.45, 120);
+      setPulling(true);
+      setPullDistance(dampened);
+      if (dampened >= PULL_THRESHOLD && !hapticFired.current) {
+        navigator.vibrate?.(15);
+        hapticFired.current = true;
+      }
+    }
+  }, [refreshing]);
+
+  const handleTouchEnd = useCallback(async () => {
+    if (!isPulling.current) return;
+    isPulling.current = false;
+
+    if (pullDistance >= PULL_THRESHOLD && !refreshing) {
+      setRefreshing(true);
+      setPullDistance(50);
+      spinControls.start({ rotate: 360, transition: { repeat: Infinity, duration: 0.8, ease: "linear" } });
+      await refetch();
+      spinControls.stop();
+      setRefreshing(false);
+    }
+
+    setPulling(false);
+    setPullDistance(0);
+    hapticFired.current = false;
+  }, [pullDistance, refreshing, spinControls]);
+
+  const pullProgress = Math.min(pullDistance / PULL_THRESHOLD, 1);
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
 
   // Capture referral param on landing
@@ -149,9 +209,40 @@ const Index = () => {
   // No blocking loader — render page immediately, show inline spinner in content area
 
   return (
-    <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))', touchAction: 'pan-y', overscrollBehaviorX: 'none' }}>
+    <div
+      className="min-h-dvh bg-background"
+      style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))', touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       <SEOHead description="Predict the future, earn from it. Trade on real-world events across Web, Telegram & WhatsApp with OPoll Market." path="/" />
       <TopBar />
+
+      {/* Pull-to-refresh indicator */}
+      <motion.div
+        className="fixed left-0 right-0 z-40 flex items-center justify-center pointer-events-none"
+        style={{ top: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}
+        initial={{ opacity: 0, y: -20 }}
+        animate={{
+          opacity: pulling || refreshing ? 1 : 0,
+          y: pulling || refreshing ? pullDistance * 0.3 : -20
+        }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      >
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full glass-strong">
+          <motion.div
+            animate={refreshing ? spinControls : { rotate: pullProgress * 180 }}
+            transition={{ type: "tween", duration: 0 }}
+          >
+            <Loader2 className="w-4 h-4 text-primary" />
+          </motion.div>
+          <span className="text-xs font-medium text-muted-foreground">
+            {refreshing ? "Refreshing…" : pullProgress >= 1 ? "Release to refresh" : "Pull to refresh"}
+          </span>
+        </div>
+      </motion.div>
+
       <div className="max-w-lg md:max-w-4xl xl:max-w-6xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
         {/* Mobile Hero */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-8 md:hidden">
