@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -209,13 +210,23 @@ const SetupSecurity = () => {
 
           {step === "totp_verify" && (
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
-              <h2 className="text-lg font-semibold text-center">Scan or Enter Secret</h2>
+              <h2 className="text-lg font-semibold text-center">Scan QR Code</h2>
               <p className="text-sm text-muted-foreground text-center">
-                Open Google Authenticator, tap "+" and enter this secret key manually:
+                Open Google Authenticator, tap "+" and scan this QR code:
               </p>
 
+              {totpUri && (
+                <div className="flex justify-center py-2">
+                  <div className="bg-white p-3 rounded-xl">
+                    <QRCodeSVG value={totpUri} size={180} level="M" />
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground text-center">Or enter this secret key manually:</p>
+
               <div className="bg-muted rounded-lg p-3 flex items-center gap-2">
-                <code className="flex-1 text-sm font-mono break-all select-all">{totpSecret}</code>
+                <code className="flex-1 text-xs font-mono break-all select-all">{totpSecret}</code>
                 <button onClick={copySecret} className="shrink-0 p-2 rounded-lg hover:bg-background">
                   {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
                 </button>
