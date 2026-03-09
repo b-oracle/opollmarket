@@ -1113,7 +1113,7 @@ const Profile = () => {
       <InstallAppModal open={installOpen} onClose={() => setInstallOpen(false)} />
       
       <BottomNav />
-      <SocialPage open={socialOpen} onClose={() => setSocialOpen(false)} />
+      
     </div>
   );
 };
