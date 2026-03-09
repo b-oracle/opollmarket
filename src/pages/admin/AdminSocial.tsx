@@ -38,11 +38,28 @@ const AdminSocial = () => {
   }, [search]);
 
   const fetchStats = useCallback(async () => {
-    const [{ count: followCount }, { count: likeCount }, { count: commentCount }, { data: followRows }] = await Promise.all([
+    const fetchAllFollows = async () => {
+      let allFollows: any[] = [];
+      let page = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const { data } = await supabase.from("follows").select("created_at").order("created_at", { ascending: true }).range(page * 1000, (page + 1) * 1000 - 1);
+        if (data && data.length > 0) {
+          allFollows = [...allFollows, ...data];
+          page++;
+          if (data.length < 1000) hasMore = false;
+        } else {
+          hasMore = false;
+        }
+      }
+      return allFollows;
+    };
+
+    const [{ count: followCount }, { count: likeCount }, { count: commentCount }, followRows] = await Promise.all([
       supabase.from("follows").select("id", { count: "exact", head: true }),
       supabase.from("market_likes").select("id", { count: "exact", head: true }),
       supabase.from("comments").select("id", { count: "exact", head: true }),
-      supabase.from("follows").select("created_at").order("created_at", { ascending: true }).limit(1000),
+      fetchAllFollows(),
     ]);
     setTotalFollows(followCount ?? 0);
     setTotalLikes(likeCount ?? 0);

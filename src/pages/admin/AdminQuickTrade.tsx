@@ -51,9 +51,26 @@ const AdminQuickTrade = () => {
 
   useEffect(() => {
     const fetch = async () => {
-      const [{ data: roundData }, { data: betData }] = await Promise.all([
-        supabase.from("quick_rounds").select("*").order("created_at", { ascending: false }).limit(1000),
-        supabase.from("quick_bets").select("*").order("created_at", { ascending: false }).limit(1000),
+      const fetchAllData = async (table: string) => {
+        let allData: any[] = [];
+        let page = 0;
+        let hasMore = true;
+        while (hasMore) {
+          const { data } = await supabase.from(table).select("*").order("created_at", { ascending: false }).range(page * 1000, (page + 1) * 1000 - 1);
+          if (data && data.length > 0) {
+            allData = [...allData, ...data];
+            page++;
+            if (data.length < 1000) hasMore = false;
+          } else {
+            hasMore = false;
+          }
+        }
+        return allData;
+      };
+
+      const [roundData, betData] = await Promise.all([
+        fetchAllData("quick_rounds"),
+        fetchAllData("quick_bets"),
       ]);
       setRounds(roundData || []);
       setBets(betData || []);
