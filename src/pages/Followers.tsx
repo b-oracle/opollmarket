@@ -120,7 +120,7 @@ const Followers = () => {
       const ids = data.map((f: any) => f.following_id);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url")
+        .select("id, display_name, avatar_url, verification_level")
         .in("id", ids);
       const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
       return data.map((f: any) => ({ ...f, profile: profileMap.get(f.following_id) || null }));
