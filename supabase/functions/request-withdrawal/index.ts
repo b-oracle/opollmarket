@@ -408,10 +408,11 @@ Deno.serve(async (req) => {
     });
 
     // Notify user
+    const feeNote = feeAmount > 0 ? ` (Fee: $${feeAmount.toFixed(2)}, Net: $${netAmount.toFixed(2)})` : "";
     await adminClient.from("notifications").insert({
       user_id: userId,
       title: "Withdrawal Sent",
-      message: `Your withdrawal of $${Number(amount).toFixed(2)} has been sent to ${wallet_address.trim().slice(0, 8)}...`,
+      message: `Your withdrawal of $${Number(amount).toFixed(2)}${feeNote} has been sent to ${wallet_address.trim().slice(0, 8)}...`,
       type: "withdrawal",
     });
 
