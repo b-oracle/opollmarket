@@ -351,7 +351,7 @@ const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDra
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-4" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain", willChange: "scroll-position" } as React.CSSProperties}>
               {renderContent()}
             </div>
           </motion.div>

@@ -187,7 +187,7 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
           </div>
 
           {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto overscroll-contain">
+          <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", willChange: "scroll-position" } as React.CSSProperties}>
             {/* The share card to be screenshotted */}
             <div className="px-4 py-3">
               <div ref={cardRef} className={`rounded-2xl overflow-hidden bg-gradient-to-br ${rankTheme.gradient} border ${rankTheme.border} p-5`}>
