@@ -160,7 +160,7 @@ const SocialTutorial = ({ onComplete, userId }: SocialTutorialProps) => {
       haptic.success();
       playCompleteSound();
       fireWinConfetti();
-      markTutorialSeen();
+      markTutorialSeen(userId);
       navigate("/", { replace: true });
       onComplete();
     } else {
