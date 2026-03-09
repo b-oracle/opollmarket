@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
-import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown, ExternalLink, Flame, Radio } from "lucide-react";
+import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown, ExternalLink, Flame, Radio, CheckCircle2, XCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Market } from "@/data/markets";
 import CategoryIcon from "@/components/CategoryIcon";
@@ -522,8 +522,17 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
           {/* Prediction buttons */}
           {isEnded ? (
-            <div className="w-full text-center py-3 rounded-xl bg-muted/50 border border-border/50">
-              <span className="text-sm font-semibold text-muted-foreground">{market.status === "resolved" ? "Market Ended — Resolution Completed" : market.status === "cancelled" ? "Market Cancelled" : "Market Ended — Awaiting Resolution"}</span>
+            <div className={`w-full text-center py-3 rounded-xl border flex items-center justify-center gap-2 ${
+              market.status === "resolved"
+                ? "bg-primary/5 border-primary/20"
+                : market.status === "cancelled"
+                  ? "bg-destructive/5 border-destructive/20"
+                  : "bg-muted/50 border-border/50"
+            }`}>
+              {market.status === "resolved" ? <CheckCircle2 className="w-4 h-4 text-primary" /> : market.status === "cancelled" ? <XCircle className="w-4 h-4 text-destructive" /> : <Clock className="w-4 h-4 text-muted-foreground" />}
+              <span className={`text-sm font-semibold ${
+                market.status === "resolved" ? "text-primary" : market.status === "cancelled" ? "text-destructive" : "text-muted-foreground"
+              }`}>{market.status === "resolved" ? "Market Ended — Resolution Completed" : market.status === "cancelled" ? "Market Cancelled" : "Market Ended — Awaiting Resolution"}</span>
             </div>
           ) : (
             <motion.div

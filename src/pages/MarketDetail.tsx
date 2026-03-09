@@ -3,7 +3,7 @@ import YouTubeEmbed, { isYouTubeUrl } from "@/components/YouTubeEmbed";
 import { useParams, useNavigate } from "react-router-dom";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
-import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2, Wallet, FileText, ExternalLink } from "lucide-react";
+import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2, Wallet, FileText, ExternalLink, CheckCircle2, XCircle } from "lucide-react";
 // LogoLoader removed for faster load
 import { useMarket } from "@/hooks/useMarkets";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
@@ -762,7 +762,12 @@ const MarketDetail = () => {
             <div className="px-0 pb-4 pt-3">
               <div className="w-full flex gap-3">
                 {isEnded ? (
-                  <div className="flex-1 text-center py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base bg-muted text-muted-foreground">{market?.status === "resolved" ? "Market Ended — Resolution Completed" : market?.status === "cancelled" ? "Market Cancelled" : "Market Ended — Awaiting Resolution"}</div>
+                  <div className={`flex-1 text-center py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 ${
+                    market?.status === "resolved" ? "bg-primary/10 text-primary" : market?.status === "cancelled" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"
+                  }`}>
+                    {market?.status === "resolved" ? <CheckCircle2 className="w-5 h-5" /> : market?.status === "cancelled" ? <XCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                    {market?.status === "resolved" ? "Market Ended — Resolution Completed" : market?.status === "cancelled" ? "Market Cancelled" : "Market Ended — Awaiting Resolution"}
+                  </div>
                 ) : (
                   <>
                     <button onClick={() => { setBetSide("yes"); setBetOpen(true); }} className="flex-1 min-w-0 btn-yes py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy Yes {yesPercent}¢</button>
@@ -779,7 +784,12 @@ const MarketDetail = () => {
         <div className="fixed left-0 right-0 md:left-60 z-[60] px-4 pb-4 pt-3 bg-gradient-to-t from-background via-background to-transparent md:bottom-0" style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}>
           <div className="w-full max-w-lg md:max-w-4xl mx-auto flex gap-3">
             {isEnded ? (
-              <div className="flex-1 text-center py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base bg-muted text-muted-foreground">{market?.status === "resolved" ? "Market Ended — Resolution Completed" : market?.status === "cancelled" ? "Market Cancelled" : "Market Ended — Awaiting Resolution"}</div>
+              <div className={`flex-1 text-center py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 ${
+                    market?.status === "resolved" ? "bg-primary/10 text-primary" : market?.status === "cancelled" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"
+                  }`}>
+                    {market?.status === "resolved" ? <CheckCircle2 className="w-5 h-5" /> : market?.status === "cancelled" ? <XCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                    {market?.status === "resolved" ? "Market Ended — Resolution Completed" : market?.status === "cancelled" ? "Market Cancelled" : "Market Ended — Awaiting Resolution"}
+                  </div>
             ) : (
               <>
                 <button onClick={() => { setBetSide("yes"); setBetOpen(true); }} className="flex-1 min-w-0 btn-yes py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy Yes {yesPercent}¢</button>

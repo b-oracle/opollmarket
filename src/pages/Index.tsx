@@ -1,4 +1,4 @@
-import { Loader2, Clock } from "lucide-react";
+import { Loader2, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import SEOHead from "@/components/SEOHead";
 import TopBar from "@/components/TopBar";
@@ -527,8 +527,12 @@ const Index = () => {
               >
                 {(market.status === 'ended' || market.status === 'resolved') && (
                   <div className="absolute inset-0 z-10 rounded-xl md:rounded-2xl bg-background/60 backdrop-blur-[2px] flex items-center justify-center">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted border border-border text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                      <Clock className="w-3.5 h-3.5" />
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-wider ${
+                      market.status === 'resolved'
+                        ? 'bg-primary/10 border-primary/30 text-primary'
+                        : 'bg-muted border-border text-muted-foreground'
+                    }`}>
+                      {market.status === 'resolved' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
                       {market.status === 'resolved' ? 'Resolution Completed' : 'Awaiting Resolution'}
                     </span>
                   </div>
