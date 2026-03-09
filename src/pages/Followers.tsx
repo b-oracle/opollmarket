@@ -251,7 +251,7 @@ const Followers = () => {
                 const profile = item.profile;
                 const userId = tab === "followers" ? item.follower_id : item.following_id;
                 const name = profile?.display_name || "Anonymous";
-                const hasNft = isNftAvatar(profile?.avatar_url);
+                const vLevel = (profile?.verification_level || "none") as VerificationLevel;
                 return (
                   <motion.div
                     key={item.id}
@@ -269,10 +269,13 @@ const Followers = () => {
                           <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
                         )}
                       </div>
-                      {hasNft && <NftBadge className="absolute -bottom-0.5 -right-0.5 scale-75" />}
+                      {vLevel !== "none" && <NftBadge level={vLevel} className="absolute -bottom-0.5 -right-0.5 scale-75" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate">{name}</p>
+                      <p className="text-sm font-semibold truncate flex items-center gap-1">
+                        {name}
+                        {vLevel !== "none" && <NftBadge level={vLevel} size={14} />}
+                      </p>
                       <p className="text-[10px] text-muted-foreground">
                         {new Date(item.created_at).toLocaleDateString()}
                       </p>
