@@ -68,7 +68,7 @@ const formatDollar = (v: number) => {
   return `$${abs.toFixed(0)}`;
 };
 
-const AvatarCircle = ({ avatar, name, size = "w-10 h-10" }: { avatar: string | null; name: string; size?: string }) => (
+const AvatarCircle = ({ avatar, name, size = "w-10 h-10", verificationLevel }: { avatar: string | null; name: string; size?: string; verificationLevel?: VerificationLevel }) => (
   <div className="relative shrink-0">
     <div className={`${size} rounded-full bg-secondary flex items-center justify-center text-lg overflow-hidden`}>
       {avatar ? (
@@ -77,7 +77,7 @@ const AvatarCircle = ({ avatar, name, size = "w-10 h-10" }: { avatar: string | n
         <span>👤</span>
       )}
     </div>
-    {isNftAvatar(avatar) && <NftBadge className="absolute -bottom-0.5 -right-0.5" />}
+    {verificationLevel && verificationLevel !== "none" && <NftBadge level={verificationLevel} className="absolute -bottom-0.5 -right-0.5" />}
   </div>
 );
 
