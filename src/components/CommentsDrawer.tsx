@@ -21,6 +21,7 @@ interface Comment {
   liked?: boolean;
   replies?: Comment[];
   avatar_url?: string | null;
+  verification_level?: VerificationLevel;
 }
 
 interface CommentsDrawerProps {
