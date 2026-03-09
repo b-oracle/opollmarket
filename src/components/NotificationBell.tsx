@@ -14,6 +14,7 @@ interface Notification {
   type: string;
   read: boolean;
   market_id: string | null;
+  actor_id: string | null;
   created_at: string;
 }
 
