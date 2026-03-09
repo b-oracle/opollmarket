@@ -345,6 +345,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
                 </div>
               )}
             </div>
+            </div>
           </motion.div>
         </>
       )}
