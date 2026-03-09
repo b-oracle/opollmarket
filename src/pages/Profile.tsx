@@ -782,6 +782,9 @@ const Profile = () => {
           ))}
         </div>
 
+        {/* Copy Trade Stats */}
+        <CopyTradeStats userId={user?.id} />
+
         {/* Actions */}
         <div className="space-y-3 mb-8">
           <button onClick={() => navigate("/portfolio")} className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">

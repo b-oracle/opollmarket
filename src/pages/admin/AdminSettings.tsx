@@ -272,6 +272,20 @@ const AdminSettings = () => {
               </CardContent>
             </Card>
 
+            <Card className="border-dashed">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2"><Copy className="w-4 h-4" /> Copy Trade Commission</CardTitle>
+                <CardDescription className="text-xs">% of profit deducted from copiers and credited to the original trader when their copied trade wins.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Label htmlFor="copyTradeCommission">Commission (%)</Label>
+                  <Input id="copyTradeCommission" type="number" min={0} max={100} step={0.5} value={copyTradeCommission} onChange={(e) => setCopyTradeCommission(e.target.value)} placeholder="10" />
+                  <p className="text-[10px] text-muted-foreground">Current: {copyTradeCommissionNum}%</p>
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="rounded-lg border border-border p-3 space-y-1.5 bg-muted/50">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Pool Reserve</span>
