@@ -3,7 +3,7 @@ import YouTubeEmbed, { isYouTubeUrl } from "@/components/YouTubeEmbed";
 import { useParams, useNavigate } from "react-router-dom";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
-import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2, Wallet, FileText, ExternalLink } from "lucide-react";
+import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2, Wallet, FileText, ExternalLink, CheckCircle2, XCircle } from "lucide-react";
 // LogoLoader removed for faster load
 import { useMarket } from "@/hooks/useMarkets";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
