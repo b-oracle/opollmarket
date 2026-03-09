@@ -19,6 +19,8 @@ import BoostMarketModal from "@/components/BoostMarketModal";
 import { useCommentCount } from "@/hooks/useCommentCount";
 import useAnalytics from "@/hooks/useAnalytics";
 import { useLikeCount } from "@/hooks/useLikeCount";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 
 const formatVolume = (v: number) => {
@@ -127,7 +129,20 @@ const Index = () => {
     });
   }, [markets, boostedMarketIds, filter, searchQuery, categoryFilter]);
 
-  const totalVolume = markets.reduce((s, m) => s + m.volume, 0);
+  const { data: quickTradeVolume = 0 } = useQuery({
+    queryKey: ["quick-trade-volume"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("quick_bets")
+        .select("amount")
+        .in("status", ["won", "lost", "refunded"]);
+      if (error) return 0;
+      return (data ?? []).reduce((s, b) => s + Number(b.amount), 0);
+    },
+    staleTime: 60_000,
+  });
+
+  const totalVolume = markets.reduce((s, m) => s + m.volume, 0) + quickTradeVolume;
   const totalTraders = markets.reduce((s, m) => s + m.participants, 0);
   const liveCount = useMemo(() => markets.filter((m) => m.autoResolve && ((m.sportType && m.sportMatchId) || m.autoResolveAsset)).length, [markets]);
 
