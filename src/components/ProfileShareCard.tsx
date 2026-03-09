@@ -9,7 +9,7 @@ interface ProfileShareCardProps {
   avatarUrl?: string | null;
   followersCount: number;
   followingCount: number;
-  likesCount: number;
+  tradesCount: number;
   referralCount: number;
   marketsCount: number;
   positionsCount: number;
@@ -40,7 +40,7 @@ const rankLabel = (rank: number | null): string => {
 };
 
 const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
-  ({ displayName, bio, avatarUrl, followersCount, followingCount, likesCount, referralCount, marketsCount, positionsCount, leaderboardRanks }, ref) => {
+  ({ displayName, bio, avatarUrl, followersCount, followingCount, tradesCount, referralCount, marketsCount, positionsCount, leaderboardRanks }, ref) => {
     const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
 
     // Resolve colors synchronously so they're available on first render for html2canvas
@@ -165,7 +165,7 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
             {[
               { label: "Followers", value: followersCount },
               { label: "Following", value: followingCount },
-              { label: "Likes", value: likesCount },
+              { label: "Trades", value: tradesCount },
               { label: "Referrals", value: referralCount },
             ].map((s) => (
               <div key={s.label} style={{ textAlign: "center" }}>
