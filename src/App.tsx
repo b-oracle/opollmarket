@@ -146,6 +146,7 @@ const App = () => (
                 <PWAUpdatePrompt />
                 <BrowserRouter>
                 <SocialTutorialTrigger />
+                <PendingCopyTrades />
                 <ConditionalSidebar />
                 <ConditionalLayout>
                   <div className="flex-1">
