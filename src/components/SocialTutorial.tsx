@@ -119,19 +119,31 @@ const steps: TutorialStep[] = [
   },
 ];
 
-export const shouldShowTutorial = (userId?: string): boolean => {
-  const key = userId ? `${TUTORIAL_KEY}_${userId}` : TUTORIAL_KEY;
-  return localStorage.getItem(key) !== "1";
+export const checkTutorialSeenFromDB = async (userId: string): Promise<boolean> => {
+  const { data } = await supabase
+    .from("profiles")
+    .select("social_tutorial_seen")
+    .eq("id", userId)
+    .single();
+  return !!(data as any)?.social_tutorial_seen;
 };
 
-export const markTutorialSeen = (userId?: string) => {
-  const key = userId ? `${TUTORIAL_KEY}_${userId}` : TUTORIAL_KEY;
-  localStorage.setItem(key, "1");
+export const markTutorialSeen = async (userId?: string) => {
+  if (userId) {
+    await supabase
+      .from("profiles")
+      .update({ social_tutorial_seen: true } as any)
+      .eq("id", userId);
+  }
 };
 
-export const resetTutorial = (userId?: string) => {
-  const key = userId ? `${TUTORIAL_KEY}_${userId}` : TUTORIAL_KEY;
-  localStorage.removeItem(key);
+export const resetTutorial = async (userId?: string) => {
+  if (userId) {
+    await supabase
+      .from("profiles")
+      .update({ social_tutorial_seen: false } as any)
+      .eq("id", userId);
+  }
 };
 
 interface SocialTutorialProps {
