@@ -36,6 +36,8 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [rememberedName, setRememberedName] = useState<string | null>(null);
+  const [showLoginSecurity, setShowLoginSecurity] = useState(false);
+  const [loginSecReqs, setLoginSecReqs] = useState<{ require_pin: boolean; require_totp: boolean }>({ require_pin: false, require_totp: false });
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
