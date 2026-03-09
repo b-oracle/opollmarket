@@ -42,25 +42,55 @@ const UserProfile = () => {
   const [activeTab, setActiveTab] = useState<"markets" | "predictions" | "rank">("markets");
   const [shareOpen, setShareOpen] = useState(false);
   const profileCardRef = useRef<HTMLDivElement>(null);
+  const [swipeDragX, setSwipeDragX] = useState(0);
+  const swipingActive = useRef(false);
 
-  // Swipe-right from left edge to go back to account profile
+  // Swipe-right from left edge to go back to account profile with drag follow
   const swipeStartX = useRef(0);
   const swipeStartY = useRef(0);
   const swipeFromEdge = useRef(false);
+  const swipeLockedDir = useRef<"horizontal" | "vertical" | null>(null);
   const handleSwipeStart = useCallback((e: React.TouchEvent) => {
     const x = e.touches[0].clientX;
     swipeStartX.current = x;
     swipeStartY.current = e.touches[0].clientY;
     swipeFromEdge.current = x < 40;
+    swipeLockedDir.current = null;
+    swipingActive.current = false;
   }, []);
-  const handleSwipeEnd = useCallback((e: React.TouchEvent) => {
+  const handleSwipeMove = useCallback((e: React.TouchEvent) => {
     if (!swipeFromEdge.current || !isOwnProfile) return;
-    const dx = e.changedTouches[0].clientX - swipeStartX.current;
-    const dy = Math.abs(e.changedTouches[0].clientY - swipeStartY.current);
-    if (dx > 60 && dy < 80) {
-      navigate("/profile");
+    const dx = e.touches[0].clientX - swipeStartX.current; // positive = swiped right
+    const dy = Math.abs(e.touches[0].clientY - swipeStartY.current);
+    if (!swipeLockedDir.current) {
+      if (Math.abs(dx) > 10 || dy > 10) {
+        swipeLockedDir.current = Math.abs(dx) > dy ? "horizontal" : "vertical";
+      }
+      return;
     }
-  }, [isOwnProfile, navigate]);
+    if (swipeLockedDir.current !== "horizontal") return;
+    if (dx > 0) {
+      swipingActive.current = true;
+      setSwipeDragX(Math.min(dx * 0.6, window.innerWidth * 0.7));
+    }
+  }, [isOwnProfile]);
+  const handleSwipeEnd = useCallback(() => {
+    if (!swipingActive.current) {
+      swipeFromEdge.current = false;
+      return;
+    }
+    if (swipeDragX > 80) {
+      setSwipeDragX(window.innerWidth);
+      setTimeout(() => {
+        navigate("/profile");
+        setSwipeDragX(0);
+      }, 200);
+    } else {
+      setSwipeDragX(0);
+    }
+    swipingActive.current = false;
+    swipeFromEdge.current = false;
+  }, [swipeDragX, navigate]);
 
   // Profile data
   const { data: profile, isLoading: profileLoading } = useQuery({
@@ -286,12 +316,42 @@ const UserProfile = () => {
   }
 
   return (
-    <div className="min-h-dvh bg-background overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }} onTouchStart={handleSwipeStart} onTouchEnd={handleSwipeEnd}>
+    <div
+      className="min-h-dvh bg-background overflow-y-auto overscroll-contain"
+      style={{
+        paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))',
+        transform: swipeDragX ? `translateX(${swipeDragX}px)` : undefined,
+        transition: swipingActive.current ? 'none' : 'transform 0.25s ease-out',
+      }}
+      onTouchStart={handleSwipeStart}
+      onTouchMove={handleSwipeMove}
+      onTouchEnd={handleSwipeEnd}
+    >
+      {/* Swipe-back hint glow on left edge (own profile only) */}
+      {isOwnProfile && (
+        <motion.div
+          className="fixed left-0 top-1/3 bottom-1/3 z-30 pointer-events-none w-12"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0, 0.7, 0.3, 0.7, 0] }}
+          transition={{ delay: 1.2, duration: 3, repeat: 2, repeatDelay: 2 }}
+        >
+          <div className="w-full h-full rounded-r-full bg-gradient-to-r from-primary/40 via-primary/15 to-transparent blur-md" />
+          <motion.div
+            className="absolute left-1 top-1/2 -translate-y-1/2"
+            animate={{ x: [0, -6, 0] }}
+            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+          >
+            <svg width="14" height="24" viewBox="0 0 14 24" fill="none" className="text-primary opacity-60">
+              <path d="M12 2L2 12L12 22" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </motion.div>
+        </motion.div>
+      )}
       <TopBar />
       <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">
-          <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full glass flex items-center justify-center hover:bg-muted transition-colors">
+          <button onClick={() => isOwnProfile ? navigate("/profile") : navigate(-1)} className="w-9 h-9 rounded-full glass flex items-center justify-center hover:bg-muted transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h2 className="text-lg font-bold truncate flex-1">{displayName}</h2>
