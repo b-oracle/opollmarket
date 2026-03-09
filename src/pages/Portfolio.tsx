@@ -448,12 +448,23 @@ const Portfolio = () => {
             }`}
           >
             <Clock className="w-3 h-3" />
-            Open Orders
+            Orders
             {userLimitOrders.filter(o => o.status === "pending").length > 0 && (
               <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-500 text-[9px] font-bold">
                 {userLimitOrders.filter(o => o.status === "pending").length}
               </span>
             )}
+          </button>
+          <button
+            onClick={() => setActiveTab("copy")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-xs font-semibold transition-all ${
+              activeTab === "copy"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Copy className="w-3 h-3" />
+            Copy Trades
           </button>
         </div>
 
