@@ -1127,9 +1127,11 @@ const Profile = () => {
                     if (item.href === "__install__") {
                       setInstallOpen(true);
                     } else if (item.href === "__social_tour__") {
-                      localStorage.removeItem("social_tutorial_seen");
-                      navigate("/");
-                      toast.success("Social tour will start momentarily!");
+                      import("@/components/SocialTutorial").then(({ resetTutorial }) => {
+                        resetTutorial(user?.id);
+                        navigate("/");
+                        toast.success("Social tour will start momentarily!");
+                      });
                     } else {
                       toast.info(`${item.label} — Coming Soon!`);
                     }
