@@ -56,6 +56,7 @@ async function fetchAllNpPayments(apiKey: string, jwt: string): Promise<NpPaymen
 
   while (true) {
     const url = `${NP_API}/payment/?limit=${limit}&page=${page}&sortBy=created_at&orderBy=asc`;
+    console.log(`Fetching NP payments page ${page}, JWT length: ${jwt.length}`);
     const res = await fetch(url, {
       headers: {
         "x-api-key": apiKey,
