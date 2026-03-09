@@ -174,6 +174,7 @@ const AdminWithdrawals = () => {
                   <TableHead>Date</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Wallet</TableHead>
+                  <TableHead>TX Hash</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Note</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
