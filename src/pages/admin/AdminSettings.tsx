@@ -168,6 +168,7 @@ const AdminSettings = () => {
           withdrawal_multiplier: withdrawalMultiplierNum,
           withdrawal_limit_enabled: withdrawalLimitEnabled,
           exit_fee_percent: exitFeeNum,
+          copy_trade_commission_percent: copyTradeCommissionNum,
           quick_trade_fee_percent: quickTradeFeeNum,
           qt_min_bet: qtMinBetNum,
           qt_max_bet: qtMaxBetNum,
