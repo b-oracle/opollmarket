@@ -22,7 +22,7 @@ import { Switch } from "@/components/ui/switch";
 import NftBadge, { isNftAvatar } from "@/components/NftBadge";
 import { AnimatePresence, motion } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import SocialPage from "@/components/SocialPage";
+
 import CopyTradeStats from "@/components/CopyTradeStats";
 
 
@@ -204,7 +204,6 @@ const Profile = () => {
   const [editBio, setEditBio] = useState("");
   const [editIsPublic, setEditIsPublic] = useState(true);
   const [swipeHintDismissed, setSwipeHintDismissed] = useState(() => localStorage.getItem("social_swipe_used") === "1");
-  const [socialOpen, setSocialOpen] = useState(false);
 
   // Swipe-left from right edge detection — open social overlay
   const touchStartX = useRef(0);
@@ -228,7 +227,7 @@ const Profile = () => {
         localStorage.setItem("social_swipe_used", "1");
         setSwipeHintDismissed(true);
       }
-      setSocialOpen(true);
+      navigate(`/user/${user.id}`);
     }
   }, [swipeHintDismissed, user]);
 
@@ -1114,7 +1113,7 @@ const Profile = () => {
       <InstallAppModal open={installOpen} onClose={() => setInstallOpen(false)} />
       
       <BottomNav />
-      <SocialPage open={socialOpen} onClose={() => setSocialOpen(false)} />
+      
     </div>
   );
 };
