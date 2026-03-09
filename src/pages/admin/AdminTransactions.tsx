@@ -99,7 +99,12 @@ const AdminTransactions = () => {
 
       const buildTotalQuery = (type: string) => {
         let q = supabase.from("transactions").select("amount").eq("type", type);
-        q = applyStatusFilterQ(q);
+        if (statusFilter === "all") {
+          // Always exclude pending/expired from totals — only count confirmed/partial
+          q = q.in("status", ["confirmed", "partial"]);
+        } else {
+          q = applyStatusFilterQ(q);
+        }
         q = applySearchFilter(q);
         return q;
       };
