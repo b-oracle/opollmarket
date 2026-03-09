@@ -163,8 +163,6 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           minHeight: 'var(--feed-card-height)',
           maxHeight: 'var(--feed-card-height)',
           touchAction: "pan-y",
-          transform: dragX !== 0 ? `translateX(${dragX * 0.5}px)` : undefined,
-          transition: dragX === 0 ? 'transform 0.25s ease-out' : 'none',
         }}
       >
         {/* Swipe overlay indicators */}
