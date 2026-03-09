@@ -8,7 +8,7 @@ import BottomNav from "@/components/BottomNav";
 import FollowButton from "@/components/FollowButton";
 import { ArrowLeft, Users, UserCheck, Loader2, Search, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import NftBadge, { isNftAvatar } from "@/components/NftBadge";
+import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 
 const LAST_SEEN_KEY = "followers_last_seen";
 const ITEMS_PER_PAGE = 10;
@@ -99,7 +99,7 @@ const Followers = () => {
       const ids = data.map((f: any) => f.follower_id);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url")
+        .select("id, display_name, avatar_url, verification_level")
         .in("id", ids);
       const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
       return data.map((f: any) => ({ ...f, profile: profileMap.get(f.follower_id) || null }));
@@ -120,7 +120,7 @@ const Followers = () => {
       const ids = data.map((f: any) => f.following_id);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url")
+        .select("id, display_name, avatar_url, verification_level")
         .in("id", ids);
       const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
       return data.map((f: any) => ({ ...f, profile: profileMap.get(f.following_id) || null }));
@@ -251,7 +251,7 @@ const Followers = () => {
                 const profile = item.profile;
                 const userId = tab === "followers" ? item.follower_id : item.following_id;
                 const name = profile?.display_name || "Anonymous";
-                const hasNft = isNftAvatar(profile?.avatar_url);
+                const vLevel = (profile?.verification_level || "none") as VerificationLevel;
                 return (
                   <motion.div
                     key={item.id}
@@ -269,10 +269,13 @@ const Followers = () => {
                           <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
                         )}
                       </div>
-                      {hasNft && <NftBadge className="absolute -bottom-0.5 -right-0.5 scale-75" />}
+                      {vLevel !== "none" && <NftBadge level={vLevel} className="absolute -bottom-0.5 -right-0.5 scale-75" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate">{name}</p>
+                      <p className="text-sm font-semibold truncate flex items-center gap-1">
+                        {name}
+                        {vLevel !== "none" && <NftBadge level={vLevel} size={14} />}
+                      </p>
                       <p className="text-[10px] text-muted-foreground">
                         {new Date(item.created_at).toLocaleDateString()}
                       </p>

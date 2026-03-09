@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import useAnalytics from "@/hooks/useAnalytics";
 import RankShareModal from "@/components/RankShareModal";
-import NftBadge, { isNftAvatar } from "@/components/NftBadge";
+import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import FollowButton from "@/components/FollowButton";
 
 
@@ -19,6 +19,7 @@ interface Referrer {
   userId: string;
   name: string;
   avatar: string | null;
+  verificationLevel: VerificationLevel;
   totalReferrals: number;
   totalEarned: number;
 }
@@ -27,6 +28,7 @@ interface Trader {
   userId: string;
   name: string;
   avatar: string | null;
+  verificationLevel: VerificationLevel;
   pnl: number;
   trades: number;
   volume: number;
@@ -66,7 +68,7 @@ const formatDollar = (v: number) => {
   return `$${abs.toFixed(0)}`;
 };
 
-const AvatarCircle = ({ avatar, name, size = "w-10 h-10" }: { avatar: string | null; name: string; size?: string }) => (
+const AvatarCircle = ({ avatar, name, size = "w-10 h-10", verificationLevel }: { avatar: string | null; name: string; size?: string; verificationLevel?: VerificationLevel }) => (
   <div className="relative shrink-0">
     <div className={`${size} rounded-full bg-secondary flex items-center justify-center text-lg overflow-hidden`}>
       {avatar ? (
@@ -75,7 +77,7 @@ const AvatarCircle = ({ avatar, name, size = "w-10 h-10" }: { avatar: string | n
         <span>👤</span>
       )}
     </div>
-    {isNftAvatar(avatar) && <NftBadge className="absolute -bottom-0.5 -right-0.5" />}
+    {verificationLevel && verificationLevel !== "none" && <NftBadge level={verificationLevel} className="absolute -bottom-0.5 -right-0.5" />}
   </div>
 );
 
@@ -201,7 +203,7 @@ const useReferralLeaderboard = (period: TimePeriod) => {
       const ids = Array.from(map.keys());
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url")
+        .select("id, display_name, avatar_url, verification_level")
         .in("id", ids);
 
       const pMap = new Map((profiles || []).map((p) => [p.id, p]));
@@ -210,7 +212,7 @@ const useReferralLeaderboard = (period: TimePeriod) => {
         ids.map((id) => {
           const s = map.get(id)!;
           const p = pMap.get(id);
-          return { userId: id, name: p?.display_name || "Anonymous", avatar: p?.avatar_url || null, totalReferrals: s.count, totalEarned: s.total };
+          return { userId: id, name: p?.display_name || "Anonymous", avatar: p?.avatar_url || null, verificationLevel: (p?.verification_level || "none") as VerificationLevel, totalReferrals: s.count, totalEarned: s.total };
         })
       );
       setLoading(false);
@@ -261,7 +263,7 @@ const useTradingLeaderboard = (period: TimePeriod) => {
       const ids = Array.from(userMap.keys());
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url")
+        .select("id, display_name, avatar_url, verification_level")
         .in("id", ids);
 
       const pMap = new Map((profiles || []).map((p) => [p.id, p]));
@@ -270,7 +272,7 @@ const useTradingLeaderboard = (period: TimePeriod) => {
         ids.map((id) => {
           const s = userMap.get(id)!;
           const p = pMap.get(id);
-          return { userId: id, name: p?.display_name || "Anonymous", avatar: p?.avatar_url || null, ...s };
+          return { userId: id, name: p?.display_name || "Anonymous", avatar: p?.avatar_url || null, verificationLevel: (p?.verification_level || "none") as VerificationLevel, ...s };
         })
       );
       setLoading(false);
@@ -285,6 +287,7 @@ interface QuickTrader {
   userId: string;
   name: string;
   avatar: string | null;
+  verificationLevel: VerificationLevel;
   profit: number;
   wins: number;
   totalBets: number;
@@ -303,12 +306,16 @@ const useQuickTradeLeaderboard = (period: TimePeriod) => {
         _limit: 20,
         ...(cutoff ? { _cutoff: cutoff } : {}),
       } as any);
-      if (data) {
+      if (data && (data as any[]).length > 0) {
+        const userIds = (data as any[]).map((d) => d.user_id);
+        const { data: profiles } = await supabase.from("profiles").select("id, verification_level").in("id", userIds);
+        const vMap = new Map((profiles || []).map((p: any) => [p.id, p.verification_level]));
         setQuickTraders(
           (data as any[]).map((d) => ({
             userId: d.user_id,
             name: d.display_name || "Anonymous",
             avatar: d.avatar_url,
+            verificationLevel: (vMap.get(d.user_id) || "none") as VerificationLevel,
             profit: Number(d.profit),
             wins: Number(d.wins),
             totalBets: Number(d.total_bets),
@@ -328,6 +335,7 @@ interface StreakUser {
   userId: string;
   name: string;
   avatar: string | null;
+  verificationLevel: VerificationLevel;
   currentStreak: number;
   bestStreak: number;
 }
@@ -340,12 +348,16 @@ const useStreakLeaderboard = () => {
     setLoading(true);
     (async () => {
       const { data } = await supabase.rpc("get_streak_leaderboard", { _limit: 20 } as any);
-      if (data) {
+      if (data && (data as any[]).length > 0) {
+        const userIds = (data as any[]).map((d) => d.user_id);
+        const { data: profiles } = await supabase.from("profiles").select("id, verification_level").in("id", userIds);
+        const vMap = new Map((profiles || []).map((p: any) => [p.id, p.verification_level]));
         setStreakUsers(
           (data as any[]).map((d) => ({
             userId: d.user_id,
             name: d.display_name || "Anonymous",
             avatar: d.avatar_url,
+            verificationLevel: (vMap.get(d.user_id) || "none") as VerificationLevel,
             currentStreak: Number(d.current_streak),
             bestStreak: Number(d.best_streak),
           }))
@@ -617,11 +629,12 @@ const Rankings = () => {
                                   className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : "cursor-pointer hover:bg-accent/30"}`}
                                 >
                                   <div className="w-8 flex justify-center shrink-0">{rankBadge(rank)}</div>
-                                  <AvatarCircle avatar={trader.avatar} name={trader.name} />
+                                  <AvatarCircle avatar={trader.avatar} name={trader.name} verificationLevel={trader.verificationLevel} />
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-1.5">
                                       <span className={`text-sm font-bold truncate ${isMe ? "text-primary" : ""}`}>{isMe ? "You" : trader.name}</span>
                                       {isMe && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
+                                      {!isMe && trader.verificationLevel !== "none" && <NftBadge level={trader.verificationLevel} size={14} />}
                                     </div>
                                     <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
                                       <span>{trader.trades} trade{trader.trades !== 1 ? "s" : ""}</span>
@@ -733,11 +746,12 @@ const Rankings = () => {
                                       className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : "cursor-pointer hover:bg-accent/30"}`}
                                     >
                                       <div className="w-8 flex justify-center shrink-0">{rankBadge(rank)}</div>
-                                      <AvatarCircle avatar={qt.avatar} name={qt.name} />
+                                      <AvatarCircle avatar={qt.avatar} name={qt.name} verificationLevel={qt.verificationLevel} />
                                       <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-1.5">
                                           <span className={`text-sm font-bold truncate ${isMe ? "text-primary" : ""}`}>{isMe ? "You" : qt.name}</span>
                                           {isMe && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
+                                          {!isMe && qt.verificationLevel !== "none" && <NftBadge level={qt.verificationLevel} size={14} />}
                                         </div>
                                         <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
                                           <span>{qt.wins}W/{qt.totalBets - qt.wins}L</span>
@@ -801,11 +815,12 @@ const Rankings = () => {
                                       className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : "cursor-pointer hover:bg-accent/30"}`}
                                     >
                                       <div className="w-8 flex justify-center shrink-0">{rankBadge(rank)}</div>
-                                      <AvatarCircle avatar={su.avatar} name={su.name} />
+                                      <AvatarCircle avatar={su.avatar} name={su.name} verificationLevel={su.verificationLevel} />
                                       <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-1.5">
                                           <span className={`text-sm font-bold truncate ${isMe ? "text-primary" : ""}`}>{isMe ? "You" : su.name}</span>
                                           {isMe && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
+                                          {!isMe && su.verificationLevel !== "none" && <NftBadge level={su.verificationLevel} size={14} />}
                                         </div>
                                         <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
                                           <span>Best: {su.bestStreak} 🏆</span>
@@ -907,11 +922,12 @@ const Rankings = () => {
                                   className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : "cursor-pointer hover:bg-accent/30"}`}
                                 >
                                   <div className="w-8 flex justify-center shrink-0">{rankBadge(rank)}</div>
-                                  <AvatarCircle avatar={ref.avatar} name={ref.name} />
+                                  <AvatarCircle avatar={ref.avatar} name={ref.name} verificationLevel={ref.verificationLevel} />
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-1.5">
                                       <span className={`text-sm font-bold truncate ${isMe ? "text-primary" : ""}`}>{isMe ? "You" : ref.name}</span>
                                       {isMe && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
+                                      {!isMe && ref.verificationLevel !== "none" && <NftBadge level={ref.verificationLevel} size={14} />}
                                     </div>
                                     <div className="text-[10px] text-muted-foreground mt-0.5">
                                       {ref.totalReferrals} referral{ref.totalReferrals !== 1 ? "s" : ""}
