@@ -45,3 +45,5 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.verify-security]
     verify_jwt = false
+  [functions.bulk-update-verification]
+    verify_jwt = false
