@@ -120,16 +120,24 @@ const steps: TutorialStep[] = [
   },
 ];
 
-export const shouldShowTutorial = (): boolean => {
-  return localStorage.getItem(TUTORIAL_KEY) !== "1";
+export const shouldShowTutorial = (userId?: string): boolean => {
+  const key = userId ? `${TUTORIAL_KEY}_${userId}` : TUTORIAL_KEY;
+  return localStorage.getItem(key) !== "1";
 };
 
-export const markTutorialSeen = () => {
-  localStorage.setItem(TUTORIAL_KEY, "1");
+export const markTutorialSeen = (userId?: string) => {
+  const key = userId ? `${TUTORIAL_KEY}_${userId}` : TUTORIAL_KEY;
+  localStorage.setItem(key, "1");
+};
+
+export const resetTutorial = (userId?: string) => {
+  const key = userId ? `${TUTORIAL_KEY}_${userId}` : TUTORIAL_KEY;
+  localStorage.removeItem(key);
 };
 
 interface SocialTutorialProps {
   onComplete: () => void;
+  userId?: string;
 }
 
 const SocialTutorial = ({ onComplete }: SocialTutorialProps) => {
