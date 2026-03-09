@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import ActivityFeed from "@/components/ActivityFeed";
@@ -42,6 +42,25 @@ const UserProfile = () => {
   const [activeTab, setActiveTab] = useState<"markets" | "predictions" | "rank">("markets");
   const [shareOpen, setShareOpen] = useState(false);
   const profileCardRef = useRef<HTMLDivElement>(null);
+
+  // Swipe-right from left edge to go back to account profile
+  const swipeStartX = useRef(0);
+  const swipeStartY = useRef(0);
+  const swipeFromEdge = useRef(false);
+  const handleSwipeStart = useCallback((e: React.TouchEvent) => {
+    const x = e.touches[0].clientX;
+    swipeStartX.current = x;
+    swipeStartY.current = e.touches[0].clientY;
+    swipeFromEdge.current = x < 40;
+  }, []);
+  const handleSwipeEnd = useCallback((e: React.TouchEvent) => {
+    if (!swipeFromEdge.current || !isOwnProfile) return;
+    const dx = e.changedTouches[0].clientX - swipeStartX.current;
+    const dy = Math.abs(e.changedTouches[0].clientY - swipeStartY.current);
+    if (dx > 60 && dy < 80) {
+      navigate("/profile");
+    }
+  }, [isOwnProfile, navigate]);
 
   // Profile data
   const { data: profile, isLoading: profileLoading } = useQuery({
@@ -267,7 +286,7 @@ const UserProfile = () => {
   }
 
   return (
-    <div className="min-h-dvh bg-background overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+    <div className="min-h-dvh bg-background overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }} onTouchStart={handleSwipeStart} onTouchEnd={handleSwipeEnd}>
       <TopBar />
       <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
         {/* Header */}
