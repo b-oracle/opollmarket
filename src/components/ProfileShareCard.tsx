@@ -177,6 +177,38 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
             ))}
           </div>
 
+          {/* Trades Breakdown */}
+          {(predictionsCount !== undefined || quickTradesCount !== undefined) && (
+            <div
+              style={{
+                display: "flex",
+                gap: "8px",
+                marginBottom: "16px",
+              }}
+            >
+              {[
+                { emoji: "📈", label: "Predictions", value: predictionsCount ?? 0 },
+                { emoji: "⚡", label: "Quick Trades", value: quickTradesCount ?? 0 },
+              ].map((s) => (
+                <div
+                  key={s.label}
+                  style={{
+                    flex: 1,
+                    padding: "10px",
+                    borderRadius: "12px",
+                    backgroundColor: `${colors.muted}50`,
+                    border: `1px solid ${colors.border}50`,
+                    textAlign: "center",
+                  }}
+                >
+                  <div style={{ fontSize: "14px", marginBottom: "2px" }}>{s.emoji}</div>
+                  <div style={{ fontSize: "16px", fontWeight: 800, color: colors.primary, lineHeight: "1.3" }}>{s.value}</div>
+                  <div style={{ fontSize: "9px", color: colors.mutedFg }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Activity Stats */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "16px" }}>
             {[
