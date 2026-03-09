@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { TrendingUp, Users, MessageSquare, ShoppingBag, Loader2, DollarSign, Activity, Gift, UserPlus, Zap, UserCheck, Heart, ArrowDownLeft, ArrowUpRight, Wallet, Scale, Info } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
+import NpReconciliation from "@/components/admin/NpReconciliation";
 
 interface Stats {
   totalMarkets: number;
@@ -444,6 +445,9 @@ const AdminDashboard = () => {
           </div>
         );
       })()}
+
+      {/* NP Fee Reconciliation Tool */}
+      <NpReconciliation />
 
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
