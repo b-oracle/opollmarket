@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
       .eq("id", user.id);
 
     return new Response(
-      JSON.stringify({ success: true, level, has_nft: hasNftAvatar, has_tokens: hasTokens }),
+      JSON.stringify({ success: true, level, has_nft: hasNft, has_tokens: hasTokens }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
