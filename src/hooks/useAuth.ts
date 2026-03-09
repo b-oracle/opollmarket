@@ -105,6 +105,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (event === "SIGNED_IN") {
           localStorage.removeItem("social_swipe_used");
           localStorage.removeItem("social_tutorial_seen");
+          localStorage.removeItem("feed_swipe_hint_seen");
         }
 
         lastSessionRef.current = newSession;
