@@ -91,6 +91,10 @@ const AdminSettings = () => {
         setQtEnabledAssets(new Set(assets.split(",").filter(Boolean)));
         const timeframes = String(d.qt_enabled_timeframes ?? "60,180,300,900");
         setQtEnabledTimeframes(new Set(timeframes.split(",").filter(Boolean).map(Number)));
+        setBlueRevenueShare(String(d.blue_revenue_share_percent ?? 0));
+        setGoldRevenueShare(String(d.gold_revenue_share_percent ?? 0));
+        setBlueTrendingMult(String(d.blue_trending_multiplier ?? 1.2));
+        setGoldTrendingMult(String(d.gold_trending_multiplier ?? 1.5));
         setSettingsId(d.id);
       }
       if (error) console.error(error);
