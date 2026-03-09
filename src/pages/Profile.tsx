@@ -640,7 +640,7 @@ const Profile = () => {
                     <span className="text-2xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
                   )}
                 </div>
-                {isNftAvatar(profile?.avatar_url) && <NftBadge className="absolute -bottom-0.5 -right-0.5" />}
+                {(profile as any)?.verification_level && (profile as any).verification_level !== "none" && <NftBadge className="absolute -bottom-0.5 -right-0.5" level={(profile as any).verification_level} />}
               </div>
               <div className="space-y-1">
                 <p className="text-base font-bold">{displayName}</p>
