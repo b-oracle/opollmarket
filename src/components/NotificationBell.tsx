@@ -14,6 +14,7 @@ interface Notification {
   type: string;
   read: boolean;
   market_id: string | null;
+  actor_id: string | null;
   created_at: string;
 }
 
@@ -82,25 +83,18 @@ const NotificationBell = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
-  const handleClick = async (n: Notification) => {
+  const handleClick = (n: Notification) => {
     if (!n.read) {
       supabase.from("notifications").update({ read: true }).eq("id", n.id).then(() => {
         setNotifications((prev) => prev.map((x) => x.id === n.id ? { ...x, read: true } : x));
       });
     }
 
-    // "New Follower" notifications → navigate to the follower's profile
-    if (n.title.includes("Follower")) {
-      const nameMatch = n.message.match(/^(.+?) started following/);
-      if (nameMatch) {
-        const followerName = nameMatch[1];
-        const { data: profileId } = await supabase.rpc("get_user_id_by_username", { _username: followerName });
-        if (profileId) {
-          setOpen(false);
-          navigate(`/user/${profileId}`);
-          return;
-        }
-      }
+    // Follower notifications → navigate to follower's profile
+    if (n.title.includes("Follower") && n.actor_id) {
+      setOpen(false);
+      navigate(`/user/${n.actor_id}`);
+      return;
     }
 
     if (n.market_id) {
