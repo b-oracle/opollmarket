@@ -3,8 +3,7 @@ import { useConfetti } from "@/hooks/useConfetti";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, MessageCircle, Users, Bookmark, ArrowRight, ArrowLeft, Sparkles, UserPlus, Globe } from "lucide-react";
-
-const TUTORIAL_KEY = "social_tutorial_seen";
+import { supabase } from "@/integrations/supabase/client";
 
 /** Haptic patterns matching the project standard */
 const haptic = {
