@@ -344,6 +344,107 @@ const AdminDashboard = () => {
         );
       })()}
 
+      {/* Deposit Reconciliation Card */}
+      {stats && (() => {
+        const gross = stats.grossDeposits;
+        const confirmed = stats.totalDeposits;
+        const partial = stats.partialDepositsAmount;
+        const pending = stats.pendingDepositsAmount;
+        const expired = stats.expiredDepositsAmount;
+        const credited = confirmed + partial;
+        const unprocessed = pending + expired;
+        const fmt = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(1)}K` : `$${v.toFixed(2)}`;
+        const maxBar = Math.max(gross, 1);
+
+        return (
+          <div className="bg-card border border-border rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Scale className="w-5 h-5 text-primary" />
+              <h3 className="text-sm font-semibold">Deposit Reconciliation</h3>
+            </div>
+
+            {/* Breakdown grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+              <div className="rounded-lg bg-muted/30 border border-border p-3">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium block mb-1">Gross Requested</span>
+                <p className="text-lg font-bold">{fmt(gross)}</p>
+                <p className="text-[10px] text-muted-foreground">{stats.grossDepositCount} total deposits</p>
+              </div>
+              <div className="rounded-lg bg-green-500/5 border border-green-500/10 p-3">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium block mb-1">Net Credited</span>
+                <p className="text-lg font-bold text-green-500">{fmt(credited)}</p>
+                <p className="text-[10px] text-muted-foreground">{stats.depositCount} confirmed{stats.partialDepositCount > 0 ? ` + ${stats.partialDepositCount} partial` : ''}</p>
+              </div>
+              <div className="rounded-lg bg-yellow-500/5 border border-yellow-500/10 p-3">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium block mb-1">Pending</span>
+                <p className="text-lg font-bold text-yellow-500">{fmt(pending)}</p>
+                <p className="text-[10px] text-muted-foreground">{stats.pendingDepositCount} awaiting</p>
+              </div>
+              <div className="rounded-lg bg-destructive/5 border border-destructive/10 p-3">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium block mb-1">Expired</span>
+                <p className="text-lg font-bold text-destructive">{fmt(expired)}</p>
+                <p className="text-[10px] text-muted-foreground">{stats.expiredDepositCount} never completed</p>
+              </div>
+            </div>
+
+            {/* Stacked bar visualization */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] text-muted-foreground font-medium">Deposit Breakdown</span>
+                <span className="text-[10px] font-bold">{fmt(gross)}</span>
+              </div>
+              <div className="h-3 bg-muted rounded-full overflow-hidden flex">
+                {credited > 0 && (
+                  <div
+                    className="h-full bg-green-500 transition-all"
+                    style={{ width: `${(credited / maxBar) * 100}%` }}
+                    title={`Credited: ${fmt(credited)}`}
+                  />
+                )}
+                {pending > 0 && (
+                  <div
+                    className="h-full bg-yellow-500 transition-all"
+                    style={{ width: `${(pending / maxBar) * 100}%` }}
+                    title={`Pending: ${fmt(pending)}`}
+                  />
+                )}
+                {expired > 0 && (
+                  <div
+                    className="h-full bg-destructive transition-all"
+                    style={{ width: `${(expired / maxBar) * 100}%` }}
+                    title={`Expired: ${fmt(expired)}`}
+                  />
+                )}
+              </div>
+              <div className="flex items-center gap-4 mt-1.5">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                  <span className="text-[10px] text-muted-foreground">Credited ({fmt(credited)})</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
+                  <span className="text-[10px] text-muted-foreground">Pending ({fmt(pending)})</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-destructive" />
+                  <span className="text-[10px] text-muted-foreground">Expired ({fmt(expired)})</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Info note */}
+            <div className="mt-4 flex items-start gap-2 rounded-lg bg-muted/30 border border-border p-3">
+              <Info className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                <strong>Net Credited</strong> reflects actual funds added to user balances (after payment processor fees). 
+                <strong> Gross Requested</strong> includes all deposit attempts. The difference between NOWPayments balance 
+                and Net Credited is due to processor fees (~0.5-1%) deducted before crediting.
+              </p>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Activity chart */}
