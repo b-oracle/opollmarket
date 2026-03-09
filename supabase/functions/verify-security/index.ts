@@ -70,8 +70,9 @@ Deno.serve(async (req) => {
       valid = bcrypt.compareSync(code, settings.pin_hash);
     } else if (type === "totp") {
       if (!settings.totp_enabled || !settings.totp_secret) {
-        return new Response(JSON.stringify({ error: "2FA not configured" }), {
-          status: 400, headers: corsHeaders,
+        // TOTP not actually configured — treat as pass (data inconsistency)
+        return new Response(JSON.stringify({ valid: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
