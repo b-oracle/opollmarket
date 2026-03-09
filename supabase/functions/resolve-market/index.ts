@@ -294,6 +294,15 @@ async function handleResolve(
           status: "confirmed",
           side: "yes",
         });
+
+        // Notify trader about commission earned
+        await adminClient.from("notifications").insert({
+          user_id: earning.trader_user_id,
+          title: "Copy Trade Commission! 💰",
+          message: `You earned $${commissionAmount.toFixed(2)} commission from a copier's profit on "${market.title}"`,
+          type: "info",
+          market_id,
+        });
       }
 
       // Update the copy_trade_earnings record with actual figures
