@@ -388,9 +388,6 @@ const Profile = () => {
     <div
       className="min-h-dvh bg-background"
       style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
     >
       {/* Swipe hint glow on right edge */}
       {!swipeHintDismissed && (
