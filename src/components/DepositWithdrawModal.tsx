@@ -978,6 +978,14 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                 )}
               </AnimatePresence>
     </BottomSheet>
+    <SecurityVerificationModal
+      open={showSecurityModal}
+      onClose={() => setShowSecurityModal(false)}
+      onVerified={() => { setShowSecurityModal(false); executeWithdraw(); }}
+      requirePin={securitySettings?.require_pin ?? false}
+      requireTotp={securitySettings?.require_totp ?? false}
+    />
+    </>
   );
 };
 
