@@ -50,7 +50,7 @@ async function fetchAllNpPayments(apiKey: string, jwt: string): Promise<NpPaymen
     const res = await fetch(url, {
       headers: {
         "x-api-key": apiKey,
-        "Authorization": jwt,
+        "Authorization": `Bearer ${jwt}`,
       },
     });
 
