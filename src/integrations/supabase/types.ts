@@ -189,6 +189,7 @@ export type Database = {
       commission_settings: {
         Row: {
           admin_fee_percent: number
+          copy_trade_commission_percent: number
           creator_fee_percent: number
           exit_fee_percent: number
           id: string
@@ -218,6 +219,7 @@ export type Database = {
         }
         Insert: {
           admin_fee_percent?: number
+          copy_trade_commission_percent?: number
           creator_fee_percent?: number
           exit_fee_percent?: number
           id?: string
@@ -247,6 +249,7 @@ export type Database = {
         }
         Update: {
           admin_fee_percent?: number
+          copy_trade_commission_percent?: number
           creator_fee_percent?: number
           exit_fee_percent?: number
           id?: string
@@ -311,6 +314,60 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      copy_trade_earnings: {
+        Row: {
+          commission_amount: number
+          commission_percent: number
+          copier_profit: number
+          copier_user_id: string
+          created_at: string
+          id: string
+          market_id: string | null
+          pending_trade_id: string | null
+          trade_type: string
+          trader_user_id: string
+        }
+        Insert: {
+          commission_amount?: number
+          commission_percent?: number
+          copier_profit?: number
+          copier_user_id: string
+          created_at?: string
+          id?: string
+          market_id?: string | null
+          pending_trade_id?: string | null
+          trade_type?: string
+          trader_user_id: string
+        }
+        Update: {
+          commission_amount?: number
+          commission_percent?: number
+          copier_profit?: number
+          copier_user_id?: string
+          created_at?: string
+          id?: string
+          market_id?: string | null
+          pending_trade_id?: string | null
+          trade_type?: string
+          trader_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "copy_trade_earnings_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "copy_trade_earnings_pending_trade_id_fkey"
+            columns: ["pending_trade_id"]
+            isOneToOne: false
+            referencedRelation: "pending_copy_trades"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       feature_toggles: {
         Row: {
@@ -1325,6 +1382,13 @@ export type Database = {
     }
     Functions: {
       expire_stale_pending_deposits: { Args: never; Returns: undefined }
+      get_copy_trade_stats: {
+        Args: { _trader_id: string }
+        Returns: {
+          total_copiers: number
+          total_revenue: number
+        }[]
+      }
       get_follow_counts: {
         Args: { _user_id: string }
         Returns: {
