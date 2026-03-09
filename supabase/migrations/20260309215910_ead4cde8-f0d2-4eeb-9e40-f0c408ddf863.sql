@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS social_tutorial_seen boolean NOT NULL DEFAULT false;

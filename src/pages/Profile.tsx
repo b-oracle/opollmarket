@@ -1275,8 +1275,8 @@ const Profile = () => {
                     if (item.href === "__install__") {
                       setInstallOpen(true);
                     } else if (item.href === "__social_tour__") {
-                      import("@/components/SocialTutorial").then(({ resetTutorial }) => {
-                        resetTutorial(user?.id);
+                      import("@/components/SocialTutorial").then(async ({ resetTutorial }) => {
+                        await resetTutorial(user?.id);
                         navigate("/");
                         toast.success("Social tour will start momentarily!");
                       });
