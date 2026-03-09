@@ -235,7 +235,7 @@ const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
                 <p className="text-xs text-muted-foreground">Require PIN after signing in</p>
               </div>
               <Switch
-                checked={secSettings.require_pin_login}
+                checked={secSettings?.require_pin_login ?? false}
                 onCheckedChange={(v) => updateToggle("require_pin_login", v)}
               />
             </div>
