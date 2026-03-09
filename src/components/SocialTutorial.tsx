@@ -140,7 +140,7 @@ interface SocialTutorialProps {
   userId?: string;
 }
 
-const SocialTutorial = ({ onComplete }: SocialTutorialProps) => {
+const SocialTutorial = ({ onComplete, userId }: SocialTutorialProps) => {
   const [step, setStep] = useState(0);
   const navigate = useNavigate();
   const { fireWinConfetti } = useConfetti();
