@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Scale, Loader2, AlertTriangle, CheckCircle2, ArrowRight, XCircle, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
