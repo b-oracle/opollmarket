@@ -246,6 +246,10 @@ Deno.serve(async (req) => {
 
     const payCurrency = crypto_currency || "usdtbsc";
 
+    // Calculate fee and net payout
+    const feeAmount = withdrawalFeePercent > 0 ? (amount * withdrawalFeePercent) / 100 : 0;
+    const netAmount = amount - feeAmount;
+
     // JWT-based payout flow
     let payoutSuccess = false;
     let payoutId = null;
@@ -256,9 +260,9 @@ Deno.serve(async (req) => {
       // Step 1: Authenticate with NOWPayments to get JWT
       const jwtToken = await getNowPaymentsJwt();
 
-      // Step 2: Get estimated crypto amount
+      // Step 2: Get estimated crypto amount (based on net amount after fee)
       const estimateRes = await fetch(
-        `https://api.nowpayments.io/v1/estimate?amount=${amount}&currency_from=usd&currency_to=${payCurrency}`,
+        `https://api.nowpayments.io/v1/estimate?amount=${netAmount}&currency_from=usd&currency_to=${payCurrency}`,
         { headers: { "x-api-key": apiKey } }
       );
 
