@@ -98,12 +98,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const commentCount = useCommentCount(market.id);
-  const [dragX, setDragX] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
-  const [swiping, setSwiping] = useState(false);
   const captureContentRef = useRef<HTMLDivElement>(null);
-  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
-  const touchLockedRef = useRef<"horizontal" | "vertical" | null>(null);
   const [parallaxY, setParallaxY] = useState(0);
 
   // Parallax effect for background image
