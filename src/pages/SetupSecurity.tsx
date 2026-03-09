@@ -16,11 +16,6 @@ const SetupSecurity = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  if (!authLoading && !user) {
-    navigate("/auth", { replace: true });
-    return null;
-  }
-
   const [step, setStep] = useState<SetupStep>("choose");
   const [pin, setPin] = useState("");
   const [pinConfirm, setPinConfirm] = useState("");
@@ -33,6 +28,11 @@ const SetupSecurity = () => {
   const [copied, setCopied] = useState(false);
   const [pinDone, setPinDone] = useState(false);
   const [totpDone, setTotpDone] = useState(false);
+
+  if (!authLoading && !user) {
+    navigate("/auth", { replace: true });
+    return null;
+  }
 
   const handleSetPin = async () => {
     if (pin !== pinConfirm) {
