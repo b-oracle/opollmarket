@@ -474,16 +474,6 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                       Buy No {noPercent}¢
                     </button>
                   </div>
-                  {isActive && (
-                    <motion.p
-                      className="text-[10px] text-muted-foreground/50 font-medium text-center lg:hidden"
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 1.2, duration: 0.5, ease: "easeOut" }}
-                    >
-                      ← Swipe left for NO · Swipe right for YES →
-                    </motion.p>
-                  )}
                 </div>
               )}
             </motion.div>
