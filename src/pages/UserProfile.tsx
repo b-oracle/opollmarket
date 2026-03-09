@@ -42,25 +42,55 @@ const UserProfile = () => {
   const [activeTab, setActiveTab] = useState<"markets" | "predictions" | "rank">("markets");
   const [shareOpen, setShareOpen] = useState(false);
   const profileCardRef = useRef<HTMLDivElement>(null);
+  const [swipeDragX, setSwipeDragX] = useState(0);
+  const swipingActive = useRef(false);
 
-  // Swipe-right from left edge to go back to account profile
+  // Swipe-right from left edge to go back to account profile with drag follow
   const swipeStartX = useRef(0);
   const swipeStartY = useRef(0);
   const swipeFromEdge = useRef(false);
+  const swipeLockedDir = useRef<"horizontal" | "vertical" | null>(null);
   const handleSwipeStart = useCallback((e: React.TouchEvent) => {
     const x = e.touches[0].clientX;
     swipeStartX.current = x;
     swipeStartY.current = e.touches[0].clientY;
     swipeFromEdge.current = x < 40;
+    swipeLockedDir.current = null;
+    swipingActive.current = false;
   }, []);
-  const handleSwipeEnd = useCallback((e: React.TouchEvent) => {
+  const handleSwipeMove = useCallback((e: React.TouchEvent) => {
     if (!swipeFromEdge.current || !isOwnProfile) return;
-    const dx = e.changedTouches[0].clientX - swipeStartX.current;
-    const dy = Math.abs(e.changedTouches[0].clientY - swipeStartY.current);
-    if (dx > 60 && dy < 80) {
-      navigate("/profile");
+    const dx = e.touches[0].clientX - swipeStartX.current; // positive = swiped right
+    const dy = Math.abs(e.touches[0].clientY - swipeStartY.current);
+    if (!swipeLockedDir.current) {
+      if (Math.abs(dx) > 10 || dy > 10) {
+        swipeLockedDir.current = Math.abs(dx) > dy ? "horizontal" : "vertical";
+      }
+      return;
     }
-  }, [isOwnProfile, navigate]);
+    if (swipeLockedDir.current !== "horizontal") return;
+    if (dx > 0) {
+      swipingActive.current = true;
+      setSwipeDragX(Math.min(dx * 0.6, window.innerWidth * 0.7));
+    }
+  }, [isOwnProfile]);
+  const handleSwipeEnd = useCallback(() => {
+    if (!swipingActive.current) {
+      swipeFromEdge.current = false;
+      return;
+    }
+    if (swipeDragX > 80) {
+      setSwipeDragX(window.innerWidth);
+      setTimeout(() => {
+        navigate("/profile");
+        setSwipeDragX(0);
+      }, 200);
+    } else {
+      setSwipeDragX(0);
+    }
+    swipingActive.current = false;
+    swipeFromEdge.current = false;
+  }, [swipeDragX, navigate]);
 
   // Profile data
   const { data: profile, isLoading: profileLoading } = useQuery({
