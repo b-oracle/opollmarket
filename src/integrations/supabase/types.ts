@@ -1508,7 +1508,13 @@ export type Database = {
         }[]
       }
       get_user_id_by_username: { Args: { _username: string }; Returns: string }
-      get_user_trade_count: { Args: { _user_id: string }; Returns: number }
+      get_user_trade_count: {
+        Args: { _user_id: string }
+        Returns: {
+          predictions: number
+          quick_trades: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
