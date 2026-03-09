@@ -18,7 +18,7 @@ import PWAUpdatePrompt from "./components/PWAUpdatePrompt";
 import LogoLoader from "./components/LogoLoader";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { SidebarStateProvider, useSidebarState } from "./hooks/useSidebarState";
-import SocialTutorial, { shouldShowTutorial } from "./components/SocialTutorial";
+import SocialTutorial, { checkTutorialSeenFromDB } from "./components/SocialTutorial";
 import { useFeatureToggles } from "./hooks/useFeatureToggles";
 import PendingCopyTrades from "./components/PendingCopyTrades";
 
