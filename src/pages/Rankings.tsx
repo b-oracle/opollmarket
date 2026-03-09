@@ -348,12 +348,16 @@ const useStreakLeaderboard = () => {
     setLoading(true);
     (async () => {
       const { data } = await supabase.rpc("get_streak_leaderboard", { _limit: 20 } as any);
-      if (data) {
+      if (data && (data as any[]).length > 0) {
+        const userIds = (data as any[]).map((d) => d.user_id);
+        const { data: profiles } = await supabase.from("profiles").select("id, verification_level").in("id", userIds);
+        const vMap = new Map((profiles || []).map((p: any) => [p.id, p.verification_level]));
         setStreakUsers(
           (data as any[]).map((d) => ({
             userId: d.user_id,
             name: d.display_name || "Anonymous",
             avatar: d.avatar_url,
+            verificationLevel: (vMap.get(d.user_id) || "none") as VerificationLevel,
             currentStreak: Number(d.current_streak),
             bestStreak: Number(d.best_streak),
           }))
