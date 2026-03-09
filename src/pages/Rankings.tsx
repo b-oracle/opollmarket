@@ -287,6 +287,7 @@ interface QuickTrader {
   userId: string;
   name: string;
   avatar: string | null;
+  verificationLevel: VerificationLevel;
   profit: number;
   wins: number;
   totalBets: number;
