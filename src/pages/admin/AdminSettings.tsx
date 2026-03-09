@@ -566,8 +566,8 @@ const AdminSettings = () => {
                 <div className="rounded-lg bg-muted/50 p-2 space-y-0.5">
                   <p className="text-[10px] text-muted-foreground font-medium">Preview (based on {creatorNum}% creator fee)</p>
                   <div className="flex flex-wrap gap-2 text-[10px]">
-                    <span className="px-1.5 py-0.5 rounded bg-background border border-blue-500/30 text-blue-600">Blue: {blueRevenueShareNum}% of creator fee</span>
-                    <span className="px-1.5 py-0.5 rounded bg-background border border-yellow-500/30 text-yellow-600">Gold: {goldRevenueShareNum}% of creator fee</span>
+                    <span className="px-1.5 py-0.5 rounded bg-background border border-primary/30 text-primary">Blue: {blueRevenueShareNum}% of creator fee</span>
+                    <span className="px-1.5 py-0.5 rounded bg-background border border-accent/50 text-accent-foreground">Gold: {goldRevenueShareNum}% of creator fee</span>
                   </div>
                 </div>
                 <p className="text-[10px] text-muted-foreground">Distributed automatically every 24h to verified creators' bonus balance from their own resolved markets.</p>
