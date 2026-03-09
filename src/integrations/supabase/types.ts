@@ -992,6 +992,7 @@ export type Database = {
           id: string
           is_public: boolean
           referred_by: string | null
+          social_tutorial_seen: boolean
           updated_at: string
           wallet_address: string | null
         }
@@ -1004,6 +1005,7 @@ export type Database = {
           id: string
           is_public?: boolean
           referred_by?: string | null
+          social_tutorial_seen?: boolean
           updated_at?: string
           wallet_address?: string | null
         }
@@ -1016,6 +1018,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           referred_by?: string | null
+          social_tutorial_seen?: boolean
           updated_at?: string
           wallet_address?: string | null
         }
