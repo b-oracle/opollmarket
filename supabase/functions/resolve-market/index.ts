@@ -218,6 +218,97 @@ async function handleResolve(
 
   console.log("resolve-market: Success, winners:", winningPositions.length, "paid:", totalPaidOut);
 
+  // ── Process copy trade revenue share ──
+  // Find all copy_trade_earnings for this market
+  const { data: copyEarnings } = await adminClient
+    .from("copy_trade_earnings")
+    .select("*")
+    .eq("market_id", market_id);
+
+  if (copyEarnings && copyEarnings.length > 0) {
+    // Get all positions for copiers on this market to determine profit
+    for (const earning of copyEarnings) {
+      // Find the copier's position(s) on this market
+      const { data: copierPositions } = await adminClient
+        .from("positions")
+        .select("side, option_id, shares, avg_price")
+        .eq("user_id", earning.copier_user_id)
+        .eq("market_id", market_id);
+
+      if (!copierPositions || copierPositions.length === 0) continue;
+
+      let copierProfit = 0;
+      for (const pos of copierPositions) {
+        const isWinner =
+          (market.market_type === "binary" && winning_side && pos.side === winning_side) ||
+          (market.market_type === "multi" && winning_option_id && pos.option_id === winning_option_id);
+
+        if (isWinner) {
+          // Profit = payout (shares * $1) minus cost (shares * avg_price)
+          copierProfit += pos.shares * (1 - pos.avg_price);
+        } else {
+          // Loss = -(shares * avg_price)
+          copierProfit -= pos.shares * pos.avg_price;
+        }
+      }
+
+      // Only charge commission if copier made a profit
+      let commissionAmount = 0;
+      if (copierProfit > 0) {
+        commissionAmount = copierProfit * (earning.commission_percent / 100);
+
+        // Deduct commission from copier's balance
+        const { data: copierBal } = await adminClient
+          .from("balances")
+          .select("amount")
+          .eq("user_id", earning.copier_user_id)
+          .single();
+
+        if (copierBal) {
+          await adminClient
+            .from("balances")
+            .update({ amount: Math.max(0, copierBal.amount - commissionAmount), updated_at: new Date().toISOString() })
+            .eq("user_id", earning.copier_user_id);
+        }
+
+        // Credit commission to trader's balance
+        const { data: traderBal } = await adminClient
+          .from("balances")
+          .select("amount")
+          .eq("user_id", earning.trader_user_id)
+          .single();
+
+        if (traderBal) {
+          await adminClient
+            .from("balances")
+            .update({ amount: traderBal.amount + commissionAmount, updated_at: new Date().toISOString() })
+            .eq("user_id", earning.trader_user_id);
+        }
+
+        // Record commission transaction for the trader
+        await adminClient.from("transactions").insert({
+          user_id: earning.trader_user_id,
+          market_id,
+          type: "commission",
+          amount: commissionAmount,
+          status: "confirmed",
+          side: "yes",
+        });
+      }
+
+      // Update the copy_trade_earnings record with actual figures
+      await adminClient
+        .from("copy_trade_earnings")
+        .update({
+          copier_profit: copierProfit,
+          commission_amount: commissionAmount,
+        })
+        .eq("id", earning.id);
+    }
+
+    console.log("resolve-market: Processed", copyEarnings.length, "copy trade earnings");
+  }
+
   return new Response(
     JSON.stringify({
       success: true,
