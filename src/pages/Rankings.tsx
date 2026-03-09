@@ -922,11 +922,12 @@ const Rankings = () => {
                                   className={`glass rounded-xl p-3.5 flex items-center gap-3 ${isMe ? "ring-1 ring-primary/40 bg-primary/5" : "cursor-pointer hover:bg-accent/30"}`}
                                 >
                                   <div className="w-8 flex justify-center shrink-0">{rankBadge(rank)}</div>
-                                  <AvatarCircle avatar={ref.avatar} name={ref.name} />
+                                  <AvatarCircle avatar={ref.avatar} name={ref.name} verificationLevel={ref.verificationLevel} />
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-1.5">
                                       <span className={`text-sm font-bold truncate ${isMe ? "text-primary" : ""}`}>{isMe ? "You" : ref.name}</span>
                                       {isMe && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
+                                      {!isMe && ref.verificationLevel !== "none" && <NftBadge level={ref.verificationLevel} size={14} />}
                                     </div>
                                     <div className="text-[10px] text-muted-foreground mt-0.5">
                                       {ref.totalReferrals} referral{ref.totalReferrals !== 1 ? "s" : ""}
