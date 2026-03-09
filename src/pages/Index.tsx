@@ -525,11 +525,11 @@ const Index = () => {
                 onClick={() => navigate(`/market/${market.id}`)}
                 className={`relative glass rounded-xl p-3 cursor-pointer transition-all active:scale-[0.98] flex items-center gap-3 group md:p-4 md:rounded-2xl hover:border-primary/20 hover:bg-accent/20 ${isBoosted ? 'ring-1 ring-primary/30 bg-primary/5' : ''} ${market.status === 'ended' ? 'opacity-75' : ''}`}
               >
-                {market.status === 'ended' && (
+                {(market.status === 'ended' || market.status === 'resolved') && (
                   <div className="absolute inset-0 z-10 rounded-xl md:rounded-2xl bg-background/60 backdrop-blur-[2px] flex items-center justify-center">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted border border-border text-xs font-bold text-muted-foreground uppercase tracking-wider">
                       <Clock className="w-3.5 h-3.5" />
-                      Awaiting Resolution
+                      {market.status === 'resolved' ? 'Resolution Completed' : 'Awaiting Resolution'}
                     </span>
                   </div>
                 )}
