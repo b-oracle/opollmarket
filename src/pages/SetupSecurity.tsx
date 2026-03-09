@@ -13,7 +13,7 @@ import SEOHead from "@/components/SEOHead";
 type SetupStep = "choose" | "pin" | "pin_confirm" | "totp_generate" | "totp_verify" | "done";
 
 const SetupSecurity = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const [step, setStep] = useState<SetupStep>("choose");
@@ -28,6 +28,11 @@ const SetupSecurity = () => {
   const [copied, setCopied] = useState(false);
   const [pinDone, setPinDone] = useState(false);
   const [totpDone, setTotpDone] = useState(false);
+
+  if (!authLoading && !user) {
+    navigate("/auth", { replace: true });
+    return null;
+  }
 
   const handleSetPin = async () => {
     if (pin !== pinConfirm) {
