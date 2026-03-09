@@ -43,6 +43,25 @@ const UserProfile = () => {
   const [shareOpen, setShareOpen] = useState(false);
   const profileCardRef = useRef<HTMLDivElement>(null);
 
+  // Swipe-right from left edge to go back to account profile
+  const swipeStartX = useRef(0);
+  const swipeStartY = useRef(0);
+  const swipeFromEdge = useRef(false);
+  const handleSwipeStart = useCallback((e: React.TouchEvent) => {
+    const x = e.touches[0].clientX;
+    swipeStartX.current = x;
+    swipeStartY.current = e.touches[0].clientY;
+    swipeFromEdge.current = x < 40;
+  }, []);
+  const handleSwipeEnd = useCallback((e: React.TouchEvent) => {
+    if (!swipeFromEdge.current || !isOwnProfile) return;
+    const dx = e.changedTouches[0].clientX - swipeStartX.current;
+    const dy = Math.abs(e.changedTouches[0].clientY - swipeStartY.current);
+    if (dx > 60 && dy < 80) {
+      navigate("/profile");
+    }
+  }, [isOwnProfile, navigate]);
+
   // Profile data
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["user-profile", id],
