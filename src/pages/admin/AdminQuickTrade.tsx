@@ -51,7 +51,7 @@ const AdminQuickTrade = () => {
 
   useEffect(() => {
     const fetch = async () => {
-      const fetchAllData = async (table: string) => {
+      const fetchAllData = async (table: any) => {
         let allData: any[] = [];
         let page = 0;
         let hasMore = true;
