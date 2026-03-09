@@ -347,7 +347,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
         .eq("user_id", user.id)
         .maybeSingle();
 
-      const sec = secData as { pin_enabled: boolean; totp_enabled: boolean; require_pin_withdrawal: boolean; require_totp_withdrawal: boolean } | null;
+      const sec = secData as unknown as { pin_enabled: boolean; totp_enabled: boolean; require_pin_withdrawal: boolean; require_totp_withdrawal: boolean } | null;
       const needPin = sec?.pin_enabled && sec?.require_pin_withdrawal;
       const needTotp = sec?.totp_enabled && sec?.require_totp_withdrawal;
 

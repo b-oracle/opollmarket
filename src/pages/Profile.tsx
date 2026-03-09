@@ -181,7 +181,7 @@ const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
         .select("pin_enabled, totp_enabled, require_pin_withdrawal, require_totp_withdrawal")
         .eq("user_id", userId)
         .maybeSingle();
-      return data as { pin_enabled: boolean; totp_enabled: boolean; require_pin_withdrawal: boolean; require_totp_withdrawal: boolean } | null;
+      return data as unknown as { pin_enabled: boolean; totp_enabled: boolean; require_pin_withdrawal: boolean; require_totp_withdrawal: boolean } | null;
     },
     enabled: !!userId,
   });
