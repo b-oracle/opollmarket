@@ -121,6 +121,10 @@ const AdminSettings = () => {
   const qtStreak3Num = parseFloat(qtStreak3) || 1;
   const qtStreak4Num = parseFloat(qtStreak4) || 1;
   const qtStreak5Num = parseFloat(qtStreak5) || 1;
+  const blueRevenueShareNum = parseFloat(blueRevenueShare) || 0;
+  const goldRevenueShareNum = parseFloat(goldRevenueShare) || 0;
+  const blueTrendingMultNum = parseFloat(blueTrendingMult) || 1.2;
+  const goldTrendingMultNum = parseFloat(goldTrendingMult) || 1.5;
   const totalFee = adminNum + creatorNum;
   const poolPercent = 100 - totalFee;
   const isValid =
