@@ -34,6 +34,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import useAnalytics from "@/hooks/useAnalytics";
 import { useUserLimitOrders, useCancelLimitOrder } from "@/hooks/useLimitOrders";
+import CopySubscriptions from "@/components/CopySubscriptions";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import { useUserBalance } from "@/hooks/useUserBalance";
 
