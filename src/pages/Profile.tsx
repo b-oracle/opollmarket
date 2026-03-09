@@ -478,6 +478,41 @@ const Profile = () => {
           </motion.div>
         </motion.div>
       )}
+
+      {/* Slide-to-reveal overlay panel */}
+      {revealX > 0 && (
+        <div
+          className="fixed inset-0 z-40 pointer-events-none"
+          style={{ backgroundColor: `rgba(0,0,0,${Math.min(revealX / screenW * 0.5, 0.5)})` }}
+        />
+      )}
+      {revealX > 0 && (
+        <div
+          className="fixed inset-y-0 right-0 z-50 bg-background shadow-2xl"
+          style={{
+            width: '100%',
+            maxWidth: '100vw',
+            transform: `translateX(${Math.max(screenW - revealX, 0)}px)`,
+            transition: isDragging.current ? 'none' : 'transform 0.25s ease-out',
+          }}
+        >
+          <div className="flex items-center justify-center h-full">
+            <div className="flex flex-col items-center gap-3 text-center px-6">
+              <div className="w-16 h-16 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center overflow-hidden">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
+                )}
+              </div>
+              <p className="text-sm font-bold">{displayName}</p>
+              <p className="text-xs text-muted-foreground">Social Profile</p>
+              <Users className="w-5 h-5 text-primary animate-pulse" />
+            </div>
+          </div>
+        </div>
+      )}
+
       <TopBar />
       <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
         {/* Avatar & Profile Edit */}
