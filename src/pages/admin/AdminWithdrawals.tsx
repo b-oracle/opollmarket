@@ -190,8 +190,26 @@ const AdminWithdrawals = () => {
                       {format(new Date(w.created_at), "MMM d, yyyy HH:mm")}
                     </TableCell>
                     <TableCell className="font-bold">${Number(w.amount).toFixed(2)}</TableCell>
-                    <TableCell className="font-mono text-xs max-w-[140px] truncate">
-                      {w.wallet_address}
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-xs max-w-[100px] truncate" title={w.wallet_address}>
+                          {w.wallet_address}
+                        </span>
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(w.wallet_address); toast.success("Wallet address copied!"); }}
+                          className="p-1 rounded hover:bg-muted transition-colors shrink-0"
+                          title="Copy address"
+                        >
+                          <Copy className="w-3 h-3 text-muted-foreground" />
+                        </button>
+                        <button
+                          onClick={() => setQrAddress(w.wallet_address)}
+                          className="p-1 rounded hover:bg-muted transition-colors shrink-0"
+                          title="Show QR code"
+                        >
+                          <QrCode className="w-3 h-3 text-muted-foreground" />
+                        </button>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <span
