@@ -408,7 +408,7 @@ const Profile = () => {
       if (!user) return null;
       const { data } = await supabase
         .from("profiles")
-        .select("wallet_address, avatar_url, display_name, is_public, bio")
+        .select("wallet_address, avatar_url, display_name, is_public, bio, verification_level")
         .eq("id", user.id)
         .single();
       return data;
@@ -446,6 +446,8 @@ const Profile = () => {
           .update({ wallet_address: address })
           .eq("id", user.id);
         queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
+        // Refresh verification level
+        supabase.functions.invoke("update-verification").catch(() => {});
       })();
     }
   }, [user, isConnected, address, profile]);
@@ -638,7 +640,7 @@ const Profile = () => {
                     <span className="text-2xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
                   )}
                 </div>
-                {isNftAvatar(profile?.avatar_url) && <NftBadge className="absolute -bottom-0.5 -right-0.5" />}
+                {(profile as any)?.verification_level && (profile as any).verification_level !== "none" && <NftBadge className="absolute -bottom-0.5 -right-0.5" level={(profile as any).verification_level} />}
               </div>
               <div className="space-y-1">
                 <p className="text-base font-bold">{displayName}</p>
@@ -665,7 +667,7 @@ const Profile = () => {
                 <span className="text-2xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
               )}
             </div>
-            {isNftAvatar(profile?.avatar_url) && <NftBadge className="absolute -bottom-0.5 -right-0.5" />}
+            {(profile as any)?.verification_level && (profile as any).verification_level !== "none" && <NftBadge className="absolute -bottom-0.5 -right-0.5" level={(profile as any).verification_level} />}
           </div>
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-bold">{displayName}</h2>
@@ -940,6 +942,10 @@ const Profile = () => {
                           setShowNftPicker(false);
                           toast.success("Profile updated!");
                           setEditingProfile(false);
+
+                          // Refresh verification level in background
+                          supabase.functions.invoke("update-verification").catch(() => {});
+                          setTimeout(() => queryClient.invalidateQueries({ queryKey: ["profile", user!.id] }), 1500);
                         } catch (err) {
                           toast.error("Something went wrong");
                         } finally {

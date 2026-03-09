@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS verification_level text NOT NULL DEFAULT 'none';
