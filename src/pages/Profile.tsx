@@ -284,7 +284,7 @@ const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
             </div>
           </>
         )}
-        {!secSettings.pin_enabled && !secSettings.totp_enabled && (
+        {!secSettings?.pin_enabled && !secSettings?.totp_enabled && (
           <div className="glass rounded-xl p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0">
               <Shield className="w-5 h-5 text-muted-foreground" />
