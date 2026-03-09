@@ -118,7 +118,7 @@ const AdminSettings = () => {
   const isValid =
     adminNum >= 0 && creatorNum >= 0 && totalFee <= 100 &&
     referralNum >= 0 && tokenNum >= 0 && nftNum >= 0 &&
-    minWithdrawNum >= 0 && withdrawalCooldownNum >= 0 && withdrawalMultiplierNum >= 1 && exitFeeNum >= 0 && exitFeeNum <= 100 && copyTradeCommissionNum >= 0 && copyTradeCommissionNum <= 100 &&
+    minWithdrawNum >= 0 && withdrawalCooldownNum >= 0 && withdrawalMultiplierNum >= 1 && exitFeeNum >= 0 && exitFeeNum <= 100 && withdrawalFeeNum >= 0 && withdrawalFeeNum <= 100 && copyTradeCommissionNum >= 0 && copyTradeCommissionNum <= 100 &&
     quickTradeFeeNum >= 0 && quickTradeFeeNum <= 100 &&
     qtMinBetNum >= 0 && qtMaxBetNum > 0 && qtMaxBetNum >= qtMinBetNum &&
     qtStreak2Num >= 1 && qtStreak3Num >= 1 && qtStreak4Num >= 1 && qtStreak5Num >= 1 &&
