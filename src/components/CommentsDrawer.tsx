@@ -181,11 +181,13 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
       const topLevel: Comment[] = [];
 
       for (const c of allComments || []) {
+        const profile = c.author_wallet ? profileMap.get(c.author_wallet) : null;
         const comment: Comment = {
           ...c,
           liked: likedIds.has(c.id),
           replies: [],
-          avatar_url: c.author_wallet ? avatarMap.get(c.author_wallet) || null : null,
+          avatar_url: profile?.avatar_url || null,
+          verification_level: (profile?.verification_level || "none") as VerificationLevel,
         };
         commentMap.set(c.id, comment);
       }
