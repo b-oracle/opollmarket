@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
-import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown, ExternalLink, Flame, Radio } from "lucide-react";
+import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ExternalLink, Flame, Radio } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Market } from "@/data/markets";
 import CategoryIcon from "@/components/CategoryIcon";
@@ -98,12 +98,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const commentCount = useCommentCount(market.id);
-  const [dragX, setDragX] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
-  const [swiping, setSwiping] = useState(false);
   const captureContentRef = useRef<HTMLDivElement>(null);
-  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
-  const touchLockedRef = useRef<"horizontal" | "vertical" | null>(null);
   const [parallaxY, setParallaxY] = useState(0);
 
   // Parallax effect for background image
@@ -127,83 +123,6 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
     return () => scrollParent.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const SWIPE_THRESHOLD = 60;
-  const LOCK_ANGLE_THRESHOLD = 20; // pixels before locking direction
-
-  // Manual touch handling for responsive swipe
-  useEffect(() => {
-    const el = cardRef.current;
-    if (!el || isMulti) return;
-
-    const onTouchStart = (e: TouchEvent) => {
-      const touch = e.touches[0];
-      touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
-      touchLockedRef.current = null;
-    };
-
-    const onTouchMove = (e: TouchEvent) => {
-      if (!touchStartRef.current) return;
-      const touch = e.touches[0];
-      const dx = touch.clientX - touchStartRef.current.x;
-      const dy = touch.clientY - touchStartRef.current.y;
-
-      // Determine direction lock
-      if (!touchLockedRef.current) {
-        const absDx = Math.abs(dx);
-        const absDy = Math.abs(dy);
-        if (absDx > LOCK_ANGLE_THRESHOLD || absDy > LOCK_ANGLE_THRESHOLD) {
-          touchLockedRef.current = absDx > absDy ? "horizontal" : "vertical";
-        }
-      }
-
-      if (touchLockedRef.current === "horizontal") {
-        e.preventDefault(); // prevent scroll
-        setDragX(dx);
-        if (!swiping && Math.abs(dx) > 10) setSwiping(true);
-      }
-    };
-
-    const onTouchEnd = (e: TouchEvent) => {
-      if (!touchStartRef.current || touchLockedRef.current !== "horizontal") {
-        setDragX(0);
-        setSwiping(false);
-        touchStartRef.current = null;
-        touchLockedRef.current = null;
-        return;
-      }
-
-      const dx = dragX;
-      const elapsed = Date.now() - touchStartRef.current.time;
-      const velocity = Math.abs(dx) / (elapsed || 1) * 1000; // px/s
-      const triggered = Math.abs(dx) > SWIPE_THRESHOLD || (velocity > 400 && Math.abs(dx) > 25);
-
-      if (triggered) {
-        if (isEnded) {
-          toast.info("This market has ended and is no longer available for predictions");
-        } else {
-          const side = dx > 0 ? "yes" : "no";
-          setBetModal({ open: true, side });
-        }
-      }
-      setDragX(0);
-      setSwiping(false);
-      touchStartRef.current = null;
-      touchLockedRef.current = null;
-    };
-
-    el.addEventListener("touchstart", onTouchStart, { passive: true });
-    el.addEventListener("touchmove", onTouchMove, { passive: false });
-    el.addEventListener("touchend", onTouchEnd, { passive: true });
-
-    return () => {
-      el.removeEventListener("touchstart", onTouchStart);
-      el.removeEventListener("touchmove", onTouchMove);
-      el.removeEventListener("touchend", onTouchEnd);
-    };
-  }, [isMulti, swiping, dragX]);
-
-  const swipeProgress = Math.min(Math.abs(dragX) / SWIPE_THRESHOLD, 1);
-  const swipeSide = dragX > 0 ? "yes" : dragX < 0 ? "no" : null;
 
   const handleLike = () => {
     if (!user) {
@@ -244,46 +163,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           minHeight: 'var(--feed-card-height)',
           maxHeight: 'var(--feed-card-height)',
           touchAction: "pan-y",
-          transform: dragX !== 0 ? `translateX(${dragX * 0.5}px)` : undefined,
-          transition: dragX === 0 ? 'transform 0.25s ease-out' : 'none',
         }}
       >
-        {/* Swipe overlay indicators */}
-        {!isMulti && swiping && (
-          <>
-            <motion.div
-              className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
-              style={{ opacity: swipeSide === "yes" ? swipeProgress * 0.8 : 0 }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-primary/25" />
-              <motion.div
-                className="flex flex-col items-center gap-2"
-                style={{ scale: 0.8 + swipeProgress * 0.4, opacity: swipeSide === "yes" ? swipeProgress : 0 }}
-              >
-                <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center backdrop-blur-sm">
-                  <ThumbsUp className="w-10 h-10 text-primary" />
-                </div>
-                <span className="text-lg font-bold neon-yes">Buy Yes {yesPercent}¢</span>
-              </motion.div>
-            </motion.div>
-
-            <motion.div
-              className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
-              style={{ opacity: swipeSide === "no" ? swipeProgress * 0.8 : 0 }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-l from-transparent via-destructive/10 to-destructive/25" />
-              <motion.div
-                className="flex flex-col items-center gap-2"
-                style={{ scale: 0.8 + swipeProgress * 0.4, opacity: swipeSide === "no" ? swipeProgress : 0 }}
-              >
-                <div className="w-20 h-20 rounded-full bg-destructive/20 border-2 border-destructive flex items-center justify-center backdrop-blur-sm">
-                  <ThumbsDown className="w-10 h-10 text-destructive" />
-                </div>
-                <span className="text-lg font-bold neon-no">Buy No {noPercent}¢</span>
-              </motion.div>
-            </motion.div>
-          </>
-        )}
         {/* Visible banner: always image + gradient */}
         <div className="absolute inset-0 overflow-hidden">
           {market.imageUrl ? (
