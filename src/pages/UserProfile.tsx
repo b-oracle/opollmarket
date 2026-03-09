@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -170,13 +171,18 @@ const UserProfile = () => {
   });
 
   // Total trades count (predictions + quick trades) via security-definer function
-  const { data: tradesCount = 0 } = useQuery({
+  const { data: tradeData = { predictions: 0, quick_trades: 0, total: 0 } } = useQuery({
     queryKey: ["user-trades-count", id],
     queryFn: async () => {
-      if (!id) return 0;
+      if (!id) return { predictions: 0, quick_trades: 0, total: 0 };
       const { data, error } = await supabase.rpc("get_user_trade_count", { _user_id: id });
-      if (error) return 0;
-      return Number(data) || 0;
+      if (error || !data || !data[0]) return { predictions: 0, quick_trades: 0, total: 0 };
+      const row = data[0];
+      return {
+        predictions: Number(row.predictions) || 0,
+        quick_trades: Number(row.quick_trades) || 0,
+        total: (Number(row.predictions) || 0) + (Number(row.quick_trades) || 0),
+      };
     },
     enabled: !!id,
   });
@@ -396,7 +402,7 @@ const UserProfile = () => {
           avatarUrl={profile.avatar_url}
           followersCount={followCounts.followers}
           followingCount={followCounts.following}
-          tradesCount={tradesCount}
+          tradesCount={tradeData.total}
           referralCount={referralCount}
           marketsCount={userMarkets.length}
           positionsCount={userPositions.length}
@@ -450,10 +456,20 @@ const UserProfile = () => {
                   <p className="font-bold">{followCounts.following}</p>
                   <p className="text-muted-foreground text-[10px]">Following</p>
                 </div>
-                <div className="text-center">
-                  <p className="font-bold">{tradesCount}</p>
-                  <p className="text-muted-foreground text-[10px]">Trades</p>
-                </div>
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="text-center cursor-default">
+                        <p className="font-bold">{tradeData.total}</p>
+                        <p className="text-muted-foreground text-[10px]">Trades</p>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">
+                      <p>📈 {tradeData.predictions} Predictions</p>
+                      <p>⚡ {tradeData.quick_trades} Quick Trades</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <div className="text-center">
                   <p className="font-bold">{referralCount}</p>
                   <p className="text-muted-foreground text-[10px]">Referrals</p>
