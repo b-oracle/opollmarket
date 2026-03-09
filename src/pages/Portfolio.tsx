@@ -724,6 +724,12 @@ const Portfolio = () => {
             })}
           </div>
         )}
+
+        {/* Copy Trades Tab */}
+        {activeTab === "copy" && (
+          <CopySubscriptions />
+        )}
+      </div>
       </div>
 
       {/* Sell Confirmation Modal */}
