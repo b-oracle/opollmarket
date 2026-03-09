@@ -66,6 +66,19 @@ const UserProfile = () => {
   const touchStartY = useRef(0);
   const isPulling = useRef(false);
 
+  const handleFollowClick = useCallback(() => {
+    if (isFollowing) {
+      setShowUnfollowConfirm(true);
+    } else {
+      toggleFollow();
+    }
+  }, [isFollowing, toggleFollow]);
+
+  const handleConfirmUnfollow = useCallback(() => {
+    setShowUnfollowConfirm(false);
+    toggleFollow();
+  }, [toggleFollow]);
+
   const handlePullStart = useCallback((e: React.TouchEvent) => {
     const container = containerRef.current;
     if (!container || container.scrollTop > 5 || refreshing) return;
