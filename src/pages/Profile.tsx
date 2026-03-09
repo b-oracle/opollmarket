@@ -488,7 +488,7 @@ const Profile = () => {
       )}
       {revealX > 0 && (
         <div
-          className="fixed inset-y-0 right-0 z-50 bg-background shadow-2xl"
+          className="fixed inset-y-0 right-0 z-50 bg-background/95 backdrop-blur-xl shadow-2xl border-l border-border/50"
           style={{
             width: '100%',
             maxWidth: '100vw',
@@ -497,17 +497,27 @@ const Profile = () => {
           }}
         >
           <div className="flex items-center justify-center h-full">
-            <div className="flex flex-col items-center gap-3 text-center px-6">
-              <div className="w-16 h-16 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center overflow-hidden">
-                {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
-                )}
+            <div className="flex flex-col items-center gap-4 text-center px-8">
+              {/* Glow ring behind avatar */}
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl scale-150" />
+                <div className="relative w-20 h-20 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center overflow-hidden ring-4 ring-primary/10">
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-2xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
+                  )}
+                </div>
+                {isNftAvatar(profile?.avatar_url) && <NftBadge className="absolute -bottom-0.5 -right-0.5" />}
               </div>
-              <p className="text-sm font-bold">{displayName}</p>
-              <p className="text-xs text-muted-foreground">Social Profile</p>
-              <Users className="w-5 h-5 text-primary animate-pulse" />
+              <div className="space-y-1">
+                <p className="text-base font-bold">{displayName}</p>
+                <p className="text-xs text-muted-foreground font-medium tracking-wide uppercase">Social Profile</p>
+              </div>
+              <div className="flex items-center gap-1.5 text-primary">
+                <Users className="w-4 h-4" />
+                <ChevronRight className="w-3.5 h-3.5 animate-pulse" />
+              </div>
             </div>
           </div>
         </div>
