@@ -23,6 +23,13 @@ interface Stats {
   withdrawalCount: number;
   pendingDepositCount: number;
   pendingWithdrawalCount: number;
+  grossDeposits: number;
+  grossDepositCount: number;
+  pendingDepositsAmount: number;
+  expiredDepositsAmount: number;
+  expiredDepositCount: number;
+  partialDepositsAmount: number;
+  partialDepositCount: number;
 }
 
 interface MarketRow {
