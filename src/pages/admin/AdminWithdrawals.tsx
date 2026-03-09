@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { logAuditEvent } from "@/lib/auditLog";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle2, XCircle, Clock, Search, RefreshCw, Copy, QrCode, X } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Clock, Search, RefreshCw, Copy, QrCode, X, ExternalLink } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -174,6 +174,7 @@ const AdminWithdrawals = () => {
                   <TableHead>Date</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Wallet</TableHead>
+                  <TableHead>TX Hash</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Note</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -210,6 +211,26 @@ const AdminWithdrawals = () => {
                           <QrCode className="w-3 h-3 text-muted-foreground" />
                         </button>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {w.tx_hash ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-xs max-w-[80px] truncate" title={w.tx_hash}>
+                            {w.tx_hash}
+                          </span>
+                          <a
+                            href={`https://bscscan.com/tx/${w.tx_hash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1 rounded hover:bg-muted transition-colors shrink-0"
+                            title="View on BscScan"
+                          >
+                            <ExternalLink className="w-3 h-3 text-primary" />
+                          </a>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <span
