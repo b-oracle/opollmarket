@@ -455,10 +455,18 @@ const UserProfile = () => {
                   <p className="font-bold">{followCounts.following}</p>
                   <p className="text-muted-foreground text-[10px]">Following</p>
                 </div>
-                <div className="text-center">
-                  <p className="font-bold">{tradesCount}</p>
-                  <p className="text-muted-foreground text-[10px]">Trades</p>
-                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="text-center cursor-default">
+                      <p className="font-bold">{tradeData.total}</p>
+                      <p className="text-muted-foreground text-[10px]">Trades</p>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    <p>📈 {tradeData.predictions} Predictions</p>
+                    <p>⚡ {tradeData.quick_trades} Quick Trades</p>
+                  </TooltipContent>
+                </Tooltip>
                 <div className="text-center">
                   <p className="font-bold">{referralCount}</p>
                   <p className="text-muted-foreground text-[10px]">Referrals</p>
