@@ -403,6 +403,8 @@ const UserProfile = () => {
           followersCount={followCounts.followers}
           followingCount={followCounts.following}
           tradesCount={tradeData.total}
+          predictionsCount={tradeData.predictions}
+          quickTradesCount={tradeData.quick_trades}
           referralCount={referralCount}
           marketsCount={userMarkets.length}
           positionsCount={userPositions.length}

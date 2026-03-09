@@ -10,6 +10,8 @@ interface ProfileShareCardProps {
   followersCount: number;
   followingCount: number;
   tradesCount: number;
+  predictionsCount?: number;
+  quickTradesCount?: number;
   referralCount: number;
   marketsCount: number;
   positionsCount: number;
@@ -40,7 +42,7 @@ const rankLabel = (rank: number | null): string => {
 };
 
 const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
-  ({ displayName, bio, avatarUrl, followersCount, followingCount, tradesCount, referralCount, marketsCount, positionsCount, leaderboardRanks }, ref) => {
+  ({ displayName, bio, avatarUrl, followersCount, followingCount, tradesCount, predictionsCount, quickTradesCount, referralCount, marketsCount, positionsCount, leaderboardRanks }, ref) => {
     const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
 
     // Resolve colors synchronously so they're available on first render for html2canvas
@@ -174,6 +176,38 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
               </div>
             ))}
           </div>
+
+          {/* Trades Breakdown */}
+          {(predictionsCount !== undefined || quickTradesCount !== undefined) && (
+            <div
+              style={{
+                display: "flex",
+                gap: "8px",
+                marginBottom: "16px",
+              }}
+            >
+              {[
+                { emoji: "📈", label: "Predictions", value: predictionsCount ?? 0 },
+                { emoji: "⚡", label: "Quick Trades", value: quickTradesCount ?? 0 },
+              ].map((s) => (
+                <div
+                  key={s.label}
+                  style={{
+                    flex: 1,
+                    padding: "10px",
+                    borderRadius: "12px",
+                    backgroundColor: `${colors.muted}50`,
+                    border: `1px solid ${colors.border}50`,
+                    textAlign: "center",
+                  }}
+                >
+                  <div style={{ fontSize: "14px", marginBottom: "2px" }}>{s.emoji}</div>
+                  <div style={{ fontSize: "16px", fontWeight: 800, color: colors.primary, lineHeight: "1.3" }}>{s.value}</div>
+                  <div style={{ fontSize: "9px", color: colors.mutedFg }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Activity Stats */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "16px" }}>
