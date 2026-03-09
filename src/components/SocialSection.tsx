@@ -76,7 +76,7 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
       if (uniqueIds.length === 0) return [];
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url, bio, is_public")
+        .select("id, display_name, avatar_url, bio, is_public, verification_level")
         .in("id", uniqueIds)
         .eq("is_public", true);
       return profiles || [];
