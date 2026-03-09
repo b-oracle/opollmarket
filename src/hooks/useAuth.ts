@@ -101,10 +101,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
-        // Reset social tutorial + swipe hint on any new sign-in (email or OAuth)
+        // Reset swipe hints on sign-in (but NOT the social tutorial — it should only replay manually)
         if (event === "SIGNED_IN") {
           localStorage.removeItem("social_swipe_used");
-          localStorage.removeItem("social_tutorial_seen");
           localStorage.removeItem("feed_swipe_hint_seen");
         }
 
