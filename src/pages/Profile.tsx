@@ -248,7 +248,7 @@ const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
                 <p className="text-xs text-muted-foreground">Require PIN before withdrawing</p>
               </div>
               <Switch
-                checked={secSettings.require_pin_withdrawal}
+                checked={secSettings?.require_pin_withdrawal ?? false}
                 onCheckedChange={(v) => updateToggle("require_pin_withdrawal", v)}
               />
             </div>
