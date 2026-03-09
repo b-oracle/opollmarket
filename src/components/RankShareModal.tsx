@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { X, Download, Copy, Share2, Loader2, Twitter, Facebook, MessageCircle, Send, Trophy, TrendingUp, Crown, Medal, Award } from "lucide-react";
+import { X, Download, Copy, Share2, Loader2, Twitter, MessageCircle, Send, Trophy, TrendingUp, Crown, Medal, Award } from "lucide-react";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
 import watermarkLogo from "@/assets/watermark-logo.png";
@@ -43,7 +42,6 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
 
     const capture = async () => {
       setCapturing(true);
-      // Wait for the card to render
       await new Promise((r) => setTimeout(r, 400));
       try {
         if (!cardRef.current) throw new Error("Card not ready");
@@ -55,7 +53,6 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
           logging: false,
         });
 
-        // Draw watermark
         const ctx = canvas.getContext("2d");
         if (ctx) {
           const logo = new Image();
@@ -151,7 +148,6 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
 
   const topPercent = Math.round((rank / totalCount) * 100);
 
-  // Rank-specific theme colors
   const rankTheme = rank === 1
     ? { gradient: "from-yellow-900/40 via-card to-yellow-500/15", border: "border-yellow-500/50", accent: "#EAB308", accentBg: "bg-yellow-500/20", ring: "ring-yellow-500/30" }
     : rank === 2
@@ -160,97 +156,123 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
     ? { gradient: "from-orange-900/30 via-card to-orange-500/10", border: "border-orange-700/50", accent: "#B45309", accentBg: "bg-orange-700/20", ring: "ring-orange-700/30" }
     : { gradient: "from-card via-card to-primary/10", border: "border-border/30", accent: "hsl(var(--primary))", accentBg: "bg-primary/20", ring: "ring-primary/30" };
 
+  if (!open) return null;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm p-0 gap-0 glass border-border/50 rounded-2xl overflow-hidden [&>button]:hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
-          <h3 className="text-sm font-bold">Share Your Rank</h3>
-          <button onClick={() => onOpenChange(false)} className="w-8 h-8 rounded-full glass flex items-center justify-center hover:bg-muted transition-colors">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-50 bg-background/60 backdrop-blur-sm"
+        onClick={() => onOpenChange(false)}
+      />
 
-        {/* The share card to be screenshotted */}
-        <div className="px-4 py-3">
-          <div ref={cardRef} className={`rounded-2xl overflow-hidden bg-gradient-to-br ${rankTheme.gradient} border ${rankTheme.border} p-5`}>
-            {/* Top section */}
-            <div className="flex items-center gap-2 mb-4">
-              <Trophy className="w-5 h-5" style={{ color: rankTheme.accent }} />
-              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{category} Leaderboard</span>
-            </div>
-
-            {/* Rank display */}
-            <div className="flex items-center gap-4 mb-4">
-              {/* Avatar */}
-              <div className={`w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-2xl shrink-0 overflow-hidden border-2 ${rankTheme.ring}`} style={{ borderColor: rankTheme.accent }}>
-                {avatar ? (
-                  <img src={avatar} alt={name} className="w-full h-full object-cover" />
-                ) : (
-                  <span>👤</span>
-                )}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <p className="text-lg font-bold truncate">{name}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  {rankBadge(rank)}
-                  <span className="text-3xl font-black" style={{ color: rankTheme.accent }}>#{rank}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div className="glass rounded-xl p-3 text-center">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Performance</p>
-                <p className={`text-lg font-bold flex items-center justify-center gap-1 ${valuePositive ? "text-primary" : "text-destructive"}`}>
-                  {valuePositive ? <TrendingUp className="w-4 h-4" /> : null}
-                  {valueLine}
-                </p>
-              </div>
-              <div className="glass rounded-xl p-3 text-center">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Percentile</p>
-                <p className="text-lg font-bold" style={{ color: rankTheme.accent }}>Top {topPercent}%</p>
-              </div>
-            </div>
-
-            <p className="text-[10px] text-muted-foreground text-center">{statLine}</p>
-          </div>
-        </div>
-
-        {/* Screenshot preview */}
-        {capturing && (
-          <div className="px-4 pb-3 flex justify-center">
-            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-          </div>
-        )}
-
-        {/* Action buttons */}
-        <div className="px-4 pb-4 grid grid-cols-3 gap-2">
-          <button onClick={handleCopy} disabled={capturing} className="flex items-center justify-center gap-2 py-2.5 rounded-xl glass text-xs font-semibold hover:bg-muted transition-colors disabled:opacity-50">
-            <Copy className="w-4 h-4" /> Copy
-          </button>
-          <button onClick={handleDownload} disabled={capturing || !screenshot} className="flex items-center justify-center gap-2 py-2.5 rounded-xl glass text-xs font-semibold hover:bg-muted transition-colors disabled:opacity-50">
-            <Download className="w-4 h-4" /> Download
-          </button>
-          <button onClick={handleTwitter} className="flex items-center justify-center gap-2 py-2.5 rounded-xl glass text-xs font-semibold hover:bg-muted transition-colors">
-            <Twitter className="w-4 h-4" /> Twitter
-          </button>
-          <button onClick={handleWhatsApp} className="flex items-center justify-center gap-2 py-2.5 rounded-xl glass text-xs font-semibold hover:bg-muted transition-colors">
-            <MessageCircle className="w-4 h-4" /> WhatsApp
-          </button>
-          <button onClick={handleTelegram} className="flex items-center justify-center gap-2 py-2.5 rounded-xl glass text-xs font-semibold hover:bg-muted transition-colors">
-            <Send className="w-4 h-4" /> Telegram
-          </button>
-          {typeof navigator !== "undefined" && navigator.share && (
-            <button onClick={handleNativeShare} disabled={capturing} className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-colors disabled:opacity-50">
-              <Share2 className="w-4 h-4" /> Share
+      {/* Modal */}
+      <div
+        className="fixed inset-x-0 z-50 flex items-center justify-center pointer-events-none"
+        style={{ top: "env(safe-area-inset-top)", bottom: "calc(4rem + env(safe-area-inset-bottom))", padding: "1rem" }}
+      >
+        <div
+          className="pointer-events-auto w-full max-w-sm md:max-w-lg bg-card border border-border rounded-2xl shadow-xl overflow-hidden flex flex-col"
+          style={{ maxHeight: "100%" }}
+        >
+          {/* Sticky header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 shrink-0">
+            <h3 className="text-sm font-bold">Share Your Rank</h3>
+            <button
+              onClick={() => onOpenChange(false)}
+              className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
+            >
+              <X className="w-4 h-4" />
             </button>
+          </div>
+
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto overscroll-contain">
+            {/* The share card to be screenshotted */}
+            <div className="px-4 py-3">
+              <div ref={cardRef} className={`rounded-2xl overflow-hidden bg-gradient-to-br ${rankTheme.gradient} border ${rankTheme.border} p-5`}>
+                <div className="flex items-center gap-2 mb-4">
+                  <Trophy className="w-5 h-5" style={{ color: rankTheme.accent }} />
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{category} Leaderboard</span>
+                </div>
+
+                <div className="flex items-center gap-4 mb-4">
+                  <div className={`w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-2xl shrink-0 overflow-hidden border-2 ${rankTheme.ring}`} style={{ borderColor: rankTheme.accent }}>
+                    {avatar ? (
+                      <img src={avatar} alt={name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span>👤</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-lg font-bold truncate">{name}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      {rankBadge(rank)}
+                      <span className="text-3xl font-black" style={{ color: rankTheme.accent }}>#{rank}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="glass rounded-xl p-3 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Performance</p>
+                    <p className={`text-lg font-bold flex items-center justify-center gap-1 ${valuePositive ? "text-primary" : "text-destructive"}`}>
+                      {valuePositive ? <TrendingUp className="w-4 h-4" /> : null}
+                      {valueLine}
+                    </p>
+                  </div>
+                  <div className="glass rounded-xl p-3 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Percentile</p>
+                    <p className="text-lg font-bold" style={{ color: rankTheme.accent }}>Top {topPercent}%</p>
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-muted-foreground text-center">{statLine}</p>
+              </div>
+            </div>
+
+            {/* Screenshot preview */}
+            {capturing && (
+              <div className="px-4 pb-3 flex justify-center">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="px-4 pb-3 grid grid-cols-3 gap-2">
+              <button onClick={handleCopy} disabled={capturing} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors disabled:opacity-50">
+                <Copy className="w-3.5 h-3.5" /> Copy
+              </button>
+              <button onClick={handleDownload} disabled={capturing || !screenshot} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors disabled:opacity-50">
+                <Download className="w-3.5 h-3.5" /> Save
+              </button>
+              <button onClick={handleTwitter} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors">
+                <Twitter className="w-3.5 h-3.5" /> Twitter
+              </button>
+              <button onClick={handleWhatsApp} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors">
+                <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+              </button>
+              <button onClick={handleTelegram} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors">
+                <Send className="w-3.5 h-3.5" /> Telegram
+              </button>
+            </div>
+          </div>
+
+          {/* Sticky footer: native share */}
+          {typeof navigator !== "undefined" && navigator.share && (
+            <div className="px-4 py-3 border-t border-border/30 shrink-0" style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}>
+              <button
+                onClick={handleNativeShare}
+                disabled={capturing}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                <Share2 className="w-4 h-4" /> Share via...
+              </button>
+            </div>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </>
   );
 };
 
