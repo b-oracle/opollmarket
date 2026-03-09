@@ -2,6 +2,7 @@ import LogoLoader from "@/components/LogoLoader";
 import { useState, useCallback, useEffect, useRef } from "react";
 import HoldToConfirmButton from "@/components/HoldToConfirmButton";
 import BottomSheet from "@/components/BottomSheet";
+import SecurityVerificationModal from "@/components/SecurityVerificationModal";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
