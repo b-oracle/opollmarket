@@ -758,6 +758,26 @@ const UserProfile = () => {
         )}
       </div>
       <BottomNav />
+
+      <AlertDialog open={showUnfollowConfirm} onOpenChange={setShowUnfollowConfirm}>
+        <AlertDialogContent className="max-w-xs rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base">Unfollow {displayName}?</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
+              You will stop receiving notifications about their activity and copy-trade settings will be removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl text-sm">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmUnfollow}
+              className="rounded-xl text-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Unfollow
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
