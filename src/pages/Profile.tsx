@@ -199,9 +199,30 @@ const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
 
   if (isLoading || !secSettings) return null;
 
+  const pinActive = secSettings.pin_enabled;
+  const totpActive = secSettings.totp_enabled;
+  const anyLoginSec = secSettings.require_pin_login || secSettings.require_totp_login;
+
   return (
     <div className="mb-6">
-      <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Security</h3>
+      <div className="flex items-center gap-2 mb-3">
+        <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Security</h3>
+        {pinActive && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">
+            <Lock className="w-3 h-3" /> PIN
+          </span>
+        )}
+        {totpActive && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">
+            <Shield className="w-3 h-3" /> 2FA
+          </span>
+        )}
+        {anyLoginSec && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 text-[10px] font-semibold">
+            Login Protected
+          </span>
+        )}
+      </div>
       <div className="space-y-2">
         {secSettings.pin_enabled && (
           <>
