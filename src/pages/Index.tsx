@@ -261,7 +261,7 @@ const Index = () => {
         <div className="grid grid-cols-3 gap-3 mb-8 lg:hidden">
           {[
             { icon: TrendingUp, label: "Volume", value: formatVolume(totalVolume) },
-            { icon: Users, label: "Traders", value: totalTraders.toLocaleString() },
+            { icon: Users, label: "Users", value: totalTraders.toLocaleString() },
             { icon: Zap, label: "Markets", value: markets.length.toString() },
           ].map(({ icon: Icon, label, value }, i) => (
             <motion.div key={label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.1 }} className="glass rounded-xl p-3 text-center">
