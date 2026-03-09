@@ -129,7 +129,7 @@ const NpReconciliation = () => {
         </div>
         <button
           onClick={runAudit}
-          disabled={loading}
+          disabled={loading || isAuthenticated === false}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50"
         >
           {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Scale className="w-3.5 h-3.5" />}
@@ -137,7 +137,14 @@ const NpReconciliation = () => {
         </button>
       </div>
 
-      {!summary && !loading && (
+      {isAuthenticated === false && (
+        <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 p-3">
+          <AlertTriangle className="w-4 h-4 text-destructive" />
+          <p className="text-xs text-destructive font-medium">Please log in as an admin to use the reconciliation tool.</p>
+        </div>
+      )}
+
+      {isAuthenticated !== false && !summary && !loading && (
         <p className="text-xs text-muted-foreground">
           Fetches complete transaction history from the payment processor and cross-references every record with the database.
         </p>
