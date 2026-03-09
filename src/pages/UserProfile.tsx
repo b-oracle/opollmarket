@@ -406,7 +406,7 @@ const UserProfile = () => {
           avatarUrl={profile.avatar_url}
           followersCount={followCounts.followers}
           followingCount={followCounts.following}
-          likesCount={likesCount}
+          tradesCount={tradesCount}
           referralCount={referralCount}
           marketsCount={userMarkets.length}
           positionsCount={userPositions.length}
