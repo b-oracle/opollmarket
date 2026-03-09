@@ -730,7 +730,6 @@ const Portfolio = () => {
           <CopySubscriptions />
         )}
       </div>
-      </div>
 
       {/* Sell Confirmation Modal */}
       {sellTarget && (
