@@ -438,7 +438,11 @@ const UserProfile = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium">Auto-Copy</p>
-                    <p className="text-[10px] text-muted-foreground">Automatically place the same bets</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {copySettings?.auto_copy
+                        ? "Trades copy instantly — you'll be notified after"
+                        : "You'll approve each trade before it executes"}
+                    </p>
                   </div>
                   <Switch
                     checked={copySettings?.auto_copy ?? false}
