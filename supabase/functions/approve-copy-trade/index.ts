@@ -117,12 +117,13 @@ Deno.serve(async (req) => {
       // Get commission settings
       const { data: commData } = await supabase
         .from("commission_settings")
-        .select("admin_fee_percent, creator_fee_percent")
+        .select("admin_fee_percent, creator_fee_percent, copy_trade_commission_percent")
         .limit(1)
         .single();
 
       const adminFee = trade.amount * (Number(commData?.admin_fee_percent ?? 2) / 100);
       const creatorFee = trade.amount * (Number(commData?.creator_fee_percent ?? 3) / 100);
+      const copyTradeCommissionPercent = Number(commData?.copy_trade_commission_percent ?? 10);
       const totalDeduct = trade.amount;
       const tradePrice = trade.price || 50;
       const finalShares = trade.shares || Math.max(0.01, Number(((trade.amount - adminFee - creatorFee) / (tradePrice / 100)).toFixed(2)));
@@ -155,6 +156,19 @@ Deno.serve(async (req) => {
         shares: finalShares,
         price: tradePrice / 100,
         status: "confirmed",
+      });
+
+      // Record the copy trade earning entry (commission will be calculated on resolution based on profit)
+      // For now, record with 0 profit — actual commission is applied when market resolves
+      await supabase.from("copy_trade_earnings").insert({
+        trader_user_id: trade.trader_user_id,
+        copier_user_id: user.id,
+        pending_trade_id: trade.id,
+        market_id: trade.market_id,
+        trade_type: trade.trade_type,
+        copier_profit: 0,
+        commission_percent: copyTradeCommissionPercent,
+        commission_amount: 0,
       });
     }
 

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer, Globe, Plus, Trash2, RefreshCw, ToggleLeft } from "lucide-react";
+import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer, Globe, Plus, Trash2, RefreshCw, ToggleLeft, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { useAdminContext } from "./AdminLayout";
@@ -40,6 +40,7 @@ const AdminSettings = () => {
   const [withdrawalMultiplier, setWithdrawalMultiplier] = useState("");
   const [withdrawalLimitEnabled, setWithdrawalLimitEnabled] = useState(true);
   const [exitFee, setExitFee] = useState("");
+  const [copyTradeCommission, setCopyTradeCommission] = useState("");
   const [quickTradeFee, setQuickTradeFee] = useState("");
   const [qtMinBet, setQtMinBet] = useState("");
   const [qtMaxBet, setQtMaxBet] = useState("");
@@ -72,6 +73,7 @@ const AdminSettings = () => {
         setWithdrawalMultiplier(String(d.withdrawal_multiplier ?? 2));
         setWithdrawalLimitEnabled(d.withdrawal_limit_enabled !== false);
         setExitFee(String(d.exit_fee_percent ?? 5));
+        setCopyTradeCommission(String(d.copy_trade_commission_percent ?? 10));
         setQuickTradeFee(String(d.quick_trade_fee_percent ?? 5));
         setQtMinBet(String(d.qt_min_bet ?? 1));
         setQtMaxBet(String(d.qt_max_bet ?? 500));
@@ -100,6 +102,7 @@ const AdminSettings = () => {
   const withdrawalCooldownNum = parseInt(withdrawalCooldown) || 5;
   const withdrawalMultiplierNum = parseFloat(withdrawalMultiplier) || 2;
   const exitFeeNum = parseFloat(exitFee) || 0;
+  const copyTradeCommissionNum = parseFloat(copyTradeCommission) || 0;
   const quickTradeFeeNum = parseFloat(quickTradeFee) || 0;
   const qtMinBetNum = parseFloat(qtMinBet) || 0;
   const qtMaxBetNum = parseFloat(qtMaxBet) || 0;
@@ -112,7 +115,7 @@ const AdminSettings = () => {
   const isValid =
     adminNum >= 0 && creatorNum >= 0 && totalFee <= 100 &&
     referralNum >= 0 && tokenNum >= 0 && nftNum >= 0 &&
-    minWithdrawNum >= 0 && withdrawalCooldownNum >= 0 && withdrawalMultiplierNum >= 1 && exitFeeNum >= 0 && exitFeeNum <= 100 &&
+    minWithdrawNum >= 0 && withdrawalCooldownNum >= 0 && withdrawalMultiplierNum >= 1 && exitFeeNum >= 0 && exitFeeNum <= 100 && copyTradeCommissionNum >= 0 && copyTradeCommissionNum <= 100 &&
     quickTradeFeeNum >= 0 && quickTradeFeeNum <= 100 &&
     qtMinBetNum >= 0 && qtMaxBetNum > 0 && qtMaxBetNum >= qtMinBetNum &&
     qtStreak2Num >= 1 && qtStreak3Num >= 1 && qtStreak4Num >= 1 && qtStreak5Num >= 1 &&
@@ -165,6 +168,7 @@ const AdminSettings = () => {
           withdrawal_multiplier: withdrawalMultiplierNum,
           withdrawal_limit_enabled: withdrawalLimitEnabled,
           exit_fee_percent: exitFeeNum,
+          copy_trade_commission_percent: copyTradeCommissionNum,
           quick_trade_fee_percent: quickTradeFeeNum,
           qt_min_bet: qtMinBetNum,
           qt_max_bet: qtMaxBetNum,
@@ -190,6 +194,7 @@ const AdminSettings = () => {
           admin_fee_percent: adminNum,
           creator_fee_percent: creatorNum,
           exit_fee_percent: exitFeeNum,
+          copy_trade_commission_percent: copyTradeCommissionNum,
           min_withdrawal_amount: minWithdrawNum,
           withdrawal_cooldown_minutes: withdrawalCooldownNum,
           withdrawal_multiplier: withdrawalMultiplierNum,
@@ -263,6 +268,20 @@ const AdminSettings = () => {
                   <Label htmlFor="exitFee">Exit Fee (%)</Label>
                   <Input id="exitFee" type="number" min={0} max={100} step={0.5} value={exitFee} onChange={(e) => setExitFee(e.target.value)} placeholder="5" />
                   <p className="text-[10px] text-muted-foreground">Current: {exitFeeNum}%</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-dashed">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2"><Copy className="w-4 h-4" /> Copy Trade Commission</CardTitle>
+                <CardDescription className="text-xs">% of profit deducted from copiers and credited to the original trader when their copied trade wins.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Label htmlFor="copyTradeCommission">Commission (%)</Label>
+                  <Input id="copyTradeCommission" type="number" min={0} max={100} step={0.5} value={copyTradeCommission} onChange={(e) => setCopyTradeCommission(e.target.value)} placeholder="10" />
+                  <p className="text-[10px] text-muted-foreground">Current: {copyTradeCommissionNum}%</p>
                 </div>
               </CardContent>
             </Card>
