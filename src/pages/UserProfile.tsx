@@ -434,12 +434,12 @@ const UserProfile = () => {
                   <span className="text-2xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
                 )}
               </div>
-              {hasNftAvatar && (
+              {isVerified && (
                 <span className="absolute -bottom-0.5 -right-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-card">
                   <Hexagon className="w-4 h-4 text-primary fill-primary/20" />
                 </span>
               )}
-              {hasNftAvatar && (
+              {isVerified && (
                 <div className="absolute -top-1 -left-1 px-1.5 py-0.5 rounded-full bg-primary/20 border border-primary/30">
                   <span className="text-[8px] font-bold text-primary uppercase">Creator</span>
                 </div>
