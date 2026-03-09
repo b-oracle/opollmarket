@@ -27,7 +27,7 @@ const ActivityFeed = ({ userId, isOwnProfile, isPublic }: ActivityFeedProps) => 
     queryFn: async () => {
       const { data } = await supabase
         .from("transactions")
-        .select("id, type, side, amount, shares, price, market_id, created_at, status")
+        .select("id, type, side, amount, shares, price, market_id, created_at, status, is_copy_trade")
         .eq("user_id", userId)
         .in("type", ["buy", "sell"])
         .eq("status", "confirmed")
