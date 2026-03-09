@@ -357,10 +357,11 @@ Deno.serve(async (req) => {
         status: "pending",
       });
 
+      const feeNote = feeAmount > 0 ? ` (Fee: $${feeAmount.toFixed(2)}, Net: $${netAmount.toFixed(2)})` : "";
       await adminClient.from("notifications").insert({
         user_id: userId,
         title: "Withdrawal Pending",
-        message: `Your withdrawal of $${Number(amount).toFixed(2)} is being processed manually and will be completed shortly.`,
+        message: `Your withdrawal of $${Number(amount).toFixed(2)}${feeNote} is being processed manually and will be completed shortly.`,
         type: "withdrawal",
       });
 
