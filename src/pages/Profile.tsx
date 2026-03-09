@@ -203,21 +203,6 @@ const Profile = () => {
   const [selectedNftUrl, setSelectedNftUrl] = useState<string | null>(null);
   const [editBio, setEditBio] = useState("");
   const [editIsPublic, setEditIsPublic] = useState(true);
-  const [swipeHintDismissed, setSwipeHintDismissed] = useState(() => localStorage.getItem("social_swipe_used") === "1");
-  const [revealX, setRevealX] = useState(0);
-  const revealAnimating = useRef(false);
-
-  // Slide-to-reveal from right edge — reveals social profile panel
-  const touchStartX = useRef(0);
-  const touchStartY = useRef(0);
-  const touchStartedInEdge = useRef(false);
-  const touchLockedDir = useRef<"horizontal" | "vertical" | null>(null);
-  const isDragging = useRef(false);
-  const screenW = typeof window !== "undefined" ? window.innerWidth : 400;
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (revealAnimating.current) return;
-    const x = e.touches[0].clientX;
     touchStartX.current = x;
     touchStartY.current = e.touches[0].clientY;
     touchStartedInEdge.current = x > window.innerWidth - 40;
