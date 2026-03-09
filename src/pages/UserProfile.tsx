@@ -329,7 +329,7 @@ const UserProfile = () => {
             <p className="text-sm text-muted-foreground mt-1">This profile is private</p>
             {!isOwnProfile && user && (
               <button
-                onClick={toggleFollow}
+                onClick={handleFollowClick}
                 disabled={followLoading}
                 className="mt-4 px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center gap-2"
               >
