@@ -170,13 +170,18 @@ const UserProfile = () => {
   });
 
   // Total trades count (predictions + quick trades) via security-definer function
-  const { data: tradesCount = 0 } = useQuery({
+  const { data: tradeData = { predictions: 0, quick_trades: 0, total: 0 } } = useQuery({
     queryKey: ["user-trades-count", id],
     queryFn: async () => {
-      if (!id) return 0;
+      if (!id) return { predictions: 0, quick_trades: 0, total: 0 };
       const { data, error } = await supabase.rpc("get_user_trade_count", { _user_id: id });
-      if (error) return 0;
-      return Number(data) || 0;
+      if (error || !data || !data[0]) return { predictions: 0, quick_trades: 0, total: 0 };
+      const row = data[0];
+      return {
+        predictions: Number(row.predictions) || 0,
+        quick_trades: Number(row.quick_trades) || 0,
+        total: (Number(row.predictions) || 0) + (Number(row.quick_trades) || 0),
+      };
     },
     enabled: !!id,
   });
