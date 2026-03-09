@@ -230,6 +230,10 @@ const AdminSettings = () => {
           qt_streak_5x: qtStreak5Num,
           min_token_balance: tokenNum,
           min_nft_balance: nftNum,
+          blue_revenue_share_percent: blueRevenueShareNum,
+          gold_revenue_share_percent: goldRevenueShareNum,
+          blue_trending_multiplier: blueTrendingMultNum,
+          gold_trending_multiplier: goldTrendingMultNum,
         },
       });
 
