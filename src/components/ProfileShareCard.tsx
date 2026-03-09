@@ -132,7 +132,7 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
                   {displayName}
                 </div>
                 {isNftAvatar(avatarUrl) && (
-                  <span style={{ fontSize: "14px", flexShrink: 0 }}>💎</span>
+                  <span style={{ fontSize: "14px", flexShrink: 0, color: "#E8B730", fontWeight: 800 }}>✔</span>
                 )}
               </div>
               {bio && (
