@@ -197,7 +197,7 @@ const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
     toast.success("Updated");
   };
 
-  if (isLoading || !secSettings) return null;
+  if (isLoading) return null;
 
   const pinActive = secSettings.pin_enabled;
   const totpActive = secSettings.totp_enabled;
