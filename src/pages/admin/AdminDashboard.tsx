@@ -170,6 +170,13 @@ const AdminDashboard = () => {
         withdrawalCount: withdrawalCount.count ?? 0,
         pendingDepositCount: pendingDepositCount.count ?? 0,
         pendingWithdrawalCount: pendingWithdrawalCount.count ?? 0,
+        grossDeposits,
+        grossDepositCount: grossDepositCount.count ?? 0,
+        pendingDepositsAmount,
+        expiredDepositsAmount,
+        expiredDepositCount: expiredDepositCount.count ?? 0,
+        partialDepositsAmount,
+        partialDepositCount: partialDepositCount.count ?? 0,
       });
 
       // Category breakdown
