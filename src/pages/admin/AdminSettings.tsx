@@ -40,6 +40,7 @@ const AdminSettings = () => {
   const [withdrawalMultiplier, setWithdrawalMultiplier] = useState("");
   const [withdrawalLimitEnabled, setWithdrawalLimitEnabled] = useState(true);
   const [exitFee, setExitFee] = useState("");
+  const [copyTradeCommission, setCopyTradeCommission] = useState("");
   const [quickTradeFee, setQuickTradeFee] = useState("");
   const [qtMinBet, setQtMinBet] = useState("");
   const [qtMaxBet, setQtMaxBet] = useState("");
