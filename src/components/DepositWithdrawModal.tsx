@@ -389,6 +389,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
   if (!open) return null;
 
   return (
+    <>
     <BottomSheet open={open} onClose={handleClose} className="p-5">
               <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-4" />
 
