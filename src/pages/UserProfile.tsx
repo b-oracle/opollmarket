@@ -401,7 +401,7 @@ const UserProfile = () => {
           avatarUrl={profile.avatar_url}
           followersCount={followCounts.followers}
           followingCount={followCounts.following}
-          tradesCount={tradesCount}
+          tradesCount={tradeData.total}
           referralCount={referralCount}
           marketsCount={userMarkets.length}
           positionsCount={userPositions.length}
