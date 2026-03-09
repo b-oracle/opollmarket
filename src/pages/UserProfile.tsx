@@ -12,7 +12,7 @@ import { useFollow, useFollowCounts } from "@/hooks/useFollow";
 import { useCopySettings } from "@/hooks/useCopySettings";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
-import NftBadge, { isNftAvatar } from "@/components/NftBadge";
+import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Users, Heart, Trophy, Gift, UserPlus, UserMinus, Loader2,
