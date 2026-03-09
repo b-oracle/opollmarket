@@ -3,10 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Loader2, Receipt, BarChart3, MessageSquare, Bookmark, Gift, TrendingUp, TrendingDown,
-  ArrowUpFromLine, ArrowDownToLine, Zap, Banknote, Lock, Shield, ShieldOff
+  ArrowUpFromLine, ArrowDownToLine, Zap, Banknote, Lock, Shield, ShieldOff, RotateCcw
 } from "lucide-react";
 import { format } from "date-fns";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface UserActivityDrawerProps {
   open: boolean;
@@ -28,6 +29,9 @@ const TABS: { key: Tab; label: string; icon: any }[] = [
 ];
 
 const SecuritySummary = ({ userId }: { userId: string }) => {
+  const queryClient = useQueryClient();
+  const [resetting, setResetting] = useState<string | null>(null);
+
   const { data: sec, isLoading } = useQuery({
     queryKey: ["admin-user-security", userId],
     queryFn: async () => {
@@ -41,6 +45,25 @@ const SecuritySummary = ({ userId }: { userId: string }) => {
     enabled: !!userId,
   });
 
+  const handleReset = async (type: "pin" | "totp") => {
+    const label = type === "pin" ? "PIN" : "2FA";
+    if (!confirm(`Are you sure you want to reset this user's ${label}? They will need to set it up again.`)) return;
+    setResetting(type);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-reset-security", {
+        body: { target_user_id: userId, reset_type: type },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`${label} reset successfully`);
+      queryClient.invalidateQueries({ queryKey: ["admin-user-security", userId] });
+    } catch (err: any) {
+      toast.error(err.message || `Failed to reset ${label}`);
+    } finally {
+      setResetting(null);
+    }
+  };
+
   if (isLoading || !sec) return null;
 
   const pinOn = sec.pin_enabled;
@@ -51,18 +74,32 @@ const SecuritySummary = ({ userId }: { userId: string }) => {
   return (
     <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
       {pinOn ? (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">
-          <Lock className="w-3 h-3" /> PIN
-        </span>
+        <button
+          onClick={() => handleReset("pin")}
+          disabled={resetting === "pin"}
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold hover:bg-primary/20 transition-colors cursor-pointer"
+          title="Click to reset PIN"
+        >
+          {resetting === "pin" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Lock className="w-3 h-3" />}
+          PIN
+          <RotateCcw className="w-2.5 h-2.5 opacity-60" />
+        </button>
       ) : (
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-semibold">
           <Lock className="w-3 h-3" /> No PIN
         </span>
       )}
       {totpOn ? (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">
-          <Shield className="w-3 h-3" /> 2FA
-        </span>
+        <button
+          onClick={() => handleReset("totp")}
+          disabled={resetting === "totp"}
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold hover:bg-primary/20 transition-colors cursor-pointer"
+          title="Click to reset 2FA"
+        >
+          {resetting === "totp" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Shield className="w-3 h-3" />}
+          2FA
+          <RotateCcw className="w-2.5 h-2.5 opacity-60" />
+        </button>
       ) : (
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-semibold">
           <ShieldOff className="w-3 h-3" /> No 2FA
