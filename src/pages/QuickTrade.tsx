@@ -51,23 +51,57 @@ interface QuickTradeAsset {
   label: string;
   assetClass: AssetClass;
   geckoId?: string;
+  icon?: string;
+  unit?: string;
 }
 
 const ALL_ASSETS: QuickTradeAsset[] = [
-  { symbol: "BTC", label: "Bitcoin", assetClass: "crypto", geckoId: "bitcoin" },
-  { symbol: "ETH", label: "Ethereum", assetClass: "crypto", geckoId: "ethereum" },
+  // Crypto
+  { symbol: "BTC", label: "Bitcoin", assetClass: "crypto", geckoId: "bitcoin", icon: "₿" },
+  { symbol: "ETH", label: "Ethereum", assetClass: "crypto", geckoId: "ethereum", icon: "Ξ" },
   { symbol: "BNB", label: "BNB", assetClass: "crypto", geckoId: "binancecoin" },
   { symbol: "SOL", label: "Solana", assetClass: "crypto", geckoId: "solana" },
   { symbol: "XRP", label: "XRP", assetClass: "crypto", geckoId: "ripple" },
   { symbol: "DOGE", label: "Dogecoin", assetClass: "crypto", geckoId: "dogecoin" },
   // Commodities
-  { symbol: "XAU", label: "Gold", assetClass: "commodity" },
-  { symbol: "XAG", label: "Silver", assetClass: "commodity" },
+  { symbol: "XAU", label: "Gold", assetClass: "commodity", icon: "🥇", unit: "USD/oz" },
+  { symbol: "XAG", label: "Silver", assetClass: "commodity", icon: "🥈", unit: "USD/oz" },
   // Forex
-  { symbol: "EUR/USD", label: "EUR/USD", assetClass: "forex" },
-  { symbol: "GBP/USD", label: "GBP/USD", assetClass: "forex" },
-  { symbol: "USD/JPY", label: "USD/JPY", assetClass: "forex" },
+  { symbol: "EUR/USD", label: "EUR/USD", assetClass: "forex", icon: "€" },
+  { symbol: "GBP/USD", label: "GBP/USD", assetClass: "forex", icon: "£" },
+  { symbol: "USD/JPY", label: "USD/JPY", assetClass: "forex", icon: "¥" },
 ];
+
+const ASSET_CLASS_LABELS: Record<AssetClass, string> = {
+  crypto: "Crypto",
+  commodity: "Commodities",
+  forex: "Forex",
+};
+
+/** Smart price formatter based on asset class and magnitude */
+function formatPrice(price: number, asset: QuickTradeAsset): string {
+  if (asset.assetClass === "forex") {
+    return price.toFixed(4);
+  }
+  if (asset.assetClass === "commodity") {
+    return price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  // Crypto: adapt decimals to price magnitude
+  if (price >= 1000) return price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (price >= 1) return price.toFixed(4);
+  return price.toFixed(6);
+}
+
+function getPricePrefix(asset: QuickTradeAsset): string {
+  if (asset.assetClass === "forex") return "";
+  return "$";
+}
+
+function getPriceLabel(asset: QuickTradeAsset): string {
+  if (asset.unit) return asset.unit;
+  if (asset.assetClass === "forex") return asset.symbol;
+  return `${asset.label} / USD`;
+}
 
 const ALL_TIMEFRAMES = [
   { label: "1m", seconds: 60 },
@@ -185,6 +219,13 @@ export default function QuickTrade() {
       setSelectedAsset(ASSETS[0]);
     }
   }, [ASSETS, selectedAsset.symbol]);
+
+  // Auto-switch to area chart when selecting non-crypto assets (no OHLC/TV available)
+  useEffect(() => {
+    if (selectedAsset.assetClass !== "crypto" && chartType !== "area") {
+      setChartType("area");
+    }
+  }, [selectedAsset.assetClass]);
 
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [prevPrice, setPrevPrice] = useState<number | null>(null);
@@ -772,7 +813,7 @@ export default function QuickTrade() {
 
   return (
     <>
-      <SEOHead title="Quick Trade — Fast Predictions" description="Predict if crypto goes UP or DOWN in 5 minutes" />
+      <SEOHead title="Quick Trade — Fast Predictions" description="Predict if assets go UP or DOWN — Crypto, Commodities, Forex" />
       <TopBar />
       <div className="min-h-screen bg-background pt-[calc(3.5rem+env(safe-area-inset-top))]" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
         <div className="max-w-xl md:max-w-3xl mx-auto px-3 sm:px-4 pt-3 sm:pt-4">
@@ -789,25 +830,37 @@ export default function QuickTrade() {
             </div>
           </div>
 
-          {/* Asset selector */}
-          <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide">
-            {ASSETS.map((a) => (
-              <button
-                key={a.symbol}
-                onClick={() => {
-                  setSelectedAsset(a);
-                  setActiveRound(null);
-                  setUserBet(null);
-                }}
-                className={`shrink-0 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                  selectedAsset.symbol === a.symbol
-                    ? "bg-primary text-primary-foreground shadow-lg"
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                {a.symbol}
-              </button>
-            ))}
+          {/* Asset selector — grouped by class */}
+          <div className="space-y-2 mb-4">
+            {(["crypto", "commodity", "forex"] as AssetClass[]).map((cls) => {
+              const classAssets = ASSETS.filter(a => a.assetClass === cls);
+              if (classAssets.length === 0) return null;
+              return (
+                <div key={cls}>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">{ASSET_CLASS_LABELS[cls]}</p>
+                  <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+                    {classAssets.map((a) => (
+                      <button
+                        key={a.symbol}
+                        onClick={() => {
+                          setSelectedAsset(a);
+                          setActiveRound(null);
+                          setUserBet(null);
+                        }}
+                        className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                          selectedAsset.symbol === a.symbol
+                            ? "bg-primary text-primary-foreground shadow-lg"
+                            : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {a.icon && <span className="text-sm">{a.icon}</span>}
+                        {a.symbol}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* Timeframe selector */}
@@ -836,7 +889,7 @@ export default function QuickTrade() {
           <div ref={chartCardRef} className="relative rounded-2xl border border-border bg-card p-3 sm:p-5 mb-3 sm:mb-4">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">{selectedAsset.label} / USD</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">{getPriceLabel(selectedAsset)}</p>
                 <AnimatePresence mode="wait">
                   {currentPrice != null ? (
                     <motion.p
@@ -848,7 +901,7 @@ export default function QuickTrade() {
                         priceDir === "up" ? "text-green-500" : priceDir === "down" ? "text-destructive" : "text-foreground"
                       }`}
                     >
-                      ${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {getPricePrefix(selectedAsset)}{formatPrice(currentPrice, selectedAsset)}
                       {priceDir === "up" && <TrendingUp className="inline w-5 h-5 ml-2" />}
                       {priceDir === "down" && <TrendingDown className="inline w-5 h-5 ml-2" />}
                     </motion.p>
@@ -877,7 +930,7 @@ export default function QuickTrade() {
             {/* Open price reference */}
             {activeRound?.open_price && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>Open: <span className="font-semibold text-foreground">${Number(activeRound.open_price).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></span>
+                <span>Open: <span className="font-semibold text-foreground">{getPricePrefix(selectedAsset)}{formatPrice(Number(activeRound.open_price), selectedAsset)}</span></span>
                 {currentPrice != null && (
                   <span className={`font-semibold ${
                     currentPrice > Number(activeRound.open_price) ? "text-green-500" : currentPrice < Number(activeRound.open_price) ? "text-destructive" : "text-muted-foreground"
@@ -914,20 +967,24 @@ export default function QuickTrade() {
                   >
                     <LineChartIcon className="w-3.5 h-3.5" />
                   </button>
-                  <button
-                    onClick={() => setChartType("candle")}
-                    className={`p-1.5 rounded transition-all ${chartType === "candle" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                    title="Candlestick chart"
-                  >
-                    <BarChart3 className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => setChartType("tv")}
-                    className={`px-1.5 py-1 rounded text-[9px] font-bold transition-all ${chartType === "tv" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                    title="TradingView chart"
-                  >
-                    TV
-                  </button>
+                  {selectedAsset.assetClass === "crypto" && (
+                    <button
+                      onClick={() => setChartType("candle")}
+                      className={`p-1.5 rounded transition-all ${chartType === "candle" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                      title="Candlestick chart"
+                    >
+                      <BarChart3 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  {selectedAsset.assetClass === "crypto" && (
+                    <button
+                      onClick={() => setChartType("tv")}
+                      className={`px-1.5 py-1 rounded text-[9px] font-bold transition-all ${chartType === "tv" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                      title="TradingView chart"
+                    >
+                      TV
+                    </button>
+                  )}
                 </div>
                 <button
                   onClick={toggleMute}
@@ -980,7 +1037,7 @@ export default function QuickTrade() {
                       <div className="absolute bottom-2 right-2 z-10">
                         <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold backdrop-blur-sm border bg-amber-500/10 text-amber-500 border-amber-500/30">
                           <span>🎯</span>
-                          <span>Target ${Number(activeRound.open_price).toLocaleString()}</span>
+                          <span>Target {getPricePrefix(selectedAsset)}{formatPrice(Number(activeRound.open_price), selectedAsset)}</span>
                         </div>
                       </div>
                     )}
@@ -1067,7 +1124,7 @@ export default function QuickTrade() {
       <ShareModal
         open={showShareModal}
         onOpenChange={setShowShareModal}
-        title={`${selectedAsset.symbol} Quick Trade — ${currentPrice ? `$${currentPrice.toLocaleString()}` : ""}`}
+        title={`${selectedAsset.symbol} Quick Trade — ${currentPrice ? `${getPricePrefix(selectedAsset)}${formatPrice(currentPrice, selectedAsset)}` : ""}`}
         description={`${selectedTimeframe.label} UP/DOWN prediction on ${selectedAsset.label}`}
         marketUrl={`${window.location.origin}/quick-trade`}
         captureRef={chartCardRef}
