@@ -85,11 +85,14 @@ const Terms = () => {
           <p>OPollMarket provides a peer-to-peer prediction market platform where users can:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li><strong>Trade predictions</strong> on binary (Yes/No), multiple-choice, and range-bracket markets using an Automated Market Maker (AMM) pricing mechanism.</li>
+            <li><strong>Quick Trade</strong> on short-term price prediction rounds for assets including cryptocurrencies, commodities, and forex pairs with configurable timeframes.</li>
             <li><strong>Create markets</strong> by proposing prediction questions, providing initial liquidity, and defining clear resolution criteria.</li>
+            <li><strong>Copy trade</strong> by following successful traders and automatically replicating their predictions and Quick Trades.</li>
+            <li><strong>Earn verification badges</strong> (Blue Tick, Gold Tick) by holding qualifying BC400 tokens and/or NFTs, unlocking benefits such as trending boosts and revenue sharing.</li>
             <li><strong>Boost markets</strong> to increase visibility through paid promotional tiers.</li>
-            <li><strong>Engage socially</strong> by commenting on markets, liking content, bookmarking markets, and sharing via integrated social channels (X/Twitter, Telegram, WhatsApp).</li>
+            <li><strong>Engage socially</strong> by commenting on markets, liking content, bookmarking markets, following users, and sharing via integrated social channels (X/Twitter, Telegram, WhatsApp).</li>
             <li><strong>Participate in a referral program</strong> to earn bonus rewards for introducing new users.</li>
-            <li><strong>View real-time data</strong> including order book depth, price history charts, and live trade feeds.</li>
+            <li><strong>View real-time data</strong> including order book depth, price history charts, live trade feeds, and live sports scores.</li>
           </ul>
         </section>
 
