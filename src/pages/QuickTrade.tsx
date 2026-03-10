@@ -338,22 +338,25 @@ export default function QuickTrade() {
   // Fetch real OHLC data for TradingView chart (supports up to 30 days)
   useEffect(() => {
     let cancelled = false;
-    const cacheKey = `${selectedAsset.geckoId}:${chartTimeframe}`;
+    const cacheKey = `${selectedAsset.symbol}:${chartTimeframe}`;
     const cached = ohlcCacheRef.current.get(cacheKey);
     if (cached) {
       setOhlcData(cached);
       return;
     }
 
+    // OHLC only available for crypto assets
+    if (selectedAsset.assetClass !== "crypto") return;
+
     (async () => {
-      const candles = await fetchOHLCData("", chartTimeframe, selectedAsset.geckoId);
+      const candles = await fetchOHLCData(selectedAsset.symbol, chartTimeframe, selectedAsset.geckoId);
       if (!cancelled && candles.length > 0) {
         ohlcCacheRef.current.set(cacheKey, candles);
         setOhlcData(candles);
       }
     })();
     return () => { cancelled = true; };
-  }, [selectedAsset.geckoId, chartTimeframe]);
+  }, [selectedAsset.symbol, chartTimeframe]);
 
   // ── Stream price via WebSocket (sub-second) with HTTP polling fallback ──
   const lastFetchTimeRef = useRef(0);
