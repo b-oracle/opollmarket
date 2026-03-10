@@ -199,6 +199,7 @@ const AdminSettings = () => {
           creator_fee_percent: creatorNum,
           referral_reward_amount: referralNum,
           min_token_balance: tokenNum,
+          min_gold_token_balance: goldTokenNum,
           min_nft_balance: nftNum,
           min_withdrawal_amount: minWithdrawNum,
           withdrawal_cooldown_minutes: withdrawalCooldownNum,
