@@ -117,6 +117,7 @@ export async function fetchCryptoPrice(
 
   failCount++;
   return cached?.price ?? null;
+}
 
 // ── Commodity & Forex price fetchers ──
 
