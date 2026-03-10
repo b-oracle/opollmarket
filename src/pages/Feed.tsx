@@ -7,7 +7,7 @@ import BottomNav from "@/components/BottomNav";
 import { useMarkets } from "@/hooks/useMarkets";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
 import { Loader2, TrendingUp, Users, Clock, Heart, MessageCircle, Zap, Flame, ExternalLink, Bookmark } from "lucide-react";
-import { motion, useAnimation } from "framer-motion";
+import { motion } from "framer-motion";
 import useAnalytics from "@/hooks/useAnalytics";
 import CategoryIcon from "@/components/CategoryIcon";
 import { useNavigate } from "react-router-dom";
