@@ -306,9 +306,9 @@ export default function QuickTrade() {
   // Fetch raw price data when asset changes (for area/candle recharts)
   useEffect(() => {
     let cancelled = false;
-    const geckoId = selectedAsset.geckoId;
+    const cacheKey = selectedAsset.symbol;
 
-    const cachedRaw = rawDataRef.current.get(geckoId);
+    const cachedRaw = rawDataRef.current.get(cacheKey);
     if (cachedRaw && cachedRaw.length > 0) {
       setPriceHistory(filterPriceData(cachedRaw, chartMs));
       setHistoryLoading(false);
@@ -317,15 +317,15 @@ export default function QuickTrade() {
     }
 
     (async () => {
-      const raw = await fetchRawPriceData(geckoId);
+      const raw = await fetchRawPriceData(selectedAsset);
       if (!cancelled && raw.length > 0) {
-        rawDataRef.current.set(geckoId, raw);
+        rawDataRef.current.set(cacheKey, raw);
         setPriceHistory(filterPriceData(raw, chartMs));
       }
       if (!cancelled) setHistoryLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [selectedAsset.geckoId]);
+  }, [selectedAsset.symbol]);
 
   // When chart timeframe changes, re-filter existing raw data (instant for area/candle)
   useEffect(() => {
