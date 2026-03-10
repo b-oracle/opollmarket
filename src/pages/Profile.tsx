@@ -539,6 +539,21 @@ const Profile = () => {
     enabled: !!user,
   });
 
+  // Active market count for verified users
+  const { data: activeMarketCount = 0 } = useQuery({
+    queryKey: ["active-market-count", user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      const { count } = await supabase
+        .from("markets")
+        .select("id", { count: "exact", head: true })
+        .eq("creator_wallet", user.id)
+        .in("status", ["active", "pending"]);
+      return count || 0;
+    },
+    enabled: !!user,
+  });
+
   const openDeposit = () => { setModalTab("deposit"); setModalOpen(true); };
   const openWithdraw = () => { setModalTab("withdraw"); setModalOpen(true); };
 
