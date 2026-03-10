@@ -167,11 +167,8 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
                   fontSize: "20px",
                   fontWeight: 800,
                   color: colors.fg,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  maxWidth: "280px",
                   lineHeight: "1.3",
+                  wordBreak: "break-word" as const,
                 }}>
                   {displayName}
                 </div>
