@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useConfetti } from "@/hooks/useConfetti";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -159,10 +159,14 @@ const SocialTutorial = ({ onComplete, userId }: SocialTutorialProps) => {
   const current = steps[step];
   const isLast = step === steps.length - 1;
 
-  // Navigate to the step's route when step changes
+  // Navigate to the step's route when step changes (only on step change, not on location change)
+  const lastNavigatedStep = useRef(-1);
   useEffect(() => {
-    if (location.pathname !== current.route) {
-      navigate(current.route, { replace: true });
+    if (lastNavigatedStep.current !== step) {
+      lastNavigatedStep.current = step;
+      if (location.pathname !== current.route) {
+        navigate(current.route, { replace: true });
+      }
     }
   }, [step, current.route, navigate, location.pathname]);
 
