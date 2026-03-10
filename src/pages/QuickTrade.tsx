@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { isMarketOpen, getNextOpenTime } from "@/lib/marketHours";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   TrendingUp,
   TrendingDown,
   Radio,
   Timer,
+  Moon,
   Users,
   ArrowUp,
   ArrowDown,
@@ -904,10 +906,17 @@ export default function QuickTrade() {
               <h1 className="text-xl font-bold text-foreground">Quick Trade</h1>
               <p className="text-xs text-muted-foreground">{selectedTimeframe.label} UP/DOWN predictions</p>
             </div>
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-destructive/15 border border-destructive/30">
-              <Radio className="w-3 h-3 text-destructive animate-pulse" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-destructive">Live</span>
-            </div>
+            {isMarketOpen(selectedAsset.assetClass) ? (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-destructive/15 border border-destructive/30">
+                <Radio className="w-3 h-3 text-destructive animate-pulse" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-destructive">Live</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted/50 border border-muted-foreground/20">
+                <Moon className="w-3 h-3 text-muted-foreground" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Closed</span>
+              </div>
+            )}
           </div>
 
           {/* Asset selector — grouped by class */}
@@ -1099,13 +1108,20 @@ export default function QuickTrade() {
                   <>
                     {/* Live badge + P&L */}
                     <div className="absolute top-1 left-1 z-10 flex items-center gap-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                        </span>
-                        <span className="text-[9px] font-bold text-green-500 uppercase tracking-wider">Live</span>
-                      </div>
+                      {isMarketOpen(selectedAsset.assetClass) ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                          </span>
+                          <span className="text-[9px] font-bold text-green-500 uppercase tracking-wider">Live</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <Moon className="w-2.5 h-2.5 text-muted-foreground" />
+                          <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Closed</span>
+                        </div>
+                      )}
                       {userBet && activeRound?.open_price && currentPrice != null && (() => {
                         const entry = Number(activeRound.open_price);
                         const pnl = userBet.side === "down"
