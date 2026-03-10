@@ -169,7 +169,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
               <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
             )}
           </div>
-          {nft && <NftBadge className="absolute -bottom-0.5 -right-0.5 scale-75" />}
+          
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold truncate">{name}</p>

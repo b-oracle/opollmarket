@@ -104,7 +104,7 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
               <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
             )}
           </div>
-          {vLevel !== "none" && <NftBadge level={vLevel} className="absolute -bottom-0.5 -right-0.5 scale-75" />}
+          
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold truncate flex items-center gap-1">
