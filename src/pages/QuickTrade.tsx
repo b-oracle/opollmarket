@@ -206,13 +206,13 @@ export default function QuickTrade() {
     return new Set(commissionSettings.qt_disabled_assets.split(",").filter(Boolean));
   }, [commissionSettings?.qt_disabled_assets]);
 
-  // Filter assets based on admin settings
+  // Filter assets based on admin settings — exclude disabled assets entirely
   const ASSETS = useMemo(() => {
-    if (!commissionSettings?.qt_enabled_assets) return ALL_ASSETS;
+    if (!commissionSettings?.qt_enabled_assets) return ALL_ASSETS.filter(a => !disabledAssets.has(a.symbol));
     const enabled = new Set(commissionSettings.qt_enabled_assets.split(",").filter(Boolean));
-    const filtered = ALL_ASSETS.filter(a => enabled.has(a.symbol));
-    return filtered.length > 0 ? filtered : ALL_ASSETS;
-  }, [commissionSettings?.qt_enabled_assets]);
+    const filtered = ALL_ASSETS.filter(a => enabled.has(a.symbol) && !disabledAssets.has(a.symbol));
+    return filtered.length > 0 ? filtered : ALL_ASSETS.filter(a => !disabledAssets.has(a.symbol));
+  }, [commissionSettings?.qt_enabled_assets, disabledAssets]);
 
   // Filter timeframes based on admin settings
   const TIMEFRAMES = useMemo(() => {
