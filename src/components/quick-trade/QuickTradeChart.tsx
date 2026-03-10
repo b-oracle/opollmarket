@@ -34,7 +34,7 @@ function formatTooltipPrice(price: number, assetClass?: string): string {
 
 function QuickTradeChart({
   chartType, chartMs, priceHistory, ohlcData, streamingPrice,
-  historyLoading, activeRound, userBet, resolveFlash, timeframeLabel,
+  historyLoading, activeRound, userBet, resolveFlash, timeframeLabel, assetClass,
 }: QuickTradeChartProps) {
   if (historyLoading) {
     return (
