@@ -165,38 +165,8 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
 };
 
 const SocialTutorialTrigger = () => {
-  const { user } = useAuth();
-  const { isFeatureEnabled } = useFeatureToggles();
-  const [show, setShow] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
-
-  useEffect(() => {
-    if (dismissed) return;
-    if (!isFeatureEnabled("social_tutorial")) return;
-    if (!user) { setShow(false); return; }
-
-    let cancelled = false;
-    checkTutorialSeenFromDB(user.id).then((seen) => {
-      if (cancelled) return;
-      if (!seen) {
-        setTimeout(() => { if (!cancelled) setShow(true); }, 1200);
-      } else {
-        setShow(false);
-      }
-    });
-    return () => { cancelled = true; };
-  }, [user, dismissed, isFeatureEnabled]);
-
-  const handleComplete = () => {
-    setShow(false);
-    setDismissed(true);
-  };
-
-  return (
-    <AnimatePresence>
-      {show && <SocialTutorial onComplete={handleComplete} userId={user?.id} />}
-    </AnimatePresence>
-  );
+  // Tutorial disabled
+  return null;
 };
 
 const App = () => (
