@@ -72,6 +72,39 @@ const Disclaimer = () => {
           <p className="font-medium text-foreground">Past performance of any market, position, or trading strategy does not guarantee future results.</p>
         </section>
 
+        <section id="quicktrade-risk" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">Quick Trade Risks</h2>
+          <p>Quick Trade involves predicting short-term price movements within fixed time windows. Additional risks include:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Short Timeframes:</strong> Rounds as short as 1 minute leave minimal time for price analysis, increasing the element of chance.</li>
+            <li><strong>Streak Multipliers:</strong> While streak bonuses can amplify winnings, they do not reduce the inherent risk of each individual trade.</li>
+            <li><strong>Data Feed Dependency:</strong> Results depend on real-time price data from external sources. Delays or inaccuracies in price feeds may affect outcomes.</li>
+            <li><strong>Asset Availability:</strong> Available assets and timeframes may be changed at any time without notice.</li>
+          </ul>
+        </section>
+
+        <section id="copytrade-risk" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">Copy Trading Risks</h2>
+          <p>Copy trading allows you to replicate another user's trades. You should be aware that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>No Guaranteed Returns:</strong> Past performance of any trader you copy does not guarantee future results.</li>
+            <li><strong>Your Responsibility:</strong> You remain fully responsible for all trades executed on your account through copy trading.</li>
+            <li><strong>Commission Deduction:</strong> A copy trade commission is deducted from your profits on successful copied trades.</li>
+            <li><strong>Execution Differences:</strong> Copied trades may execute at different prices than the original trader's due to timing and liquidity.</li>
+          </ul>
+        </section>
+
+        <section id="verification-disclaimer" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">Verification Badges</h2>
+          <p>Blue Tick and Gold Tick verification badges indicate that a user holds qualifying BC400 tokens and/or NFTs at the time of verification. You should be aware that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Verification badges are <strong>not endorsements</strong> of a user's trading ability, trustworthiness, or the quality of their market predictions.</li>
+            <li>Badge status is based on wallet holdings at the time of verification and may change if a user's holdings change.</li>
+            <li>Trending boosts and revenue sharing benefits associated with verification do not guarantee increased market success or returns.</li>
+            <li>Token and NFT requirements for each tier are set by the System-Mod Engine and may be adjusted at any time.</li>
+          </ul>
+        </section>
+
         <section id="crypto-risks" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">Cryptocurrency & Blockchain Risks</h2>
           <p>The Platform involves interaction with cryptocurrency and blockchain technology, which carries additional risks:</p>
