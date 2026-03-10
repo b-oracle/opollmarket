@@ -892,24 +892,33 @@ export default function QuickTrade() {
                 <div key={cls}>
                   <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">{ASSET_CLASS_LABELS[cls]}</p>
                   <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-                    {classAssets.map((a) => (
+                    {classAssets.map((a) => {
+                      const isDisabled = disabledAssets.has(a.symbol);
+                      return (
                       <button
                         key={a.symbol}
                         onClick={() => {
+                          if (isDisabled) return;
                           setSelectedAsset(a);
                           setActiveRound(null);
                           setUserBet(null);
                         }}
+                        disabled={isDisabled}
                         className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                          selectedAsset.symbol === a.symbol
+                          isDisabled
+                            ? "bg-destructive/10 text-destructive/60 cursor-not-allowed line-through opacity-60"
+                            : selectedAsset.symbol === a.symbol
                             ? "bg-primary text-primary-foreground shadow-lg"
                             : "bg-muted/50 text-muted-foreground hover:bg-muted"
                         }`}
+                        title={isDisabled ? "Market not available — disabled by admin" : undefined}
                       >
                         {a.icon && <span className="text-sm">{a.icon}</span>}
                         {a.symbol}
+                        {isDisabled && <span className="text-[9px] no-underline ml-0.5">⚠️</span>}
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               );
