@@ -1082,6 +1082,30 @@ const Profile = () => {
                   </button>
                 </div>
               </div>
+            ) : connectors.length > 0 ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Wallet className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className="text-sm font-semibold">Wallet detected</p>
+                    <p className="text-xs text-muted-foreground">
+                      {connectors.map(c => c.name).filter((v, i, a) => a.indexOf(v) === i).join(", ")}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    const { open } = require("@reown/appkit/react") as any;
+                    open();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold bg-primary text-primary-foreground shadow-[0_0_20px_hsl(var(--neon-yes)/0.3)] transition-all active:scale-95"
+                >
+                  <Wallet className="w-4 h-4" />
+                  Connect Wallet
+                </button>
+              </div>
             ) : (
               <div className="space-y-3 text-center">
                 <div className="flex items-center gap-3">
