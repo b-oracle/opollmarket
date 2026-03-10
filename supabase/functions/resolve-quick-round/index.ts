@@ -19,6 +19,47 @@ const ASSET_GECKO_MAP: Record<string, string> = {
   LINK: "chainlink",
 };
 
+const METAL_MAP: Record<string, string> = {
+  XAU: "gold",
+  XAG: "silver",
+  XPT: "platinum",
+  XPD: "palladium",
+};
+
+type AssetClass = "crypto" | "commodity" | "forex";
+
+function getAssetClass(symbol: string): AssetClass {
+  if (METAL_MAP[symbol.toUpperCase()]) return "commodity";
+  if (symbol.includes("/")) return "forex";
+  return "crypto";
+}
+
+async function fetchCommodityPrice(asset: string): Promise<number | null> {
+  const metalName = METAL_MAP[asset.toUpperCase()];
+  if (!metalName) return null;
+  try {
+    const resp = await fetch(`https://api.metals.dev/v1/latest?api_key=demo&currency=USD&unit=toz`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data?.metals?.[metalName] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchForexPrice(asset: string): Promise<number | null> {
+  const [base, quote] = asset.split("/");
+  if (!base || !quote) return null;
+  try {
+    const resp = await fetch(`https://api.frankfurter.app/latest?from=${base}&to=${quote}`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data?.rates?.[quote] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // Streak multiplier tiers - configurable via settings
 function getStreakMultiplier(streak: number, s2: number, s3: number, s4: number, s5: number): number {
   if (streak >= 5) return s5;
@@ -41,6 +82,13 @@ async function fetchCryptoPrice(asset: string): Promise<number | null> {
   } catch {
     return null;
   }
+}
+
+async function fetchAssetPrice(asset: string): Promise<number | null> {
+  const assetClass = getAssetClass(asset);
+  if (assetClass === "commodity") return fetchCommodityPrice(asset);
+  if (assetClass === "forex") return fetchForexPrice(asset);
+  return fetchCryptoPrice(asset);
 }
 
 async function getOrCreateStreak(supabase: any, userId: string) {
@@ -163,7 +211,7 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const closePrice = await fetchCryptoPrice(round.asset);
+      const closePrice = await fetchAssetPrice(round.asset);
       if (closePrice == null) continue;
 
       const openPrice = Number(round.open_price);

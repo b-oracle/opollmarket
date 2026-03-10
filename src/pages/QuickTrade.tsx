@@ -45,13 +45,28 @@ import QuickTradeChart from "@/components/quick-trade/QuickTradeChart";
 import QuickTradeHistory from "@/components/quick-trade/QuickTradeHistory";
 import QuickTradeBetControls from "@/components/quick-trade/QuickTradeBetControls";
 // ── Asset config ──
-const ALL_ASSETS = [
-  { symbol: "BTC", label: "Bitcoin", geckoId: "bitcoin" },
-  { symbol: "ETH", label: "Ethereum", geckoId: "ethereum" },
-  { symbol: "BNB", label: "BNB", geckoId: "binancecoin" },
-  { symbol: "SOL", label: "Solana", geckoId: "solana" },
-  { symbol: "XRP", label: "XRP", geckoId: "ripple" },
-  { symbol: "DOGE", label: "Dogecoin", geckoId: "dogecoin" },
+type AssetClass = "crypto" | "commodity" | "forex";
+interface QuickTradeAsset {
+  symbol: string;
+  label: string;
+  assetClass: AssetClass;
+  geckoId?: string;
+}
+
+const ALL_ASSETS: QuickTradeAsset[] = [
+  { symbol: "BTC", label: "Bitcoin", assetClass: "crypto", geckoId: "bitcoin" },
+  { symbol: "ETH", label: "Ethereum", assetClass: "crypto", geckoId: "ethereum" },
+  { symbol: "BNB", label: "BNB", assetClass: "crypto", geckoId: "binancecoin" },
+  { symbol: "SOL", label: "Solana", assetClass: "crypto", geckoId: "solana" },
+  { symbol: "XRP", label: "XRP", assetClass: "crypto", geckoId: "ripple" },
+  { symbol: "DOGE", label: "Dogecoin", assetClass: "crypto", geckoId: "dogecoin" },
+  // Commodities
+  { symbol: "XAU", label: "Gold", assetClass: "commodity" },
+  { symbol: "XAG", label: "Silver", assetClass: "commodity" },
+  // Forex
+  { symbol: "EUR/USD", label: "EUR/USD", assetClass: "forex" },
+  { symbol: "GBP/USD", label: "GBP/USD", assetClass: "forex" },
+  { symbol: "USD/JPY", label: "USD/JPY", assetClass: "forex" },
 ];
 
 const ALL_TIMEFRAMES = [
@@ -80,15 +95,21 @@ const haptic = (style: "light" | "medium" | "heavy" | "success" | "error" = "med
 };
 const AMOUNT_PRESETS = [5, 10, 25, 50, 100];
 
-import { fetchCryptoPrice, fetchCryptoHistory, fetchOHLCData, subscribeToPriceStream, type OHLCCandle } from "@/lib/cryptoPriceProvider";
+import { fetchCryptoPrice, fetchCryptoHistory, fetchAssetPrice, fetchOHLCData, subscribeToPriceStream, type OHLCCandle } from "@/lib/cryptoPriceProvider";
 
-// Wrapper to keep existing call signatures (geckoId-based)
-async function fetchPrice(geckoId: string): Promise<number | null> {
-  return fetchCryptoPrice("", geckoId);
+// Wrapper that routes by asset class
+async function fetchPriceForAsset(asset: QuickTradeAsset): Promise<number | null> {
+  if (asset.assetClass === "crypto") return fetchCryptoPrice(asset.symbol, asset.geckoId);
+  return fetchAssetPrice(asset.symbol);
 }
 
-async function fetchRawPriceData(geckoId: string): Promise<[number, number][]> {
-  return fetchCryptoHistory("", geckoId);
+async function fetchRawPriceData(asset: QuickTradeAsset): Promise<[number, number][]> {
+  if (asset.assetClass === "crypto") return fetchCryptoHistory(asset.symbol, asset.geckoId);
+  // For commodities/forex, generate a single-point history from current price
+  const price = await fetchAssetPrice(asset.symbol);
+  if (price == null) return [];
+  const now = Date.now();
+  return [[now, price]];
 }
 
 function filterPriceData(
@@ -285,9 +306,9 @@ export default function QuickTrade() {
   // Fetch raw price data when asset changes (for area/candle recharts)
   useEffect(() => {
     let cancelled = false;
-    const geckoId = selectedAsset.geckoId;
+    const cacheKey = selectedAsset.symbol;
 
-    const cachedRaw = rawDataRef.current.get(geckoId);
+    const cachedRaw = rawDataRef.current.get(cacheKey);
     if (cachedRaw && cachedRaw.length > 0) {
       setPriceHistory(filterPriceData(cachedRaw, chartMs));
       setHistoryLoading(false);
@@ -296,43 +317,46 @@ export default function QuickTrade() {
     }
 
     (async () => {
-      const raw = await fetchRawPriceData(geckoId);
+      const raw = await fetchRawPriceData(selectedAsset);
       if (!cancelled && raw.length > 0) {
-        rawDataRef.current.set(geckoId, raw);
+        rawDataRef.current.set(cacheKey, raw);
         setPriceHistory(filterPriceData(raw, chartMs));
       }
       if (!cancelled) setHistoryLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [selectedAsset.geckoId]);
+  }, [selectedAsset.symbol]);
 
   // When chart timeframe changes, re-filter existing raw data (instant for area/candle)
   useEffect(() => {
-    const raw = rawDataRef.current.get(selectedAsset.geckoId);
+    const raw = rawDataRef.current.get(selectedAsset.symbol);
     if (raw && raw.length > 0) {
       setPriceHistory(filterPriceData(raw, chartMs));
     }
-  }, [chartMs, selectedAsset.geckoId]);
+  }, [chartMs, selectedAsset.symbol]);
 
   // Fetch real OHLC data for TradingView chart (supports up to 30 days)
   useEffect(() => {
     let cancelled = false;
-    const cacheKey = `${selectedAsset.geckoId}:${chartTimeframe}`;
+    const cacheKey = `${selectedAsset.symbol}:${chartTimeframe}`;
     const cached = ohlcCacheRef.current.get(cacheKey);
     if (cached) {
       setOhlcData(cached);
       return;
     }
 
+    // OHLC only available for crypto assets
+    if (selectedAsset.assetClass !== "crypto") return;
+
     (async () => {
-      const candles = await fetchOHLCData("", chartTimeframe, selectedAsset.geckoId);
+      const candles = await fetchOHLCData(selectedAsset.symbol, chartTimeframe, selectedAsset.geckoId);
       if (!cancelled && candles.length > 0) {
         ohlcCacheRef.current.set(cacheKey, candles);
         setOhlcData(candles);
       }
     })();
     return () => { cancelled = true; };
-  }, [selectedAsset.geckoId, chartTimeframe]);
+  }, [selectedAsset.symbol, chartTimeframe]);
 
   // ── Stream price via WebSocket (sub-second) with HTTP polling fallback ──
   const lastFetchTimeRef = useRef(0);
@@ -378,9 +402,9 @@ export default function QuickTrade() {
         });
         
         // Update raw cache
-        const rawCached = rawDataRef.current.get(selectedAsset.geckoId) || [];
+        const rawCached = rawDataRef.current.get(selectedAsset.symbol) || [];
         const maxCutoff = now - 4 * 60 * 60 * 1000;
-        rawDataRef.current.set(selectedAsset.geckoId, [...rawCached, [now, price] as [number, number]].filter(([ts]) => ts >= maxCutoff));
+        rawDataRef.current.set(selectedAsset.symbol, [...rawCached, [now, price] as [number, number]].filter(([ts]) => ts >= maxCutoff));
       });
     };
     
@@ -396,15 +420,15 @@ export default function QuickTrade() {
           
           if (shouldFetch) {
             lastFetchTimeRef.current = now;
-            const p = await fetchPrice(selectedAsset.geckoId);
+            const p = await fetchPriceForAsset(selectedAsset);
             if (p != null && mounted && !wsActiveRef.current) {
               setPrevPrice(currentPrice);
               setCurrentPrice(p);
               setStreamingPrice(p);
               const maxCutoff = now - 4 * 60 * 60 * 1000;
               const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
-              const rawCached = rawDataRef.current.get(selectedAsset.geckoId) || [];
-              rawDataRef.current.set(selectedAsset.geckoId, [...rawCached, [now, p] as [number, number]].filter(([ts]) => ts >= maxCutoff));
+              const rawCached = rawDataRef.current.get(selectedAsset.symbol) || [];
+              rawDataRef.current.set(selectedAsset.symbol, [...rawCached, [now, p] as [number, number]].filter(([ts]) => ts >= maxCutoff));
               setPriceHistory((prev) => {
                 const updated = [...prev, { time: timeLabel, price: p, ts: now }];
                 return updated.filter((pt) => pt.ts >= maxCutoff);

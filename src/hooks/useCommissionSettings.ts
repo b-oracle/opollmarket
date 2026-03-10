@@ -37,7 +37,7 @@ export const useCommissionSettings = () => {
           qt_streak_3x: 1.10,
           qt_streak_4x: 1.15,
           qt_streak_5x: 1.25,
-          qt_enabled_assets: "BTC,ETH,BNB,SOL,XRP,DOGE",
+          qt_enabled_assets: "BTC,ETH,BNB,SOL,XRP,DOGE,XAU,XAG,EUR/USD,GBP/USD,USD/JPY",
           qt_enabled_timeframes: "60,180,300,900",
         };
       }
@@ -53,7 +53,7 @@ export const useCommissionSettings = () => {
         qt_streak_3x: Number(d.qt_streak_3x ?? 1.10),
         qt_streak_4x: Number(d.qt_streak_4x ?? 1.15),
         qt_streak_5x: Number(d.qt_streak_5x ?? 1.25),
-        qt_enabled_assets: String(d.qt_enabled_assets ?? "BTC,ETH,BNB,SOL,XRP,DOGE"),
+        qt_enabled_assets: String(d.qt_enabled_assets ?? "BTC,ETH,BNB,SOL,XRP,DOGE,XAU,XAG,EUR/USD,GBP/USD,USD/JPY"),
         qt_enabled_timeframes: String(d.qt_enabled_timeframes ?? "60,180,300,900"),
       };
     },
