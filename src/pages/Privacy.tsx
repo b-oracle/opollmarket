@@ -98,7 +98,8 @@ const Privacy = () => {
           <ul className="list-disc pl-5 space-y-1">
             <li><strong>Content Moderation:</strong> Market submissions, comments, display names, and uploaded images are screened by AI models (Google Gemini) for policy compliance. Flagged content is logged for review by the System-Mod Engine.</li>
             <li><strong>Market Similarity Detection:</strong> New market proposals are compared against existing markets using AI to identify potential duplicates.</li>
-            <li><strong>Trending Calculation:</strong> Automated scoring algorithms analyze volume, participation, recent activity, comments, and likes to identify trending markets.</li>
+            <li><strong>Trending Calculation:</strong> Automated scoring algorithms analyze volume, participation, recent activity, comments, and likes to identify trending markets. Verified users (Blue/Gold Tick holders) receive trending score multipliers configured by the System-Mod Engine.</li>
+            <li><strong>FAQ AI Assistant:</strong> The Platform provides an AI-powered FAQ search that processes user questions to generate contextual answers about platform features.</li>
           </ul>
           <p>Automated moderation decisions that result in content rejection or account restrictions are subject to human review upon request. Moderation logs are retained for accountability and dispute resolution purposes.</p>
         </section>
