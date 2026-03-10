@@ -78,7 +78,7 @@ const AvatarCircle = ({ avatar, name, size = "w-10 h-10", verificationLevel }: {
         <span>👤</span>
       )}
     </div>
-    {verificationLevel && verificationLevel !== "none" && <NftBadge level={verificationLevel} className="absolute -bottom-0.5 -right-0.5" />}
+    
   </div>
 );
 
