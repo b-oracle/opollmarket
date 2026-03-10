@@ -78,9 +78,11 @@ Deno.serve(async (req) => {
     const { error: upsertError } = await adminClient
       .from("user_security_settings")
       .upsert({
-        user_id: user.id,
+      user_id: user.id,
         pin_hash: pinHash,
         pin_enabled: true,
+        require_pin_login: true,
+        require_pin_withdrawal: true,
         security_setup_complete: true,
         updated_at: new Date().toISOString(),
       }, { onConflict: "user_id" });
