@@ -192,6 +192,7 @@ const App = () => (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
       <WagmiProvider config={config}>
         <QueryClientProvider client={queryClient}>
+          <VerificationThresholdProvider>
           <AuthProvider>
             <SidebarStateProvider>
               <TooltipProvider>
