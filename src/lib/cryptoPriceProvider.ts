@@ -197,7 +197,7 @@ export async function fetchAssetPrice(asset: string): Promise<number | null> {
 
 const nonCryptoHistory = new Map<string, [number, number][]>();
 const NON_CRYPTO_MAX_POINTS = 500; // max data points to keep
-const NON_CRYPTO_POLL_INTERVAL = 15_000; // poll every 15 seconds
+const NON_CRYPTO_POLL_INTERVAL = 60_000; // poll every 60 seconds (conserve API quota)
 const activePollers = new Map<string, { timer: ReturnType<typeof setInterval>; refCount: number }>();
 
 function appendPricePoint(asset: string, price: number) {
