@@ -1032,7 +1032,7 @@ const Create = () => {
 
   // --- Market Creation Form ---
   return (
-    <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
+    <div className="h-dvh bg-background overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
       <TopBar />
       <div className="max-w-lg md:max-w-2xl mx-auto px-3 sm:px-4 pt-20">
         {/* Header */}
