@@ -329,11 +329,11 @@ export default function QuickTrade() {
 
   // When chart timeframe changes, re-filter existing raw data (instant for area/candle)
   useEffect(() => {
-    const raw = rawDataRef.current.get(selectedAsset.geckoId);
+    const raw = rawDataRef.current.get(selectedAsset.symbol);
     if (raw && raw.length > 0) {
       setPriceHistory(filterPriceData(raw, chartMs));
     }
-  }, [chartMs, selectedAsset.geckoId]);
+  }, [chartMs, selectedAsset.symbol]);
 
   // Fetch real OHLC data for TradingView chart (supports up to 30 days)
   useEffect(() => {
