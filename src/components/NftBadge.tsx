@@ -101,9 +101,9 @@ interface NftBadgeProps {
 
 const NftBadge = ({ className = "", size = 16, level }: NftBadgeProps) => {
   const effectiveLevel = level || "gold";
+  const thresholds = useContext(ThresholdCtx);
   if (effectiveLevel === "none") return null;
 
-  const thresholds = useContext(ThresholdCtx);
   const color = effectiveLevel === "gold" ? "gold" : "blue";
 
   return (
