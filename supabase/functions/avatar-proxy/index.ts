@@ -4,9 +4,49 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Simple in-memory rate limiter: max 30 requests per IP per 60s window
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 30;
+const WINDOW_MS = 60_000;
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now >= entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + WINDOW_MS });
+    return false;
+  }
+  entry.count++;
+  return entry.count > RATE_LIMIT;
+}
+
+// Periodically prune expired entries to prevent memory leaks
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of rateLimitMap) {
+    if (now >= val.resetAt) rateLimitMap.delete(key);
+  }
+}, WINDOW_MS);
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  const clientIp =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("cf-connecting-ip") ||
+    "unknown";
+
+  if (isRateLimited(clientIp)) {
+    return new Response(JSON.stringify({ error: "Too many requests" }), {
+      status: 429,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json",
+        "Retry-After": "60",
+      },
+    });
   }
 
   try {
@@ -19,7 +59,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Basic URL validation
     let parsed: URL;
     try {
       parsed = new URL(url);
@@ -37,7 +76,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fetch the image server-side (no CORS restrictions)
     const imgResponse = await fetch(url, {
       headers: { "Accept": "image/*" },
       signal: AbortSignal.timeout(10000),
@@ -55,7 +93,6 @@ Deno.serve(async (req) => {
 
     const contentType = imgResponse.headers.get("content-type") || "image/png";
 
-    // Limit to 5MB to prevent abuse
     const buffer = await imgResponse.arrayBuffer();
     if (buffer.byteLength > 5 * 1024 * 1024) {
       return new Response(JSON.stringify({ error: "Image too large" }), {
@@ -64,7 +101,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Convert to base64 data URL
     const base64 = btoa(
       new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
     );
