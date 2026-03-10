@@ -172,7 +172,10 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
           
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold truncate">{name}</p>
+          <p className="text-sm font-semibold truncate flex items-center gap-1">
+            {name}
+            {nft && <NftBadge size={14} />}
+          </p>
           {prof?.bio && <p className="text-[10px] text-muted-foreground truncate">{prof.bio}</p>}
         </div>
         <div onClick={(e) => e.stopPropagation()}>
