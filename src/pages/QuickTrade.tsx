@@ -1026,7 +1026,7 @@ export default function QuickTrade() {
                       <div className="absolute bottom-2 right-2 z-10">
                         <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold backdrop-blur-sm border bg-amber-500/10 text-amber-500 border-amber-500/30">
                           <span>🎯</span>
-                          <span>Target ${Number(activeRound.open_price).toLocaleString()}</span>
+                          <span>Target {getPricePrefix(selectedAsset)}{formatPrice(Number(activeRound.open_price), selectedAsset)}</span>
                         </div>
                       </div>
                     )}
