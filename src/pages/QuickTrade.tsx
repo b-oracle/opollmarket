@@ -129,7 +129,7 @@ const haptic = (style: "light" | "medium" | "heavy" | "success" | "error" = "med
 };
 const AMOUNT_PRESETS = [5, 10, 25, 50, 100];
 
-import { fetchCryptoPrice, fetchCryptoHistory, fetchAssetPrice, fetchOHLCData, subscribeToPriceStream, type OHLCCandle } from "@/lib/cryptoPriceProvider";
+import { fetchCryptoPrice, fetchCryptoHistory, fetchAssetPrice, fetchOHLCData, subscribeToPriceStream, startNonCryptoHistoryPoller, getNonCryptoHistory, type OHLCCandle } from "@/lib/cryptoPriceProvider";
 
 // Wrapper that routes by asset class
 async function fetchPriceForAsset(asset: QuickTradeAsset): Promise<number | null> {
@@ -139,11 +139,8 @@ async function fetchPriceForAsset(asset: QuickTradeAsset): Promise<number | null
 
 async function fetchRawPriceData(asset: QuickTradeAsset): Promise<[number, number][]> {
   if (asset.assetClass === "crypto") return fetchCryptoHistory(asset.symbol, asset.geckoId);
-  // For commodities/forex, generate a single-point history from current price
-  const price = await fetchAssetPrice(asset.symbol);
-  if (price == null) return [];
-  const now = Date.now();
-  return [[now, price]];
+  // Return accumulated polling history for non-crypto assets
+  return getNonCryptoHistory(asset.symbol);
 }
 
 function filterPriceData(
@@ -449,8 +446,14 @@ export default function QuickTrade() {
       });
     };
     
-    // Try WebSocket first
+    // Try WebSocket first (crypto only)
     const unsubWs = subscribeToPriceStream(selectedAsset.symbol, handleWsTick);
+    
+    // For non-crypto assets, start the background history poller
+    let unsubPoller: (() => void) | null = null;
+    if (selectedAsset.assetClass !== "crypto") {
+      unsubPoller = startNonCryptoHistoryPoller(selectedAsset.symbol);
+    }
     
     // Fallback: HTTP polling if WS doesn't fire within 3s
     const fallbackTimer = setTimeout(() => {
@@ -470,6 +473,21 @@ export default function QuickTrade() {
               const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
               const rawCached = rawDataRef.current.get(selectedAsset.symbol) || [];
               rawDataRef.current.set(selectedAsset.symbol, [...rawCached, [now, p] as [number, number]].filter(([ts]) => ts >= maxCutoff));
+              
+              // For non-crypto, also sync from accumulated history
+              if (selectedAsset.assetClass !== "crypto") {
+                const accumulated = getNonCryptoHistory(selectedAsset.symbol);
+                if (accumulated.length > 1) {
+                  const filtered = accumulated.filter(([ts]) => ts >= maxCutoff);
+                  setPriceHistory(filtered.map(([ts, price]) => ({
+                    time: new Date(ts).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true }),
+                    price,
+                    ts,
+                  })));
+                  return;
+                }
+              }
+              
               setPriceHistory((prev) => {
                 const updated = [...prev, { time: timeLabel, price: p, ts: now }];
                 return updated.filter((pt) => pt.ts >= maxCutoff);
@@ -489,14 +507,15 @@ export default function QuickTrade() {
           }
         };
         poll();
-        pollIv = setInterval(poll, 1000); // faster polling as fallback
+        pollIv = setInterval(poll, 1000);
       }
-    }, 3000);
+    }, selectedAsset.assetClass !== "crypto" ? 0 : 3000); // Start immediately for non-crypto (no WS to wait for)
     
     return () => {
       mounted = false;
       wsActiveRef.current = false;
       unsubWs();
+      unsubPoller?.();
       if (pendingRaf) cancelAnimationFrame(pendingRaf);
       clearTimeout(fallbackTimer);
       if (pollIv) clearInterval(pollIv);

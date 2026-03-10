@@ -162,6 +162,72 @@ export async function fetchAssetPrice(asset: string): Promise<number | null> {
   return null;
 }
 
+// ── Non-crypto price history accumulator ──
+// Builds up an in-memory rolling history via periodic polling so area charts fill up.
+
+const nonCryptoHistory = new Map<string, [number, number][]>();
+const NON_CRYPTO_MAX_POINTS = 500; // max data points to keep
+const NON_CRYPTO_POLL_INTERVAL = 15_000; // poll every 15 seconds
+const activePollers = new Map<string, { timer: ReturnType<typeof setInterval>; refCount: number }>();
+
+function appendPricePoint(asset: string, price: number) {
+  let history = nonCryptoHistory.get(asset);
+  if (!history) {
+    history = [];
+    nonCryptoHistory.set(asset, history);
+  }
+  history.push([Date.now(), price]);
+  // Trim to max points
+  if (history.length > NON_CRYPTO_MAX_POINTS) {
+    nonCryptoHistory.set(asset, history.slice(-NON_CRYPTO_MAX_POINTS));
+  }
+}
+
+/**
+ * Start polling for a non-crypto asset's price history.
+ * Returns an unsubscribe function. Multiple callers share the same poller.
+ */
+export function startNonCryptoHistoryPoller(asset: string): () => void {
+  const existing = activePollers.get(asset);
+  if (existing) {
+    existing.refCount++;
+    return () => {
+      existing.refCount--;
+      if (existing.refCount <= 0) {
+        clearInterval(existing.timer);
+        activePollers.delete(asset);
+      }
+    };
+  }
+
+  // Fetch immediately, then poll
+  const doFetch = async () => {
+    const price = await fetchAssetPrice(asset);
+    if (price != null) appendPricePoint(asset, price);
+  };
+  doFetch();
+  const timer = setInterval(doFetch, NON_CRYPTO_POLL_INTERVAL);
+  activePollers.set(asset, { timer, refCount: 1 });
+
+  return () => {
+    const p = activePollers.get(asset);
+    if (p) {
+      p.refCount--;
+      if (p.refCount <= 0) {
+        clearInterval(p.timer);
+        activePollers.delete(asset);
+      }
+    }
+  };
+}
+
+/**
+ * Get accumulated non-crypto price history.
+ */
+export function getNonCryptoHistory(asset: string): [number, number][] {
+  return nonCryptoHistory.get(asset) ?? [];
+}
+
 // ── Historical price data with fallback ──
 const rawCache = new Map<string, { prices: [number, number][]; fetchedAt: number }>();
 const RAW_CACHE_TTL = 30_000;
