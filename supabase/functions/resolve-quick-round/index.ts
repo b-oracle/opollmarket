@@ -26,15 +26,19 @@ const METAL_MAP: Record<string, string> = {
   XPD: "palladium",
 };
 
+// Non-metal commodities resolved via Omkar API edge function
+const EDGE_COMMODITY_SYMBOLS = new Set(["NG", "COPPER", "WTI", "BRENT"]);
+
 type AssetClass = "crypto" | "commodity" | "forex";
 
 function getAssetClass(symbol: string): AssetClass {
   if (METAL_MAP[symbol.toUpperCase()]) return "commodity";
+  if (EDGE_COMMODITY_SYMBOLS.has(symbol.toUpperCase())) return "commodity";
   if (symbol.includes("/")) return "forex";
   return "crypto";
 }
 
-async function fetchCommodityPrice(asset: string): Promise<number | null> {
+async function fetchMetalPrice(asset: string): Promise<number | null> {
   const metalName = METAL_MAP[asset.toUpperCase()];
   if (!metalName) return null;
   try {
@@ -45,6 +49,35 @@ async function fetchCommodityPrice(asset: string): Promise<number | null> {
   } catch {
     return null;
   }
+}
+
+async function fetchEdgeCommodityPrice(asset: string): Promise<number | null> {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  try {
+    const resp = await fetch(
+      `${supabaseUrl}/functions/v1/commodity-price`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${serviceKey}`,
+        },
+        body: JSON.stringify({ asset: asset.toUpperCase() }),
+      }
+    );
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data?.price ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchCommodityPrice(asset: string): Promise<number | null> {
+  if (METAL_MAP[asset.toUpperCase()]) return fetchMetalPrice(asset);
+  if (EDGE_COMMODITY_SYMBOLS.has(asset.toUpperCase())) return fetchEdgeCommodityPrice(asset);
+  return null;
 }
 
 async function fetchForexPrice(asset: string): Promise<number | null> {
