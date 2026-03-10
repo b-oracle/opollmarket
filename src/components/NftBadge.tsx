@@ -1,9 +1,11 @@
 /**
  * Tiered verification badge.
- * - "blue" = holds NFT OR 10M+ BC400 tokens (one of them)
- * - "gold" = holds BOTH NFT AND 100M+ BC400 tokens
- * - Falls back to checking avatar URL if no level provided (legacy)
+ * - "blue" = holds NFT OR min_token_balance BC400 tokens
+ * - "gold" = holds BOTH NFT AND min_gold_token_balance BC400 tokens
  */
+import { createContext, useContext, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CheckCircle, Coins, Image } from "lucide-react";
 
@@ -12,7 +14,48 @@ export type VerificationLevel = "none" | "blue" | "gold";
 export const isNftAvatar = (avatarUrl: string | null | undefined): boolean =>
   !!avatarUrl && !avatarUrl.includes("/storage/v1/");
 
-/** Verified tick – mirrors the X (Twitter) badge shape */
+/* ── Shared threshold context (avoids N queries for N badges) ── */
+
+interface Thresholds {
+  blue: string;
+  gold: string;
+  nft: number;
+}
+
+const ThresholdCtx = createContext<Thresholds>({ blue: "10M", gold: "100M", nft: 1 });
+
+const formatTokenAmount = (n: number): string => {
+  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(n % 1_000_000_000 === 0 ? 0 : 1)}B`;
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(n % 1_000 === 0 ? 0 : 1)}K`;
+  return n.toLocaleString();
+};
+
+export const VerificationThresholdProvider = ({ children }: { children: React.ReactNode }) => {
+  const { data } = useQuery({
+    queryKey: ["verification_thresholds"],
+    queryFn: async () => {
+      const { data: row } = await supabase
+        .from("commission_settings")
+        .select("min_token_balance, min_gold_token_balance, min_nft_balance")
+        .limit(1)
+        .maybeSingle();
+      return {
+        blue: formatTokenAmount(Number(row?.min_token_balance) || 10_000_000),
+        gold: formatTokenAmount(Number((row as any)?.min_gold_token_balance) || 100_000_000),
+        nft: Number(row?.min_nft_balance) || 1,
+      };
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  const value = useMemo(() => data || { blue: "10M", gold: "100M", nft: 1 }, [data]);
+
+  return <ThresholdCtx.Provider value={value}>{children}</ThresholdCtx.Provider>;
+};
+
+/* ── Verified tick SVG ── */
+
 const VerifiedTick = ({ size = 16, color = "gold" }: { size?: number; color?: "gold" | "blue" }) => {
   const gradientId = color === "gold" ? "gold-grad" : "blue-grad";
   return (
@@ -48,6 +91,8 @@ const VerifiedTick = ({ size = 16, color = "gold" }: { size?: number; color?: "g
   );
 };
 
+/* ── Badge component ── */
+
 interface NftBadgeProps {
   className?: string;
   size?: number;
@@ -55,7 +100,8 @@ interface NftBadgeProps {
 }
 
 const NftBadge = ({ className = "", size = 16, level }: NftBadgeProps) => {
-  const effectiveLevel = level || "gold"; // legacy fallback
+  const effectiveLevel = level || "gold";
+  const thresholds = useContext(ThresholdCtx);
   if (effectiveLevel === "none") return null;
 
   const color = effectiveLevel === "gold" ? "gold" : "blue";
@@ -89,11 +135,11 @@ const NftBadge = ({ className = "", size = 16, level }: NftBadgeProps) => {
             <ul className="space-y-1.5">
               <li className="flex items-start gap-1.5">
                 <Image className="w-3.5 h-3.5 mt-0.5 text-amber-500 shrink-0" />
-                <span>Holds a BC400 NFT <span className="text-muted-foreground">&</span> uses it as their profile avatar</span>
+                <span>Holds {thresholds.nft}+ BC400 NFT{thresholds.nft > 1 ? "s" : ""} & uses it as profile avatar</span>
               </li>
               <li className="flex items-start gap-1.5">
                 <Coins className="w-3.5 h-3.5 mt-0.5 text-amber-500 shrink-0" />
-                <span>Holds the required BC400 tokens for Gold tier</span>
+                <span>Holds <span className="font-semibold">{thresholds.gold}+</span> BC400 tokens</span>
               </li>
             </ul>
           </div>
@@ -109,11 +155,11 @@ const NftBadge = ({ className = "", size = 16, level }: NftBadgeProps) => {
             <ul className="space-y-1.5">
               <li className="flex items-start gap-1.5">
                 <Coins className="w-3.5 h-3.5 mt-0.5 text-blue-500 shrink-0" />
-                <span>Holds the required BC400 tokens for Blue tier</span>
+                <span>Holds <span className="font-semibold">{thresholds.blue}+</span> BC400 tokens</span>
               </li>
               <li className="flex items-start gap-1.5">
                 <Image className="w-3.5 h-3.5 mt-0.5 text-blue-500 shrink-0" />
-                <span>Holds a BC400 NFT & uses it as their profile avatar</span>
+                <span>Holds {thresholds.nft}+ BC400 NFT{thresholds.nft > 1 ? "s" : ""} & uses it as profile avatar</span>
               </li>
             </ul>
           </div>
