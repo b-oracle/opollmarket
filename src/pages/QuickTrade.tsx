@@ -525,6 +525,34 @@ export default function QuickTrade() {
                 const updated = [...prev, { time: timeLabel, price: p, ts: now }];
                 return updated.filter((pt) => pt.ts >= maxCutoff);
               });
+            } else if (p == null && mounted) {
+              consecutiveFailsRef.current++;
+              // Auto-disable asset after 5 consecutive failures
+              if (consecutiveFailsRef.current >= 5 && !disabledAssets.has(selectedAsset.symbol)) {
+                try {
+                  const { data: settings } = await supabase
+                    .from("commission_settings")
+                    .select("qt_disabled_assets, id")
+                    .limit(1)
+                    .maybeSingle();
+                  if (settings) {
+                    const currentDisabled = new Set(String(settings.qt_disabled_assets || "").split(",").filter(Boolean));
+                    if (!currentDisabled.has(selectedAsset.symbol)) {
+                      currentDisabled.add(selectedAsset.symbol);
+                      await supabase
+                        .from("commission_settings")
+                        .update({ qt_disabled_assets: Array.from(currentDisabled).join(",") })
+                        .eq("id", settings.id);
+                      queryClient.invalidateQueries({ queryKey: ["commission_settings"] });
+                      toast({
+                        title: "Market Unavailable",
+                        description: `${selectedAsset.label} has been temporarily disabled due to price feed errors.`,
+                        variant: "destructive",
+                      });
+                    }
+                  }
+                } catch {}
+              }
             }
           } else if (mounted && !wsActiveRef.current) {
             // Jitter tick — use streaming price ref to avoid stale closure
