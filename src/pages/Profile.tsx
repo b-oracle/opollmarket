@@ -306,6 +306,7 @@ const Profile = () => {
   
   const { user, loading: authLoading, isAdmin, displayName: authDisplayName } = useAuth();
   const { balance, bonusBalance } = useUserBalance();
+  const { data: commissionSettings } = useCommissionSettings();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { track } = useAnalytics();
