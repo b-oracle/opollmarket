@@ -1,5 +1,7 @@
 import SEOHead from "@/components/SEOHead";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import PullToRefreshIndicator from "@/components/PullToRefreshIndicator";
 import { toast } from "sonner";
 import MarketCard from "@/components/MarketCard";
 import TopBar from "@/components/TopBar";
