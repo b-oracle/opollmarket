@@ -50,6 +50,7 @@ const AdminSettings = () => {
   const [creatorFee, setCreatorFee] = useState("");
   const [referralReward, setReferralReward] = useState("");
   const [minTokenBalance, setMinTokenBalance] = useState("");
+  const [minGoldTokenBalance, setMinGoldTokenBalance] = useState("");
   const [minNftBalance, setMinNftBalance] = useState("");
   const [minWithdrawalAmount, setMinWithdrawalAmount] = useState("");
   const [withdrawalCooldown, setWithdrawalCooldown] = useState("");
@@ -89,6 +90,7 @@ const AdminSettings = () => {
         setCreatorFee(String(d.creator_fee_percent));
         setReferralReward(String(d.referral_reward_amount ?? 5));
         setMinTokenBalance(String(d.min_token_balance ?? 10000000));
+        setMinGoldTokenBalance(String(d.min_gold_token_balance ?? 100000000));
         setMinNftBalance(String(d.min_nft_balance ?? 1));
         setMinWithdrawalAmount(String(d.min_withdrawal_amount ?? 5));
         setWithdrawalCooldown(String(d.withdrawal_cooldown_minutes ?? 5));
@@ -126,6 +128,7 @@ const AdminSettings = () => {
   const creatorNum = parseFloat(creatorFee) || 0;
   const referralNum = parseFloat(referralReward) || 0;
   const tokenNum = parseFloat(minTokenBalance) || 0;
+  const goldTokenNum = parseFloat(minGoldTokenBalance) || 0;
   const nftNum = parseInt(minNftBalance) || 0;
   const minWithdrawNum = parseFloat(minWithdrawalAmount) || 0;
   const withdrawalCooldownNum = parseInt(withdrawalCooldown) || 5;
@@ -196,6 +199,7 @@ const AdminSettings = () => {
           creator_fee_percent: creatorNum,
           referral_reward_amount: referralNum,
           min_token_balance: tokenNum,
+          min_gold_token_balance: goldTokenNum,
           min_nft_balance: nftNum,
           min_withdrawal_amount: minWithdrawNum,
           withdrawal_cooldown_minutes: withdrawalCooldownNum,
@@ -248,8 +252,9 @@ const AdminSettings = () => {
           qt_streak_3x: qtStreak3Num,
           qt_streak_4x: qtStreak4Num,
           qt_streak_5x: qtStreak5Num,
-          min_token_balance: tokenNum,
-          min_nft_balance: nftNum,
+           min_token_balance: tokenNum,
+           min_gold_token_balance: goldTokenNum,
+           min_nft_balance: nftNum,
           blue_revenue_share_percent: blueRevenueShareNum,
           gold_revenue_share_percent: goldRevenueShareNum,
           blue_trending_multiplier: blueTrendingMultNum,
@@ -636,9 +641,14 @@ const AdminSettings = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="minTokenBalance">Min BC400 Token Balance</Label>
+              <Label htmlFor="minTokenBalance">Min BC400 for Blue Tick</Label>
               <Input id="minTokenBalance" type="number" min={0} step={1} value={minTokenBalance} onChange={(e) => setMinTokenBalance(e.target.value)} placeholder="10000000" />
               <p className="text-[10px] text-muted-foreground">Current: {Number(tokenNum).toLocaleString()} BC400</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="minGoldTokenBalance">Min BC400 for Gold Tick</Label>
+              <Input id="minGoldTokenBalance" type="number" min={0} step={1} value={minGoldTokenBalance} onChange={(e) => setMinGoldTokenBalance(e.target.value)} placeholder="100000000" />
+              <p className="text-[10px] text-muted-foreground">Current: {Number(goldTokenNum).toLocaleString()} BC400</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="minNftBalance">Min BC400 NFT Count</Label>

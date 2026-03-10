@@ -1,0 +1,1 @@
+ALTER TABLE commission_settings ADD COLUMN min_gold_token_balance numeric NOT NULL DEFAULT 100000000;

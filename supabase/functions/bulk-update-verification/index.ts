@@ -54,11 +54,12 @@ Deno.serve(async (req) => {
     // Get commission settings
     const { data: settings } = await adminClient
       .from("commission_settings")
-      .select("min_token_balance, token_contract_address, token_decimals, nft_contract_address, min_nft_balance")
+      .select("min_token_balance, min_gold_token_balance, token_contract_address, token_decimals, nft_contract_address, min_nft_balance")
       .limit(1)
       .single();
 
     const minTokenBalance = Number(settings?.min_token_balance) || 10_000_000;
+    const minGoldTokenBalance = Number(settings?.min_gold_token_balance) || 100_000_000;
     const tokenContractAddress = settings?.token_contract_address || "";
     const tokenDecimals = Number(settings?.token_decimals) || 18;
     const nftContractAddress = (settings?.nft_contract_address || "").toLowerCase();
@@ -102,6 +103,7 @@ Deno.serve(async (req) => {
       }
 
       // Check tokens
+      let tokenBalance = 0;
       if (tokenContractAddress && profile.wallet_address) {
         try {
           const { data: tokenData } = await adminClient.functions.invoke("check-token-balance", {
@@ -111,19 +113,21 @@ Deno.serve(async (req) => {
               token_decimals: tokenDecimals,
             },
           });
-          const balance = Number(tokenData?.balance) || 0;
-          hasTokens = balance >= minTokenBalance;
+          tokenBalance = Number(tokenData?.balance) || 0;
+          hasTokens = tokenBalance >= minTokenBalance;
         } catch (err) {
           console.error(`Token check failed for ${profile.id}:`, err);
         }
       }
+
+      const hasGoldTokens = tokenBalance >= minGoldTokenBalance;
 
       // NFT verification requires using NFT as avatar
       const usingNftAvatar = !!profile.avatar_url && !profile.avatar_url.includes("/storage/v1/");
       const isNftVerified = hasNft && usingNftAvatar;
 
       let level = "none";
-      if (isNftVerified && hasTokens) level = "gold";
+      if (isNftVerified && hasGoldTokens) level = "gold";
       else if (isNftVerified || hasTokens) level = "blue";
 
       await adminClient

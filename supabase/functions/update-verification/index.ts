@@ -53,11 +53,12 @@ Deno.serve(async (req) => {
     // Get commission settings for thresholds
     const { data: settings } = await adminClient
       .from("commission_settings")
-      .select("min_token_balance, token_contract_address, token_decimals, nft_contract_address, min_nft_balance")
+      .select("min_token_balance, min_gold_token_balance, token_contract_address, token_decimals, nft_contract_address, min_nft_balance")
       .limit(1)
       .single();
 
     const minTokenBalance = Number(settings?.min_token_balance) || 10_000_000;
+    const minGoldTokenBalance = Number(settings?.min_gold_token_balance) || 100_000_000;
     const tokenContractAddress = settings?.token_contract_address || "";
     const tokenDecimals = Number(settings?.token_decimals) || 18;
     const nftContractAddress = (settings?.nft_contract_address || "").toLowerCase();
@@ -65,6 +66,7 @@ Deno.serve(async (req) => {
 
     let hasNft = false;
     let hasTokens = false;
+    let hasGoldTokens = false;
 
     if (profile.wallet_address) {
       // Check NFT ownership in wallet
@@ -95,6 +97,7 @@ Deno.serve(async (req) => {
           });
           const balance = Number(tokenData?.balance) || 0;
           hasTokens = balance >= minTokenBalance;
+          hasGoldTokens = balance >= minGoldTokenBalance;
         } catch (err) {
           console.error("Token balance check failed:", err);
         }
@@ -107,7 +110,7 @@ Deno.serve(async (req) => {
 
     // Determine verification level
     let level = "none";
-    if (isNftVerified && hasTokens) {
+    if (isNftVerified && hasGoldTokens) {
       level = "gold";
     } else if (isNftVerified || hasTokens) {
       level = "blue";
