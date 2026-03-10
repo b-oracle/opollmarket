@@ -976,7 +976,8 @@ export default function QuickTrade() {
                       title="TradingView chart"
                     >
                       TV
-                  </button>
+                    </button>
+                  )}
                 </div>
                 <button
                   onClick={toggleMute}
