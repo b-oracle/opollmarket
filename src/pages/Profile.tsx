@@ -316,6 +316,7 @@ const Profile = () => {
   const { address, isConnected } = useAccount();
   const { connect, connectors, isPending } = useFilteredConnectors();
   const { disconnect } = useDisconnect();
+  const { open } = useAppKit();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<"deposit" | "withdraw">("deposit");
   const [txFilter, setTxFilter] = useState<FilterType>("all");
