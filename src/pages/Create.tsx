@@ -717,6 +717,16 @@ const Create = () => {
     );
 
     const passed = tokenPassed || nftPassed;
+    
+    // Check if verified user exceeded free market limit
+    if (passed) {
+      const limit = verificationLevel === "gold" ? goldMaxFreeMarkets : verificationLevel === "blue" ? blueMaxFreeMarkets : 0;
+      if (limit > 0 && activeMarketCount >= limit) {
+        setExceededFreeLimit(true);
+        setFeeBypass(true);
+      }
+    }
+    
     setGatePassed(passed);
     setGateFinished(true);
     setGateRunning(false);
