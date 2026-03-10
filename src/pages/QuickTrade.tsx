@@ -435,6 +435,20 @@ export default function QuickTrade() {
   useEffect(() => {
     let mounted = true;
     let pollIv: ReturnType<typeof setInterval> | null = null;
+
+    // Skip all price streaming when market is closed
+    const marketOpen = isMarketOpen(selectedAsset.assetClass);
+    if (!marketOpen) {
+      // Still fetch one price snapshot so we show "last close" price
+      (async () => {
+        const p = await fetchPriceForAsset(selectedAsset);
+        if (p != null && mounted) {
+          setCurrentPrice(p);
+          setStreamingPrice(p);
+        }
+      })();
+      return () => { mounted = false; };
+    }
     
     // Throttle WS updates to ~100ms to avoid React re-render storm
     let lastWsUpdate = 0;
