@@ -155,11 +155,49 @@ const Terms = () => {
           <h2 className="text-base font-semibold text-foreground">8. Market Creation & Token-Gating</h2>
           <p>Market creation access is determined by a tiered verification system:</p>
           <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Verified Creators:</strong> Users who hold a minimum balance of BC400 tokens or own a qualifying BC400 NFT may create markets without additional fees.</li>
+            <li><strong>Verified Creators:</strong> Users who hold a minimum balance of BC400 tokens (as configured by the System-Mod Engine) or own a qualifying BC400 NFT may create markets without additional fees.</li>
             <li><strong>Fee-Based Creators:</strong> Users who do not meet token-gating requirements may create markets by paying a market creation fee. Fee-based markets require System-Mod Engine approval before going live.</li>
             <li><strong>First Prediction Requirement:</strong> Market creators must place a minimum $5 prediction on their own market after creation to make it officially public. This records initial volume and trading activity.</li>
           </ul>
           <p>All market creators must provide clear, unambiguous resolution criteria and a resolution source. The Platform reserves the right to approve, reject, modify, or cancel any market at its sole discretion.</p>
+        </section>
+
+        <section id="verification" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">8b. Verification Badges (Blue Tick & Gold Tick)</h2>
+          <p>The Platform offers a tiered verification badge system that recognizes users who hold qualifying BC400 tokens and/or NFTs:</p>
+          <p className="font-medium text-foreground">Blue Tick (Blue Verified)</p>
+          <p>A user qualifies for the Blue Tick by meeting <strong>at least one</strong> of the following:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Holding the minimum BC400 token balance for the Blue tier (threshold configured by the System-Mod Engine and displayed in the Platform).</li>
+            <li>Holding a qualifying BC400 NFT <strong>and</strong> using that NFT as their profile avatar.</li>
+          </ul>
+          <p className="font-medium text-foreground mt-2">Gold Tick (Gold Verified)</p>
+          <p>A user qualifies for the Gold Tick by meeting <strong>both</strong> of the following:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Holding the minimum BC400 token balance for the Gold tier (a higher threshold than Blue, configured by the System-Mod Engine).</li>
+            <li>Holding a qualifying BC400 NFT <strong>and</strong> using that NFT as their profile avatar.</li>
+          </ul>
+          <p className="font-medium text-foreground mt-2">Verification Benefits</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Trending Boost:</strong> Markets created by verified users receive a trending score multiplier (higher for Gold than Blue), increasing their visibility in trending rankings.</li>
+            <li><strong>Revenue Sharing:</strong> Verified creators may receive a percentage of creator fees from their own resolved markets, distributed as bonus balance. Percentages differ by tier and are configurable by the System-Mod Engine.</li>
+            <li><strong>Creator Badge:</strong> A "CREATOR" badge is displayed on verified users' profiles.</li>
+            <li><strong>Visual Badge:</strong> Blue and Gold verification ticks are displayed across profiles, rankings, followers lists, comments, and social feeds.</li>
+          </ul>
+          <p>Token and NFT requirements are verified automatically by checking connected wallet balances. Verification levels may be refreshed at any time by the user or in bulk by the System-Mod Engine. The System-Mod Engine reserves the right to modify thresholds, benefits, and eligibility criteria at any time.</p>
+        </section>
+
+        <section id="copytrade" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">8c. Copy Trading</h2>
+          <p>The Platform offers a copy trading feature that allows users to follow and replicate the trades of other users. By using copy trading, you agree that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>You may configure copy settings per trader, including maximum copy amount, and whether to copy predictions, Quick Trades, or both.</li>
+            <li><strong>Manual copy trades</strong> require your approval before execution within a time-limited window. Trades not approved within the window expire automatically.</li>
+            <li><strong>Auto-copy trades</strong> (when enabled) are executed automatically without confirmation.</li>
+            <li>A <strong>copy trade commission</strong> (percentage set by the System-Mod Engine) is deducted from the copier's profit and credited to the original trader when a copied trade wins.</li>
+            <li>Copy trading does not guarantee profits. You remain solely responsible for all trades executed on your account, whether initiated manually or via copy trading.</li>
+            <li>The Platform is not responsible for losses incurred through copy trading.</li>
+          </ul>
         </section>
 
         <section id="moderation" className="space-y-2 scroll-mt-20">
