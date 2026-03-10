@@ -1,4 +1,6 @@
 import { Loader2, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import PullToRefreshIndicator from "@/components/PullToRefreshIndicator";
 import { toast } from "sonner";
 import SEOHead from "@/components/SEOHead";
 import TopBar from "@/components/TopBar";
@@ -7,7 +9,7 @@ import { useMarkets } from "@/hooks/useMarkets";
 import { TrendingUp, Users, Zap, MessageCircle, Search, X, Heart } from "lucide-react";
 import CategoryIcon from "@/components/CategoryIcon";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { motion, useAnimation } from "framer-motion";
+import { motion } from "framer-motion";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import BoostCountdown from "@/components/BoostCountdown";
@@ -65,65 +67,12 @@ const Index = () => {
 
   useEffect(() => { track("page_view", { page: "home" }); }, []);
 
-  // Pull-to-refresh state
-  const PULL_THRESHOLD = 80;
+  // Pull-to-refresh
   const scrollRef = useRef<HTMLDivElement>(null);
-  const touchStartY = useRef(0);
-  const isPulling = useRef(false);
-  const hapticFired = useRef(false);
-  const [pulling, setPulling] = useState(false);
-  const [pullDistance, setPullDistance] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
-  const spinControls = useAnimation();
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (refreshing) return;
-    const scrollTop = scrollRef.current?.scrollTop ?? window.scrollY;
-    if (scrollTop > 5) return;
-    touchStartY.current = e.touches[0].clientY;
-    isPulling.current = true;
-  }, [refreshing]);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isPulling.current || refreshing) return;
-    const scrollTop = scrollRef.current?.scrollTop ?? window.scrollY;
-    if (scrollTop > 5) {
-      isPulling.current = false;
-      setPulling(false);
-      setPullDistance(0);
-      return;
-    }
-    const deltaY = e.touches[0].clientY - touchStartY.current;
-    if (deltaY > 0) {
-      const dampened = Math.min(deltaY * 0.45, 120);
-      setPulling(true);
-      setPullDistance(dampened);
-      if (dampened >= PULL_THRESHOLD && !hapticFired.current) {
-        navigator.vibrate?.(15);
-        hapticFired.current = true;
-      }
-    }
-  }, [refreshing]);
-
-  const handleTouchEnd = useCallback(async () => {
-    if (!isPulling.current) return;
-    isPulling.current = false;
-
-    if (pullDistance >= PULL_THRESHOLD && !refreshing) {
-      setRefreshing(true);
-      setPullDistance(50);
-      spinControls.start({ rotate: 360, transition: { repeat: Infinity, duration: 0.8, ease: "linear" } });
-      await refetch();
-      spinControls.stop();
-      setRefreshing(false);
-    }
-
-    setPulling(false);
-    setPullDistance(0);
-    hapticFired.current = false;
-  }, [pullDistance, refreshing, spinControls]);
-
-  const pullProgress = Math.min(pullDistance / PULL_THRESHOLD, 1);
+  const { pulling, pullDistance, refreshing, pullProgress, spinControls, handlers: pullHandlers } = usePullToRefresh({
+    onRefresh: async () => { await refetch(); },
+    scrollRef,
+  });
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
 
   // Capture referral param on landing
@@ -223,36 +172,14 @@ const Index = () => {
     <div
       className="min-h-dvh bg-background"
       style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))', touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      onTouchStart={pullHandlers.onTouchStart}
+      onTouchMove={pullHandlers.onTouchMove}
+      onTouchEnd={pullHandlers.onTouchEnd}
     >
       <SEOHead description="Predict the future, earn from it. Trade on real-world events across Web, Telegram & WhatsApp with OPoll Market." path="/" />
       <TopBar />
 
-      {/* Pull-to-refresh indicator */}
-      <motion.div
-        className="fixed left-0 right-0 z-40 flex items-center justify-center pointer-events-none"
-        style={{ top: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}
-        initial={{ opacity: 0, y: -20 }}
-        animate={{
-          opacity: pulling || refreshing ? 1 : 0,
-          y: pulling || refreshing ? pullDistance * 0.3 : -20
-        }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      >
-        <div className="flex items-center gap-2 px-4 py-2 rounded-full glass-strong">
-          <motion.div
-            animate={refreshing ? spinControls : { rotate: pullProgress * 180 }}
-            transition={{ type: "tween", duration: 0 }}
-          >
-            <Loader2 className="w-4 h-4 text-primary" />
-          </motion.div>
-          <span className="text-xs font-medium text-muted-foreground">
-            {refreshing ? "Refreshing…" : pullProgress >= 1 ? "Release to refresh" : "Pull to refresh"}
-          </span>
-        </div>
-      </motion.div>
+      <PullToRefreshIndicator pulling={pulling} refreshing={refreshing} pullDistance={pullDistance} pullProgress={pullProgress} spinControls={spinControls} />
 
       <div className="max-w-lg md:max-w-4xl xl:max-w-6xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
         {/* Mobile Hero */}

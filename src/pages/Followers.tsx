@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import PullToRefreshIndicator from "@/components/PullToRefreshIndicator";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +14,7 @@ import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 
 const LAST_SEEN_KEY = "followers_last_seen";
 const ITEMS_PER_PAGE = 10;
-const PULL_THRESHOLD = 60;
+
 
 const Followers = () => {
   const navigate = useNavigate();
@@ -23,51 +25,13 @@ const Followers = () => {
   const [page, setPage] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Pull-to-refresh
-  const [pulling, setPulling] = useState(false);
-  const [pullDistance, setPullDistance] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
-  const touchStartY = useRef(0);
-  const isPulling = useRef(false);
-
-  const handlePullStart = useCallback((e: React.TouchEvent) => {
-    const container = containerRef.current;
-    if (!container || container.scrollTop > 5 || refreshing) return;
-    touchStartY.current = e.touches[0].clientY;
-    isPulling.current = true;
-  }, [refreshing]);
-
-  const handlePullMove = useCallback((e: React.TouchEvent) => {
-    if (!isPulling.current || refreshing) return;
-    const container = containerRef.current;
-    if (!container || container.scrollTop > 5) {
-      isPulling.current = false;
-      setPulling(false);
-      setPullDistance(0);
-      return;
-    }
-    const deltaY = e.touches[0].clientY - touchStartY.current;
-    if (deltaY > 0) {
-      const dampened = Math.min(deltaY * 0.45, 120);
-      setPulling(true);
-      setPullDistance(dampened);
-      if (dampened >= PULL_THRESHOLD) navigator.vibrate?.(15);
-    }
-  }, [refreshing]);
-
-  const handlePullEnd = useCallback(async () => {
-    if (!isPulling.current) return;
-    isPulling.current = false;
-    if (pullDistance >= PULL_THRESHOLD && !refreshing) {
-      setRefreshing(true);
-      setPullDistance(50);
+  const { pulling, pullDistance, refreshing, pullProgress, spinControls, handlers: pullHandlers } = usePullToRefresh({
+    onRefresh: async () => {
       await queryClient.invalidateQueries({ queryKey: ["my-followers", user?.id] });
       await queryClient.invalidateQueries({ queryKey: ["my-following", user?.id] });
-      setRefreshing(false);
-    }
-    setPulling(false);
-    setPullDistance(0);
-  }, [pullDistance, refreshing, queryClient, user?.id]);
+    },
+    scrollRef: containerRef,
+  });
 
   // Reset page on tab/search change
   useEffect(() => { setPage(1); }, [tab, search]);
@@ -155,32 +119,13 @@ const Followers = () => {
       ref={containerRef}
       className="min-h-dvh bg-background overflow-y-auto overscroll-contain"
       style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom))", touchAction: 'pan-y', WebkitOverflowScrolling: 'touch', willChange: 'scroll-position' } as React.CSSProperties}
-      onTouchStart={handlePullStart}
-      onTouchMove={handlePullMove}
-      onTouchEnd={handlePullEnd}
+      onTouchStart={pullHandlers.onTouchStart}
+      onTouchMove={pullHandlers.onTouchMove}
+      onTouchEnd={pullHandlers.onTouchEnd}
     >
       <TopBar />
 
-      {/* Pull-to-refresh indicator */}
-      <AnimatePresence>
-        {(pulling || refreshing) && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed left-1/2 -translate-x-1/2 z-50 flex items-center justify-center"
-            style={{ top: 'calc(3.5rem + env(safe-area-inset-top) + 8px)' }}
-          >
-            <motion.div
-              animate={refreshing ? { rotate: 360 } : { rotate: pullDistance * 3 }}
-              transition={refreshing ? { repeat: Infinity, duration: 0.8, ease: "linear" } : { type: "spring" }}
-              className={`w-8 h-8 rounded-full glass flex items-center justify-center shadow-lg ${pullDistance >= PULL_THRESHOLD || refreshing ? 'text-primary' : 'text-muted-foreground'}`}
-            >
-              <RefreshCw className="w-4 h-4" />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <PullToRefreshIndicator pulling={pulling} refreshing={refreshing} pullDistance={pullDistance} pullProgress={pullProgress} spinControls={spinControls} />
 
       <div className="max-w-lg md:max-w-2xl mx-auto px-3 sm:px-4" style={{ paddingTop: "calc(5rem + env(safe-area-inset-top))" }}>
         {/* Header */}
