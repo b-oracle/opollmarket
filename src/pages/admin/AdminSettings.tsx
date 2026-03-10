@@ -19,6 +19,22 @@ const ALL_ASSETS = [
   { symbol: "SOL", label: "Solana" },
   { symbol: "XRP", label: "XRP" },
   { symbol: "DOGE", label: "Dogecoin" },
+  { symbol: "XAU", label: "Gold" },
+  { symbol: "XAG", label: "Silver" },
+  { symbol: "XPT", label: "Platinum" },
+  { symbol: "XPD", label: "Palladium" },
+  { symbol: "NG", label: "Natural Gas" },
+  { symbol: "COPPER", label: "Copper" },
+  { symbol: "WTI", label: "WTI Crude Oil" },
+  { symbol: "BRENT", label: "Brent Crude" },
+  { symbol: "EUR/USD", label: "EUR/USD" },
+  { symbol: "GBP/USD", label: "GBP/USD" },
+  { symbol: "USD/JPY", label: "USD/JPY" },
+  { symbol: "AUD/USD", label: "AUD/USD" },
+  { symbol: "USD/CHF", label: "USD/CHF" },
+  { symbol: "USD/CAD", label: "USD/CAD" },
+  { symbol: "NZD/USD", label: "NZD/USD" },
+  { symbol: "EUR/GBP", label: "EUR/GBP" },
 ];
 
 const ALL_TIMEFRAMES = [
@@ -50,6 +66,7 @@ const AdminSettings = () => {
   const [qtStreak4, setQtStreak4] = useState("");
   const [qtStreak5, setQtStreak5] = useState("");
   const [qtEnabledAssets, setQtEnabledAssets] = useState<Set<string>>(new Set(ALL_ASSETS.map(a => a.symbol)));
+  const [qtDisabledAssets, setQtDisabledAssets] = useState<Set<string>>(new Set());
   const [qtEnabledTimeframes, setQtEnabledTimeframes] = useState<Set<number>>(new Set(ALL_TIMEFRAMES.map(t => t.seconds)));
   const [blueRevenueShare, setBlueRevenueShare] = useState("");
   const [goldRevenueShare, setGoldRevenueShare] = useState("");
@@ -89,6 +106,8 @@ const AdminSettings = () => {
         setQtStreak5(String(d.qt_streak_5x ?? 1.25));
         const assets = String(d.qt_enabled_assets ?? "BTC,ETH,BNB,SOL,XRP,DOGE");
         setQtEnabledAssets(new Set(assets.split(",").filter(Boolean)));
+        const disabledAssets = String(d.qt_disabled_assets ?? "");
+        setQtDisabledAssets(new Set(disabledAssets.split(",").filter(Boolean)));
         const timeframes = String(d.qt_enabled_timeframes ?? "60,180,300,900");
         setQtEnabledTimeframes(new Set(timeframes.split(",").filter(Boolean).map(Number)));
         setBlueRevenueShare(String(d.blue_revenue_share_percent ?? 0));
@@ -193,6 +212,7 @@ const AdminSettings = () => {
           qt_streak_4x: qtStreak4Num,
           qt_streak_5x: qtStreak5Num,
            qt_enabled_assets: Array.from(qtEnabledAssets).join(","),
+           qt_disabled_assets: Array.from(qtDisabledAssets).join(","),
            qt_enabled_timeframes: Array.from(qtEnabledTimeframes).join(","),
            blue_revenue_share_percent: blueRevenueShareNum,
            gold_revenue_share_percent: goldRevenueShareNum,
@@ -420,15 +440,44 @@ const AdminSettings = () => {
                 <div className="space-y-2">
                   {ALL_ASSETS.map(asset => (
                     <div key={asset.symbol} className="flex items-center justify-between py-1">
-                      <span className="text-sm font-medium">{asset.symbol} <span className="text-muted-foreground font-normal">· {asset.label}</span></span>
-                      <Switch
-                        checked={qtEnabledAssets.has(asset.symbol)}
-                        onCheckedChange={() => toggleAsset(asset.symbol)}
-                        disabled={qtEnabledAssets.has(asset.symbol) && qtEnabledAssets.size <= 1}
-                      />
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{asset.symbol} <span className="text-muted-foreground font-normal">· {asset.label}</span></span>
+                        {qtDisabledAssets.has(asset.symbol) && (
+                          <Badge variant="destructive" className="text-[10px] px-1.5 py-0">⚠️ Unavailable</Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {qtDisabledAssets.has(asset.symbol) && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 text-[10px] px-2"
+                            onClick={() => {
+                              setQtDisabledAssets(prev => {
+                                const next = new Set(prev);
+                                next.delete(asset.symbol);
+                                return next;
+                              });
+                            }}
+                          >
+                            <RefreshCw className="w-3 h-3 mr-1" />
+                            Re-enable
+                          </Button>
+                        )}
+                        <Switch
+                          checked={qtEnabledAssets.has(asset.symbol)}
+                          onCheckedChange={() => toggleAsset(asset.symbol)}
+                          disabled={qtEnabledAssets.has(asset.symbol) && qtEnabledAssets.size <= 1}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
+                {qtDisabledAssets.size > 0 && (
+                  <div className="mt-3 p-2 rounded-md bg-destructive/10 border border-destructive/20">
+                    <p className="text-[11px] text-destructive font-medium">⚠️ {qtDisabledAssets.size} asset(s) auto-disabled due to API errors. Click "Re-enable" then Save to restore.</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

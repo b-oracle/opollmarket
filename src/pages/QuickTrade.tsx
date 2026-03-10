@@ -200,6 +200,12 @@ export default function QuickTrade() {
   const { data: commissionSettings } = useCommissionSettings();
   const { fireWinConfetti } = useConfetti();
 
+  // Set of assets auto-disabled due to API errors
+  const disabledAssets = useMemo(() => {
+    if (!commissionSettings?.qt_disabled_assets) return new Set<string>();
+    return new Set(commissionSettings.qt_disabled_assets.split(",").filter(Boolean));
+  }, [commissionSettings?.qt_disabled_assets]);
+
   // Filter assets based on admin settings
   const ASSETS = useMemo(() => {
     if (!commissionSettings?.qt_enabled_assets) return ALL_ASSETS;
@@ -221,12 +227,14 @@ export default function QuickTrade() {
 
   const [selectedAsset, setSelectedAsset] = useState(ALL_ASSETS[0]);
 
-  // Ensure selected asset is in the enabled list
+  // Ensure selected asset is in the enabled list or not disabled
   useEffect(() => {
-    if (ASSETS.length > 0 && !ASSETS.find(a => a.symbol === selectedAsset.symbol)) {
-      setSelectedAsset(ASSETS[0]);
+    const isAvailable = ASSETS.find(a => a.symbol === selectedAsset.symbol) && !disabledAssets.has(selectedAsset.symbol);
+    if (ASSETS.length > 0 && !isAvailable) {
+      const firstAvailable = ASSETS.find(a => !disabledAssets.has(a.symbol));
+      if (firstAvailable) setSelectedAsset(firstAvailable);
     }
-  }, [ASSETS, selectedAsset.symbol]);
+  }, [ASSETS, selectedAsset.symbol, disabledAssets]);
 
   // Auto-switch to area chart when selecting non-crypto assets (no OHLC/TV available)
   useEffect(() => {
@@ -259,6 +267,7 @@ export default function QuickTrade() {
   const [showWinShare, setShowWinShare] = useState(false);
   const [winShareData, setWinShareData] = useState<{ profit: number; payout: number; side: string; asset: string } | null>(null);
   const profitCardRef = useRef<HTMLDivElement>(null);
+  const consecutiveFailsRef = useRef<number>(0);
   const [soundMuted, setSoundMuted] = useState(() => {
     try { return localStorage.getItem("qt-sound-muted") === "true"; } catch { return false; }
   });
@@ -418,6 +427,7 @@ export default function QuickTrade() {
     setPrevPrice(null);
     setStreamingPrice(null);
     wsActiveRef.current = false;
+    consecutiveFailsRef.current = 0;
   }, [selectedAsset.symbol]);
 
   useEffect(() => {
@@ -487,6 +497,7 @@ export default function QuickTrade() {
             lastFetchTimeRef.current = now;
             const p = await fetchPriceForAsset(selectedAsset);
             if (p != null && mounted && !wsActiveRef.current) {
+              consecutiveFailsRef.current = 0;
               setCurrentPrice((prev) => {
                 setPrevPrice(prev);
                 return p;
@@ -515,6 +526,28 @@ export default function QuickTrade() {
                 const updated = [...prev, { time: timeLabel, price: p, ts: now }];
                 return updated.filter((pt) => pt.ts >= maxCutoff);
               });
+            } else if (p == null && mounted) {
+              consecutiveFailsRef.current++;
+              // Auto-disable asset after 5 consecutive failures
+              if (consecutiveFailsRef.current >= 5 && !disabledAssets.has(selectedAsset.symbol)) {
+                try {
+                  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+                  await fetch(
+                    `https://${projectId}.supabase.co/functions/v1/toggle-qt-asset`,
+                    {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ asset: selectedAsset.symbol, action: "disable" }),
+                    }
+                  );
+                  queryClient.invalidateQueries({ queryKey: ["commission_settings"] });
+                  toast({
+                    title: "Market Unavailable",
+                    description: `${selectedAsset.label} has been temporarily disabled due to price feed errors.`,
+                    variant: "destructive",
+                  });
+                } catch {}
+              }
             }
           } else if (mounted && !wsActiveRef.current) {
             // Jitter tick — use streaming price ref to avoid stale closure
@@ -886,24 +919,33 @@ export default function QuickTrade() {
                 <div key={cls}>
                   <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">{ASSET_CLASS_LABELS[cls]}</p>
                   <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-                    {classAssets.map((a) => (
+                    {classAssets.map((a) => {
+                      const isDisabled = disabledAssets.has(a.symbol);
+                      return (
                       <button
                         key={a.symbol}
                         onClick={() => {
+                          if (isDisabled) return;
                           setSelectedAsset(a);
                           setActiveRound(null);
                           setUserBet(null);
                         }}
+                        disabled={isDisabled}
                         className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                          selectedAsset.symbol === a.symbol
+                          isDisabled
+                            ? "bg-destructive/10 text-destructive/60 cursor-not-allowed line-through opacity-60"
+                            : selectedAsset.symbol === a.symbol
                             ? "bg-primary text-primary-foreground shadow-lg"
                             : "bg-muted/50 text-muted-foreground hover:bg-muted"
                         }`}
+                        title={isDisabled ? "Market not available — disabled by admin" : undefined}
                       >
                         {a.icon && <span className="text-sm">{a.icon}</span>}
                         {a.symbol}
+                        {isDisabled && <span className="text-[9px] no-underline ml-0.5">⚠️</span>}
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               );

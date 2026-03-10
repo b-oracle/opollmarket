@@ -1,0 +1,1 @@
+ALTER TABLE public.commission_settings ADD COLUMN IF NOT EXISTS qt_disabled_assets text NOT NULL DEFAULT '';
