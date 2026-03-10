@@ -111,7 +111,7 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
             width: "440px",
             padding: "28px",
             fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-            borderRadius: "20px",
+            borderRadius: "0px",
             border: "none",
             backgroundColor: colors.bg,
             color: colors.fg,
