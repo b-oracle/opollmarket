@@ -262,6 +262,7 @@ const App = () => (
               </TooltipProvider>
             </SidebarStateProvider>
           </AuthProvider>
+          </VerificationThresholdProvider>
         </QueryClientProvider>
       </WagmiProvider>
     </ThemeProvider>
