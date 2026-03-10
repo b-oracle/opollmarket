@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
-import { Trophy, TrendingUp, TrendingDown, Medal, Crown, Award, Users, Star, Calendar, Share2, ArrowLeft, Zap, Flame, ChevronLeft, ChevronRight } from "lucide-react";
+import { Trophy, TrendingUp, TrendingDown, Medal, Crown, Award, Users, Star, Calendar, Share2, ArrowLeft, Zap, Flame, ChevronLeft, ChevronRight, LogIn } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import useAnalytics from "@/hooks/useAnalytics";
 import RankShareModal from "@/components/RankShareModal";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import FollowButton from "@/components/FollowButton";
+import { Button } from "@/components/ui/button";
 
 
 interface Referrer {
@@ -527,6 +528,22 @@ const Rankings = () => {
         </div>
         <p className="text-xs text-muted-foreground mb-5 ml-12">Top performers on the platform</p>
 
+        {!user ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <Trophy className="w-8 h-8 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">Sign in to view the Leaderboard</h3>
+            <p className="text-sm text-muted-foreground mb-6 max-w-xs">
+              See how you rank against other traders. Sign in to access the full leaderboard.
+            </p>
+            <Button onClick={() => navigate("/auth")} className="gap-2">
+              <LogIn className="w-4 h-4" />
+              Sign In
+            </Button>
+          </div>
+        ) : (
+        <>
         {/* Tabs */}
         <div className="flex gap-2 mb-4">
           {([
@@ -958,6 +975,8 @@ const Rankings = () => {
               </>
             )}
           </>
+        )}
+        </>
         )}
       </div>
       {/* Floating "Find Your Rank" button */}
