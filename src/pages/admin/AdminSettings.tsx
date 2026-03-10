@@ -50,7 +50,7 @@ const AdminSettings = () => {
   const [creatorFee, setCreatorFee] = useState("");
   const [referralReward, setReferralReward] = useState("");
   const [minTokenBalance, setMinTokenBalance] = useState("");
-  const [minNftBalance, setMinNftBalance] = useState("");
+  const [minGoldTokenBalance, setMinGoldTokenBalance] = useState("");
   const [minWithdrawalAmount, setMinWithdrawalAmount] = useState("");
   const [withdrawalCooldown, setWithdrawalCooldown] = useState("");
   const [withdrawalMultiplier, setWithdrawalMultiplier] = useState("");
