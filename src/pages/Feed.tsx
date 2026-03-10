@@ -337,7 +337,7 @@ const Feed = () => {
 
   }
 
-  const pullProgress = Math.min(pullDistance / PULL_THRESHOLD, 1);
+  
 
   return (
     <div className="h-dvh flex flex-col bg-background relative" style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}>
