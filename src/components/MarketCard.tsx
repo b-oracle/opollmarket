@@ -445,10 +445,20 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         <div className="relative z-10 w-full max-w-[calc(100%-3.5rem)] overflow-hidden">
           {/* Creator line + trending */}
           <div className="flex items-center gap-2 mb-1.5">
-            <div className="w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0">
-              <span className="text-[10px] font-bold text-primary">{market.creatorName.charAt(0)}</span>
+            <div
+              className={`flex items-center gap-2 min-w-0 ${market.creatorAddress ? 'cursor-pointer group/creator' : ''}`}
+              onClick={(e) => {
+                if (market.creatorAddress) {
+                  e.stopPropagation();
+                  navigate(`/user/${market.creatorAddress}`);
+                }
+              }}
+            >
+              <div className="w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0 group-hover/creator:border-primary/60 transition-colors">
+                <span className="text-[10px] font-bold text-primary">{market.creatorName.charAt(0)}</span>
+              </div>
+              <span className={`text-xs font-medium text-foreground/80 truncate group-hover/creator:underline ${creatorProfile?.wallet_address ? 'font-mono' : ''}`}>{creatorLabel}</span>
             </div>
-            <span className={`text-xs font-medium text-foreground/80 truncate ${creatorProfile?.wallet_address ? 'font-mono' : ''}`}>{creatorLabel}</span>
             {showBoosted && (
               <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-semibold flex items-center gap-0.5 shrink-0 ${
                 isBoosted 
