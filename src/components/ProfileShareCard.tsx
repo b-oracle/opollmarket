@@ -74,6 +74,29 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
   ({ displayName, bio, avatarUrl, verificationLevel = "none", followersCount, followingCount, tradesCount, predictionsCount, quickTradesCount, referralCount, marketsCount, positionsCount, leaderboardRanks }, ref) => {
     const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
 
+    // Pre-convert avatar to base64 data URL to avoid CORS issues with html2canvas
+    const [avatarBase64, setAvatarBase64] = useState<string | null>(null);
+    useEffect(() => {
+      if (!avatarUrl) { setAvatarBase64(null); return; }
+      let cancelled = false;
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        if (cancelled) return;
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0);
+          setAvatarBase64(canvas.toDataURL("image/png"));
+        } catch { setAvatarBase64(null); }
+      };
+      img.onerror = () => { if (!cancelled) setAvatarBase64(null); };
+      img.src = avatarUrl;
+      return () => { cancelled = true; };
+    }, [avatarUrl]);
+
     // Resolve colors synchronously so they're available on first render for html2canvas
     const colors = useMemo(() => ({
       bg: resolveColor("--background", isDark ? "#0a0a0a" : "#ffffff"),
