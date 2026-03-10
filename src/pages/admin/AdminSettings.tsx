@@ -266,7 +266,9 @@ const AdminSettings = () => {
           blue_revenue_share_percent: blueRevenueShareNum,
           gold_revenue_share_percent: goldRevenueShareNum,
           blue_trending_multiplier: blueTrendingMultNum,
-          gold_trending_multiplier: goldTrendingMultNum,
+           gold_trending_multiplier: goldTrendingMultNum,
+           blue_max_free_markets: blueMaxFreeMarketsNum,
+           gold_max_free_markets: goldMaxFreeMarketsNum,
         },
       });
 
