@@ -19,6 +19,22 @@ const ALL_ASSETS = [
   { symbol: "SOL", label: "Solana" },
   { symbol: "XRP", label: "XRP" },
   { symbol: "DOGE", label: "Dogecoin" },
+  { symbol: "XAU", label: "Gold" },
+  { symbol: "XAG", label: "Silver" },
+  { symbol: "XPT", label: "Platinum" },
+  { symbol: "XPD", label: "Palladium" },
+  { symbol: "NG", label: "Natural Gas" },
+  { symbol: "COPPER", label: "Copper" },
+  { symbol: "WTI", label: "WTI Crude Oil" },
+  { symbol: "BRENT", label: "Brent Crude" },
+  { symbol: "EUR/USD", label: "EUR/USD" },
+  { symbol: "GBP/USD", label: "GBP/USD" },
+  { symbol: "USD/JPY", label: "USD/JPY" },
+  { symbol: "AUD/USD", label: "AUD/USD" },
+  { symbol: "USD/CHF", label: "USD/CHF" },
+  { symbol: "USD/CAD", label: "USD/CAD" },
+  { symbol: "NZD/USD", label: "NZD/USD" },
+  { symbol: "EUR/GBP", label: "EUR/GBP" },
 ];
 
 const ALL_TIMEFRAMES = [
