@@ -276,6 +276,7 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
           {/* Activity Stats */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", marginBottom: "16px" }}>
             {[
+              { label: "Referrals", value: referralCount },
               { label: "Markets Created", value: marketsCount },
               { label: "Active Positions", value: positionsCount },
             ].map((s) => (
