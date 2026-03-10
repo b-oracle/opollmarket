@@ -200,6 +200,12 @@ export default function QuickTrade() {
   const { data: commissionSettings } = useCommissionSettings();
   const { fireWinConfetti } = useConfetti();
 
+  // Set of assets auto-disabled due to API errors
+  const disabledAssets = useMemo(() => {
+    if (!commissionSettings?.qt_disabled_assets) return new Set<string>();
+    return new Set(commissionSettings.qt_disabled_assets.split(",").filter(Boolean));
+  }, [commissionSettings?.qt_disabled_assets]);
+
   // Filter assets based on admin settings
   const ASSETS = useMemo(() => {
     if (!commissionSettings?.qt_enabled_assets) return ALL_ASSETS;
