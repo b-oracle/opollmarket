@@ -246,7 +246,17 @@ const Terms = () => {
         </section>
 
         <section id="conduct" className="space-y-2 scroll-mt-20">
-          <h2 className="text-base font-semibold text-foreground">13. Prohibited Conduct</h2>
+          <h2 className="text-base font-semibold text-foreground">14. Account Security (PIN & TOTP)</h2>
+          <p>The Platform offers optional security features to protect your account:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Security PIN:</strong> A 4-digit PIN that can be required for login and/or withdrawal actions.</li>
+            <li><strong>TOTP (Time-based One-Time Password):</strong> Two-factor authentication using authenticator apps (e.g., Google Authenticator) for additional login and withdrawal security.</li>
+          </ul>
+          <p>You are solely responsible for keeping your PIN and TOTP secret secure. The Platform cannot recover lost PINs or TOTP secrets. In exceptional circumstances, the System-Mod Engine may reset security settings upon identity verification.</p>
+        </section>
+
+        <section id="conduct" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">15. Prohibited Conduct</h2>
           <p>You agree not to:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li>Use the Platform for money laundering, terrorist financing, or other illegal activities.</li>
@@ -257,7 +267,8 @@ const Terms = () => {
             <li>Interfere with the Platform's operation, security, or infrastructure.</li>
             <li>Reverse-engineer, decompile, or attempt to extract the source code of the Platform.</li>
             <li>Submit false, misleading, or fraudulent market proposals or resolution claims.</li>
-            <li>Circumvent or attempt to circumvent content moderation, token-gating, or any other access control mechanism.</li>
+            <li>Circumvent or attempt to circumvent content moderation, token-gating, verification badge requirements, or any other access control mechanism.</li>
+            <li>Abuse the copy trading system to artificially generate commissions or manipulate trading patterns.</li>
           </ul>
         </section>
 
