@@ -1102,6 +1102,7 @@ export default function QuickTrade() {
                 userBet={userBet}
                 resolveFlash={resolveFlash}
                 timeframeLabel={CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.label}
+                assetClass={selectedAsset.assetClass}
               />
               </div>
             </div>
