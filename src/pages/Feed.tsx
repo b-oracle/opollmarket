@@ -293,10 +293,8 @@ const Feed = () => {
       const index = Math.round(container.scrollTop / itemHeight);
       setActiveIndex(index);
 
-      // Detect slight scroll offset from snap position (nudge)
       const snappedTop = index * itemHeight;
       const offset = Math.abs(container.scrollTop - snappedTop);
-      setScrollNudge(offset > 15 && offset < itemHeight * 0.4);
 
       const maxScroll = container.scrollHeight - container.clientHeight;
       const isAtEnd = container.scrollTop >= maxScroll - 5;
