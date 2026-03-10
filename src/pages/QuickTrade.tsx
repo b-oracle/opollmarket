@@ -6,6 +6,7 @@ import {
   TrendingDown,
   Radio,
   Timer,
+  Moon,
   Users,
   ArrowUp,
   ArrowDown,
