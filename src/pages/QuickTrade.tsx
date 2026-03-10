@@ -1113,7 +1113,7 @@ export default function QuickTrade() {
       <ShareModal
         open={showShareModal}
         onOpenChange={setShowShareModal}
-        title={`${selectedAsset.symbol} Quick Trade — ${currentPrice ? `$${currentPrice.toLocaleString()}` : ""}`}
+        title={`${selectedAsset.symbol} Quick Trade — ${currentPrice ? `${getPricePrefix(selectedAsset)}${formatPrice(currentPrice, selectedAsset)}` : ""}`}
         description={`${selectedTimeframe.label} UP/DOWN prediction on ${selectedAsset.label}`}
         marketUrl={`${window.location.origin}/quick-trade`}
         captureRef={chartCardRef}
