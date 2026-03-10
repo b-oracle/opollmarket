@@ -147,6 +147,8 @@ Deno.serve(async (req) => {
         .from("user_security_settings")
         .update({
           totp_enabled: true,
+          require_totp_login: true,
+          require_totp_withdrawal: true,
           security_setup_complete: true,
           updated_at: new Date().toISOString(),
         })
