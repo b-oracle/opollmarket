@@ -183,10 +183,7 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
                   fontSize: "12px",
                   color: colors.mutedFg,
                   lineHeight: "1.4",
-                  overflow: "hidden",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical" as const,
+                  wordBreak: "break-word" as const,
                   whiteSpace: "normal",
                 }}>
                   {bio}
