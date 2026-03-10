@@ -408,6 +408,14 @@ export default function QuickTrade() {
   const [streamingPrice, setStreamingPrice] = useState<number | null>(null);
   const wsActiveRef = useRef(false);
   
+  // Reset price state when asset changes
+  useEffect(() => {
+    setCurrentPrice(null);
+    setPrevPrice(null);
+    setStreamingPrice(null);
+    wsActiveRef.current = false;
+  }, [selectedAsset.symbol]);
+
   useEffect(() => {
     let mounted = true;
     let pollIv: ReturnType<typeof setInterval> | null = null;
@@ -426,8 +434,10 @@ export default function QuickTrade() {
       if (pendingRaf) cancelAnimationFrame(pendingRaf);
       pendingRaf = requestAnimationFrame(() => {
         if (!mounted) return;
-        setPrevPrice(currentPrice);
-        setCurrentPrice(price);
+        setCurrentPrice((prev) => {
+          setPrevPrice(prev);
+          return price;
+        });
         setStreamingPrice(price);
         
         // Append to price history (throttled to every 500ms for chart perf)
@@ -473,8 +483,10 @@ export default function QuickTrade() {
             lastFetchTimeRef.current = now;
             const p = await fetchPriceForAsset(selectedAsset);
             if (p != null && mounted && !wsActiveRef.current) {
-              setPrevPrice(currentPrice);
-              setCurrentPrice(p);
+              setCurrentPrice((prev) => {
+                setPrevPrice(prev);
+                return p;
+              });
               setStreamingPrice(p);
               const maxCutoff = now - 4 * 60 * 60 * 1000;
               const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
@@ -500,16 +512,21 @@ export default function QuickTrade() {
                 return updated.filter((pt) => pt.ts >= maxCutoff);
               });
             }
-          } else if (currentPrice != null && mounted && !wsActiveRef.current) {
-            const jitter = currentPrice * (Math.random() - 0.5) * 0.0001;
-            const tickPrice = currentPrice + jitter;
-            setStreamingPrice(tickPrice);
-            const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
-            setPriceHistory((prev) => {
-              const maxCutoff = now - 4 * 60 * 60 * 1000;
-              const updated = [...prev, { time: timeLabel, price: tickPrice, ts: now }];
-              const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
-              return filtered.length > 500 ? filtered.slice(-500) : filtered;
+          } else if (mounted && !wsActiveRef.current) {
+            // Jitter tick — use streaming price ref to avoid stale closure
+            setCurrentPrice((cur) => {
+              if (cur == null) return cur;
+              const jitter = cur * (Math.random() - 0.5) * 0.0001;
+              const tickPrice = cur + jitter;
+              setStreamingPrice(tickPrice);
+              const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
+              setPriceHistory((prev) => {
+                const maxCutoff = now - 4 * 60 * 60 * 1000;
+                const updated = [...prev, { time: timeLabel, price: tickPrice, ts: now }];
+                const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
+                return filtered.length > 500 ? filtered.slice(-500) : filtered;
+              });
+              return cur;
             });
           }
         };
@@ -527,7 +544,7 @@ export default function QuickTrade() {
       clearTimeout(fallbackTimer);
       if (pollIv) clearInterval(pollIv);
     };
-  }, [selectedAsset]);
+  }, [selectedAsset.symbol]);
 
   // ── Fetch / create active round ──
   const currentPriceRef = useRef(currentPrice);
