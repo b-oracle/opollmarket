@@ -1,4 +1,4 @@
-import { motion, type AnimationControls } from "framer-motion";
+import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 
 interface PullToRefreshIndicatorProps {
@@ -6,7 +6,7 @@ interface PullToRefreshIndicatorProps {
   refreshing: boolean;
   pullDistance: number;
   pullProgress: number;
-  spinControls: AnimationControls;
+  spinControls: ReturnType<typeof import("framer-motion").useAnimation>;
 }
 
 const PullToRefreshIndicator = ({

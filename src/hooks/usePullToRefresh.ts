@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { useAnimation, type AnimationControls } from "framer-motion";
+import { useAnimation } from "framer-motion";
 
 const PULL_THRESHOLD = 80;
 const DAMPEN_FACTOR = 0.45;
