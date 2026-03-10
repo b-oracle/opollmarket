@@ -211,7 +211,7 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const closePrice = await fetchCryptoPrice(round.asset);
+      const closePrice = await fetchAssetPrice(round.asset);
       if (closePrice == null) continue;
 
       const openPrice = Number(round.open_price);
