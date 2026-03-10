@@ -25,7 +25,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import CopyTradeStats from "@/components/CopyTradeStats";
-
+import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 
 type TxType = "buy" | "sell" | "deposit" | "withdraw";
 
