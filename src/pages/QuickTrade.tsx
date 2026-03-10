@@ -823,25 +823,37 @@ export default function QuickTrade() {
             </div>
           </div>
 
-          {/* Asset selector */}
-          <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide">
-            {ASSETS.map((a) => (
-              <button
-                key={a.symbol}
-                onClick={() => {
-                  setSelectedAsset(a);
-                  setActiveRound(null);
-                  setUserBet(null);
-                }}
-                className={`shrink-0 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                  selectedAsset.symbol === a.symbol
-                    ? "bg-primary text-primary-foreground shadow-lg"
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                {a.symbol}
-              </button>
-            ))}
+          {/* Asset selector — grouped by class */}
+          <div className="space-y-2 mb-4">
+            {(["crypto", "commodity", "forex"] as AssetClass[]).map((cls) => {
+              const classAssets = ASSETS.filter(a => a.assetClass === cls);
+              if (classAssets.length === 0) return null;
+              return (
+                <div key={cls}>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">{ASSET_CLASS_LABELS[cls]}</p>
+                  <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+                    {classAssets.map((a) => (
+                      <button
+                        key={a.symbol}
+                        onClick={() => {
+                          setSelectedAsset(a);
+                          setActiveRound(null);
+                          setUserBet(null);
+                        }}
+                        className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                          selectedAsset.symbol === a.symbol
+                            ? "bg-primary text-primary-foreground shadow-lg"
+                            : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {a.icon && <span className="text-sm">{a.icon}</span>}
+                        {a.symbol}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* Timeframe selector */}
