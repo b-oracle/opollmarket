@@ -111,6 +111,20 @@ const Terms = () => {
           </ul>
         </section>
 
+        <section id="quicktrade" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">5b. Quick Trade</h2>
+          <p>Quick Trade allows users to predict short-term price movements of assets (cryptocurrencies, commodities, forex) within fixed time windows. By participating in Quick Trade, you agree that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Each Quick Trade round has a fixed duration (e.g., 1, 3, 5, or 15 minutes) set by the Platform.</li>
+            <li>You predict whether the asset price will go <strong>UP</strong> or <strong>DOWN</strong> during the round.</li>
+            <li>Winning payouts are calculated based on the total pool minus the Platform fee, distributed proportionally to winners.</li>
+            <li>A <strong>streak multiplier</strong> system rewards consecutive winning trades with bonus multipliers on payouts.</li>
+            <li>Minimum and maximum bet amounts are configurable by the System-Mod Engine and displayed within the Platform.</li>
+            <li>Available assets and timeframes may be enabled or disabled at any time by the System-Mod Engine.</li>
+            <li>Quick Trade results are determined by real-time market prices from external data sources. The Platform is not responsible for data feed delays or inaccuracies.</li>
+          </ul>
+        </section>
+
         <section id="fees" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">6. Fees & Commissions</h2>
           <p>The Platform charges the following fees, which are subject to change with notice:</p>
