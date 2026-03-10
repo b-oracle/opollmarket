@@ -14,7 +14,7 @@ import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 
 const LAST_SEEN_KEY = "followers_last_seen";
 const ITEMS_PER_PAGE = 10;
-const PULL_THRESHOLD = 60;
+
 
 const Followers = () => {
   const navigate = useNavigate();

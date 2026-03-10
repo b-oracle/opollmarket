@@ -44,7 +44,7 @@ const formatDollar = (v: number) => {
   return `$${abs.toFixed(2)}`;
 };
 
-const PULL_THRESHOLD = 60;
+
 
 const UserProfile = () => {
   const { id } = useParams<{ id: string }>();
