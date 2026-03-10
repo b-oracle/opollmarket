@@ -138,8 +138,10 @@ const faqSections = [
     title: "Security & Privacy",
     items: [
       { question: "Is OPollMarket secure?", answer: "Yes. The platform implements secure wallet authentication, blockchain-based settlement, and standard cybersecurity measures." },
+      { question: "What is the Security PIN?", answer: "You can set up a 4-digit Security PIN to protect sensitive actions like login and withdrawals. Go to your Profile → Security Settings to enable it." },
+      { question: "What is TOTP (2FA)?", answer: "TOTP (Time-based One-Time Password) adds two-factor authentication using apps like Google Authenticator. You can require it for login and/or withdrawals from Security Settings." },
       { question: "Are funds custodial?", answer: "No. Funds remain under the control of users via their wallets; OPollMarket does not hold custodial access." },
-      { question: "How is user data protected?", answer: "User data is safeguarded through authentication protocols, secure infrastructure, and compliance with applicable privacy standards." },
+      { question: "How is user data protected?", answer: "User data is safeguarded through authentication protocols, Row-Level Security policies, encrypted storage, and compliance with applicable privacy standards. See our Privacy Policy for full details." },
     ],
   },
 ];
