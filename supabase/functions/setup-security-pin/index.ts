@@ -33,7 +33,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { pin, action } = await req.json();
+    // Read body once and destructure all fields
+    const body = await req.json();
+    const { pin, action, old_pin } = body;
 
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -42,8 +44,23 @@ Deno.serve(async (req) => {
 
     if (action === "change") {
       // Changing PIN — verify old PIN first
-      const { old_pin } = await req.json().catch(() => ({ old_pin: null }));
-      // For change, the full body is { action: "change", old_pin, pin }
+      if (!old_pin || !/^\d{6}$/.test(old_pin)) {
+        return new Response(JSON.stringify({ error: "Current PIN is required" }), {
+          status: 400, headers: corsHeaders,
+        });
+      }
+
+      const { data: settings } = await adminClient
+        .from("user_security_settings")
+        .select("pin_hash")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!settings?.pin_hash || !bcrypt.compareSync(old_pin, settings.pin_hash)) {
+        return new Response(JSON.stringify({ error: "Current PIN is incorrect" }), {
+          status: 400, headers: corsHeaders,
+        });
+      }
     }
 
     // Validate PIN format
@@ -57,35 +74,22 @@ Deno.serve(async (req) => {
     const salt = bcrypt.genSaltSync(10);
     const pinHash = bcrypt.hashSync(pin, salt);
 
-    // Update security settings
-    const { error: updateError } = await adminClient
+    // Upsert security settings
+    const { error: upsertError } = await adminClient
       .from("user_security_settings")
-      .update({
+      .upsert({
+        user_id: user.id,
         pin_hash: pinHash,
         pin_enabled: true,
         security_setup_complete: true,
         updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", user.id);
+      }, { onConflict: "user_id" });
 
-    if (updateError) {
-      // Row might not exist yet for existing users — upsert
-      const { error: upsertError } = await adminClient
-        .from("user_security_settings")
-        .upsert({
-          user_id: user.id,
-          pin_hash: pinHash,
-          pin_enabled: true,
-          security_setup_complete: true,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "user_id" });
-
-      if (upsertError) {
-        console.error("Failed to save PIN:", upsertError);
-        return new Response(JSON.stringify({ error: "Failed to save PIN" }), {
-          status: 500, headers: corsHeaders,
-        });
-      }
+    if (upsertError) {
+      console.error("Failed to save PIN:", upsertError);
+      return new Response(JSON.stringify({ error: "Failed to save PIN" }), {
+        status: 500, headers: corsHeaders,
+      });
     }
 
     return new Response(JSON.stringify({ success: true }), {

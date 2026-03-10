@@ -8,6 +8,25 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Simple in-memory rate limiter: max 5 attempts per user per 5 minutes
+const attempts = new Map<string, { count: number; resetAt: number }>();
+const MAX_ATTEMPTS = 5;
+const WINDOW_MS = 5 * 60 * 1000;
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const entry = attempts.get(userId);
+  if (!entry || now > entry.resetAt) {
+    attempts.set(userId, { count: 1, resetAt: now + WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= MAX_ATTEMPTS) {
+    return false;
+  }
+  entry.count++;
+  return true;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -31,6 +50,13 @@ Deno.serve(async (req) => {
     if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: corsHeaders,
+      });
+    }
+
+    // Rate limit check
+    if (!checkRateLimit(user.id)) {
+      return new Response(JSON.stringify({ error: "Too many attempts. Please wait 5 minutes." }), {
+        status: 429, headers: corsHeaders,
       });
     }
 
@@ -69,10 +95,10 @@ Deno.serve(async (req) => {
       }
       valid = bcrypt.compareSync(code, settings.pin_hash);
     } else if (type === "totp") {
+      // CRITICAL FIX: If TOTP is not configured, reject instead of bypassing
       if (!settings.totp_enabled || !settings.totp_secret) {
-        // TOTP not actually configured — treat as pass (data inconsistency)
-        return new Response(JSON.stringify({ valid: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        return new Response(JSON.stringify({ error: "2FA not configured" }), {
+          status: 400, headers: corsHeaders,
         });
       }
 
@@ -94,6 +120,8 @@ Deno.serve(async (req) => {
     }
 
     if (valid) {
+      // Reset rate limit on success
+      attempts.delete(user.id);
       await adminClient
         .from("user_security_settings")
         .update({ last_verified_at: new Date().toISOString() })
