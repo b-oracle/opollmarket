@@ -139,12 +139,27 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
                   alt={displayName}
                   style={{ width: "72px", height: "72px", objectFit: "cover", display: "block" }}
                   crossOrigin="anonymous"
+                  onError={(e) => {
+                    // Fallback: hide broken image and show initial
+                    (e.target as HTMLImageElement).style.display = "none";
+                    const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                    if (fallback) fallback.style.display = "flex";
+                  }}
                 />
-              ) : (
-                <div style={{ fontSize: "28px", fontWeight: 800, color: colors.primary, lineHeight: 1 }}>
-                  {displayName.charAt(0).toUpperCase()}
-                </div>
-              )}
+              ) : null}
+              <div style={{
+                fontSize: "28px",
+                fontWeight: 800,
+                color: colors.primary,
+                lineHeight: 1,
+                display: avatarUrl ? "none" : "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "100%",
+                height: "100%",
+              }}>
+                {displayName.charAt(0).toUpperCase()}
+              </div>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
