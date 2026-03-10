@@ -420,15 +420,15 @@ export default function QuickTrade() {
           
           if (shouldFetch) {
             lastFetchTimeRef.current = now;
-            const p = await fetchPrice(selectedAsset.geckoId);
+            const p = await fetchPriceForAsset(selectedAsset);
             if (p != null && mounted && !wsActiveRef.current) {
               setPrevPrice(currentPrice);
               setCurrentPrice(p);
               setStreamingPrice(p);
               const maxCutoff = now - 4 * 60 * 60 * 1000;
               const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
-              const rawCached = rawDataRef.current.get(selectedAsset.geckoId) || [];
-              rawDataRef.current.set(selectedAsset.geckoId, [...rawCached, [now, p] as [number, number]].filter(([ts]) => ts >= maxCutoff));
+              const rawCached = rawDataRef.current.get(selectedAsset.symbol) || [];
+              rawDataRef.current.set(selectedAsset.symbol, [...rawCached, [now, p] as [number, number]].filter(([ts]) => ts >= maxCutoff));
               setPriceHistory((prev) => {
                 const updated = [...prev, { time: timeLabel, price: p, ts: now }];
                 return updated.filter((pt) => pt.ts >= maxCutoff);
