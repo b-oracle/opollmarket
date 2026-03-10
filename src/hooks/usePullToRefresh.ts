@@ -15,7 +15,7 @@ interface UsePullToRefreshReturn {
   pullDistance: number;
   refreshing: boolean;
   pullProgress: number;
-  spinControls: AnimationControls;
+  spinControls: ReturnType<typeof useAnimation>;
   handlers: {
     onTouchStart: (e: React.TouchEvent) => void;
     onTouchMove: (e: React.TouchEvent) => void;
