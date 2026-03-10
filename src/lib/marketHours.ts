@@ -33,7 +33,9 @@ function isTradingWindowOpen(): boolean {
 /** Check if a market is currently open based on asset class */
 export function isMarketOpen(assetClass: AssetClassType | string): boolean {
   if (assetClass === "crypto") return true;
-  return isTradingWindowOpen();
+  // TEMPORARY: Force closed for testing — revert after verifying
+  return false;
+  // return isTradingWindowOpen();
 }
 
 /** Get a human-readable next open time string */
