@@ -979,6 +979,8 @@ const Rankings = () => {
         </>
         )}
       </div>
+      </>
+      )}
       {/* Floating "Find Your Rank" button */}
       <AnimatePresence>
         {currentUserId && myRankIndex >= 0 && !isOnMyPage && !loading && (
