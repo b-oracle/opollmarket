@@ -169,10 +169,13 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
               <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
             )}
           </div>
-          {nft && <NftBadge className="absolute -bottom-0.5 -right-0.5 scale-75" />}
+          
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold truncate">{name}</p>
+          <p className="text-sm font-semibold truncate flex items-center gap-1">
+            {name}
+            {nft && <NftBadge size={14} />}
+          </p>
           {prof?.bio && <p className="text-[10px] text-muted-foreground truncate">{prof.bio}</p>}
         </div>
         <div onClick={(e) => e.stopPropagation()}>
@@ -240,10 +243,13 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
                       <span className="text-xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
                     )}
                   </div>
-                  {hasNft && <NftBadge className="absolute -bottom-0.5 -right-0.5 scale-90" />}
+                  
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold truncate">{displayName}</p>
+                  <p className="font-bold truncate flex items-center gap-1">
+                    {displayName}
+                    {hasNft && <NftBadge size={16} />}
+                  </p>
                   {profile?.bio && <p className="text-[10px] text-muted-foreground line-clamp-1">{profile.bio}</p>}
                   <div className="flex gap-4 mt-1.5">
                     <span className="text-xs"><span className="font-bold">{followCounts.followers}</span> <span className="text-muted-foreground">followers</span></span>

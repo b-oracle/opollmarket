@@ -69,9 +69,6 @@ const CommentItem = ({
               </span>
             )}
           </div>
-          {comment.verification_level && comment.verification_level !== "none" && (
-            <NftBadge level={comment.verification_level} className="absolute -bottom-0.5 -right-0.5" size={14} />
-          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1 mb-0.5">
