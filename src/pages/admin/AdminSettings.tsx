@@ -151,6 +151,8 @@ const AdminSettings = () => {
   const goldRevenueShareNum = parseFloat(goldRevenueShare) || 0;
   const blueTrendingMultNum = parseFloat(blueTrendingMult) || 1.2;
   const goldTrendingMultNum = parseFloat(goldTrendingMult) || 1.5;
+  const blueMaxFreeMarketsNum = parseInt(blueMaxFreeMarkets) || 5;
+  const goldMaxFreeMarketsNum = parseInt(goldMaxFreeMarkets) || 20;
   const totalFee = adminNum + creatorNum;
   const poolPercent = 100 - totalFee;
   const isValid =
