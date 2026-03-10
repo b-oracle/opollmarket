@@ -53,7 +53,8 @@ const Privacy = () => {
             <li><strong>Authentication Data:</strong> Credentials from third-party OAuth providers (Google, Apple) if you choose to sign in via social login. We receive only the data necessary for authentication (email, name, profile picture).</li>
             <li><strong>Wallet Information:</strong> Public blockchain wallet addresses you connect to the Platform (e.g., MetaMask, Trust Wallet, SafePal, Coinbase Wallet, Rabby, Binance Wallet, Bitget Wallet). We never request or store your private keys or seed phrases.</li>
             <li><strong>User-Generated Content:</strong> Market proposals, comments, display names, and uploaded images (market covers, profile avatars).</li>
-            <li><strong>Financial Information:</strong> Transaction amounts, trade details, deposit/withdrawal data, referral information, bonus balance usage, limit order history, and exit fee records.</li>
+            <li><strong>Financial Information:</strong> Transaction amounts, trade details, deposit/withdrawal data, referral information, bonus balance usage, limit order history, exit fee records, Quick Trade round history, and copy trade settings.</li>
+            <li><strong>Security Settings:</strong> Security PIN preferences and TOTP enrollment status (we never store plaintext PINs or TOTP secrets in reversible form).</li>
             <li><strong>Communication Data:</strong> Any information you provide when contacting support or submitting feedback.</li>
           </ul>
 
