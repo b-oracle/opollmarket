@@ -74,26 +74,53 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
   ({ displayName, bio, avatarUrl, verificationLevel = "none", followersCount, followingCount, tradesCount, predictionsCount, quickTradesCount, referralCount, marketsCount, positionsCount, leaderboardRanks }, ref) => {
     const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
 
-    // Pre-convert avatar to base64 data URL to avoid CORS issues with html2canvas
+    // Pre-convert avatar to base64 via server proxy to avoid CORS issues with html2canvas
     const [avatarBase64, setAvatarBase64] = useState<string | null>(null);
     useEffect(() => {
       if (!avatarUrl) { setAvatarBase64(null); return; }
+
+      // If already a data URL or same-origin, use directly
+      if (avatarUrl.startsWith("data:")) { setAvatarBase64(avatarUrl); return; }
+
       let cancelled = false;
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        if (cancelled) return;
+
+      const fetchViaProxy = async () => {
         try {
-          const canvas = document.createElement("canvas");
-          canvas.width = img.naturalWidth;
-          canvas.height = img.naturalHeight;
-          const ctx = canvas.getContext("2d");
-          ctx?.drawImage(img, 0, 0);
-          setAvatarBase64(canvas.toDataURL("image/png"));
-        } catch { setAvatarBase64(null); }
+          const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+          const res = await fetch(
+            `https://${projectId}.supabase.co/functions/v1/avatar-proxy`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ url: avatarUrl }),
+            }
+          );
+          if (!res.ok) throw new Error("proxy failed");
+          const { dataUrl } = await res.json();
+          if (!cancelled && dataUrl) setAvatarBase64(dataUrl);
+        } catch {
+          // Fallback: try client-side canvas conversion
+          if (cancelled) return;
+          try {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = () => {
+              if (cancelled) return;
+              try {
+                const canvas = document.createElement("canvas");
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                const ctx = canvas.getContext("2d");
+                ctx?.drawImage(img, 0, 0);
+                setAvatarBase64(canvas.toDataURL("image/png"));
+              } catch { /* fallback to raw url */ }
+            };
+            img.src = avatarUrl;
+          } catch { /* give up */ }
+        }
       };
-      img.onerror = () => { if (!cancelled) setAvatarBase64(null); };
-      img.src = avatarUrl;
+
+      fetchViaProxy();
       return () => { cancelled = true; };
     }, [avatarUrl]);
 
