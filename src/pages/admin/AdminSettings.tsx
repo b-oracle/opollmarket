@@ -73,6 +73,8 @@ const AdminSettings = () => {
   const [goldRevenueShare, setGoldRevenueShare] = useState("");
   const [blueTrendingMult, setBlueTrendingMult] = useState("");
   const [goldTrendingMult, setGoldTrendingMult] = useState("");
+  const [blueMaxFreeMarkets, setBlueMaxFreeMarkets] = useState("5");
+  const [goldMaxFreeMarkets, setGoldMaxFreeMarkets] = useState("20");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
