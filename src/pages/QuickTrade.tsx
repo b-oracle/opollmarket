@@ -1108,13 +1108,20 @@ export default function QuickTrade() {
                   <>
                     {/* Live badge + P&L */}
                     <div className="absolute top-1 left-1 z-10 flex items-center gap-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                        </span>
-                        <span className="text-[9px] font-bold text-green-500 uppercase tracking-wider">Live</span>
-                      </div>
+                      {isMarketOpen(selectedAsset.assetClass) ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                          </span>
+                          <span className="text-[9px] font-bold text-green-500 uppercase tracking-wider">Live</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <Moon className="w-2.5 h-2.5 text-muted-foreground" />
+                          <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Closed</span>
+                        </div>
+                      )}
                       {userBet && activeRound?.open_price && currentPrice != null && (() => {
                         const entry = Number(activeRound.open_price);
                         const pnl = userBet.side === "down"
