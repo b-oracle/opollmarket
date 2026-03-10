@@ -1098,10 +1098,7 @@ const Profile = () => {
                   </div>
                 </div>
                 <button
-                  onClick={() => {
-                    const { open } = require("@reown/appkit/react") as any;
-                    open();
-                  }}
+                  onClick={() => open()}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold bg-primary text-primary-foreground shadow-[0_0_20px_hsl(var(--neon-yes)/0.3)] transition-all active:scale-95"
                 >
                   <Wallet className="w-4 h-4" />
