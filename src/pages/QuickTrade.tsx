@@ -923,7 +923,7 @@ export default function QuickTrade() {
             {/* Open price reference */}
             {activeRound?.open_price && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>Open: <span className="font-semibold text-foreground">${Number(activeRound.open_price).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></span>
+                <span>Open: <span className="font-semibold text-foreground">{getPricePrefix(selectedAsset)}{formatPrice(Number(activeRound.open_price), selectedAsset)}</span></span>
                 {currentPrice != null && (
                   <span className={`font-semibold ${
                     currentPrice > Number(activeRound.open_price) ? "text-green-500" : currentPrice < Number(activeRound.open_price) ? "text-destructive" : "text-muted-foreground"
