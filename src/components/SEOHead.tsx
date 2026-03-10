@@ -10,8 +10,8 @@ interface SEOHeadProps {
 }
 
 const BASE_URL = "https://opoll.org";
-const DEFAULT_TITLE = "OPoll Market | The World's First Web + Telegram + WhatsApp prediction market protocol.";
-const DEFAULT_DESC = "Predict the future, earn from it. Trade on real-world events across Web, Telegram & WhatsApp with OPoll Market.";
+const DEFAULT_TITLE = "OPoll Market | The World's First Social Prediction Platform on Telegram, WhatsApp & Web";
+const DEFAULT_DESC = "Predict the future, earn from it. Trade on real-world events across crypto, sports, politics & more. Join thousands of traders making predictions that pay.";
 const DEFAULT_IMAGE = "https://opoll.org/og-image.png";
 
 const SEOHead = ({
