@@ -1547,6 +1547,16 @@ export type Database = {
           following_count: number
         }[]
       }
+      get_follow_suggestions: {
+        Args: { _limit?: number; _user_id: string }
+        Returns: {
+          avatar_url: string
+          bio: string
+          display_name: string
+          id: string
+          verification_level: string
+        }[]
+      }
       get_quick_trade_leaderboard:
         | {
             Args: { _limit?: number }
