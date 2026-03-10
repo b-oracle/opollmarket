@@ -106,9 +106,35 @@ Deno.serve(async (req) => {
     const usingNftAvatar = !!profile.avatar_url && !profile.avatar_url.includes("/storage/v1/");
     const isNftVerified = hasNft && usingNftAvatar;
 
+    // Check gold-level token threshold
+    const hasGoldTokens = tokenContractAddress && profile.wallet_address
+      ? (() => {
+          try {
+            // Re-use the balance already fetched above
+            return hasTokens; // placeholder, recalc below
+          } catch { return false; }
+        })()
+      : false;
+
+    // Recalculate with separate gold threshold
+    let goldTokenCheck = false;
+    if (tokenContractAddress && profile.wallet_address) {
+      try {
+        const { data: tokenData2 } = await adminClient.functions.invoke("check-token-balance", {
+          body: {
+            wallet_address: profile.wallet_address,
+            token_contract_address: tokenContractAddress,
+            token_decimals: tokenDecimals,
+          },
+        });
+        const bal = Number(tokenData2?.balance) || 0;
+        goldTokenCheck = bal >= minGoldTokenBalance;
+      } catch { /* already checked above */ }
+    }
+
     // Determine verification level
     let level = "none";
-    if (isNftVerified && hasTokens) {
+    if (isNftVerified && goldTokenCheck) {
       level = "gold";
     } else if (isNftVerified || hasTokens) {
       level = "blue";

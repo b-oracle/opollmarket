@@ -198,6 +198,7 @@ export type Database = {
           gold_trending_multiplier: number
           id: string
           market_creation_fee: number | null
+          min_gold_token_balance: number
           min_nft_balance: number
           min_token_balance: number
           min_withdrawal_amount: number
@@ -234,6 +235,7 @@ export type Database = {
           gold_trending_multiplier?: number
           id?: string
           market_creation_fee?: number | null
+          min_gold_token_balance?: number
           min_nft_balance?: number
           min_token_balance?: number
           min_withdrawal_amount?: number
@@ -270,6 +272,7 @@ export type Database = {
           gold_trending_multiplier?: number
           id?: string
           market_creation_fee?: number | null
+          min_gold_token_balance?: number
           min_nft_balance?: number
           min_token_balance?: number
           min_withdrawal_amount?: number

@@ -103,6 +103,7 @@ Deno.serve(async (req) => {
       }
 
       // Check tokens
+      let tokenBalance = 0;
       if (tokenContractAddress && profile.wallet_address) {
         try {
           const { data: tokenData } = await adminClient.functions.invoke("check-token-balance", {
@@ -112,19 +113,21 @@ Deno.serve(async (req) => {
               token_decimals: tokenDecimals,
             },
           });
-          const balance = Number(tokenData?.balance) || 0;
-          hasTokens = balance >= minTokenBalance;
+          tokenBalance = Number(tokenData?.balance) || 0;
+          hasTokens = tokenBalance >= minTokenBalance;
         } catch (err) {
           console.error(`Token check failed for ${profile.id}:`, err);
         }
       }
+
+      const hasGoldTokens = tokenBalance >= minGoldTokenBalance;
 
       // NFT verification requires using NFT as avatar
       const usingNftAvatar = !!profile.avatar_url && !profile.avatar_url.includes("/storage/v1/");
       const isNftVerified = hasNft && usingNftAvatar;
 
       let level = "none";
-      if (isNftVerified && hasTokens) level = "gold";
+      if (isNftVerified && hasGoldTokens) level = "gold";
       else if (isNftVerified || hasTokens) level = "blue";
 
       await adminClient
