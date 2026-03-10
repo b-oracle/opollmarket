@@ -25,51 +25,13 @@ const Followers = () => {
   const [page, setPage] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Pull-to-refresh
-  const [pulling, setPulling] = useState(false);
-  const [pullDistance, setPullDistance] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
-  const touchStartY = useRef(0);
-  const isPulling = useRef(false);
-
-  const handlePullStart = useCallback((e: React.TouchEvent) => {
-    const container = containerRef.current;
-    if (!container || container.scrollTop > 5 || refreshing) return;
-    touchStartY.current = e.touches[0].clientY;
-    isPulling.current = true;
-  }, [refreshing]);
-
-  const handlePullMove = useCallback((e: React.TouchEvent) => {
-    if (!isPulling.current || refreshing) return;
-    const container = containerRef.current;
-    if (!container || container.scrollTop > 5) {
-      isPulling.current = false;
-      setPulling(false);
-      setPullDistance(0);
-      return;
-    }
-    const deltaY = e.touches[0].clientY - touchStartY.current;
-    if (deltaY > 0) {
-      const dampened = Math.min(deltaY * 0.45, 120);
-      setPulling(true);
-      setPullDistance(dampened);
-      if (dampened >= PULL_THRESHOLD) navigator.vibrate?.(15);
-    }
-  }, [refreshing]);
-
-  const handlePullEnd = useCallback(async () => {
-    if (!isPulling.current) return;
-    isPulling.current = false;
-    if (pullDistance >= PULL_THRESHOLD && !refreshing) {
-      setRefreshing(true);
-      setPullDistance(50);
+  const { pulling, pullDistance, refreshing, pullProgress, spinControls, handlers: pullHandlers } = usePullToRefresh({
+    onRefresh: async () => {
       await queryClient.invalidateQueries({ queryKey: ["my-followers", user?.id] });
       await queryClient.invalidateQueries({ queryKey: ["my-following", user?.id] });
-      setRefreshing(false);
-    }
-    setPulling(false);
-    setPullDistance(0);
-  }, [pullDistance, refreshing, queryClient, user?.id]);
+    },
+    scrollRef: containerRef,
+  });
 
   // Reset page on tab/search change
   useEffect(() => { setPage(1); }, [tab, search]);
