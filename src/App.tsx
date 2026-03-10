@@ -123,31 +123,41 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
   const [checked, setChecked] = useState(false);
   const [needsSetup, setNeedsSetup] = useState(false);
   const checkedUserRef = useRef<string | null>(null);
+  const checkingRef = useRef(false);
 
   const allowedPaths = ["/setup-security", "/auth", "/reset-password", "/forgot-password", "/terms", "/privacy", "/disclaimer"];
   const isAllowed = allowedPaths.some(p => location.pathname.startsWith(p));
 
+  // Use user.id as dep instead of user object to avoid re-fires on reference changes
+  const userId = user?.id ?? null;
+
   useEffect(() => {
-    if (!user || loading) { setChecked(true); setNeedsSetup(false); return; }
-    // Only check once per user session
-    if (checkedUserRef.current === user.id) { setChecked(true); return; }
+    if (!userId || loading) { setChecked(true); setNeedsSetup(false); return; }
+    if (checkedUserRef.current === userId) { setChecked(true); return; }
+    if (checkingRef.current) return; // prevent concurrent checks
+    checkingRef.current = true;
 
     import("@/integrations/supabase/client").then(({ supabase }) => {
       supabase
         .from("user_security_settings" as any)
         .select("security_setup_complete")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .maybeSingle()
         .then(({ data }) => {
           const d = data as any;
           const needs = !d || d.security_setup_complete === false;
           setNeedsSetup(needs);
-          // Only cache if setup is complete — so after finishing setup the guard re-checks
-          if (!needs) checkedUserRef.current = user.id;
+          // Cache the user id regardless — re-check only happens on explicit navigation back
+          checkedUserRef.current = userId;
+          setChecked(true);
+          checkingRef.current = false;
+        })
+        .catch(() => {
+          checkingRef.current = false;
           setChecked(true);
         });
     });
-  }, [user, loading]);
+  }, [userId, loading]);
 
   if (!checked) return null;
   if (needsSetup && !isAllowed) return <Navigate to="/setup-security" replace />;
