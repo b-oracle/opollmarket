@@ -979,22 +979,23 @@ const Rankings = () => {
         </>
         )}
       </div>
-      {/* Floating "Find Your Rank" button */}
-      <AnimatePresence>
-        {currentUserId && myRankIndex >= 0 && !isOnMyPage && !loading && (
-          <motion.button
-            initial={{ opacity: 0, y: 20, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.9 }}
-            onClick={scrollToMyRank}
-            className="fixed bottom-24 right-4 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 transition-opacity text-xs font-semibold"
-            style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
-          >
-            <Star className="w-3.5 h-3.5 fill-current" />
-            Your Rank: #{myRankIndex + 1}
-          </motion.button>
-        )}
-      </AnimatePresence>
+      {user && (
+        <AnimatePresence>
+          {currentUserId && myRankIndex >= 0 && !isOnMyPage && !loading && (
+            <motion.button
+              initial={{ opacity: 0, y: 20, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.9 }}
+              onClick={scrollToMyRank}
+              className="fixed bottom-24 right-4 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 transition-opacity text-xs font-semibold"
+              style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+            >
+              <Star className="w-3.5 h-3.5 fill-current" />
+              Your Rank: #{myRankIndex + 1}
+            </motion.button>
+          )}
+        </AnimatePresence>
+      )}
       <BottomNav />
       {shareModal && (
         <RankShareModal
@@ -1003,7 +1004,6 @@ const Rankings = () => {
           {...shareModal}
         />
       )}
-      
     </div>
   );
 };
