@@ -66,6 +66,8 @@ const ALL_ASSETS: QuickTradeAsset[] = [
   // Commodities
   { symbol: "XAU", label: "Gold", assetClass: "commodity", icon: "🥇", unit: "USD/oz" },
   { symbol: "XAG", label: "Silver", assetClass: "commodity", icon: "🥈", unit: "USD/oz" },
+  { symbol: "XPT", label: "Platinum", assetClass: "commodity", icon: "⬜", unit: "USD/oz" },
+  { symbol: "XPD", label: "Palladium", assetClass: "commodity", icon: "🔘", unit: "USD/oz" },
   // Forex
   { symbol: "EUR/USD", label: "EUR/USD", assetClass: "forex", icon: "€" },
   { symbol: "GBP/USD", label: "GBP/USD", assetClass: "forex", icon: "£" },
