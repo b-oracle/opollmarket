@@ -124,7 +124,10 @@ const METAL_MAP: Record<string, string> = {
   XAU: "gold", XAG: "silver", XPT: "platinum", XPD: "palladium",
 };
 
-async function fetchCommodityPrice(asset: string): Promise<number | null> {
+// Non-metal commodities fetched via edge function (Omkar API)
+const EDGE_COMMODITY_SYMBOLS = new Set(["NG", "COPPER", "WTI", "BRENT"]);
+
+async function fetchMetalPrice(asset: string): Promise<number | null> {
   const metalName = METAL_MAP[asset];
   if (!metalName) return null;
   try {
@@ -135,6 +138,32 @@ async function fetchCommodityPrice(asset: string): Promise<number | null> {
   } catch {
     return null;
   }
+}
+
+async function fetchEdgeCommodityPrice(asset: string): Promise<number | null> {
+  try {
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    if (!projectId) return null;
+    const resp = await fetch(
+      `https://${projectId}.supabase.co/functions/v1/commodity-price`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ asset }),
+      }
+    );
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data?.price ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchCommodityPrice(asset: string): Promise<number | null> {
+  if (METAL_MAP[asset]) return fetchMetalPrice(asset);
+  if (EDGE_COMMODITY_SYMBOLS.has(asset)) return fetchEdgeCommodityPrice(asset);
+  return null;
 }
 
 async function fetchForexPrice(asset: string): Promise<number | null> {

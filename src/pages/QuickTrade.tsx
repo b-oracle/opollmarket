@@ -68,6 +68,8 @@ const ALL_ASSETS: QuickTradeAsset[] = [
   { symbol: "XAG", label: "Silver", assetClass: "commodity", icon: "🥈", unit: "USD/oz" },
   { symbol: "XPT", label: "Platinum", assetClass: "commodity", icon: "⬜", unit: "USD/oz" },
   { symbol: "XPD", label: "Palladium", assetClass: "commodity", icon: "🔘", unit: "USD/oz" },
+  { symbol: "NG", label: "Natural Gas", assetClass: "commodity", icon: "🔥", unit: "USD/MMBtu" },
+  { symbol: "COPPER", label: "Copper", assetClass: "commodity", icon: "🟤", unit: "USD/lb" },
   // Forex
   { symbol: "EUR/USD", label: "EUR/USD", assetClass: "forex", icon: "€" },
   { symbol: "GBP/USD", label: "GBP/USD", assetClass: "forex", icon: "£" },
