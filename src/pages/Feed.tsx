@@ -265,14 +265,10 @@ const Feed = () => {
     containerRef.current?.scrollTo({ top: 0 });
   }, [feedTab]);
 
-  const [pulling, setPulling] = useState(false);
-  const [pullDistance, setPullDistance] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
-  const touchStartY = useRef(0);
-  const isPulling = useRef(false);
-  const hapticFired = useRef(false);
-  const [scrollNudge, setScrollNudge] = useState(false);
-  const spinControls = useAnimation();
+  const { pulling, pullDistance, refreshing, pullProgress, spinControls, handlers: pullHandlers } = usePullToRefresh({
+    onRefresh: async () => { await refetch(); },
+    scrollRef: containerRef,
+  });
 
   const sortedMarkets = useMemo(() => {
     const base = [...markets].sort((a, b) => {
