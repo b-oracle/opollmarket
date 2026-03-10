@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Moon } from "lucide-react";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
 import { getAssetClass } from "@/data/assetClasses";
 import { fetchAssetPrice } from "@/lib/cryptoPriceProvider";
+import { isMarketOpen, getNextOpenTime } from "@/lib/marketHours";
 
 const OP_LABELS: Record<string, string> = {
   above: ">", below: "<", at_or_above: "≥", at_or_below: "≤",
@@ -24,6 +25,8 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
   const priceRef = useRef<number | null>(null);
 
   const cls = getAssetClass(asset);
+  const marketOpen = isMarketOpen(cls);
+  const nextOpen = !marketOpen ? getNextOpenTime(cls) : "";
 
   useEffect(() => {
     let cancelled = false;
@@ -120,44 +123,55 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
   return (
     <div
       className={`inline-flex flex-col rounded-lg text-[10px] font-bold tabular-nums backdrop-blur-sm transition-all duration-500 overflow-hidden ${
-        flash === "up"
-          ? "bg-green-500/25 border border-green-500/40 shadow-[0_0_8px_rgba(34,197,94,0.3)]"
-          : flash === "down"
-            ? "bg-destructive/25 border border-destructive/40 shadow-[0_0_8px_hsl(var(--destructive)/0.3)]"
-            : conditionMet
-              ? "bg-green-500/15 border border-green-500/30 text-green-600 dark:text-green-400"
-              : proximityTier === "imminent"
-                ? "bg-amber-500/20 border border-amber-500/40 text-amber-600 dark:text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.25)]"
-                : proximityTier === "close"
-                  ? "bg-yellow-500/15 border border-yellow-500/30 text-yellow-600 dark:text-yellow-400"
-                  : "bg-primary/10 border border-primary/20 text-primary"
+        !marketOpen
+          ? "bg-muted/30 border border-muted-foreground/20 text-muted-foreground"
+          : flash === "up"
+            ? "bg-green-500/25 border border-green-500/40 shadow-[0_0_8px_rgba(34,197,94,0.3)]"
+            : flash === "down"
+              ? "bg-destructive/25 border border-destructive/40 shadow-[0_0_8px_hsl(var(--destructive)/0.3)]"
+              : conditionMet
+                ? "bg-green-500/15 border border-green-500/30 text-green-600 dark:text-green-400"
+                : proximityTier === "imminent"
+                  ? "bg-amber-500/20 border border-amber-500/40 text-amber-600 dark:text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.25)]"
+                  : proximityTier === "close"
+                    ? "bg-yellow-500/15 border border-yellow-500/30 text-yellow-600 dark:text-yellow-400"
+                    : "bg-primary/10 border border-primary/20 text-primary"
       }`}
     >
-      {proximityTier === "imminent" && !conditionMet && (
+      {!marketOpen && (
+        <div className="flex items-center justify-center gap-1 px-2 py-0.5 bg-muted/40 text-muted-foreground text-[9px] font-semibold">
+          <Moon className="w-2.5 h-2.5" />
+          Market Closed · {nextOpen}
+        </div>
+      )}
+      {marketOpen && proximityTier === "imminent" && !conditionMet && (
         <div className="flex items-center justify-center gap-1 px-2 py-0.5 bg-amber-500/25 text-amber-600 dark:text-amber-300 text-[9px] font-bold animate-pulse">
           🔥 Almost there! {progress}% to target
         </div>
       )}
-      {proximityTier === "close" && !conditionMet && (
+      {marketOpen && proximityTier === "close" && !conditionMet && (
         <div className="flex items-center justify-center gap-1 px-2 py-0.5 bg-yellow-500/20 text-yellow-600 dark:text-yellow-300 text-[9px] font-semibold">
           ⚡ Approaching target — {progress}%
         </div>
       )}
-      {conditionMet && (
+      {marketOpen && conditionMet && (
         <div className="flex items-center justify-center gap-1 px-2 py-0.5 bg-green-500/25 text-green-600 dark:text-green-300 text-[9px] font-bold">
           ✅ Condition met!
         </div>
       )}
       <div className="flex items-center gap-1 px-2 py-1">
-        <span className={`w-1.5 h-1.5 rounded-full shrink-0 animate-pulse ${
-          proximityTier === "imminent" ? "bg-amber-500" : proximityTier === "close" ? "bg-yellow-500" : "bg-destructive"
+        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+          !marketOpen
+            ? "bg-muted-foreground/40"
+            : proximityTier === "imminent" ? "bg-amber-500 animate-pulse" : proximityTier === "close" ? "bg-yellow-500 animate-pulse" : "bg-destructive animate-pulse"
         }`} />
         <span>{asset}</span>
-        <span className={dir === "up" ? "text-green-500" : dir === "down" ? "text-destructive" : ""}>
+        <span className={!marketOpen ? "text-muted-foreground" : dir === "up" ? "text-green-500" : dir === "down" ? "text-destructive" : ""}>
+          {!marketOpen && <span className="text-[9px] mr-0.5">Last:</span>}
           {formatted}
         </span>
-        {dir === "up" && <TrendingUp className="w-2.5 h-2.5" />}
-        {dir === "down" && <TrendingDown className="w-2.5 h-2.5" />}
+        {marketOpen && dir === "up" && <TrendingUp className="w-2.5 h-2.5" />}
+        {marketOpen && dir === "down" && <TrendingDown className="w-2.5 h-2.5" />}
         {targetPrice != null && operator && (
           <span className="text-muted-foreground ml-0.5">
             {OP_LABELS[operator] || "="} {isForex ? targetPrice.toFixed(4) : `$${targetPrice.toLocaleString()}`}

@@ -1179,7 +1179,7 @@ export default function QuickTrade() {
             </div>
           </div>
 
-          <QuickTradeBetControls
+           <QuickTradeBetControls
             userBet={userBet}
             betAmount={betAmount}
             setBetAmount={setBetAmount}
@@ -1190,6 +1190,7 @@ export default function QuickTrade() {
             qtMaxBet={qtMaxBet}
             onPlaceBet={placeBet}
             amountPresets={AMOUNT_PRESETS}
+            asset={selectedAsset.symbol}
           />
 
           <QuickTradeHistory
