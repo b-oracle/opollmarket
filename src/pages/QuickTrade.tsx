@@ -70,6 +70,11 @@ const ALL_ASSETS: QuickTradeAsset[] = [
   { symbol: "EUR/USD", label: "EUR/USD", assetClass: "forex", icon: "€" },
   { symbol: "GBP/USD", label: "GBP/USD", assetClass: "forex", icon: "£" },
   { symbol: "USD/JPY", label: "USD/JPY", assetClass: "forex", icon: "¥" },
+  { symbol: "AUD/USD", label: "AUD/USD", assetClass: "forex", icon: "A$" },
+  { symbol: "USD/CHF", label: "USD/CHF", assetClass: "forex", icon: "Fr" },
+  { symbol: "USD/CAD", label: "USD/CAD", assetClass: "forex", icon: "C$" },
+  { symbol: "NZD/USD", label: "NZD/USD", assetClass: "forex", icon: "NZ$" },
+  { symbol: "EUR/GBP", label: "EUR/GBP", assetClass: "forex", icon: "€£" },
 ];
 
 const ASSET_CLASS_LABELS: Record<AssetClass, string> = {
