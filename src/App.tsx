@@ -21,6 +21,7 @@ import { SidebarStateProvider, useSidebarState } from "./hooks/useSidebarState";
 import SocialTutorial, { checkTutorialSeenFromDB } from "./components/SocialTutorial";
 import { useFeatureToggles } from "./hooks/useFeatureToggles";
 import PendingCopyTrades from "./components/PendingCopyTrades";
+import { VerificationThresholdProvider } from "./components/NftBadge";
 
 // Lazy-loaded pages
 const Index = lazy(() => import("./pages/Index"));
