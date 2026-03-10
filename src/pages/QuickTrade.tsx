@@ -531,27 +531,21 @@ export default function QuickTrade() {
               // Auto-disable asset after 5 consecutive failures
               if (consecutiveFailsRef.current >= 5 && !disabledAssets.has(selectedAsset.symbol)) {
                 try {
-                  const { data: settings } = await supabase
-                    .from("commission_settings")
-                    .select("qt_disabled_assets, id")
-                    .limit(1)
-                    .maybeSingle();
-                  if (settings) {
-                    const currentDisabled = new Set(String(settings.qt_disabled_assets || "").split(",").filter(Boolean));
-                    if (!currentDisabled.has(selectedAsset.symbol)) {
-                      currentDisabled.add(selectedAsset.symbol);
-                      await supabase
-                        .from("commission_settings")
-                        .update({ qt_disabled_assets: Array.from(currentDisabled).join(",") })
-                        .eq("id", settings.id);
-                      queryClient.invalidateQueries({ queryKey: ["commission_settings"] });
-                      toast({
-                        title: "Market Unavailable",
-                        description: `${selectedAsset.label} has been temporarily disabled due to price feed errors.`,
-                        variant: "destructive",
-                      });
+                  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+                  await fetch(
+                    `https://${projectId}.supabase.co/functions/v1/toggle-qt-asset`,
+                    {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ asset: selectedAsset.symbol, action: "disable" }),
                     }
-                  }
+                  );
+                  queryClient.invalidateQueries({ queryKey: ["commission_settings"] });
+                  toast({
+                    title: "Market Unavailable",
+                    description: `${selectedAsset.label} has been temporarily disabled due to price feed errors.`,
+                    variant: "destructive",
+                  });
                 } catch {}
               }
             }
