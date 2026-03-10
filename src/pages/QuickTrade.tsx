@@ -882,7 +882,7 @@ export default function QuickTrade() {
           <div ref={chartCardRef} className="relative rounded-2xl border border-border bg-card p-3 sm:p-5 mb-3 sm:mb-4">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">{selectedAsset.label} / USD</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">{getPriceLabel(selectedAsset)}</p>
                 <AnimatePresence mode="wait">
                   {currentPrice != null ? (
                     <motion.p
@@ -894,7 +894,7 @@ export default function QuickTrade() {
                         priceDir === "up" ? "text-green-500" : priceDir === "down" ? "text-destructive" : "text-foreground"
                       }`}
                     >
-                      ${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {getPricePrefix(selectedAsset)}{formatPrice(currentPrice, selectedAsset)}
                       {priceDir === "up" && <TrendingUp className="inline w-5 h-5 ml-2" />}
                       {priceDir === "down" && <TrendingDown className="inline w-5 h-5 ml-2" />}
                     </motion.p>
