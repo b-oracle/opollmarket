@@ -89,6 +89,7 @@ const AdminSettings = () => {
         setCreatorFee(String(d.creator_fee_percent));
         setReferralReward(String(d.referral_reward_amount ?? 5));
         setMinTokenBalance(String(d.min_token_balance ?? 10000000));
+        setMinGoldTokenBalance(String(d.min_gold_token_balance ?? 100000000));
         setMinNftBalance(String(d.min_nft_balance ?? 1));
         setMinWithdrawalAmount(String(d.min_withdrawal_amount ?? 5));
         setWithdrawalCooldown(String(d.withdrawal_cooldown_minutes ?? 5));
