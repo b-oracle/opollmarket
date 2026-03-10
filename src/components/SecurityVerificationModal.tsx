@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Shield, Lock, Smartphone, Loader2 } from "lucide-react";
 import PinInput from "@/components/PinInput";
@@ -19,6 +19,17 @@ const SecurityVerificationModal = ({ open, onClose, onVerified, requirePin, requ
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [pinVerified, setPinVerified] = useState(false);
+
+  // Reset all state when modal opens/closes or requirements change
+  useEffect(() => {
+    if (open) {
+      setStep(requirePin ? "pin" : "totp");
+      setCode("");
+      setLoading(false);
+      setError("");
+      setPinVerified(false);
+    }
+  }, [open, requirePin, requireTotp]);
 
   const verify = async (type: "pin" | "totp", value: string) => {
     setLoading(true);
@@ -42,8 +53,13 @@ const SecurityVerificationModal = ({ open, onClose, onVerified, requirePin, requ
       }
 
       onVerified();
-    } catch {
-      setError("Verification failed. Try again.");
+    } catch (e: any) {
+      const msg = e?.message || "Verification failed. Try again.";
+      if (msg.includes("Too many attempts")) {
+        setError("Too many attempts. Please wait 5 minutes.");
+      } else {
+        setError("Verification failed. Try again.");
+      }
       setCode("");
     } finally {
       setLoading(false);

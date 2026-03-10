@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { TOTP } from "https://esm.sh/otpauth@9.3.6";
+import bcrypt from "npm:bcryptjs@2.4.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,13 +41,39 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { action, code } = await req.json();
+    const { action, code, verify_pin } = await req.json();
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
     if (action === "generate") {
+      // Check if TOTP is already enabled — require PIN verification to overwrite
+      const { data: existing } = await adminClient
+        .from("user_security_settings")
+        .select("totp_enabled, pin_enabled, pin_hash")
+        .eq("user_id", user.id)
+        .single();
+
+      if (existing?.totp_enabled) {
+        // Already has TOTP — require PIN to regenerate
+        if (!existing.pin_enabled || !existing.pin_hash) {
+          return new Response(JSON.stringify({ error: "Cannot regenerate 2FA without PIN verification. Please disable 2FA first via admin." }), {
+            status: 400, headers: corsHeaders,
+          });
+        }
+        if (!verify_pin || !/^\d{6}$/.test(verify_pin)) {
+          return new Response(JSON.stringify({ error: "PIN verification required to regenerate 2FA", require_pin: true }), {
+            status: 400, headers: corsHeaders,
+          });
+        }
+        if (!bcrypt.compareSync(verify_pin, existing.pin_hash)) {
+          return new Response(JSON.stringify({ error: "Incorrect PIN" }), {
+            status: 400, headers: corsHeaders,
+          });
+        }
+      }
+
       const secret = generateSecret();
       
       const totp = new TOTP({
