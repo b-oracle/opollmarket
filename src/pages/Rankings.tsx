@@ -13,6 +13,7 @@ import useAnalytics from "@/hooks/useAnalytics";
 import RankShareModal from "@/components/RankShareModal";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import FollowButton from "@/components/FollowButton";
+import { Button } from "@/components/ui/button";
 
 
 interface Referrer {
