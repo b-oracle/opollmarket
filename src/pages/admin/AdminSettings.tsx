@@ -641,9 +641,14 @@ const AdminSettings = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="minTokenBalance">Min BC400 Token Balance</Label>
+              <Label htmlFor="minTokenBalance">Min BC400 for Blue Tick</Label>
               <Input id="minTokenBalance" type="number" min={0} step={1} value={minTokenBalance} onChange={(e) => setMinTokenBalance(e.target.value)} placeholder="10000000" />
               <p className="text-[10px] text-muted-foreground">Current: {Number(tokenNum).toLocaleString()} BC400</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="minGoldTokenBalance">Min BC400 for Gold Tick</Label>
+              <Input id="minGoldTokenBalance" type="number" min={0} step={1} value={minGoldTokenBalance} onChange={(e) => setMinGoldTokenBalance(e.target.value)} placeholder="100000000" />
+              <p className="text-[10px] text-muted-foreground">Current: {Number(goldTokenNum).toLocaleString()} BC400</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="minNftBalance">Min BC400 NFT Count</Label>

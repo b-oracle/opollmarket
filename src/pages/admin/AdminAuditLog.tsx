@@ -182,7 +182,8 @@ const AdminAuditLog = () => {
       if (d.qt_streak_3x !== undefined) changes.push(`Streak 3×: ${d.qt_streak_3x}`);
       if (d.qt_streak_4x !== undefined) changes.push(`Streak 4×: ${d.qt_streak_4x}`);
       if (d.qt_streak_5x !== undefined) changes.push(`Streak 5×: ${d.qt_streak_5x}`);
-      if (d.min_token_balance !== undefined) changes.push(`Min Token: ${Number(d.min_token_balance).toLocaleString()}`);
+      if (d.min_token_balance !== undefined) changes.push(`Min Token (Blue): ${Number(d.min_token_balance).toLocaleString()}`);
+      if (d.min_gold_token_balance !== undefined) changes.push(`Min Token (Gold): ${Number(d.min_gold_token_balance).toLocaleString()}`);
       if (d.min_nft_balance !== undefined) changes.push(`Min NFT: ${d.min_nft_balance}`);
       return (
         <>
