@@ -172,9 +172,9 @@ const Index = () => {
     <div
       className="min-h-dvh bg-background"
       style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))', touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      onTouchStart={pullHandlers.onTouchStart}
+      onTouchMove={pullHandlers.onTouchMove}
+      onTouchEnd={pullHandlers.onTouchEnd}
     >
       <SEOHead description="Predict the future, earn from it. Trade on real-world events across Web, Telegram & WhatsApp with OPoll Market." path="/" />
       <TopBar />
