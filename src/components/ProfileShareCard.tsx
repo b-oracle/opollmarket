@@ -254,7 +254,7 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "16px" }}>
             {[
               { label: "Markets Created", value: marketsCount },
-              { label: "Predictions", value: positionsCount },
+              { label: "Active Positions", value: positionsCount },
             ].map((s) => (
               <div
                 key={s.label}
