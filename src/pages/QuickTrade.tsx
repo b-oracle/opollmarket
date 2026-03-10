@@ -95,15 +95,21 @@ const haptic = (style: "light" | "medium" | "heavy" | "success" | "error" = "med
 };
 const AMOUNT_PRESETS = [5, 10, 25, 50, 100];
 
-import { fetchCryptoPrice, fetchCryptoHistory, fetchOHLCData, subscribeToPriceStream, type OHLCCandle } from "@/lib/cryptoPriceProvider";
+import { fetchCryptoPrice, fetchCryptoHistory, fetchAssetPrice, fetchOHLCData, subscribeToPriceStream, type OHLCCandle } from "@/lib/cryptoPriceProvider";
 
-// Wrapper to keep existing call signatures (geckoId-based)
-async function fetchPrice(geckoId: string): Promise<number | null> {
-  return fetchCryptoPrice("", geckoId);
+// Wrapper that routes by asset class
+async function fetchPriceForAsset(asset: QuickTradeAsset): Promise<number | null> {
+  if (asset.assetClass === "crypto") return fetchCryptoPrice(asset.symbol, asset.geckoId);
+  return fetchAssetPrice(asset.symbol);
 }
 
-async function fetchRawPriceData(geckoId: string): Promise<[number, number][]> {
-  return fetchCryptoHistory("", geckoId);
+async function fetchRawPriceData(asset: QuickTradeAsset): Promise<[number, number][]> {
+  if (asset.assetClass === "crypto") return fetchCryptoHistory(asset.symbol, asset.geckoId);
+  // For commodities/forex, generate a single-point history from current price
+  const price = await fetchAssetPrice(asset.symbol);
+  if (price == null) return [];
+  const now = Date.now();
+  return [[now, price]];
 }
 
 function filterPriceData(
