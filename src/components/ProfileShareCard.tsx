@@ -71,7 +71,7 @@ const rankLabel = (rank: number | null): string => {
 };
 
 const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
-  ({ displayName, bio, avatarUrl, followersCount, followingCount, tradesCount, predictionsCount, quickTradesCount, referralCount, marketsCount, positionsCount, leaderboardRanks }, ref) => {
+  ({ displayName, bio, avatarUrl, verificationLevel = "none", followersCount, followingCount, tradesCount, predictionsCount, quickTradesCount, referralCount, marketsCount, positionsCount, leaderboardRanks }, ref) => {
     const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
 
     // Resolve colors synchronously so they're available on first render for html2canvas
