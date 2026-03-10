@@ -664,6 +664,20 @@ const AdminSettings = () => {
               <Label htmlFor="minNftBalance">Min BC400 NFT Count</Label>
               <Input id="minNftBalance" type="number" min={0} step={1} value={minNftBalance} onChange={(e) => setMinNftBalance(e.target.value)} placeholder="1" />
             </div>
+            <div className="pt-3 border-t border-border">
+              <p className="text-xs font-semibold text-foreground mb-2">Free Market Limits (per verification tier)</p>
+              <p className="text-[10px] text-muted-foreground mb-3">Max active/pending markets before a creation fee is required.</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="blueMaxFreeMarkets">Blue Tick Limit</Label>
+                  <Input id="blueMaxFreeMarkets" type="number" min={1} step={1} value={blueMaxFreeMarkets} onChange={(e) => setBlueMaxFreeMarkets(e.target.value)} placeholder="5" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="goldMaxFreeMarkets">Gold Tick Limit</Label>
+                  <Input id="goldMaxFreeMarkets" type="number" min={1} step={1} value={goldMaxFreeMarkets} onChange={(e) => setGoldMaxFreeMarkets(e.target.value)} placeholder="20" />
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
