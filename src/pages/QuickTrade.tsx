@@ -51,23 +51,57 @@ interface QuickTradeAsset {
   label: string;
   assetClass: AssetClass;
   geckoId?: string;
+  icon?: string;
+  unit?: string;
 }
 
 const ALL_ASSETS: QuickTradeAsset[] = [
-  { symbol: "BTC", label: "Bitcoin", assetClass: "crypto", geckoId: "bitcoin" },
-  { symbol: "ETH", label: "Ethereum", assetClass: "crypto", geckoId: "ethereum" },
+  // Crypto
+  { symbol: "BTC", label: "Bitcoin", assetClass: "crypto", geckoId: "bitcoin", icon: "₿" },
+  { symbol: "ETH", label: "Ethereum", assetClass: "crypto", geckoId: "ethereum", icon: "Ξ" },
   { symbol: "BNB", label: "BNB", assetClass: "crypto", geckoId: "binancecoin" },
   { symbol: "SOL", label: "Solana", assetClass: "crypto", geckoId: "solana" },
   { symbol: "XRP", label: "XRP", assetClass: "crypto", geckoId: "ripple" },
   { symbol: "DOGE", label: "Dogecoin", assetClass: "crypto", geckoId: "dogecoin" },
   // Commodities
-  { symbol: "XAU", label: "Gold", assetClass: "commodity" },
-  { symbol: "XAG", label: "Silver", assetClass: "commodity" },
+  { symbol: "XAU", label: "Gold", assetClass: "commodity", icon: "🥇", unit: "USD/oz" },
+  { symbol: "XAG", label: "Silver", assetClass: "commodity", icon: "🥈", unit: "USD/oz" },
   // Forex
-  { symbol: "EUR/USD", label: "EUR/USD", assetClass: "forex" },
-  { symbol: "GBP/USD", label: "GBP/USD", assetClass: "forex" },
-  { symbol: "USD/JPY", label: "USD/JPY", assetClass: "forex" },
+  { symbol: "EUR/USD", label: "EUR/USD", assetClass: "forex", icon: "€" },
+  { symbol: "GBP/USD", label: "GBP/USD", assetClass: "forex", icon: "£" },
+  { symbol: "USD/JPY", label: "USD/JPY", assetClass: "forex", icon: "¥" },
 ];
+
+const ASSET_CLASS_LABELS: Record<AssetClass, string> = {
+  crypto: "Crypto",
+  commodity: "Commodities",
+  forex: "Forex",
+};
+
+/** Smart price formatter based on asset class and magnitude */
+function formatPrice(price: number, asset: QuickTradeAsset): string {
+  if (asset.assetClass === "forex") {
+    return price.toFixed(4);
+  }
+  if (asset.assetClass === "commodity") {
+    return price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  // Crypto: adapt decimals to price magnitude
+  if (price >= 1000) return price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (price >= 1) return price.toFixed(4);
+  return price.toFixed(6);
+}
+
+function getPricePrefix(asset: QuickTradeAsset): string {
+  if (asset.assetClass === "forex") return "";
+  return "$";
+}
+
+function getPriceLabel(asset: QuickTradeAsset): string {
+  if (asset.unit) return asset.unit;
+  if (asset.assetClass === "forex") return asset.symbol;
+  return `${asset.label} / USD`;
+}
 
 const ALL_TIMEFRAMES = [
   { label: "1m", seconds: 60 },
