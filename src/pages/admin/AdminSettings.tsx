@@ -73,6 +73,8 @@ const AdminSettings = () => {
   const [goldRevenueShare, setGoldRevenueShare] = useState("");
   const [blueTrendingMult, setBlueTrendingMult] = useState("");
   const [goldTrendingMult, setGoldTrendingMult] = useState("");
+  const [blueMaxFreeMarkets, setBlueMaxFreeMarkets] = useState("5");
+  const [goldMaxFreeMarkets, setGoldMaxFreeMarkets] = useState("20");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
@@ -116,6 +118,8 @@ const AdminSettings = () => {
         setGoldRevenueShare(String(d.gold_revenue_share_percent ?? 0));
         setBlueTrendingMult(String(d.blue_trending_multiplier ?? 1.2));
         setGoldTrendingMult(String(d.gold_trending_multiplier ?? 1.5));
+        setBlueMaxFreeMarkets(String(d.blue_max_free_markets ?? 5));
+        setGoldMaxFreeMarkets(String(d.gold_max_free_markets ?? 20));
         setSettingsId(d.id);
       }
       if (error) console.error(error);
@@ -147,6 +151,8 @@ const AdminSettings = () => {
   const goldRevenueShareNum = parseFloat(goldRevenueShare) || 0;
   const blueTrendingMultNum = parseFloat(blueTrendingMult) || 1.2;
   const goldTrendingMultNum = parseFloat(goldTrendingMult) || 1.5;
+  const blueMaxFreeMarketsNum = parseInt(blueMaxFreeMarkets) || 5;
+  const goldMaxFreeMarketsNum = parseInt(goldMaxFreeMarkets) || 20;
   const totalFee = adminNum + creatorNum;
   const poolPercent = 100 - totalFee;
   const isValid =
@@ -222,6 +228,8 @@ const AdminSettings = () => {
            gold_revenue_share_percent: goldRevenueShareNum,
            blue_trending_multiplier: blueTrendingMultNum,
            gold_trending_multiplier: goldTrendingMultNum,
+           blue_max_free_markets: blueMaxFreeMarketsNum,
+           gold_max_free_markets: goldMaxFreeMarketsNum,
           updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
@@ -258,7 +266,9 @@ const AdminSettings = () => {
           blue_revenue_share_percent: blueRevenueShareNum,
           gold_revenue_share_percent: goldRevenueShareNum,
           blue_trending_multiplier: blueTrendingMultNum,
-          gold_trending_multiplier: goldTrendingMultNum,
+           gold_trending_multiplier: goldTrendingMultNum,
+           blue_max_free_markets: blueMaxFreeMarketsNum,
+           gold_max_free_markets: goldMaxFreeMarketsNum,
         },
       });
 
@@ -653,6 +663,20 @@ const AdminSettings = () => {
             <div className="space-y-2">
               <Label htmlFor="minNftBalance">Min BC400 NFT Count</Label>
               <Input id="minNftBalance" type="number" min={0} step={1} value={minNftBalance} onChange={(e) => setMinNftBalance(e.target.value)} placeholder="1" />
+            </div>
+            <div className="pt-3 border-t border-border">
+              <p className="text-xs font-semibold text-foreground mb-2">Free Market Limits (per verification tier)</p>
+              <p className="text-[10px] text-muted-foreground mb-3">Max active/pending markets before a creation fee is required.</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="blueMaxFreeMarkets">Blue Tick Limit</Label>
+                  <Input id="blueMaxFreeMarkets" type="number" min={1} step={1} value={blueMaxFreeMarkets} onChange={(e) => setBlueMaxFreeMarkets(e.target.value)} placeholder="5" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="goldMaxFreeMarkets">Gold Tick Limit</Label>
+                  <Input id="goldMaxFreeMarkets" type="number" min={1} step={1} value={goldMaxFreeMarkets} onChange={(e) => setGoldMaxFreeMarkets(e.target.value)} placeholder="20" />
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

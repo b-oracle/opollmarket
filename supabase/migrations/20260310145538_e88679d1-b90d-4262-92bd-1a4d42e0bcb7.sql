@@ -1,0 +1,2 @@
+ALTER TABLE public.commission_settings ADD COLUMN IF NOT EXISTS blue_max_free_markets integer NOT NULL DEFAULT 5;
+ALTER TABLE public.commission_settings ADD COLUMN IF NOT EXISTS gold_max_free_markets integer NOT NULL DEFAULT 20;

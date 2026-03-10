@@ -141,6 +141,11 @@ const Create = () => {
   const [nftBuyUrl, setNftBuyUrl] = useState("");
   const [marketCreationFee, setMarketCreationFee] = useState(50);
   const [tokenDecimals, setTokenDecimals] = useState(18);
+  const [blueMaxFreeMarkets, setBlueMaxFreeMarkets] = useState(5);
+  const [goldMaxFreeMarkets, setGoldMaxFreeMarkets] = useState(20);
+  const [verificationLevel, setVerificationLevel] = useState("none");
+  const [activeMarketCount, setActiveMarketCount] = useState(0);
+  const [exceededFreeLimit, setExceededFreeLimit] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -157,9 +162,25 @@ const Create = () => {
         setNftBuyUrl(data.nft_buy_url || "");
         setMarketCreationFee(Number(data.market_creation_fee) || 50);
         setTokenDecimals(Number(data.token_decimals) ?? 18);
+        setBlueMaxFreeMarkets(Number((data as any).blue_max_free_markets) || 5);
+        setGoldMaxFreeMarkets(Number((data as any).gold_max_free_markets) || 20);
       }
     })();
   }, []);
+
+  // Fetch user verification level and active market count
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const [{ data: profile }, { count }] = await Promise.all([
+        supabase.from("profiles").select("verification_level").eq("id", user.id).maybeSingle(),
+        supabase.from("markets").select("id", { count: "exact", head: true }).eq("creator_wallet", user.id).in("status", ["active", "pending"]),
+      ]);
+      const vLevel = profile?.verification_level || "none";
+      setVerificationLevel(vLevel);
+      setActiveMarketCount(count || 0);
+    })();
+  }, [user]);
 
   // Gate state
   const [gateChecks, setGateChecks] = useState<GateCheck[]>([]);
@@ -696,6 +717,16 @@ const Create = () => {
     );
 
     const passed = tokenPassed || nftPassed;
+    
+    // Check if verified user exceeded free market limit
+    if (passed) {
+      const limit = verificationLevel === "gold" ? goldMaxFreeMarkets : verificationLevel === "blue" ? blueMaxFreeMarkets : 0;
+      if (limit > 0 && activeMarketCount >= limit) {
+        setExceededFreeLimit(true);
+        setFeeBypass(true);
+      }
+    }
+    
     setGatePassed(passed);
     setGateFinished(true);
     setGateRunning(false);
@@ -1053,6 +1084,14 @@ const Create = () => {
           <p className="text-sm text-muted-foreground">
             Launch a prediction market and earn fees from every trade.
           </p>
+          {exceededFreeLimit && (
+            <div className="mt-3 p-3 rounded-xl bg-accent/10 border border-accent/30">
+              <p className="text-xs font-medium text-accent-foreground">
+                ⚠️ You've reached your free market limit ({activeMarketCount}/{verificationLevel === "gold" ? goldMaxFreeMarkets : blueMaxFreeMarkets}).
+                A creation fee of ${marketCreationFee} applies for additional markets.
+              </p>
+            </div>
+          )}
         </motion.div>
 
         {/* Step indicator */}
@@ -1807,7 +1846,9 @@ const Create = () => {
                 <AlertTriangle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                 <p className="text-xs text-muted-foreground">
                   {feeBypass
-                    ? `A $${marketCreationFee} creation fee applies since you don't hold NFT/BC400. This fee is non-refundable (unless the market is cancelled). Your market will require approval before going live.`
+                    ? exceededFreeLimit
+                      ? `A $${marketCreationFee} creation fee applies — you've reached your free market limit (${activeMarketCount}/${verificationLevel === "gold" ? goldMaxFreeMarkets : blueMaxFreeMarkets}). This fee is non-refundable (unless the market is cancelled). Your market will require approval before going live.`
+                      : `A $${marketCreationFee} creation fee applies since you don't hold NFT/BC400. This fee is non-refundable (unless the market is cancelled). Your market will require approval before going live.`
                     : "A 2% platform fee applies. Creators earn 1% of all trade volume. Initial liquidity will be locked until market resolution."}
                 </p>
               </div>
