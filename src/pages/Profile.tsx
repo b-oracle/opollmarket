@@ -586,8 +586,8 @@ const Profile = () => {
 
   return (
     <div
-      className="min-h-dvh bg-background"
-      style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
+      className="min-h-dvh bg-background overflow-y-auto overscroll-contain"
+      style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))', touchAction: 'pan-y', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch', willChange: 'scroll-position' } as React.CSSProperties}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
