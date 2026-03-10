@@ -8,6 +8,9 @@ const tocItems = [
   { id: "general", label: "General Disclaimer" },
   { id: "no-advice", label: "No Financial, Investment, or Legal Advice" },
   { id: "risk", label: "Risk of Loss" },
+  { id: "quicktrade-risk", label: "Quick Trade Risks" },
+  { id: "copytrade-risk", label: "Copy Trading Risks" },
+  { id: "verification-disclaimer", label: "Verification Badges" },
   { id: "crypto-risks", label: "Cryptocurrency & Blockchain Risks" },
   { id: "market-resolution", label: "Market Creation & Resolution" },
   { id: "ai-systems", label: "AI & Automated Systems" },
@@ -67,6 +70,39 @@ const Disclaimer = () => {
             <li><strong>Counterparty Risk:</strong> While the Platform holds user funds in managed accounts, there is inherent risk in any centralized custody arrangement.</li>
           </ul>
           <p className="font-medium text-foreground">Past performance of any market, position, or trading strategy does not guarantee future results.</p>
+        </section>
+
+        <section id="quicktrade-risk" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">Quick Trade Risks</h2>
+          <p>Quick Trade involves predicting short-term price movements within fixed time windows. Additional risks include:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Short Timeframes:</strong> Rounds as short as 1 minute leave minimal time for price analysis, increasing the element of chance.</li>
+            <li><strong>Streak Multipliers:</strong> While streak bonuses can amplify winnings, they do not reduce the inherent risk of each individual trade.</li>
+            <li><strong>Data Feed Dependency:</strong> Results depend on real-time price data from external sources. Delays or inaccuracies in price feeds may affect outcomes.</li>
+            <li><strong>Asset Availability:</strong> Available assets and timeframes may be changed at any time without notice.</li>
+          </ul>
+        </section>
+
+        <section id="copytrade-risk" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">Copy Trading Risks</h2>
+          <p>Copy trading allows you to replicate another user's trades. You should be aware that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>No Guaranteed Returns:</strong> Past performance of any trader you copy does not guarantee future results.</li>
+            <li><strong>Your Responsibility:</strong> You remain fully responsible for all trades executed on your account through copy trading.</li>
+            <li><strong>Commission Deduction:</strong> A copy trade commission is deducted from your profits on successful copied trades.</li>
+            <li><strong>Execution Differences:</strong> Copied trades may execute at different prices than the original trader's due to timing and liquidity.</li>
+          </ul>
+        </section>
+
+        <section id="verification-disclaimer" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">Verification Badges</h2>
+          <p>Blue Tick and Gold Tick verification badges indicate that a user holds qualifying BC400 tokens and/or NFTs at the time of verification. You should be aware that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Verification badges are <strong>not endorsements</strong> of a user's trading ability, trustworthiness, or the quality of their market predictions.</li>
+            <li>Badge status is based on wallet holdings at the time of verification and may change if a user's holdings change.</li>
+            <li>Trending boosts and revenue sharing benefits associated with verification do not guarantee increased market success or returns.</li>
+            <li>Token and NFT requirements for each tier are set by the System-Mod Engine and may be adjusted at any time.</li>
+          </ul>
         </section>
 
         <section id="crypto-risks" className="space-y-2 scroll-mt-20">
@@ -141,7 +177,7 @@ const Disclaimer = () => {
           <p>To the fullest extent permitted by law, OPollMarket and its operators, affiliates, employees, and agents disclaim all liability for any direct, indirect, incidental, special, consequential, or punitive damages — including loss of profits, data, digital assets, or goodwill — arising from your use of or inability to use the Platform, regardless of the cause of action or the theory of liability.</p>
         </section>
 
-        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: March 6, 2026</p>
+        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: March 10, 2026</p>
       </div>
       <BackToTop />
     </div>

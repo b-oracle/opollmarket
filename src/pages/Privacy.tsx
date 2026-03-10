@@ -53,7 +53,8 @@ const Privacy = () => {
             <li><strong>Authentication Data:</strong> Credentials from third-party OAuth providers (Google, Apple) if you choose to sign in via social login. We receive only the data necessary for authentication (email, name, profile picture).</li>
             <li><strong>Wallet Information:</strong> Public blockchain wallet addresses you connect to the Platform (e.g., MetaMask, Trust Wallet, SafePal, Coinbase Wallet, Rabby, Binance Wallet, Bitget Wallet). We never request or store your private keys or seed phrases.</li>
             <li><strong>User-Generated Content:</strong> Market proposals, comments, display names, and uploaded images (market covers, profile avatars).</li>
-            <li><strong>Financial Information:</strong> Transaction amounts, trade details, deposit/withdrawal data, referral information, bonus balance usage, limit order history, and exit fee records.</li>
+            <li><strong>Financial Information:</strong> Transaction amounts, trade details, deposit/withdrawal data, referral information, bonus balance usage, limit order history, exit fee records, Quick Trade round history, and copy trade settings.</li>
+            <li><strong>Security Settings:</strong> Security PIN preferences and TOTP enrollment status (we never store plaintext PINs or TOTP secrets in reversible form).</li>
             <li><strong>Communication Data:</strong> Any information you provide when contacting support or submitting feedback.</li>
           </ul>
 
@@ -76,16 +77,18 @@ const Privacy = () => {
           <h2 className="text-base font-semibold text-foreground">3. How We Use Your Information</h2>
           <p>We process your information for the following purposes:</p>
           <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Service Delivery:</strong> To create and maintain your account, execute trades, process deposits and withdrawals, and provide core Platform functionality.</li>
-            <li><strong>Token-Gate Verification:</strong> To verify BC400 token balances and NFT ownership for market creation eligibility using connected wallet addresses.</li>
+            <li><strong>Service Delivery:</strong> To create and maintain your account, execute trades, process deposits and withdrawals, manage Quick Trade rounds, and provide core Platform functionality.</li>
+            <li><strong>Token-Gate & Verification:</strong> To verify BC400 token balances and NFT ownership for market creation eligibility and verification badge assignment (Blue Tick and Gold Tick) using connected wallet addresses.</li>
             <li><strong>Content Moderation:</strong> User-generated content (market titles, descriptions, images, comments, display names) is processed by automated AI moderation systems to enforce community guidelines and platform safety.</li>
             <li><strong>Market Operations:</strong> To calculate AMM prices, process market resolutions, compute payouts, and manage liquidity pools.</li>
+            <li><strong>Copy Trading:</strong> To manage copy trade subscriptions, execute replicated trades, and calculate copy trade commissions.</li>
             <li><strong>Fraud Prevention:</strong> To detect, investigate, and prevent fraudulent activities, market manipulation, wash trading, and unauthorized account access.</li>
-            <li><strong>Communications:</strong> To send in-app notifications about market resolutions, payouts, referral rewards, pending reviews, and important platform updates.</li>
+            <li><strong>Communications:</strong> To send in-app notifications, push notifications, and Telegram alerts about market resolutions, payouts, referral rewards, copy trade actions, follower activity, and important platform updates.</li>
             <li><strong>Analytics & Improvement:</strong> To analyze usage patterns, optimize Platform performance, identify popular features, and improve user experience through aggregated and anonymized data analysis.</li>
             <li><strong>Legal Compliance:</strong> To comply with applicable laws, regulations, legal processes, or governmental requests.</li>
             <li><strong>Referral Program:</strong> To track referral relationships, verify eligibility, distribute referral bonus rewards, and apply bonus balance as fee credits.</li>
             <li><strong>Limit Order Processing:</strong> To manage, match, and execute limit orders based on market price movements.</li>
+            <li><strong>Verification System:</strong> To assess and assign verification badge levels (Blue/Gold) based on token holdings and NFT ownership, and to calculate associated benefits such as trending multipliers and revenue sharing.</li>
           </ul>
         </section>
 
@@ -95,7 +98,8 @@ const Privacy = () => {
           <ul className="list-disc pl-5 space-y-1">
             <li><strong>Content Moderation:</strong> Market submissions, comments, display names, and uploaded images are screened by AI models (Google Gemini) for policy compliance. Flagged content is logged for review by the System-Mod Engine.</li>
             <li><strong>Market Similarity Detection:</strong> New market proposals are compared against existing markets using AI to identify potential duplicates.</li>
-            <li><strong>Trending Calculation:</strong> Automated scoring algorithms analyze volume, participation, recent activity, comments, and likes to identify trending markets.</li>
+            <li><strong>Trending Calculation:</strong> Automated scoring algorithms analyze volume, participation, recent activity, comments, and likes to identify trending markets. Verified users (Blue/Gold Tick holders) receive trending score multipliers configured by the System-Mod Engine.</li>
+            <li><strong>FAQ AI Assistant:</strong> The Platform provides an AI-powered FAQ search that processes user questions to generate contextual answers about platform features.</li>
           </ul>
           <p>Automated moderation decisions that result in content rejection or account restrictions are subject to human review upon request. Moderation logs are retained for accountability and dispute resolution purposes.</p>
         </section>
@@ -203,7 +207,7 @@ const Privacy = () => {
           <p>If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us through the Platform's support channels or via the contact information provided in the application. We aim to respond to all inquiries within 30 days.</p>
         </section>
 
-        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: March 6, 2026</p>
+        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: March 10, 2026</p>
       </div>
       <BackToTop />
     </div>

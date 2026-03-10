@@ -39,10 +39,38 @@ const faqSections = [
   {
     title: "Markets",
     items: [
-      { question: "Who may create a market?", answer: "Users meeting eligibility requirements (e.g., NFT holders or holding 10,000,000+ BC400 tokens) may create markets. Users who do not meet these requirements can pay a Market Creation Fee to proceed." },
+      { question: "Who may create a market?", answer: "Users meeting eligibility requirements (e.g., NFT holders or holding the minimum required BC400 tokens) may create markets for free. Users who do not meet these requirements can pay a Market Creation Fee to proceed." },
       { question: "What types of markets are supported?", answer: "• Political events\n• Technology and innovation\n• Cryptocurrency prices\n• Sports outcomes\n• Community milestones\n• Custom event-based questions" },
       { question: "Can a market be edited after creation?", answer: "No. Core parameters cannot be modified once a market is live, ensuring fairness and integrity." },
       { question: "What happens if my market is flagged for inappropriate content?", answer: "All market submissions are screened by our AI moderation system for profanity, nudity, hate speech, violence, and other guideline violations. If your market is flagged and rejected:\n\n• The Market Creation Fee is permanently forfeited (non-refundable)\n• Only your initial liquidity will be refunded to your balance\n\nThis policy exists to discourage misuse and ensure a safe community. Repeated violations may lead to account suspension." },
+    ],
+  },
+  {
+    title: "Verification Badges",
+    items: [
+      { question: "What are verification badges?", answer: "Verification badges (Blue Tick and Gold Tick) are awarded to users who hold qualifying BC400 tokens and/or NFTs. They indicate community commitment and unlock platform benefits." },
+      { question: "How do I get a Blue Tick?", answer: "You qualify for the **Blue Tick** by meeting **at least one** of:\n\n• Holding the minimum BC400 tokens required for the Blue tier\n• Holding a qualifying BC400 NFT **and** using it as your profile avatar\n\nThe exact token threshold is set by the admin and displayed when you tap any verification badge." },
+      { question: "How do I get a Gold Tick?", answer: "You qualify for the **Gold Tick** by meeting **both** requirements:\n\n• Holding the minimum BC400 tokens required for the Gold tier (higher than Blue)\n• Holding a qualifying BC400 NFT **and** using it as your profile avatar\n\nThe exact token threshold is set by the admin and displayed when you tap any verification badge." },
+      { question: "What benefits do verified users get?", answer: "Verified users enjoy:\n\n• **Trending Boost:** Markets by verified creators get a multiplied trending score (Gold gets a higher multiplier than Blue)\n• **Revenue Sharing:** A percentage of creator fees from your own resolved markets, distributed daily as bonus balance\n• **Creator Badge:** A visible 'CREATOR' badge on your profile\n• **Visual Badge:** Blue or Gold tick displayed across your profile, rankings, comments, and social feeds" },
+      { question: "How do I refresh my verification?", answer: "Visit your Profile page and the platform automatically checks your wallet holdings. Admins can also trigger a bulk refresh for all users." },
+    ],
+  },
+  {
+    title: "Quick Trade",
+    items: [
+      { question: "What is Quick Trade?", answer: "Quick Trade lets you predict short-term price movements (UP or DOWN) on assets like BTC, ETH, Gold, Forex, and more within fixed time windows (1, 3, 5, or 15 minutes)." },
+      { question: "How do Quick Trade payouts work?", answer: "All bets in a round are pooled. A platform fee is deducted from the losing pool, and the remainder is distributed proportionally to winners." },
+      { question: "What are streak multipliers?", answer: "Consecutive winning trades earn streak bonus multipliers on your payouts. The multiplier increases with each consecutive win (2×, 3×, 4×, 5× streaks). Multiplier values are configured by the admin." },
+      { question: "What assets are available?", answer: "Available assets include cryptocurrencies (BTC, ETH, BNB, SOL, etc.), commodities (Gold, Silver, Oil), and forex pairs (EUR/USD, GBP/USD, etc.). The admin can enable or disable specific assets at any time." },
+    ],
+  },
+  {
+    title: "Copy Trading",
+    items: [
+      { question: "What is Copy Trading?", answer: "Copy Trading allows you to follow other users and automatically replicate their trades (predictions and/or Quick Trades)." },
+      { question: "How do I set up Copy Trading?", answer: "Visit any user's profile page, tap the copy icon, and configure:\n\n• **Max amount** per copied trade\n• Whether to copy predictions, Quick Trades, or both\n• **Auto-copy** (instant) or manual approval mode" },
+      { question: "Is there a commission?", answer: "Yes. When a copied trade wins, a commission (percentage set by the admin) is deducted from your profit and credited to the original trader." },
+      { question: "Can I lose money with Copy Trading?", answer: "Yes. Copy Trading does not guarantee profits. Past performance of any trader does not predict future results. You are responsible for all trades on your account." },
     ],
   },
   {
@@ -110,8 +138,10 @@ const faqSections = [
     title: "Security & Privacy",
     items: [
       { question: "Is OPollMarket secure?", answer: "Yes. The platform implements secure wallet authentication, blockchain-based settlement, and standard cybersecurity measures." },
+      { question: "What is the Security PIN?", answer: "You can set up a 4-digit Security PIN to protect sensitive actions like login and withdrawals. Go to your Profile → Security Settings to enable it." },
+      { question: "What is TOTP (2FA)?", answer: "TOTP (Time-based One-Time Password) adds two-factor authentication using apps like Google Authenticator. You can require it for login and/or withdrawals from Security Settings." },
       { question: "Are funds custodial?", answer: "No. Funds remain under the control of users via their wallets; OPollMarket does not hold custodial access." },
-      { question: "How is user data protected?", answer: "User data is safeguarded through authentication protocols, secure infrastructure, and compliance with applicable privacy standards." },
+      { question: "How is user data protected?", answer: "User data is safeguarded through authentication protocols, Row-Level Security policies, encrypted storage, and compliance with applicable privacy standards. See our Privacy Policy for full details." },
     ],
   },
 ];

@@ -10,13 +10,17 @@ const tocItems = [
   { id: "account", label: "Account Registration & Security" },
   { id: "services", label: "Platform Services" },
   { id: "trading", label: "Trading Rules & AMM Pricing" },
+  { id: "quicktrade", label: "Quick Trade" },
   { id: "fees", label: "Fees & Commissions" },
   { id: "deposits", label: "Deposits & Withdrawals" },
   { id: "creation", label: "Market Creation & Token-Gating" },
+  { id: "verification", label: "Verification Badges" },
+  { id: "copytrade", label: "Copy Trading" },
   { id: "moderation", label: "Content Moderation & Community Guidelines" },
   { id: "resolution", label: "Market Resolution" },
   { id: "boosting", label: "Market Boosting" },
   { id: "referral", label: "Referral Program" },
+  { id: "security", label: "Account Security (PIN & TOTP)" },
   { id: "conduct", label: "Prohibited Conduct" },
   { id: "ip", label: "Intellectual Property" },
   { id: "liability", label: "Limitation of Liability" },
@@ -81,11 +85,14 @@ const Terms = () => {
           <p>OPollMarket provides a peer-to-peer prediction market platform where users can:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li><strong>Trade predictions</strong> on binary (Yes/No), multiple-choice, and range-bracket markets using an Automated Market Maker (AMM) pricing mechanism.</li>
+            <li><strong>Quick Trade</strong> on short-term price prediction rounds for assets including cryptocurrencies, commodities, and forex pairs with configurable timeframes.</li>
             <li><strong>Create markets</strong> by proposing prediction questions, providing initial liquidity, and defining clear resolution criteria.</li>
+            <li><strong>Copy trade</strong> by following successful traders and automatically replicating their predictions and Quick Trades.</li>
+            <li><strong>Earn verification badges</strong> (Blue Tick, Gold Tick) by holding qualifying BC400 tokens and/or NFTs, unlocking benefits such as trending boosts and revenue sharing.</li>
             <li><strong>Boost markets</strong> to increase visibility through paid promotional tiers.</li>
-            <li><strong>Engage socially</strong> by commenting on markets, liking content, bookmarking markets, and sharing via integrated social channels (X/Twitter, Telegram, WhatsApp).</li>
+            <li><strong>Engage socially</strong> by commenting on markets, liking content, bookmarking markets, following users, and sharing via integrated social channels (X/Twitter, Telegram, WhatsApp).</li>
             <li><strong>Participate in a referral program</strong> to earn bonus rewards for introducing new users.</li>
-            <li><strong>View real-time data</strong> including order book depth, price history charts, and live trade feeds.</li>
+            <li><strong>View real-time data</strong> including order book depth, price history charts, live trade feeds, and live sports scores.</li>
           </ul>
         </section>
 
@@ -101,6 +108,20 @@ const Terms = () => {
             <li><strong>Early Exit:</strong> Users may sell their positions before market resolution. An early exit fee (percentage set by the System-Mod Engine) is deducted from the sale proceeds and returned to the market pool.</li>
             <li>The Platform does not guarantee any particular outcome, return, or profit.</li>
             <li>Past market performance is not indicative of future results.</li>
+          </ul>
+        </section>
+
+        <section id="quicktrade" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">5b. Quick Trade</h2>
+          <p>Quick Trade allows users to predict short-term price movements of assets (cryptocurrencies, commodities, forex) within fixed time windows. By participating in Quick Trade, you agree that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Each Quick Trade round has a fixed duration (e.g., 1, 3, 5, or 15 minutes) set by the Platform.</li>
+            <li>You predict whether the asset price will go <strong>UP</strong> or <strong>DOWN</strong> during the round.</li>
+            <li>Winning payouts are calculated based on the total pool minus the Platform fee, distributed proportionally to winners.</li>
+            <li>A <strong>streak multiplier</strong> system rewards consecutive winning trades with bonus multipliers on payouts.</li>
+            <li>Minimum and maximum bet amounts are configurable by the System-Mod Engine and displayed within the Platform.</li>
+            <li>Available assets and timeframes may be enabled or disabled at any time by the System-Mod Engine.</li>
+            <li>Quick Trade results are determined by real-time market prices from external data sources. The Platform is not responsible for data feed delays or inaccuracies.</li>
           </ul>
         </section>
 
@@ -134,11 +155,49 @@ const Terms = () => {
           <h2 className="text-base font-semibold text-foreground">8. Market Creation & Token-Gating</h2>
           <p>Market creation access is determined by a tiered verification system:</p>
           <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Verified Creators:</strong> Users who hold a minimum balance of BC400 tokens or own a qualifying BC400 NFT may create markets without additional fees.</li>
+            <li><strong>Verified Creators:</strong> Users who hold a minimum balance of BC400 tokens (as configured by the System-Mod Engine) or own a qualifying BC400 NFT may create markets without additional fees.</li>
             <li><strong>Fee-Based Creators:</strong> Users who do not meet token-gating requirements may create markets by paying a market creation fee. Fee-based markets require System-Mod Engine approval before going live.</li>
             <li><strong>First Prediction Requirement:</strong> Market creators must place a minimum $5 prediction on their own market after creation to make it officially public. This records initial volume and trading activity.</li>
           </ul>
           <p>All market creators must provide clear, unambiguous resolution criteria and a resolution source. The Platform reserves the right to approve, reject, modify, or cancel any market at its sole discretion.</p>
+        </section>
+
+        <section id="verification" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">8b. Verification Badges (Blue Tick & Gold Tick)</h2>
+          <p>The Platform offers a tiered verification badge system that recognizes users who hold qualifying BC400 tokens and/or NFTs:</p>
+          <p className="font-medium text-foreground">Blue Tick (Blue Verified)</p>
+          <p>A user qualifies for the Blue Tick by meeting <strong>at least one</strong> of the following:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Holding the minimum BC400 token balance for the Blue tier (threshold configured by the System-Mod Engine and displayed in the Platform).</li>
+            <li>Holding a qualifying BC400 NFT <strong>and</strong> using that NFT as their profile avatar.</li>
+          </ul>
+          <p className="font-medium text-foreground mt-2">Gold Tick (Gold Verified)</p>
+          <p>A user qualifies for the Gold Tick by meeting <strong>both</strong> of the following:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Holding the minimum BC400 token balance for the Gold tier (a higher threshold than Blue, configured by the System-Mod Engine).</li>
+            <li>Holding a qualifying BC400 NFT <strong>and</strong> using that NFT as their profile avatar.</li>
+          </ul>
+          <p className="font-medium text-foreground mt-2">Verification Benefits</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Trending Boost:</strong> Markets created by verified users receive a trending score multiplier (higher for Gold than Blue), increasing their visibility in trending rankings.</li>
+            <li><strong>Revenue Sharing:</strong> Verified creators may receive a percentage of creator fees from their own resolved markets, distributed as bonus balance. Percentages differ by tier and are configurable by the System-Mod Engine.</li>
+            <li><strong>Creator Badge:</strong> A "CREATOR" badge is displayed on verified users' profiles.</li>
+            <li><strong>Visual Badge:</strong> Blue and Gold verification ticks are displayed across profiles, rankings, followers lists, comments, and social feeds.</li>
+          </ul>
+          <p>Token and NFT requirements are verified automatically by checking connected wallet balances. Verification levels may be refreshed at any time by the user or in bulk by the System-Mod Engine. The System-Mod Engine reserves the right to modify thresholds, benefits, and eligibility criteria at any time.</p>
+        </section>
+
+        <section id="copytrade" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">8c. Copy Trading</h2>
+          <p>The Platform offers a copy trading feature that allows users to follow and replicate the trades of other users. By using copy trading, you agree that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>You may configure copy settings per trader, including maximum copy amount, and whether to copy predictions, Quick Trades, or both.</li>
+            <li><strong>Manual copy trades</strong> require your approval before execution within a time-limited window. Trades not approved within the window expire automatically.</li>
+            <li><strong>Auto-copy trades</strong> (when enabled) are executed automatically without confirmation.</li>
+            <li>A <strong>copy trade commission</strong> (percentage set by the System-Mod Engine) is deducted from the copier's profit and credited to the original trader when a copied trade wins.</li>
+            <li>Copy trading does not guarantee profits. You remain solely responsible for all trades executed on your account, whether initiated manually or via copy trading.</li>
+            <li>The Platform is not responsible for losses incurred through copy trading.</li>
+          </ul>
         </section>
 
         <section id="moderation" className="space-y-2 scroll-mt-20">
@@ -187,7 +246,17 @@ const Terms = () => {
         </section>
 
         <section id="conduct" className="space-y-2 scroll-mt-20">
-          <h2 className="text-base font-semibold text-foreground">13. Prohibited Conduct</h2>
+          <h2 className="text-base font-semibold text-foreground">14. Account Security (PIN & TOTP)</h2>
+          <p>The Platform offers optional security features to protect your account:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Security PIN:</strong> A 4-digit PIN that can be required for login and/or withdrawal actions.</li>
+            <li><strong>TOTP (Time-based One-Time Password):</strong> Two-factor authentication using authenticator apps (e.g., Google Authenticator) for additional login and withdrawal security.</li>
+          </ul>
+          <p>You are solely responsible for keeping your PIN and TOTP secret secure. The Platform cannot recover lost PINs or TOTP secrets. In exceptional circumstances, the System-Mod Engine may reset security settings upon identity verification.</p>
+        </section>
+
+        <section id="conduct" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">15. Prohibited Conduct</h2>
           <p>You agree not to:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li>Use the Platform for money laundering, terrorist financing, or other illegal activities.</li>
@@ -198,7 +267,8 @@ const Terms = () => {
             <li>Interfere with the Platform's operation, security, or infrastructure.</li>
             <li>Reverse-engineer, decompile, or attempt to extract the source code of the Platform.</li>
             <li>Submit false, misleading, or fraudulent market proposals or resolution claims.</li>
-            <li>Circumvent or attempt to circumvent content moderation, token-gating, or any other access control mechanism.</li>
+            <li>Circumvent or attempt to circumvent content moderation, token-gating, verification badge requirements, or any other access control mechanism.</li>
+            <li>Abuse the copy trading system to artificially generate commissions or manipulate trading patterns.</li>
           </ul>
         </section>
 
@@ -255,7 +325,7 @@ const Terms = () => {
           <p>For questions, concerns, or requests relating to these Terms, please contact us through the Platform's support channels or via the contact information provided in the application.</p>
         </section>
 
-        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: March 6, 2026</p>
+        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: March 10, 2026</p>
       </div>
       <BackToTop />
     </div>
