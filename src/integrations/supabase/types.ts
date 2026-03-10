@@ -294,6 +294,24 @@ export type Database = {
         }
         Relationships: []
       }
+      commodity_price_cache: {
+        Row: {
+          asset: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          asset: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          asset?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       copy_settings: {
         Row: {
           auto_copy: boolean
