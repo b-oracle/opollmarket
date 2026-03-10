@@ -402,9 +402,9 @@ export default function QuickTrade() {
         });
         
         // Update raw cache
-        const rawCached = rawDataRef.current.get(selectedAsset.geckoId) || [];
+        const rawCached = rawDataRef.current.get(selectedAsset.symbol) || [];
         const maxCutoff = now - 4 * 60 * 60 * 1000;
-        rawDataRef.current.set(selectedAsset.geckoId, [...rawCached, [now, price] as [number, number]].filter(([ts]) => ts >= maxCutoff));
+        rawDataRef.current.set(selectedAsset.symbol, [...rawCached, [now, price] as [number, number]].filter(([ts]) => ts >= maxCutoff));
       });
     };
     
