@@ -906,10 +906,17 @@ export default function QuickTrade() {
               <h1 className="text-xl font-bold text-foreground">Quick Trade</h1>
               <p className="text-xs text-muted-foreground">{selectedTimeframe.label} UP/DOWN predictions</p>
             </div>
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-destructive/15 border border-destructive/30">
-              <Radio className="w-3 h-3 text-destructive animate-pulse" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-destructive">Live</span>
-            </div>
+            {isMarketOpen(selectedAsset.assetClass) ? (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-destructive/15 border border-destructive/30">
+                <Radio className="w-3 h-3 text-destructive animate-pulse" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-destructive">Live</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted/50 border border-muted-foreground/20">
+                <Moon className="w-3 h-3 text-muted-foreground" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Closed</span>
+              </div>
+            )}
           </div>
 
           {/* Asset selector — grouped by class */}
