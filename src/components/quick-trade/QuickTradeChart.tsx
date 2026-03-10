@@ -101,20 +101,20 @@ function QuickTradeChart({
         <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg text-[11px]">
           <p className="text-muted-foreground mb-1">{new Date(d.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
           <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
-            <span className="text-muted-foreground">O</span><span className="font-mono font-semibold text-foreground">${d.open.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            <span className="text-muted-foreground">H</span><span className="font-mono font-semibold text-foreground">${d.high.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            <span className="text-muted-foreground">L</span><span className="font-mono font-semibold text-foreground">${d.low.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            <span className="text-muted-foreground">C</span><span className="font-mono font-semibold text-foreground">${d.close.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="text-muted-foreground">O</span><span className="font-mono font-semibold text-foreground">{formatTooltipPrice(d.open, assetClass)}</span>
+            <span className="text-muted-foreground">H</span><span className="font-mono font-semibold text-foreground">{formatTooltipPrice(d.high, assetClass)}</span>
+            <span className="text-muted-foreground">L</span><span className="font-mono font-semibold text-foreground">{formatTooltipPrice(d.low, assetClass)}</span>
+            <span className="text-muted-foreground">C</span><span className="font-mono font-semibold text-foreground">{formatTooltipPrice(d.close, assetClass)}</span>
             <span className="text-muted-foreground">Vol</span><span className="font-mono font-semibold text-foreground">{d.volume}</span>
-            {d.ma7 != null && <><span className="text-muted-foreground">MA7</span><span className="font-mono font-semibold" style={{ color: 'hsl(45, 93%, 58%)' }}>${d.ma7.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></>}
-            {d.ma14 != null && <><span className="text-muted-foreground">MA14</span><span className="font-mono font-semibold" style={{ color: 'hsl(280, 80%, 65%)' }}>${d.ma14.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></>}
+            {d.ma7 != null && <><span className="text-muted-foreground">MA7</span><span className="font-mono font-semibold" style={{ color: 'hsl(45, 93%, 58%)' }}>{formatTooltipPrice(d.ma7, assetClass)}</span></>}
+            {d.ma14 != null && <><span className="text-muted-foreground">MA14</span><span className="font-mono font-semibold" style={{ color: 'hsl(280, 80%, 65%)' }}>{formatTooltipPrice(d.ma14, assetClass)}</span></>}
           </div>
         </div>
       );
     }
     return (
       <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg text-[11px]">
-        <p className="font-semibold text-foreground">${Number(d.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+        <p className="font-semibold text-foreground">{formatTooltipPrice(Number(d.price), assetClass)}</p>
         <p className="text-muted-foreground">{new Date(d.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
       </div>
     );
@@ -126,7 +126,7 @@ function QuickTradeChart({
       stroke="#f59e0b"
       strokeDasharray="4 3"
       strokeOpacity={0.7}
-      label={{ value: `Target $${Number(activeRound.open_price).toLocaleString()}`, position: "right", fill: "#f59e0b", fontSize: 9, fontWeight: 600 }}
+      label={{ value: `Target ${formatTooltipPrice(Number(activeRound.open_price), assetClass)}`, position: "right", fill: "#f59e0b", fontSize: 9, fontWeight: 600 }}
     />
   ) : null;
 
