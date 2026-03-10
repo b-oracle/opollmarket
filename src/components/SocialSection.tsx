@@ -59,27 +59,15 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
     enabled: expanded,
   });
 
-  const followingIds = useMemo(() => following.map((f: any) => f.following_id), [following]);
   const { data: suggestions = [], isLoading: loadingSuggestions } = useQuery({
-    queryKey: ["follow-suggestions", userId, followingIds.join(",")],
+    queryKey: ["follow-suggestions", userId],
     queryFn: async () => {
-      const { data: recentTraders } = await supabase
-        .from("transactions")
-        .select("user_id")
-        .eq("type", "buy")
-        .eq("status", "confirmed")
-        .order("created_at", { ascending: false })
-        .limit(100);
-      if (!recentTraders) return [];
-      const exclude = new Set([userId, ...followingIds]);
-      const uniqueIds = [...new Set(recentTraders.map((t: any) => t.user_id))].filter(id => !exclude.has(id)).slice(0, 15);
-      if (uniqueIds.length === 0) return [];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, display_name, avatar_url, bio, is_public, verification_level")
-        .in("id", uniqueIds)
-        .eq("is_public", true);
-      return profiles || [];
+      const { data, error } = await supabase.rpc("get_follow_suggestions", {
+        _user_id: userId,
+        _limit: 15,
+      });
+      if (error) { console.error("follow suggestions error:", error); return []; }
+      return data || [];
     },
     enabled: expanded && activeTab === "suggestions",
   });
