@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -30,8 +30,7 @@ const SetupSecurity = () => {
   const [totpDone, setTotpDone] = useState(false);
 
   if (!authLoading && !user) {
-    navigate("/auth", { replace: true });
-    return null;
+    return <Navigate to="/auth" replace />;
   }
 
   const handleSetPin = async () => {
