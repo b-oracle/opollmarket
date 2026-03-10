@@ -152,16 +152,18 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
                   fontSize: "20px",
                   fontWeight: 800,
                   color: colors.fg,
-                  overflow: "visible",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
                   maxWidth: "280px",
-                  lineHeight: "1.5",
-                  height: "30px",
+                  lineHeight: "1.3",
                 }}>
                   {displayName}
                 </div>
-                {isNftAvatar(avatarUrl) && (
-                  <span style={{ fontSize: "14px", flexShrink: 0, color: "#E8B730", fontWeight: 800 }}>✔</span>
+                {verificationLevel !== "none" && (
+                  <span style={{ flexShrink: 0, display: "inline-flex" }}>
+                    <InlineBadgeSvg color={verificationLevel === "gold" ? "gold" : "blue"} size={18} />
+                  </span>
                 )}
               </div>
               {bio && (
@@ -170,9 +172,10 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
                   color: colors.mutedFg,
                   lineHeight: "1.4",
                   overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  maxWidth: "300px",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical" as const,
+                  whiteSpace: "normal",
                 }}>
                   {bio}
                 </div>

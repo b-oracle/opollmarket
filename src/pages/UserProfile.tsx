@@ -346,6 +346,7 @@ const UserProfile = () => {
           displayName={displayName}
           bio={profile.bio}
           avatarUrl={profile.avatar_url}
+          verificationLevel={verificationLevel}
           followersCount={followCounts.followers}
           followingCount={followCounts.following}
           tradesCount={tradeData.total}
