@@ -227,12 +227,14 @@ export default function QuickTrade() {
 
   const [selectedAsset, setSelectedAsset] = useState(ALL_ASSETS[0]);
 
-  // Ensure selected asset is in the enabled list
+  // Ensure selected asset is in the enabled list or not disabled
   useEffect(() => {
-    if (ASSETS.length > 0 && !ASSETS.find(a => a.symbol === selectedAsset.symbol)) {
-      setSelectedAsset(ASSETS[0]);
+    const isAvailable = ASSETS.find(a => a.symbol === selectedAsset.symbol) && !disabledAssets.has(selectedAsset.symbol);
+    if (ASSETS.length > 0 && !isAvailable) {
+      const firstAvailable = ASSETS.find(a => !disabledAssets.has(a.symbol));
+      if (firstAvailable) setSelectedAsset(firstAvailable);
     }
-  }, [ASSETS, selectedAsset.symbol]);
+  }, [ASSETS, selectedAsset.symbol, disabledAssets]);
 
   // Auto-switch to area chart when selecting non-crypto assets (no OHLC/TV available)
   useEffect(() => {
