@@ -440,15 +440,44 @@ const AdminSettings = () => {
                 <div className="space-y-2">
                   {ALL_ASSETS.map(asset => (
                     <div key={asset.symbol} className="flex items-center justify-between py-1">
-                      <span className="text-sm font-medium">{asset.symbol} <span className="text-muted-foreground font-normal">· {asset.label}</span></span>
-                      <Switch
-                        checked={qtEnabledAssets.has(asset.symbol)}
-                        onCheckedChange={() => toggleAsset(asset.symbol)}
-                        disabled={qtEnabledAssets.has(asset.symbol) && qtEnabledAssets.size <= 1}
-                      />
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{asset.symbol} <span className="text-muted-foreground font-normal">· {asset.label}</span></span>
+                        {qtDisabledAssets.has(asset.symbol) && (
+                          <Badge variant="destructive" className="text-[10px] px-1.5 py-0">⚠️ Unavailable</Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {qtDisabledAssets.has(asset.symbol) && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 text-[10px] px-2"
+                            onClick={() => {
+                              setQtDisabledAssets(prev => {
+                                const next = new Set(prev);
+                                next.delete(asset.symbol);
+                                return next;
+                              });
+                            }}
+                          >
+                            <RefreshCw className="w-3 h-3 mr-1" />
+                            Re-enable
+                          </Button>
+                        )}
+                        <Switch
+                          checked={qtEnabledAssets.has(asset.symbol)}
+                          onCheckedChange={() => toggleAsset(asset.symbol)}
+                          disabled={qtEnabledAssets.has(asset.symbol) && qtEnabledAssets.size <= 1}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
+                {qtDisabledAssets.size > 0 && (
+                  <div className="mt-3 p-2 rounded-md bg-destructive/10 border border-destructive/20">
+                    <p className="text-[11px] text-destructive font-medium">⚠️ {qtDisabledAssets.size} asset(s) auto-disabled due to API errors. Click "Re-enable" then Save to restore.</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
