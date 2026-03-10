@@ -133,7 +133,17 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (!userId || loading) { setChecked(true); setNeedsSetup(false); return; }
-    if (checkedUserRef.current === userId) { setChecked(true); return; }
+    // Always re-check when leaving setup-security page (user may have just completed setup)
+    if (checkedUserRef.current === userId && !location.pathname.startsWith("/setup-security")) {
+      // If we previously determined setup is needed, re-check from DB
+      // to pick up changes made on the setup page
+      if (needsSetup) {
+        // Force a re-check
+      } else {
+        setChecked(true);
+        return;
+      }
+    }
     if (checkingRef.current) return; // prevent concurrent checks
     checkingRef.current = true;
 
@@ -157,7 +167,7 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
           checkingRef.current = false;
         });
     });
-  }, [userId, loading]);
+  }, [userId, loading, location.pathname]);
 
   if (!checked) return null;
   if (needsSetup && !isAllowed) return <Navigate to="/setup-security" replace />;
