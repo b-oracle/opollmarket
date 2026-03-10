@@ -246,7 +246,10 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
                   
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold truncate">{displayName}</p>
+                  <p className="font-bold truncate flex items-center gap-1">
+                    {displayName}
+                    {hasNft && <NftBadge size={16} />}
+                  </p>
                   {profile?.bio && <p className="text-[10px] text-muted-foreground line-clamp-1">{profile.bio}</p>}
                   <div className="flex gap-4 mt-1.5">
                     <span className="text-xs"><span className="font-bold">{followCounts.followers}</span> <span className="text-muted-foreground">followers</span></span>
