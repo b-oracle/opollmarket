@@ -143,18 +143,18 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
         .select("security_setup_complete")
         .eq("user_id", userId)
         .maybeSingle()
-        .then(({ data }) => {
+        .then(({ data, error }) => {
+          if (error) {
+            checkingRef.current = false;
+            setChecked(true);
+            return;
+          }
           const d = data as any;
           const needs = !d || d.security_setup_complete === false;
           setNeedsSetup(needs);
-          // Cache the user id regardless — re-check only happens on explicit navigation back
           checkedUserRef.current = userId;
           setChecked(true);
           checkingRef.current = false;
-        })
-        .catch(() => {
-          checkingRef.current = false;
-          setChecked(true);
         });
     });
   }, [userId, loading]);
