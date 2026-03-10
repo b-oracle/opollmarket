@@ -111,7 +111,7 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
             width: "440px",
             padding: "28px",
             fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-            borderRadius: "20px",
+            borderRadius: "0px",
             border: "none",
             backgroundColor: colors.bg,
             color: colors.fg,
@@ -139,12 +139,27 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
                   alt={displayName}
                   style={{ width: "72px", height: "72px", objectFit: "cover", display: "block" }}
                   crossOrigin="anonymous"
+                  onError={(e) => {
+                    // Fallback: hide broken image and show initial
+                    (e.target as HTMLImageElement).style.display = "none";
+                    const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                    if (fallback) fallback.style.display = "flex";
+                  }}
                 />
-              ) : (
-                <div style={{ fontSize: "28px", fontWeight: 800, color: colors.primary, lineHeight: 1 }}>
-                  {displayName.charAt(0).toUpperCase()}
-                </div>
-              )}
+              ) : null}
+              <div style={{
+                fontSize: "28px",
+                fontWeight: 800,
+                color: colors.primary,
+                lineHeight: 1,
+                display: avatarUrl ? "none" : "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "100%",
+                height: "100%",
+              }}>
+                {displayName.charAt(0).toUpperCase()}
+              </div>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
@@ -152,11 +167,8 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
                   fontSize: "20px",
                   fontWeight: 800,
                   color: colors.fg,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  maxWidth: "280px",
                   lineHeight: "1.3",
+                  wordBreak: "break-word" as const,
                 }}>
                   {displayName}
                 </div>
@@ -171,10 +183,7 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
                   fontSize: "12px",
                   color: colors.mutedFg,
                   lineHeight: "1.4",
-                  overflow: "hidden",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical" as const,
+                  wordBreak: "break-word" as const,
                   whiteSpace: "normal",
                 }}>
                   {bio}
@@ -245,7 +254,7 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "16px" }}>
             {[
               { label: "Markets Created", value: marketsCount },
-              { label: "Predictions", value: positionsCount },
+              { label: "Active Positions", value: positionsCount },
             ].map((s) => (
               <div
                 key={s.label}
