@@ -45,13 +45,28 @@ import QuickTradeChart from "@/components/quick-trade/QuickTradeChart";
 import QuickTradeHistory from "@/components/quick-trade/QuickTradeHistory";
 import QuickTradeBetControls from "@/components/quick-trade/QuickTradeBetControls";
 // ── Asset config ──
-const ALL_ASSETS = [
-  { symbol: "BTC", label: "Bitcoin", geckoId: "bitcoin" },
-  { symbol: "ETH", label: "Ethereum", geckoId: "ethereum" },
-  { symbol: "BNB", label: "BNB", geckoId: "binancecoin" },
-  { symbol: "SOL", label: "Solana", geckoId: "solana" },
-  { symbol: "XRP", label: "XRP", geckoId: "ripple" },
-  { symbol: "DOGE", label: "Dogecoin", geckoId: "dogecoin" },
+type AssetClass = "crypto" | "commodity" | "forex";
+interface QuickTradeAsset {
+  symbol: string;
+  label: string;
+  assetClass: AssetClass;
+  geckoId?: string;
+}
+
+const ALL_ASSETS: QuickTradeAsset[] = [
+  { symbol: "BTC", label: "Bitcoin", assetClass: "crypto", geckoId: "bitcoin" },
+  { symbol: "ETH", label: "Ethereum", assetClass: "crypto", geckoId: "ethereum" },
+  { symbol: "BNB", label: "BNB", assetClass: "crypto", geckoId: "binancecoin" },
+  { symbol: "SOL", label: "Solana", assetClass: "crypto", geckoId: "solana" },
+  { symbol: "XRP", label: "XRP", assetClass: "crypto", geckoId: "ripple" },
+  { symbol: "DOGE", label: "Dogecoin", assetClass: "crypto", geckoId: "dogecoin" },
+  // Commodities
+  { symbol: "XAU", label: "Gold", assetClass: "commodity" },
+  { symbol: "XAG", label: "Silver", assetClass: "commodity" },
+  // Forex
+  { symbol: "EUR/USD", label: "EUR/USD", assetClass: "forex" },
+  { symbol: "GBP/USD", label: "GBP/USD", assetClass: "forex" },
+  { symbol: "USD/JPY", label: "USD/JPY", assetClass: "forex" },
 ];
 
 const ALL_TIMEFRAMES = [
