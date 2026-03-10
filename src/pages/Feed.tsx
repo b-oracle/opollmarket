@@ -33,7 +33,7 @@ import { useCommentCount } from "@/hooks/useCommentCount";
 import { useLikeCount } from "@/hooks/useLikeCount";
 import BoostCountdown from "@/components/BoostCountdown";
 
-const PULL_THRESHOLD = 80;
+
 
 const formatVolume = (v: number) => {
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
