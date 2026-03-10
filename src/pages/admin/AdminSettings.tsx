@@ -212,6 +212,7 @@ const AdminSettings = () => {
           qt_streak_4x: qtStreak4Num,
           qt_streak_5x: qtStreak5Num,
            qt_enabled_assets: Array.from(qtEnabledAssets).join(","),
+           qt_disabled_assets: Array.from(qtDisabledAssets).join(","),
            qt_enabled_timeframes: Array.from(qtEnabledTimeframes).join(","),
            blue_revenue_share_percent: blueRevenueShareNum,
            gold_revenue_share_percent: goldRevenueShareNum,
