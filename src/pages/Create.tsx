@@ -141,6 +141,11 @@ const Create = () => {
   const [nftBuyUrl, setNftBuyUrl] = useState("");
   const [marketCreationFee, setMarketCreationFee] = useState(50);
   const [tokenDecimals, setTokenDecimals] = useState(18);
+  const [blueMaxFreeMarkets, setBlueMaxFreeMarkets] = useState(5);
+  const [goldMaxFreeMarkets, setGoldMaxFreeMarkets] = useState(20);
+  const [verificationLevel, setVerificationLevel] = useState("none");
+  const [activeMarketCount, setActiveMarketCount] = useState(0);
+  const [exceededFreeLimit, setExceededFreeLimit] = useState(false);
 
   useEffect(() => {
     (async () => {
