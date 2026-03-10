@@ -427,6 +427,7 @@ export default function QuickTrade() {
     setPrevPrice(null);
     setStreamingPrice(null);
     wsActiveRef.current = false;
+    consecutiveFailsRef.current = 0;
   }, [selectedAsset.symbol]);
 
   useEffect(() => {
