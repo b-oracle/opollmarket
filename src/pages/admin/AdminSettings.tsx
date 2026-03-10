@@ -106,6 +106,8 @@ const AdminSettings = () => {
         setQtStreak5(String(d.qt_streak_5x ?? 1.25));
         const assets = String(d.qt_enabled_assets ?? "BTC,ETH,BNB,SOL,XRP,DOGE");
         setQtEnabledAssets(new Set(assets.split(",").filter(Boolean)));
+        const disabledAssets = String(d.qt_disabled_assets ?? "");
+        setQtDisabledAssets(new Set(disabledAssets.split(",").filter(Boolean)));
         const timeframes = String(d.qt_enabled_timeframes ?? "60,180,300,900");
         setQtEnabledTimeframes(new Set(timeframes.split(",").filter(Boolean).map(Number)));
         setBlueRevenueShare(String(d.blue_revenue_share_percent ?? 0));
