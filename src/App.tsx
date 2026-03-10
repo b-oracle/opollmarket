@@ -140,7 +140,8 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
         .maybeSingle()
         .then(({ data }) => {
           const d = data as any;
-          setNeedsSetup(d && d.security_setup_complete === false);
+          // No row at all OR row with setup incomplete → needs setup
+          setNeedsSetup(!d || d.security_setup_complete === false);
           checkedUserRef.current = user.id;
           setChecked(true);
         });
