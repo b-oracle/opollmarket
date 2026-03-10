@@ -119,32 +119,13 @@ const Followers = () => {
       ref={containerRef}
       className="min-h-dvh bg-background overflow-y-auto overscroll-contain"
       style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom))", touchAction: 'pan-y', WebkitOverflowScrolling: 'touch', willChange: 'scroll-position' } as React.CSSProperties}
-      onTouchStart={handlePullStart}
-      onTouchMove={handlePullMove}
-      onTouchEnd={handlePullEnd}
+      onTouchStart={pullHandlers.onTouchStart}
+      onTouchMove={pullHandlers.onTouchMove}
+      onTouchEnd={pullHandlers.onTouchEnd}
     >
       <TopBar />
 
-      {/* Pull-to-refresh indicator */}
-      <AnimatePresence>
-        {(pulling || refreshing) && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed left-1/2 -translate-x-1/2 z-50 flex items-center justify-center"
-            style={{ top: 'calc(3.5rem + env(safe-area-inset-top) + 8px)' }}
-          >
-            <motion.div
-              animate={refreshing ? { rotate: 360 } : { rotate: pullDistance * 3 }}
-              transition={refreshing ? { repeat: Infinity, duration: 0.8, ease: "linear" } : { type: "spring" }}
-              className={`w-8 h-8 rounded-full glass flex items-center justify-center shadow-lg ${pullDistance >= PULL_THRESHOLD || refreshing ? 'text-primary' : 'text-muted-foreground'}`}
-            >
-              <RefreshCw className="w-4 h-4" />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <PullToRefreshIndicator pulling={pulling} refreshing={refreshing} pullDistance={pullDistance} pullProgress={pullProgress} spinControls={spinControls} />
 
       <div className="max-w-lg md:max-w-2xl mx-auto px-3 sm:px-4" style={{ paddingTop: "calc(5rem + env(safe-area-inset-top))" }}>
         {/* Header */}
