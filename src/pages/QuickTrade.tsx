@@ -220,6 +220,13 @@ export default function QuickTrade() {
     }
   }, [ASSETS, selectedAsset.symbol]);
 
+  // Auto-switch to area chart when selecting non-crypto assets (no OHLC/TV available)
+  useEffect(() => {
+    if (selectedAsset.assetClass !== "crypto" && chartType !== "area") {
+      setChartType("area");
+    }
+  }, [selectedAsset.assetClass]);
+
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [prevPrice, setPrevPrice] = useState<number | null>(null);
   const [activeRound, setActiveRound] = useState<Round | null>(null);
