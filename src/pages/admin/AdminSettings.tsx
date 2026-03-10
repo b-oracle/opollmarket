@@ -118,6 +118,8 @@ const AdminSettings = () => {
         setGoldRevenueShare(String(d.gold_revenue_share_percent ?? 0));
         setBlueTrendingMult(String(d.blue_trending_multiplier ?? 1.2));
         setGoldTrendingMult(String(d.gold_trending_multiplier ?? 1.5));
+        setBlueMaxFreeMarkets(String(d.blue_max_free_markets ?? 5));
+        setGoldMaxFreeMarkets(String(d.gold_max_free_markets ?? 20));
         setSettingsId(d.id);
       }
       if (error) console.error(error);
