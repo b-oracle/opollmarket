@@ -316,7 +316,7 @@ const UserProfile = () => {
   return (
     <div
       ref={containerRef}
-      className="min-h-dvh bg-background overflow-y-auto overscroll-contain"
+      className="h-dvh bg-background overflow-y-auto overscroll-contain"
       style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))', touchAction: 'pan-y', WebkitOverflowScrolling: 'touch', willChange: 'scroll-position' } as React.CSSProperties}
       onTouchStart={pullHandlers.onTouchStart}
       onTouchMove={pullHandlers.onTouchMove}
