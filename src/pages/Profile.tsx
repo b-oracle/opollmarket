@@ -996,18 +996,16 @@ const Profile = () => {
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-3 gap-3 mb-3">
           {(() => {
             const buyTxns = transactions.filter((t: any) => t.type === "buy" && t.status === "confirmed");
             const sellTxns = transactions.filter((t: any) => t.type === "sell" && t.status === "confirmed");
             const totalBought = buyTxns.reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
             const totalSold = sellTxns.reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
-            // PnL from payouts received minus amount spent on buys
             const payoutTxns = transactions.filter((t: any) => t.type === "payout" && t.status === "confirmed");
             const totalPayouts = payoutTxns.reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
             const pnl = totalPayouts + totalSold - totalBought;
             const totalPredictions = buyTxns.length;
-            // Win rate: payouts count vs total resolved (payouts + losses)
             const resolvedCount = payoutTxns.length + transactions.filter((t: any) => t.type === "loss").length;
             const winRate = resolvedCount > 0 ? Math.round((payoutTxns.length / resolvedCount) * 100) : null;
 
@@ -1023,6 +1021,35 @@ const Profile = () => {
             ));
           })()}
         </div>
+
+        {/* Active Markets Usage (for verified creators) */}
+        {profile?.verification_level && profile.verification_level !== "none" && (
+          <div className="glass rounded-xl p-3 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-primary" />
+                <span className="text-xs font-semibold">Active Markets</span>
+              </div>
+              <span className="text-sm font-bold">
+                {activeMarketCount} / {profile.verification_level === "gold" ? (commissionSettings as any)?.gold_max_free_markets ?? 20 : (commissionSettings as any)?.blue_max_free_markets ?? 5}
+              </span>
+            </div>
+            <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-primary transition-all"
+                style={{
+                  width: `${Math.min(
+                    (activeMarketCount / (profile.verification_level === "gold" ? (commissionSettings as any)?.gold_max_free_markets ?? 20 : (commissionSettings as any)?.blue_max_free_markets ?? 5)) * 100,
+                    100
+                  )}%`,
+                }}
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Free markets remaining: {Math.max(0, (profile.verification_level === "gold" ? (commissionSettings as any)?.gold_max_free_markets ?? 20 : (commissionSettings as any)?.blue_max_free_markets ?? 5) - activeMarketCount)}
+            </p>
+          </div>
+        )}
 
         {/* Copy Trade Stats */}
         <CopyTradeStats userId={user?.id} />
