@@ -183,29 +183,36 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
                 flexShrink: 0,
               }}
             >
-              {(avatarBase64 || avatarUrl) ? (
-                <img
-                  src={avatarBase64 || avatarUrl || ""}
-                  alt={displayName}
-                  style={{ width: "72px", height: "72px", objectFit: "cover", display: "block" }}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                    const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
-                    if (fallback) fallback.style.display = "flex";
-                  }}
-                />
-              ) : null}
-              <div style={{
-                fontSize: "28px",
-                fontWeight: 800,
-                color: colors.primary,
-                lineHeight: 1,
-                display: (avatarBase64 || avatarUrl) ? "none" : "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "100%",
-                height: "100%",
-              }}>
+              <img
+                src={avatarBase64 || avatarUrl || ""}
+                alt={displayName}
+                style={{
+                  width: "72px",
+                  height: "72px",
+                  objectFit: "cover",
+                  display: (avatarBase64 || avatarUrl) ? "block" : "none",
+                }}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                  const parent = (e.target as HTMLImageElement).parentElement;
+                  const fallback = parent?.querySelector("[data-fallback]") as HTMLElement;
+                  if (fallback) fallback.style.display = "flex";
+                }}
+              />
+              <div
+                data-fallback="true"
+                style={{
+                  fontSize: "28px",
+                  fontWeight: 800,
+                  color: colors.primary,
+                  lineHeight: 1,
+                  display: (avatarBase64 || avatarUrl) ? "none" : "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "100%",
+                  height: "100%",
+                }}
+              >
                 {displayName.charAt(0).toUpperCase()}
               </div>
             </div>
