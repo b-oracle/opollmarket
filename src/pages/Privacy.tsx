@@ -77,16 +77,18 @@ const Privacy = () => {
           <h2 className="text-base font-semibold text-foreground">3. How We Use Your Information</h2>
           <p>We process your information for the following purposes:</p>
           <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Service Delivery:</strong> To create and maintain your account, execute trades, process deposits and withdrawals, and provide core Platform functionality.</li>
-            <li><strong>Token-Gate Verification:</strong> To verify BC400 token balances and NFT ownership for market creation eligibility using connected wallet addresses.</li>
+            <li><strong>Service Delivery:</strong> To create and maintain your account, execute trades, process deposits and withdrawals, manage Quick Trade rounds, and provide core Platform functionality.</li>
+            <li><strong>Token-Gate & Verification:</strong> To verify BC400 token balances and NFT ownership for market creation eligibility and verification badge assignment (Blue Tick and Gold Tick) using connected wallet addresses.</li>
             <li><strong>Content Moderation:</strong> User-generated content (market titles, descriptions, images, comments, display names) is processed by automated AI moderation systems to enforce community guidelines and platform safety.</li>
             <li><strong>Market Operations:</strong> To calculate AMM prices, process market resolutions, compute payouts, and manage liquidity pools.</li>
+            <li><strong>Copy Trading:</strong> To manage copy trade subscriptions, execute replicated trades, and calculate copy trade commissions.</li>
             <li><strong>Fraud Prevention:</strong> To detect, investigate, and prevent fraudulent activities, market manipulation, wash trading, and unauthorized account access.</li>
-            <li><strong>Communications:</strong> To send in-app notifications about market resolutions, payouts, referral rewards, pending reviews, and important platform updates.</li>
+            <li><strong>Communications:</strong> To send in-app notifications, push notifications, and Telegram alerts about market resolutions, payouts, referral rewards, copy trade actions, follower activity, and important platform updates.</li>
             <li><strong>Analytics & Improvement:</strong> To analyze usage patterns, optimize Platform performance, identify popular features, and improve user experience through aggregated and anonymized data analysis.</li>
             <li><strong>Legal Compliance:</strong> To comply with applicable laws, regulations, legal processes, or governmental requests.</li>
             <li><strong>Referral Program:</strong> To track referral relationships, verify eligibility, distribute referral bonus rewards, and apply bonus balance as fee credits.</li>
             <li><strong>Limit Order Processing:</strong> To manage, match, and execute limit orders based on market price movements.</li>
+            <li><strong>Verification System:</strong> To assess and assign verification badge levels (Blue/Gold) based on token holdings and NFT ownership, and to calculate associated benefits such as trending multipliers and revenue sharing.</li>
           </ul>
         </section>
 
