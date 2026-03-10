@@ -30,8 +30,7 @@ const SetupSecurity = () => {
   const [totpDone, setTotpDone] = useState(false);
 
   if (!authLoading && !user) {
-    navigate("/auth", { replace: true });
-    return null;
+    return <Navigate to="/auth" replace />;
   }
 
   const handleSetPin = async () => {
