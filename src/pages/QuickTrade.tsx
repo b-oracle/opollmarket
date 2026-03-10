@@ -268,7 +268,6 @@ export default function QuickTrade() {
   const [winShareData, setWinShareData] = useState<{ profit: number; payout: number; side: string; asset: string } | null>(null);
   const profitCardRef = useRef<HTMLDivElement>(null);
   const consecutiveFailsRef = useRef<number>(0);
-  const queryClient = useQueryClient(); // already declared above, re-use below
   const [soundMuted, setSoundMuted] = useState(() => {
     try { return localStorage.getItem("qt-sound-muted") === "true"; } catch { return false; }
   });
