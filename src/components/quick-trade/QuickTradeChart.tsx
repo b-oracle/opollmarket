@@ -19,6 +19,17 @@ interface QuickTradeChartProps {
   userBet: { side: string } | null;
   resolveFlash: "win" | "lose" | null;
   timeframeLabel: string;
+  assetClass?: "crypto" | "commodity" | "forex";
+}
+
+/** Format a price for tooltip display based on asset class */
+function formatTooltipPrice(price: number, assetClass?: string): string {
+  if (assetClass === "forex") return price.toFixed(4);
+  if (assetClass === "commodity") return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  // Crypto
+  if (price >= 1000) return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (price >= 1) return `$${price.toFixed(4)}`;
+  return `$${price.toFixed(6)}`;
 }
 
 function QuickTradeChart({
