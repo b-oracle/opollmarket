@@ -162,9 +162,25 @@ const Create = () => {
         setNftBuyUrl(data.nft_buy_url || "");
         setMarketCreationFee(Number(data.market_creation_fee) || 50);
         setTokenDecimals(Number(data.token_decimals) ?? 18);
+        setBlueMaxFreeMarkets(Number((data as any).blue_max_free_markets) || 5);
+        setGoldMaxFreeMarkets(Number((data as any).gold_max_free_markets) || 20);
       }
     })();
   }, []);
+
+  // Fetch user verification level and active market count
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const [{ data: profile }, { count }] = await Promise.all([
+        supabase.from("profiles").select("verification_level").eq("id", user.id).maybeSingle(),
+        supabase.from("markets").select("id", { count: "exact", head: true }).eq("creator_wallet", user.id).in("status", ["active", "pending"]),
+      ]);
+      const vLevel = profile?.verification_level || "none";
+      setVerificationLevel(vLevel);
+      setActiveMarketCount(count || 0);
+    })();
+  }, [user]);
 
   // Gate state
   const [gateChecks, setGateChecks] = useState<GateCheck[]>([]);
