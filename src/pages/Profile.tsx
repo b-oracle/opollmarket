@@ -11,6 +11,7 @@ import { useUserBalance } from "@/hooks/useUserBalance";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccount, useDisconnect } from "wagmi";
+import { useAppKit } from "@reown/appkit/react";
 import { useFilteredConnectors } from "@/hooks/useFilteredConnectors";
 import { bsc } from "wagmi/chains";
 import {
