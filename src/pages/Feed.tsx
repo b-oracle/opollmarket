@@ -314,52 +314,6 @@ const Feed = () => {
     return () => container.removeEventListener("scroll", handleScroll);
   }, [sortedMarkets.length, isDesktop]);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    const container = containerRef.current;
-    if (!container || container.scrollTop > 5 || refreshing) return;
-    touchStartY.current = e.touches[0].clientY;
-    isPulling.current = true;
-  }, [refreshing]);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isPulling.current || refreshing) return;
-    const container = containerRef.current;
-    if (!container || container.scrollTop > 5) {
-      isPulling.current = false;
-      setPulling(false);
-      setPullDistance(0);
-      return;
-    }
-    const deltaY = e.touches[0].clientY - touchStartY.current;
-    if (deltaY > 0) {
-      const dampened = Math.min(deltaY * 0.45, 120);
-      setPulling(true);
-      setPullDistance(dampened);
-      if (dampened >= PULL_THRESHOLD && !hapticFired.current) {
-        navigator.vibrate?.(15);
-        hapticFired.current = true;
-      }
-    }
-  }, [refreshing]);
-
-  const handleTouchEnd = useCallback(async () => {
-    if (!isPulling.current) return;
-    isPulling.current = false;
-
-    if (pullDistance >= PULL_THRESHOLD && !refreshing) {
-      setRefreshing(true);
-      setPullDistance(50);
-      spinControls.start({ rotate: 360, transition: { repeat: Infinity, duration: 0.8, ease: "linear" } });
-      await refetch();
-      spinControls.stop();
-      setRefreshing(false);
-    }
-
-    setPulling(false);
-    setPullDistance(0);
-    hapticFired.current = false;
-  }, [pullDistance, refreshing, refetch, spinControls]);
-
   if (isLoading) {
     return (
       <div className="h-dvh flex flex-col bg-background">
