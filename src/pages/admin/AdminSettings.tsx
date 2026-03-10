@@ -127,6 +127,7 @@ const AdminSettings = () => {
   const creatorNum = parseFloat(creatorFee) || 0;
   const referralNum = parseFloat(referralReward) || 0;
   const tokenNum = parseFloat(minTokenBalance) || 0;
+  const goldTokenNum = parseFloat(minGoldTokenBalance) || 0;
   const nftNum = parseInt(minNftBalance) || 0;
   const minWithdrawNum = parseFloat(minWithdrawalAmount) || 0;
   const withdrawalCooldownNum = parseInt(withdrawalCooldown) || 5;
