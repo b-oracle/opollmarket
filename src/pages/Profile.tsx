@@ -519,13 +519,15 @@ const Profile = () => {
     }
   };
 
+  const [expandedTxId, setExpandedTxId] = useState<string | null>(null);
+
   const { data: transactions = [] } = useQuery({
     queryKey: ["transactions", user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data } = await supabase
         .from("transactions")
-        .select("*")
+        .select("*, markets(title)")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       return data || [];
