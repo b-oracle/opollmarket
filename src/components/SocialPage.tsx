@@ -29,6 +29,33 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
   const [followersPage, setFollowersPage] = useState(1);
   const [followingPage, setFollowingPage] = useState(1);
   const [suggestionsPage, setSuggestionsPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Debounce search input
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value);
+    setSuggestionsPage(1);
+    const timeout = setTimeout(() => setDebouncedSearch(value.trim().toLowerCase()), 300);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  // Search users query
+  const { data: searchResults = [], isLoading: loadingSearch } = useQuery({
+    queryKey: ["user-search", debouncedSearch],
+    queryFn: async () => {
+      if (!user || !debouncedSearch || debouncedSearch.length < 2) return [];
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url, bio, is_public")
+        .eq("is_public", true)
+        .ilike("display_name", `%${debouncedSearch}%`)
+        .neq("id", user.id)
+        .limit(20);
+      return data || [];
+    },
+    enabled: !!user && open && debouncedSearch.length >= 2,
+  });
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
