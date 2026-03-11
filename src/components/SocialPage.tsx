@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,10 +7,11 @@ import { useFollowCounts } from "@/hooks/useFollow";
 import FollowButton from "@/components/FollowButton";
 import ActivityFeed from "@/components/ActivityFeed";
 import NftBadge, { isNftAvatar } from "@/components/NftBadge";
+import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Users, UserCheck, Heart, Gift, Trophy,
-  Sparkles, ChevronRight, ChevronLeft, Loader2, X,
+  Sparkles, ChevronRight, ChevronLeft, Loader2, X, Search,
 } from "lucide-react";
 
 const ITEMS_PER_PAGE = 10;
@@ -28,6 +29,33 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
   const [followersPage, setFollowersPage] = useState(1);
   const [followingPage, setFollowingPage] = useState(1);
   const [suggestionsPage, setSuggestionsPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Debounce search input
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value);
+    setSuggestionsPage(1);
+    const timeout = setTimeout(() => setDebouncedSearch(value.trim().toLowerCase()), 300);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  // Search users query
+  const { data: searchResults = [], isLoading: loadingSearch } = useQuery({
+    queryKey: ["user-search", debouncedSearch],
+    queryFn: async () => {
+      if (!user || !debouncedSearch || debouncedSearch.length < 2) return [];
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url, bio, is_public")
+        .eq("is_public", true)
+        .ilike("display_name", `%${debouncedSearch}%`)
+        .neq("id", user.id)
+        .limit(20);
+      return data || [];
+    },
+    enabled: !!user && open && debouncedSearch.length >= 2,
+  });
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -334,18 +362,58 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
 
               {activeTab === "suggestions" && (
                 <div className="space-y-1.5">
-                  <p className="text-xs text-muted-foreground px-1 mb-2">Active traders you might want to follow</p>
-                  {loadingSuggestions ? (
-                    <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
-                  ) : suggestions.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Sparkles className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">No suggestions right now</p>
-                    </div>
+                  {/* Search bar */}
+                  <div className="relative mb-3">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search users by name..."
+                      value={searchQuery}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      className="pl-9 pr-9 h-10 rounded-xl bg-muted/50 border-border/50 text-sm"
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => { setSearchQuery(""); setDebouncedSearch(""); }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Search results or suggestions */}
+                  {debouncedSearch.length >= 2 ? (
+                    <>
+                      <p className="text-xs text-muted-foreground px-1 mb-2">
+                        Search results for "{debouncedSearch}"
+                      </p>
+                      {loadingSearch ? (
+                        <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                      ) : searchResults.length === 0 ? (
+                        <div className="text-center py-12">
+                          <Search className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">No users found</p>
+                        </div>
+                      ) : (
+                        searchResults.map((s: any, i: number) => renderUserRow(s.id, s, i))
+                      )}
+                    </>
                   ) : (
                     <>
-                      {paginatedSuggestions.map((s: any, i: number) => renderUserRow(s.id, s, i))}
-                      <PaginationControls page={suggestionsPage} totalPages={suggestionsTotalPages} setPage={setSuggestionsPage} />
+                      <p className="text-xs text-muted-foreground px-1 mb-2">Active traders you might want to follow</p>
+                      {loadingSuggestions ? (
+                        <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                      ) : suggestions.length === 0 ? (
+                        <div className="text-center py-12">
+                          <Sparkles className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">No suggestions right now</p>
+                        </div>
+                      ) : (
+                        <>
+                          {paginatedSuggestions.map((s: any, i: number) => renderUserRow(s.id, s, i))}
+                          <PaginationControls page={suggestionsPage} totalPages={suggestionsTotalPages} setPage={setSuggestionsPage} />
+                        </>
+                      )}
                     </>
                   )}
                 </div>
