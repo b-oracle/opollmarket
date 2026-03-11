@@ -165,7 +165,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setTimeRemaining("");
       return;
     }
-    const EXPIRY_MS = 2 * 60 * 60 * 1000; // 2 hours
+    const EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
     const tick = () => {
       const elapsed = Date.now() - depositCreatedAt;
       const remaining = EXPIRY_MS - elapsed;
