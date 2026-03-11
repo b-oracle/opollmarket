@@ -169,6 +169,22 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
   }
 
   console.log(`Credited $${creditAmount} (${finalStatus}) to user ${userId}`);
+
+  // Settle any outstanding debts from this user's balance
+  try {
+    const { data: debtResult } = await supabase.rpc("settle_user_debts", { _user_id: userId });
+    if (debtResult && Number(debtResult.amount) > 0) {
+      console.log(`Settled $${debtResult.amount} in debts for user ${userId}`);
+      await supabase.from("notifications").insert({
+        user_id: userId,
+        title: "Outstanding Balance Settled 📋",
+        message: `$${Number(debtResult.amount).toFixed(2)} was deducted from your deposit to cover outstanding market liquidity fees.`,
+        type: "info",
+      });
+    }
+  } catch (debtErr) {
+    console.error("Failed to settle debts:", debtErr);
+  }
 }
 
 async function handleBoost(supabase: ReturnType<typeof createClient>, payload: Record<string, unknown>, orderId: string) {
