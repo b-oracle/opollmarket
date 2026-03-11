@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,10 +7,11 @@ import { useFollowCounts } from "@/hooks/useFollow";
 import FollowButton from "@/components/FollowButton";
 import ActivityFeed from "@/components/ActivityFeed";
 import NftBadge, { isNftAvatar } from "@/components/NftBadge";
+import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Users, UserCheck, Heart, Gift, Trophy,
-  Sparkles, ChevronRight, ChevronLeft, Loader2, X,
+  Sparkles, ChevronRight, ChevronLeft, Loader2, X, Search,
 } from "lucide-react";
 
 const ITEMS_PER_PAGE = 10;
