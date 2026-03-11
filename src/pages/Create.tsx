@@ -2068,6 +2068,7 @@ const Create = () => {
                         }
 
                         toast.success("First prediction placed! Your market is now live.");
+                        clearFormStorage();
                         setSubmitStep("success");
                       } catch (err: any) {
                         toast.error(err.message || "Failed to place prediction");
