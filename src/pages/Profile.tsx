@@ -17,7 +17,7 @@ import { bsc } from "wagmi/chains";
 import {
   Wallet, Gift, ArrowDownToLine, ArrowUpFromLine, ArrowUpRight, ArrowDownLeft,
   Repeat, LogIn, Send, MessageCircle, ExternalLink, ChevronRight,
-  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image, BarChart3, Globe, EyeOff, Users, Sparkles,
+  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image, BarChart3, Globe, EyeOff, Users, Sparkles, Zap, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import NftBadge, { isNftAvatar } from "@/components/NftBadge";
@@ -45,7 +45,7 @@ const formatTimeAgo = (date: string) => {
   return `${Math.floor(hrs / 24)}d ago`;
 };
 
-type FilterType = "all" | "trades" | "deposits";
+type FilterType = "all" | "trades" | "deposits" | "quick_trades";
 type StatusFilter = "all" | "confirmed" | "pending" | "failed";
 
 const TelegramSection = ({ userId }: { userId?: string }) => {
@@ -527,6 +527,21 @@ const Profile = () => {
     enabled: !!user,
   });
 
+  // Fetch quick trade bets
+  const { data: quickBets = [] } = useQuery({
+    queryKey: ["quick-bets-profile", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase
+        .from("quick_bets")
+        .select("*, quick_rounds(*)")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
   const { data: positions = [] } = useQuery({
     queryKey: ["positions", user?.id],
     queryFn: async () => {
@@ -559,6 +574,26 @@ const Profile = () => {
   const openWithdraw = () => { setModalTab("withdraw"); setModalOpen(true); };
 
   const filteredTx = useMemo(() => {
+    if (txFilter === "quick_trades") {
+      let result = quickBets.map((qb: any) => ({
+        id: qb.id,
+        type: "quick_trade" as const,
+        side: qb.side,
+        amount: qb.amount,
+        payout: qb.payout,
+        status: qb.status === "won" ? "confirmed" : qb.status === "lost" ? "failed" : "pending",
+        qtStatus: qb.status,
+        created_at: qb.created_at,
+        asset: qb.quick_rounds?.asset || "BTC",
+        streak: qb.streak,
+      }));
+      if (statusFilter !== "all") {
+        result = result.filter((t: any) =>
+          statusFilter === "failed" ? (t.status === "failed") : t.status === statusFilter
+        );
+      }
+      return result;
+    }
     let result = transactions;
     if (txFilter === "trades") result = result.filter((t: any) => t.type === "buy" || t.type === "sell");
     else if (txFilter === "deposits") result = result.filter((t: any) => t.type === "deposit" || t.type === "withdraw");
@@ -568,7 +603,7 @@ const Profile = () => {
       );
     }
     return result;
-  }, [transactions, txFilter, statusFilter]);
+  }, [transactions, quickBets, txFilter, statusFilter]);
 
   const txTotalPages = Math.max(1, Math.ceil(filteredTx.length / TX_PER_PAGE));
   const paginatedTx = useMemo(() => {
@@ -1190,7 +1225,10 @@ const Profile = () => {
             <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Transaction History</h3>
             <motion.button
               onClick={async () => {
-                await queryClient.invalidateQueries({ queryKey: ["transactions", user?.id] });
+                await Promise.all([
+                  queryClient.invalidateQueries({ queryKey: ["transactions", user?.id] }),
+                  queryClient.invalidateQueries({ queryKey: ["quick-bets-profile", user?.id] }),
+                ]);
                 toast.success("Transactions refreshed");
               }}
               whileTap={{ rotate: 360 }}
@@ -1201,10 +1239,10 @@ const Profile = () => {
             </motion.button>
           </div>
           <div className="flex gap-2 mb-3 flex-wrap">
-            {(["all", "trades", "deposits"] as FilterType[]).map((f) => (
+            {(["all", "trades", "quick_trades", "deposits"] as FilterType[]).map((f) => (
               <button key={f} onClick={() => { setTxFilter(f); setTxPage(1); }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize ${txFilter === f ? "bg-primary text-primary-foreground" : "glass text-muted-foreground hover:text-foreground"}`}>
-                {f === "deposits" ? "Deposits & Withdrawals" : f}
+                {f === "deposits" ? "Deposits" : f === "quick_trades" ? "Quick Trades" : f}
               </button>
             ))}
           </div>
@@ -1226,6 +1264,49 @@ const Profile = () => {
 
           <div className="space-y-2">
             {paginatedTx.map((tx: any, i: number) => {
+              // Quick trade rendering
+              if (tx.type === "quick_trade") {
+                const won = tx.qtStatus === "won";
+                const lost = tx.qtStatus === "lost";
+                const pnl = won ? Number(tx.payout) - Number(tx.amount) : lost ? -Number(tx.amount) : 0;
+                return (
+                  <motion.div key={tx.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                    className="glass rounded-xl p-3.5 flex items-start gap-3">
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${won ? "bg-green-500/10 text-green-500" : lost ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"}`}>
+                      {tx.side === "up" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold flex items-center gap-1">
+                            <Zap className="w-3 h-3" /> {tx.side.toUpperCase()}
+                          </span>
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                            {tx.asset}
+                          </span>
+                          {tx.streak > 1 && <span className="text-[10px] text-amber-500 font-bold">🔥{tx.streak}</span>}
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                            won ? "bg-green-500/10 text-green-500"
+                            : lost ? "bg-destructive/10 text-destructive"
+                            : "bg-yellow-500/10 text-yellow-500"
+                          }`}>
+                            {won ? "✓ Won" : lost ? "✗ Lost" : "⏳ Pending"}
+                          </span>
+                        </div>
+                        <span className={`text-sm font-bold ${won ? "text-green-500" : lost ? "text-destructive" : "text-muted-foreground"}`}>
+                          {won ? `+$${pnl.toFixed(2)}` : lost ? `-$${Number(tx.amount).toFixed(2)}` : `$${Number(tx.amount).toFixed(2)}`}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground">{formatTimeAgo(tx.created_at)}</span>
+                        {won && tx.payout && <span className="text-[10px] text-muted-foreground">Payout: ${Number(tx.payout).toFixed(2)}</span>}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              }
+
+              // Regular transaction rendering
               const cfg = txConfig[tx.type as TxType] || txConfig.buy;
               const Icon = cfg.icon;
               return (
