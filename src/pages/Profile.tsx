@@ -50,7 +50,7 @@ const formatTimeAgo = (date: string) => {
   return `${Math.floor(hrs / 24)}d ago`;
 };
 
-type FilterType = "all" | "trades" | "deposits" | "quick_trades";
+type FilterType = "all" | "trades" | "deposits" | "quick_trades" | "earnings";
 type StatusFilter = "all" | "confirmed" | "pending" | "failed";
 
 const TelegramSection = ({ userId }: { userId?: string }) => {
@@ -603,6 +603,7 @@ const Profile = () => {
     let result = transactions;
     if (txFilter === "trades") result = result.filter((t: any) => t.type === "buy" || t.type === "sell");
     else if (txFilter === "deposits") result = result.filter((t: any) => t.type === "deposit" || t.type === "withdraw" || t.type === "withdrawal");
+    else if (txFilter === "earnings") result = result.filter((t: any) => t.type === "commission" || t.type === "payout" || t.type === "refund");
     if (statusFilter !== "all") {
       result = result.filter((t: any) =>
         statusFilter === "failed" ? (t.status === "failed" || t.status === "expired") : t.status === statusFilter
@@ -1245,10 +1246,10 @@ const Profile = () => {
             </motion.button>
           </div>
           <div className="flex gap-2 mb-3 flex-wrap">
-            {(["all", "trades", "quick_trades", "deposits"] as FilterType[]).map((f) => (
+            {(["all", "trades", "quick_trades", "deposits", "earnings"] as FilterType[]).map((f) => (
               <button key={f} onClick={() => { setTxFilter(f); setTxPage(1); }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize ${txFilter === f ? "bg-primary text-primary-foreground" : "glass text-muted-foreground hover:text-foreground"}`}>
-                {f === "deposits" ? "Deposits" : f === "quick_trades" ? "Quick Trades" : f === "trades" ? "Predictions" : f}
+                {f === "deposits" ? "Deposits" : f === "quick_trades" ? "Quick Trades" : f === "trades" ? "Predictions" : f === "earnings" ? "Earnings" : f}
               </button>
             ))}
           </div>
