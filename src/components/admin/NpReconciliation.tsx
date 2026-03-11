@@ -3,6 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Scale, Loader2, AlertTriangle, CheckCircle2, ArrowRight, XCircle, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 
+interface FixedRecord {
+  tx_id: string;
+  user_id: string;
+  np_payment_id: string;
+  np_status: string;
+  requested_amount: number;
+  credited_amount: number;
+  status_set: string;
+}
+
 interface MatchedRecord {
   tx_id: string;
   user_id: string;
@@ -69,6 +79,8 @@ const NpReconciliation = () => {
   const [anomaliesDb, setAnomaliesDb] = useState<AnomalyDbRecord[]>([]);
   const [anomaliesNp, setAnomaliesNp] = useState<AnomalyNpRecord[]>([]);
   const [applied, setApplied] = useState<ApplyResult[] | null>(null);
+  const [fixingExpired, setFixingExpired] = useState(false);
+  const [fixedResults, setFixedResults] = useState<{ fixed: FixedRecord[]; skipped: any[]; total_checked: number } | null>(null);
   const [tab, setTab] = useState<"matched" | "anomalies">("matched");
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
@@ -118,6 +130,30 @@ const NpReconciliation = () => {
     }
   };
 
+  const fixExpiredDeposits = async () => {
+    if (!confirm("This will check all expired deposits against NOWPayments and credit users for any that were actually paid. Continue?")) return;
+    setFixingExpired(true);
+    setFixedResults(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("np-reconcile", {
+        body: { action: "fix_expired" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setFixedResults(data);
+      const fixedCount = data.fixed?.length || 0;
+      const totalCredited = data.fixed?.reduce((s: number, f: FixedRecord) => s + f.credited_amount, 0) || 0;
+      toast.success(fixedCount > 0
+        ? `Fixed ${fixedCount} deposits — $${totalCredited.toFixed(2)} credited`
+        : `Checked ${data.total_checked} expired deposits — none need fixing`
+      );
+    } catch (err: any) {
+      toast.error(err.message || "Failed to fix expired deposits");
+    } finally {
+      setFixingExpired(false);
+    }
+  };
+
   const totalAnomalies = anomaliesDb.length + anomaliesNp.length;
 
   return (
@@ -127,14 +163,24 @@ const NpReconciliation = () => {
           <Scale className="w-5 h-5 text-primary" />
           <h3 className="text-sm font-semibold">NOWPayments Full Reconciliation</h3>
         </div>
-        <button
-          onClick={runAudit}
-          disabled={loading || isAuthenticated === false}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50"
-        >
-          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Scale className="w-3.5 h-3.5" />}
-          {loading ? "Fetching NP history..." : "Run Full Audit"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={fixExpiredDeposits}
+            disabled={fixingExpired || isAuthenticated === false}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent text-accent-foreground text-xs font-semibold hover:bg-accent/90 transition-all active:scale-95 disabled:opacity-50"
+          >
+            {fixingExpired ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <AlertTriangle className="w-3.5 h-3.5" />}
+            {fixingExpired ? "Checking NP..." : "Fix Expired"}
+          </button>
+          <button
+            onClick={runAudit}
+            disabled={loading || isAuthenticated === false}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Scale className="w-3.5 h-3.5" />}
+            {loading ? "Fetching NP history..." : "Run Full Audit"}
+          </button>
+        </div>
       </div>
 
       {isAuthenticated === false && (
@@ -406,6 +452,36 @@ const NpReconciliation = () => {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Fixed expired results */}
+      {fixedResults && (
+        <div className={`mt-4 rounded-lg p-3 ${fixedResults.fixed.length > 0 ? "bg-green-500/5 border border-green-500/20" : "bg-muted/30 border border-border"}`}>
+          <div className="flex items-center gap-2 mb-2">
+            {fixedResults.fixed.length > 0 ? (
+              <CheckCircle2 className="w-4 h-4 text-green-500" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
+            )}
+            <p className="text-xs font-semibold">
+              Checked {fixedResults.total_checked} expired deposits — {fixedResults.fixed.length} recovered, {fixedResults.skipped.length} skipped
+            </p>
+          </div>
+          {fixedResults.fixed.length > 0 && (
+            <div className="space-y-1.5">
+              {fixedResults.fixed.map((f) => (
+                <div key={f.tx_id} className="flex items-center justify-between text-xs bg-card rounded-lg px-3 py-2 border border-border">
+                  <span className="font-mono text-muted-foreground">{f.np_payment_id}</span>
+                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${f.status_set === "partial" ? "bg-yellow-500/10 text-yellow-500" : "bg-green-500/10 text-green-500"}`}>
+                    {f.status_set}
+                  </span>
+                  <span className="font-semibold text-green-500">+{fmt(f.credited_amount)}</span>
+                  <span className="text-muted-foreground">of {fmt(f.requested_amount)}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

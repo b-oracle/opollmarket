@@ -160,10 +160,150 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { action } = body; // "audit" or "apply"
+    const { action } = body; // "audit", "apply", or "fix_expired"
 
     // Step 1: Authenticate with NP
     const npJwt = await getNpJwt(npApiKey, npEmail, npPassword);
+
+    // Handle fix_expired action — check expired deposits against NP API
+    if (action === "fix_expired") {
+      // Get all expired deposits with NP payment IDs
+      const { data: expiredDeposits } = await adminClient
+        .from("transactions")
+        .select("id, user_id, amount, nowpayments_payment_id, created_at")
+        .eq("type", "deposit")
+        .eq("status", "expired")
+        .not("nowpayments_payment_id", "is", null)
+        .order("created_at");
+
+      if (!expiredDeposits || expiredDeposits.length === 0) {
+        return new Response(JSON.stringify({ action: "fix_expired", fixed: [], message: "No expired deposits with NP IDs found" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const fixed: Array<{
+        tx_id: string;
+        user_id: string;
+        np_payment_id: string;
+        np_status: string;
+        requested_amount: number;
+        credited_amount: number;
+        status_set: string;
+      }> = [];
+      const skipped: Array<{ np_payment_id: string; np_status: string }> = [];
+
+      for (const dep of expiredDeposits) {
+        // Query NP API for actual payment status
+        const npRes = await fetch(`${NP_API}/payment/${dep.nowpayments_payment_id}`, {
+          headers: { "x-api-key": npApiKey },
+        });
+
+        if (!npRes.ok) {
+          console.error(`NP API error for ${dep.nowpayments_payment_id}: ${npRes.status}`);
+          skipped.push({ np_payment_id: dep.nowpayments_payment_id!, np_status: "api_error" });
+          await new Promise((r) => setTimeout(r, 300));
+          continue;
+        }
+
+        const npPayment = await npRes.json();
+        const npStatus = npPayment.payment_status;
+
+        // Only fix partially_paid, finished, or confirmed payments
+        if (npStatus !== "partially_paid" && npStatus !== "finished" && npStatus !== "confirmed") {
+          skipped.push({ np_payment_id: dep.nowpayments_payment_id!, np_status: npStatus });
+          await new Promise((r) => setTimeout(r, 300));
+          continue;
+        }
+
+        const outcomeAmount = npPayment.outcome_amount || npPayment.actually_paid_at_fiat || npPayment.actually_paid || 0;
+        if (outcomeAmount <= 0) {
+          skipped.push({ np_payment_id: dep.nowpayments_payment_id!, np_status: `${npStatus}_zero_outcome` });
+          await new Promise((r) => setTimeout(r, 300));
+          continue;
+        }
+
+        const requestedAmount = Number(dep.amount);
+        const creditAmount = Number(outcomeAmount);
+        const isPartial = creditAmount < requestedAmount * 0.98;
+        const finalStatus = isPartial ? "partial" : "confirmed";
+
+        // Credit user balance
+        const { data: balance } = await adminClient
+          .from("balances")
+          .select("amount")
+          .eq("user_id", dep.user_id)
+          .eq("currency", "USDT")
+          .single();
+
+        if (balance) {
+          await adminClient
+            .from("balances")
+            .update({
+              amount: Number(balance.amount) + creditAmount,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("user_id", dep.user_id)
+            .eq("currency", "USDT");
+        }
+
+        // Update transaction
+        await adminClient
+          .from("transactions")
+          .update({ status: finalStatus, amount: creditAmount })
+          .eq("id", dep.id);
+
+        // Notify user
+        if (isPartial) {
+          const shortfall = requestedAmount - creditAmount;
+          await adminClient.from("notifications").insert({
+            user_id: dep.user_id,
+            title: "Partial Deposit Recovered ⚠️",
+            message: `$${creditAmount.toFixed(2)} of your $${requestedAmount.toFixed(2)} deposit has been credited. Remaining: $${shortfall.toFixed(2)}.`,
+            type: "deposit",
+          });
+        } else {
+          await adminClient.from("notifications").insert({
+            user_id: dep.user_id,
+            title: "Deposit Confirmed ✅",
+            message: `Your deposit of $${creditAmount.toFixed(2)} has been confirmed (recovered from expired).`,
+            type: "deposit",
+          });
+        }
+
+        // Settle debts
+        try {
+          await adminClient.rpc("settle_user_debts", { _user_id: dep.user_id });
+        } catch (e) {
+          console.error("Debt settlement error:", e);
+        }
+
+        // Audit log
+        await adminClient.from("audit_logs").insert({
+          actor_id: userId!,
+          action: "fix_expired_deposit",
+          target_type: "transaction",
+          target_id: dep.id,
+          details: { np_status: npStatus, credited: creditAmount, requested: requestedAmount, final_status: finalStatus },
+        });
+
+        fixed.push({
+          tx_id: dep.id,
+          user_id: dep.user_id,
+          np_payment_id: dep.nowpayments_payment_id!,
+          np_status: npStatus,
+          requested_amount: requestedAmount,
+          credited_amount: creditAmount,
+          status_set: finalStatus,
+        });
+
+        await new Promise((r) => setTimeout(r, 300));
+      }
+
+      return new Response(JSON.stringify({ action: "fix_expired", fixed, skipped, total_checked: expiredDeposits.length }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Step 2: Fetch ALL payments from NP
     const npPayments = await fetchAllNpPayments(npApiKey, npJwt);
