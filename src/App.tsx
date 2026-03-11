@@ -270,6 +270,7 @@ const App = () => (
                           <Route path="checklist" element={<AdminChecklist />} />
                           <Route path="audit-log" element={<AdminAuditLog />} />
                           <Route path="quick-trade" element={<AdminQuickTrade />} />
+                          <Route path="predictions" element={<AdminPredictions />} />
                           <Route path="social" element={<AdminSocial />} />
                         </Route>
                         <Route path="*" element={<NotFound />} />
