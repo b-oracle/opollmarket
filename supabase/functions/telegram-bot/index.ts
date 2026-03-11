@@ -971,9 +971,9 @@ async function handleQuickTrade(
     text:
       `⚡ <b>Quick Trade</b>\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `Predict if a crypto price goes 📈 UP or 📉 DOWN!\n\n` +
+      `Predict if a price goes 📈 UP or 📉 DOWN!\n\n` +
       `📊 <b>Live Prices</b>\n` +
-      `${priceList}\n` +
+      `${priceList}${marketHoursNote}\n` +
       `💰 Bet range: <b>$${minBet} – $${maxBet}</b>\n` +
       `⏱️ Round duration: <b>5 minutes</b>\n\n` +
       `Select an asset to trade:`,
