@@ -305,11 +305,8 @@ Deno.serve(async (req) => {
           const errText = await payoutRes.text();
           payoutError = errText;
 
-          // Detect 403 IP restriction — don't retry, fall through to pending
           if (payoutRes.status === 403) {
-            got403 = true;
-            console.warn("Payout blocked by IP restriction (403), falling back to manual approval");
-            break;
+            console.warn("Payout blocked by IP restriction (403)");
           }
 
           if ((payoutRes.status >= 500 || payoutRes.status === 429) && attempt < maxPayoutRetries) {
