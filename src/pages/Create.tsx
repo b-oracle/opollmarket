@@ -194,6 +194,7 @@ const Create = () => {
   const [swapModalOpen, setSwapModalOpen] = useState(false);
   const [showConnectors, setShowConnectors] = useState(false);
   const [feeBypass, setFeeBypass] = useState(false);
+  const [depositModalOpen, setDepositModalOpen] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
