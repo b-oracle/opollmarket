@@ -406,36 +406,41 @@ const Create = () => {
     setCreatedAsPending(false);
     setModerationReason("");
 
-    // Step 0a: AI similarity check
-    setSubmitStep("checking_similarity");
-    let isSimilar = false;
-    try {
-      const { data: simData, error: simError } = await supabase.functions.invoke("check-market-similarity", {
-        body: { title: title.trim(), description: description.trim() },
-      });
-      if (!simError && simData?.similar && simData.matches?.length > 0) {
-        isSimilar = true;
-        setSimilarMarkets(simData.matches);
-      }
-    } catch (err) {
-      console.error("Similarity check failed, proceeding:", err);
-    }
-
-    // Step 0b: AI content moderation
+    // Step 0: Run similarity check and content moderation in parallel
     setSubmitStep("moderating");
+    let isSimilar = false;
     let isFlagged = false;
-    try {
-      const { data: modData, error: modError } = await supabase.functions.invoke("moderate-market-content", {
+
+    const [simResult, modResult] = await Promise.allSettled([
+      supabase.functions.invoke("check-market-similarity", {
+        body: { title: title.trim(), description: description.trim() },
+      }),
+      supabase.functions.invoke("moderate-market-content", {
         body: {
           title: title.trim(),
           description: description.trim(),
           options: marketType !== "binary" ? options.filter(o => o.trim()) : undefined,
         },
-      });
+      }),
+    ]);
+
+    // Process similarity result
+    if (simResult.status === "fulfilled") {
+      const { data: simData, error: simError } = simResult.value;
+      if (!simError && simData?.similar && simData.matches?.length > 0) {
+        isSimilar = true;
+        setSimilarMarkets(simData.matches);
+      }
+    } else {
+      console.error("Similarity check failed, proceeding:", simResult.reason);
+    }
+
+    // Process moderation result
+    if (modResult.status === "fulfilled") {
+      const { data: modData, error: modError } = modResult.value;
       if (!modError && modData?.flagged) {
         isFlagged = true;
         setModerationReason(modData.reason || "Content flagged by AI moderation");
-        // Log to moderation dashboard
         await supabase.from("moderation_logs").insert({
           content_type: "market",
           user_id: user.id,
@@ -444,8 +449,8 @@ const Create = () => {
           category: modData.categories?.[0] || "content",
         });
       }
-    } catch (err) {
-      console.error("Moderation check failed, proceeding:", err);
+    } else {
+      console.error("Moderation check failed, proceeding:", modResult.reason);
     }
 
     // Step 1: Check and deduct balance
