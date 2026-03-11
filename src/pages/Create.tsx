@@ -228,6 +228,11 @@ const Create = () => {
     try { sessionStorage.setItem("create_options", JSON.stringify(options)); } catch {}
   }, [title, description, details, category, endDate, resolutionSource, initialLiquidity, step, marketType, options, videoUrl]);
 
+  const clearFormStorage = () => {
+    ["title", "description", "details", "category", "endDate", "resolutionSource", "initialLiquidity", "videoUrl", "step", "marketType", "options"]
+      .forEach((k) => { try { sessionStorage.removeItem(`create_${k}`); } catch {} });
+  };
+
   // Auto-resolve state
   const [autoResolve, setAutoResolve] = useState(false);
   const [autoResolveAsset, setAutoResolveAsset] = useState("BTC");
