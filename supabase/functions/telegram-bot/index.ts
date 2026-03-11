@@ -207,10 +207,11 @@ async function handleStart(token: string, chatId: number) {
           { text: "⚡ Quick Trade", callback_data: "cmd_quicktrade" },
         ],
         [
+          { text: "❓ FAQ", callback_data: "cmd_faq" },
           { text: "📖 Help", callback_data: "cmd_help" },
-          { text: "🌐 Open Web App", url: APP_URL },
         ],
         [
+          { text: "🌐 Open Web App", url: APP_URL },
           { text: "🐦 Follow us on X", url: "https://x.com/opollmarket" },
         ],
       ],
