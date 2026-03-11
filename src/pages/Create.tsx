@@ -2,6 +2,7 @@ import LogoLoader from "@/components/LogoLoader";
 import { useUserBalance } from "@/hooks/useUserBalance";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAccount } from "wagmi";
+import { useAppKit } from "@reown/appkit/react";
 import { useFilteredConnectors } from "@/hooks/useFilteredConnectors";
 import { useNavigate } from "react-router-dom";
 import { bsc } from "wagmi/chains";
@@ -128,6 +129,7 @@ const DetailsField = ({ details, setDetails, error, touched: fieldTouched, onBlu
 
 const Create = () => {
   const { address, isConnected } = useAccount();
+  const { open } = useAppKit();
   const { connect, connectors, isPending } = useFilteredConnectors();
   const { user, loading: authLoading, displayName } = useAuth();
   const navigate = useNavigate();
@@ -924,31 +926,15 @@ const Create = () => {
                   Connect your wallet to verify token holdings and unlock market creation.
                 </p>
 
-                {/* Connect buttons */}
+                {/* Connect button */}
                 <div className="space-y-2 pt-1">
-                  {connectors.length > 0 ? (
-                    connectors.map((connector) => (
-                      <button
-                        key={connector.uid}
-                        onClick={() => connect({ connector })}
-                        disabled={isPending}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground transition-all active:scale-95 disabled:opacity-50"
-                      >
-                        {isPending ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Wallet className="w-4 h-4" />
-                        )}
-                        {connector.name === "Injected" ? "Connect Wallet" : `Connect ${connector.name}`}
-                      </button>
-                    ))
-                  ) : (
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      No wallet detected. Open this page in a{" "}
-                      <span className="font-semibold text-foreground">wallet browser</span> (MetaMask, Trust Wallet, SafePal, Coinbase Wallet, Rabby, Binance Wallet, Bitget Wallet) or use a{" "}
-                      <span className="font-semibold text-foreground">desktop browser</span> with a Web3 wallet extension installed.
-                    </p>
-                  )}
+                  <button
+                    onClick={() => open()}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground transition-all active:scale-95"
+                  >
+                    <Wallet className="w-4 h-4" />
+                    Connect Wallet
+                  </button>
                 </div>
 
                 <div className="flex flex-wrap justify-center gap-2 pt-1">
