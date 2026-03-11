@@ -191,10 +191,12 @@ function QuickTradeChart({
       };
       const wickTop = yScale(payload.high);
       const wickBottom = yScale(payload.low);
+      const bodyWidth = Math.max(Math.min(width * 0.5, 6), 2);
+      const bodyX = x + (width - bodyWidth) / 2;
       return (
         <g>
-          <line x1={wickX} y1={wickTop} x2={wickX} y2={wickBottom} stroke={fill} strokeWidth={1} />
-          <rect x={x + 1} y={y} width={Math.max(width - 2, 2)} height={Math.max(height, 1)} fill={fill} rx={1} />
+          <line x1={wickX} y1={wickTop} x2={wickX} y2={wickBottom} stroke={fill} strokeWidth={0.75} strokeOpacity={0.8} />
+          <rect x={bodyX} y={y} width={bodyWidth} height={Math.max(height, 1)} fill={fill} rx={0.5} />
         </g>
       );
     };
