@@ -126,6 +126,39 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     };
   }, [initialTab, open]);
 
+  // Resume a pending deposit by fetching payment details
+  useEffect(() => {
+    if (!open || !resumePaymentId || !user) return;
+
+    const fetchPaymentDetails = async () => {
+      setStep("executing");
+      setErrorMsg("");
+      try {
+        const { data, error } = await supabase.functions.invoke("get-deposit-status", {
+          body: { payment_id: resumePaymentId },
+        });
+        if (error || data?.error) {
+          throw new Error(data?.error || error?.message || "Failed to fetch payment details");
+        }
+        setPaymentInfo({
+          payment_id: resumePaymentId,
+          pay_address: data.pay_address,
+          pay_amount: data.pay_amount,
+          pay_currency: data.pay_currency,
+          expiration_estimate_date: data.expiration_estimate_date,
+        });
+        setDepositCreatedAt(new Date(data.created_at).getTime());
+        setStep("awaiting_payment");
+        startPolling(resumePaymentId);
+      } catch (err: any) {
+        setErrorMsg(err.message || "Could not load payment details");
+        setStep("error");
+      }
+    };
+
+    fetchPaymentDetails();
+  }, [open, resumePaymentId, user]);
+
   // Countdown timer for deposit expiry (2 hours)
   useEffect(() => {
     if (step !== "awaiting_payment" || !depositCreatedAt) {
