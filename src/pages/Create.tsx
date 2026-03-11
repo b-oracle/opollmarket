@@ -1871,7 +1871,7 @@ const Create = () => {
                 </div>
               )}
 
-              {(submitStep === "checking_similarity" || submitStep === "moderating" || submitStep === "deploying" || submitStep === "saving") && (
+              {(submitStep === "moderating" || submitStep === "deploying" || submitStep === "saving") && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -1879,27 +1879,22 @@ const Create = () => {
                 >
                   <LogoLoader size="lg" />
                   <h3 className="text-base font-bold mt-3 mb-1">
-                    {submitStep === "checking_similarity"
-                      ? "Checking for Duplicates..."
-                      : submitStep === "moderating"
-                      ? "Moderating Content..."
+                    {submitStep === "moderating"
+                      ? "Running AI Checks..."
                       : submitStep === "deploying"
                       ? "Deploying Contract..."
                       : "Saving to Database..."}
                   </h3>
                   <p className="text-xs text-muted-foreground text-center">
-                    {submitStep === "checking_similarity"
-                      ? "Using AI to verify your market is unique..."
-                      : submitStep === "moderating"
-                      ? "Checking content for policy compliance..."
+                    {submitStep === "moderating"
+                      ? "Checking similarity & content moderation..."
                       : submitStep === "deploying"
                       ? "Deploying your prediction market contract on BSC. Please confirm in your wallet."
                       : "Storing market data and linking contract address..."}
                   </p>
                   <div className="mt-4 space-y-2 w-full max-w-xs">
                     {[
-                      { label: "Checking for similar markets", done: submitStep !== "checking_similarity" },
-                      { label: "Content moderation", done: submitStep !== "checking_similarity" && submitStep !== "moderating" },
+                      { label: "AI similarity & moderation", done: submitStep !== "moderating" },
                       { label: "Preparing contract", done: submitStep === "saving" },
                       { label: "Awaiting wallet signature", done: submitStep === "saving" },
                       { label: "Broadcasting transaction", done: submitStep === "saving" },
