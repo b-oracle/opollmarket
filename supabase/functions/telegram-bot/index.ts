@@ -297,8 +297,9 @@ async function handleHelp(token: string, chatId: number) {
       "  /portfolio — View your positions\n" +
       "  /balance — Check your balance\n\n" +
       "⚡ <b>Quick Trade</b>\n" +
-      "  /quicktrade — Predict crypto prices\n\n" +
+      "  /quicktrade — Predict asset prices\n\n" +
       "📈 <b>Info</b>\n" +
+      "  /faq — Ask the FAQ assistant\n" +
       "  /stats — Platform statistics\n" +
       "  /help — Show this message",
     parse_mode: "HTML",
