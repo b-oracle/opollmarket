@@ -854,23 +854,43 @@ async function handleQuickTrade(
 
   const assetEmojis: Record<string, string> = {
     BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
+    XAU: "🥇", XAG: "🥈", XPT: "⚪", XPD: "🔘",
+    "EUR/USD": "🇪🇺", "GBP/USD": "🇬🇧", "USD/JPY": "🇯🇵", "AUD/USD": "🇦🇺",
+    "USD/CAD": "🇨🇦", "USD/CHF": "🇨🇭", "NZD/USD": "🇳🇿", "EUR/GBP": "💱",
   };
 
-  // Fetch live prices for all enabled assets
-  const prices = await fetchCryptoPrices(assets.slice(0, 6));
+  // Separate crypto and non-crypto for price fetching
+  const cryptoAssets = assets.filter((a: string) => !isForexAsset(a) && !isCommodityAsset(a));
+  const prices = await fetchCryptoPrices(cryptoAssets.slice(0, 12));
+
+  // Fetch forex/commodity prices individually
+  for (const asset of assets) {
+    if (isForexAsset(asset) || isCommodityAsset(asset)) {
+      const p = await getAssetPrice(asset);
+      if (p) prices[asset] = p.price;
+    }
+  }
 
   let priceList = "";
-  for (const asset of assets.slice(0, 6)) {
+  for (const asset of assets.slice(0, 10)) {
     const emoji = assetEmojis[asset] || "📊";
     const price = prices[asset];
     priceList += price
-      ? `${emoji} <b>${asset}</b>: ${formatPrice(price)}\n`
+      ? `${emoji} <b>${asset}</b>: ${isForexAsset(asset) ? price.toFixed(4) : formatPrice(price)}\n`
       : `${emoji} <b>${asset}</b>\n`;
   }
 
-  const buttons = assets.slice(0, 6).map((asset: string) => {
+  // Market hours notice for forex
+  const forexOpen = isForexMarketOpen();
+  const hasForex = assets.some((a: string) => isForexAsset(a) || isCommodityAsset(a));
+  let marketHoursNote = "";
+  if (hasForex && !forexOpen) {
+    marketHoursNote = "\n🌙 <i>Forex & Commodity markets are closed. Opens Sunday 5:00 PM ET.</i>\n";
+  }
+
+  const buttons = assets.slice(0, 10).map((asset: string) => {
     const price = prices[asset];
-    const priceLabel = price ? ` ${formatPrice(price)}` : "";
+    const priceLabel = price ? ` ${isForexAsset(asset) ? price.toFixed(4) : formatPrice(price)}` : "";
     return {
       text: `${assetEmojis[asset] || "📊"} ${asset}${priceLabel}`,
       callback_data: `qt_asset_${asset}`,
