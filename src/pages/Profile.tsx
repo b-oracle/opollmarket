@@ -27,13 +27,18 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import CopyTradeStats from "@/components/CopyTradeStats";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 
-type TxType = "buy" | "sell" | "deposit" | "withdraw";
+type TxType = "buy" | "sell" | "deposit" | "withdraw" | "withdrawal" | "commission" | "payout" | "refund" | "initial_liquidity";
 
 const txConfig: Record<TxType, { icon: typeof ArrowUpRight; label: string; colorClass: string }> = {
-  buy: { icon: ArrowDownLeft, label: "Buy", colorClass: "text-primary bg-primary/10" },
+  buy: { icon: ArrowDownLeft, label: "Prediction", colorClass: "text-primary bg-primary/10" },
   sell: { icon: ArrowUpRight, label: "Sell", colorClass: "text-destructive bg-destructive/10" },
   deposit: { icon: ArrowDownToLine, label: "Deposit", colorClass: "text-primary bg-primary/10" },
-  withdraw: { icon: ArrowUpFromLine, label: "Withdraw", colorClass: "text-muted-foreground bg-muted" },
+  withdraw: { icon: ArrowUpFromLine, label: "Withdrawal", colorClass: "text-muted-foreground bg-muted" },
+  withdrawal: { icon: ArrowUpFromLine, label: "Withdrawal", colorClass: "text-muted-foreground bg-muted" },
+  commission: { icon: BarChart3, label: "Commission", colorClass: "text-amber-500 bg-amber-500/10" },
+  payout: { icon: Gift, label: "Payout", colorClass: "text-green-500 bg-green-500/10" },
+  refund: { icon: Repeat, label: "Refund", colorClass: "text-blue-500 bg-blue-500/10" },
+  initial_liquidity: { icon: Sparkles, label: "Market Liquidity", colorClass: "text-amber-500 bg-amber-500/10" },
 };
 
 const formatTimeAgo = (date: string) => {
@@ -596,7 +601,7 @@ const Profile = () => {
     }
     let result = transactions;
     if (txFilter === "trades") result = result.filter((t: any) => t.type === "buy" || t.type === "sell");
-    else if (txFilter === "deposits") result = result.filter((t: any) => t.type === "deposit" || t.type === "withdraw");
+    else if (txFilter === "deposits") result = result.filter((t: any) => t.type === "deposit" || t.type === "withdraw" || t.type === "withdrawal");
     if (statusFilter !== "all") {
       result = result.filter((t: any) =>
         statusFilter === "failed" ? (t.status === "failed" || t.status === "expired") : t.status === statusFilter
@@ -1307,7 +1312,8 @@ const Profile = () => {
               }
 
               // Regular transaction rendering
-              const cfg = txConfig[tx.type as TxType] || txConfig.buy;
+              const txKey: TxType = (tx.type === "buy" && tx.side === "initial_liquidity") ? "initial_liquidity" : (tx.type as TxType);
+              const cfg = txConfig[txKey] || txConfig.buy;
               const Icon = cfg.icon;
               return (
                 <motion.div key={tx.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
@@ -1324,7 +1330,7 @@ const Profile = () => {
                             📋 Copied
                           </span>
                         )}
-                        {tx.side && (
+                        {tx.side && tx.side !== "initial_liquidity" && (tx.type === "buy" || tx.type === "sell") && (
                           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${tx.side === "yes" ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive"}`}>
                             {tx.side.toUpperCase()}
                           </span>
@@ -1341,8 +1347,8 @@ const Profile = () => {
                           {tx.status === "confirmed" ? "✓ Confirmed" : tx.status === "pending" ? "⏳ Pending" : tx.status === "failed" ? "✗ Failed" : tx.status === "expired" ? "✗ Expired" : tx.status}
                         </span>
                       </div>
-                      <span className={`text-sm font-bold ${tx.type === "buy" || tx.type === "withdraw" ? "text-destructive" : "text-primary"}`}>
-                        {tx.type === "sell" || tx.type === "deposit" ? "+" : "-"}${Number(tx.amount).toFixed(2)}
+                      <span className={`text-sm font-bold ${["sell", "deposit", "payout", "refund"].includes(tx.type) ? "text-green-500" : "text-destructive"}`}>
+                        {["sell", "deposit", "payout", "refund"].includes(tx.type) ? "+" : "-"}${Number(tx.amount).toFixed(2)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
