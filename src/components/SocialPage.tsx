@@ -362,18 +362,58 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
 
               {activeTab === "suggestions" && (
                 <div className="space-y-1.5">
-                  <p className="text-xs text-muted-foreground px-1 mb-2">Active traders you might want to follow</p>
-                  {loadingSuggestions ? (
-                    <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
-                  ) : suggestions.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Sparkles className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">No suggestions right now</p>
-                    </div>
+                  {/* Search bar */}
+                  <div className="relative mb-3">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search users by name..."
+                      value={searchQuery}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      className="pl-9 pr-9 h-10 rounded-xl bg-muted/50 border-border/50 text-sm"
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => { setSearchQuery(""); setDebouncedSearch(""); }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Search results or suggestions */}
+                  {debouncedSearch.length >= 2 ? (
+                    <>
+                      <p className="text-xs text-muted-foreground px-1 mb-2">
+                        Search results for "{debouncedSearch}"
+                      </p>
+                      {loadingSearch ? (
+                        <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                      ) : searchResults.length === 0 ? (
+                        <div className="text-center py-12">
+                          <Search className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">No users found</p>
+                        </div>
+                      ) : (
+                        searchResults.map((s: any, i: number) => renderUserRow(s.id, s, i))
+                      )}
+                    </>
                   ) : (
                     <>
-                      {paginatedSuggestions.map((s: any, i: number) => renderUserRow(s.id, s, i))}
-                      <PaginationControls page={suggestionsPage} totalPages={suggestionsTotalPages} setPage={setSuggestionsPage} />
+                      <p className="text-xs text-muted-foreground px-1 mb-2">Active traders you might want to follow</p>
+                      {loadingSuggestions ? (
+                        <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                      ) : suggestions.length === 0 ? (
+                        <div className="text-center py-12">
+                          <Sparkles className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">No suggestions right now</p>
+                        </div>
+                      ) : (
+                        <>
+                          {paginatedSuggestions.map((s: any, i: number) => renderUserRow(s.id, s, i))}
+                          <PaginationControls page={suggestionsPage} totalPages={suggestionsTotalPages} setPage={setSuggestionsPage} />
+                        </>
+                      )}
                     </>
                   )}
                 </div>
