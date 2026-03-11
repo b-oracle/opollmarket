@@ -68,6 +68,50 @@ export type Database = {
         }
         Relationships: []
       }
+      balance_debts: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          market_id: string | null
+          reason: string
+          settled_amount: number
+          settled_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          market_id?: string | null
+          reason?: string
+          settled_amount?: number
+          settled_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          market_id?: string | null
+          reason?: string
+          settled_amount?: number
+          settled_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "balance_debts_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       balances: {
         Row: {
           amount: number
@@ -1643,6 +1687,7 @@ export type Database = {
               error: true
             } & "Could not choose the best candidate function between: public.is_valid_referral_code(_code => text), public.is_valid_referral_code(_code => uuid). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
           }
+      settle_user_debts: { Args: { _user_id: string }; Returns: Json }
       update_trending_markets: { Args: never; Returns: undefined }
     }
     Enums: {
