@@ -1434,13 +1434,13 @@ const Profile = () => {
                             )}
                             <div><span className="text-muted-foreground">Amount</span><p className="font-semibold">${Number(tx.amount).toFixed(2)}</p></div>
                             {tx.nowpayments_payment_id && (
-                              <div className="col-span-2"><span className="text-muted-foreground">Payment ID</span><p className="font-mono text-[10px] text-muted-foreground truncate">{tx.nowpayments_payment_id}</p></div>
+                              <div className="col-span-2"><span className="text-muted-foreground">Payment ID</span><div className="flex items-center gap-1"><p className="font-mono text-[10px] text-muted-foreground truncate">{tx.nowpayments_payment_id}</p><button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(tx.nowpayments_payment_id); toast.success("Payment ID copied"); }} className="shrink-0 p-0.5 rounded hover:bg-muted/50"><Copy className="w-3 h-3 text-muted-foreground" /></button></div></div>
                             )}
                             {tx.tx_hash && (
-                              <div className="col-span-2"><span className="text-muted-foreground">Tx Hash</span><p className="font-mono text-[10px] text-muted-foreground truncate">{tx.tx_hash}</p></div>
+                              <div className="col-span-2"><span className="text-muted-foreground">Tx Hash</span><div className="flex items-center gap-1"><p className="font-mono text-[10px] text-muted-foreground truncate">{tx.tx_hash}</p><button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(tx.tx_hash); toast.success("Tx hash copied"); }} className="shrink-0 p-0.5 rounded hover:bg-muted/50"><Copy className="w-3 h-3 text-muted-foreground" /></button></div></div>
                             )}
                             <div className="col-span-2"><span className="text-muted-foreground">Date</span><p className="font-semibold">{new Date(tx.created_at).toLocaleString()}</p></div>
-                            <div className="col-span-2"><span className="text-muted-foreground">Transaction ID</span><p className="font-mono text-[10px] text-muted-foreground truncate">{tx.id}</p></div>
+                            <div className="col-span-2"><span className="text-muted-foreground">Transaction ID</span><div className="flex items-center gap-1"><p className="font-mono text-[10px] text-muted-foreground truncate">{tx.id}</p><button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(tx.id); toast.success("Transaction ID copied"); }} className="shrink-0 p-0.5 rounded hover:bg-muted/50"><Copy className="w-3 h-3 text-muted-foreground" /></button></div></div>
                           </div>
                         </motion.div>
                       )}
