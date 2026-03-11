@@ -1117,6 +1117,7 @@ async function handleBetConfirm(
         amount,
         price: priceInCents,
         shares,
+        userId,
       }),
     });
 
