@@ -77,6 +77,69 @@ function formatPrice(price: number): string {
   return `$${price.toFixed(8)}`;
 }
 
+// ── Commodity price helpers ──
+const COMMODITY_SYMBOLS: Record<string, string> = {
+  XAU: "Gold", XAG: "Silver", XPT: "Platinum", XPD: "Palladium",
+};
+
+async function fetchCommodityPrice(symbol: string): Promise<{ price: number } | null> {
+  try {
+    const apiKey = Deno.env.get("OMKAR_COMMODITY_API_KEY");
+    if (!apiKey) return null;
+    const r = await fetch(`https://api.metals.dev/v1/latest?api_key=${apiKey}&currency=USD&unit=toz`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    const metalMap: Record<string, string> = { XAU: "gold", XAG: "silver", XPT: "platinum", XPD: "palladium" };
+    const key = metalMap[symbol];
+    if (key && data.metals?.[key]) return { price: data.metals[key] };
+    return null;
+  } catch { return null; }
+}
+
+// ── Forex price helpers ──
+function isForexAsset(symbol: string): boolean {
+  return symbol.includes("/");
+}
+
+function isCommodityAsset(symbol: string): boolean {
+  return !!COMMODITY_SYMBOLS[symbol];
+}
+
+async function fetchForexPrice(pair: string): Promise<{ price: number } | null> {
+  const [from, to] = pair.split("/");
+  if (!from || !to) return null;
+  try {
+    const r = await fetch(`https://api.frankfurter.app/latest?from=${from}&to=${to}`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    if (data.rates?.[to]) return { price: data.rates[to] };
+    return null;
+  } catch { return null; }
+}
+
+/** Forex & commodity markets: open Sunday 17:00 ET → Friday 17:00 ET */
+function isForexMarketOpen(): boolean {
+  const etStr = new Date().toLocaleString("en-US", { timeZone: "America/New_York" });
+  const et = new Date(etStr);
+  const day = et.getDay();
+  const hour = et.getHours();
+  if (day === 6) return false;
+  if (day === 0) return hour >= 17;
+  if (day === 5) return hour < 17;
+  return true;
+}
+
+async function getAssetPrice(symbol: string): Promise<{ price: number; change24h?: number } | null> {
+  if (isForexAsset(symbol)) return fetchForexPrice(symbol);
+  if (isCommodityAsset(symbol)) return fetchCommodityPrice(symbol);
+  return fetchCryptoPrice(symbol);
+}
+
+function formatAssetPrice(symbol: string, price: number): string {
+  if (isForexAsset(symbol)) return price.toFixed(4);
+  return formatPrice(price);
+}
+
 const APP_URL = "https://opoll.org";
 
 Deno.serve(async (req) => {
