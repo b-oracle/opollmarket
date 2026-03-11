@@ -1532,6 +1532,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      deduct_market_liquidity: {
+        Args: {
+          _bonus_for_fee?: number
+          _fee_amount?: number
+          _liquidity_amount: number
+          _user_id: string
+        }
+        Returns: Json
+      }
       expire_stale_pending_deposits: { Args: never; Returns: undefined }
       get_copy_trade_stats: {
         Args: { _trader_id: string }
