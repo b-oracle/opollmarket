@@ -330,6 +330,11 @@ async function handleLinkSession(
     .single();
 
   if (session) {
+    // Skip sessions used for custom amounts or FAQ — let their handlers process
+    if (session.email.startsWith("qt_custom:") || session.email.startsWith("mkt_custom:") || session.email.startsWith("faq:")) {
+      return false;
+    }
+
     // This is the password step — delete the password message immediately
     try {
       await tg(token, "deleteMessage", { chat_id: chatId, message_id: messageId });
