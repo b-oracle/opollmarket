@@ -105,6 +105,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (event === "SIGNED_IN") {
           localStorage.removeItem("social_swipe_used");
           localStorage.removeItem("feed_swipe_hint_seen");
+          // Recheck verification level in background (catches stale badges)
+          supabase.functions.invoke("update-verification").catch(() => {});
         }
 
         lastSessionRef.current = newSession;
