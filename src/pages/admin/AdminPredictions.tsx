@@ -50,12 +50,12 @@ const AdminPredictions = () => {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const fetchPaginated = async (table: string, select: string, filters?: (q: any) => any) => {
+      const fetchPaginated = async (table: "transactions" | "markets", select: string, filters?: (q: any) => any) => {
         let allData: any[] = [];
         let page = 0;
         let hasMore = true;
         while (hasMore) {
-          let q = supabase.from(table).select(select).order("created_at", { ascending: false }).range(page * 1000, (page + 1) * 1000 - 1);
+          let q = (supabase.from(table) as any).select(select).order("created_at", { ascending: false }).range(page * 1000, (page + 1) * 1000 - 1);
           if (filters) q = filters(q);
           const { data } = await q;
           if (data && data.length > 0) {
