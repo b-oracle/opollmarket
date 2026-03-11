@@ -1421,7 +1421,7 @@ const Profile = () => {
                         >
                           <div className="mt-3 pt-3 border-t border-border/50 grid grid-cols-2 gap-2 text-[11px]">
                             {marketTitle && (
-                              <div className="col-span-2"><span className="text-muted-foreground">Market</span><p className="font-semibold truncate">{marketTitle}</p></div>
+                              <div className="col-span-2"><span className="text-muted-foreground">Market</span><p className="font-semibold truncate">{tx.market_id ? <span className="text-primary underline cursor-pointer" onClick={(e) => { e.stopPropagation(); navigate(`/market/${tx.market_id}`); }}>{marketTitle}</span> : marketTitle}</p></div>
                             )}
                             {(tx.type === "buy" || tx.type === "sell") && tx.side && tx.side !== "initial_liquidity" && (
                               <div><span className="text-muted-foreground">Side</span><p className="font-semibold">{tx.side.toUpperCase()}</p></div>
