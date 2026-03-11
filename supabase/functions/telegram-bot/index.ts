@@ -246,7 +246,10 @@ async function handleHelp(token: string, chatId: number) {
           { text: "💰 Balance", callback_data: "cmd_balance" },
         ],
         [
+          { text: "❓ FAQ", callback_data: "cmd_faq" },
           { text: "🌐 Open Web App", url: APP_URL },
+        ],
+        [
           { text: "🐦 Follow on X", url: "https://x.com/opollmarket" },
         ],
         [
