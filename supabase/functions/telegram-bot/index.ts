@@ -77,6 +77,69 @@ function formatPrice(price: number): string {
   return `$${price.toFixed(8)}`;
 }
 
+// ── Commodity price helpers ──
+const COMMODITY_SYMBOLS: Record<string, string> = {
+  XAU: "Gold", XAG: "Silver", XPT: "Platinum", XPD: "Palladium",
+};
+
+async function fetchCommodityPrice(symbol: string): Promise<{ price: number } | null> {
+  try {
+    const apiKey = Deno.env.get("OMKAR_COMMODITY_API_KEY");
+    if (!apiKey) return null;
+    const r = await fetch(`https://api.metals.dev/v1/latest?api_key=${apiKey}&currency=USD&unit=toz`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    const metalMap: Record<string, string> = { XAU: "gold", XAG: "silver", XPT: "platinum", XPD: "palladium" };
+    const key = metalMap[symbol];
+    if (key && data.metals?.[key]) return { price: data.metals[key] };
+    return null;
+  } catch { return null; }
+}
+
+// ── Forex price helpers ──
+function isForexAsset(symbol: string): boolean {
+  return symbol.includes("/");
+}
+
+function isCommodityAsset(symbol: string): boolean {
+  return !!COMMODITY_SYMBOLS[symbol];
+}
+
+async function fetchForexPrice(pair: string): Promise<{ price: number } | null> {
+  const [from, to] = pair.split("/");
+  if (!from || !to) return null;
+  try {
+    const r = await fetch(`https://api.frankfurter.app/latest?from=${from}&to=${to}`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    if (data.rates?.[to]) return { price: data.rates[to] };
+    return null;
+  } catch { return null; }
+}
+
+/** Forex & commodity markets: open Sunday 17:00 ET → Friday 17:00 ET */
+function isForexMarketOpen(): boolean {
+  const etStr = new Date().toLocaleString("en-US", { timeZone: "America/New_York" });
+  const et = new Date(etStr);
+  const day = et.getDay();
+  const hour = et.getHours();
+  if (day === 6) return false;
+  if (day === 0) return hour >= 17;
+  if (day === 5) return hour < 17;
+  return true;
+}
+
+async function getAssetPrice(symbol: string): Promise<{ price: number; change24h?: number } | null> {
+  if (isForexAsset(symbol)) return fetchForexPrice(symbol);
+  if (isCommodityAsset(symbol)) return fetchCommodityPrice(symbol);
+  return fetchCryptoPrice(symbol);
+}
+
+function formatAssetPrice(symbol: string, price: number): string {
+  if (isForexAsset(symbol)) return price.toFixed(4);
+  return formatPrice(price);
+}
+
 const APP_URL = "https://opoll.org";
 
 Deno.serve(async (req) => {
@@ -145,6 +208,8 @@ Deno.serve(async (req) => {
       await handleUnlink(token, supabase, chatId);
     } else if (text === "/stats") {
       await handleStats(token, supabase, chatId);
+    } else if (text === "/faq") {
+      await handleFaqStart(token, supabase, chatId);
     } else if (text === "/cancel") {
       // Cancel any pending link session
       await supabase.from("telegram_link_sessions").delete().eq("chat_id", chatId);
@@ -159,10 +224,14 @@ Deno.serve(async (req) => {
         // Check if this is a custom QT amount (number input)
         const qtHandled = await handleQTCustomInput(token, supabase, chatId, text);
         if (!qtHandled) {
-          await tg(token, "sendMessage", {
-            chat_id: chatId,
-            text: "Unknown command. Type /help to see available commands.",
-          });
+          // Check if this is a FAQ question
+          const faqHandled = await handleFaqSession(token, supabase, chatId, text);
+          if (!faqHandled) {
+            await tg(token, "sendMessage", {
+              chat_id: chatId,
+              text: "Unknown command. Type /help to see available commands.",
+            });
+          }
         }
       }
     }
@@ -201,10 +270,11 @@ async function handleStart(token: string, chatId: number) {
           { text: "⚡ Quick Trade", callback_data: "cmd_quicktrade" },
         ],
         [
+          { text: "❓ FAQ", callback_data: "cmd_faq" },
           { text: "📖 Help", callback_data: "cmd_help" },
-          { text: "🌐 Open Web App", url: APP_URL },
         ],
         [
+          { text: "🌐 Open Web App", url: APP_URL },
           { text: "🐦 Follow us on X", url: "https://x.com/opollmarket" },
         ],
       ],
@@ -227,8 +297,9 @@ async function handleHelp(token: string, chatId: number) {
       "  /portfolio — View your positions\n" +
       "  /balance — Check your balance\n\n" +
       "⚡ <b>Quick Trade</b>\n" +
-      "  /quicktrade — Predict crypto prices\n\n" +
+      "  /quicktrade — Predict asset prices\n\n" +
       "📈 <b>Info</b>\n" +
+      "  /faq — Ask the FAQ assistant\n" +
       "  /stats — Platform statistics\n" +
       "  /help — Show this message",
     parse_mode: "HTML",
@@ -239,7 +310,10 @@ async function handleHelp(token: string, chatId: number) {
           { text: "💰 Balance", callback_data: "cmd_balance" },
         ],
         [
+          { text: "❓ FAQ", callback_data: "cmd_faq" },
           { text: "🌐 Open Web App", url: APP_URL },
+        ],
+        [
           { text: "🐦 Follow on X", url: "https://x.com/opollmarket" },
         ],
         [
@@ -330,6 +404,11 @@ async function handleLinkSession(
     .single();
 
   if (session) {
+    // Skip sessions used for custom amounts or FAQ — let their handlers process
+    if (session.email.startsWith("qt_custom:") || session.email.startsWith("mkt_custom:") || session.email.startsWith("faq:")) {
+      return false;
+    }
+
     // This is the password step — delete the password message immediately
     try {
       await tg(token, "deleteMessage", { chat_id: chatId, message_id: messageId });
@@ -839,23 +918,43 @@ async function handleQuickTrade(
 
   const assetEmojis: Record<string, string> = {
     BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
+    XAU: "🥇", XAG: "🥈", XPT: "⚪", XPD: "🔘",
+    "EUR/USD": "🇪🇺", "GBP/USD": "🇬🇧", "USD/JPY": "🇯🇵", "AUD/USD": "🇦🇺",
+    "USD/CAD": "🇨🇦", "USD/CHF": "🇨🇭", "NZD/USD": "🇳🇿", "EUR/GBP": "💱",
   };
 
-  // Fetch live prices for all enabled assets
-  const prices = await fetchCryptoPrices(assets.slice(0, 6));
+  // Separate crypto and non-crypto for price fetching
+  const cryptoAssets = assets.filter((a: string) => !isForexAsset(a) && !isCommodityAsset(a));
+  const prices = await fetchCryptoPrices(cryptoAssets.slice(0, 12));
+
+  // Fetch forex/commodity prices individually
+  for (const asset of assets) {
+    if (isForexAsset(asset) || isCommodityAsset(asset)) {
+      const p = await getAssetPrice(asset);
+      if (p) prices[asset] = p.price;
+    }
+  }
 
   let priceList = "";
-  for (const asset of assets.slice(0, 6)) {
+  for (const asset of assets.slice(0, 10)) {
     const emoji = assetEmojis[asset] || "📊";
     const price = prices[asset];
     priceList += price
-      ? `${emoji} <b>${asset}</b>: ${formatPrice(price)}\n`
+      ? `${emoji} <b>${asset}</b>: ${isForexAsset(asset) ? price.toFixed(4) : formatPrice(price)}\n`
       : `${emoji} <b>${asset}</b>\n`;
   }
 
-  const buttons = assets.slice(0, 6).map((asset: string) => {
+  // Market hours notice for forex
+  const forexOpen = isForexMarketOpen();
+  const hasForex = assets.some((a: string) => isForexAsset(a) || isCommodityAsset(a));
+  let marketHoursNote = "";
+  if (hasForex && !forexOpen) {
+    marketHoursNote = "\n🌙 <i>Forex & Commodity markets are closed. Opens Sunday 5:00 PM ET.</i>\n";
+  }
+
+  const buttons = assets.slice(0, 10).map((asset: string) => {
     const price = prices[asset];
-    const priceLabel = price ? ` ${formatPrice(price)}` : "";
+    const priceLabel = price ? ` ${isForexAsset(asset) ? price.toFixed(4) : formatPrice(price)}` : "";
     return {
       text: `${assetEmojis[asset] || "📊"} ${asset}${priceLabel}`,
       callback_data: `qt_asset_${asset}`,
@@ -873,9 +972,9 @@ async function handleQuickTrade(
     text:
       `⚡ <b>Quick Trade</b>\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `Predict if a crypto price goes 📈 UP or 📉 DOWN!\n\n` +
+      `Predict if a price goes 📈 UP or 📉 DOWN!\n\n` +
       `📊 <b>Live Prices</b>\n` +
-      `${priceList}\n` +
+      `${priceList}${marketHoursNote}\n` +
       `💰 Bet range: <b>$${minBet} – $${maxBet}</b>\n` +
       `⏱️ Round duration: <b>5 minutes</b>\n\n` +
       `Select an asset to trade:`,
@@ -918,17 +1017,20 @@ async function handleCallback(
   } else if (data === "cmd_quicktrade") {
     await handleQuickTrade(token, supabase, chatId);
     return;
+  } else if (data === "cmd_faq") {
+    await handleFaqStart(token, supabase, chatId);
+    return;
   }
 
   if (data.startsWith("mktpage_")) {
     const page = parseInt(data.replace("mktpage_", ""), 10) || 0;
     await handleMarkets(token, supabase, chatId, page);
+  } else if (data.startsWith("mkt_cust_")) {
+    await handleMarketCustomAmount(token, supabase, chatId, data);
   } else if (data.startsWith("mkt_")) {
     await handleMarketDetail(token, supabase, chatId, data);
   } else if (data.startsWith("bet_") || data.startsWith("b_")) {
     await handleBetConfirm(token, supabase, chatId, data);
-  } else if (data.startsWith("mkt_cust_")) {
-    await handleMarketCustomAmount(token, supabase, chatId, data);
   } else if (data.startsWith("qt_asset_")) {
     await handleQTAssetSelected(token, chatId, data);
   } else if (data.startsWith("qt_custom_")) {
@@ -1112,6 +1214,7 @@ async function handleBetConfirm(
         amount,
         price: priceInCents,
         shares,
+        userId,
       }),
     });
 
@@ -1333,25 +1436,64 @@ async function handleQTAssetSelected(token: string, chatId: number, data: string
 
   const assetEmojis: Record<string, string> = {
     BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
+    XAU: "🥇", XAG: "🥈", XPT: "⚪", XPD: "🔘",
+    "EUR/USD": "🇪🇺", "GBP/USD": "🇬🇧", "USD/JPY": "🇯🇵", "AUD/USD": "🇦🇺",
+    "USD/CAD": "🇨🇦", "USD/CHF": "🇨🇭", "NZD/USD": "🇳🇿", "EUR/GBP": "💱",
   };
 
-  const chartUrl = `${APP_URL}/quick-trade?asset=${asset}`;
+  const isForex = isForexAsset(asset);
+  const isCommodity = isCommodityAsset(asset);
+  const needsMarketHours = isForex || isCommodity;
 
-  // Fetch live price with 24h change
-  const priceData = await fetchCryptoPrice(asset);
+  // Market hours check
+  if (needsMarketHours && !isForexMarketOpen()) {
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text:
+        `🌙 <b>Market Closed</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `${assetEmojis[asset] || "📊"} <b>${asset}</b> trading is currently closed.\n\n` +
+        `🕐 <b>Trading hours:</b>\n` +
+        `Sunday 5:00 PM ET → Friday 5:00 PM ET\n\n` +
+        `Try a crypto asset instead — they trade 24/7!`,
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "⬅️ Back to Assets", callback_data: "cmd_quicktrade" }],
+          [{ text: "🏠 Home", callback_data: "cmd_home" }],
+        ],
+      },
+    });
+    return;
+  }
+
+  const chartUrl = `${APP_URL}/quick-trade?asset=${encodeURIComponent(asset)}`;
+
+  // Fetch live price
+  const priceData = await getAssetPrice(asset);
   let priceText = "";
   if (priceData) {
-    const changeEmoji = priceData.change24h >= 0 ? "🟢" : "🔴";
-    const changeSign = priceData.change24h >= 0 ? "+" : "";
-    priceText =
-      `\n💲 <b>Current Price</b>: ${formatPrice(priceData.price)}\n` +
-      `${changeEmoji} <b>24h Change</b>: ${changeSign}${priceData.change24h.toFixed(2)}%\n`;
+    priceText = `\n💲 <b>Current Price</b>: ${formatAssetPrice(asset, priceData.price)}\n`;
+    if (priceData.change24h !== undefined) {
+      const changeEmoji = priceData.change24h >= 0 ? "🟢" : "🔴";
+      const changeSign = priceData.change24h >= 0 ? "+" : "";
+      priceText += `${changeEmoji} <b>24h Change</b>: ${changeSign}${priceData.change24h.toFixed(2)}%\n`;
+    }
+  }
+
+  // Build TradingView URL based on asset type
+  let tvUrl = `https://www.tradingview.com/chart/?symbol=BINANCE:${asset}USDT`;
+  if (isForex) {
+    tvUrl = `https://www.tradingview.com/chart/?symbol=FX:${asset.replace("/", "")}`;
+  } else if (isCommodity) {
+    const tvMap: Record<string, string> = { XAU: "XAUUSD", XAG: "XAGUSD", XPT: "XPTUSD", XPD: "XPDUSD" };
+    tvUrl = `https://www.tradingview.com/chart/?symbol=OANDA:${tvMap[asset] || asset}`;
   }
 
   const buttons = [
     [
       { text: "📊 View Chart", url: chartUrl },
-      { text: "📈 TradingView", url: `https://www.tradingview.com/chart/?symbol=BINANCE:${asset}USDT` },
+      { text: "📈 TradingView", url: tvUrl },
     ],
     [
       { text: "📈 UP ($5)", callback_data: `qt_side_up_5_${asset}` },
@@ -1407,6 +1549,18 @@ async function handleQTSideSelected(
   const side = parts[0];
   const amount = Number(parts[1]);
   const asset = parts.slice(2).join("_");
+
+  // Market hours check for forex/commodity
+  if ((isForexAsset(asset) || isCommodityAsset(asset)) && !isForexMarketOpen()) {
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text: "🌙 This market is currently closed. Trading hours: Sunday 5:00 PM ET → Friday 5:00 PM ET.",
+      reply_markup: {
+        inline_keyboard: [[{ text: "⬅️ Back", callback_data: "cmd_quicktrade" }]],
+      },
+    });
+    return;
+  }
 
   const { data: bal } = await supabase
     .from("balances")
@@ -1472,6 +1626,9 @@ async function handleQTSideSelected(
 
   const assetEmojis: Record<string, string> = {
     BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
+    XAU: "🥇", XAG: "🥈", XPT: "⚪", XPD: "🔘",
+    "EUR/USD": "🇪🇺", "GBP/USD": "🇬🇧", "USD/JPY": "🇯🇵", "AUD/USD": "🇦🇺",
+    "USD/CAD": "🇨🇦", "USD/CHF": "🇨🇭", "NZD/USD": "🇳🇿", "EUR/GBP": "💱",
   };
   const sideEmoji = side === "up" ? "📈" : "📉";
 
@@ -1524,6 +1681,7 @@ async function handleQTCustomAmount(
 
   const assetEmojis: Record<string, string> = {
     BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
+    XAU: "🥇", XAG: "🥈", "EUR/USD": "🇪🇺", "GBP/USD": "🇬🇧", "USD/JPY": "🇯🇵",
   };
 
   // Get bet limits
@@ -1630,6 +1788,7 @@ async function handleQTCustomInput(
     const asset = identifier;
     const assetEmojis: Record<string, string> = {
       BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
+      XAU: "🥇", XAG: "🥈", "EUR/USD": "🇪🇺", "GBP/USD": "🇬🇧", "USD/JPY": "🇯🇵",
     };
 
     await tg(token, "sendMessage", {
@@ -1731,4 +1890,159 @@ async function handleMarketCustomAmount(
       input_field_placeholder: "Enter amount ($1-$500)",
     },
   });
+}
+
+// ── FAQ Handlers ──
+
+async function handleFaqStart(
+  token: string,
+  supabase: ReturnType<typeof createClient>,
+  chatId: number
+) {
+  // Store FAQ session
+  await supabase
+    .from("telegram_link_sessions")
+    .upsert(
+      { chat_id: chatId, email: "faq:", created_at: new Date().toISOString() },
+      { onConflict: "chat_id" }
+    );
+
+  await tg(token, "sendMessage", {
+    chat_id: chatId,
+    text:
+      `❓ <b>OPoll FAQ Assistant</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `Ask me anything about the OPoll platform!\n\n` +
+      `📝 <b>Example questions:</b>\n` +
+      `• How do I deposit funds?\n` +
+      `• How does market resolution work?\n` +
+      `• What are the trading fees?\n` +
+      `• How do referrals work?\n\n` +
+      `Type your question below:\n\n` +
+      `<i>Type /cancel to exit FAQ mode</i>`,
+    parse_mode: "HTML",
+  });
+}
+
+async function handleFaqSession(
+  token: string,
+  supabase: ReturnType<typeof createClient>,
+  chatId: number,
+  question: string
+): Promise<boolean> {
+  const { data: session } = await supabase
+    .from("telegram_link_sessions")
+    .select("email, created_at")
+    .eq("chat_id", chatId)
+    .single();
+
+  if (!session || !session.email.startsWith("faq:")) return false;
+
+  // Check expiry (10 min for FAQ)
+  const sessionAge = Date.now() - new Date(session.created_at).getTime();
+  if (sessionAge > 10 * 60 * 1000) {
+    await supabase.from("telegram_link_sessions").delete().eq("chat_id", chatId);
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text: "⏰ FAQ session expired. Type /faq to start again.",
+    });
+    return true;
+  }
+
+  // Send typing indicator
+  await tg(token, "sendChatAction", { chat_id: chatId, action: "typing" });
+
+  try {
+    // Call faq-ai edge function (non-streaming)
+    const faqUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/faq-ai`;
+    const response = await fetch(faqUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+      },
+      body: JSON.stringify({ question }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`FAQ API error: ${response.status}`);
+    }
+
+    // The faq-ai function streams SSE — we need to collect the full response
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error("No response body");
+
+    let fullAnswer = "";
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split("\n");
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) fullAnswer += content;
+          } catch {
+            // skip unparseable chunks
+          }
+        }
+      }
+    }
+
+    if (!fullAnswer.trim()) {
+      fullAnswer = "Sorry, I couldn't generate an answer. Please try rephrasing your question.";
+    }
+
+    // Refresh FAQ session for follow-up questions
+    await supabase
+      .from("telegram_link_sessions")
+      .upsert(
+        { chat_id: chatId, email: "faq:", created_at: new Date().toISOString() },
+        { onConflict: "chat_id" }
+      );
+
+    // Telegram has 4096 char limit — truncate if needed
+    const answer = fullAnswer.length > 3800 ? fullAnswer.slice(0, 3800) + "..." : fullAnswer;
+
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text:
+        `❓ <b>FAQ Answer</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `${escapeHtml(answer)}\n\n` +
+        `<i>Ask another question or type /cancel to exit.</i>`,
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "🔮 Markets", callback_data: "cmd_markets" },
+            { text: "⚡ Quick Trade", callback_data: "cmd_quicktrade" },
+          ],
+          [
+            { text: "🏠 Home", callback_data: "cmd_home" },
+          ],
+        ],
+      },
+    });
+  } catch (err) {
+    console.error("FAQ error:", err);
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text: "❌ Sorry, I couldn't answer that right now. Please try again.",
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "❓ Try Again", callback_data: "cmd_faq" }],
+          [{ text: "🏠 Home", callback_data: "cmd_home" }],
+        ],
+      },
+    });
+  }
+
+  return true;
 }
