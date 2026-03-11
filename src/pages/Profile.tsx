@@ -576,8 +576,8 @@ const Profile = () => {
     enabled: !!user,
   });
 
-  const openDeposit = () => { setModalTab("deposit"); setModalOpen(true); };
-  const openWithdraw = () => { setModalTab("withdraw"); setModalOpen(true); };
+  const openDeposit = () => { setResumePaymentId(null); setModalTab("deposit"); setModalOpen(true); };
+  const openWithdraw = () => { setResumePaymentId(null); setModalTab("withdraw"); setModalOpen(true); };
 
   const filteredTx = useMemo(() => {
     if (txFilter === "quick_trades") {
