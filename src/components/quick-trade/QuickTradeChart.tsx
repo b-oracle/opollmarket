@@ -139,7 +139,7 @@ function QuickTradeChart({
       stroke="#f59e0b"
       strokeDasharray="4 3"
       strokeOpacity={0.7}
-      label={{ value: `Target ${formatTooltipPrice(Number(activeRound.open_price), assetClass)}`, position: "right", fill: "#f59e0b", fontSize: 9, fontWeight: 600 }}
+      label={{ value: `Entry ${formatTooltipPrice(Number(activeRound.open_price), assetClass)}`, position: "right", fill: "#f59e0b", fontSize: 9, fontWeight: 600 }}
     />
   ) : null;
 
