@@ -496,29 +496,28 @@ const Create = () => {
     // Referral bonus can only cover the creation fee portion, not liquidity
     const feeAmount = feeBypass ? marketCreationFee : 0;
     const bonusForFee = Math.min(Number(bal.bonus_balance || 0), feeAmount);
-    const feeFromMain = feeAmount - bonusForFee;
-    const mainDeduction = liquidityAmount + feeFromMain;
 
-    if (bal.amount < mainDeduction) {
-      setSubmitStep("error");
-      const totalNeeded = mainDeduction + bonusForFee;
-      toast.error(`Insufficient balance. You need $${totalNeeded.toFixed(2)} USDT but have $${(Number(bal.amount) + Number(bal.bonus_balance || 0)).toFixed(2)}.`);
-      return;
-    }
-
-    // Deduct: main balance for liquidity + remaining fee, bonus for fee portion
-    const { error: deductError } = await supabase
-      .from("balances")
-      .update({
-        amount: Number(bal.amount) - mainDeduction,
-        bonus_balance: Number(bal.bonus_balance || 0) - bonusForFee,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", user.id);
+    // Use secure server-side function to deduct balance (RLS blocks client-side updates)
+    const { data: deductResult, error: deductError } = await supabase.rpc(
+      "deduct_market_liquidity" as any,
+      {
+        _user_id: user.id,
+        _liquidity_amount: liquidityAmount,
+        _fee_amount: feeAmount,
+        _bonus_for_fee: bonusForFee,
+      }
+    );
 
     if (deductError) {
       setSubmitStep("error");
       toast.error("Failed to deduct liquidity from your balance");
+      return;
+    }
+
+    const result = typeof deductResult === "string" ? JSON.parse(deductResult) : deductResult;
+    if (!result?.success) {
+      setSubmitStep("error");
+      toast.error(result?.error || "Insufficient balance for market creation");
       return;
     }
 
