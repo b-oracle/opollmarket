@@ -168,6 +168,7 @@ const Create = () => {
         setBlueMaxFreeMarkets(Number((data as any).blue_max_free_markets) || 5);
         setGoldMaxFreeMarkets(Number((data as any).gold_max_free_markets) || 20);
       }
+      setSettingsLoaded(true);
     })();
   }, []);
 
