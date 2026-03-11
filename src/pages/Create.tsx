@@ -146,6 +146,7 @@ const Create = () => {
   const [blueMaxFreeMarkets, setBlueMaxFreeMarkets] = useState(5);
   const [goldMaxFreeMarkets, setGoldMaxFreeMarkets] = useState(20);
   const [verificationLevel, setVerificationLevel] = useState("none");
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [activeMarketCount, setActiveMarketCount] = useState(0);
   const [exceededFreeLimit, setExceededFreeLimit] = useState(false);
 
