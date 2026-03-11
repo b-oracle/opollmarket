@@ -933,17 +933,20 @@ async function handleCallback(
   } else if (data === "cmd_quicktrade") {
     await handleQuickTrade(token, supabase, chatId);
     return;
+  } else if (data === "cmd_faq") {
+    await handleFaqStart(token, supabase, chatId);
+    return;
   }
 
   if (data.startsWith("mktpage_")) {
     const page = parseInt(data.replace("mktpage_", ""), 10) || 0;
     await handleMarkets(token, supabase, chatId, page);
+  } else if (data.startsWith("mkt_cust_")) {
+    await handleMarketCustomAmount(token, supabase, chatId, data);
   } else if (data.startsWith("mkt_")) {
     await handleMarketDetail(token, supabase, chatId, data);
   } else if (data.startsWith("bet_") || data.startsWith("b_")) {
     await handleBetConfirm(token, supabase, chatId, data);
-  } else if (data.startsWith("mkt_cust_")) {
-    await handleMarketCustomAmount(token, supabase, chatId, data);
   } else if (data.startsWith("qt_asset_")) {
     await handleQTAssetSelected(token, chatId, data);
   } else if (data.startsWith("qt_custom_")) {
