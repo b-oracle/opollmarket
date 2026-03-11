@@ -16,7 +16,7 @@ import { useFilteredConnectors } from "@/hooks/useFilteredConnectors";
 import { bsc } from "wagmi/chains";
 import {
   Wallet, Gift, ArrowDownToLine, ArrowUpFromLine, ArrowUpRight, ArrowDownLeft,
-  Repeat, LogIn, Send, MessageCircle, ExternalLink, ChevronRight,
+  Repeat, LogIn, Send, MessageCircle, ExternalLink, ChevronRight, ChevronDown,
   Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image, BarChart3, Globe, EyeOff, Users, Sparkles, Zap, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
@@ -519,13 +519,15 @@ const Profile = () => {
     }
   };
 
+  const [expandedTxId, setExpandedTxId] = useState<string | null>(null);
+
   const { data: transactions = [] } = useQuery({
     queryKey: ["transactions", user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data } = await supabase
         .from("transactions")
-        .select("*")
+        .select("*, markets(title)")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       return data || [];
@@ -1276,48 +1278,77 @@ const Profile = () => {
                 const won = tx.qtStatus === "won";
                 const lost = tx.qtStatus === "lost";
                 const pnl = won ? Number(tx.payout) - Number(tx.amount) : lost ? -Number(tx.amount) : 0;
+                const isExpanded = expandedTxId === tx.id;
                 return (
                   <motion.div key={tx.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                    className="glass rounded-xl p-3.5 flex items-start gap-3">
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${won ? "bg-green-500/10 text-green-500" : lost ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"}`}>
-                      {tx.side === "up" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-0.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold flex items-center gap-1">
-                            <Zap className="w-3 h-3" /> {tx.side.toUpperCase()}
-                          </span>
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                            {tx.asset}
-                          </span>
-                          {tx.streak > 1 && <span className="text-[10px] text-amber-500 font-bold">🔥{tx.streak}</span>}
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                            won ? "bg-green-500/10 text-green-500"
-                            : lost ? "bg-destructive/10 text-destructive"
-                            : "bg-yellow-500/10 text-yellow-500"
-                          }`}>
-                            {won ? "✓ Won" : lost ? "✗ Lost" : "⏳ Pending"}
-                          </span>
+                    onClick={() => setExpandedTxId(isExpanded ? null : tx.id)}
+                    className="glass rounded-xl p-3.5 cursor-pointer hover:ring-1 hover:ring-border transition-all">
+                    <div className="flex items-start gap-3">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${won ? "bg-green-500/10 text-green-500" : lost ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"}`}>
+                        {tx.side === "up" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold flex items-center gap-1">
+                              <Zap className="w-3 h-3" /> {tx.side.toUpperCase()}
+                            </span>
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                              {tx.asset}
+                            </span>
+                            {tx.streak > 1 && <span className="text-[10px] text-amber-500 font-bold">🔥{tx.streak}</span>}
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                              won ? "bg-green-500/10 text-green-500"
+                              : lost ? "bg-destructive/10 text-destructive"
+                              : "bg-yellow-500/10 text-yellow-500"
+                            }`}>
+                              {won ? "✓ Won" : lost ? "✗ Lost" : "⏳ Pending"}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className={`text-sm font-bold ${won ? "text-green-500" : lost ? "text-destructive" : "text-muted-foreground"}`}>
+                              {won ? `+$${pnl.toFixed(2)}` : lost ? `-$${Number(tx.amount).toFixed(2)}` : `$${Number(tx.amount).toFixed(2)}`}
+                            </span>
+                            <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                          </div>
                         </div>
-                        <span className={`text-sm font-bold ${won ? "text-green-500" : lost ? "text-destructive" : "text-muted-foreground"}`}>
-                          {won ? `+$${pnl.toFixed(2)}` : lost ? `-$${Number(tx.amount).toFixed(2)}` : `$${Number(tx.amount).toFixed(2)}`}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-muted-foreground">{formatTimeAgo(tx.created_at)}</span>
-                        {won && tx.payout && <span className="text-[10px] text-muted-foreground">Payout: ${Number(tx.payout).toFixed(2)}</span>}
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-muted-foreground">{formatTimeAgo(tx.created_at)}</span>
+                          {won && tx.payout && <span className="text-[10px] text-muted-foreground">Payout: ${Number(tx.payout).toFixed(2)}</span>}
+                        </div>
                       </div>
                     </div>
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="mt-3 pt-3 border-t border-border/50 grid grid-cols-2 gap-2 text-[11px]">
+                            <div><span className="text-muted-foreground">Asset</span><p className="font-semibold">{tx.asset}</p></div>
+                            <div><span className="text-muted-foreground">Side</span><p className="font-semibold">{tx.side.toUpperCase()}</p></div>
+                            <div><span className="text-muted-foreground">Wagered</span><p className="font-semibold">${Number(tx.amount).toFixed(2)}</p></div>
+                            {won && tx.payout && <div><span className="text-muted-foreground">Payout</span><p className="font-semibold text-green-500">${Number(tx.payout).toFixed(2)}</p></div>}
+                            {tx.streak > 0 && <div><span className="text-muted-foreground">Streak</span><p className="font-semibold">{tx.streak}x</p></div>}
+                            <div className="col-span-2"><span className="text-muted-foreground">Date</span><p className="font-semibold">{new Date(tx.created_at).toLocaleString()}</p></div>
+                            <div className="col-span-2"><span className="text-muted-foreground">Transaction ID</span><p className="font-mono text-[10px] text-muted-foreground truncate">{tx.id}</p></div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </motion.div>
                 );
               }
 
-              // Regular transaction rendering
               const txKey: TxType = (tx.type === "buy" && tx.side === "initial_liquidity") ? "initial_liquidity" : (tx.type as TxType);
               const cfg = txConfig[txKey] || txConfig.buy;
               const Icon = cfg.icon;
               const isPendingDeposit = tx.type === "deposit" && (tx.status === "pending" || tx.status === "partial") && tx.nowpayments_payment_id;
+              const isExpanded = expandedTxId === tx.id;
+              const marketTitle = (tx as any).markets?.title;
               return (
                 <motion.div key={tx.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                   onClick={() => {
@@ -1325,49 +1356,96 @@ const Profile = () => {
                       setResumePaymentId(tx.nowpayments_payment_id);
                       setModalTab("deposit");
                       setModalOpen(true);
+                      return;
                     }
+                    setExpandedTxId(isExpanded ? null : tx.id);
                   }}
-                  className={`glass rounded-xl p-3.5 flex items-start gap-3 ${isPendingDeposit ? "cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all" : ""}`}>
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${cfg.colorClass}`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold">{cfg.label}</span>
-                        {tx.is_copy_trade && (
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-accent text-accent-foreground border border-border">
-                            📋 Copied
+                  className={`glass rounded-xl p-3.5 cursor-pointer hover:ring-1 hover:ring-border transition-all`}>
+                  <div className="flex items-start gap-3">
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${cfg.colorClass}`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold">{cfg.label}</span>
+                          {tx.is_copy_trade && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-accent text-accent-foreground border border-border">
+                              📋 Copied
+                            </span>
+                          )}
+                          {tx.side && tx.side !== "initial_liquidity" && (tx.type === "buy" || tx.type === "sell") && (
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${tx.side === "yes" ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive"}`}>
+                              {tx.side.toUpperCase()}
+                            </span>
+                          )}
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                            tx.status === "confirmed"
+                              ? "bg-green-500/10 text-green-500"
+                              : tx.status === "pending"
+                              ? "bg-yellow-500/10 text-yellow-500"
+                              : tx.status === "failed" || tx.status === "expired"
+                              ? "bg-destructive/10 text-destructive"
+                              : "bg-muted text-muted-foreground"
+                          }`}>
+                            {tx.status === "confirmed" ? "✓ Confirmed" : tx.status === "pending" ? "⏳ Pending" : tx.status === "failed" ? "✗ Failed" : tx.status === "expired" ? "✗ Expired" : tx.status}
                           </span>
-                        )}
-                        {tx.side && tx.side !== "initial_liquidity" && (tx.type === "buy" || tx.type === "sell") && (
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${tx.side === "yes" ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive"}`}>
-                            {tx.side.toUpperCase()}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-sm font-bold ${["sell", "deposit", "payout", "refund", "commission"].includes(tx.type) ? "text-green-500" : "text-destructive"}`}>
+                            {["sell", "deposit", "payout", "refund", "commission"].includes(tx.type) ? "+" : "-"}${Number(tx.amount).toFixed(2)}
                           </span>
-                        )}
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                          tx.status === "confirmed"
-                            ? "bg-green-500/10 text-green-500"
-                            : tx.status === "pending"
-                            ? "bg-yellow-500/10 text-yellow-500"
-                            : tx.status === "failed" || tx.status === "expired"
-                            ? "bg-destructive/10 text-destructive"
-                            : "bg-muted text-muted-foreground"
-                        }`}>
-                          {tx.status === "confirmed" ? "✓ Confirmed" : tx.status === "pending" ? "⏳ Pending" : tx.status === "failed" ? "✗ Failed" : tx.status === "expired" ? "✗ Expired" : tx.status}
-                        </span>
+                          {isPendingDeposit ? (
+                            <ChevronRight className="w-3.5 h-3.5 text-primary" />
+                          ) : (
+                            <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                          )}
+                        </div>
                       </div>
-                      <span className={`text-sm font-bold ${["sell", "deposit", "payout", "refund", "commission"].includes(tx.type) ? "text-green-500" : "text-destructive"}`}>
-                        {["sell", "deposit", "payout", "refund", "commission"].includes(tx.type) ? "+" : "-"}${Number(tx.amount).toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-muted-foreground">{formatTimeAgo(tx.created_at)}</span>
-                      <span className="text-[10px] text-muted-foreground">{formatTimeAgo(tx.created_at)}</span>
-                      {tx.shares && <span className="text-[10px] text-muted-foreground">{Number(tx.shares).toFixed(1)} shares</span>}
-                      {isPendingDeposit && <span className="text-[10px] text-primary font-semibold">Tap to view →</span>}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground">{formatTimeAgo(tx.created_at)}</span>
+                        {tx.shares && <span className="text-[10px] text-muted-foreground">{Number(tx.shares).toFixed(1)} shares</span>}
+                        {isPendingDeposit && <span className="text-[10px] text-primary font-semibold">Tap to view →</span>}
+                      </div>
                     </div>
                   </div>
+                  {!isPendingDeposit && (
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="mt-3 pt-3 border-t border-border/50 grid grid-cols-2 gap-2 text-[11px]">
+                            {marketTitle && (
+                              <div className="col-span-2"><span className="text-muted-foreground">Market</span><p className="font-semibold truncate">{marketTitle}</p></div>
+                            )}
+                            {(tx.type === "buy" || tx.type === "sell") && tx.side && tx.side !== "initial_liquidity" && (
+                              <div><span className="text-muted-foreground">Side</span><p className="font-semibold">{tx.side.toUpperCase()}</p></div>
+                            )}
+                            {tx.price && (
+                              <div><span className="text-muted-foreground">Price/Share</span><p className="font-semibold">${Number(tx.price).toFixed(2)}</p></div>
+                            )}
+                            {tx.shares && (
+                              <div><span className="text-muted-foreground">Shares</span><p className="font-semibold">{Number(tx.shares).toFixed(2)}</p></div>
+                            )}
+                            <div><span className="text-muted-foreground">Amount</span><p className="font-semibold">${Number(tx.amount).toFixed(2)}</p></div>
+                            {tx.nowpayments_payment_id && (
+                              <div className="col-span-2"><span className="text-muted-foreground">Payment ID</span><p className="font-mono text-[10px] text-muted-foreground truncate">{tx.nowpayments_payment_id}</p></div>
+                            )}
+                            {tx.tx_hash && (
+                              <div className="col-span-2"><span className="text-muted-foreground">Tx Hash</span><p className="font-mono text-[10px] text-muted-foreground truncate">{tx.tx_hash}</p></div>
+                            )}
+                            <div className="col-span-2"><span className="text-muted-foreground">Date</span><p className="font-semibold">{new Date(tx.created_at).toLocaleString()}</p></div>
+                            <div className="col-span-2"><span className="text-muted-foreground">Transaction ID</span><p className="font-mono text-[10px] text-muted-foreground truncate">{tx.id}</p></div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  )}
                 </motion.div>
               );
             })}
