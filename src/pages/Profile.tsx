@@ -1347,8 +1347,8 @@ const Profile = () => {
                           {tx.status === "confirmed" ? "✓ Confirmed" : tx.status === "pending" ? "⏳ Pending" : tx.status === "failed" ? "✗ Failed" : tx.status === "expired" ? "✗ Expired" : tx.status}
                         </span>
                       </div>
-                      <span className={`text-sm font-bold ${["sell", "deposit", "payout", "refund"].includes(tx.type) ? "text-green-500" : "text-destructive"}`}>
-                        {["sell", "deposit", "payout", "refund"].includes(tx.type) ? "+" : "-"}${Number(tx.amount).toFixed(2)}
+                      <span className={`text-sm font-bold ${["sell", "deposit", "payout", "refund", "commission"].includes(tx.type) ? "text-green-500" : "text-destructive"}`}>
+                        {["sell", "deposit", "payout", "refund", "commission"].includes(tx.type) ? "+" : "-"}${Number(tx.amount).toFixed(2)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
