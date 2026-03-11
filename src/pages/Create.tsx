@@ -2266,6 +2266,7 @@ const Create = () => {
       </div>
       
       <BottomNav />
+      <DepositWithdrawModal open={depositModalOpen} onClose={() => setDepositModalOpen(false)} initialTab="deposit" />
     </div>
   );
 };
