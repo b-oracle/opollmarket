@@ -1261,6 +1261,49 @@ const Profile = () => {
 
           <div className="space-y-2">
             {paginatedTx.map((tx: any, i: number) => {
+              // Quick trade rendering
+              if (tx.type === "quick_trade") {
+                const won = tx.qtStatus === "won";
+                const lost = tx.qtStatus === "lost";
+                const pnl = won ? Number(tx.payout) - Number(tx.amount) : lost ? -Number(tx.amount) : 0;
+                return (
+                  <motion.div key={tx.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                    className="glass rounded-xl p-3.5 flex items-start gap-3">
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${won ? "bg-green-500/10 text-green-500" : lost ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"}`}>
+                      {tx.side === "up" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold flex items-center gap-1">
+                            <Zap className="w-3 h-3" /> {tx.side.toUpperCase()}
+                          </span>
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                            {tx.asset}
+                          </span>
+                          {tx.streak > 1 && <span className="text-[10px] text-amber-500 font-bold">🔥{tx.streak}</span>}
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                            won ? "bg-green-500/10 text-green-500"
+                            : lost ? "bg-destructive/10 text-destructive"
+                            : "bg-yellow-500/10 text-yellow-500"
+                          }`}>
+                            {won ? "✓ Won" : lost ? "✗ Lost" : "⏳ Pending"}
+                          </span>
+                        </div>
+                        <span className={`text-sm font-bold ${won ? "text-green-500" : lost ? "text-destructive" : "text-muted-foreground"}`}>
+                          {won ? `+$${pnl.toFixed(2)}` : lost ? `-$${Number(tx.amount).toFixed(2)}` : `$${Number(tx.amount).toFixed(2)}`}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground">{formatTimeAgo(tx.created_at)}</span>
+                        {won && tx.payout && <span className="text-[10px] text-muted-foreground">Payout: ${Number(tx.payout).toFixed(2)}</span>}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              }
+
+              // Regular transaction rendering
               const cfg = txConfig[tx.type as TxType] || txConfig.buy;
               const Icon = cfg.icon;
               return (
