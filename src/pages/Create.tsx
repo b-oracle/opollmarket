@@ -578,10 +578,15 @@ const Create = () => {
 
     if (error) {
       console.error("Failed to save market:", error);
-      await supabase
-        .from("balances")
-        .update({ amount: bal.amount, updated_at: new Date().toISOString() })
-        .eq("user_id", user.id);
+      // Refund via secure RPC (rollback the deduction)
+      const feeAmount = feeBypass ? marketCreationFee : 0;
+      const bonusForFee = Math.min(Number(bal.bonus_balance || 0), feeAmount);
+      await supabase.rpc("deduct_market_liquidity" as any, {
+        _user_id: user.id,
+        _liquidity_amount: -liquidityAmount,
+        _fee_amount: -feeAmount,
+        _bonus_for_fee: -bonusForFee,
+      });
       setSubmitStep("error");
       toast.error("Failed to save market. Your balance has been refunded.");
       return;
