@@ -325,6 +325,7 @@ const Profile = () => {
   const { open } = useAppKit();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<"deposit" | "withdraw">("deposit");
+  const [resumePaymentId, setResumePaymentId] = useState<string | null>(null);
   const [txFilter, setTxFilter] = useState<FilterType>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [txPage, setTxPage] = useState(1);
