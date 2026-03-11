@@ -1549,6 +1549,18 @@ async function handleQTSideSelected(
   const amount = Number(parts[1]);
   const asset = parts.slice(2).join("_");
 
+  // Market hours check for forex/commodity
+  if ((isForexAsset(asset) || isCommodityAsset(asset)) && !isForexMarketOpen()) {
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text: "🌙 This market is currently closed. Trading hours: Sunday 5:00 PM ET → Friday 5:00 PM ET.",
+      reply_markup: {
+        inline_keyboard: [[{ text: "⬅️ Back", callback_data: "cmd_quicktrade" }]],
+      },
+    });
+    return;
+  }
+
   const { data: bal } = await supabase
     .from("balances")
     .select("amount")
