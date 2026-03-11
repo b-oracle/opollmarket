@@ -679,7 +679,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Currency</span>
                           <span className="font-semibold">
-                            {CRYPTO_OPTIONS.find((c) => c.value === selectedCrypto)?.label}
+                            {ALL_CRYPTO_OPTIONS.find((c) => c.value === selectedCrypto)?.label}
                           </span>
                         </div>
                         {!isDeposit && (
