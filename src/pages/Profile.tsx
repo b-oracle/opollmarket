@@ -35,7 +35,7 @@ const txConfig: Record<TxType, { icon: typeof ArrowUpRight; label: string; color
   deposit: { icon: ArrowDownToLine, label: "Deposit", colorClass: "text-primary bg-primary/10" },
   withdraw: { icon: ArrowUpFromLine, label: "Withdrawal", colorClass: "text-muted-foreground bg-muted" },
   withdrawal: { icon: ArrowUpFromLine, label: "Withdrawal", colorClass: "text-muted-foreground bg-muted" },
-  commission: { icon: BarChart3, label: "Commission", colorClass: "text-amber-500 bg-amber-500/10" },
+  commission: { icon: BarChart3, label: "Copy Trade Commission", colorClass: "text-amber-500 bg-amber-500/10" },
   payout: { icon: Gift, label: "Payout", colorClass: "text-green-500 bg-green-500/10" },
   refund: { icon: Repeat, label: "Refund", colorClass: "text-blue-500 bg-blue-500/10" },
   initial_liquidity: { icon: Sparkles, label: "Market Liquidity", colorClass: "text-amber-500 bg-amber-500/10" },
@@ -1405,7 +1405,12 @@ const Profile = () => {
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-muted-foreground">{formatTimeAgo(tx.created_at)}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] text-muted-foreground">{formatTimeAgo(tx.created_at)}</span>
+                          {tx.type === "commission" && tx.side && tx.side !== "yes" && tx.side !== "no" && (
+                            <span className="text-[10px] text-amber-500">from {tx.side}</span>
+                          )}
+                        </div>
                         {tx.shares && <span className="text-[10px] text-muted-foreground">{Number(tx.shares).toFixed(1)} shares</span>}
                         {isPendingDeposit && <span className="text-[10px] text-primary font-semibold">Tap to view →</span>}
                       </div>
@@ -1424,6 +1429,9 @@ const Profile = () => {
                           <div className="mt-3 pt-3 border-t border-border/50 grid grid-cols-2 gap-2 text-[11px]">
                             {marketTitle && (
                               <div className="col-span-2"><span className="text-muted-foreground">Market</span><p className="font-semibold truncate">{tx.market_id ? <span className="text-primary underline cursor-pointer" onClick={(e) => { e.stopPropagation(); navigate(`/market/${tx.market_id}`); }}>{marketTitle}</span> : marketTitle}</p></div>
+                            )}
+                            {tx.type === "commission" && tx.side && tx.side !== "yes" && tx.side !== "no" && (
+                              <div className="col-span-2"><span className="text-muted-foreground">Copier</span><p className="font-semibold">{tx.side}</p></div>
                             )}
                             {(tx.type === "buy" || tx.type === "sell") && tx.side && tx.side !== "initial_liquidity" && (
                               <div><span className="text-muted-foreground">Side</span><p className="font-semibold">{tx.side.toUpperCase()}</p></div>
