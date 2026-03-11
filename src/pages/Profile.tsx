@@ -1425,6 +1425,9 @@ const Profile = () => {
                             {marketTitle && (
                               <div className="col-span-2"><span className="text-muted-foreground">Market</span><p className="font-semibold truncate">{tx.market_id ? <span className="text-primary underline cursor-pointer" onClick={(e) => { e.stopPropagation(); navigate(`/market/${tx.market_id}`); }}>{marketTitle}</span> : marketTitle}</p></div>
                             )}
+                            {tx.type === "commission" && tx.side && tx.side !== "yes" && tx.side !== "no" && (
+                              <div className="col-span-2"><span className="text-muted-foreground">Copier</span><p className="font-semibold">{tx.side}</p></div>
+                            )}
                             {(tx.type === "buy" || tx.type === "sell") && tx.side && tx.side !== "initial_liquidity" && (
                               <div><span className="text-muted-foreground">Side</span><p className="font-semibold">{tx.side.toUpperCase()}</p></div>
                             )}

@@ -285,14 +285,22 @@ async function handleResolve(
             .eq("user_id", earning.trader_user_id);
         }
 
-        // Record commission transaction for the trader
+        // Get copier's display name for the commission transaction
+        const { data: copierProfile } = await adminClient
+          .from("profiles")
+          .select("display_name")
+          .eq("id", earning.copier_user_id)
+          .single();
+        const copierName = copierProfile?.display_name || "A copier";
+
+        // Record commission transaction for the trader (side stores copier name for transparency)
         await adminClient.from("transactions").insert({
           user_id: earning.trader_user_id,
           market_id,
           type: "commission",
           amount: commissionAmount,
           status: "confirmed",
-          side: "yes",
+          side: copierName,
         });
 
         // Notify trader about commission earned
