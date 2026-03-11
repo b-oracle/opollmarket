@@ -527,6 +527,21 @@ const Profile = () => {
     enabled: !!user,
   });
 
+  // Fetch quick trade bets
+  const { data: quickBets = [] } = useQuery({
+    queryKey: ["quick-bets-profile", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase
+        .from("quick_bets")
+        .select("*, quick_rounds(*)")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
   const { data: positions = [] } = useQuery({
     queryKey: ["positions", user?.id],
     queryFn: async () => {
