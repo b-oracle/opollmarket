@@ -51,15 +51,40 @@ const PRESET_AMOUNTS = [25, 50, 100, 250];
 const MIN_AMOUNT = 1;
 const MAX_AMOUNT = 50000;
 
-const CRYPTO_OPTIONS = [
-  { value: "usdtbsc", label: "USDT (BSC)" },
-  { value: "usdttrc20", label: "USDT (TRC20)" },
-  { value: "usdterc20", label: "USDT (ERC20)" },
-  { value: "btc", label: "Bitcoin" },
-  { value: "eth", label: "Ethereum" },
-  { value: "bnbbsc", label: "BNB (BSC)" },
-  { value: "ltc", label: "Litecoin" },
+const CRYPTO_GROUPS = [
+  {
+    label: "Stablecoins",
+    options: [
+      { value: "usdtbsc", label: "USDT (BEP20)" },
+      { value: "usdttrc20", label: "USDT (TRC20)" },
+      { value: "usdterc20", label: "USDT (ERC20)" },
+      { value: "usdtmatic", label: "USDT (Polygon)" },
+      { value: "usdtsol", label: "USDT (SOL)" },
+      { value: "usdcerc20", label: "USDC (ERC20)" },
+      { value: "usdcsol", label: "USDC (SOL)" },
+      { value: "usdcmatic", label: "USDC (Polygon)" },
+      { value: "usdcbsc", label: "USDC (BEP20)" },
+      { value: "dai", label: "DAI" },
+    ],
+  },
+  {
+    label: "Popular Crypto",
+    options: [
+      { value: "btc", label: "Bitcoin (BTC)" },
+      { value: "eth", label: "Ethereum (ETH)" },
+      { value: "bnbbsc", label: "BNB (BSC)" },
+      { value: "sol", label: "Solana (SOL)" },
+      { value: "ltc", label: "Litecoin (LTC)" },
+      { value: "xrp", label: "XRP" },
+      { value: "doge", label: "Dogecoin (DOGE)" },
+      { value: "maticmainnet", label: "MATIC (Polygon)" },
+      { value: "avaxc", label: "AVAX (C-Chain)" },
+      { value: "ton", label: "TON" },
+    ],
+  },
 ];
+
+const ALL_CRYPTO_OPTIONS = CRYPTO_GROUPS.flatMap((g) => g.options);
 
 const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: DepositWithdrawModalProps) => {
   const { user } = useAuth();
