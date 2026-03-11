@@ -268,8 +268,24 @@ Deno.serve(async (req) => {
       resolvedCount++;
     }
 
+    // Piggyback: run bulk verification sweep to catch stale badges
+    let verificationResult = null;
+    try {
+      const { data } = await adminClient.functions.invoke("bulk-update-verification", {
+        headers: { Authorization: `Bearer ${serviceRoleKey}` },
+      });
+      verificationResult = data;
+      console.log("Bulk verification sweep complete:", data?.updated ?? 0, "profiles checked");
+    } catch (verErr) {
+      console.error("Bulk verification sweep failed:", verErr);
+    }
+
     return new Response(
-      JSON.stringify({ message: "Auto-resolve check complete", resolved: resolvedCount }),
+      JSON.stringify({
+        message: "Auto-resolve check complete",
+        resolved: resolvedCount,
+        verification_sweep: verificationResult,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
