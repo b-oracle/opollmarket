@@ -912,6 +912,17 @@ const Create = () => {
                     {check.icon}
                   </motion.div>
                 ))}
+                {/* Re-check eligibility — right below NFT check */}
+                {gateFinished && !gatePassed && (
+                  <button
+                    onClick={() => { setGateChecks([]); setGateFinished(false); runGateCheck(); }}
+                    disabled={gateRunning}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm text-destructive hover:text-destructive/80 transition-colors"
+                  >
+                    <ArrowRight className="w-3.5 h-3.5" />
+                    Re-check eligibility
+                  </button>
+                )}
               </div>
             )}
 
