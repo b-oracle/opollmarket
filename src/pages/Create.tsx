@@ -737,10 +737,10 @@ const Create = () => {
   };
 
   useEffect(() => {
-    if (isConnected && !gatePassed && !gateRunning && gateChecks.length === 0) {
+    if (isConnected && settingsLoaded && !gatePassed && !gateRunning && gateChecks.length === 0) {
       runGateCheck();
     }
-  }, [isConnected]);
+  }, [isConnected, settingsLoaded]);
 
   // Fee bypass — skip gate and proceed to form, fee added at checkout
   const handleFeeBypass = () => {
