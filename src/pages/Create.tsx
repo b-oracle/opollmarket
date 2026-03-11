@@ -1775,10 +1775,21 @@ const Create = () => {
                 </div>
                 {(() => {
                   const totalNeeded = parseFloat(initialLiquidity) + (feeBypass ? marketCreationFee : 0);
-                  return totalNeeded > balance && balance > 0 ? (
-                    <p className="text-[10px] text-destructive mt-1.5 flex items-center gap-1">
-                      ⚠️ Total cost (${totalNeeded.toFixed(2)}) exceeds your balance by ${(totalNeeded - balance).toFixed(2)}
-                    </p>
+                  const shortfall = totalNeeded - balance;
+                  return totalNeeded > balance && balance >= 0 ? (
+                    <div className="mt-2 space-y-2">
+                      <p className="text-[10px] text-destructive flex items-center gap-1">
+                        ⚠️ Total cost (${totalNeeded.toFixed(2)}) exceeds your balance by ${shortfall.toFixed(2)}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setDepositModalOpen(true)}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold transition-all active:scale-95"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Add Funds to Continue
+                      </button>
+                    </div>
                   ) : null;
                 })()}
               </div>
