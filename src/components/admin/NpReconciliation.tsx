@@ -130,6 +130,30 @@ const NpReconciliation = () => {
     }
   };
 
+  const fixExpiredDeposits = async () => {
+    if (!confirm("This will check all expired deposits against NOWPayments and credit users for any that were actually paid. Continue?")) return;
+    setFixingExpired(true);
+    setFixedResults(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("np-reconcile", {
+        body: { action: "fix_expired" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setFixedResults(data);
+      const fixedCount = data.fixed?.length || 0;
+      const totalCredited = data.fixed?.reduce((s: number, f: FixedRecord) => s + f.credited_amount, 0) || 0;
+      toast.success(fixedCount > 0
+        ? `Fixed ${fixedCount} deposits — $${totalCredited.toFixed(2)} credited`
+        : `Checked ${data.total_checked} expired deposits — none need fixing`
+      );
+    } catch (err: any) {
+      toast.error(err.message || "Failed to fix expired deposits");
+    } finally {
+      setFixingExpired(false);
+    }
+  };
+
   const totalAnomalies = anomaliesDb.length + anomaliesNp.length;
 
   return (
@@ -139,14 +163,24 @@ const NpReconciliation = () => {
           <Scale className="w-5 h-5 text-primary" />
           <h3 className="text-sm font-semibold">NOWPayments Full Reconciliation</h3>
         </div>
-        <button
-          onClick={runAudit}
-          disabled={loading || isAuthenticated === false}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50"
-        >
-          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Scale className="w-3.5 h-3.5" />}
-          {loading ? "Fetching NP history..." : "Run Full Audit"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={fixExpiredDeposits}
+            disabled={fixingExpired || isAuthenticated === false}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent text-accent-foreground text-xs font-semibold hover:bg-accent/90 transition-all active:scale-95 disabled:opacity-50"
+          >
+            {fixingExpired ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <AlertTriangle className="w-3.5 h-3.5" />}
+            {fixingExpired ? "Checking NP..." : "Fix Expired"}
+          </button>
+          <button
+            onClick={runAudit}
+            disabled={loading || isAuthenticated === false}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Scale className="w-3.5 h-3.5" />}
+            {loading ? "Fetching NP history..." : "Run Full Audit"}
+          </button>
+        </div>
       </div>
 
       {isAuthenticated === false && (
