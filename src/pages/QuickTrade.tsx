@@ -1025,8 +1025,8 @@ export default function QuickTrade() {
 
               {/* Countdown */}
               <div className="text-center">
-                <div className={`text-3xl font-mono font-bold tabular-nums ${
-                  timeLeft <= 10 ? "text-destructive animate-pulse" : timeLeft <= 30 ? "text-amber-500" : "text-foreground"
+                <div className={`text-3xl font-mono font-bold tabular-nums transition-colors duration-300 ${
+                  timeLeft <= 10 ? "text-destructive" : timeLeft <= 30 ? "text-amber-500" : "text-foreground"
                 }`}>
                   {formatTime(timeLeft)}
                 </div>
