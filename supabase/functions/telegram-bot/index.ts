@@ -1889,3 +1889,158 @@ async function handleMarketCustomAmount(
     },
   });
 }
+
+// ── FAQ Handlers ──
+
+async function handleFaqStart(
+  token: string,
+  supabase: ReturnType<typeof createClient>,
+  chatId: number
+) {
+  // Store FAQ session
+  await supabase
+    .from("telegram_link_sessions")
+    .upsert(
+      { chat_id: chatId, email: "faq:", created_at: new Date().toISOString() },
+      { onConflict: "chat_id" }
+    );
+
+  await tg(token, "sendMessage", {
+    chat_id: chatId,
+    text:
+      `❓ <b>OPoll FAQ Assistant</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `Ask me anything about the OPoll platform!\n\n` +
+      `📝 <b>Example questions:</b>\n` +
+      `• How do I deposit funds?\n` +
+      `• How does market resolution work?\n` +
+      `• What are the trading fees?\n` +
+      `• How do referrals work?\n\n` +
+      `Type your question below:\n\n` +
+      `<i>Type /cancel to exit FAQ mode</i>`,
+    parse_mode: "HTML",
+  });
+}
+
+async function handleFaqSession(
+  token: string,
+  supabase: ReturnType<typeof createClient>,
+  chatId: number,
+  question: string
+): Promise<boolean> {
+  const { data: session } = await supabase
+    .from("telegram_link_sessions")
+    .select("email, created_at")
+    .eq("chat_id", chatId)
+    .single();
+
+  if (!session || !session.email.startsWith("faq:")) return false;
+
+  // Check expiry (10 min for FAQ)
+  const sessionAge = Date.now() - new Date(session.created_at).getTime();
+  if (sessionAge > 10 * 60 * 1000) {
+    await supabase.from("telegram_link_sessions").delete().eq("chat_id", chatId);
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text: "⏰ FAQ session expired. Type /faq to start again.",
+    });
+    return true;
+  }
+
+  // Send typing indicator
+  await tg(token, "sendChatAction", { chat_id: chatId, action: "typing" });
+
+  try {
+    // Call faq-ai edge function (non-streaming)
+    const faqUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/faq-ai`;
+    const response = await fetch(faqUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+      },
+      body: JSON.stringify({ question }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`FAQ API error: ${response.status}`);
+    }
+
+    // The faq-ai function streams SSE — we need to collect the full response
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error("No response body");
+
+    let fullAnswer = "";
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split("\n");
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) fullAnswer += content;
+          } catch {
+            // skip unparseable chunks
+          }
+        }
+      }
+    }
+
+    if (!fullAnswer.trim()) {
+      fullAnswer = "Sorry, I couldn't generate an answer. Please try rephrasing your question.";
+    }
+
+    // Refresh FAQ session for follow-up questions
+    await supabase
+      .from("telegram_link_sessions")
+      .upsert(
+        { chat_id: chatId, email: "faq:", created_at: new Date().toISOString() },
+        { onConflict: "chat_id" }
+      );
+
+    // Telegram has 4096 char limit — truncate if needed
+    const answer = fullAnswer.length > 3800 ? fullAnswer.slice(0, 3800) + "..." : fullAnswer;
+
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text:
+        `❓ <b>FAQ Answer</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `${escapeHtml(answer)}\n\n` +
+        `<i>Ask another question or type /cancel to exit.</i>`,
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "🔮 Markets", callback_data: "cmd_markets" },
+            { text: "⚡ Quick Trade", callback_data: "cmd_quicktrade" },
+          ],
+          [
+            { text: "🏠 Home", callback_data: "cmd_home" },
+          ],
+        ],
+      },
+    });
+  } catch (err) {
+    console.error("FAQ error:", err);
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text: "❌ Sorry, I couldn't answer that right now. Please try again.",
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "❓ Try Again", callback_data: "cmd_faq" }],
+          [{ text: "🏠 Home", callback_data: "cmd_home" }],
+        ],
+      },
+    });
+  }
+
+  return true;
+}
