@@ -2,6 +2,7 @@ import LogoLoader from "@/components/LogoLoader";
 import { useUserBalance } from "@/hooks/useUserBalance";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAccount } from "wagmi";
+import { useAppKit } from "@reown/appkit/react";
 import { useFilteredConnectors } from "@/hooks/useFilteredConnectors";
 import { useNavigate } from "react-router-dom";
 import { bsc } from "wagmi/chains";
