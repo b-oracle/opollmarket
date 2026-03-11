@@ -574,6 +574,26 @@ const Profile = () => {
   const openWithdraw = () => { setModalTab("withdraw"); setModalOpen(true); };
 
   const filteredTx = useMemo(() => {
+    if (txFilter === "quick_trades") {
+      let result = quickBets.map((qb: any) => ({
+        id: qb.id,
+        type: "quick_trade" as const,
+        side: qb.side,
+        amount: qb.amount,
+        payout: qb.payout,
+        status: qb.status === "won" ? "confirmed" : qb.status === "lost" ? "failed" : "pending",
+        qtStatus: qb.status,
+        created_at: qb.created_at,
+        asset: qb.quick_rounds?.asset || "BTC",
+        streak: qb.streak,
+      }));
+      if (statusFilter !== "all") {
+        result = result.filter((t: any) =>
+          statusFilter === "failed" ? (t.status === "failed") : t.status === statusFilter
+        );
+      }
+      return result;
+    }
     let result = transactions;
     if (txFilter === "trades") result = result.filter((t: any) => t.type === "buy" || t.type === "sell");
     else if (txFilter === "deposits") result = result.filter((t: any) => t.type === "deposit" || t.type === "withdraw");
@@ -583,7 +603,7 @@ const Profile = () => {
       );
     }
     return result;
-  }, [transactions, txFilter, statusFilter]);
+  }, [transactions, quickBets, txFilter, statusFilter]);
 
   const txTotalPages = Math.max(1, Math.ceil(filteredTx.length / TX_PER_PAGE));
   const paginatedTx = useMemo(() => {
