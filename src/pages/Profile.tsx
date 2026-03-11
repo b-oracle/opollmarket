@@ -1330,7 +1330,7 @@ const Profile = () => {
                             📋 Copied
                           </span>
                         )}
-                        {tx.side && (
+                        {tx.side && tx.side !== "initial_liquidity" && (tx.type === "buy" || tx.type === "sell") && (
                           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${tx.side === "yes" ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive"}`}>
                             {tx.side.toUpperCase()}
                           </span>
