@@ -705,6 +705,7 @@ export type Database = {
           image_url: string | null
           initial_liquidity: number
           liquidity: number
+          liquidity_verified: boolean
           market_type: string
           moderator_decision: string | null
           moderator_id: string | null
@@ -748,6 +749,7 @@ export type Database = {
           image_url?: string | null
           initial_liquidity?: number
           liquidity?: number
+          liquidity_verified?: boolean
           market_type?: string
           moderator_decision?: string | null
           moderator_id?: string | null
@@ -791,6 +793,7 @@ export type Database = {
           image_url?: string | null
           initial_liquidity?: number
           liquidity?: number
+          liquidity_verified?: boolean
           market_type?: string
           moderator_decision?: string | null
           moderator_id?: string | null
@@ -1586,6 +1589,16 @@ export type Database = {
         Returns: Json
       }
       expire_stale_pending_deposits: { Args: never; Returns: undefined }
+      flag_unverified_liquidity: {
+        Args: never
+        Returns: {
+          created_at: string
+          creator_wallet: string
+          initial_liquidity: number
+          market_id: string
+          title: string
+        }[]
+      }
       get_copy_trade_stats: {
         Args: { _trader_id: string }
         Returns: {
