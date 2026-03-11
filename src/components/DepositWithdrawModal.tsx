@@ -51,15 +51,40 @@ const PRESET_AMOUNTS = [25, 50, 100, 250];
 const MIN_AMOUNT = 1;
 const MAX_AMOUNT = 50000;
 
-const CRYPTO_OPTIONS = [
-  { value: "usdtbsc", label: "USDT (BSC)" },
-  { value: "usdttrc20", label: "USDT (TRC20)" },
-  { value: "usdterc20", label: "USDT (ERC20)" },
-  { value: "btc", label: "Bitcoin" },
-  { value: "eth", label: "Ethereum" },
-  { value: "bnbbsc", label: "BNB (BSC)" },
-  { value: "ltc", label: "Litecoin" },
+const CRYPTO_GROUPS = [
+  {
+    label: "Stablecoins",
+    options: [
+      { value: "usdtbsc", label: "USDT (BEP20)" },
+      { value: "usdttrc20", label: "USDT (TRC20)" },
+      { value: "usdterc20", label: "USDT (ERC20)" },
+      { value: "usdtmatic", label: "USDT (Polygon)" },
+      { value: "usdtsol", label: "USDT (SOL)" },
+      { value: "usdcerc20", label: "USDC (ERC20)" },
+      { value: "usdcsol", label: "USDC (SOL)" },
+      { value: "usdcmatic", label: "USDC (Polygon)" },
+      { value: "usdcbsc", label: "USDC (BEP20)" },
+      { value: "dai", label: "DAI" },
+    ],
+  },
+  {
+    label: "Popular Crypto",
+    options: [
+      { value: "btc", label: "Bitcoin (BTC)" },
+      { value: "eth", label: "Ethereum (ETH)" },
+      { value: "bnbbsc", label: "BNB (BSC)" },
+      { value: "sol", label: "Solana (SOL)" },
+      { value: "ltc", label: "Litecoin (LTC)" },
+      { value: "xrp", label: "XRP" },
+      { value: "doge", label: "Dogecoin (DOGE)" },
+      { value: "maticmainnet", label: "MATIC (Polygon)" },
+      { value: "avaxc", label: "AVAX (C-Chain)" },
+      { value: "ton", label: "TON" },
+    ],
+  },
 ];
+
+const ALL_CRYPTO_OPTIONS = CRYPTO_GROUPS.flatMap((g) => g.options);
 
 const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: DepositWithdrawModalProps) => {
   const { user } = useAuth();
@@ -553,21 +578,22 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                       <label className="text-xs text-muted-foreground mb-1.5 block">
                         {isDeposit ? "Pay with" : "Receive as"}
                       </label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {CRYPTO_OPTIONS.slice(0, 6).map((c) => (
-                          <button
-                            key={c.value}
-                            onClick={() => setSelectedCrypto(c.value)}
-                            className={`py-2 px-2 rounded-xl text-xs font-semibold transition-all ${
-                              selectedCrypto === c.value
-                                ? "bg-primary text-primary-foreground"
-                                : "glass hover:bg-accent/50 text-muted-foreground"
-                            }`}
-                          >
-                            {c.label}
-                          </button>
+                      <select
+                        value={selectedCrypto}
+                        onChange={(e) => setSelectedCrypto(e.target.value)}
+                        className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all appearance-none"
+                        style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}
+                      >
+                        {CRYPTO_GROUPS.map((group) => (
+                          <optgroup key={group.label} label={group.label}>
+                            {group.options.map((c) => (
+                              <option key={c.value} value={c.value}>
+                                {c.label}
+                              </option>
+                            ))}
+                          </optgroup>
                         ))}
-                      </div>
+                      </select>
                     </div>
 
                     {/* Wallet address for withdrawals */}
@@ -653,7 +679,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Currency</span>
                           <span className="font-semibold">
-                            {CRYPTO_OPTIONS.find((c) => c.value === selectedCrypto)?.label}
+                            {ALL_CRYPTO_OPTIONS.find((c) => c.value === selectedCrypto)?.label}
                           </span>
                         </div>
                         {!isDeposit && (
