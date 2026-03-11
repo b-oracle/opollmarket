@@ -1030,7 +1030,7 @@ const Profile = () => {
         <div className="glass rounded-xl p-4 mb-6 text-center">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Balance</p>
           <p className="text-3xl font-bold text-primary">${balance.toFixed(2)}</p>
-          <p className="text-[10px] text-muted-foreground">USDT</p>
+          <p className="text-[10px] text-muted-foreground">USD</p>
           {bonusBalance > 0 && (
             <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/50 border border-border">
               <Gift className="w-3 h-3 text-primary" />
@@ -1050,8 +1050,10 @@ const Profile = () => {
             const totalPayouts = payoutTxns.reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
             const pnl = totalPayouts + totalSold - totalBought;
             const totalPredictions = buyTxns.length;
-            const resolvedCount = payoutTxns.length + transactions.filter((t: any) => t.type === "loss").length;
-            const winRate = resolvedCount > 0 ? Math.round((payoutTxns.length / resolvedCount) * 100) : null;
+            const refundTxns = transactions.filter((t: any) => t.type === "refund" && t.status === "confirmed");
+            const resolvedCount = payoutTxns.length + Math.max(0, totalPredictions - payoutTxns.length - refundTxns.length);
+            const wins = payoutTxns.length;
+            const winRate = resolvedCount > 0 && wins > 0 ? Math.round((wins / resolvedCount) * 100) : (totalPredictions > 0 && resolvedCount > 0 ? 0 : null);
 
             return [
               { label: "Predictions", value: totalPredictions.toString() },
