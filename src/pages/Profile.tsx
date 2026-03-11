@@ -1502,7 +1502,7 @@ const Profile = () => {
         </div>
       </div>
 
-      <DepositWithdrawModal open={modalOpen} onClose={() => setModalOpen(false)} initialTab={modalTab} />
+      <DepositWithdrawModal open={modalOpen} onClose={() => { setModalOpen(false); setResumePaymentId(null); }} initialTab={modalTab} resumePaymentId={resumePaymentId} />
       <InstallAppModal open={installOpen} onClose={() => setInstallOpen(false)} />
       
       <BottomNav />
