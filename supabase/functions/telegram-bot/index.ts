@@ -1435,25 +1435,64 @@ async function handleQTAssetSelected(token: string, chatId: number, data: string
 
   const assetEmojis: Record<string, string> = {
     BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
+    XAU: "🥇", XAG: "🥈", XPT: "⚪", XPD: "🔘",
+    "EUR/USD": "🇪🇺", "GBP/USD": "🇬🇧", "USD/JPY": "🇯🇵", "AUD/USD": "🇦🇺",
+    "USD/CAD": "🇨🇦", "USD/CHF": "🇨🇭", "NZD/USD": "🇳🇿", "EUR/GBP": "💱",
   };
 
-  const chartUrl = `${APP_URL}/quick-trade?asset=${asset}`;
+  const isForex = isForexAsset(asset);
+  const isCommodity = isCommodityAsset(asset);
+  const needsMarketHours = isForex || isCommodity;
 
-  // Fetch live price with 24h change
-  const priceData = await fetchCryptoPrice(asset);
+  // Market hours check
+  if (needsMarketHours && !isForexMarketOpen()) {
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text:
+        `🌙 <b>Market Closed</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `${assetEmojis[asset] || "📊"} <b>${asset}</b> trading is currently closed.\n\n` +
+        `🕐 <b>Trading hours:</b>\n` +
+        `Sunday 5:00 PM ET → Friday 5:00 PM ET\n\n` +
+        `Try a crypto asset instead — they trade 24/7!`,
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "⬅️ Back to Assets", callback_data: "cmd_quicktrade" }],
+          [{ text: "🏠 Home", callback_data: "cmd_home" }],
+        ],
+      },
+    });
+    return;
+  }
+
+  const chartUrl = `${APP_URL}/quick-trade?asset=${encodeURIComponent(asset)}`;
+
+  // Fetch live price
+  const priceData = await getAssetPrice(asset);
   let priceText = "";
   if (priceData) {
-    const changeEmoji = priceData.change24h >= 0 ? "🟢" : "🔴";
-    const changeSign = priceData.change24h >= 0 ? "+" : "";
-    priceText =
-      `\n💲 <b>Current Price</b>: ${formatPrice(priceData.price)}\n` +
-      `${changeEmoji} <b>24h Change</b>: ${changeSign}${priceData.change24h.toFixed(2)}%\n`;
+    priceText = `\n💲 <b>Current Price</b>: ${formatAssetPrice(asset, priceData.price)}\n`;
+    if (priceData.change24h !== undefined) {
+      const changeEmoji = priceData.change24h >= 0 ? "🟢" : "🔴";
+      const changeSign = priceData.change24h >= 0 ? "+" : "";
+      priceText += `${changeEmoji} <b>24h Change</b>: ${changeSign}${priceData.change24h.toFixed(2)}%\n`;
+    }
+  }
+
+  // Build TradingView URL based on asset type
+  let tvUrl = `https://www.tradingview.com/chart/?symbol=BINANCE:${asset}USDT`;
+  if (isForex) {
+    tvUrl = `https://www.tradingview.com/chart/?symbol=FX:${asset.replace("/", "")}`;
+  } else if (isCommodity) {
+    const tvMap: Record<string, string> = { XAU: "XAUUSD", XAG: "XAGUSD", XPT: "XPTUSD", XPD: "XPDUSD" };
+    tvUrl = `https://www.tradingview.com/chart/?symbol=OANDA:${tvMap[asset] || asset}`;
   }
 
   const buttons = [
     [
       { text: "📊 View Chart", url: chartUrl },
-      { text: "📈 TradingView", url: `https://www.tradingview.com/chart/?symbol=BINANCE:${asset}USDT` },
+      { text: "📈 TradingView", url: tvUrl },
     ],
     [
       { text: "📈 UP ($5)", callback_data: `qt_side_up_5_${asset}` },
