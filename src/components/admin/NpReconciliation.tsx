@@ -79,6 +79,8 @@ const NpReconciliation = () => {
   const [anomaliesDb, setAnomaliesDb] = useState<AnomalyDbRecord[]>([]);
   const [anomaliesNp, setAnomaliesNp] = useState<AnomalyNpRecord[]>([]);
   const [applied, setApplied] = useState<ApplyResult[] | null>(null);
+  const [fixingExpired, setFixingExpired] = useState(false);
+  const [fixedResults, setFixedResults] = useState<{ fixed: FixedRecord[]; skipped: any[]; total_checked: number } | null>(null);
   const [tab, setTab] = useState<"matched" | "anomalies">("matched");
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
