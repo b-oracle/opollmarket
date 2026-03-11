@@ -218,6 +218,58 @@ async function handleResolve(
 
   console.log("resolve-market: Success, winners:", winningPositions.length, "paid:", totalPaidOut);
 
+  // ── Return initial liquidity to creator (minus exit fee) ──
+  if (market.initial_liquidity > 0) {
+    const creatorUserId = market.creator_wallet;
+
+    // Get exit fee from commission_settings
+    const { data: settings } = await adminClient
+      .from("commission_settings")
+      .select("exit_fee_percent")
+      .limit(1)
+      .single();
+
+    const exitFeePercent = settings?.exit_fee_percent ?? 5;
+    const feeAmount = market.initial_liquidity * (exitFeePercent / 100);
+    const liquidityRefund = market.initial_liquidity - feeAmount;
+
+    if (liquidityRefund > 0) {
+      const { data: creatorBal } = await adminClient
+        .from("balances")
+        .select("amount")
+        .eq("user_id", creatorUserId)
+        .single();
+
+      if (creatorBal) {
+        await adminClient
+          .from("balances")
+          .update({ amount: creatorBal.amount + liquidityRefund, updated_at: new Date().toISOString() })
+          .eq("user_id", creatorUserId);
+      }
+
+      await adminClient.from("transactions").insert({
+        user_id: creatorUserId,
+        market_id: market_id,
+        type: "refund",
+        amount: liquidityRefund,
+        side: "liquidity_return",
+        status: "confirmed",
+      });
+
+      // Notify creator
+      await adminClient.from("notifications").insert({
+        user_id: creatorUserId,
+        title: "Liquidity Returned 💰",
+        message: `Your $${market.initial_liquidity.toFixed(2)} initial liquidity for "${market.title}" has been returned ($${liquidityRefund.toFixed(2)} after ${exitFeePercent}% fee).`,
+        type: "refund",
+        market_id: market_id,
+      });
+
+      console.log("resolve-market: Returned liquidity to creator:", liquidityRefund, "fee:", feeAmount);
+    }
+  }
+
+
   // ── Process copy trade revenue share ──
   // Find all copy_trade_earnings for this market
   const { data: copyEarnings } = await adminClient
