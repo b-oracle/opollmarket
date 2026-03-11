@@ -129,6 +129,7 @@ const DetailsField = ({ details, setDetails, error, touched: fieldTouched, onBlu
 
 const Create = () => {
   const { address, isConnected } = useAccount();
+  const { open } = useAppKit();
   const { connect, connectors, isPending } = useFilteredConnectors();
   const { user, loading: authLoading, displayName } = useAuth();
   const navigate = useNavigate();
