@@ -48,6 +48,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 import CategoryIcon from "@/components/CategoryIcon";
+import DepositWithdrawModal from "@/components/DepositWithdrawModal";
 import SwapModal from "@/components/SwapModal";
 import FixtureSearch from "@/components/FixtureSearch";
 import { isPriceAutoResolveCategory, getAssetsForCategory, getAssetClassLabel, getResolutionSource } from "@/data/assetClasses";
@@ -194,19 +195,43 @@ const Create = () => {
   const [swapModalOpen, setSwapModalOpen] = useState(false);
   const [showConnectors, setShowConnectors] = useState(false);
   const [feeBypass, setFeeBypass] = useState(false);
+  const [depositModalOpen, setDepositModalOpen] = useState(false);
 
-  // Form state
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [details, setDetails] = useState("");
-  const [category, setCategory] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [resolutionSource, setResolutionSource] = useState("");
-  const [initialLiquidity, setInitialLiquidity] = useState("");
-  const [step, setStep] = useState(1);
-  const [marketType, setMarketType] = useState<"binary" | "multi" | "range">("binary");
-  const [options, setOptions] = useState<string[]>(["", ""]);
-  const [videoUrl, setVideoUrl] = useState("");
+  // Form state — restore from sessionStorage on mount
+  const getStored = (key: string, fallback: string) => {
+    try { return sessionStorage.getItem(`create_${key}`) ?? fallback; } catch { return fallback; }
+  };
+  const getStoredJson = <T,>(key: string, fallback: T): T => {
+    try { const v = sessionStorage.getItem(`create_${key}`); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+  };
+
+  const [title, setTitle] = useState(() => getStored("title", ""));
+  const [description, setDescription] = useState(() => getStored("description", ""));
+  const [details, setDetails] = useState(() => getStored("details", ""));
+  const [category, setCategory] = useState(() => getStored("category", ""));
+  const [endDate, setEndDate] = useState(() => getStored("endDate", ""));
+  const [resolutionSource, setResolutionSource] = useState(() => getStored("resolutionSource", ""));
+  const [initialLiquidity, setInitialLiquidity] = useState(() => getStored("initialLiquidity", ""));
+  const [step, setStep] = useState(() => getStoredJson("step", 1));
+  const [marketType, setMarketType] = useState<"binary" | "multi" | "range">(() => getStoredJson("marketType", "binary"));
+  const [options, setOptions] = useState<string[]>(() => getStoredJson("options", ["", ""]));
+  const [videoUrl, setVideoUrl] = useState(() => getStored("videoUrl", ""));
+
+  // Persist form state to sessionStorage
+  useEffect(() => {
+    const fields: Record<string, string> = {
+      title, description, details, category, endDate, resolutionSource, initialLiquidity, videoUrl,
+    };
+    Object.entries(fields).forEach(([k, v]) => { try { sessionStorage.setItem(`create_${k}`, v); } catch {} });
+    try { sessionStorage.setItem("create_step", JSON.stringify(step)); } catch {}
+    try { sessionStorage.setItem("create_marketType", JSON.stringify(marketType)); } catch {}
+    try { sessionStorage.setItem("create_options", JSON.stringify(options)); } catch {}
+  }, [title, description, details, category, endDate, resolutionSource, initialLiquidity, step, marketType, options, videoUrl]);
+
+  const clearFormStorage = () => {
+    ["title", "description", "details", "category", "endDate", "resolutionSource", "initialLiquidity", "videoUrl", "step", "marketType", "options"]
+      .forEach((k) => { try { sessionStorage.removeItem(`create_${k}`); } catch {} });
+  };
 
   // Auto-resolve state
   const [autoResolve, setAutoResolve] = useState(false);
@@ -609,6 +634,7 @@ const Create = () => {
 
     if (needsReview) {
       // Pending markets go straight to success (no first prediction needed)
+      clearFormStorage();
       setSubmitStep("success");
       if (feeBypass) {
         toast.info("Your market requires approval. The creation fee ($" + marketCreationFee + ") is non-refundable.");
@@ -1756,10 +1782,21 @@ const Create = () => {
                 </div>
                 {(() => {
                   const totalNeeded = parseFloat(initialLiquidity) + (feeBypass ? marketCreationFee : 0);
-                  return totalNeeded > balance && balance > 0 ? (
-                    <p className="text-[10px] text-destructive mt-1.5 flex items-center gap-1">
-                      ⚠️ Total cost (${totalNeeded.toFixed(2)}) exceeds your balance by ${(totalNeeded - balance).toFixed(2)}
-                    </p>
+                  const shortfall = totalNeeded - balance;
+                  return totalNeeded > balance && balance >= 0 ? (
+                    <div className="mt-2 space-y-2">
+                      <p className="text-[10px] text-destructive flex items-center gap-1">
+                        ⚠️ Total cost (${totalNeeded.toFixed(2)}) exceeds your balance by ${shortfall.toFixed(2)}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setDepositModalOpen(true)}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold transition-all active:scale-95"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Add Funds to Continue
+                      </button>
+                    </div>
                   ) : null;
                 })()}
               </div>
@@ -2031,6 +2068,7 @@ const Create = () => {
                         }
 
                         toast.success("First prediction placed! Your market is now live.");
+                        clearFormStorage();
                         setSubmitStep("success");
                       } catch (err: any) {
                         toast.error(err.message || "Failed to place prediction");
@@ -2235,6 +2273,7 @@ const Create = () => {
       </div>
       
       <BottomNav />
+      <DepositWithdrawModal open={depositModalOpen} onClose={() => setDepositModalOpen(false)} initialTab="deposit" />
     </div>
   );
 };
