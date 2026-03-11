@@ -145,6 +145,8 @@ Deno.serve(async (req) => {
       await handleUnlink(token, supabase, chatId);
     } else if (text === "/stats") {
       await handleStats(token, supabase, chatId);
+    } else if (text === "/faq") {
+      await handleFaqStart(token, supabase, chatId);
     } else if (text === "/cancel") {
       // Cancel any pending link session
       await supabase.from("telegram_link_sessions").delete().eq("chat_id", chatId);
