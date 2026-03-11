@@ -31,6 +31,7 @@ interface DepositWithdrawModalProps {
   open: boolean;
   onClose: () => void;
   initialTab?: Tab;
+  resumePaymentId?: string | null;
 }
 
 interface PaymentInfo {
@@ -86,7 +87,7 @@ const CRYPTO_GROUPS = [
 
 const ALL_CRYPTO_OPTIONS = CRYPTO_GROUPS.flatMap((g) => g.options);
 
-const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: DepositWithdrawModalProps) => {
+const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePaymentId }: DepositWithdrawModalProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { balance, bonusBalance } = useUserBalance();
@@ -124,6 +125,39 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit" }: Deposit
       if (pollInterval) clearInterval(pollInterval);
     };
   }, [initialTab, open]);
+
+  // Resume a pending deposit by fetching payment details
+  useEffect(() => {
+    if (!open || !resumePaymentId || !user) return;
+
+    const fetchPaymentDetails = async () => {
+      setStep("executing");
+      setErrorMsg("");
+      try {
+        const { data, error } = await supabase.functions.invoke("get-deposit-status", {
+          body: { payment_id: resumePaymentId },
+        });
+        if (error || data?.error) {
+          throw new Error(data?.error || error?.message || "Failed to fetch payment details");
+        }
+        setPaymentInfo({
+          payment_id: resumePaymentId,
+          pay_address: data.pay_address,
+          pay_amount: data.pay_amount,
+          pay_currency: data.pay_currency,
+          expiration_estimate_date: data.expiration_estimate_date,
+        });
+        setDepositCreatedAt(new Date(data.created_at).getTime());
+        setStep("awaiting_payment");
+        startPolling(resumePaymentId);
+      } catch (err: any) {
+        setErrorMsg(err.message || "Could not load payment details");
+        setStep("error");
+      }
+    };
+
+    fetchPaymentDetails();
+  }, [open, resumePaymentId, user]);
 
   // Countdown timer for deposit expiry (2 hours)
   useEffect(() => {

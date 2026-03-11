@@ -325,6 +325,7 @@ const Profile = () => {
   const { open } = useAppKit();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<"deposit" | "withdraw">("deposit");
+  const [resumePaymentId, setResumePaymentId] = useState<string | null>(null);
   const [txFilter, setTxFilter] = useState<FilterType>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [txPage, setTxPage] = useState(1);
@@ -575,8 +576,8 @@ const Profile = () => {
     enabled: !!user,
   });
 
-  const openDeposit = () => { setModalTab("deposit"); setModalOpen(true); };
-  const openWithdraw = () => { setModalTab("withdraw"); setModalOpen(true); };
+  const openDeposit = () => { setResumePaymentId(null); setModalTab("deposit"); setModalOpen(true); };
+  const openWithdraw = () => { setResumePaymentId(null); setModalTab("withdraw"); setModalOpen(true); };
 
   const filteredTx = useMemo(() => {
     if (txFilter === "quick_trades") {
@@ -1315,9 +1316,17 @@ const Profile = () => {
               const txKey: TxType = (tx.type === "buy" && tx.side === "initial_liquidity") ? "initial_liquidity" : (tx.type as TxType);
               const cfg = txConfig[txKey] || txConfig.buy;
               const Icon = cfg.icon;
+              const isPendingDeposit = tx.type === "deposit" && (tx.status === "pending" || tx.status === "partial") && tx.nowpayments_payment_id;
               return (
                 <motion.div key={tx.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                  className="glass rounded-xl p-3.5 flex items-start gap-3">
+                  onClick={() => {
+                    if (isPendingDeposit) {
+                      setResumePaymentId(tx.nowpayments_payment_id);
+                      setModalTab("deposit");
+                      setModalOpen(true);
+                    }
+                  }}
+                  className={`glass rounded-xl p-3.5 flex items-start gap-3 ${isPendingDeposit ? "cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all" : ""}`}>
                   <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${cfg.colorClass}`}>
                     <Icon className="w-4 h-4" />
                   </div>
@@ -1353,7 +1362,9 @@ const Profile = () => {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-muted-foreground">{formatTimeAgo(tx.created_at)}</span>
+                      <span className="text-[10px] text-muted-foreground">{formatTimeAgo(tx.created_at)}</span>
                       {tx.shares && <span className="text-[10px] text-muted-foreground">{Number(tx.shares).toFixed(1)} shares</span>}
+                      {isPendingDeposit && <span className="text-[10px] text-primary font-semibold">Tap to view →</span>}
                     </div>
                   </div>
                 </motion.div>
@@ -1493,7 +1504,7 @@ const Profile = () => {
         </div>
       </div>
 
-      <DepositWithdrawModal open={modalOpen} onClose={() => setModalOpen(false)} initialTab={modalTab} />
+      <DepositWithdrawModal open={modalOpen} onClose={() => { setModalOpen(false); setResumePaymentId(null); }} initialTab={modalTab} resumePaymentId={resumePaymentId} />
       <InstallAppModal open={installOpen} onClose={() => setInstallOpen(false)} />
       
       <BottomNav />
