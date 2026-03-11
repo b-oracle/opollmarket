@@ -49,3 +49,5 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.avatar-proxy]
     verify_jwt = false
+  [functions.get-deposit-status]
+    verify_jwt = false
