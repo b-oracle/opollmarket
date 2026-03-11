@@ -1247,7 +1247,7 @@ const Profile = () => {
             {(["all", "trades", "quick_trades", "deposits"] as FilterType[]).map((f) => (
               <button key={f} onClick={() => { setTxFilter(f); setTxPage(1); }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize ${txFilter === f ? "bg-primary text-primary-foreground" : "glass text-muted-foreground hover:text-foreground"}`}>
-                {f === "deposits" ? "Deposits" : f === "quick_trades" ? "Quick Trades" : f}
+                {f === "deposits" ? "Deposits" : f === "quick_trades" ? "Quick Trades" : f === "trades" ? "Predictions" : f}
               </button>
             ))}
           </div>
