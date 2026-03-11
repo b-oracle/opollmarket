@@ -1225,7 +1225,10 @@ const Profile = () => {
             <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Transaction History</h3>
             <motion.button
               onClick={async () => {
-                await queryClient.invalidateQueries({ queryKey: ["transactions", user?.id] });
+                await Promise.all([
+                  queryClient.invalidateQueries({ queryKey: ["transactions", user?.id] }),
+                  queryClient.invalidateQueries({ queryKey: ["quick-bets-profile", user?.id] }),
+                ]);
                 toast.success("Transactions refreshed");
               }}
               whileTap={{ rotate: 360 }}
