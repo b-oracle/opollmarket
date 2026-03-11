@@ -634,6 +634,7 @@ const Create = () => {
 
     if (needsReview) {
       // Pending markets go straight to success (no first prediction needed)
+      clearFormStorage();
       setSubmitStep("success");
       if (feeBypass) {
         toast.info("Your market requires approval. The creation fee ($" + marketCreationFee + ") is non-refundable.");
