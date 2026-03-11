@@ -88,10 +88,23 @@ function QuickTradeChart({
     );
   }
 
-  const isUp = filtered[filtered.length - 1].price >= filtered[0].price;
   const upColor = "hsl(142, 76%, 36%)";
   const downColor = "hsl(0, 84%, 60%)";
-  const color = isUp ? upColor : downColor;
+
+  // When user has a bet, color reflects P&L relative to their side
+  const color = (() => {
+    if (userBet && activeRound?.open_price) {
+      const entry = Number(activeRound.open_price);
+      const current = filtered[filtered.length - 1].price;
+      const inProfit = userBet.side === "down"
+        ? current < entry
+        : current > entry;
+      return inProfit ? upColor : downColor;
+    }
+    // No active bet: use price direction
+    const isUp = filtered[filtered.length - 1].price >= filtered[0].price;
+    return isUp ? upColor : downColor;
+  })();
 
   const tooltipContent = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
