@@ -1312,7 +1312,8 @@ const Profile = () => {
               }
 
               // Regular transaction rendering
-              const cfg = txConfig[tx.type as TxType] || txConfig.buy;
+              const txKey: TxType = (tx.type === "buy" && tx.side === "initial_liquidity") ? "initial_liquidity" : (tx.type as TxType);
+              const cfg = txConfig[txKey] || txConfig.buy;
               const Icon = cfg.icon;
               return (
                 <motion.div key={tx.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
