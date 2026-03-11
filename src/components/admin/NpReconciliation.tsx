@@ -3,6 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Scale, Loader2, AlertTriangle, CheckCircle2, ArrowRight, XCircle, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 
+interface FixedRecord {
+  tx_id: string;
+  user_id: string;
+  np_payment_id: string;
+  np_status: string;
+  requested_amount: number;
+  credited_amount: number;
+  status_set: string;
+}
+
 interface MatchedRecord {
   tx_id: string;
   user_id: string;
