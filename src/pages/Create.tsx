@@ -362,7 +362,7 @@ const Create = () => {
   };
 
   // Submission state
-  type SubmitStep = "idle" | "checking_similarity" | "moderating" | "deploying" | "saving" | "success" | "first_prediction" | "placing_prediction" | "error";
+  type SubmitStep = "idle" | "moderating" | "deploying" | "saving" | "success" | "first_prediction" | "placing_prediction" | "error";
   const [submitStep, setSubmitStep] = useState<SubmitStep>("idle");
   const [txHash, setTxHash] = useState("");
   const [newMarketId, setNewMarketId] = useState("");
@@ -406,36 +406,41 @@ const Create = () => {
     setCreatedAsPending(false);
     setModerationReason("");
 
-    // Step 0a: AI similarity check
-    setSubmitStep("checking_similarity");
-    let isSimilar = false;
-    try {
-      const { data: simData, error: simError } = await supabase.functions.invoke("check-market-similarity", {
-        body: { title: title.trim(), description: description.trim() },
-      });
-      if (!simError && simData?.similar && simData.matches?.length > 0) {
-        isSimilar = true;
-        setSimilarMarkets(simData.matches);
-      }
-    } catch (err) {
-      console.error("Similarity check failed, proceeding:", err);
-    }
-
-    // Step 0b: AI content moderation
+    // Step 0: Run similarity check and content moderation in parallel
     setSubmitStep("moderating");
+    let isSimilar = false;
     let isFlagged = false;
-    try {
-      const { data: modData, error: modError } = await supabase.functions.invoke("moderate-market-content", {
+
+    const [simResult, modResult] = await Promise.allSettled([
+      supabase.functions.invoke("check-market-similarity", {
+        body: { title: title.trim(), description: description.trim() },
+      }),
+      supabase.functions.invoke("moderate-market-content", {
         body: {
           title: title.trim(),
           description: description.trim(),
           options: marketType !== "binary" ? options.filter(o => o.trim()) : undefined,
         },
-      });
+      }),
+    ]);
+
+    // Process similarity result
+    if (simResult.status === "fulfilled") {
+      const { data: simData, error: simError } = simResult.value;
+      if (!simError && simData?.similar && simData.matches?.length > 0) {
+        isSimilar = true;
+        setSimilarMarkets(simData.matches);
+      }
+    } else {
+      console.error("Similarity check failed, proceeding:", simResult.reason);
+    }
+
+    // Process moderation result
+    if (modResult.status === "fulfilled") {
+      const { data: modData, error: modError } = modResult.value;
       if (!modError && modData?.flagged) {
         isFlagged = true;
         setModerationReason(modData.reason || "Content flagged by AI moderation");
-        // Log to moderation dashboard
         await supabase.from("moderation_logs").insert({
           content_type: "market",
           user_id: user.id,
@@ -444,8 +449,8 @@ const Create = () => {
           category: modData.categories?.[0] || "content",
         });
       }
-    } catch (err) {
-      console.error("Moderation check failed, proceeding:", err);
+    } else {
+      console.error("Moderation check failed, proceeding:", modResult.reason);
     }
 
     // Step 1: Check and deduct balance
@@ -493,7 +498,7 @@ const Create = () => {
     }
 
     // Simulate on-chain contract deployment
-    await new Promise((r) => setTimeout(r, 2500));
+    await new Promise((r) => setTimeout(r, 1200));
     const mockTxHash = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`;
     const mockContractAddr = `0x${Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`;
     setTxHash(mockTxHash);
@@ -1866,7 +1871,7 @@ const Create = () => {
                 </div>
               )}
 
-              {(submitStep === "checking_similarity" || submitStep === "moderating" || submitStep === "deploying" || submitStep === "saving") && (
+              {(submitStep === "moderating" || submitStep === "deploying" || submitStep === "saving") && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -1874,27 +1879,22 @@ const Create = () => {
                 >
                   <LogoLoader size="lg" />
                   <h3 className="text-base font-bold mt-3 mb-1">
-                    {submitStep === "checking_similarity"
-                      ? "Checking for Duplicates..."
-                      : submitStep === "moderating"
-                      ? "Moderating Content..."
+                    {submitStep === "moderating"
+                      ? "Running AI Checks..."
                       : submitStep === "deploying"
                       ? "Deploying Contract..."
                       : "Saving to Database..."}
                   </h3>
                   <p className="text-xs text-muted-foreground text-center">
-                    {submitStep === "checking_similarity"
-                      ? "Using AI to verify your market is unique..."
-                      : submitStep === "moderating"
-                      ? "Checking content for policy compliance..."
+                    {submitStep === "moderating"
+                      ? "Checking similarity & content moderation..."
                       : submitStep === "deploying"
                       ? "Deploying your prediction market contract on BSC. Please confirm in your wallet."
                       : "Storing market data and linking contract address..."}
                   </p>
                   <div className="mt-4 space-y-2 w-full max-w-xs">
                     {[
-                      { label: "Checking for similar markets", done: submitStep !== "checking_similarity" },
-                      { label: "Content moderation", done: submitStep !== "checking_similarity" && submitStep !== "moderating" },
+                      { label: "AI similarity & moderation", done: submitStep !== "moderating" },
                       { label: "Preparing contract", done: submitStep === "saving" },
                       { label: "Awaiting wallet signature", done: submitStep === "saving" },
                       { label: "Broadcasting transaction", done: submitStep === "saving" },
