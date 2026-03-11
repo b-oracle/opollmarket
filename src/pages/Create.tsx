@@ -146,6 +146,7 @@ const Create = () => {
   const [blueMaxFreeMarkets, setBlueMaxFreeMarkets] = useState(5);
   const [goldMaxFreeMarkets, setGoldMaxFreeMarkets] = useState(20);
   const [verificationLevel, setVerificationLevel] = useState("none");
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [activeMarketCount, setActiveMarketCount] = useState(0);
   const [exceededFreeLimit, setExceededFreeLimit] = useState(false);
 
@@ -167,6 +168,7 @@ const Create = () => {
         setBlueMaxFreeMarkets(Number((data as any).blue_max_free_markets) || 5);
         setGoldMaxFreeMarkets(Number((data as any).gold_max_free_markets) || 20);
       }
+      setSettingsLoaded(true);
     })();
   }, []);
 
@@ -735,10 +737,10 @@ const Create = () => {
   };
 
   useEffect(() => {
-    if (isConnected && !gatePassed && !gateRunning && gateChecks.length === 0) {
+    if (isConnected && settingsLoaded && !gatePassed && !gateRunning && gateChecks.length === 0) {
       runGateCheck();
     }
-  }, [isConnected]);
+  }, [isConnected, settingsLoaded]);
 
   // Fee bypass — skip gate and proceed to form, fee added at checkout
   const handleFeeBypass = () => {
