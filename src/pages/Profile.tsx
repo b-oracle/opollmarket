@@ -1362,7 +1362,9 @@ const Profile = () => {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-muted-foreground">{formatTimeAgo(tx.created_at)}</span>
+                      <span className="text-[10px] text-muted-foreground">{formatTimeAgo(tx.created_at)}</span>
                       {tx.shares && <span className="text-[10px] text-muted-foreground">{Number(tx.shares).toFixed(1)} shares</span>}
+                      {isPendingDeposit && <span className="text-[10px] text-primary font-semibold">Tap to view →</span>}
                     </div>
                   </div>
                 </motion.div>
