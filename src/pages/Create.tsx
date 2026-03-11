@@ -196,18 +196,36 @@ const Create = () => {
   const [feeBypass, setFeeBypass] = useState(false);
   const [depositModalOpen, setDepositModalOpen] = useState(false);
 
-  // Form state
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [details, setDetails] = useState("");
-  const [category, setCategory] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [resolutionSource, setResolutionSource] = useState("");
-  const [initialLiquidity, setInitialLiquidity] = useState("");
-  const [step, setStep] = useState(1);
-  const [marketType, setMarketType] = useState<"binary" | "multi" | "range">("binary");
-  const [options, setOptions] = useState<string[]>(["", ""]);
-  const [videoUrl, setVideoUrl] = useState("");
+  // Form state — restore from sessionStorage on mount
+  const getStored = (key: string, fallback: string) => {
+    try { return sessionStorage.getItem(`create_${key}`) ?? fallback; } catch { return fallback; }
+  };
+  const getStoredJson = <T,>(key: string, fallback: T): T => {
+    try { const v = sessionStorage.getItem(`create_${key}`); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+  };
+
+  const [title, setTitle] = useState(() => getStored("title", ""));
+  const [description, setDescription] = useState(() => getStored("description", ""));
+  const [details, setDetails] = useState(() => getStored("details", ""));
+  const [category, setCategory] = useState(() => getStored("category", ""));
+  const [endDate, setEndDate] = useState(() => getStored("endDate", ""));
+  const [resolutionSource, setResolutionSource] = useState(() => getStored("resolutionSource", ""));
+  const [initialLiquidity, setInitialLiquidity] = useState(() => getStored("initialLiquidity", ""));
+  const [step, setStep] = useState(() => getStoredJson("step", 1));
+  const [marketType, setMarketType] = useState<"binary" | "multi" | "range">(() => getStoredJson("marketType", "binary"));
+  const [options, setOptions] = useState<string[]>(() => getStoredJson("options", ["", ""]));
+  const [videoUrl, setVideoUrl] = useState(() => getStored("videoUrl", ""));
+
+  // Persist form state to sessionStorage
+  useEffect(() => {
+    const fields: Record<string, string> = {
+      title, description, details, category, endDate, resolutionSource, initialLiquidity, videoUrl,
+    };
+    Object.entries(fields).forEach(([k, v]) => { try { sessionStorage.setItem(`create_${k}`, v); } catch {} });
+    try { sessionStorage.setItem("create_step", JSON.stringify(step)); } catch {}
+    try { sessionStorage.setItem("create_marketType", JSON.stringify(marketType)); } catch {}
+    try { sessionStorage.setItem("create_options", JSON.stringify(options)); } catch {}
+  }, [title, description, details, category, endDate, resolutionSource, initialLiquidity, step, marketType, options, videoUrl]);
 
   // Auto-resolve state
   const [autoResolve, setAutoResolve] = useState(false);
