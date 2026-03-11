@@ -1405,7 +1405,12 @@ const Profile = () => {
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-muted-foreground">{formatTimeAgo(tx.created_at)}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] text-muted-foreground">{formatTimeAgo(tx.created_at)}</span>
+                          {tx.type === "commission" && tx.side && tx.side !== "yes" && tx.side !== "no" && (
+                            <span className="text-[10px] text-amber-500">from {tx.side}</span>
+                          )}
+                        </div>
                         {tx.shares && <span className="text-[10px] text-muted-foreground">{Number(tx.shares).toFixed(1)} shares</span>}
                         {isPendingDeposit && <span className="text-[10px] text-primary font-semibold">Tap to view →</span>}
                       </div>
