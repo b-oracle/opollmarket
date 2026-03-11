@@ -454,6 +454,36 @@ const NpReconciliation = () => {
           </div>
         </div>
       )}
+
+      {/* Fixed expired results */}
+      {fixedResults && (
+        <div className={`mt-4 rounded-lg p-3 ${fixedResults.fixed.length > 0 ? "bg-green-500/5 border border-green-500/20" : "bg-muted/30 border border-border"}`}>
+          <div className="flex items-center gap-2 mb-2">
+            {fixedResults.fixed.length > 0 ? (
+              <CheckCircle2 className="w-4 h-4 text-green-500" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
+            )}
+            <p className="text-xs font-semibold">
+              Checked {fixedResults.total_checked} expired deposits — {fixedResults.fixed.length} recovered, {fixedResults.skipped.length} skipped
+            </p>
+          </div>
+          {fixedResults.fixed.length > 0 && (
+            <div className="space-y-1.5">
+              {fixedResults.fixed.map((f) => (
+                <div key={f.tx_id} className="flex items-center justify-between text-xs bg-card rounded-lg px-3 py-2 border border-border">
+                  <span className="font-mono text-muted-foreground">{f.np_payment_id}</span>
+                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${f.status_set === "partial" ? "bg-yellow-500/10 text-yellow-500" : "bg-green-500/10 text-green-500"}`}>
+                    {f.status_set}
+                  </span>
+                  <span className="font-semibold text-green-500">+{fmt(f.credited_amount)}</span>
+                  <span className="text-muted-foreground">of {fmt(f.requested_amount)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
