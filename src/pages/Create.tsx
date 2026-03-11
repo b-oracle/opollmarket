@@ -362,7 +362,7 @@ const Create = () => {
   };
 
   // Submission state
-  type SubmitStep = "idle" | "checking_similarity" | "moderating" | "deploying" | "saving" | "success" | "first_prediction" | "placing_prediction" | "error";
+  type SubmitStep = "idle" | "moderating" | "deploying" | "saving" | "success" | "first_prediction" | "placing_prediction" | "error";
   const [submitStep, setSubmitStep] = useState<SubmitStep>("idle");
   const [txHash, setTxHash] = useState("");
   const [newMarketId, setNewMarketId] = useState("");
