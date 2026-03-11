@@ -32,12 +32,13 @@ import useAnalytics from "@/hooks/useAnalytics";
 const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
 const CreatorCard = ({ creatorName, creatorUserId }: { creatorName: string; creatorUserId: string }) => {
+  const navigate = useNavigate();
   const { data: profile } = useQuery({
     queryKey: ["creator-profile", creatorUserId],
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("wallet_address, display_name")
+        .select("wallet_address, display_name, avatar_url")
         .eq("id", creatorUserId)
         .maybeSingle();
       return data;
@@ -45,24 +46,26 @@ const CreatorCard = ({ creatorName, creatorUserId }: { creatorName: string; crea
     enabled: !!creatorUserId,
   });
 
-  const walletAddr = profile?.wallet_address;
+  const displayName = profile?.display_name || creatorName;
+  const primaryAddr = profile?.wallet_address
+    ? truncateAddr(profile.wallet_address)
+    : truncateAddr(creatorUserId);
 
   return (
-    <div className="glass rounded-xl p-4 mb-4 flex items-center gap-3">
-      <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
-        <span className="font-bold text-primary">{(profile?.display_name || creatorName).charAt(0)}</span>
+    <div
+      onClick={() => navigate(`/user/${creatorUserId}`)}
+      className="glass rounded-xl p-4 mb-4 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-transform"
+    >
+      <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center overflow-hidden">
+        {profile?.avatar_url ? (
+          <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
+        ) : (
+          <span className="font-bold text-primary">{displayName.charAt(0)}</span>
+        )}
       </div>
       <div className="flex-1 min-w-0">
-        {walletAddr ? (
-          <>
-            <p className="text-sm font-semibold font-mono">{truncateAddr(walletAddr)}</p>
-            {profile?.display_name && (
-              <p className="text-xs text-muted-foreground">@{profile.display_name}</p>
-            )}
-          </>
-        ) : (
-          <p className="text-sm font-semibold">@{profile?.display_name || creatorName}</p>
-        )}
+        <p className="text-sm font-semibold font-mono">{primaryAddr}</p>
+        <p className="text-xs text-muted-foreground">@{displayName}</p>
       </div>
     </div>
   );
