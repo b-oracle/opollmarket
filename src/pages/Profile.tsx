@@ -601,7 +601,7 @@ const Profile = () => {
     }
     let result = transactions;
     if (txFilter === "trades") result = result.filter((t: any) => t.type === "buy" || t.type === "sell");
-    else if (txFilter === "deposits") result = result.filter((t: any) => t.type === "deposit" || t.type === "withdraw");
+    else if (txFilter === "deposits") result = result.filter((t: any) => t.type === "deposit" || t.type === "withdraw" || t.type === "withdrawal");
     if (statusFilter !== "all") {
       result = result.filter((t: any) =>
         statusFilter === "failed" ? (t.status === "failed" || t.status === "expired") : t.status === statusFilter
