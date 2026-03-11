@@ -161,10 +161,14 @@ Deno.serve(async (req) => {
         // Check if this is a custom QT amount (number input)
         const qtHandled = await handleQTCustomInput(token, supabase, chatId, text);
         if (!qtHandled) {
-          await tg(token, "sendMessage", {
-            chat_id: chatId,
-            text: "Unknown command. Type /help to see available commands.",
-          });
+          // Check if this is a FAQ question
+          const faqHandled = await handleFaqSession(token, supabase, chatId, text);
+          if (!faqHandled) {
+            await tg(token, "sendMessage", {
+              chat_id: chatId,
+              text: "Unknown command. Type /help to see available commands.",
+            });
+          }
         }
       }
     }
