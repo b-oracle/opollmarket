@@ -1786,6 +1786,7 @@ async function handleQTCustomInput(
     const asset = identifier;
     const assetEmojis: Record<string, string> = {
       BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
+      XAU: "🥇", XAG: "🥈", "EUR/USD": "🇪🇺", "GBP/USD": "🇬🇧", "USD/JPY": "🇯🇵",
     };
 
     await tg(token, "sendMessage", {
