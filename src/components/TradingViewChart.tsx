@@ -71,6 +71,9 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   const pulsingDotRef = useRef<HTMLDivElement>(null);
   const [dotColor, setDotColor] = useState("#22c55e");
   const [countdown, setCountdown] = useState<number | null>(null);
+  const interpolationRef = useRef<number | null>(null);
+  const interpolatedPriceRef = useRef<number | null>(null);
+  const lastUpdateTimeRef = useRef<number>(0);
 
   // Countdown timer for active round
   useEffect(() => {
