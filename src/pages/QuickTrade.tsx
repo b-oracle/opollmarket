@@ -436,6 +436,8 @@ export default function QuickTrade() {
 
   useEffect(() => {
     let mounted = true;
+    const streamRunId = ++streamRunIdRef.current;
+    const isCurrentRun = () => mounted && streamRunIdRef.current === streamRunId;
     let pollIv: ReturnType<typeof setInterval> | null = null;
 
     // Skip all price streaming when market is closed
