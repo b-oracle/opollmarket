@@ -19,13 +19,37 @@ OPollMarket is a prediction market platform where users create and trade on real
 - Display names and avatars are customizable in the Profile page.
 - All display names and avatars are screened by AI moderation.
 
+## Account Security (Mandatory)
+- After registration, users MUST set up at least one security method before accessing the platform.
+- **6-Digit PIN**: A numeric passcode required for login and withdrawals. Users enter the PIN, then confirm it.
+- **Google Authenticator (TOTP/2FA)**: Time-based one-time passwords via an authenticator app. Users scan a QR code or enter a secret key manually, then verify with a 6-digit code from the app.
+- Users can set up BOTH methods for layered security.
+- PIN and TOTP are required for withdrawals once enabled.
+- Resetting or regenerating a TOTP secret requires PIN verification.
+- Security settings can only be reset by the System-Mod Engine if needed.
+
 ## Deposits & Withdrawals
-- Deposits are made via cryptocurrency through NOWPayments integration.
-- Supported currencies include USDT, BNB, and others shown in the app.
-- Deposits are credited after blockchain confirmation.
-- Withdrawals require submitting a request with your wallet address and are subject to review.
-- Network/gas fees are borne by the user.
-- Users have both a main balance and a bonus balance (from referrals).
+
+### Deposits
+- Deposits are made via cryptocurrency through an integrated payment gateway.
+- **20+ supported cryptocurrencies** across two categories:
+  - **Stablecoins**: USDT (BEP20, TRC20, ERC20, Polygon, SOL), USDC (ERC20, SOL, Polygon, BEP20), DAI
+  - **Popular Crypto**: BTC, ETH, BNB, SOL, LTC, XRP, DOGE, MATIC, AVAX, TON
+- Users select a cryptocurrency and its network, then send funds to the generated deposit address.
+- Deposits are credited after blockchain confirmation (converted to USD equivalent).
+- **Partial deposits**: If a user underpays, the actual USD amount received is credited.
+- **Deposit expiry**: Payment addresses expire after 1 hour. Users must complete payment within this window.
+- Expired or pending deposits can be resumed from the transaction history.
+
+### Withdrawals
+- Withdrawals require submitting a request with a wallet address, selecting a cryptocurrency and network.
+- Withdrawals require security verification (PIN or TOTP, whichever is enabled).
+- **Minimum withdrawal amount** applies (configured by the platform).
+- **Withdrawal limits**: Based on a multiplier of total deposits — users can withdraw up to a certain multiple of what they've deposited.
+- **Cooldown period**: A minimum time gap between consecutive withdrawal requests.
+- Network/gas fees are borne by the user; a withdrawal fee percentage also applies.
+- Withdrawal requests are subject to review and processing.
+- Users have both a **main balance** and a **bonus balance** (from referrals). Bonus balance can be used for trading but withdrawal limits apply to real deposits.
 
 ## Trading & Predictions
 - All trades are executed through the AMM — prices are determined by supply, demand, and liquidity.
@@ -35,6 +59,28 @@ OPollMarket is a prediction market platform where users create and trade on real
 - Real trade volume indicators overlay the order book depth levels.
 - Price history charts and live trade feeds are available on each market detail page.
 - Minimum prediction amount is $5 when creating a market (first prediction requirement).
+- **Exit positions**: Users can sell their positions before market resolution. An exit fee applies to early sales.
+
+## Quick Trade
+- A short-term price prediction feature separate from prediction markets.
+- Users predict whether an asset's price will go **UP** or **DOWN** within a fixed timeframe.
+- **Supported assets**:
+  - **Crypto**: BTC, ETH, BNB, SOL, XRP, DOGE (available 24/7)
+  - **Commodities**: Gold, Silver, Crude Oil, Natural Gas, Platinum, Palladium, Copper, Wheat, Corn, Soybeans, Coffee, Sugar, Cotton, Cocoa (follow market hours)
+  - **Forex**: EUR/USD, GBP/USD, USD/JPY, AUD/USD, USD/CAD, USD/CHF, NZD/USD, EUR/GBP, EUR/JPY, GBP/JPY (follow market hours)
+- **Timeframes**: 1 minute, 3 minutes, 5 minutes, 15 minutes.
+- **Win streaks**: Consecutive wins earn multiplier bonuses (2x, 3x, 4x, 5x at configurable streak thresholds).
+- Streak milestones trigger celebration animations.
+- A dedicated Quick Trade leaderboard and streak leaderboard rank top performers.
+- Platform fee applies to Quick Trade winnings.
+
+## Copy Trading
+- Users can follow top traders and automatically copy their trades.
+- **How it works**: Go to a trader's profile, enable copy trading, and configure settings.
+- **Configurable settings**: Maximum copy amount per trade, auto-copy on/off, copy predictions, copy Quick Trades.
+- **Pending copy trades**: When a followed trader places a trade, copiers receive a pending copy trade notification for approval (unless auto-copy is enabled).
+- **Commission**: A percentage of the copier's profit is deducted as commission and credited to the original trader.
+- Copy trade earnings and statistics are tracked and visible on trader profiles.
 
 ## Market Creation
 - Token-gated access: Users holding BC400 tokens (10M+) or qualifying NFTs can create markets for free.
@@ -57,6 +103,15 @@ OPollMarket is a prediction market platform where users create and trade on real
 - Platform Fee: A percentage from winning payouts (platform fee + creator fee, displayed in-app).
 - Market Creation Fee: For users without token-gate access (non-refundable if market rejected for violations).
 - Market Boost Fee: Optional paid promotion, varies by tier.
+- Exit Fee: A percentage charged when selling positions before market resolution.
+- Quick Trade Fee: A percentage from Quick Trade winnings.
+- Copy Trade Commission: A percentage of copier's profit paid to the original trader.
+- Withdrawal Fee: A percentage applied to withdrawal amounts.
+
+## Verification Tiers
+- **Blue Tick**: Hold 10M+ BC400 tokens or qualifying NFTs. Benefits include free market creation, trending score boost, and revenue sharing from platform fees.
+- **Gold Tick**: Hold 100M+ BC400 tokens. Higher trending score boost and higher revenue share percentage.
+- Revenue shares are distributed to verified users from platform fees on markets they created.
 
 ## Market Boosting
 - Three boost tiers: Silver, Gold, Diamond with varying durations and pricing.
@@ -71,22 +126,25 @@ OPollMarket is a prediction market platform where users create and trade on real
 - Bookmarks: Save markets for later viewing.
 - Sharing: Share markets to X/Twitter, Telegram, WhatsApp, or copy link.
 - Share cards with rank information can be generated and downloaded.
+- Follow/unfollow other users to see their activity.
 
 ## Referral Program
 - Users can invite others using their display name as a referral code.
 - When a referred user places their first trade, the referrer earns a bonus reward.
 - One reward per referred user; self-referrals and manipulation are prohibited.
-- Reward amount is configured by the platform.
+- Reward amount is configured by the platform and credited to the bonus balance.
 
 ## Rankings & Leaderboard
 - Users are ranked by prediction accuracy and profitability.
 - Rankings page shows top performers.
 - Users can share their rank via shareable cards.
+- Separate leaderboards for Quick Trade profit and win streaks.
 
 ## Portfolio
-- Shows total balance, active positions, trade history.
+- Shows total balance (main + bonus), active positions, trade history.
 - Displays unrealized P&L based on current market prices.
 - Shows shares owned, average entry price, and current value.
+- Transaction history includes deposits, withdrawals, predictions, and Quick Trades.
 
 ## Feed
 - TikTok-style vertical scroll feed of markets.
@@ -96,9 +154,10 @@ OPollMarket is a prediction market platform where users create and trade on real
 
 ## Notifications
 - In-app notification bell with real-time updates.
-- Notifications for: market resolution, payouts, refunds, market approval, referral rewards.
+- Notifications for: market resolution, payouts, refunds, market approval, referral rewards, new followers, copy trade alerts.
 - Mark all as read functionality.
 - Clicking a notification navigates to the relevant market.
+- Optional web push notifications and Telegram notifications.
 
 ## Platform Availability
 - Available as a web app and Progressive Web App (PWA).
