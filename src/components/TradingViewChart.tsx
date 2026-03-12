@@ -131,36 +131,73 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
 
     // Prefer real OHLC data from exchange APIs
     if (ohlcData && ohlcData.length > 0) {
-      const candles: CandlestickData[] = ohlcData.map((c) => ({
-        time: c.time as UTCTimestamp,
-        open: c.open,
-        high: c.high,
-        low: c.low,
-        close: c.close,
-      }));
+      const sorted = [...ohlcData].sort((a, b) => a.time - b.time);
+      const sourceIntervalSec = sorted.length > 1 ? Math.max(1, sorted[1].time - sorted[0].time) : desiredBucketSec;
+      const shouldUseRawPriceFallback = desiredBucketSec < sourceIntervalSec && !!priceHistory && priceHistory.length > 1;
 
-      const volumes: { time: UTCTimestamp; value: number; color: string }[] = ohlcData.map((c) => ({
-        time: c.time as UTCTimestamp,
-        value: Math.abs(c.close - c.open) * 1000,
-        color: c.close >= c.open ? upColor + "66" : downColor + "66",
-      }));
+      if (!shouldUseRawPriceFallback) {
+        const cutoffSec = Math.floor(Date.now() / 1000) - desiredBucketSec * CANDLE_BUCKETS;
+        const scoped = sorted.filter((c) => c.time >= cutoffSec);
+        const source = scoped.length > 1 ? scoped : sorted.slice(-CANDLE_BUCKETS);
 
-      const ma7: { time: UTCTimestamp; value: number }[] = [];
-      const ma14: { time: UTCTimestamp; value: number }[] = [];
-      for (let i = 0; i < candles.length; i++) {
-        if (i >= 6) {
-          let sum = 0;
-          for (let j = i - 6; j <= i; j++) sum += (candles[j] as any).close;
-          ma7.push({ time: candles[i].time as UTCTimestamp, value: sum / 7 });
+        const candles: CandlestickData[] = [];
+        const volumes: { time: UTCTimestamp; value: number; color: string }[] = [];
+
+        let bucketTime: number | null = null;
+        let open = 0;
+        let high = 0;
+        let low = 0;
+        let close = 0;
+        let sampleCount = 0;
+
+        const flushBucket = () => {
+          if (bucketTime == null) return;
+          const time = bucketTime as UTCTimestamp;
+          candles.push({ time, open, high, low, close });
+          volumes.push({
+            time,
+            value: Math.max(1, sampleCount),
+            color: close >= open ? upColor + "66" : downColor + "66",
+          });
+        };
+
+        for (const c of source) {
+          const alignedTime = Math.floor(c.time / desiredBucketSec) * desiredBucketSec;
+          if (bucketTime === null || alignedTime !== bucketTime) {
+            flushBucket();
+            bucketTime = alignedTime;
+            open = c.open;
+            high = c.high;
+            low = c.low;
+            close = c.close;
+            sampleCount = 1;
+          } else {
+            high = Math.max(high, c.high);
+            low = Math.min(low, c.low);
+            close = c.close;
+            sampleCount += 1;
+          }
         }
-        if (i >= 13) {
-          let sum = 0;
-          for (let j = i - 13; j <= i; j++) sum += (candles[j] as any).close;
-          ma14.push({ time: candles[i].time as UTCTimestamp, value: sum / 14 });
+
+        flushBucket();
+
+        const ma7: { time: UTCTimestamp; value: number }[] = [];
+        const ma14: { time: UTCTimestamp; value: number }[] = [];
+        for (let i = 0; i < candles.length; i++) {
+          if (i >= 6) {
+            let sum = 0;
+            for (let j = i - 6; j <= i; j++) sum += (candles[j] as any).close;
+            ma7.push({ time: candles[i].time as UTCTimestamp, value: sum / 7 });
+          }
+          if (i >= 13) {
+            let sum = 0;
+            for (let j = i - 13; j <= i; j++) sum += (candles[j] as any).close;
+            ma14.push({ time: candles[i].time as UTCTimestamp, value: sum / 14 });
+          }
         }
+
+        return { candles, volumes, ma7, ma14 };
       }
-
-      return { candles, volumes, ma7, ma14 };
     }
 
     // Fallback: bucket raw price points into candles
