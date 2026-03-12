@@ -277,6 +277,7 @@ function QuickTradeChart({
           <XAxis dataKey="ts" hide />
           <RechartsTooltip content={tooltipContent} cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '3 3' }} />
           {targetReferenceLine}
+          {closeTimeReferenceLine}
           <Area type="monotone" dataKey="price" stroke={color} strokeWidth={2} fill="url(#priceGradient)" dot={false} isAnimationActive={false} />
         </AreaChart>
       </ResponsiveContainer>
