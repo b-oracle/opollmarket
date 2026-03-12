@@ -457,7 +457,26 @@ export default function QuickTrade() {
   useEffect(() => {
     let mounted = true;
     const streamRunId = ++streamRunIdRef.current;
-    const isCurrentRun = () => mounted && streamRunIdRef.current === streamRunId;
+    const streamAssetSymbol = selectedAsset.symbol;
+    const isCurrentRun = () =>
+      mounted &&
+      streamRunIdRef.current === streamRunId &&
+      selectedAssetSymbolRef.current === streamAssetSymbol;
+
+    const applyDisplayPrice = (price: number) => {
+      if (!isCurrentRun()) return;
+      setCurrentPriceAsset(streamAssetSymbol);
+      setCurrentPrice((prev) => {
+        setPrevPrice(prev);
+        return price;
+      });
+    };
+
+    const applyStreamingPrice = (price: number) => {
+      if (!isCurrentRun()) return;
+      setStreamingPrice(price);
+    };
+
     let pollIv: ReturnType<typeof setInterval> | null = null;
 
     // Skip all price streaming when market is closed
@@ -467,13 +486,28 @@ export default function QuickTrade() {
       (async () => {
         const p = await fetchPriceForAsset(selectedAsset);
         if (p != null && isCurrentRun()) {
-          setCurrentPrice(p);
-          setStreamingPrice(p);
+          applyDisplayPrice(p);
+          applyStreamingPrice(p);
         }
       })();
-      return () => { mounted = false; };
+      return () => {
+        mounted = false;
+      };
     }
-    
+
+    // Immediate per-asset bootstrap fetch so switches never show stale prior-asset prices
+    (async () => {
+      const p = await fetchPriceForAsset(selectedAsset);
+      if (p != null && isCurrentRun()) {
+        consecutiveFailsRef.current = 0;
+        applyDisplayPrice(p);
+        applyStreamingPrice(p);
+        if (selectedAsset.assetClass !== "crypto") {
+          feedRealPrice(streamAssetSymbol, p);
+        }
+      }
+    })();
+
     // ── Smooth crypto interpolation state ──
     // Instead of snapping to each WS tick, we lerp between ticks at ~20fps
     let targetWsPrice = 0;
@@ -481,7 +515,7 @@ export default function QuickTrade() {
     let cryptoInterpId: ReturnType<typeof setInterval> | null = null;
     let lastChartAppend = 0;
     let pendingRaf: number | null = null;
-    
+
     const appendCryptoChartPoint = (price: number) => {
       const now = Date.now();
       if (now - lastChartAppend < 300) return; // throttle chart points to ~3/sec
@@ -493,10 +527,10 @@ export default function QuickTrade() {
         const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
         return filtered.length > 600 ? filtered.slice(-600) : filtered;
       });
-      const rawCached = rawDataRef.current.get(selectedAsset.symbol) || [];
-      rawDataRef.current.set(selectedAsset.symbol, [...rawCached, [now, price] as [number, number]].filter(([ts]) => ts >= maxCutoff));
+      const rawCached = rawDataRef.current.get(streamAssetSymbol) || [];
+      rawDataRef.current.set(streamAssetSymbol, [...rawCached, [now, price] as [number, number]].filter(([ts]) => ts >= maxCutoff));
     };
-    
+
     // WS tick handler: just update the target price (no direct state set)
     const handleWsTick = (price: number) => {
       if (!isCurrentRun()) return;
@@ -504,14 +538,14 @@ export default function QuickTrade() {
       if (displayedPrice === 0) displayedPrice = price; // seed on first tick
       targetWsPrice = price;
     };
-    
+
     // Start smooth interpolation loop for crypto (~20fps for chart, ~2fps for price display)
     if (selectedAsset.assetClass === "crypto") {
       const LERP_RATE = 0.15; // 15% toward target per tick — fast but smooth
       const CRYPTO_TICK_MS = 50; // 20fps for chart
       let lastDisplayUpdate = 0;
       const DISPLAY_THROTTLE_MS = 500; // Update price text ~2x/sec
-      
+
       cryptoInterpId = setInterval(() => {
         if (!isCurrentRun() || targetWsPrice === 0) return;
         // Lerp toward target
@@ -520,84 +554,80 @@ export default function QuickTrade() {
         if (Math.abs(displayedPrice - targetWsPrice) / targetWsPrice < 0.000001) {
           displayedPrice = targetWsPrice;
         }
-        
+
         // Chart updates at full speed (20fps)
-        setStreamingPrice(displayedPrice);
+        applyStreamingPrice(displayedPrice);
         appendCryptoChartPoint(displayedPrice);
-        
+
         // Price display updates slowly (~2x/sec) to avoid blinking
         const now = Date.now();
         if (now - lastDisplayUpdate >= DISPLAY_THROTTLE_MS) {
           lastDisplayUpdate = now;
-          setCurrentPrice((prev) => {
-            setPrevPrice(prev);
-            return displayedPrice;
-          });
+          applyDisplayPrice(displayedPrice);
         }
       }, CRYPTO_TICK_MS);
     }
-    
+
     // For crypto: use Binance WebSocket for real-time streaming
-    const unsubWs = subscribeToPriceStream(selectedAsset.symbol, handleWsTick);
-    
+    const unsubWs = subscribeToPriceStream(streamAssetSymbol, handleWsTick);
+
     // For non-crypto assets: use smooth interpolation + polling
     let unsubPoller: (() => void) | null = null;
     let unsubSmooth: (() => void) | null = null;
-    
+
     if (selectedAsset.assetClass !== "crypto") {
-      unsubPoller = startNonCryptoHistoryPoller(selectedAsset.symbol);
-      
+      unsubPoller = startNonCryptoHistoryPoller(streamAssetSymbol);
+
       // Subscribe to smoothed price stream (~15fps interpolation for chart, ~2fps for display)
       let lastSmoothUpdate = 0;
       let lastDisplayUpdate = 0;
       const DISPLAY_THROTTLE_MS = 500;
-      unsubSmooth = subscribeToSmoothedPriceStream(selectedAsset.symbol, (price) => {
+      unsubSmooth = subscribeToSmoothedPriceStream(streamAssetSymbol, (price) => {
         if (!isCurrentRun()) return;
         const now = Date.now();
-        
+
         // Chart streaming price updates at full speed
-        setStreamingPrice(price);
-        
+        applyStreamingPrice(price);
+
         // Price display updates slowly (~2x/sec) to avoid blinking
         if (now - lastDisplayUpdate >= DISPLAY_THROTTLE_MS) {
           lastDisplayUpdate = now;
-          setCurrentPrice((prev) => {
-            setPrevPrice(prev);
-            return price;
-          });
+          applyDisplayPrice(price);
         }
-        
+
         // Append chart points at ~200ms intervals for smooth streaming
         if (now - lastSmoothUpdate >= 200) {
           lastSmoothUpdate = now;
           const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
           const maxCutoff = now - 4 * 60 * 60 * 1000;
-          
+
           setPriceHistory((prev) => {
             const updated = [...prev, { time: timeLabel, price, ts: now }];
             const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
             return filtered.length > 800 ? filtered.slice(-800) : filtered;
           });
-          
+
           // Update raw cache
-          const rawCached = rawDataRef.current.get(selectedAsset.symbol) || [];
-          rawDataRef.current.set(selectedAsset.symbol, [...rawCached, [now, price] as [number, number]].filter(([ts]) => ts >= maxCutoff));
+          const rawCached = rawDataRef.current.get(streamAssetSymbol) || [];
+          rawDataRef.current.set(streamAssetSymbol, [...rawCached, [now, price] as [number, number]].filter(([ts]) => ts >= maxCutoff));
         }
       });
-      
+
       // HTTP poll for real prices every 10s and feed into interpolation
       const pollNonCrypto = async () => {
         const now = Date.now();
         if (now - lastFetchTimeRef.current < 8000) return;
         lastFetchTimeRef.current = now;
-        
+
         const p = await fetchPriceForAsset(selectedAsset);
         if (p != null && isCurrentRun()) {
           consecutiveFailsRef.current = 0;
-          feedRealPrice(selectedAsset.symbol, p);
+          feedRealPrice(streamAssetSymbol, p);
+          applyDisplayPrice(p);
+          applyStreamingPrice(p);
         } else if (p == null && isCurrentRun()) {
           consecutiveFailsRef.current++;
-          if (consecutiveFailsRef.current >= 5 && !disabledAssets.has(selectedAsset.symbol)) {
+          if (consecutiveFailsRef.current >= 5 && !disabledAssets.has(streamAssetSymbol)) {
             try {
               const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
               await fetch(
@@ -605,7 +635,7 @@ export default function QuickTrade() {
                 {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ asset: selectedAsset.symbol, action: "disable" }),
+                  body: JSON.stringify({ asset: streamAssetSymbol, action: "disable" }),
                 }
               );
               queryClient.invalidateQueries({ queryKey: ["commission_settings"] });
@@ -618,11 +648,11 @@ export default function QuickTrade() {
           }
         }
       };
-      
+
       // Initial fetch
       pollNonCrypto();
       pollIv = setInterval(pollNonCrypto, 10_000);
-      
+
     } else {
       // Crypto: fallback HTTP polling if WS doesn't fire within 3s
       const fallbackTimer = setTimeout(() => {
@@ -630,21 +660,18 @@ export default function QuickTrade() {
           const poll = async () => {
             const now = Date.now();
             const shouldFetch = now - lastFetchTimeRef.current >= 5000;
-            
+
             if (shouldFetch) {
               lastFetchTimeRef.current = now;
               const p = await fetchPriceForAsset(selectedAsset);
               if (p != null && isCurrentRun() && !wsActiveRef.current) {
                 consecutiveFailsRef.current = 0;
-                setCurrentPrice((prev) => {
-                  setPrevPrice(prev);
-                  return p;
-                });
-                setStreamingPrice(p);
+                applyDisplayPrice(p);
+                applyStreamingPrice(p);
                 const maxCutoff = now - 4 * 60 * 60 * 1000;
                 const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
-                const rawCached = rawDataRef.current.get(selectedAsset.symbol) || [];
-                rawDataRef.current.set(selectedAsset.symbol, [...rawCached, [now, p] as [number, number]].filter(([ts]) => ts >= maxCutoff));
+                const rawCached = rawDataRef.current.get(streamAssetSymbol) || [];
+                rawDataRef.current.set(streamAssetSymbol, [...rawCached, [now, p] as [number, number]].filter(([ts]) => ts >= maxCutoff));
                 setPriceHistory((prev) => {
                   const updated = [...prev, { time: timeLabel, price: p, ts: now }];
                   return updated.filter((pt) => pt.ts >= maxCutoff);
@@ -656,7 +683,7 @@ export default function QuickTrade() {
                 if (cur == null) return cur;
                 const jitter = cur * (Math.random() - 0.5) * 0.0001;
                 const tickPrice = cur + jitter;
-                setStreamingPrice(tickPrice);
+                applyStreamingPrice(tickPrice);
                 const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
                 setPriceHistory((prev) => {
                   const maxCutoff = now - 4 * 60 * 60 * 1000;
@@ -672,7 +699,7 @@ export default function QuickTrade() {
           pollIv = setInterval(poll, 1000);
         }
       }, 3000);
-      
+
       return () => {
         mounted = false;
         wsActiveRef.current = false;
@@ -683,7 +710,7 @@ export default function QuickTrade() {
         if (pollIv) clearInterval(pollIv);
       };
     }
-    
+
     return () => {
       mounted = false;
       wsActiveRef.current = false;
@@ -694,7 +721,7 @@ export default function QuickTrade() {
       if (pendingRaf) cancelAnimationFrame(pendingRaf);
       if (pollIv) clearInterval(pollIv);
     };
-  }, [selectedAsset.symbol]);
+  }, [selectedAsset]);
 
   // ── Fetch / create active round ──
   const latestRoundContextRef = useRef<{ asset: string; duration: number }>({
