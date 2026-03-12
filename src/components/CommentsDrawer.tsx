@@ -409,6 +409,32 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
     setInputValue(`@${author} `);
   };
 
+  const handleEdit = async (commentId: string, newContent: string) => {
+    try {
+      const { error } = await supabase.from("comments").update({ content: newContent }).eq("id", commentId);
+      if (error) throw error;
+      const updateContent = (arr: Comment[]): Comment[] =>
+        arr.map((c) => ({
+          ...c,
+          content: c.id === commentId ? newContent : c.content,
+          replies: updateContent(c.replies || []),
+        }));
+      setComments(updateContent);
+      toast.success("Comment updated");
+    } catch { toast.error("Failed to update comment"); }
+  };
+
+  const handleDelete = async (commentId: string) => {
+    try {
+      const { error } = await supabase.from("comments").delete().eq("id", commentId);
+      if (error) throw error;
+      const removeComment = (arr: Comment[]): Comment[] =>
+        arr.filter((c) => c.id !== commentId).map((c) => ({ ...c, replies: removeComment(c.replies || []) }));
+      setComments(removeComment);
+      toast.success("Comment deleted");
+    } catch { toast.error("Failed to delete comment"); }
+  };
+
   if (!open) return null;
 
   return (
