@@ -143,6 +143,15 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
   const identityId = user?.id || "";
   const isSignedIn = !!user;
 
+  // Fetch current user's avatar
+  const [currentUserAvatar, setCurrentUserAvatar] = useState<string | null>(null);
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.from("profiles").select("avatar_url").eq("id", user.id).maybeSingle().then(({ data }) => {
+      setCurrentUserAvatar(data?.avatar_url || null);
+    });
+  }, [user?.id]);
+
   const fetchComments = useCallback(async () => {
     setLoading(true);
     try {
