@@ -228,6 +228,12 @@ export default function QuickTrade() {
   const qtMaxBet = commissionSettings?.qt_max_bet ?? 500;
 
   const [selectedAsset, setSelectedAsset] = useState(ALL_ASSETS[0]);
+  const selectedAssetSymbolRef = useRef(selectedAsset.symbol);
+  const previousSelectedAssetRef = useRef(selectedAsset.symbol);
+
+  useEffect(() => {
+    selectedAssetSymbolRef.current = selectedAsset.symbol;
+  }, [selectedAsset.symbol]);
 
   // Ensure selected asset is in the enabled list or not disabled
   useEffect(() => {
@@ -246,6 +252,7 @@ export default function QuickTrade() {
   }, [selectedAsset.assetClass]);
 
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+  const [currentPriceAsset, setCurrentPriceAsset] = useState(ALL_ASSETS[0].symbol);
   const [prevPrice, setPrevPrice] = useState<number | null>(null);
   const [activeRound, setActiveRound] = useState<Round | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
