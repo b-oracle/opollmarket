@@ -1123,7 +1123,7 @@ export default function QuickTrade() {
                 ) : (
                   <div className="h-10 w-40 bg-muted/50 rounded animate-pulse mt-1" />
                 )}
-                </AnimatePresence>
+                
               </div>
 
               {/* Countdown */}
