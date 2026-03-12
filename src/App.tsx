@@ -132,19 +132,26 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
   // Use user.id as dep instead of user object to avoid re-fires on reference changes
   const userId = user?.id ?? null;
 
+  // Listen for custom event from SetupSecurity page when setup completes
+  useEffect(() => {
+    const handler = () => {
+      setNeedsSetup(false);
+      checkedUserRef.current = userId;
+      setChecked(true);
+    };
+    window.addEventListener("security-setup-complete", handler);
+    return () => window.removeEventListener("security-setup-complete", handler);
+  }, [userId]);
+
   useEffect(() => {
     if (!userId || loading) { setChecked(true); setNeedsSetup(false); return; }
-    // Always re-check when leaving setup-security page (user may have just completed setup)
-    if (checkedUserRef.current === userId && !location.pathname.startsWith("/setup-security")) {
-      // If we previously determined setup is needed, re-check from DB
-      // to pick up changes made on the setup page
-      if (needsSetup) {
-        // Force a re-check
-      } else {
-        setChecked(true);
-        return;
-      }
+
+    // If we already checked this user and determined setup is NOT needed, skip
+    if (checkedUserRef.current === userId && !needsSetup) {
+      setChecked(true);
+      return;
     }
+
     if (checkingRef.current) return; // prevent concurrent checks
     checkingRef.current = true;
 
@@ -155,8 +162,8 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
         .eq("user_id", userId)
         .maybeSingle()
         .then(({ data, error }) => {
+          checkingRef.current = false;
           if (error) {
-            checkingRef.current = false;
             setChecked(true);
             return;
           }
@@ -165,7 +172,6 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
           setNeedsSetup(needs);
           checkedUserRef.current = userId;
           setChecked(true);
-          checkingRef.current = false;
         });
     });
   }, [userId, loading, location.pathname]);
