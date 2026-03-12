@@ -476,6 +476,9 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
                         comment={comment}
                         onReply={handleReply}
                         onLike={handleLike}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        currentUserId={identityId}
                       />
                     ))}
                   </div>
