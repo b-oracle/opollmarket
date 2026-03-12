@@ -43,8 +43,22 @@ function getAssetType(asset: string): "crypto" | "commodity" | "forex" {
   return "crypto";
 }
 
-// ── Crypto: CoinGecko ──
-async function fetchCryptoPrice(asset: string): Promise<number | null> {
+// Binance symbol mapping
+const BINANCE_MAP: Record<string, string> = {
+  BTC: "BTCUSDT", ETH: "ETHUSDT", BNB: "BNBUSDT", SOL: "SOLUSDT",
+  XRP: "XRPUSDT", ADA: "ADAUSDT", DOGE: "DOGEUSDT", MATIC: "MATICUSDT",
+  AVAX: "AVAXUSDT", DOT: "DOTUSDT", LINK: "LINKUSDT", SHIB: "SHIBUSDT",
+};
+
+// Kraken symbol mapping
+const KRAKEN_MAP: Record<string, string> = {
+  BTC: "XXBTZUSD", ETH: "XETHZUSD", SOL: "SOLUSD", XRP: "XXRPZUSD",
+  ADA: "ADAUSD", DOGE: "XDGUSD", DOT: "DOTUSD", LINK: "LINKUSD",
+  AVAX: "AVAXUSD", MATIC: "MATICUSD", SHIB: "SHIBUSD",
+};
+
+// ── Crypto: CoinGecko (primary) → Binance → Kraken (fallbacks) ──
+async function fetchCryptoFromCoinGecko(asset: string): Promise<number | null> {
   const geckoId = CRYPTO_MAP[asset.toUpperCase()];
   if (!geckoId) return null;
   try {
@@ -57,6 +71,47 @@ async function fetchCryptoPrice(asset: string): Promise<number | null> {
   } catch {
     return null;
   }
+}
+
+async function fetchCryptoFromBinance(asset: string): Promise<number | null> {
+  const symbol = BINANCE_MAP[asset.toUpperCase()];
+  if (!symbol) return null;
+  try {
+    const resp = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const price = parseFloat(data.price);
+    return isNaN(price) ? null : price;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchCryptoFromKraken(asset: string): Promise<number | null> {
+  const pair = KRAKEN_MAP[asset.toUpperCase()];
+  if (!pair) return null;
+  try {
+    const resp = await fetch(`https://api.kraken.com/0/public/Ticker?pair=${pair}`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    if (data.error?.length) return null;
+    const key = Object.keys(data.result || {})[0];
+    if (!key) return null;
+    const price = parseFloat(data.result[key].c[0]);
+    return isNaN(price) ? null : price;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchCryptoPrice(asset: string): Promise<number | null> {
+  let price = await fetchCryptoFromCoinGecko(asset);
+  if (price !== null) return price;
+  console.log(`CoinGecko failed for ${asset}, trying Binance`);
+  price = await fetchCryptoFromBinance(asset);
+  if (price !== null) return price;
+  console.log(`Binance failed for ${asset}, trying Kraken`);
+  return fetchCryptoFromKraken(asset);
 }
 
 // ── Forex: ExchangeRate-API (primary) → Frankfurter (fallback) ──
