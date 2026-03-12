@@ -327,7 +327,7 @@ Deno.serve(async (req) => {
     // Get commission rate
     const { data: settings } = await supabase
       .from("commission_settings")
-      .select("admin_fee_percent, creator_fee_percent, quick_trade_fee_percent, qt_streak_2x, qt_streak_3x, qt_streak_4x, qt_streak_5x")
+      .select("id, admin_fee_percent, creator_fee_percent, quick_trade_fee_percent, qt_streak_2x, qt_streak_3x, qt_streak_4x, qt_streak_5x, qt_disabled_assets")
       .limit(1)
       .single();
     const platformFee = settings?.quick_trade_fee_percent != null
@@ -341,6 +341,14 @@ Deno.serve(async (req) => {
     const s5 = Number(settings?.qt_streak_5x ?? 1.25);
 
     let resolvedCount = 0;
+
+    // Track consecutive price-fetch failures per asset for auto-disable
+    const MAX_CONSECUTIVE_FAILURES = 3;
+    const failureCount: Record<string, number> = {};
+
+    // Load current disabled assets
+    const currentDisabledStr = String(settings?.qt_disabled_assets ?? "");
+    const currentDisabled = new Set(currentDisabledStr.split(",").filter(Boolean));
 
     for (const round of rounds) {
       const endTime = new Date(
@@ -357,7 +365,47 @@ Deno.serve(async (req) => {
       }
 
       const closePrice = await fetchAssetPrice(round.asset);
-      if (closePrice == null) continue;
+      if (closePrice == null) {
+        // Track failure
+        failureCount[round.asset] = (failureCount[round.asset] || 0) + 1;
+        console.warn(`Price fetch failed for ${round.asset} (${failureCount[round.asset]}/${MAX_CONSECUTIVE_FAILURES})`);
+
+        // Auto-disable asset after MAX_CONSECUTIVE_FAILURES
+        if (failureCount[round.asset] >= MAX_CONSECUTIVE_FAILURES && !currentDisabled.has(round.asset)) {
+          currentDisabled.add(round.asset);
+          const newDisabledStr = Array.from(currentDisabled).join(",");
+          await supabase
+            .from("commission_settings")
+            .update({ qt_disabled_assets: newDisabledStr })
+            .eq("id", settings?.id ?? (await supabase.from("commission_settings").select("id").limit(1).single()).data?.id);
+          console.warn(`Auto-disabled asset ${round.asset} due to ${MAX_CONSECUTIVE_FAILURES} consecutive price fetch failures`);
+
+          // Refund all pending bets for this asset's unresolved rounds
+          const { data: failedBets } = await supabase
+            .from("quick_bets")
+            .select("*")
+            .eq("round_id", round.id)
+            .eq("status", "pending");
+          if (failedBets) {
+            for (const bet of failedBets) {
+              await supabase
+                .from("quick_bets")
+                .update({ payout: bet.amount, status: "refunded" })
+                .eq("id", bet.id);
+              await creditBalance(supabase, bet.user_id, Number(bet.amount));
+            }
+          }
+          // Mark round as cancelled
+          await supabase
+            .from("quick_rounds")
+            .update({ status: "resolved", result: "flat", resolved_at: new Date().toISOString() })
+            .eq("id", round.id);
+          resolvedCount++;
+        }
+        continue;
+      }
+      // Reset failure count on success
+      failureCount[round.asset] = 0;
 
       const openPrice = Number(round.open_price);
       const result =
