@@ -171,6 +171,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const asset = body?.asset;
     const isForex = body?.type === "forex";
+    const preferredProvider = body?.provider; // "twelve_data" or "exchangerate"
 
     if (!asset || typeof asset !== "string") {
       return new Response(JSON.stringify({ error: "Missing asset parameter" }), {
