@@ -472,11 +472,60 @@ const OHLC_CACHE_TTL = 30_000;
 
 function timeframeToDays(tfKey: string): number {
   switch (tfKey) {
-    case "1m": case "5m": case "15m": case "1h": case "4h": return 1;
-    case "1d": return 2;
-    case "1w": return 7;
-    case "1M": return 30;
+    case "1m": return 1;
+    case "5m": return 2;
+    case "15m": return 3;
+    case "1h": return 7;
+    case "4h": return 14;
+    case "1d": return 30;
+    case "1w": return 60;
+    case "1M": return 180;
     default: return 1;
+  }
+}
+
+function timeframeToSeconds(tfKey: string): number {
+  switch (tfKey) {
+    case "1m": return 60;
+    case "5m": return 5 * 60;
+    case "15m": return 15 * 60;
+    case "1h": return 60 * 60;
+    case "4h": return 4 * 60 * 60;
+    case "1d": return 24 * 60 * 60;
+    case "1w": return 7 * 24 * 60 * 60;
+    case "1M": return 30 * 24 * 60 * 60;
+    default: return 60;
+  }
+}
+
+function timeframeToCoinCapInterval(tfKey: string): string {
+  switch (tfKey) {
+    case "1m": return "m1";
+    case "5m": return "m5";
+    case "15m": return "m15";
+    case "1h": return "h1";
+    case "4h": return "h4";
+    case "1d": return "d1";
+    default: return "m5";
+  }
+}
+
+function timeframeToCryptoCompareConfig(tfKey: string): { endpoint: "histominute" | "histohour" | "histoday"; aggregate: number; limit: number } {
+  switch (tfKey) {
+    case "1m":
+      return { endpoint: "histominute", aggregate: 1, limit: 720 };
+    case "5m":
+      return { endpoint: "histominute", aggregate: 5, limit: 576 };
+    case "15m":
+      return { endpoint: "histominute", aggregate: 15, limit: 480 };
+    case "1h":
+      return { endpoint: "histohour", aggregate: 1, limit: 336 };
+    case "4h":
+      return { endpoint: "histohour", aggregate: 4, limit: 240 };
+    case "1d":
+      return { endpoint: "histoday", aggregate: 1, limit: 180 };
+    default:
+      return { endpoint: "histominute", aggregate: 5, limit: 288 };
   }
 }
 
@@ -494,56 +543,63 @@ async function fetchOHLCFromCoinGecko(geckoId: string, days: number): Promise<OH
   }));
 }
 
-async function fetchOHLCFromCoinCap(coinCapId: string, days: number): Promise<OHLCCandle[] | null> {
+async function fetchOHLCFromCoinCap(coinCapId: string, tfKey: string): Promise<OHLCCandle[] | null> {
   const now = Date.now();
-  const start = now - days * 24 * 60 * 60 * 1000;
-  const interval = days <= 1 ? "m5" : days <= 7 ? "h1" : "h2";
+  const bucketSec = timeframeToSeconds(tfKey);
+  const lookbackMs = Math.min(bucketSec * 1000 * 240, 30 * 24 * 60 * 60 * 1000);
+  const start = now - lookbackMs;
+  const interval = timeframeToCoinCapInterval(tfKey);
+
   const r = await fetch(
     `https://api.coincap.io/v2/assets/${coinCapId}/history?interval=${interval}&start=${start}&end=${now}`
   );
   if (!r.ok) return null;
   const d = await r.json();
   if (!d?.data?.length) return null;
-  const points: { time: number; price: number }[] = d.data.map((p: { time: number; priceUsd: string }) => ({
-    time: Math.floor(p.time / 1000),
-    price: parseFloat(p.priceUsd),
-  }));
-  const bucketSize = days <= 1 ? 6 : 1;
-  const candles: OHLCCandle[] = [];
-  for (let i = 0; i < points.length; i += bucketSize) {
-    const slice = points.slice(i, i + bucketSize);
-    if (slice.length === 0) continue;
-    candles.push({
-      time: slice[0].time,
-      open: slice[0].price,
-      high: Math.max(...slice.map(s => s.price)),
-      low: Math.min(...slice.map(s => s.price)),
-      close: slice[slice.length - 1].price,
-    });
-  }
-  return candles.length > 0 ? candles : null;
+
+  const points: { time: number; price: number }[] = d.data
+    .map((p: { time: number; priceUsd: string }) => ({
+      time: Math.floor(p.time / 1000),
+      price: parseFloat(p.priceUsd),
+    }))
+    .filter((p: { time: number; price: number }) => Number.isFinite(p.price));
+
+  if (!points.length) return null;
+
+  // CoinCap returns one price per interval, so derive pseudo-OHLC from previous close.
+  return points.map((p, i) => {
+    const open = i === 0 ? p.price : points[i - 1].price;
+    const close = p.price;
+    return {
+      time: p.time,
+      open,
+      high: Math.max(open, close),
+      low: Math.min(open, close),
+      close,
+    };
+  });
 }
 
-async function fetchOHLCFromCryptoCompare(sym: string, days: number): Promise<OHLCCandle[] | null> {
-  let url: string;
-  if (days <= 1) {
-    url = `https://min-api.cryptocompare.com/data/v2/histominute?fsym=${sym}&tsym=USD&limit=288&aggregate=5`;
-  } else if (days <= 7) {
-    url = `https://min-api.cryptocompare.com/data/v2/histohour?fsym=${sym}&tsym=USD&limit=${days * 24}`;
-  } else {
-    url = `https://min-api.cryptocompare.com/data/v2/histoday?fsym=${sym}&tsym=USD&limit=${days}`;
-  }
+async function fetchOHLCFromCryptoCompare(sym: string, tfKey: string): Promise<OHLCCandle[] | null> {
+  const { endpoint, aggregate, limit } = timeframeToCryptoCompareConfig(tfKey);
+  const url = `https://min-api.cryptocompare.com/data/v2/${endpoint}?fsym=${sym}&tsym=USD&limit=${limit}&aggregate=${aggregate}`;
+
   const r = await fetch(url);
   if (!r.ok) return null;
   const d = await r.json();
   if (!d?.Data?.Data?.length) return null;
-  return d.Data.Data.map((p: { time: number; open: number; high: number; low: number; close: number }) => ({
-    time: p.time,
-    open: p.open,
-    high: p.high,
-    low: p.low,
-    close: p.close,
-  }));
+
+  const candles = d.Data.Data
+    .map((p: { time: number; open: number; high: number; low: number; close: number }) => ({
+      time: p.time,
+      open: p.open,
+      high: p.high,
+      low: p.low,
+      close: p.close,
+    }))
+    .filter((c: OHLCCandle) => Number.isFinite(c.open) && Number.isFinite(c.high) && Number.isFinite(c.low) && Number.isFinite(c.close));
+
+  return candles.length > 0 ? candles : null;
 }
 
 export async function fetchOHLCData(
