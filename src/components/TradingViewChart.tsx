@@ -375,7 +375,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
       const nowSec = Math.floor(Date.now() / 1000) as UTCTimestamp;
 
       if (chartStyle === "candle" && candleSeriesRef.current) {
-        const bucketSec = 10;
+        const bucketSec = Math.max(60, Math.floor(chartMs / 1000 / 60));
         const candleTime = (Math.floor(nowSec / bucketSec) * bucketSec) as UTCTimestamp;
 
         const cur = currentCandleRef.current;
