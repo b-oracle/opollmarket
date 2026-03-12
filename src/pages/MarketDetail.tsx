@@ -39,7 +39,7 @@ const CreatorCard = ({ creatorName, creatorUserId }: { creatorName: string; crea
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("wallet_address, display_name, avatar_url")
+        .select("wallet_address, display_name, avatar_url, verification_level")
         .eq("id", creatorUserId)
         .maybeSingle();
       return data;
