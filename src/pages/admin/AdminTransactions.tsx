@@ -20,14 +20,16 @@ interface TxRow {
 const TYPE_STYLES: Record<string, { label: string; class: string }> = {
   deposit: { label: "Deposit", class: "bg-green-500/10 text-green-500" },
   withdrawal: { label: "Withdrawal", class: "bg-yellow-500/10 text-yellow-500" },
+  buy: { label: "Bet", class: "bg-primary/10 text-primary" },
   bet: { label: "Bet", class: "bg-primary/10 text-primary" },
   payout: { label: "Payout", class: "bg-blue-500/10 text-blue-500" },
+  commission: { label: "Commission", class: "bg-purple-500/10 text-purple-500" },
 };
 
 const AdminTransactions = () => {
   const [txns, setTxns] = useState<TxRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "deposit" | "withdrawal" | "bet" | "payout">("all");
+  const [filter, setFilter] = useState<"all" | "deposit" | "withdrawal" | "buy" | "payout">("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "confirmed" | "pending" | "failed">("all");
   const [totals, setTotals] = useState({ deposits: 0, withdrawals: 0, bets: 0 });
   const [page, setPage] = useState(0);
@@ -112,7 +114,7 @@ const AdminTransactions = () => {
       const [depRes, wdRes, betRes] = await Promise.all([
         buildTotalQuery("deposit"),
         buildTotalQuery("withdrawal"),
-        buildTotalQuery("bet"),
+        buildTotalQuery("buy"),
       ]);
 
       setTotals({
@@ -254,7 +256,7 @@ const AdminTransactions = () => {
           )}
         </div>
         <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 overflow-x-auto scrollbar-hide">
-          {(["all", "deposit", "withdrawal", "bet", "payout"] as const).map((f) => (
+          {(["all", "deposit", "withdrawal", "buy", "payout"] as const).map((f) => (
             <button
               key={f}
               onClick={() => { setPage(0); setFilter(f); }}
