@@ -422,7 +422,7 @@ export default function QuickTrade() {
   const lastFetchTimeRef = useRef(0);
   const [streamingPrice, setStreamingPrice] = useState<number | null>(null);
   const wsActiveRef = useRef(false);
-  
+  const streamRunIdRef = useRef(0);
   // Reset price state when asset changes
   useEffect(() => {
     setCurrentPrice(null);
