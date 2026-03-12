@@ -430,6 +430,8 @@ export default function QuickTrade() {
     setStreamingPrice(null);
     setPriceHistory([]);
     setOhlcData([]);
+    setActiveRound(null);
+    setUserBet(null);
     wsActiveRef.current = false;
     consecutiveFailsRef.current = 0;
     lastFetchTimeRef.current = 0;
