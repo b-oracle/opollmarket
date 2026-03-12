@@ -133,13 +133,28 @@ function QuickTradeChart({
     );
   };
 
-  const targetReferenceLine = userBet && activeRound?.open_price ? (
+  const entryPrice = userBet && activeRound?.open_price ? Number(activeRound.open_price) : null;
+  const roundEndTs = activeRound
+    ? new Date(activeRound.created_at).getTime() + activeRound.duration_seconds * 1000
+    : null;
+
+  const targetReferenceLine = entryPrice ? (
     <ReferenceLine
-      y={Number(activeRound.open_price)}
+      y={entryPrice}
       stroke="#f59e0b"
       strokeDasharray="4 3"
+      strokeOpacity={0.8}
+      label={{ value: `📍 Entry ${formatTooltipPrice(entryPrice, assetClass)}`, position: "insideTopRight", fill: "#f59e0b", fontSize: 9, fontWeight: 600 }}
+    />
+  ) : null;
+
+  const closeTimeReferenceLine = roundEndTs && userBet ? (
+    <ReferenceLine
+      x={roundEndTs}
+      stroke="#ef4444"
+      strokeDasharray="6 3"
       strokeOpacity={0.7}
-      label={{ value: `Entry ${formatTooltipPrice(Number(activeRound.open_price), assetClass)}`, position: "right", fill: "#f59e0b", fontSize: 9, fontWeight: 600 }}
+      label={{ value: `⏱ Close ${new Date(roundEndTs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`, position: "insideTopLeft", fill: "#ef4444", fontSize: 9, fontWeight: 600 }}
     />
   ) : null;
 
