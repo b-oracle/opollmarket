@@ -398,8 +398,10 @@ export default function QuickTrade() {
     let cancelled = false;
     const cacheKey = selectedAsset.symbol;
 
-    const cachedRaw = rawDataRef.current.get(cacheKey);
+    // Try in-memory cache first, then sessionStorage
+    const cachedRaw = rawDataRef.current.get(cacheKey) || getSessionCache<[number, number][]>(`raw_${cacheKey}`);
     if (cachedRaw && cachedRaw.length > 0) {
+      rawDataRef.current.set(cacheKey, cachedRaw);
       setPriceHistory(filterPriceData(cachedRaw, chartMs));
       setHistoryLoading(false);
     } else {
@@ -410,6 +412,7 @@ export default function QuickTrade() {
       const raw = await fetchRawPriceData(selectedAsset);
       if (!cancelled && raw.length > 0) {
         rawDataRef.current.set(cacheKey, raw);
+        setSessionCache(`raw_${cacheKey}`, raw);
         setPriceHistory(filterPriceData(raw, chartMs));
       }
       if (!cancelled) setHistoryLoading(false);
@@ -429,8 +432,11 @@ export default function QuickTrade() {
   useEffect(() => {
     let cancelled = false;
     const cacheKey = `${selectedAsset.symbol}:${chartTimeframe}`;
-    const cached = ohlcCacheRef.current.get(cacheKey);
-    if (cached) {
+
+    // Try in-memory cache first, then sessionStorage
+    const cached = ohlcCacheRef.current.get(cacheKey) || getSessionCache<OHLCCandle[]>(`ohlc_${cacheKey}`);
+    if (cached && cached.length > 0) {
+      ohlcCacheRef.current.set(cacheKey, cached);
       setOhlcData(cached);
       return;
     }
@@ -442,6 +448,7 @@ export default function QuickTrade() {
       const candles = await fetchOHLCData(selectedAsset.symbol, chartTimeframe, selectedAsset.geckoId);
       if (!cancelled && candles.length > 0) {
         ohlcCacheRef.current.set(cacheKey, candles);
+        setSessionCache(`ohlc_${cacheKey}`, candles);
         setOhlcData(candles);
       }
     })();
