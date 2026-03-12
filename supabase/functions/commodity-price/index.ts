@@ -6,25 +6,56 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// In-memory cache to reduce API calls (5000/month free tier)
+// In-memory cache to reduce API calls
 const cache = new Map<string, { price: number; fetchedAt: number }>();
-const CACHE_TTL = 120_000; // 2 minutes (was 30s — more conservative to avoid quota burn)
+const CACHE_TTL = 120_000; // 2 minutes
 
-// Map our symbols to Omkar API commodity names
-const ASSET_MAP: Record<string, string> = {
+// Map our symbols to Twelve Data symbols (primary) and Omkar names (fallback)
+const TWELVE_DATA_MAP: Record<string, string> = {
+  NG: "NG",
+  COPPER: "COPPER",
+  WTI: "WTI",
+  BRENT: "BRENT",
+};
+
+const OMKAR_MAP: Record<string, string> = {
   NG: "natural_gas",
   COPPER: "copper",
   WTI: "crude_oil",
   BRENT: "brent_crude_oil",
 };
 
-// Fallback: scrape-free static prices (updated periodically as a last resort)
+// Fallback static prices (last resort)
 const FALLBACK_PRICES: Record<string, number> = {
-  natural_gas: 3.50,
-  copper: 4.25,
-  crude_oil: 72.00,
-  brent_crude_oil: 76.00,
+  NG: 3.50,
+  COPPER: 4.25,
+  WTI: 72.00,
+  BRENT: 76.00,
 };
+
+async function fetchFromTwelveData(symbol: string, apiKey: string): Promise<number | null> {
+  const tdSymbol = TWELVE_DATA_MAP[symbol];
+  if (!tdSymbol) return null;
+  try {
+    const resp = await fetch(
+      `https://api.twelvedata.com/price?symbol=${tdSymbol}&apikey=${apiKey}`
+    );
+    if (!resp.ok) {
+      console.error(`Twelve Data error [${resp.status}]`);
+      return null;
+    }
+    const data = await resp.json();
+    if (data.code || data.status === "error") {
+      console.error("Twelve Data error:", data.message);
+      return null;
+    }
+    const price = parseFloat(data.price);
+    return isNaN(price) ? null : price;
+  } catch (e) {
+    console.error("Twelve Data fetch error:", e);
+    return null;
+  }
+}
 
 async function fetchFromOmkar(commodityName: string, apiKey: string): Promise<number | null> {
   try {
@@ -47,14 +78,7 @@ async function fetchFromOmkar(commodityName: string, apiKey: string): Promise<nu
   }
 }
 
-// Try CommodityPriceAPI.com (free, no key required, 60s updates)
-async function fetchFromCommodityPriceApi(commodityName: string): Promise<number | null> {
-  // Map Omkar names to symbols used by metals.dev / frankfurter as last resort
-  // This provider doesn't exist without a key, so we skip it
-  return null;
-}
-
-// Store last known good price in Supabase for cross-instance persistence
+// Store last known good price in DB for cross-instance persistence
 async function getDbCachedPrice(supabase: any, asset: string): Promise<number | null> {
   try {
     const { data } = await supabase
@@ -63,9 +87,8 @@ async function getDbCachedPrice(supabase: any, asset: string): Promise<number | 
       .eq("asset", asset)
       .maybeSingle();
     if (!data) return null;
-    // Accept DB cache if < 1 hour old
     const age = Date.now() - new Date(data.updated_at).getTime();
-    if (age > 3600_000) return null;
+    if (age > 3600_000) return null; // Accept if < 1 hour old
     return data.price;
   } catch {
     return null;
@@ -96,8 +119,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const commodityName = ASSET_MAP[asset.toUpperCase()];
-    if (!commodityName) {
+    const normalizedAsset = asset.toUpperCase();
+    if (!TWELVE_DATA_MAP[normalizedAsset]) {
       return new Response(JSON.stringify({ error: `Unsupported asset: ${asset}` }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -105,42 +128,65 @@ Deno.serve(async (req) => {
     }
 
     // 1. Check in-memory cache
-    const cached = cache.get(commodityName);
+    const cached = cache.get(normalizedAsset);
     if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
       return new Response(JSON.stringify({ price: cached.price, cached: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // 2. Try Omkar API
-    const apiKey = Deno.env.get("OMKAR_COMMODITY_API_KEY");
     let price: number | null = null;
 
-    if (apiKey) {
-      price = await fetchFromOmkar(commodityName, apiKey);
+    // 2. Try Twelve Data (primary)
+    const twelveDataKey = Deno.env.get("TWELVE_DATA_API_KEY");
+    if (twelveDataKey) {
+      price = await fetchFromTwelveData(normalizedAsset, twelveDataKey);
+      if (price !== null) {
+        cache.set(normalizedAsset, { price, fetchedAt: Date.now() });
+
+        // Persist to DB asynchronously
+        try {
+          const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+          const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+          const supabase = createClient(supabaseUrl, serviceKey);
+          await setDbCachedPrice(supabase, normalizedAsset, price);
+        } catch {}
+
+        return new Response(JSON.stringify({ price, source: "twelve_data" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.log(`Twelve Data failed for ${normalizedAsset}, trying Omkar fallback`);
     }
 
-    // 3. If Omkar failed, try DB cache
+    // 3. Try Omkar API (fallback)
+    const omkarKey = Deno.env.get("OMKAR_COMMODITY_API_KEY");
+    const omkarName = OMKAR_MAP[normalizedAsset];
+    if (omkarKey && omkarName) {
+      price = await fetchFromOmkar(omkarName, omkarKey);
+    }
+
+    // 4. If both APIs failed, try DB cache
     if (price == null) {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const supabase = createClient(supabaseUrl, serviceKey);
       
-      price = await getDbCachedPrice(supabase, commodityName);
+      price = await getDbCachedPrice(supabase, normalizedAsset);
       
       if (price != null) {
-        cache.set(commodityName, { price, fetchedAt: Date.now() });
+        cache.set(normalizedAsset, { price, fetchedAt: Date.now() });
         return new Response(JSON.stringify({ price, cached: true, source: "db_cache" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
     }
 
-    // 4. Last resort: static fallback
+    // 5. Last resort: static fallback
     if (price == null) {
-      price = FALLBACK_PRICES[commodityName] ?? null;
+      price = FALLBACK_PRICES[normalizedAsset] ?? null;
       if (price != null) {
-        cache.set(commodityName, { price, fetchedAt: Date.now() });
+        cache.set(normalizedAsset, { price, fetchedAt: Date.now() });
         return new Response(JSON.stringify({ price, cached: true, source: "fallback" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -154,18 +200,18 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Cache the result in memory + DB
-    cache.set(commodityName, { price, fetchedAt: Date.now() });
+    // Cache the result
+    cache.set(normalizedAsset, { price, fetchedAt: Date.now() });
 
-    // Persist to DB asynchronously
+    // Persist to DB
     try {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const supabase = createClient(supabaseUrl, serviceKey);
-      await setDbCachedPrice(supabase, commodityName, price);
+      await setDbCachedPrice(supabase, normalizedAsset, price);
     } catch {}
 
-    return new Response(JSON.stringify({ price, commodity: commodityName }), {
+    return new Response(JSON.stringify({ price, source: "omkar" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {

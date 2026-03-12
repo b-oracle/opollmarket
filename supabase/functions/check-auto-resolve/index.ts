@@ -22,10 +22,19 @@ const CRYPTO_MAP: Record<string, string> = {
   SHIB: "shiba-inu",
 };
 
-// Commodity symbols — fetched via Frankfurter (metals) or fallback
-const COMMODITY_SYMBOLS = new Set(["XAU", "XAG", "XPT", "XPD", "BRENT", "WTI", "NG", "COPPER"]);
+// Twelve Data symbol mapping for commodities
+const TWELVE_DATA_COMMODITY_MAP: Record<string, string> = {
+  XAU: "XAU/USD",
+  XAG: "XAG/USD",
+  XPT: "XPT/USD",
+  XPD: "XPD/USD",
+  BRENT: "BRENT",
+  WTI: "WTI",
+  NG: "NG",
+  COPPER: "COPPER",
+};
 
-// Forex pairs
+const COMMODITY_SYMBOLS = new Set(["XAU", "XAG", "XPT", "XPD", "BRENT", "WTI", "NG", "COPPER"]);
 const FOREX_PAIRS = new Set(["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD", "USD/CHF", "NZD/USD", "EUR/GBP"]);
 
 function getAssetType(asset: string): "crypto" | "commodity" | "forex" {
@@ -34,6 +43,7 @@ function getAssetType(asset: string): "crypto" | "commodity" | "forex" {
   return "crypto";
 }
 
+// ── Crypto: CoinGecko ──
 async function fetchCryptoPrice(asset: string): Promise<number | null> {
   const geckoId = CRYPTO_MAP[asset.toUpperCase()];
   if (!geckoId) return null;
@@ -49,33 +59,29 @@ async function fetchCryptoPrice(asset: string): Promise<number | null> {
   }
 }
 
-async function fetchCommodityPrice(symbol: string): Promise<number | null> {
+// ── Forex: ExchangeRate-API (primary) → Frankfurter (fallback) ──
+async function fetchForexFromExchangeRateApi(pair: string, apiKey: string): Promise<number | null> {
   try {
-    // Use metals.dev free API for precious metals
-    if (["XAU", "XAG", "XPT", "XPD"].includes(symbol)) {
-      const metalMap: Record<string, string> = { XAU: "gold", XAG: "silver", XPT: "platinum", XPD: "palladium" };
-      const metalName = metalMap[symbol];
-      if (!metalName) return null;
-      
-      const resp = await fetch(`https://api.metals.dev/v1/latest?api_key=demo&currency=USD&unit=toz`);
-      if (!resp.ok) return null;
-      const data = await resp.json();
-      return data?.metals?.[metalName] ?? null;
+    const [base, quote] = pair.split("/");
+    if (!base || !quote) return null;
+    const resp = await fetch(`https://v6.exchangerate-api.com/v6/${apiKey}/pair/${base}/${quote}`);
+    if (!resp.ok) {
+      console.error(`ExchangeRate-API error [${resp.status}]`);
+      return null;
     }
-    
-    // For oil and other commodities, use a proxy via exchangerate
-    // Fallback: return null (manual resolution needed)
-    return null;
-  } catch {
+    const data = await resp.json();
+    if (data.result !== "success") return null;
+    return data.conversion_rate ?? null;
+  } catch (e) {
+    console.error("ExchangeRate-API fetch error:", e);
     return null;
   }
 }
 
-async function fetchForexRate(pair: string): Promise<number | null> {
+async function fetchForexFromFrankfurter(pair: string): Promise<number | null> {
   try {
     const [base, quote] = pair.split("/");
     if (!base || !quote) return null;
-    
     const resp = await fetch(`https://api.frankfurter.app/latest?from=${base}&to=${quote}`);
     if (!resp.ok) return null;
     const data = await resp.json();
@@ -85,6 +91,70 @@ async function fetchForexRate(pair: string): Promise<number | null> {
   }
 }
 
+async function fetchForexRate(pair: string): Promise<number | null> {
+  const apiKey = Deno.env.get("EXCHANGERATE_API_KEY");
+  if (apiKey) {
+    const price = await fetchForexFromExchangeRateApi(pair, apiKey);
+    if (price !== null) return price;
+    console.log(`ExchangeRate-API failed for ${pair}, falling back to Frankfurter`);
+  }
+  return fetchForexFromFrankfurter(pair);
+}
+
+// ── Commodities: Twelve Data (primary) → metals.dev (precious metals fallback) ──
+async function fetchCommodityFromTwelveData(symbol: string, apiKey: string): Promise<number | null> {
+  const tdSymbol = TWELVE_DATA_COMMODITY_MAP[symbol.toUpperCase()];
+  if (!tdSymbol) return null;
+  try {
+    const resp = await fetch(
+      `https://api.twelvedata.com/price?symbol=${tdSymbol}&apikey=${apiKey}`
+    );
+    if (!resp.ok) {
+      console.error(`Twelve Data error [${resp.status}]`);
+      return null;
+    }
+    const data = await resp.json();
+    if (data.code || data.status === "error") {
+      console.error("Twelve Data error:", data.message);
+      return null;
+    }
+    const price = parseFloat(data.price);
+    return isNaN(price) ? null : price;
+  } catch (e) {
+    console.error("Twelve Data fetch error:", e);
+    return null;
+  }
+}
+
+async function fetchMetalFallback(symbol: string): Promise<number | null> {
+  const metalMap: Record<string, string> = { XAU: "gold", XAG: "silver", XPT: "platinum", XPD: "palladium" };
+  const metalName = metalMap[symbol];
+  if (!metalName) return null;
+  try {
+    const resp = await fetch(`https://api.metals.dev/v1/latest?api_key=demo&currency=USD&unit=toz`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data?.metals?.[metalName] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchCommodityPrice(symbol: string): Promise<number | null> {
+  const apiKey = Deno.env.get("TWELVE_DATA_API_KEY");
+  if (apiKey) {
+    const price = await fetchCommodityFromTwelveData(symbol, apiKey);
+    if (price !== null) return price;
+    console.log(`Twelve Data failed for ${symbol}, trying fallback`);
+  }
+  // Fallback for precious metals only
+  if (["XAU", "XAG", "XPT", "XPD"].includes(symbol)) {
+    return fetchMetalFallback(symbol);
+  }
+  return null;
+}
+
+// ── Unified price fetcher ──
 async function fetchPrice(asset: string): Promise<number | null> {
   const assetType = getAssetType(asset);
   switch (assetType) {
@@ -94,22 +164,13 @@ async function fetchPrice(asset: string): Promise<number | null> {
   }
 }
 
-function conditionMet(
-  currentPrice: number,
-  targetPrice: number,
-  operator: string
-): boolean {
+function conditionMet(currentPrice: number, targetPrice: number, operator: string): boolean {
   switch (operator) {
-    case "above":
-      return currentPrice > targetPrice;
-    case "below":
-      return currentPrice < targetPrice;
-    case "at_or_above":
-      return currentPrice >= targetPrice;
-    case "at_or_below":
-      return currentPrice <= targetPrice;
-    default:
-      return false;
+    case "above": return currentPrice > targetPrice;
+    case "below": return currentPrice < targetPrice;
+    case "at_or_above": return currentPrice >= targetPrice;
+    case "at_or_below": return currentPrice <= targetPrice;
+    default: return false;
   }
 }
 
@@ -208,10 +269,8 @@ Deno.serve(async (req) => {
       const isOneSided = losers.length === 0 || winners.length === 0;
 
       if (winners.length === 0) {
-        // ONE-SIDED: Everyone lost — platform profit, no refund
         console.log(`Market ${market.id}: One-sided loss — platform profit`);
       } else if (isOneSided && losers.length === 0) {
-        // ONE-SIDED: Everyone won — return capital minus admin fee
         const { data: feeSettings } = await adminClient
           .from("commission_settings")
           .select("admin_fee_percent")
@@ -251,7 +310,6 @@ Deno.serve(async (req) => {
           });
         }
       } else {
-        // NORMAL: Two-sided — winners get full share value
         for (const pos of winners) {
           const payout = pos.shares;
 
@@ -282,7 +340,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Determine asset display label
+      // Notifications
       const assetType = getAssetType(asset);
       const priceLabel = assetType === "forex" ? asset : `${asset}/USD`;
       const priceInfo = currentPrice !== null ? `${priceLabel}: $${currentPrice.toLocaleString()}` : "";
@@ -300,9 +358,7 @@ Deno.serve(async (req) => {
 
       const notifications = Array.from(uniqueUsers.entries()).map(([userId, side]) => {
         const won = side === winningSide;
-        const title = won
-          ? "You Won! 🎉 Market Auto-Resolved"
-          : "Market Auto-Resolved";
+        const title = won ? "You Won! 🎉 Market Auto-Resolved" : "Market Auto-Resolved";
         const message = winningSide === "yes"
           ? `"${market.title}" resolved YES — ${priceInfo ? `price condition met (${priceInfo})` : "condition met"}. ${won ? "Your payout has been credited!" : "Better luck next time!"}`
           : `"${market.title}" resolved NO — deadline passed without condition being met${priceInfo ? ` (${priceInfo})` : ""}. ${won ? "Your payout has been credited!" : "Better luck next time!"}`;
@@ -323,7 +379,7 @@ Deno.serve(async (req) => {
       resolvedCount++;
     }
 
-    // Piggyback: run bulk verification sweep to catch stale badges
+    // Piggyback: run bulk verification sweep
     let verificationResult = null;
     try {
       const { data } = await adminClient.functions.invoke("bulk-update-verification", {
