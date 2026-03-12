@@ -677,9 +677,9 @@ export default function QuickTrade() {
     if (data && data.length > 0) {
       setActiveRound(data[0] as unknown as Round);
     } else {
-      // No active round — create one if we have a price
-      const price = currentPriceRef.current;
-      if (price != null) {
+      // No active round — create one using a fresh price snapshot for the selected asset
+      const freshPrice = await fetchPriceForAsset(selectedAsset);
+      if (freshPrice != null) {
         const now = new Date();
         const locksAt = new Date(now.getTime() + (selectedTimeframe.seconds - LOCK_BUFFER) * 1000);
         const { data: newRound } = await supabase
@@ -687,7 +687,7 @@ export default function QuickTrade() {
           .insert({
             asset: selectedAsset.symbol,
             duration_seconds: selectedTimeframe.seconds,
-            open_price: price,
+            open_price: freshPrice,
             status: "open",
             locks_at: locksAt.toISOString(),
           })
