@@ -234,7 +234,18 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
       if (containerRef.current) chart.applyOptions({ width: containerRef.current.clientWidth, height: containerRef.current.clientHeight });
     });
     ro.observe(containerRef.current);
-    return () => { ro.disconnect(); chart.remove(); chartRef.current = null; };
+    return () => {
+      ro.disconnect();
+      if (interpolationRef.current) {
+        cancelAnimationFrame(interpolationRef.current);
+        interpolationRef.current = null;
+      }
+      animationActiveRef.current = false;
+      hasInitializedDataRef.current = false;
+      currentCandleRef.current = null;
+      chart.remove();
+      chartRef.current = null;
+    };
   }, [isDark, chartStyle]);
 
   // Set initial data
