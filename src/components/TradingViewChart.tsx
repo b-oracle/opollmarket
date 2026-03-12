@@ -44,6 +44,19 @@ interface TradingViewChartProps {
 
 const CANDLE_BUCKETS = 60;
 
+function getCandleBucketSeconds(timeframeLabel: string, chartMs: number): number {
+  const tf = timeframeLabel.trim().toLowerCase();
+  switch (tf) {
+    case "1m": return 60;
+    case "5m": return 5 * 60;
+    case "15m": return 15 * 60;
+    case "1h": return 60 * 60;
+    case "4h": return 4 * 60 * 60;
+    case "1d": return 24 * 60 * 60;
+    default: return Math.max(60, Math.floor(chartMs / 1000));
+  }
+}
+
 const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(function TradingViewChart({
   priceHistory,
   ohlcData,
@@ -76,8 +89,20 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   const targetStreamingPriceRef = useRef<number | null>(null);
   const animationActiveRef = useRef(false);
   const hasInitializedDataRef = useRef(false);
+  const seededDataKeyRef = useRef<string>("");
+  const candleBucketSecRef = useRef<number>(getCandleBucketSeconds(timeframeLabel, chartMs));
   // Track current streaming candle OHLC state
   const currentCandleRef = useRef<{ time: number; open: number; high: number; low: number; close: number } | null>(null);
+
+  useEffect(() => {
+    candleBucketSecRef.current = getCandleBucketSeconds(timeframeLabel, chartMs);
+  }, [timeframeLabel, chartMs]);
+
+  // Reset candle runtime state when timeframe or chart style changes
+  useEffect(() => {
+    currentCandleRef.current = null;
+    lastCandleTimeRef.current = 0;
+  }, [timeframeLabel, chartMs, chartStyle]);
 
   // Countdown timer for active round
   useEffect(() => {
@@ -102,48 +127,87 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   const buildData = useCallback(() => {
     const upColor = "#22c55e";
     const downColor = "#ef4444";
+    const desiredBucketSec = getCandleBucketSeconds(timeframeLabel, chartMs);
 
     // Prefer real OHLC data from exchange APIs
     if (ohlcData && ohlcData.length > 0) {
-      const candles: CandlestickData[] = ohlcData.map((c) => ({
-        time: c.time as UTCTimestamp,
-        open: c.open,
-        high: c.high,
-        low: c.low,
-        close: c.close,
-      }));
+      const sorted = [...ohlcData].sort((a, b) => a.time - b.time);
+      const sourceIntervalSec = sorted.length > 1 ? Math.max(1, sorted[1].time - sorted[0].time) : desiredBucketSec;
+      const shouldUseRawPriceFallback = desiredBucketSec < sourceIntervalSec && !!priceHistory && priceHistory.length > 1;
 
-      const volumes: { time: UTCTimestamp; value: number; color: string }[] = ohlcData.map((c) => ({
-        time: c.time as UTCTimestamp,
-        value: Math.abs(c.close - c.open) * 1000,
-        color: c.close >= c.open ? upColor + "66" : downColor + "66",
-      }));
+      if (!shouldUseRawPriceFallback) {
+        const cutoffSec = Math.floor(Date.now() / 1000) - desiredBucketSec * CANDLE_BUCKETS;
+        const scoped = sorted.filter((c) => c.time >= cutoffSec);
+        const source = scoped.length > 1 ? scoped : sorted.slice(-CANDLE_BUCKETS);
 
-      const ma7: { time: UTCTimestamp; value: number }[] = [];
-      const ma14: { time: UTCTimestamp; value: number }[] = [];
-      for (let i = 0; i < candles.length; i++) {
-        if (i >= 6) {
-          let sum = 0;
-          for (let j = i - 6; j <= i; j++) sum += (candles[j] as any).close;
-          ma7.push({ time: candles[i].time as UTCTimestamp, value: sum / 7 });
+        const candles: CandlestickData[] = [];
+        const volumes: { time: UTCTimestamp; value: number; color: string }[] = [];
+
+        let bucketTime: number | null = null;
+        let open = 0;
+        let high = 0;
+        let low = 0;
+        let close = 0;
+        let sampleCount = 0;
+
+        const flushBucket = () => {
+          if (bucketTime == null) return;
+          const time = bucketTime as UTCTimestamp;
+          candles.push({ time, open, high, low, close });
+          volumes.push({
+            time,
+            value: Math.max(1, sampleCount),
+            color: close >= open ? upColor + "66" : downColor + "66",
+          });
+        };
+
+        for (const c of source) {
+          const alignedTime = Math.floor(c.time / desiredBucketSec) * desiredBucketSec;
+          if (bucketTime === null || alignedTime !== bucketTime) {
+            flushBucket();
+            bucketTime = alignedTime;
+            open = c.open;
+            high = c.high;
+            low = c.low;
+            close = c.close;
+            sampleCount = 1;
+          } else {
+            high = Math.max(high, c.high);
+            low = Math.min(low, c.low);
+            close = c.close;
+            sampleCount += 1;
+          }
         }
-        if (i >= 13) {
-          let sum = 0;
-          for (let j = i - 13; j <= i; j++) sum += (candles[j] as any).close;
-          ma14.push({ time: candles[i].time as UTCTimestamp, value: sum / 14 });
+
+        flushBucket();
+
+        const ma7: { time: UTCTimestamp; value: number }[] = [];
+        const ma14: { time: UTCTimestamp; value: number }[] = [];
+        for (let i = 0; i < candles.length; i++) {
+          if (i >= 6) {
+            let sum = 0;
+            for (let j = i - 6; j <= i; j++) sum += (candles[j] as any).close;
+            ma7.push({ time: candles[i].time as UTCTimestamp, value: sum / 7 });
+          }
+          if (i >= 13) {
+            let sum = 0;
+            for (let j = i - 13; j <= i; j++) sum += (candles[j] as any).close;
+            ma14.push({ time: candles[i].time as UTCTimestamp, value: sum / 14 });
+          }
         }
+
+        return { candles, volumes, ma7, ma14 };
       }
-
-      return { candles, volumes, ma7, ma14 };
     }
 
     // Fallback: bucket raw price points into candles
     if (!priceHistory) return { candles: [], volumes: [], ma7: [], ma14: [] };
-    const cutoff = Date.now() - chartMs;
+    const lookbackMs = Math.max(chartMs, desiredBucketSec * CANDLE_BUCKETS * 1000);
+    const cutoff = Date.now() - lookbackMs;
     const filtered = priceHistory.filter((pt) => pt.ts >= cutoff);
     if (filtered.length < 2) return { candles: [], volumes: [], ma7: [], ma14: [] };
 
-    const bucketMs = Math.max(Math.floor(chartMs / CANDLE_BUCKETS), 3000);
+    const bucketMs = desiredBucketSec * 1000;
     const candles: CandlestickData[] = [];
     const volumes: { time: UTCTimestamp; value: number; color: string }[] = [];
     let bucketStart = filtered[0].ts;
@@ -248,11 +312,19 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     };
   }, [isDark, chartStyle]);
 
-  // Set initial data (seed once per chart instance; avoid resetting during live stream)
+  // Set/refresh chart data when timeframe/source changes (without resetting every stream tick)
   useEffect(() => {
     if (!chartRef.current) return;
 
-    if (hasInitializedDataRef.current && streamingPrice != null) {
+    const ohlcLen = ohlcData?.length ?? 0;
+    const ohlcFirst = ohlcLen > 0 ? ohlcData![0].time : 0;
+    const ohlcLast = ohlcLen > 0 ? ohlcData![ohlcLen - 1].time : 0;
+    const priceLen = priceHistory?.length ?? 0;
+    const priceFirst = priceLen > 0 ? priceHistory![0].ts : 0;
+    const priceLast = priceLen > 0 ? priceHistory![priceLen - 1].ts : 0;
+
+    const dataKey = `${chartStyle}:${timeframeLabel}:${chartMs}:${ohlcLen}:${ohlcFirst}:${ohlcLast}:${priceLen}:${priceFirst}:${priceLast}`;
+    if (hasInitializedDataRef.current && seededDataKeyRef.current === dataKey) {
       return;
     }
 
@@ -283,15 +355,14 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
       close: Number(last.close),
     };
 
-    if (interpolatedPriceRef.current == null) {
-      interpolatedPriceRef.current = Number(last.close);
-      targetStreamingPriceRef.current = Number(last.close);
-      prevStreamingPriceRef.current = Number(last.close);
-    }
+    interpolatedPriceRef.current = Number(last.close);
+    targetStreamingPriceRef.current = Number(last.close);
+    prevStreamingPriceRef.current = Number(last.close);
 
+    seededDataKeyRef.current = dataKey;
     hasInitializedDataRef.current = true;
     chartRef.current.timeScale().fitContent();
-  }, [buildData, chartStyle, streamingPrice]);
+  }, [buildData, chartStyle, chartMs, timeframeLabel, ohlcData, priceHistory]);
 
   // Entry price horizontal marker line
   useEffect(() => {
@@ -375,22 +446,28 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
       const nowSec = Math.floor(Date.now() / 1000) as UTCTimestamp;
 
       if (chartStyle === "candle" && candleSeriesRef.current) {
-        const bucketSec = Math.max(60, Math.floor(chartMs / 1000 / 60));
-        const lastTime = lastCandleTimeRef.current || (Math.floor(nowSec / bucketSec) * bucketSec);
-        const elapsed = nowSec - lastTime;
+        const bucketSec = candleBucketSecRef.current;
+        const alignedBucketTime = (Math.floor(nowSec / bucketSec) * bucketSec) as UTCTimestamp;
 
         const cur = currentCandleRef.current;
-        if (!cur || elapsed >= bucketSec) {
-          // Start a new candle, ensuring its time is strictly after the last one
-          const newTime = (lastTime + bucketSec) as UTCTimestamp;
+        if (!cur) {
           currentCandleRef.current = {
-            time: newTime,
+            time: alignedBucketTime,
             open: nextPrice,
             high: nextPrice,
             low: nextPrice,
             close: nextPrice,
           };
-          lastCandleTimeRef.current = newTime;
+          lastCandleTimeRef.current = alignedBucketTime;
+        } else if (alignedBucketTime > cur.time) {
+          currentCandleRef.current = {
+            time: alignedBucketTime,
+            open: cur.close,
+            high: nextPrice,
+            low: nextPrice,
+            close: nextPrice,
+          };
+          lastCandleTimeRef.current = alignedBucketTime;
         } else {
           cur.high = Math.max(cur.high, nextPrice);
           cur.low = Math.min(cur.low, nextPrice);
