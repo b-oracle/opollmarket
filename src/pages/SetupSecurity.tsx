@@ -97,6 +97,8 @@ const SetupSecurity = () => {
   const canProceed = pinDone || totpDone;
 
   const handleContinue = () => {
+    // Signal to SecuritySetupGuard that setup is complete
+    window.dispatchEvent(new Event("security-setup-complete"));
     navigate("/", { replace: true });
   };
 
