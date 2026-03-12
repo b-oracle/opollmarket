@@ -607,8 +607,8 @@ const Profile = () => {
     else if (txFilter === "deposits") result = result.filter((t: any) => t.type === "deposit" || t.type === "withdraw" || t.type === "withdrawal");
     else if (txFilter === "earnings") result = result.filter((t: any) => t.type === "commission" || t.type === "payout" || t.type === "refund");
 
-    // Hide expired deposits from "all" filter — only show under "failed" status or "deposits" tab
-    if (txFilter === "all" && statusFilter === "all") {
+    // Hide expired deposits everywhere except the "failed" status filter
+    if (statusFilter !== "failed") {
       result = result.filter((t: any) => !(t.type === "deposit" && t.status === "expired"));
     }
 
