@@ -186,9 +186,15 @@ const SocialTutorialTrigger = () => {
   const { isFeatureEnabled } = useFeatureToggles();
   const [show, setShow] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const location = useLocation();
+
+  // Don't show tutorial while on security setup or auth pages
+  const isOnSetupOrAuth = ["/setup-security", "/auth", "/reset-password", "/forgot-password"].some(
+    p => location.pathname.startsWith(p)
+  );
 
   useEffect(() => {
-    if (dismissed) return;
+    if (dismissed || isOnSetupOrAuth) { setShow(false); return; }
     if (!isFeatureEnabled("social_tutorial")) return;
     if (!user) { setShow(false); return; }
 
@@ -202,7 +208,7 @@ const SocialTutorialTrigger = () => {
       }
     });
     return () => { cancelled = true; };
-  }, [user, dismissed, isFeatureEnabled]);
+  }, [user, dismissed, isFeatureEnabled, isOnSetupOrAuth]);
 
   const handleComplete = () => {
     setShow(false);
