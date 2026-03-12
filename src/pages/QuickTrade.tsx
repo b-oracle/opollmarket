@@ -156,6 +156,29 @@ async function fetchRawPriceData(asset: QuickTradeAsset): Promise<[number, numbe
   return getNonCryptoHistory(asset.symbol);
 }
 
+// ── SessionStorage-backed chart cache helpers ──
+const CHART_CACHE_PREFIX = "qt_chart_";
+const CHART_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getSessionCache<T>(key: string): T | null {
+  try {
+    const raw = sessionStorage.getItem(CHART_CACHE_PREFIX + key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Date.now() - parsed._ts > CHART_CACHE_TTL) {
+      sessionStorage.removeItem(CHART_CACHE_PREFIX + key);
+      return null;
+    }
+    return parsed.data as T;
+  } catch { return null; }
+}
+
+function setSessionCache<T>(key: string, data: T) {
+  try {
+    sessionStorage.setItem(CHART_CACHE_PREFIX + key, JSON.stringify({ data, _ts: Date.now() }));
+  } catch { /* quota exceeded — ignore */ }
+}
+
 function filterPriceData(
   raw: [number, number][],
   durationMs: number
