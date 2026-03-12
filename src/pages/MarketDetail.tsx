@@ -147,6 +147,10 @@ const InlineCommentItem = ({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
             <span className="text-xs font-semibold">@{comment.author_name}</span>
+            {comment.verification_level && comment.verification_level !== "none" && (
+              <NftBadge level={comment.verification_level} size={14} />
+            )}
+            <span className="text-[10px] text-muted-foreground">{formatCommentTime(comment.created_at)}</span>
             <span className="text-[10px] text-muted-foreground">{formatCommentTime(comment.created_at)}</span>
           </div>
           <p className="text-xs text-foreground/80 leading-relaxed break-words">{comment.content}</p>
