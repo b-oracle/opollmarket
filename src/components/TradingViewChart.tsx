@@ -248,15 +248,20 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     };
   }, [isDark, chartStyle]);
 
-  // Set initial data
+  // Set initial data (seed once per chart instance; avoid resetting during live stream)
   useEffect(() => {
     if (!chartRef.current) return;
+
+    if (hasInitializedDataRef.current && streamingPrice != null) {
+      return;
+    }
+
     const { candles, volumes, ma7, ma14 } = buildData();
+    if (!candles.length) return;
 
     if (chartStyle === "candle" && candleSeriesRef.current) {
       candleSeriesRef.current.setData(candles);
     } else if (chartStyle === "line" && areaSeriesRef.current) {
-      // Convert candles to area data points
       const areaData = candles.map((c: any) => ({
         time: c.time,
         value: c.close,
@@ -267,14 +272,26 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     volumeSeriesRef.current?.setData(volumes as any);
     maSeriesRef.current?.setData(ma7);
     ma14SeriesRef.current?.setData(ma14);
-    
-    // Track last candle time for streaming updates
-    if (candles.length > 0) {
-      lastCandleTimeRef.current = candles[candles.length - 1].time as number;
+
+    const last = candles[candles.length - 1] as any;
+    lastCandleTimeRef.current = Number(last.time);
+    currentCandleRef.current = {
+      time: Number(last.time),
+      open: Number(last.open),
+      high: Number(last.high),
+      low: Number(last.low),
+      close: Number(last.close),
+    };
+
+    if (interpolatedPriceRef.current == null) {
+      interpolatedPriceRef.current = Number(last.close);
+      targetStreamingPriceRef.current = Number(last.close);
+      prevStreamingPriceRef.current = Number(last.close);
     }
-    
+
+    hasInitializedDataRef.current = true;
     chartRef.current.timeScale().fitContent();
-  }, [buildData, chartStyle]);
+  }, [buildData, chartStyle, streamingPrice]);
 
   // Entry price horizontal marker line
   useEffect(() => {
