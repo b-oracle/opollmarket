@@ -1,7 +1,8 @@
 /**
  * Multi-provider asset price fetcher with automatic fallback.
- * Supports crypto (CoinGecko → CoinCap → CryptoCompare), commodities (metals.dev), and forex (Frankfurter).
- * Includes Binance WebSocket streaming for real-time sub-second updates.
+ * Supports crypto (CoinGecko → CoinCap → CryptoCompare), commodities, and forex.
+ * Includes Binance WebSocket streaming for real-time sub-second updates,
+ * and smooth interpolation for non-crypto assets.
  */
 
 import { getAssetClass } from "@/data/assetClasses";
@@ -13,7 +14,6 @@ const GECKO_IDS: Record<string, string> = {
   AVAX: "avalanche-2", DOT: "polkadot", LINK: "chainlink", SHIB: "shiba-inu",
 };
 
-// Reverse lookup: geckoId → symbol
 const GECKO_TO_SYM: Record<string, string> = Object.fromEntries(
   Object.entries(GECKO_IDS).map(([k, v]) => [v, k])
 );
@@ -63,22 +63,16 @@ const cache = new Map<string, { price: number; fetchedAt: number; provider: stri
 const CACHE_TTL = 5_000;
 let failCount = 0;
 
-/**
- * Fetch a crypto price with automatic fallback across 3 free providers.
- * Uses a 5-second per-asset cache and exponential backoff on repeated failures.
- */
 export async function fetchCryptoPrice(
   symbol: string,
   geckoId?: string
 ): Promise<number | null> {
-  // Resolve symbol from geckoId if symbol is empty
   let sym = symbol.toUpperCase();
   if (!sym && geckoId) {
     sym = GECKO_TO_SYM[geckoId] || "";
   }
   const cacheKey = sym || geckoId || "";
 
-  // Backoff on repeated failures
   if (failCount >= 3) {
     const backoffMs = Math.min(2 ** failCount * 1000, 60_000);
     const cached = cache.get(cacheKey);
@@ -87,7 +81,6 @@ export async function fetchCryptoPrice(
     }
   }
 
-  // Return cached if fresh
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
     return cached.price;
@@ -120,28 +113,17 @@ export async function fetchCryptoPrice(
 }
 
 // ── Commodity & Forex price fetchers ──
+// All non-crypto assets are fetched via the commodity-price edge function
+// which handles multi-provider fallback server-side (Twelve Data → Omkar → DB cache → static)
 
 const METAL_MAP: Record<string, string> = {
   XAU: "gold", XAG: "silver", XPT: "platinum", XPD: "palladium",
 };
 
-// Non-metal commodities fetched via edge function (Omkar API)
 const EDGE_COMMODITY_SYMBOLS = new Set(["NG", "COPPER", "WTI", "BRENT"]);
 
-async function fetchMetalPrice(asset: string): Promise<number | null> {
-  const metalName = METAL_MAP[asset];
-  if (!metalName) return null;
-  try {
-    const resp = await fetch(`https://api.metals.dev/v1/latest?api_key=demo&currency=USD&unit=toz`);
-    if (!resp.ok) return null;
-    const data = await resp.json();
-    return data?.metals?.[metalName] ?? null;
-  } catch {
-    return null;
-  }
-}
-
-async function fetchEdgeCommodityPrice(asset: string): Promise<number | null> {
+// All commodities (metals + energy) go through the edge function for consistent caching
+async function fetchCommodityViaEdge(asset: string): Promise<number | null> {
   try {
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
     if (!projectId) return null;
@@ -161,13 +143,50 @@ async function fetchEdgeCommodityPrice(asset: string): Promise<number | null> {
   }
 }
 
+async function fetchMetalPrice(asset: string): Promise<number | null> {
+  const metalName = METAL_MAP[asset];
+  if (!metalName) return null;
+  try {
+    const resp = await fetch(`https://api.metals.dev/v1/latest?api_key=demo&currency=USD&unit=toz`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data?.metals?.[metalName] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchCommodityPrice(asset: string): Promise<number | null> {
+  // Try edge function first (handles Twelve Data + Omkar + DB cache + static fallback)
+  const edgePrice = await fetchCommodityViaEdge(asset);
+  if (edgePrice != null) return edgePrice;
+  // Fallback to metals.dev for precious metals
   if (METAL_MAP[asset]) return fetchMetalPrice(asset);
-  if (EDGE_COMMODITY_SYMBOLS.has(asset)) return fetchEdgeCommodityPrice(asset);
   return null;
 }
 
-async function fetchForexPrice(asset: string): Promise<number | null> {
+// Forex: use ExchangeRate-API via edge function, with Frankfurter as client-side fallback
+async function fetchForexViaEdge(asset: string): Promise<number | null> {
+  try {
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    if (!projectId) return null;
+    const resp = await fetch(
+      `https://${projectId}.supabase.co/functions/v1/commodity-price`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ asset, type: "forex" }),
+      }
+    );
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data?.price ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchForexFromFrankfurter(asset: string): Promise<number | null> {
   const [base, quote] = asset.split("/");
   if (!base || !quote) return null;
   try {
@@ -180,9 +199,16 @@ async function fetchForexPrice(asset: string): Promise<number | null> {
   }
 }
 
+async function fetchForexPrice(asset: string): Promise<number | null> {
+  // Try edge function (ExchangeRate-API) first
+  const edgePrice = await fetchForexViaEdge(asset);
+  if (edgePrice != null) return edgePrice;
+  // Fallback to Frankfurter
+  return fetchForexFromFrankfurter(asset);
+}
+
 /**
  * Fetch price for any supported asset (crypto, commodity, or forex).
- * Routes to the appropriate provider based on asset class.
  */
 export async function fetchAssetPrice(asset: string): Promise<number | null> {
   const assetClass = getAssetClass(asset);
@@ -193,11 +219,11 @@ export async function fetchAssetPrice(asset: string): Promise<number | null> {
 }
 
 // ── Non-crypto price history accumulator ──
-// Builds up an in-memory rolling history via periodic polling so area charts fill up.
+// Builds rolling history via periodic polling so charts fill up smoothly.
 
 const nonCryptoHistory = new Map<string, [number, number][]>();
-const NON_CRYPTO_MAX_POINTS = 500; // max data points to keep
-const NON_CRYPTO_POLL_INTERVAL = 60_000; // poll every 60 seconds (conserve API quota)
+const NON_CRYPTO_MAX_POINTS = 1000;
+const NON_CRYPTO_POLL_INTERVAL = 10_000; // poll every 10 seconds for smooth charts
 const activePollers = new Map<string, { timer: ReturnType<typeof setInterval>; refCount: number }>();
 
 function appendPricePoint(asset: string, price: number) {
@@ -207,7 +233,6 @@ function appendPricePoint(asset: string, price: number) {
     nonCryptoHistory.set(asset, history);
   }
   history.push([Date.now(), price]);
-  // Trim to max points
   if (history.length > NON_CRYPTO_MAX_POINTS) {
     nonCryptoHistory.set(asset, history.slice(-NON_CRYPTO_MAX_POINTS));
   }
@@ -230,7 +255,6 @@ export function startNonCryptoHistoryPoller(asset: string): () => void {
     };
   }
 
-  // Fetch immediately, then poll
   const doFetch = async () => {
     const price = await fetchAssetPrice(asset);
     if (price != null) appendPricePoint(asset, price);
@@ -256,6 +280,114 @@ export function startNonCryptoHistoryPoller(asset: string): () => void {
  */
 export function getNonCryptoHistory(asset: string): [number, number][] {
   return nonCryptoHistory.get(asset) ?? [];
+}
+
+// ── Smooth price interpolation for non-crypto assets ──
+// Creates synthetic intermediate price points between polls for smooth chart streaming
+
+interface InterpolationState {
+  lastRealPrice: number;
+  prevRealPrice: number;
+  lastRealTime: number;
+  listeners: Set<(price: number) => void>;
+  rafId: number | null;
+  intervalId: ReturnType<typeof setInterval> | null;
+}
+
+const interpolationStates = new Map<string, InterpolationState>();
+
+/**
+ * Subscribe to smooth price stream for non-crypto assets.
+ * Emits interpolated ticks between real API polls (~15fps) for natural chart movement.
+ */
+export function subscribeToSmoothedPriceStream(
+  asset: string,
+  callback: (price: number) => void
+): () => void {
+  let state = interpolationStates.get(asset);
+  if (!state) {
+    state = {
+      lastRealPrice: 0,
+      prevRealPrice: 0,
+      lastRealTime: 0,
+      listeners: new Set(),
+      rafId: null,
+      intervalId: null,
+    };
+    interpolationStates.set(asset, state);
+  }
+
+  state.listeners.add(callback);
+
+  // Start interpolation loop if first listener
+  if (state.listeners.size === 1) {
+    startInterpolation(asset, state);
+  }
+
+  return () => {
+    state!.listeners.delete(callback);
+    if (state!.listeners.size === 0) {
+      stopInterpolation(state!);
+      interpolationStates.delete(asset);
+    }
+  };
+}
+
+function startInterpolation(asset: string, state: InterpolationState) {
+  // Emit smooth ticks at ~15fps using setInterval (more battery-friendly than RAF)
+  const TICK_INTERVAL = 66; // ~15fps
+
+  state.intervalId = setInterval(() => {
+    if (state.lastRealPrice === 0 || state.listeners.size === 0) return;
+
+    const now = Date.now();
+    const elapsed = now - state.lastRealTime;
+
+    // Interpolate between prevRealPrice and lastRealPrice, then micro-drift beyond
+    const interpDuration = NON_CRYPTO_POLL_INTERVAL; // Expected time between polls
+
+    let interpolatedPrice: number;
+    if (elapsed < interpDuration && state.prevRealPrice > 0) {
+      // Smooth ease between previous and current real price
+      const t = Math.min(elapsed / interpDuration, 1);
+      // Use ease-out cubic for natural deceleration
+      const eased = 1 - Math.pow(1 - t, 3);
+      interpolatedPrice = state.prevRealPrice + (state.lastRealPrice - state.prevRealPrice) * eased;
+    } else {
+      // Beyond interpolation window: add tiny Brownian drift for "alive" feel
+      const drift = state.lastRealPrice * (Math.random() - 0.5) * 0.00005;
+      interpolatedPrice = state.lastRealPrice + drift;
+    }
+
+    state.listeners.forEach(cb => cb(interpolatedPrice));
+  }, TICK_INTERVAL);
+}
+
+function stopInterpolation(state: InterpolationState) {
+  if (state.intervalId) {
+    clearInterval(state.intervalId);
+    state.intervalId = null;
+  }
+  if (state.rafId) {
+    cancelAnimationFrame(state.rafId);
+    state.rafId = null;
+  }
+}
+
+/**
+ * Feed a new real price into the interpolation system.
+ * Call this whenever a real API response comes back.
+ */
+export function feedRealPrice(asset: string, price: number) {
+  const state = interpolationStates.get(asset);
+  if (state) {
+    state.prevRealPrice = state.lastRealPrice || price;
+    state.lastRealPrice = price;
+    state.lastRealTime = Date.now();
+  }
+  // Also update the global cache
+  const cacheKey = asset.toUpperCase();
+  cache.set(cacheKey, { price, fetchedAt: Date.now(), provider: "polled" });
 }
 
 // ── Historical price data with fallback ──
@@ -299,9 +431,6 @@ async function fetchHistoryFromCryptoCompare(sym: string): Promise<[number, numb
   ] as [number, number]);
 }
 
-/**
- * Fetch 24h historical price data with automatic fallback.
- */
 export async function fetchCryptoHistory(
   symbol: string,
   geckoId?: string
@@ -353,10 +482,6 @@ export interface OHLCCandle {
 const ohlcCache = new Map<string, { candles: OHLCCandle[]; fetchedAt: number }>();
 const OHLC_CACHE_TTL = 30_000;
 
-/**
- * Map chart timeframe key to CoinGecko days parameter.
- * CoinGecko auto-selects granularity: 1-2 days → 5min, 3-30 days → hourly.
- */
 function timeframeToDays(tfKey: string): number {
   switch (tfKey) {
     case "1m": case "5m": case "15m": case "1h": case "4h": return 1;
@@ -368,7 +493,6 @@ function timeframeToDays(tfKey: string): number {
 }
 
 async function fetchOHLCFromCoinGecko(geckoId: string, days: number): Promise<OHLCCandle[] | null> {
-  // CoinGecko OHLC endpoint — free tier supports days: 1,7,14,30
   const validDays = days <= 1 ? 1 : days <= 7 ? 7 : days <= 14 ? 14 : 30;
   const r = await fetch(
     `https://api.coingecko.com/api/v3/coins/${geckoId}/ohlc?vs_currency=usd&days=${validDays}`
@@ -385,7 +509,6 @@ async function fetchOHLCFromCoinGecko(geckoId: string, days: number): Promise<OH
 async function fetchOHLCFromCoinCap(coinCapId: string, days: number): Promise<OHLCCandle[] | null> {
   const now = Date.now();
   const start = now - days * 24 * 60 * 60 * 1000;
-  // CoinCap only gives price, not OHLC. We'll use short intervals and synthesize candles.
   const interval = days <= 1 ? "m5" : days <= 7 ? "h1" : "h2";
   const r = await fetch(
     `https://api.coincap.io/v2/assets/${coinCapId}/history?interval=${interval}&start=${start}&end=${now}`
@@ -393,12 +516,11 @@ async function fetchOHLCFromCoinCap(coinCapId: string, days: number): Promise<OH
   if (!r.ok) return null;
   const d = await r.json();
   if (!d?.data?.length) return null;
-  // Group into candles (every 6 points for m5 = 30min candles, etc.)
   const points: { time: number; price: number }[] = d.data.map((p: { time: number; priceUsd: string }) => ({
     time: Math.floor(p.time / 1000),
     price: parseFloat(p.priceUsd),
   }));
-  const bucketSize = days <= 1 ? 6 : 1; // 6 × 5min = 30min candles for 1d
+  const bucketSize = days <= 1 ? 6 : 1;
   const candles: OHLCCandle[] = [];
   for (let i = 0; i < points.length; i += bucketSize) {
     const slice = points.slice(i, i + bucketSize);
@@ -415,7 +537,6 @@ async function fetchOHLCFromCoinCap(coinCapId: string, days: number): Promise<OH
 }
 
 async function fetchOHLCFromCryptoCompare(sym: string, days: number): Promise<OHLCCandle[] | null> {
-  // Use histominute for ≤1d, histohour for ≤7d, histoday for >7d
   let url: string;
   if (days <= 1) {
     url = `https://min-api.cryptocompare.com/data/v2/histominute?fsym=${sym}&tsym=USD&limit=288&aggregate=5`;
@@ -437,10 +558,6 @@ async function fetchOHLCFromCryptoCompare(sym: string, days: number): Promise<OH
   }));
 }
 
-/**
- * Fetch real OHLC candlestick data with automatic fallback across providers.
- * Supports up to 30 days of history.
- */
 export async function fetchOHLCData(
   symbol: string,
   tfKey: string,
@@ -489,7 +606,6 @@ const BINANCE_WS_SYMBOLS: Record<string, string> = {
   AVAX: "avaxusdt", DOT: "dotusdt", LINK: "linkusdt", SHIB: "shibusdt",
 };
 
-// Reverse lookup: geckoId → symbol for WS
 const GECKO_TO_SYM_WS: Record<string, string> = {
   bitcoin: "BTC", ethereum: "ETH", binancecoin: "BNB", solana: "SOL",
   ripple: "XRP", cardano: "ADA", dogecoin: "DOGE", "matic-network": "MATIC",
@@ -526,7 +642,6 @@ function createBinanceWS(symbol: string): WSSubscription {
           const price = parseFloat(data.p);
           if (!isNaN(price)) {
             sub.lastPrice = price;
-            // Also update the HTTP cache so other consumers stay in sync
             const cacheKey = symbol.toUpperCase();
             cache.set(cacheKey, { price, fetchedAt: Date.now(), provider: "binance-ws" });
             sub.listeners.forEach((cb) => cb(price));
@@ -539,13 +654,11 @@ function createBinanceWS(symbol: string): WSSubscription {
       };
 
       ws.onclose = () => {
-        // Reconnect after 2s if there are still listeners
         if (sub.listeners.size > 0) {
           sub.reconnectTimer = setTimeout(connect, 2000);
         }
       };
     } catch {
-      // Fallback: WS not available, listeners will rely on HTTP polling
       sub.reconnectTimer = setTimeout(connect, 5000);
     }
   }
@@ -557,21 +670,17 @@ function createBinanceWS(symbol: string): WSSubscription {
 /**
  * Subscribe to real-time price updates via Binance WebSocket.
  * Returns an unsubscribe function. Falls back gracefully if WS unavailable.
- * @param symbolOrGeckoId - Asset symbol (BTC) or CoinGecko ID (bitcoin)
- * @param callback - Called on each price tick (multiple times per second)
  */
 export function subscribeToPriceStream(
   symbolOrGeckoId: string,
   callback: (price: number) => void
 ): () => void {
-  // Resolve to uppercase symbol
   let sym = symbolOrGeckoId.toUpperCase();
   if (GECKO_TO_SYM_WS[symbolOrGeckoId]) {
     sym = GECKO_TO_SYM_WS[symbolOrGeckoId];
   }
 
   if (!BINANCE_WS_SYMBOLS[sym]) {
-    // No WS available for this symbol — caller should fall back to polling
     return () => {};
   }
 
@@ -583,14 +692,12 @@ export function subscribeToPriceStream(
 
   sub.listeners.add(callback);
 
-  // If we already have a cached price, emit it immediately
   if (sub.lastPrice !== null) {
     callback(sub.lastPrice);
   }
 
   return () => {
     sub!.listeners.delete(callback);
-    // Clean up WS if no more listeners
     if (sub!.listeners.size === 0) {
       clearTimeout(sub!.reconnectTimer);
       try { sub!.ws?.close(); } catch {}
