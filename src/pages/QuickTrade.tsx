@@ -479,7 +479,7 @@ export default function QuickTrade() {
     
     // WS tick handler: just update the target price (no direct state set)
     const handleWsTick = (price: number) => {
-      if (!mounted) return;
+      if (!isCurrentRun()) return;
       wsActiveRef.current = true;
       if (displayedPrice === 0) displayedPrice = price; // seed on first tick
       targetWsPrice = price;
