@@ -59,7 +59,7 @@ function buildCandles(
 ): Candle[] {
   if (points.length < 2) return [];
   const span = points[points.length - 1].ts - points[0].ts;
-  const bucketMs = Math.max(Math.floor(span / targetCount), 60000);
+  const bucketMs = Math.max(Math.floor(span / targetCount), 1000);
 
   const candles: Candle[] = [];
   let bucketStart = points[0].ts;
