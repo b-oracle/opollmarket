@@ -130,10 +130,21 @@ const formatCommentTime = (dateStr: string) => {
 };
 
 const InlineCommentItem = ({
-  comment, isReply = false, onReply, onLike,
-}: { comment: DbComment; isReply?: boolean; onReply: (id: string, author: string) => void; onLike: (id: string, liked: boolean) => void; }) => {
+  comment, isReply = false, onReply, onLike, onEdit, onDelete, currentUserId,
+}: { comment: DbComment; isReply?: boolean; onReply: (id: string, author: string) => void; onLike: (id: string, liked: boolean) => void; onEdit: (id: string, content: string) => void; onDelete: (id: string) => void; currentUserId: string; }) => {
   const [showReplies, setShowReplies] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(comment.content);
+  const isOwner = !!currentUserId && comment.author_wallet === currentUserId;
   const replies = comment.replies || [];
+
+  const handleSaveEdit = () => {
+    const trimmed = editText.trim();
+    if (!trimmed || trimmed === comment.content) { setEditing(false); return; }
+    onEdit(comment.id, trimmed);
+    setEditing(false);
+  };
+
   return (
     <div className={isReply ? "ml-8 border-l border-border/30 pl-3" : ""}>
       <div className="flex gap-2.5 py-2.5">
@@ -151,9 +162,18 @@ const InlineCommentItem = ({
               <NftBadge level={comment.verification_level} size={14} />
             )}
             <span className="text-[10px] text-muted-foreground">{formatCommentTime(comment.created_at)}</span>
-            <span className="text-[10px] text-muted-foreground">{formatCommentTime(comment.created_at)}</span>
           </div>
-          <p className="text-xs text-foreground/80 leading-relaxed break-words">{comment.content}</p>
+          {editing ? (
+            <div className="flex items-center gap-1.5 mt-1">
+              <input type="text" value={editText} onChange={(e) => setEditText(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSaveEdit()}
+                className="flex-1 text-xs bg-muted/50 border border-border rounded-md px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-ring" autoFocus />
+              <button onClick={handleSaveEdit} className="p-1 text-primary hover:text-primary/80"><Check className="w-3.5 h-3.5" /></button>
+              <button onClick={() => { setEditing(false); setEditText(comment.content); }} className="p-1 text-muted-foreground hover:text-foreground"><X className="w-3.5 h-3.5" /></button>
+            </div>
+          ) : (
+            <p className="text-xs text-foreground/80 leading-relaxed break-words">{comment.content}</p>
+          )}
           <div className="flex items-center gap-4 mt-1">
             <button onClick={() => onLike(comment.id, !!comment.liked)} className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-destructive transition-colors">
               <Heart className={`w-3 h-3 ${comment.liked ? "text-destructive fill-destructive" : ""}`} />
@@ -163,6 +183,16 @@ const InlineCommentItem = ({
               <button onClick={() => onReply(comment.id, comment.author_name)} className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors">
                 <CornerDownRight className="w-3 h-3" /> Reply
               </button>
+            )}
+            {isOwner && !editing && (
+              <>
+                <button onClick={() => setEditing(true)} className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors">
+                  <Pencil className="w-3 h-3" /> Edit
+                </button>
+                <button onClick={() => onDelete(comment.id)} className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-destructive transition-colors">
+                  <Trash2 className="w-3 h-3" /> Delete
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -175,7 +205,7 @@ const InlineCommentItem = ({
               {showReplies ? "Hide" : "View"} {replies.length} replies
             </button>
           )}
-          {showReplies && replies.map((r) => <InlineCommentItem key={r.id} comment={r} isReply onReply={onReply} onLike={onLike} />)}
+          {showReplies && replies.map((r) => <InlineCommentItem key={r.id} comment={r} isReply onReply={onReply} onLike={onLike} onEdit={onEdit} onDelete={onDelete} currentUserId={currentUserId} />)}
         </div>
       )}
     </div>
