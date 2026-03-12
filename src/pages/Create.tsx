@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useAccount } from "wagmi";
 import { useAppKit } from "@reown/appkit/react";
 import { useFilteredConnectors } from "@/hooks/useFilteredConnectors";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { bsc } from "wagmi/chains";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
