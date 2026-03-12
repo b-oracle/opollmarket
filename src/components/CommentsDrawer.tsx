@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import BottomSheet from "@/components/BottomSheet";
-import { X, Send, ChevronDown, Heart, CornerDownRight, Loader2 } from "lucide-react";
+import { X, Send, ChevronDown, Heart, CornerDownRight, Loader2, Pencil, Trash2, Check } from "lucide-react";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccount } from "wagmi";
@@ -47,14 +47,30 @@ const CommentItem = ({
   isReply = false,
   onReply,
   onLike,
+  onEdit,
+  onDelete,
+  currentUserId,
 }: {
   comment: Comment;
   isReply?: boolean;
   onReply: (commentId: string, author: string) => void;
   onLike: (commentId: string, liked: boolean) => void;
+  onEdit: (commentId: string, newContent: string) => void;
+  onDelete: (commentId: string) => void;
+  currentUserId: string;
 }) => {
   const [showReplies, setShowReplies] = useState(!isReply);
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(comment.content);
+  const isOwner = !!currentUserId && comment.author_wallet === currentUserId;
   const replies = comment.replies || [];
+
+  const handleSaveEdit = () => {
+    const trimmed = editText.trim();
+    if (!trimmed || trimmed === comment.content) { setEditing(false); return; }
+    onEdit(comment.id, trimmed);
+    setEditing(false);
+  };
 
   return (
     <div className={`${isReply ? "ml-8 border-l border-border/30 pl-3" : ""}`}>
@@ -78,7 +94,22 @@ const CommentItem = ({
             )}
             <span className="text-[10px] text-muted-foreground">{formatTimeAgo(comment.created_at)}</span>
           </div>
-          <p className="text-sm text-foreground/90 leading-relaxed break-words">{comment.content}</p>
+          {editing ? (
+            <div className="flex items-center gap-1.5 mt-1">
+              <input
+                type="text"
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSaveEdit()}
+                className="flex-1 text-sm bg-muted/50 border border-border rounded-md px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                autoFocus
+              />
+              <button onClick={handleSaveEdit} className="p-1 text-primary hover:text-primary/80"><Check className="w-3.5 h-3.5" /></button>
+              <button onClick={() => { setEditing(false); setEditText(comment.content); }} className="p-1 text-muted-foreground hover:text-foreground"><X className="w-3.5 h-3.5" /></button>
+            </div>
+          ) : (
+            <p className="text-sm text-foreground/90 leading-relaxed break-words">{comment.content}</p>
+          )}
           <div className="flex items-center gap-4 mt-1.5">
             <button
               onClick={() => onLike(comment.id, !!comment.liked)}
@@ -95,6 +126,16 @@ const CommentItem = ({
                 <CornerDownRight className="w-3 h-3" />
                 Reply
               </button>
+            )}
+            {isOwner && !editing && (
+              <>
+                <button onClick={() => setEditing(true)} className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors">
+                  <Pencil className="w-3 h-3" /> Edit
+                </button>
+                <button onClick={() => onDelete(comment.id)} className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-destructive transition-colors">
+                  <Trash2 className="w-3 h-3" /> Delete
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -119,6 +160,9 @@ const CommentItem = ({
                 isReply
                 onReply={onReply}
                 onLike={onLike}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                currentUserId={currentUserId}
               />
             ))}
         </div>
@@ -365,6 +409,32 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
     setInputValue(`@${author} `);
   };
 
+  const handleEdit = async (commentId: string, newContent: string) => {
+    try {
+      const { error } = await supabase.from("comments").update({ content: newContent }).eq("id", commentId);
+      if (error) throw error;
+      const updateContent = (arr: Comment[]): Comment[] =>
+        arr.map((c) => ({
+          ...c,
+          content: c.id === commentId ? newContent : c.content,
+          replies: updateContent(c.replies || []),
+        }));
+      setComments(updateContent);
+      toast.success("Comment updated");
+    } catch { toast.error("Failed to update comment"); }
+  };
+
+  const handleDelete = async (commentId: string) => {
+    try {
+      const { error } = await supabase.from("comments").delete().eq("id", commentId);
+      if (error) throw error;
+      const removeComment = (arr: Comment[]): Comment[] =>
+        arr.filter((c) => c.id !== commentId).map((c) => ({ ...c, replies: removeComment(c.replies || []) }));
+      setComments(removeComment);
+      toast.success("Comment deleted");
+    } catch { toast.error("Failed to delete comment"); }
+  };
+
   if (!open) return null;
 
   return (
@@ -406,6 +476,9 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
                         comment={comment}
                         onReply={handleReply}
                         onLike={handleLike}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        currentUserId={identityId}
                       />
                     ))}
                   </div>
