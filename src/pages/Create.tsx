@@ -418,7 +418,78 @@ const Create = () => {
     return urlData.publicUrl;
   };
 
-  const addOption = () => {
+  const saveDraft = useCallback(async () => {
+    if (!user) { toast.error("Sign in to save drafts"); return; }
+    setSavingDraft(true);
+    try {
+      let imageUrl: string | null = imagePreview?.startsWith("blob:") ? null : (imagePreview || null);
+      if (imageFile && imagePreview?.startsWith("blob:")) {
+        imageUrl = await uploadImage();
+      }
+
+      const today = new Date().toISOString().split("T")[0];
+      const draftData: any = {
+        creator_wallet: user.id,
+        creator_name: displayName,
+        title: title.trim() || "Untitled Draft",
+        description: description.trim() || "Draft market — no description yet.",
+        details: details.trim() || null,
+        video_url: videoUrl.trim() || null,
+        image_url: imageUrl,
+        category: category || "Other",
+        end_date: endDate || today,
+        resolution_source: resolutionSource.trim() || "TBD",
+        initial_liquidity: initialLiquidity ? parseFloat(initialLiquidity) : 0,
+        liquidity: initialLiquidity ? parseFloat(initialLiquidity) : 0,
+        market_type: marketType,
+        status: "draft",
+        auto_resolve: autoResolve,
+        auto_resolve_asset: autoResolve && isPriceAutoResolveCategory(category) ? autoResolveAsset : null,
+        auto_resolve_target_price: autoResolve && isPriceAutoResolveCategory(category) && autoResolveTargetPrice ? parseFloat(autoResolveTargetPrice) : null,
+        auto_resolve_operator: autoResolve && isPriceAutoResolveCategory(category) ? autoResolveOperator : null,
+        auto_resolve_deadline: autoResolve && endDate && autoResolveTime ? new Date(`${endDate}T${autoResolveTime}:00Z`).toISOString() : null,
+        sport_type: autoResolve && category === "Sports" ? sportType : null,
+        sport_match_id: autoResolve && category === "Sports" ? sportMatchId : null,
+        sport_predicted_outcome: autoResolve && category === "Sports" ? sportPredictedOutcome : null,
+        sport_league: autoResolve && category === "Sports" ? sportLeague || null : null,
+      };
+
+      let savedId = draftId;
+      if (draftId) {
+        const { error } = await supabase.from("markets").update(draftData).eq("id", draftId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase.from("markets").insert(draftData).select("id").maybeSingle();
+        if (error) throw error;
+        savedId = data?.id || null;
+        setDraftId(savedId);
+      }
+
+      if (savedId && marketType !== "binary") {
+        await supabase.from("market_options").delete().eq("market_id", savedId);
+        const validOptions = options.filter(o => o.trim());
+        if (validOptions.length > 0) {
+          const equalPrice = Math.round((1 / validOptions.length) * 100) / 100;
+          await supabase.from("market_options").insert(
+            validOptions.map((label, i) => ({
+              market_id: savedId!,
+              label: label.trim(),
+              price: equalPrice,
+              sort_order: i,
+            }))
+          );
+        }
+      }
+
+      toast.success("Draft saved!");
+    } catch (err: any) {
+      console.error("Draft save error:", err);
+      toast.error("Failed to save draft");
+    } finally {
+      setSavingDraft(false);
+    }
+  }, [user, draftId, title, description, details, category, endDate, resolutionSource, initialLiquidity, marketType, options, videoUrl, imageFile, imagePreview, autoResolve, autoResolveAsset, autoResolveOperator, autoResolveTargetPrice, autoResolveTime, sportType, sportMatchId, sportPredictedOutcome, sportLeague, displayName]);
+
     if (options.length < 6) setOptions([...options, ""]);
   };
   const removeOption = (idx: number) => {
