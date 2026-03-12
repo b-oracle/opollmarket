@@ -592,6 +592,12 @@ const Create = () => {
   const [firstPredSide, setFirstPredSide] = useState<"yes" | "no">("yes");
   const [firstPredAmount, setFirstPredAmount] = useState("5");
 
+  // Progress tracking for submit flow
+  const [submitProgress, setSubmitProgress] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const submitStartRef = useRef<number>(0);
+  const ESTIMATED_TOTAL_SEC = 30; // estimated total seconds
+
   // Save wallet address to profile when connected
   useEffect(() => {
     if (user && isConnected && address) {
