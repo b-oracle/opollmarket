@@ -1494,13 +1494,23 @@ const Create = () => {
                 </div>
               )}
 
-              <button
-                onClick={tryAdvanceStep1}
-                className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
-              >
-                Continue
-                <ArrowRight className="w-4 h-4" />
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={saveDraft}
+                  disabled={savingDraft}
+                  className="flex-1 glass py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {savingDraft ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+                  Save Draft
+                </button>
+                <button
+                  onClick={tryAdvanceStep1}
+                  className="flex-1 bg-primary text-primary-foreground py-3.5 rounded-xl font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
+                >
+                  Continue
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
             </motion.div>
           )}
 
