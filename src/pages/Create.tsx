@@ -197,6 +197,12 @@ const Create = () => {
   const [feeBypass, setFeeBypass] = useState(false);
   const [depositModalOpen, setDepositModalOpen] = useState(false);
 
+  // Draft state
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [draftLoading, setDraftLoading] = useState(true);
+  const [draftBannerDraft, setDraftBannerDraft] = useState<{ id: string; title: string } | null>(null);
+  const [savingDraft, setSavingDraft] = useState(false);
+
   // Form state — restore from sessionStorage on mount
   const getStored = (key: string, fallback: string) => {
     try { return sessionStorage.getItem(`create_${key}`) ?? fallback; } catch { return fallback; }
@@ -232,6 +238,159 @@ const Create = () => {
     ["title", "description", "details", "category", "endDate", "resolutionSource", "initialLiquidity", "videoUrl", "step", "marketType", "options"]
       .forEach((k) => { try { sessionStorage.removeItem(`create_${k}`); } catch {} });
   };
+
+  // Check for existing drafts on mount
+  useEffect(() => {
+    if (!user) { setDraftLoading(false); return; }
+    (async () => {
+      const { data } = await supabase
+        .from("markets")
+        .select("id, title, description, details, category, end_date, resolution_source, initial_liquidity, market_type, video_url, image_url, auto_resolve, auto_resolve_asset, auto_resolve_operator, auto_resolve_target_price, auto_resolve_deadline, sport_type, sport_match_id, sport_predicted_outcome, sport_league, market_options!market_options_market_id_fkey(id, label, sort_order)")
+        .eq("creator_wallet", user.id)
+        .eq("status", "draft")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data) {
+        setDraftBannerDraft({ id: data.id, title: data.title || "Untitled Draft" });
+      }
+      setDraftLoading(false);
+    })();
+  }, [user]);
+
+  const resumeDraft = useCallback(async (draft: any) => {
+    // Populate all form fields from draft
+    setTitle(draft.title || "");
+    setDescription(draft.description || "");
+    setDetails(draft.details || "");
+    setCategory(draft.category || "");
+    setEndDate(draft.end_date || "");
+    setResolutionSource(draft.resolution_source === "TBD" ? "" : (draft.resolution_source || ""));
+    setInitialLiquidity(draft.initial_liquidity > 0 ? String(draft.initial_liquidity) : "");
+    setMarketType((draft.market_type as "binary" | "multi" | "range") || "binary");
+    setVideoUrl(draft.video_url || "");
+    if (draft.image_url) setImagePreview(draft.image_url);
+    if (draft.auto_resolve) {
+      setAutoResolve(true);
+      if (draft.auto_resolve_asset) setAutoResolveAsset(draft.auto_resolve_asset);
+      if (draft.auto_resolve_operator) setAutoResolveOperator(draft.auto_resolve_operator);
+      if (draft.auto_resolve_target_price) setAutoResolveTargetPrice(String(draft.auto_resolve_target_price));
+      if (draft.auto_resolve_deadline) {
+        try { setAutoResolveTime(new Date(draft.auto_resolve_deadline).toISOString().slice(11, 16)); } catch {}
+      }
+    }
+    if (draft.sport_type) setSportType(draft.sport_type);
+    if (draft.sport_match_id) setSportMatchId(draft.sport_match_id);
+    if (draft.sport_predicted_outcome) setSportPredictedOutcome(draft.sport_predicted_outcome);
+    if (draft.sport_league) setSportLeague(draft.sport_league);
+
+    // Load options
+    const opts = draft.market_options as any[];
+    if (opts && opts.length > 0) {
+      setOptions(opts.sort((a: any, b: any) => a.sort_order - b.sort_order).map((o: any) => o.label));
+    }
+    setDraftId(draft.id);
+    setDraftBannerDraft(null);
+    setStep(1);
+    toast.success("Draft loaded — continue where you left off!");
+  }, []);
+
+  const handleResumeDraft = useCallback(async () => {
+    if (!draftBannerDraft || !user) return;
+    const { data } = await supabase
+      .from("markets")
+      .select("*, market_options!market_options_market_id_fkey(id, label, sort_order)")
+      .eq("id", draftBannerDraft.id)
+      .maybeSingle();
+    if (data) resumeDraft(data);
+  }, [draftBannerDraft, user, resumeDraft]);
+
+  const handleDiscardDraft = useCallback(async () => {
+    if (!draftBannerDraft) return;
+    // Delete options first, then market
+    await supabase.from("market_options").delete().eq("market_id", draftBannerDraft.id);
+    await supabase.from("markets").delete().eq("id", draftBannerDraft.id);
+    setDraftBannerDraft(null);
+    setDraftId(null);
+    toast.success("Draft discarded");
+  }, [draftBannerDraft]);
+
+  const saveDraft = useCallback(async () => {
+    if (!user) { toast.error("Sign in to save drafts"); return; }
+    setSavingDraft(true);
+    try {
+      // Upload image if present and no URL yet
+      let imageUrl: string | null = imagePreview?.startsWith("blob:") ? null : (imagePreview || null);
+      if (imageFile && imagePreview?.startsWith("blob:")) {
+        imageUrl = await uploadImage();
+      }
+
+      const today = new Date().toISOString().split("T")[0];
+      const draftData: any = {
+        creator_wallet: user.id,
+        creator_name: displayName,
+        title: title.trim() || "Untitled Draft",
+        description: description.trim() || "Draft market — no description yet.",
+        details: details.trim() || null,
+        video_url: videoUrl.trim() || null,
+        image_url: imageUrl,
+        category: category || "Other",
+        end_date: endDate || today,
+        resolution_source: resolutionSource.trim() || "TBD",
+        initial_liquidity: initialLiquidity ? parseFloat(initialLiquidity) : 0,
+        liquidity: initialLiquidity ? parseFloat(initialLiquidity) : 0,
+        market_type: marketType,
+        status: "draft",
+        auto_resolve: autoResolve,
+        auto_resolve_asset: autoResolve && isPriceAutoResolveCategory(category) ? autoResolveAsset : null,
+        auto_resolve_target_price: autoResolve && isPriceAutoResolveCategory(category) && autoResolveTargetPrice ? parseFloat(autoResolveTargetPrice) : null,
+        auto_resolve_operator: autoResolve && isPriceAutoResolveCategory(category) ? autoResolveOperator : null,
+        auto_resolve_deadline: autoResolve && endDate && autoResolveTime ? new Date(`${endDate}T${autoResolveTime}:00Z`).toISOString() : null,
+        sport_type: autoResolve && category === "Sports" ? sportType : null,
+        sport_match_id: autoResolve && category === "Sports" ? sportMatchId : null,
+        sport_predicted_outcome: autoResolve && category === "Sports" ? sportPredictedOutcome : null,
+        sport_league: autoResolve && category === "Sports" ? sportLeague || null : null,
+      };
+
+      let savedId = draftId;
+      if (draftId) {
+        // Update existing draft
+        const { error } = await supabase.from("markets").update(draftData).eq("id", draftId);
+        if (error) throw error;
+      } else {
+        // Insert new draft
+        const { data, error } = await supabase.from("markets").insert(draftData).select("id").maybeSingle();
+        if (error) throw error;
+        savedId = data?.id || null;
+        setDraftId(savedId);
+      }
+
+      // Save multi/range options
+      if (savedId && marketType !== "binary") {
+        // Clear existing options
+        await supabase.from("market_options").delete().eq("market_id", savedId);
+        const validOptions = options.filter(o => o.trim());
+        if (validOptions.length > 0) {
+          const equalPrice = Math.round((1 / validOptions.length) * 100) / 100;
+          await supabase.from("market_options").insert(
+            validOptions.map((label, i) => ({
+              market_id: savedId!,
+              label: label.trim(),
+              price: equalPrice,
+              sort_order: i,
+            }))
+          );
+        }
+      }
+
+      toast.success("Draft saved!");
+    } catch (err: any) {
+      console.error("Draft save error:", err);
+      toast.error("Failed to save draft");
+    } finally {
+      setSavingDraft(false);
+    }
+  }, [user, draftId, title, description, details, category, endDate, resolutionSource, initialLiquidity, marketType, options, videoUrl, imageFile, imagePreview, autoResolve, autoResolveAsset, autoResolveOperator, autoResolveTargetPrice, autoResolveTime, sportType, sportMatchId, sportPredictedOutcome, sportLeague, displayName]);
 
   // Auto-resolve state
   const [autoResolve, setAutoResolve] = useState(false);
