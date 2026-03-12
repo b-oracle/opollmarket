@@ -446,7 +446,7 @@ export default function QuickTrade() {
       // Still fetch one price snapshot so we show "last close" price
       (async () => {
         const p = await fetchPriceForAsset(selectedAsset);
-        if (p != null && mounted) {
+        if (p != null && isCurrentRun()) {
           setCurrentPrice(p);
           setStreamingPrice(p);
         }
