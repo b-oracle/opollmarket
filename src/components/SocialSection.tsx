@@ -22,6 +22,13 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
   const { user } = useAuth();
   const [expanded, setExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<"activity" | "followers" | "following" | "suggestions">("activity");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const { data: followers = [], isLoading: loadingFollowers } = useQuery({
     queryKey: ["social-followers", userId],
