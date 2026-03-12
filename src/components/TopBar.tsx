@@ -31,6 +31,16 @@ const TopBar = () => {
 
   const initial = displayName.charAt(0).toUpperCase();
 
+  const { data: avatarUrl } = useQuery({
+    queryKey: ["user-avatar", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("avatar_url").eq("id", user!.id).maybeSingle();
+      return data?.avatar_url || null;
+    },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+
   return (
     <>
     <header
