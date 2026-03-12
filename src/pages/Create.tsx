@@ -55,7 +55,6 @@ import { isPriceAutoResolveCategory, getAssetsForCategory, getAssetClassLabel, g
 
 /** Progress bar with estimated time remaining for market creation */
 const SubmitProgressBar = ({ completedSteps, startTime, estimatedTotalSec }: {
-  submitStep: string;
   completedSteps: Set<number>;
   startTime: number;
   estimatedTotalSec: number;
