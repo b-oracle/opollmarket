@@ -201,15 +201,18 @@ const InlineComments = ({ marketId }: { marketId: string }) => {
 
       // Fetch avatars for comment authors
       const authorIds = [...new Set((data || []).map(c => c.author_wallet).filter(Boolean))] as string[];
-      const avatarMap = new Map<string, string | null>();
+      const profileMap = new Map<string, { avatar_url: string | null; verification_level: string }>();
       if (authorIds.length > 0) {
-        const { data: profiles } = await supabase.from("profiles").select("id, avatar_url").in("id", authorIds);
-        for (const p of profiles || []) avatarMap.set(p.id, p.avatar_url);
+        const { data: profiles } = await supabase.from("profiles").select("id, avatar_url, verification_level").in("id", authorIds);
+        for (const p of profiles || []) profileMap.set(p.id, { avatar_url: p.avatar_url, verification_level: p.verification_level });
       }
 
       const map = new Map<string, DbComment>();
       const topLevel: DbComment[] = [];
-      for (const c of data || []) { map.set(c.id, { ...c, liked: likedIds.has(c.id), replies: [], avatar_url: c.author_wallet ? avatarMap.get(c.author_wallet) || null : null }); }
+      for (const c of data || []) {
+        const profile = c.author_wallet ? profileMap.get(c.author_wallet) : null;
+        map.set(c.id, { ...c, liked: likedIds.has(c.id), replies: [], avatar_url: profile?.avatar_url || null, verification_level: (profile?.verification_level || "none") as VerificationLevel });
+      }
       for (const c of data || []) {
         const comment = map.get(c.id)!;
         if (c.parent_id && map.has(c.parent_id)) { map.get(c.parent_id)!.replies!.push(comment); }
