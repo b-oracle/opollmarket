@@ -215,16 +215,50 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
 
               {activeTab === "suggestions" && (
                 <div className="space-y-1.5">
-                  <p className="text-xs text-muted-foreground px-1 mb-2">Active traders you might want to follow</p>
-                  {loadingSuggestions ? (
-                    <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
-                  ) : suggestions.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Sparkles className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">No suggestions right now</p>
-                    </div>
+                  {/* Search bar */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search by name..."
+                      className="w-full bg-muted/50 border border-border rounded-xl pl-9 pr-9 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground"
+                    />
+                    {searchQuery && (
+                      <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                      </button>
+                    )}
+                  </div>
+
+                  {debouncedSearch.length >= 2 ? (
+                    <>
+                      {loadingSearch ? (
+                        <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                      ) : searchResults.length === 0 ? (
+                        <div className="text-center py-12">
+                          <Search className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">No users found for "{debouncedSearch}"</p>
+                        </div>
+                      ) : (
+                        searchResults.map((s: any, i: number) => renderUserRow(s.id, s, i))
+                      )}
+                    </>
                   ) : (
-                    suggestions.map((s: any, i: number) => renderUserRow(s.id, s, i))
+                    <>
+                      <p className="text-xs text-muted-foreground px-1 mb-2">Active traders you might want to follow</p>
+                      {loadingSuggestions ? (
+                        <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                      ) : suggestions.length === 0 ? (
+                        <div className="text-center py-12">
+                          <Sparkles className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">No suggestions right now</p>
+                        </div>
+                      ) : (
+                        suggestions.map((s: any, i: number) => renderUserRow(s.id, s, i))
+                      )}
+                    </>
                   )}
                 </div>
               )}
