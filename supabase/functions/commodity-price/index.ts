@@ -8,7 +8,7 @@ const corsHeaders = {
 
 // In-memory cache to reduce API calls
 const cache = new Map<string, { price: number; fetchedAt: number }>();
-const CACHE_TTL = 120_000; // 2 minutes
+const CACHE_TTL = 30_000; // 30 seconds (shorter for streaming)
 
 // Map our symbols to Twelve Data symbols (primary) and Omkar names (fallback)
 const TWELVE_DATA_MAP: Record<string, string> = {
@@ -16,6 +16,10 @@ const TWELVE_DATA_MAP: Record<string, string> = {
   COPPER: "COPPER",
   WTI: "WTI",
   BRENT: "BRENT",
+  XAU: "XAU/USD",
+  XAG: "XAG/USD",
+  XPT: "XPT/USD",
+  XPD: "XPD/USD",
 };
 
 const OMKAR_MAP: Record<string, string> = {
@@ -25,12 +29,23 @@ const OMKAR_MAP: Record<string, string> = {
   BRENT: "brent_crude_oil",
 };
 
+const METAL_MAP: Record<string, string> = {
+  XAU: "gold",
+  XAG: "silver",
+  XPT: "platinum",
+  XPD: "palladium",
+};
+
 // Fallback static prices (last resort)
 const FALLBACK_PRICES: Record<string, number> = {
   NG: 3.50,
   COPPER: 4.25,
   WTI: 72.00,
   BRENT: 76.00,
+  XAU: 2650.00,
+  XAG: 31.00,
+  XPT: 1020.00,
+  XPD: 1050.00,
 };
 
 async function fetchFromTwelveData(symbol: string, apiKey: string): Promise<number | null> {
@@ -78,7 +93,49 @@ async function fetchFromOmkar(commodityName: string, apiKey: string): Promise<nu
   }
 }
 
-// Store last known good price in DB for cross-instance persistence
+async function fetchMetalPrice(asset: string): Promise<number | null> {
+  const metalName = METAL_MAP[asset];
+  if (!metalName) return null;
+  try {
+    const resp = await fetch(`https://api.metals.dev/v1/latest?api_key=demo&currency=USD&unit=toz`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data?.metals?.[metalName] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Forex via ExchangeRate-API
+async function fetchForexFromExchangeRateApi(asset: string, apiKey: string): Promise<number | null> {
+  const [base, quote] = asset.split("/");
+  if (!base || !quote) return null;
+  try {
+    const resp = await fetch(`https://v6.exchangerate-api.com/v6/${apiKey}/pair/${base}/${quote}`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    if (data.result !== "success") return null;
+    return data.conversion_rate ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Forex via Frankfurter (free, no key)
+async function fetchForexFromFrankfurter(asset: string): Promise<number | null> {
+  const [base, quote] = asset.split("/");
+  if (!base || !quote) return null;
+  try {
+    const resp = await fetch(`https://api.frankfurter.app/latest?from=${base}&to=${quote}`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data?.rates?.[quote] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// DB cache helpers
 async function getDbCachedPrice(supabase: any, asset: string): Promise<number | null> {
   try {
     const { data } = await supabase
@@ -111,7 +168,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { asset } = await req.json();
+    const body = await req.json();
+    const asset = body?.asset;
+    const isForex = body?.type === "forex";
+
     if (!asset || typeof asset !== "string") {
       return new Response(JSON.stringify({ error: "Missing asset parameter" }), {
         status: 400,
@@ -120,7 +180,68 @@ Deno.serve(async (req) => {
     }
 
     const normalizedAsset = asset.toUpperCase();
-    if (!TWELVE_DATA_MAP[normalizedAsset]) {
+
+    // ── FOREX HANDLING ──
+    if (isForex || normalizedAsset.includes("/")) {
+      // Check in-memory cache
+      const cached = cache.get(`forex:${normalizedAsset}`);
+      if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
+        return new Response(JSON.stringify({ price: cached.price, cached: true, source: "memory" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      let price: number | null = null;
+
+      // Try ExchangeRate-API first
+      const exchangeRateKey = Deno.env.get("EXCHANGERATE_API_KEY");
+      if (exchangeRateKey) {
+        price = await fetchForexFromExchangeRateApi(normalizedAsset, exchangeRateKey);
+      }
+
+      // Fallback to Frankfurter
+      if (price == null) {
+        price = await fetchForexFromFrankfurter(normalizedAsset);
+      }
+
+      // DB cache fallback
+      if (price == null) {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const supabase = createClient(supabaseUrl, serviceKey);
+        price = await getDbCachedPrice(supabase, `forex:${normalizedAsset}`);
+        if (price != null) {
+          cache.set(`forex:${normalizedAsset}`, { price, fetchedAt: Date.now() });
+          return new Response(JSON.stringify({ price, cached: true, source: "db_cache" }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+
+      if (price == null) {
+        return new Response(JSON.stringify({ error: "No forex price available" }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      cache.set(`forex:${normalizedAsset}`, { price, fetchedAt: Date.now() });
+
+      // Persist to DB
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const supabase = createClient(supabaseUrl, serviceKey);
+        await setDbCachedPrice(supabase, `forex:${normalizedAsset}`, price);
+      } catch {}
+
+      return new Response(JSON.stringify({ price, source: "exchange_rate_api" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── COMMODITY HANDLING ──
+    if (!TWELVE_DATA_MAP[normalizedAsset] && !METAL_MAP[normalizedAsset]) {
       return new Response(JSON.stringify({ error: `Unsupported asset: ${asset}` }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -143,37 +264,39 @@ Deno.serve(async (req) => {
       price = await fetchFromTwelveData(normalizedAsset, twelveDataKey);
       if (price !== null) {
         cache.set(normalizedAsset, { price, fetchedAt: Date.now() });
-
-        // Persist to DB asynchronously
         try {
           const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
           const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
           const supabase = createClient(supabaseUrl, serviceKey);
           await setDbCachedPrice(supabase, normalizedAsset, price);
         } catch {}
-
         return new Response(JSON.stringify({ price, source: "twelve_data" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      console.log(`Twelve Data failed for ${normalizedAsset}, trying Omkar fallback`);
+      console.log(`Twelve Data failed for ${normalizedAsset}, trying fallback`);
     }
 
-    // 3. Try Omkar API (fallback)
-    const omkarKey = Deno.env.get("OMKAR_COMMODITY_API_KEY");
-    const omkarName = OMKAR_MAP[normalizedAsset];
-    if (omkarKey && omkarName) {
-      price = await fetchFromOmkar(omkarName, omkarKey);
+    // 3. Try metals.dev for precious metals
+    if (METAL_MAP[normalizedAsset]) {
+      price = await fetchMetalPrice(normalizedAsset);
     }
 
-    // 4. If both APIs failed, try DB cache
+    // 4. Try Omkar API for energy/base metals
+    if (price == null) {
+      const omkarKey = Deno.env.get("OMKAR_COMMODITY_API_KEY");
+      const omkarName = OMKAR_MAP[normalizedAsset];
+      if (omkarKey && omkarName) {
+        price = await fetchFromOmkar(omkarName, omkarKey);
+      }
+    }
+
+    // 5. If APIs failed, try DB cache
     if (price == null) {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const supabase = createClient(supabaseUrl, serviceKey);
-      
       price = await getDbCachedPrice(supabase, normalizedAsset);
-      
       if (price != null) {
         cache.set(normalizedAsset, { price, fetchedAt: Date.now() });
         return new Response(JSON.stringify({ price, cached: true, source: "db_cache" }), {
@@ -182,7 +305,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 5. Last resort: static fallback
+    // 6. Last resort: static fallback
     if (price == null) {
       price = FALLBACK_PRICES[normalizedAsset] ?? null;
       if (price != null) {
@@ -211,7 +334,7 @@ Deno.serve(async (req) => {
       await setDbCachedPrice(supabase, normalizedAsset, price);
     } catch {}
 
-    return new Response(JSON.stringify({ price, source: "omkar" }), {
+    return new Response(JSON.stringify({ price, source: "fallback_chain" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
