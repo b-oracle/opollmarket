@@ -333,6 +333,29 @@ const InlineComments = ({ marketId }: { marketId: string }) => {
     }
     setReplyTo({ id: commentId, author }); setInputValue(`@${author} `);
   };
+
+  const handleEdit = async (commentId: string, newContent: string) => {
+    try {
+      const { error } = await supabase.from("comments").update({ content: newContent }).eq("id", commentId);
+      if (error) throw error;
+      const updateContent = (arr: DbComment[]): DbComment[] =>
+        arr.map((c) => ({ ...c, content: c.id === commentId ? newContent : c.content, replies: updateContent(c.replies || []) }));
+      setComments(updateContent);
+      toast.success("Comment updated");
+    } catch { toast.error("Failed to update comment"); }
+  };
+
+  const handleDelete = async (commentId: string) => {
+    try {
+      const { error } = await supabase.from("comments").delete().eq("id", commentId);
+      if (error) throw error;
+      const removeComment = (arr: DbComment[]): DbComment[] =>
+        arr.filter((c) => c.id !== commentId).map((c) => ({ ...c, replies: removeComment(c.replies || []) }));
+      setComments(removeComment);
+      toast.success("Comment deleted");
+    } catch { toast.error("Failed to delete comment"); }
+  };
+
   const totalComments = comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0);
 
   return (
@@ -362,7 +385,7 @@ const InlineComments = ({ marketId }: { marketId: string }) => {
         <div className="text-center py-6 text-muted-foreground"><p className="text-xs">No comments yet. Be the first!</p></div>
       ) : (
         <div className="divide-y divide-border/20">
-          {comments.map((c) => <InlineCommentItem key={c.id} comment={c} onReply={handleReply} onLike={handleLike} />)}
+          {comments.map((c) => <InlineCommentItem key={c.id} comment={c} onReply={handleReply} onLike={handleLike} onEdit={handleEdit} onDelete={handleDelete} currentUserId={walletId} />)}
         </div>
       )}
     </div>
