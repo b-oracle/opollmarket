@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import AdminPagination from "@/components/admin/AdminPagination";
+import NpReconciliation from "@/components/admin/NpReconciliation";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -252,6 +253,9 @@ const AdminDeposits = () => {
       <div className="mt-4">
         <AdminPagination page={page} totalItems={data?.total || 0} pageSize={PAGE_SIZE} onPageChange={setPage} />
       </div>
+
+      {/* Deposit Reconciliation Tool */}
+      <NpReconciliation />
     </div>
   );
 };
