@@ -127,6 +127,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   const buildData = useCallback(() => {
     const upColor = "#22c55e";
     const downColor = "#ef4444";
+    const desiredBucketSec = getCandleBucketSeconds(timeframeLabel, chartMs);
 
     // Prefer real OHLC data from exchange APIs
     if (ohlcData && ohlcData.length > 0) {
