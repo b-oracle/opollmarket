@@ -1152,7 +1152,7 @@ export default function QuickTrade() {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">{getPriceLabel(selectedAsset)}</p>
-                {currentPrice != null ? (
+                {currentPrice != null && currentPriceAsset === selectedAsset.symbol ? (
                   <p
                     className={`text-3xl font-bold tabular-nums mt-1 transition-colors duration-500 ease-in-out ${
                       priceDir === "up" ? "text-green-500" : priceDir === "down" ? "text-destructive" : "text-foreground"
