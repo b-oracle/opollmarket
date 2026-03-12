@@ -2213,38 +2213,58 @@ const Create = () => {
                       ? "Running AI Checks..."
                       : submitStep === "deploying"
                       ? "Deploying Contract..."
-                      : "Saving to Database..."}
+                      : "Almost Done..."}
                   </h3>
-                  <p className="text-xs text-muted-foreground text-center">
+                  <p className="text-xs text-muted-foreground text-center mb-3">
                     {submitStep === "moderating"
-                      ? "Checking similarity & content moderation..."
+                      ? "Checking similarity, content moderation & uploading image..."
                       : submitStep === "deploying"
-                      ? "Deploying your prediction market contract on BSC. Please confirm in your wallet."
-                      : "Storing market data and linking contract address..."}
+                      ? "Verifying balance & preparing contract..."
+                      : "Saving market data..."}
                   </p>
+
+                  {/* Progress bar with estimated time */}
+                  <SubmitProgressBar
+                    submitStep={submitStep}
+                    completedSteps={completedSteps}
+                    startTime={submitStartRef.current}
+                    estimatedTotalSec={ESTIMATED_TOTAL_SEC}
+                  />
+
                   <div className="mt-4 space-y-2 w-full max-w-xs">
                     {[
-                      { label: "AI similarity & moderation", done: submitStep !== "moderating" },
-                      { label: "Preparing contract", done: submitStep === "saving" },
-                      { label: "Awaiting wallet signature", done: submitStep === "saving" },
-                      { label: "Broadcasting transaction", done: submitStep === "saving" },
-                      { label: "Saving market data", done: false },
-                    ].map((s, i) => (
-                      <motion.div
-                        key={s.label}
-                        initial={{ opacity: 0.3 }}
-                        animate={{ opacity: s.done ? 1 : 0.3 }}
-                        transition={{ delay: i * 0.3 }}
-                        className="flex items-center gap-2 text-xs"
-                      >
-                        {s.done ? (
-                          <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-                        ) : (
-                          <div className="w-3.5 h-3.5 rounded-full border border-muted-foreground/30" />
-                        )}
-                        <span className={s.done ? "text-foreground" : "text-muted-foreground"}>{s.label}</span>
-                      </motion.div>
-                    ))}
+                      { label: "AI checks & image upload", stepIdx: 0 },
+                      { label: "Balance verification", stepIdx: 1 },
+                      { label: "Preparing contract", stepIdx: 2 },
+                      { label: "Broadcasting transaction", stepIdx: 3 },
+                      { label: "Saving market data", stepIdx: 4 },
+                    ].map((s) => {
+                      const done = completedSteps.has(s.stepIdx);
+                      const isActive = !done && (
+                        (s.stepIdx === 0 && submitStep === "moderating") ||
+                        (s.stepIdx === 1 && submitStep === "deploying" && !completedSteps.has(1)) ||
+                        (s.stepIdx === 2 && completedSteps.has(1) && !completedSteps.has(2)) ||
+                        (s.stepIdx === 3 && completedSteps.has(2) && !completedSteps.has(3)) ||
+                        (s.stepIdx === 4 && submitStep === "saving")
+                      );
+                      return (
+                        <motion.div
+                          key={s.label}
+                          initial={{ opacity: 0.3 }}
+                          animate={{ opacity: done || isActive ? 1 : 0.3 }}
+                          className="flex items-center gap-2 text-xs"
+                        >
+                          {done ? (
+                            <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                          ) : isActive ? (
+                            <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
+                          ) : (
+                            <div className="w-3.5 h-3.5 rounded-full border border-muted-foreground/30" />
+                          )}
+                          <span className={done ? "text-foreground" : isActive ? "text-primary font-medium" : "text-muted-foreground"}>{s.label}</span>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 </motion.div>
               )}
