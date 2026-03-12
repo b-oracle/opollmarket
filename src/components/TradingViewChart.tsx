@@ -76,6 +76,8 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   const targetStreamingPriceRef = useRef<number | null>(null);
   const animationActiveRef = useRef(false);
   const hasInitializedDataRef = useRef(false);
+  // Track current streaming candle OHLC state
+  const currentCandleRef = useRef<{ time: number; open: number; high: number; low: number; close: number } | null>(null);
 
   // Countdown timer for active round
   useEffect(() => {
