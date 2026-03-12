@@ -311,8 +311,8 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
 
     const prevPrice = prevStreamingPriceRef.current ?? streamingPrice;
     const startPrice = interpolatedPriceRef.current ?? prevPrice;
-    const targetPrice = streamingPrice;
-    const isUp = targetPrice >= prevPrice;
+    const targetPriceVal = streamingPrice;
+    const isUp = targetPriceVal >= prevPrice;
     const DURATION = 300; // ms to interpolate
     const startTime = performance.now();
 
@@ -324,7 +324,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
       const t = Math.min(elapsed / DURATION, 1);
       // Ease-out cubic
       const ease = 1 - Math.pow(1 - t, 3);
-      const price = startPrice + (targetPrice - startPrice) * ease;
+      const price = startPrice + (targetPriceVal - startPrice) * ease;
       interpolatedPriceRef.current = price;
 
       const nowSec = Math.floor(Date.now() / 1000) as UTCTimestamp;
@@ -332,12 +332,25 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
       if (chartStyle === "candle" && candleSeriesRef.current) {
         const bucketSec = 10;
         const candleTime = (Math.floor(nowSec / bucketSec) * bucketSec) as UTCTimestamp;
+        
+        const cur = currentCandleRef.current;
+        if (!cur || cur.time !== candleTime) {
+          // New candle bucket — start fresh
+          currentCandleRef.current = { time: candleTime, open: price, high: price, low: price, close: price };
+        } else {
+          // Update existing candle: only touch high/low/close
+          cur.high = Math.max(cur.high, price);
+          cur.low = Math.min(cur.low, price);
+          cur.close = price;
+        }
+        
+        const c = currentCandleRef.current!;
         candleSeriesRef.current.update({
-          time: candleTime,
-          open: price,
-          high: price,
-          low: price,
-          close: price,
+          time: c.time as UTCTimestamp,
+          open: c.open,
+          high: c.high,
+          low: c.low,
+          close: c.close,
         });
         if (candleTime > lastCandleTimeRef.current) lastCandleTimeRef.current = candleTime;
       } else if (areaSeriesRef.current) {
