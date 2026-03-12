@@ -75,13 +75,14 @@ const Index = () => {
   });
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
 
-  // Capture referral param on landing
+  // Capture referral param and redirect to signup
   useEffect(() => {
     const ref = searchParams.get("ref");
     if (ref) {
       localStorage.setItem("referral_id", ref);
+      navigate(`/auth?ref=${encodeURIComponent(ref)}`, { replace: true });
     }
-  }, [searchParams]);
+  }, [searchParams, navigate]);
 
   const boostedMarkets = useMemo(() => {
     const boosted = markets.filter((m) => boostedMarketIds.has(m.id));
