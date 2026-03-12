@@ -302,14 +302,12 @@ Deno.serve(async (req) => {
       }
 
       if (winners.length === 0) {
-        // All losers — refund minus commission
+        // All losers — wager becomes platform profit, no refund
         for (const bet of losers) {
-          const refund = Number(bet.amount) * (1 - platformFee);
           await supabase
             .from("quick_bets")
-            .update({ payout: refund, status: "lost" })
+            .update({ payout: 0, status: "lost" })
             .eq("id", bet.id);
-          await creditBalance(supabase, bet.user_id, refund);
         }
       } else if (losers.length === 0) {
         // All winners — refund minus commission, increment streak
