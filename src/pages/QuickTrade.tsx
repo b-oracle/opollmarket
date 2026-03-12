@@ -532,17 +532,25 @@ export default function QuickTrade() {
     if (selectedAsset.assetClass !== "crypto") {
       unsubPoller = startNonCryptoHistoryPoller(selectedAsset.symbol);
       
-      // Subscribe to smoothed price stream (~15fps interpolation)
+      // Subscribe to smoothed price stream (~15fps interpolation for chart, ~2fps for display)
       let lastSmoothUpdate = 0;
+      let lastDisplayUpdate = 0;
+      const DISPLAY_THROTTLE_MS = 500;
       unsubSmooth = subscribeToSmoothedPriceStream(selectedAsset.symbol, (price) => {
         if (!isCurrentRun()) return;
         const now = Date.now();
         
-        setCurrentPrice((prev) => {
-          setPrevPrice(prev);
-          return price;
-        });
+        // Chart streaming price updates at full speed
         setStreamingPrice(price);
+        
+        // Price display updates slowly (~2x/sec) to avoid blinking
+        if (now - lastDisplayUpdate >= DISPLAY_THROTTLE_MS) {
+          lastDisplayUpdate = now;
+          setCurrentPrice((prev) => {
+            setPrevPrice(prev);
+            return price;
+          });
+        }
         
         // Append chart points at ~200ms intervals for smooth streaming
         if (now - lastSmoothUpdate >= 200) {
