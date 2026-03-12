@@ -177,26 +177,43 @@ function QuickTradeChart({
     const yMin = Math.min(...allLows);
     const yMax = Math.max(...allHighs);
     const padding = (yMax - yMin) * 0.1 || 1;
+    const maxVolume = Math.max(...candles.map(c => c.volume), 1);
+
+    const chartHeight = 150;
+    const candleAreaTop = 4;
+    const candleAreaBottom = chartHeight * 0.25;
+    const candleAreaHeight = chartHeight - candleAreaTop - candleAreaBottom;
 
     const renderCandlestick = (props: any) => {
-      const { x, y, width, height, payload } = props;
+      const { x, width, payload } = props;
       if (!payload) return null;
       const isBullish = payload.close >= payload.open;
       const fill = isBullish ? upColor : downColor;
       const wickX = x + width / 2;
-      const yScale = (val: number) => {
-        const domain = [yMin - padding, yMax + padding];
-        const range = [120 - 4, 4];
-        return range[0] + ((val - domain[0]) / (domain[1] - domain[0])) * (range[1] - range[0]);
-      };
+
+      const domain0 = yMin - padding;
+      const domain1 = yMax + padding;
+      const yScale = (val: number) =>
+        candleAreaTop + candleAreaHeight * (1 - (val - domain0) / (domain1 - domain0));
+
       const wickTop = yScale(payload.high);
       const wickBottom = yScale(payload.low);
+      const bodyTop = yScale(Math.max(payload.open, payload.close));
+      const bodyBottom = yScale(Math.min(payload.open, payload.close));
+      const bodyHeight = Math.max(bodyBottom - bodyTop, 1);
       const bodyWidth = Math.max(Math.min(width * 0.5, 6), 2);
       const bodyX = x + (width - bodyWidth) / 2;
+
+      const volHeight = (payload.volume / maxVolume) * (candleAreaBottom - 4);
+      const volY = chartHeight - volHeight;
+      const volWidth = Math.max(width * 0.7, 3);
+      const volX = x + (width - volWidth) / 2;
+
       return (
         <g>
           <line x1={wickX} y1={wickTop} x2={wickX} y2={wickBottom} stroke={fill} strokeWidth={0.75} strokeOpacity={0.8} />
-          <rect x={bodyX} y={y} width={bodyWidth} height={Math.max(height, 1)} fill={fill} rx={0.5} />
+          <rect x={bodyX} y={bodyTop} width={bodyWidth} height={bodyHeight} fill={fill} rx={0.5} />
+          <rect x={volX} y={volY} width={volWidth} height={volHeight} fill={fill} fillOpacity={0.25} rx={1} />
         </g>
       );
     };
@@ -209,7 +226,7 @@ function QuickTradeChart({
 
     return (
       <>
-        <ResponsiveContainer width="100%" height={120}>
+        <ResponsiveContainer width="100%" height={chartHeight}>
           <ComposedChart data={withMA} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
             <YAxis domain={[yMin - padding, yMax + padding]} hide />
             <XAxis dataKey="ts" hide />
@@ -222,17 +239,6 @@ function QuickTradeChart({
             </Bar>
             <Line type="monotone" dataKey="ma7" stroke="hsl(45, 93%, 58%)" strokeWidth={1.5} dot={false} isAnimationActive={false} connectNulls />
             <Line type="monotone" dataKey="ma14" stroke="hsl(280, 80%, 65%)" strokeWidth={1.5} dot={false} isAnimationActive={false} connectNulls />
-          </ComposedChart>
-        </ResponsiveContainer>
-        <ResponsiveContainer width="100%" height={30}>
-          <ComposedChart data={candles} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-            <XAxis dataKey="ts" hide />
-            <YAxis domain={[0, 'dataMax']} hide />
-            <Bar dataKey="volume" isAnimationActive={false} radius={[1, 1, 0, 0]}>
-              {candles.map((c, i) => (
-                <Cell key={i} fill={c.close >= c.open ? upColor : downColor} fillOpacity={0.35} />
-              ))}
-            </Bar>
           </ComposedChart>
         </ResponsiveContainer>
         <p className="text-[10px] text-muted-foreground text-center mt-1">Last {timeframeLabel}</p>
