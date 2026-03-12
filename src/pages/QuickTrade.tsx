@@ -142,7 +142,7 @@ const haptic = (style: "light" | "medium" | "heavy" | "success" | "error" = "med
 };
 const AMOUNT_PRESETS = [5, 10, 25, 50, 100];
 
-import { fetchCryptoPrice, fetchCryptoHistory, fetchAssetPrice, fetchOHLCData, subscribeToPriceStream, startNonCryptoHistoryPoller, getNonCryptoHistory, type OHLCCandle } from "@/lib/cryptoPriceProvider";
+import { fetchCryptoPrice, fetchCryptoHistory, fetchAssetPrice, fetchOHLCData, subscribeToPriceStream, startNonCryptoHistoryPoller, getNonCryptoHistory, subscribeToSmoothedPriceStream, feedRealPrice, type OHLCCandle } from "@/lib/cryptoPriceProvider";
 
 // Wrapper that routes by asset class
 async function fetchPriceForAsset(asset: QuickTradeAsset): Promise<number | null> {
@@ -493,108 +493,151 @@ export default function QuickTrade() {
       });
     };
     
-    // Try WebSocket first (crypto only)
+    // For crypto: use Binance WebSocket for real-time streaming
     const unsubWs = subscribeToPriceStream(selectedAsset.symbol, handleWsTick);
     
-    // For non-crypto assets, start the background history poller
+    // For non-crypto assets: use smooth interpolation + polling
     let unsubPoller: (() => void) | null = null;
+    let unsubSmooth: (() => void) | null = null;
+    
     if (selectedAsset.assetClass !== "crypto") {
       unsubPoller = startNonCryptoHistoryPoller(selectedAsset.symbol);
-    }
-    
-    // Fallback: HTTP polling if WS doesn't fire within 3s
-    const fallbackTimer = setTimeout(() => {
-      if (!wsActiveRef.current && mounted) {
-        const poll = async () => {
-          const now = Date.now();
-          const shouldFetch = now - lastFetchTimeRef.current >= 5000;
+      
+      // Subscribe to smoothed price stream (~15fps interpolation)
+      let lastSmoothUpdate = 0;
+      unsubSmooth = subscribeToSmoothedPriceStream(selectedAsset.symbol, (price) => {
+        if (!mounted) return;
+        const now = Date.now();
+        
+        setCurrentPrice((prev) => {
+          setPrevPrice(prev);
+          return price;
+        });
+        setStreamingPrice(price);
+        
+        // Append chart points at ~200ms intervals for smooth streaming
+        if (now - lastSmoothUpdate >= 200) {
+          lastSmoothUpdate = now;
+          const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
+          const maxCutoff = now - 4 * 60 * 60 * 1000;
           
-          if (shouldFetch) {
-            lastFetchTimeRef.current = now;
-            const p = await fetchPriceForAsset(selectedAsset);
-            if (p != null && mounted && !wsActiveRef.current) {
-              consecutiveFailsRef.current = 0;
-              setCurrentPrice((prev) => {
-                setPrevPrice(prev);
-                return p;
-              });
-              setStreamingPrice(p);
-              const maxCutoff = now - 4 * 60 * 60 * 1000;
-              const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
-              const rawCached = rawDataRef.current.get(selectedAsset.symbol) || [];
-              rawDataRef.current.set(selectedAsset.symbol, [...rawCached, [now, p] as [number, number]].filter(([ts]) => ts >= maxCutoff));
-              
-              // For non-crypto, also sync from accumulated history
-              if (selectedAsset.assetClass !== "crypto") {
-                const accumulated = getNonCryptoHistory(selectedAsset.symbol);
-                if (accumulated.length > 1) {
-                  const filtered = accumulated.filter(([ts]) => ts >= maxCutoff);
-                  setPriceHistory(filtered.map(([ts, price]) => ({
-                    time: new Date(ts).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true }),
-                    price,
-                    ts,
-                  })));
-                  return;
+          setPriceHistory((prev) => {
+            const updated = [...prev, { time: timeLabel, price, ts: now }];
+            const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
+            return filtered.length > 800 ? filtered.slice(-800) : filtered;
+          });
+          
+          // Update raw cache
+          const rawCached = rawDataRef.current.get(selectedAsset.symbol) || [];
+          rawDataRef.current.set(selectedAsset.symbol, [...rawCached, [now, price] as [number, number]].filter(([ts]) => ts >= maxCutoff));
+        }
+      });
+      
+      // HTTP poll for real prices every 10s and feed into interpolation
+      const pollNonCrypto = async () => {
+        const now = Date.now();
+        if (now - lastFetchTimeRef.current < 8000) return;
+        lastFetchTimeRef.current = now;
+        
+        const p = await fetchPriceForAsset(selectedAsset);
+        if (p != null && mounted) {
+          consecutiveFailsRef.current = 0;
+          feedRealPrice(selectedAsset.symbol, p);
+        } else if (p == null && mounted) {
+          consecutiveFailsRef.current++;
+          if (consecutiveFailsRef.current >= 5 && !disabledAssets.has(selectedAsset.symbol)) {
+            try {
+              const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+              await fetch(
+                `https://${projectId}.supabase.co/functions/v1/toggle-qt-asset`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ asset: selectedAsset.symbol, action: "disable" }),
                 }
-              }
-              
-              setPriceHistory((prev) => {
-                const updated = [...prev, { time: timeLabel, price: p, ts: now }];
-                return updated.filter((pt) => pt.ts >= maxCutoff);
+              );
+              queryClient.invalidateQueries({ queryKey: ["commission_settings"] });
+              toast({
+                title: "Market Unavailable",
+                description: `${selectedAsset.label} has been temporarily disabled due to price feed errors.`,
+                variant: "destructive",
               });
-            } else if (p == null && mounted) {
-              consecutiveFailsRef.current++;
-              // Auto-disable asset after 5 consecutive failures
-              if (consecutiveFailsRef.current >= 5 && !disabledAssets.has(selectedAsset.symbol)) {
-                try {
-                  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-                  await fetch(
-                    `https://${projectId}.supabase.co/functions/v1/toggle-qt-asset`,
-                    {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ asset: selectedAsset.symbol, action: "disable" }),
-                    }
-                  );
-                  queryClient.invalidateQueries({ queryKey: ["commission_settings"] });
-                  toast({
-                    title: "Market Unavailable",
-                    description: `${selectedAsset.label} has been temporarily disabled due to price feed errors.`,
-                    variant: "destructive",
-                  });
-                } catch {}
-              }
-            }
-          } else if (mounted && !wsActiveRef.current) {
-            // Jitter tick — use streaming price ref to avoid stale closure
-            setCurrentPrice((cur) => {
-              if (cur == null) return cur;
-              const jitter = cur * (Math.random() - 0.5) * 0.0001;
-              const tickPrice = cur + jitter;
-              setStreamingPrice(tickPrice);
-              const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
-              setPriceHistory((prev) => {
-                const maxCutoff = now - 4 * 60 * 60 * 1000;
-                const updated = [...prev, { time: timeLabel, price: tickPrice, ts: now }];
-                const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
-                return filtered.length > 500 ? filtered.slice(-500) : filtered;
-              });
-              return cur;
-            });
+            } catch {}
           }
-        };
-        poll();
-        pollIv = setInterval(poll, 1000);
-      }
-    }, selectedAsset.assetClass !== "crypto" ? 0 : 3000); // Start immediately for non-crypto (no WS to wait for)
+        }
+      };
+      
+      // Initial fetch
+      pollNonCrypto();
+      pollIv = setInterval(pollNonCrypto, 10_000);
+      
+    } else {
+      // Crypto: fallback HTTP polling if WS doesn't fire within 3s
+      const fallbackTimer = setTimeout(() => {
+        if (!wsActiveRef.current && mounted) {
+          const poll = async () => {
+            const now = Date.now();
+            const shouldFetch = now - lastFetchTimeRef.current >= 5000;
+            
+            if (shouldFetch) {
+              lastFetchTimeRef.current = now;
+              const p = await fetchPriceForAsset(selectedAsset);
+              if (p != null && mounted && !wsActiveRef.current) {
+                consecutiveFailsRef.current = 0;
+                setCurrentPrice((prev) => {
+                  setPrevPrice(prev);
+                  return p;
+                });
+                setStreamingPrice(p);
+                const maxCutoff = now - 4 * 60 * 60 * 1000;
+                const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
+                const rawCached = rawDataRef.current.get(selectedAsset.symbol) || [];
+                rawDataRef.current.set(selectedAsset.symbol, [...rawCached, [now, p] as [number, number]].filter(([ts]) => ts >= maxCutoff));
+                setPriceHistory((prev) => {
+                  const updated = [...prev, { time: timeLabel, price: p, ts: now }];
+                  return updated.filter((pt) => pt.ts >= maxCutoff);
+                });
+              }
+            } else if (mounted && !wsActiveRef.current) {
+              // Jitter tick for alive feel
+              setCurrentPrice((cur) => {
+                if (cur == null) return cur;
+                const jitter = cur * (Math.random() - 0.5) * 0.0001;
+                const tickPrice = cur + jitter;
+                setStreamingPrice(tickPrice);
+                const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
+                setPriceHistory((prev) => {
+                  const maxCutoff = now - 4 * 60 * 60 * 1000;
+                  const updated = [...prev, { time: timeLabel, price: tickPrice, ts: now }];
+                  const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
+                  return filtered.length > 500 ? filtered.slice(-500) : filtered;
+                });
+                return cur;
+              });
+            }
+          };
+          poll();
+          pollIv = setInterval(poll, 1000);
+        }
+      }, 3000);
+      
+      return () => {
+        mounted = false;
+        wsActiveRef.current = false;
+        unsubWs();
+        if (pendingRaf) cancelAnimationFrame(pendingRaf);
+        clearTimeout(fallbackTimer);
+        if (pollIv) clearInterval(pollIv);
+      };
+    }
     
     return () => {
       mounted = false;
       wsActiveRef.current = false;
       unsubWs();
       unsubPoller?.();
+      unsubSmooth?.();
       if (pendingRaf) cancelAnimationFrame(pendingRaf);
-      clearTimeout(fallbackTimer);
       if (pollIv) clearInterval(pollIv);
     };
   }, [selectedAsset.symbol]);
