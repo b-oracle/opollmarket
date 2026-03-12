@@ -116,6 +116,7 @@ interface DbComment {
   liked?: boolean;
   replies?: DbComment[];
   avatar_url?: string | null;
+  verification_level?: VerificationLevel;
 }
 
 const formatCommentTime = (dateStr: string) => {
