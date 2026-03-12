@@ -66,7 +66,12 @@ const CreatorCard = ({ creatorName, creatorUserId }: { creatorName: string; crea
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold font-mono">{primaryAddr}</p>
-        <p className="text-xs text-muted-foreground">@{displayName}</p>
+        <p className="text-xs text-muted-foreground flex items-center gap-1">
+          @{displayName}
+          {profile?.verification_level && profile.verification_level !== "none" && (
+            <NftBadge level={profile.verification_level as VerificationLevel} size={14} />
+          )}
+        </p>
       </div>
     </div>
   );
