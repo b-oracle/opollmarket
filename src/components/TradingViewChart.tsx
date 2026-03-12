@@ -273,11 +273,19 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     };
   }, [isDark, chartStyle]);
 
-  // Set initial data (seed once per chart instance; avoid resetting during live stream)
+  // Set/refresh chart data when timeframe/source changes (without resetting every stream tick)
   useEffect(() => {
     if (!chartRef.current) return;
 
-    if (hasInitializedDataRef.current && streamingPrice != null) {
+    const ohlcLen = ohlcData?.length ?? 0;
+    const ohlcFirst = ohlcLen > 0 ? ohlcData![0].time : 0;
+    const ohlcLast = ohlcLen > 0 ? ohlcData![ohlcLen - 1].time : 0;
+    const priceLen = priceHistory?.length ?? 0;
+    const priceFirst = priceLen > 0 ? priceHistory![0].ts : 0;
+    const priceLast = priceLen > 0 ? priceHistory![priceLen - 1].ts : 0;
+
+    const dataKey = `${chartStyle}:${timeframeLabel}:${chartMs}:${ohlcLen}:${ohlcFirst}:${ohlcLast}:${priceLen}:${priceFirst}:${priceLast}`;
+    if (hasInitializedDataRef.current && seededDataKeyRef.current === dataKey) {
       return;
     }
 
@@ -308,15 +316,14 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
       close: Number(last.close),
     };
 
-    if (interpolatedPriceRef.current == null) {
-      interpolatedPriceRef.current = Number(last.close);
-      targetStreamingPriceRef.current = Number(last.close);
-      prevStreamingPriceRef.current = Number(last.close);
-    }
+    interpolatedPriceRef.current = Number(last.close);
+    targetStreamingPriceRef.current = Number(last.close);
+    prevStreamingPriceRef.current = Number(last.close);
 
+    seededDataKeyRef.current = dataKey;
     hasInitializedDataRef.current = true;
     chartRef.current.timeScale().fitContent();
-  }, [buildData, chartStyle, streamingPrice]);
+  }, [buildData, chartStyle, chartMs, timeframeLabel, ohlcData, priceHistory]);
 
   // Entry price horizontal marker line
   useEffect(() => {
