@@ -360,9 +360,9 @@ function SVGCandleChart({
       )}
 
       {/* MA legend */}
-      <div className="absolute top-1 left-1 flex items-center gap-2 pointer-events-none">
-        <span className="text-[8px] font-semibold" style={{ color: MA7_COLOR }}>— MA7</span>
-        <span className="text-[8px] font-semibold" style={{ color: MA14_COLOR }}>— MA14</span>
+      <div className="absolute bottom-1 left-1 flex items-center gap-2 pointer-events-none">
+        <span className="text-[7px] font-semibold opacity-70" style={{ color: MA7_COLOR }}>MA7</span>
+        <span className="text-[7px] font-semibold opacity-70" style={{ color: MA14_COLOR }}>MA14</span>
       </div>
     </div>
   );
