@@ -134,45 +134,24 @@ function getEdgeFunctionUrl(fnName: string): string | null {
   return `https://${projectId}.supabase.co/functions/v1/${fnName}`;
 }
 
-// ── Twelve Data via edge proxy (primary for commodities) ──
-async function fetchFromTwelveDataProxy(asset: string): Promise<number | null> {
-  if (!TWELVE_DATA_SYMBOLS[asset]) return null;
-  const url = getEdgeFunctionUrl("commodity-price");
-  if (!url) return null;
+// ── Helper: fetch with timeout ──
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 8000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const resp = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ asset, provider: "twelve_data" }),
-    });
-    if (!resp.ok) return null;
-    const data = await resp.json();
-    return data?.price ?? null;
-  } catch {
-    return null;
+    const resp = await fetch(url, { ...options, signal: controller.signal });
+    return resp;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
-// ── metals.dev fallback for precious metals ──
-async function fetchMetalPrice(asset: string): Promise<number | null> {
-  const metalName = METAL_MAP[asset];
-  if (!metalName) return null;
-  try {
-    const resp = await fetch(`https://api.metals.dev/v1/latest?api_key=demo&currency=USD&unit=toz`);
-    if (!resp.ok) return null;
-    const data = await resp.json();
-    return data?.metals?.[metalName] ?? null;
-  } catch {
-    return null;
-  }
-}
-
-// ── Generic edge function fallback (Omkar + DB cache + static) ──
-async function fetchCommodityViaEdgeFallback(asset: string): Promise<number | null> {
+// ── Single edge function call for commodities (handles full fallback chain server-side) ──
+async function fetchCommodityPrice(asset: string): Promise<number | null> {
   const url = getEdgeFunctionUrl("commodity-price");
   if (!url) return null;
   try {
-    const resp = await fetch(url, {
+    const resp = await fetchWithTimeout(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ asset }),
@@ -185,28 +164,15 @@ async function fetchCommodityViaEdgeFallback(asset: string): Promise<number | nu
   }
 }
 
-async function fetchCommodityPrice(asset: string): Promise<number | null> {
-  // 1. Twelve Data (via edge proxy — primary, uses TWELVE_DATA_API_KEY server-side)
-  const tdPrice = await fetchFromTwelveDataProxy(asset);
-  if (tdPrice != null) return tdPrice;
-  // 2. metals.dev for precious metals (free client-side)
-  if (METAL_MAP[asset]) {
-    const metalPrice = await fetchMetalPrice(asset);
-    if (metalPrice != null) return metalPrice;
-  }
-  // 3. Edge function fallback chain (Omkar → DB cache → static)
-  return fetchCommodityViaEdgeFallback(asset);
-}
-
-// ── ExchangeRate API via edge proxy (primary for forex, uses EXCHANGERATE_API_KEY server-side) ──
-async function fetchFromExchangeRateProxy(asset: string): Promise<number | null> {
+// ── Single edge function call for forex (handles full fallback chain server-side) ──
+async function fetchForexPrice(asset: string): Promise<number | null> {
   const url = getEdgeFunctionUrl("commodity-price");
   if (!url) return null;
   try {
-    const resp = await fetch(url, {
+    const resp = await fetchWithTimeout(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ asset, type: "forex", provider: "exchangerate" }),
+      body: JSON.stringify({ asset, type: "forex" }),
     });
     if (!resp.ok) return null;
     const data = await resp.json();
@@ -214,28 +180,6 @@ async function fetchFromExchangeRateProxy(asset: string): Promise<number | null>
   } catch {
     return null;
   }
-}
-
-// ── Frankfurter (free, no key — fallback for forex) ──
-async function fetchForexFromFrankfurter(asset: string): Promise<number | null> {
-  const [base, quote] = asset.split("/");
-  if (!base || !quote) return null;
-  try {
-    const resp = await fetch(`https://api.frankfurter.app/latest?from=${base}&to=${quote}`);
-    if (!resp.ok) return null;
-    const data = await resp.json();
-    return data?.rates?.[quote] ?? null;
-  } catch {
-    return null;
-  }
-}
-
-async function fetchForexPrice(asset: string): Promise<number | null> {
-  // 1. ExchangeRate API (via edge proxy — primary, uses EXCHANGERATE_API_KEY server-side)
-  const erPrice = await fetchFromExchangeRateProxy(asset);
-  if (erPrice != null) return erPrice;
-  // 2. Frankfurter (free client-side fallback)
-  return fetchForexFromFrankfurter(asset);
 }
 
 /**
