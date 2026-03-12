@@ -246,6 +246,7 @@ function QuickTradeChart({
             <YAxis domain={[yMin - padding, yMax + padding]} hide />
             <XAxis dataKey="ts" hide />
             <RechartsTooltip content={tooltipContent} cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '3 3' }} />
+            {targetReferenceLine}
             {closeTimeReferenceLine}
             <Bar dataKey="body" shape={renderCandlestick} isAnimationActive={false}>
               {withMA.map((c, i) => (
