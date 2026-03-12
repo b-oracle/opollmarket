@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import AdminPagination from "@/components/admin/AdminPagination";
+import NpReconciliation from "@/components/admin/NpReconciliation";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
