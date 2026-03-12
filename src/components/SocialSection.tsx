@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +8,7 @@ import ActivityFeed from "@/components/ActivityFeed";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Users, UserCheck, Heart, Sparkles, Loader2, ChevronDown,
+  Users, UserCheck, Heart, Sparkles, Loader2, ChevronDown, Search, X,
 } from "lucide-react";
 
 interface SocialSectionProps {
