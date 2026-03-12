@@ -93,9 +93,13 @@ const TopBar = () => {
             <div className="relative">
               <button
                 onClick={() => setShowMenu(!showMenu)}
-                className="w-9 h-9 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-sm font-bold text-primary transition-all active:scale-95"
+                className="w-9 h-9 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-sm font-bold text-primary transition-all active:scale-95 overflow-hidden"
               >
-                {initial}
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+                ) : (
+                  initial
+                )}
               </button>
               <AnimatePresence>
                 {showMenu && (
