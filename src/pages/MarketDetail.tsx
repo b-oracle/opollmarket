@@ -4,6 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
 import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2, Wallet, FileText, ExternalLink, CheckCircle2, XCircle } from "lucide-react";
+import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 // LogoLoader removed for faster load
 import { useMarket } from "@/hooks/useMarkets";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
@@ -38,7 +39,7 @@ const CreatorCard = ({ creatorName, creatorUserId }: { creatorName: string; crea
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("wallet_address, display_name, avatar_url")
+        .select("wallet_address, display_name, avatar_url, verification_level")
         .eq("id", creatorUserId)
         .maybeSingle();
       return data;
@@ -65,7 +66,12 @@ const CreatorCard = ({ creatorName, creatorUserId }: { creatorName: string; crea
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold font-mono">{primaryAddr}</p>
-        <p className="text-xs text-muted-foreground">@{displayName}</p>
+        <p className="text-xs text-muted-foreground flex items-center gap-1">
+          @{displayName}
+          {profile?.verification_level && profile.verification_level !== "none" && (
+            <NftBadge level={profile.verification_level as VerificationLevel} size={14} />
+          )}
+        </p>
       </div>
     </div>
   );
