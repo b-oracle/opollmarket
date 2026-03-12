@@ -109,6 +109,7 @@ interface DbComment {
   created_at: string;
   liked?: boolean;
   replies?: DbComment[];
+  avatar_url?: string | null;
 }
 
 const formatCommentTime = (dateStr: string) => {
@@ -129,8 +130,12 @@ const InlineCommentItem = ({
   return (
     <div className={isReply ? "ml-8 border-l border-border/30 pl-3" : ""}>
       <div className="flex gap-2.5 py-2.5">
-        <div className="w-7 h-7 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0">
-          <span className="text-[10px] font-bold text-primary">{comment.author_name.charAt(0).toUpperCase()}</span>
+        <div className="w-7 h-7 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0 overflow-hidden">
+          {comment.avatar_url ? (
+            <img src={comment.avatar_url} alt={comment.author_name} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-[10px] font-bold text-primary">{comment.author_name.charAt(0).toUpperCase()}</span>
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
@@ -182,9 +187,18 @@ const InlineComments = ({ marketId }: { marketId: string }) => {
       if (error) throw error;
       const { data: userLikes } = await supabase.from("comment_likes").select("comment_id").eq("wallet_address", walletId);
       const likedIds = new Set(userLikes?.map((l) => l.comment_id) || []);
+
+      // Fetch avatars for comment authors
+      const authorIds = [...new Set((data || []).map(c => c.author_wallet).filter(Boolean))] as string[];
+      const avatarMap = new Map<string, string | null>();
+      if (authorIds.length > 0) {
+        const { data: profiles } = await supabase.from("profiles").select("id, avatar_url").in("id", authorIds);
+        for (const p of profiles || []) avatarMap.set(p.id, p.avatar_url);
+      }
+
       const map = new Map<string, DbComment>();
       const topLevel: DbComment[] = [];
-      for (const c of data || []) { map.set(c.id, { ...c, liked: likedIds.has(c.id), replies: [] }); }
+      for (const c of data || []) { map.set(c.id, { ...c, liked: likedIds.has(c.id), replies: [], avatar_url: c.author_wallet ? avatarMap.get(c.author_wallet) || null : null }); }
       for (const c of data || []) {
         const comment = map.get(c.id)!;
         if (c.parent_id && map.has(c.parent_id)) { map.get(c.parent_id)!.replies!.push(comment); }

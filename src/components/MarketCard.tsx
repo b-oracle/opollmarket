@@ -80,7 +80,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("wallet_address")
+        .select("wallet_address, avatar_url")
         .eq("id", market.creatorAddress)
         .maybeSingle();
       return data;
@@ -454,8 +454,12 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                 }
               }}
             >
-              <div className="w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0 group-hover/creator:border-primary/60 transition-colors">
-                <span className="text-[10px] font-bold text-primary">{market.creatorName.charAt(0)}</span>
+              <div className="w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0 group-hover/creator:border-primary/60 transition-colors overflow-hidden">
+                {creatorProfile?.avatar_url ? (
+                  <img src={creatorProfile.avatar_url} alt={market.creatorName} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-[10px] font-bold text-primary">{market.creatorName.charAt(0)}</span>
+                )}
               </div>
               <span className={`text-xs font-medium text-foreground/80 truncate group-hover/creator:underline ${creatorProfile?.wallet_address ? 'font-mono' : ''}`}>{creatorLabel}</span>
             </div>

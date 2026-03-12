@@ -143,6 +143,15 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
   const identityId = user?.id || "";
   const isSignedIn = !!user;
 
+  // Fetch current user's avatar
+  const [currentUserAvatar, setCurrentUserAvatar] = useState<string | null>(null);
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.from("profiles").select("avatar_url").eq("id", user.id).maybeSingle().then(({ data }) => {
+      setCurrentUserAvatar(data?.avatar_url || null);
+    });
+  }, [user?.id]);
+
   const fetchComments = useCallback(async () => {
     setLoading(true);
     try {
@@ -422,10 +431,14 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
                   </div>
                 )}
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0">
-                    <span className="text-xs font-bold text-primary">
-                      {displayName.charAt(0).toUpperCase()}
-                    </span>
+                  <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0 overflow-hidden">
+                    {currentUserAvatar ? (
+                      <img src={currentUserAvatar} alt={displayName} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xs font-bold text-primary">
+                        {displayName.charAt(0).toUpperCase()}
+                      </span>
+                    )}
                   </div>
                   <input
                     ref={inputRef}
