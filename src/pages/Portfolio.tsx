@@ -774,6 +774,74 @@ const Portfolio = () => {
         {activeTab === "copy" && (
           <CopySubscriptions />
         )}
+
+        {/* Drafts Tab */}
+        {activeTab === "drafts" && (
+          <div className="space-y-3">
+            {draftsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : drafts.length === 0 ? (
+              <div className="text-center py-12">
+                <FileEdit className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">No drafts yet</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">Save a market as draft while creating it</p>
+                <button
+                  onClick={() => navigate("/create")}
+                  className="mt-4 bg-primary text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-95"
+                >
+                  Create Market
+                </button>
+              </div>
+            ) : (
+              drafts.map((draft) => (
+                <motion.div
+                  key={draft.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="glass rounded-xl p-4 flex items-start gap-3"
+                >
+                  {draft.image_url ? (
+                    <img src={draft.image_url} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-lg bg-muted/50 flex items-center justify-center flex-shrink-0">
+                      <FileEdit className="w-5 h-5 text-muted-foreground/50" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-semibold truncate">{draft.title || "Untitled Draft"}</h4>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium">{draft.category}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium capitalize">{draft.market_type}</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Updated {new Date(draft.updated_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex gap-1.5 flex-shrink-0">
+                    <button
+                      onClick={() => navigate("/create", { state: { resumeDraftId: draft.id } })}
+                      className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                      title="Resume editing"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm("Delete this draft?")) deleteDraft(draft.id);
+                      }}
+                      className="p-2 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+                      title="Delete draft"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       {/* Sell Confirmation Modal */}
