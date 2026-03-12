@@ -490,6 +490,7 @@ const Create = () => {
     }
   }, [user, draftId, title, description, details, category, endDate, resolutionSource, initialLiquidity, marketType, options, videoUrl, imageFile, imagePreview, autoResolve, autoResolveAsset, autoResolveOperator, autoResolveTargetPrice, autoResolveTime, sportType, sportMatchId, sportPredictedOutcome, sportLeague, displayName]);
 
+  const addOption = () => {
     if (options.length < 6) setOptions([...options, ""]);
   };
   const removeOption = (idx: number) => {
