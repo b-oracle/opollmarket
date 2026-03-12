@@ -431,10 +431,14 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
                   </div>
                 )}
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0">
-                    <span className="text-xs font-bold text-primary">
-                      {displayName.charAt(0).toUpperCase()}
-                    </span>
+                  <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0 overflow-hidden">
+                    {currentUserAvatar ? (
+                      <img src={currentUserAvatar} alt={displayName} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xs font-bold text-primary">
+                        {displayName.charAt(0).toUpperCase()}
+                      </span>
+                    )}
                   </div>
                   <input
                     ref={inputRef}
