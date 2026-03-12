@@ -253,6 +253,9 @@ const AdminDeposits = () => {
       <div className="mt-4">
         <AdminPagination page={page} totalItems={data?.total || 0} pageSize={PAGE_SIZE} onPageChange={setPage} />
       </div>
+
+      {/* Deposit Reconciliation Tool */}
+      <NpReconciliation />
     </div>
   );
 };
