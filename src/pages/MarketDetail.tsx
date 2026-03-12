@@ -183,9 +183,18 @@ const InlineComments = ({ marketId }: { marketId: string }) => {
       if (error) throw error;
       const { data: userLikes } = await supabase.from("comment_likes").select("comment_id").eq("wallet_address", walletId);
       const likedIds = new Set(userLikes?.map((l) => l.comment_id) || []);
+
+      // Fetch avatars for comment authors
+      const authorIds = [...new Set((data || []).map(c => c.author_wallet).filter(Boolean))] as string[];
+      const avatarMap = new Map<string, string | null>();
+      if (authorIds.length > 0) {
+        const { data: profiles } = await supabase.from("profiles").select("id, avatar_url").in("id", authorIds);
+        for (const p of profiles || []) avatarMap.set(p.id, p.avatar_url);
+      }
+
       const map = new Map<string, DbComment>();
       const topLevel: DbComment[] = [];
-      for (const c of data || []) { map.set(c.id, { ...c, liked: likedIds.has(c.id), replies: [] }); }
+      for (const c of data || []) { map.set(c.id, { ...c, liked: likedIds.has(c.id), replies: [], avatar_url: c.author_wallet ? avatarMap.get(c.author_wallet) || null : null }); }
       for (const c of data || []) {
         const comment = map.get(c.id)!;
         if (c.parent_id && map.has(c.parent_id)) { map.get(c.parent_id)!.replies!.push(comment); }
