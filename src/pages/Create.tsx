@@ -1297,7 +1297,35 @@ const Create = () => {
           )}
         </motion.div>
 
-        {/* Step indicator */}
+        {/* Draft resume banner */}
+        {!draftLoading && draftBannerDraft && !draftId && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-4 rounded-xl bg-primary/5 border border-primary/20 flex items-start gap-3"
+          >
+            <FileText className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">Unfinished Draft</p>
+              <p className="text-xs text-muted-foreground truncate">{draftBannerDraft.title}</p>
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={handleResumeDraft}
+                  className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold transition-all active:scale-95"
+                >
+                  Resume
+                </button>
+                <button
+                  onClick={handleDiscardDraft}
+                  className="px-3 py-1.5 rounded-lg bg-muted border border-border text-xs font-semibold text-muted-foreground hover:text-destructive transition-all active:scale-95"
+                >
+                  Discard
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         <div className="flex items-center gap-2 mb-6">
           {[1, 2, 3].map((s) => (
             <div key={s} className="flex items-center gap-2 flex-1">
