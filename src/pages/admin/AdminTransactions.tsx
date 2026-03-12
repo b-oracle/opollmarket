@@ -20,8 +20,10 @@ interface TxRow {
 const TYPE_STYLES: Record<string, { label: string; class: string }> = {
   deposit: { label: "Deposit", class: "bg-green-500/10 text-green-500" },
   withdrawal: { label: "Withdrawal", class: "bg-yellow-500/10 text-yellow-500" },
+  buy: { label: "Bet", class: "bg-primary/10 text-primary" },
   bet: { label: "Bet", class: "bg-primary/10 text-primary" },
   payout: { label: "Payout", class: "bg-blue-500/10 text-blue-500" },
+  commission: { label: "Commission", class: "bg-purple-500/10 text-purple-500" },
 };
 
 const AdminTransactions = () => {
