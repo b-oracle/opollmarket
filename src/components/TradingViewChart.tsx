@@ -336,44 +336,63 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     };
   }, [targetPrice, chartStyle]);
 
+  // Stop any active animation loop when chart type changes
   useEffect(() => {
-    if (!streamingPrice || !chartRef.current) return;
+    if (interpolationRef.current) {
+      cancelAnimationFrame(interpolationRef.current);
+      interpolationRef.current = null;
+    }
+    animationActiveRef.current = false;
+  }, [chartStyle]);
 
-    const prevPrice = prevStreamingPriceRef.current ?? streamingPrice;
-    const startPrice = interpolatedPriceRef.current ?? prevPrice;
-    const targetPriceVal = streamingPrice;
-    const isUp = targetPriceVal >= prevPrice;
-    const DURATION = 300; // ms to interpolate
-    const startTime = performance.now();
+  // Smooth streaming updates (single RAF loop, target-driven)
+  useEffect(() => {
+    if (streamingPrice == null || !chartRef.current) return;
 
-    // Cancel any running interpolation
-    if (interpolationRef.current) cancelAnimationFrame(interpolationRef.current);
+    const basePrice = interpolatedPriceRef.current ?? prevStreamingPriceRef.current ?? streamingPrice;
+    targetStreamingPriceRef.current = streamingPrice;
+    prevStreamingPriceRef.current = streamingPrice;
 
-    const tick = (now: number) => {
-      const elapsed = now - startTime;
-      const t = Math.min(elapsed / DURATION, 1);
-      // Ease-out cubic
-      const ease = 1 - Math.pow(1 - t, 3);
-      const price = startPrice + (targetPriceVal - startPrice) * ease;
-      interpolatedPriceRef.current = price;
+    const isUpNow = streamingPrice >= basePrice;
+    setDotColor(isUpNow ? "#22c55e" : "#ef4444");
+
+    if (animationActiveRef.current) return;
+    animationActiveRef.current = true;
+
+    const animate = () => {
+      const target = targetStreamingPriceRef.current;
+      if (target == null) {
+        animationActiveRef.current = false;
+        interpolationRef.current = null;
+        return;
+      }
+
+      const current = interpolatedPriceRef.current ?? target;
+      const delta = target - current;
+      const nextPrice = Math.abs(delta) < 0.000001 ? target : current + delta * 0.22;
+      interpolatedPriceRef.current = nextPrice;
 
       const nowSec = Math.floor(Date.now() / 1000) as UTCTimestamp;
 
       if (chartStyle === "candle" && candleSeriesRef.current) {
         const bucketSec = 10;
         const candleTime = (Math.floor(nowSec / bucketSec) * bucketSec) as UTCTimestamp;
-        
+
         const cur = currentCandleRef.current;
         if (!cur || cur.time !== candleTime) {
-          // New candle bucket — start fresh
-          currentCandleRef.current = { time: candleTime, open: price, high: price, low: price, close: price };
+          currentCandleRef.current = {
+            time: candleTime,
+            open: nextPrice,
+            high: nextPrice,
+            low: nextPrice,
+            close: nextPrice,
+          };
         } else {
-          // Update existing candle: only touch high/low/close
-          cur.high = Math.max(cur.high, price);
-          cur.low = Math.min(cur.low, price);
-          cur.close = price;
+          cur.high = Math.max(cur.high, nextPrice);
+          cur.low = Math.min(cur.low, nextPrice);
+          cur.close = nextPrice;
         }
-        
+
         const c = currentCandleRef.current!;
         candleSeriesRef.current.update({
           time: c.time as UTCTimestamp,
@@ -384,46 +403,41 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
         });
         if (candleTime > lastCandleTimeRef.current) lastCandleTimeRef.current = candleTime;
       } else if (areaSeriesRef.current) {
-        const greenLine = "#22c55e";
-        const redLine = "#ef4444";
-        const lineColor = isUp ? greenLine : redLine;
+        const isUp = target >= current;
+        const lineColor = isUp ? "#22c55e" : "#ef4444";
         const topColor = isUp ? "rgba(34, 197, 94, 0.28)" : "rgba(239, 68, 68, 0.28)";
         const bottomColor = isUp ? "rgba(34, 197, 94, 0.02)" : "rgba(239, 68, 68, 0.02)";
         areaSeriesRef.current.applyOptions({ lineColor, topColor, bottomColor });
-        areaSeriesRef.current.update({ time: nowSec, value: price });
+        areaSeriesRef.current.update({ time: nowSec, value: nextPrice });
       }
 
-      // Update pulsing dot position
       if (pulsingDotRef.current && chartRef.current) {
         const series = chartStyle === "candle" ? candleSeriesRef.current : areaSeriesRef.current;
         if (series) {
           try {
-            const y = series.priceToCoordinate(price);
-            const timeScale = chartRef.current.timeScale();
-            const x = timeScale.timeToCoordinate(nowSec);
+            const y = series.priceToCoordinate(nextPrice);
+            const x = chartRef.current.timeScale().timeToCoordinate(nowSec);
             if (y !== null && x !== null) {
               pulsingDotRef.current.style.left = `${x}px`;
               pulsingDotRef.current.style.top = `${y}px`;
               pulsingDotRef.current.style.display = "block";
             }
-          } catch {}
+          } catch {
+            // noop
+          }
         }
       }
 
-      if (t < 1) {
-        interpolationRef.current = requestAnimationFrame(tick);
+      const stillMoving = Math.abs((targetStreamingPriceRef.current ?? nextPrice) - nextPrice) > 0.0005;
+      if (stillMoving) {
+        interpolationRef.current = requestAnimationFrame(animate);
       } else {
         interpolationRef.current = null;
+        animationActiveRef.current = false;
       }
     };
 
-    setDotColor(isUp ? "#22c55e" : "#ef4444");
-    interpolationRef.current = requestAnimationFrame(tick);
-    prevStreamingPriceRef.current = streamingPrice;
-
-    return () => {
-      if (interpolationRef.current) cancelAnimationFrame(interpolationRef.current);
-    };
+    interpolationRef.current = requestAnimationFrame(animate);
   }, [streamingPrice, chartStyle]);
 
   // Compute P&L when bet is active
