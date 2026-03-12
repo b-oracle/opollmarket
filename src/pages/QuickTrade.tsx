@@ -491,7 +491,7 @@ export default function QuickTrade() {
       const CRYPTO_TICK_MS = 50; // 20fps
       
       cryptoInterpId = setInterval(() => {
-        if (!mounted || targetWsPrice === 0) return;
+        if (!isCurrentRun() || targetWsPrice === 0) return;
         // Lerp toward target
         displayedPrice = displayedPrice + (targetWsPrice - displayedPrice) * LERP_RATE;
         // Snap if very close
