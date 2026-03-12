@@ -109,6 +109,7 @@ interface DbComment {
   created_at: string;
   liked?: boolean;
   replies?: DbComment[];
+  avatar_url?: string | null;
 }
 
 const formatCommentTime = (dateStr: string) => {
