@@ -649,6 +649,7 @@ export default function QuickTrade() {
       unsubWs();
       unsubPoller?.();
       unsubSmooth?.();
+      if (cryptoInterpId) clearInterval(cryptoInterpId);
       if (pendingRaf) cancelAnimationFrame(pendingRaf);
       if (pollIv) clearInterval(pollIv);
     };
