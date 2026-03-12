@@ -631,13 +631,16 @@ const Create = () => {
     setSimilarMarkets([]);
     setCreatedAsPending(false);
     setModerationReason("");
+    setSubmitProgress(0);
+    setCompletedSteps(new Set());
+    submitStartRef.current = Date.now();
 
-    // Step 0: Run similarity check and content moderation in parallel
+    // Step 0: Run AI checks AND image upload in parallel for speed
     setSubmitStep("moderating");
     let isSimilar = false;
     let isFlagged = false;
 
-    const [simResult, modResult] = await Promise.allSettled([
+    const [simResult, modResult, imageUploadResult] = await Promise.allSettled([
       supabase.functions.invoke("check-market-similarity", {
         body: { title: title.trim(), description: description.trim() },
       }),
@@ -648,7 +651,11 @@ const Create = () => {
           options: marketType !== "binary" ? options.filter(o => o.trim()) : undefined,
         },
       }),
+      // Upload image in parallel with AI checks to save time
+      imageFile ? uploadImage() : Promise.resolve(null),
     ]);
+
+    setCompletedSteps(prev => new Set([...prev, 0]));
 
     // Process similarity result
     if (simResult.status === "fulfilled") {
@@ -681,6 +688,7 @@ const Create = () => {
 
     // Step 1: Check and deduct balance
     setSubmitStep("deploying");
+    setCompletedSteps(prev => new Set([...prev, 1]));
 
     const { data: bal, error: balError } = await supabase
       .from("balances")
@@ -722,22 +730,25 @@ const Create = () => {
       return;
     }
 
-    // Simulate on-chain contract deployment
-    await new Promise((r) => setTimeout(r, 1200));
+    setCompletedSteps(prev => new Set([...prev, 2]));
+
+    // Simulate on-chain contract deployment (reduced from 1200ms)
+    await new Promise((r) => setTimeout(r, 400));
     const mockTxHash = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`;
     const mockContractAddr = `0x${Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`;
     setTxHash(mockTxHash);
 
+    setCompletedSteps(prev => new Set([...prev, 3]));
     setSubmitStep("saving");
 
     // If similar, flagged, or fee bypass — needs admin review
     const needsReview = isSimilar || isFlagged || feeBypass;
     const marketStatus = needsReview ? "pending" : "active";
 
-    // Upload cover image if present
+    // Image was already uploaded in parallel — extract result
     let imageUrl: string | null = null;
-    if (imageFile) {
-      imageUrl = await uploadImage();
+    if (imageUploadResult.status === "fulfilled") {
+      imageUrl = imageUploadResult.value as string | null;
     }
 
     // Save to database
