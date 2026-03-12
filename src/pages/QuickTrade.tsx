@@ -432,6 +432,9 @@ export default function QuickTrade() {
   const streamRunIdRef = useRef(0);
   // Reset price state when asset changes
   useEffect(() => {
+    const previousAsset = previousSelectedAssetRef.current;
+
+    setCurrentPriceAsset(selectedAsset.symbol);
     setCurrentPrice(null);
     setPrevPrice(null);
     setStreamingPrice(null);
@@ -442,8 +445,13 @@ export default function QuickTrade() {
     wsActiveRef.current = false;
     consecutiveFailsRef.current = 0;
     lastFetchTimeRef.current = 0;
-    // Clear any stale interpolation state from the previous asset
+
+    // Clear interpolation for both previous and current asset to avoid stale ticks leaking across switches
+    if (previousAsset && previousAsset !== selectedAsset.symbol) {
+      resetInterpolationState(previousAsset);
+    }
     resetInterpolationState(selectedAsset.symbol);
+    previousSelectedAssetRef.current = selectedAsset.symbol;
   }, [selectedAsset.symbol]);
 
   useEffect(() => {
