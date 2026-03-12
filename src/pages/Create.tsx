@@ -53,6 +53,42 @@ import SwapModal from "@/components/SwapModal";
 import FixtureSearch from "@/components/FixtureSearch";
 import { isPriceAutoResolveCategory, getAssetsForCategory, getAssetClassLabel, getResolutionSource } from "@/data/assetClasses";
 
+/** Progress bar with estimated time remaining for market creation */
+const SubmitProgressBar = ({ completedSteps, startTime, estimatedTotalSec }: {
+  completedSteps: Set<number>;
+  startTime: number;
+  estimatedTotalSec: number;
+}) => {
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    if (!startTime) return;
+    const iv = setInterval(() => setElapsed(Math.floor((Date.now() - startTime) / 1000)), 500);
+    return () => clearInterval(iv);
+  }, [startTime]);
+
+  const stepProgress = (completedSteps.size / 5) * 100;
+  const timeProgress = Math.min((elapsed / estimatedTotalSec) * 100, 95);
+  const progress = Math.max(stepProgress, timeProgress);
+  const remaining = Math.max(0, estimatedTotalSec - elapsed);
+
+  return (
+    <div className="w-full max-w-xs space-y-1.5">
+      <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+        <motion.div
+          className="h-full bg-primary rounded-full"
+          initial={{ width: "0%" }}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        />
+      </div>
+      <div className="flex justify-between text-[10px] text-muted-foreground">
+        <span>{Math.round(progress)}% complete</span>
+        <span>~{remaining}s remaining</span>
+      </div>
+    </div>
+  );
+};
+
 const CATEGORIES = [
   "Crypto", "Commodities", "Forex", "AI & Tech", "Science", "Economy",
   "Entertainment", "Sports", "Politics", "Other",
@@ -592,6 +628,12 @@ const Create = () => {
   const [firstPredSide, setFirstPredSide] = useState<"yes" | "no">("yes");
   const [firstPredAmount, setFirstPredAmount] = useState("5");
 
+  // Progress tracking for submit flow
+  const [submitProgress, setSubmitProgress] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const submitStartRef = useRef<number>(0);
+  const ESTIMATED_TOTAL_SEC = 30; // estimated total seconds
+
   // Save wallet address to profile when connected
   useEffect(() => {
     if (user && isConnected && address) {
@@ -625,13 +667,16 @@ const Create = () => {
     setSimilarMarkets([]);
     setCreatedAsPending(false);
     setModerationReason("");
+    setSubmitProgress(0);
+    setCompletedSteps(new Set());
+    submitStartRef.current = Date.now();
 
-    // Step 0: Run similarity check and content moderation in parallel
+    // Step 0: Run AI checks AND image upload in parallel for speed
     setSubmitStep("moderating");
     let isSimilar = false;
     let isFlagged = false;
 
-    const [simResult, modResult] = await Promise.allSettled([
+    const [simResult, modResult, imageUploadResult] = await Promise.allSettled([
       supabase.functions.invoke("check-market-similarity", {
         body: { title: title.trim(), description: description.trim() },
       }),
@@ -642,7 +687,11 @@ const Create = () => {
           options: marketType !== "binary" ? options.filter(o => o.trim()) : undefined,
         },
       }),
+      // Upload image in parallel with AI checks to save time
+      imageFile ? uploadImage() : Promise.resolve(null),
     ]);
+
+    setCompletedSteps(prev => new Set([...prev, 0]));
 
     // Process similarity result
     if (simResult.status === "fulfilled") {
@@ -675,6 +724,7 @@ const Create = () => {
 
     // Step 1: Check and deduct balance
     setSubmitStep("deploying");
+    setCompletedSteps(prev => new Set([...prev, 1]));
 
     const { data: bal, error: balError } = await supabase
       .from("balances")
@@ -716,22 +766,25 @@ const Create = () => {
       return;
     }
 
-    // Simulate on-chain contract deployment
-    await new Promise((r) => setTimeout(r, 1200));
+    setCompletedSteps(prev => new Set([...prev, 2]));
+
+    // Simulate on-chain contract deployment (reduced from 1200ms)
+    await new Promise((r) => setTimeout(r, 400));
     const mockTxHash = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`;
     const mockContractAddr = `0x${Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`;
     setTxHash(mockTxHash);
 
+    setCompletedSteps(prev => new Set([...prev, 3]));
     setSubmitStep("saving");
 
     // If similar, flagged, or fee bypass — needs admin review
     const needsReview = isSimilar || isFlagged || feeBypass;
     const marketStatus = needsReview ? "pending" : "active";
 
-    // Upload cover image if present
+    // Image was already uploaded in parallel — extract result
     let imageUrl: string | null = null;
-    if (imageFile) {
-      imageUrl = await uploadImage();
+    if (imageUploadResult.status === "fulfilled") {
+      imageUrl = imageUploadResult.value as string | null;
     }
 
     // Save to database
@@ -850,6 +903,7 @@ const Create = () => {
       }
     }
 
+    setCompletedSteps(prev => new Set([...prev, 4]));
     setNewMarketId(data?.id || "");
     setCreatedAsPending(needsReview);
 
@@ -2196,38 +2250,57 @@ const Create = () => {
                       ? "Running AI Checks..."
                       : submitStep === "deploying"
                       ? "Deploying Contract..."
-                      : "Saving to Database..."}
+                      : "Almost Done..."}
                   </h3>
-                  <p className="text-xs text-muted-foreground text-center">
+                  <p className="text-xs text-muted-foreground text-center mb-3">
                     {submitStep === "moderating"
-                      ? "Checking similarity & content moderation..."
+                      ? "Checking similarity, content moderation & uploading image..."
                       : submitStep === "deploying"
-                      ? "Deploying your prediction market contract on BSC. Please confirm in your wallet."
-                      : "Storing market data and linking contract address..."}
+                      ? "Verifying balance & preparing contract..."
+                      : "Saving market data..."}
                   </p>
+
+                  {/* Progress bar with estimated time */}
+                  <SubmitProgressBar
+                    completedSteps={completedSteps}
+                    startTime={submitStartRef.current}
+                    estimatedTotalSec={ESTIMATED_TOTAL_SEC}
+                  />
+
                   <div className="mt-4 space-y-2 w-full max-w-xs">
                     {[
-                      { label: "AI similarity & moderation", done: submitStep !== "moderating" },
-                      { label: "Preparing contract", done: submitStep === "saving" },
-                      { label: "Awaiting wallet signature", done: submitStep === "saving" },
-                      { label: "Broadcasting transaction", done: submitStep === "saving" },
-                      { label: "Saving market data", done: false },
-                    ].map((s, i) => (
-                      <motion.div
-                        key={s.label}
-                        initial={{ opacity: 0.3 }}
-                        animate={{ opacity: s.done ? 1 : 0.3 }}
-                        transition={{ delay: i * 0.3 }}
-                        className="flex items-center gap-2 text-xs"
-                      >
-                        {s.done ? (
-                          <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-                        ) : (
-                          <div className="w-3.5 h-3.5 rounded-full border border-muted-foreground/30" />
-                        )}
-                        <span className={s.done ? "text-foreground" : "text-muted-foreground"}>{s.label}</span>
-                      </motion.div>
-                    ))}
+                      { label: "AI checks & image upload", stepIdx: 0 },
+                      { label: "Balance verification", stepIdx: 1 },
+                      { label: "Preparing contract", stepIdx: 2 },
+                      { label: "Broadcasting transaction", stepIdx: 3 },
+                      { label: "Saving market data", stepIdx: 4 },
+                    ].map((s) => {
+                      const done = completedSteps.has(s.stepIdx);
+                      const isActive = !done && (
+                        (s.stepIdx === 0 && submitStep === "moderating") ||
+                        (s.stepIdx === 1 && submitStep === "deploying" && !completedSteps.has(1)) ||
+                        (s.stepIdx === 2 && completedSteps.has(1) && !completedSteps.has(2)) ||
+                        (s.stepIdx === 3 && completedSteps.has(2) && !completedSteps.has(3)) ||
+                        (s.stepIdx === 4 && submitStep === "saving")
+                      );
+                      return (
+                        <motion.div
+                          key={s.label}
+                          initial={{ opacity: 0.3 }}
+                          animate={{ opacity: done || isActive ? 1 : 0.3 }}
+                          className="flex items-center gap-2 text-xs"
+                        >
+                          {done ? (
+                            <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                          ) : isActive ? (
+                            <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
+                          ) : (
+                            <div className="w-3.5 h-3.5 rounded-full border border-muted-foreground/30" />
+                          )}
+                          <span className={done ? "text-foreground" : isActive ? "text-primary font-medium" : "text-muted-foreground"}>{s.label}</span>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 </motion.div>
               )}
