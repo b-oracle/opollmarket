@@ -636,6 +636,7 @@ export default function QuickTrade() {
         mounted = false;
         wsActiveRef.current = false;
         unsubWs();
+        if (cryptoInterpId) clearInterval(cryptoInterpId);
         if (pendingRaf) cancelAnimationFrame(pendingRaf);
         clearTimeout(fallbackTimer);
         if (pollIv) clearInterval(pollIv);
