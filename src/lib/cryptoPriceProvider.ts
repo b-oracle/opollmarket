@@ -612,7 +612,7 @@ export async function fetchOHLCData(
     sym = GECKO_TO_SYM[geckoId] || "";
   }
   const days = timeframeToDays(tfKey);
-  const cacheKey = `${sym || geckoId}:${days}`;
+  const cacheKey = `${sym || geckoId}:${tfKey}`;
   const cached = ohlcCache.get(cacheKey);
   if (cached && Date.now() - cached.fetchedAt < OHLC_CACHE_TTL) {
     return cached.candles;
@@ -622,10 +622,11 @@ export async function fetchOHLCData(
   const ccId = COINCAP_IDS[sym];
   const ccSym = CRYPTOCOMPARE_SYMS[sym];
 
+  // Prefer timeframe-native providers first for better interval accuracy.
   const providers: Array<() => Promise<OHLCCandle[] | null>> = [];
+  if (ccSym) providers.push(() => fetchOHLCFromCryptoCompare(ccSym, tfKey));
+  if (ccId) providers.push(() => fetchOHLCFromCoinCap(ccId, tfKey));
   if (gId) providers.push(() => fetchOHLCFromCoinGecko(gId, days));
-  if (ccId) providers.push(() => fetchOHLCFromCoinCap(ccId, days));
-  if (ccSym) providers.push(() => fetchOHLCFromCryptoCompare(ccSym, days));
 
   for (const fn of providers) {
     try {
