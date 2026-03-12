@@ -613,7 +613,7 @@ export default function QuickTrade() {
                   return updated.filter((pt) => pt.ts >= maxCutoff);
                 });
               }
-            } else if (mounted && !wsActiveRef.current) {
+            } else if (isCurrentRun() && !wsActiveRef.current) {
               // Jitter tick for alive feel
               setCurrentPrice((cur) => {
                 if (cur == null) return cur;
