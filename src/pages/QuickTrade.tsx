@@ -589,7 +589,7 @@ export default function QuickTrade() {
     } else {
       // Crypto: fallback HTTP polling if WS doesn't fire within 3s
       const fallbackTimer = setTimeout(() => {
-        if (!wsActiveRef.current && mounted) {
+        if (!wsActiveRef.current && isCurrentRun()) {
           const poll = async () => {
             const now = Date.now();
             const shouldFetch = now - lastFetchTimeRef.current >= 5000;
