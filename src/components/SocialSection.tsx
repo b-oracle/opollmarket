@@ -66,6 +66,20 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
     enabled: expanded,
   });
 
+  const { data: searchResults = [], isLoading: loadingSearch } = useQuery({
+    queryKey: ["social-search", debouncedSearch],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url, bio, verification_level")
+        .eq("is_public", true)
+        .ilike("display_name", `%${debouncedSearch}%`)
+        .limit(20);
+      return (data || []).filter((p: any) => p.id !== userId);
+    },
+    enabled: expanded && activeTab === "suggestions" && debouncedSearch.length >= 2,
+  });
+
   const { data: suggestions = [], isLoading: loadingSuggestions } = useQuery({
     queryKey: ["follow-suggestions", userId],
     queryFn: async () => {
