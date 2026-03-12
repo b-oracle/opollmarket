@@ -50,7 +50,7 @@ const formatTimeAgo = (date: string) => {
   return `${Math.floor(hrs / 24)}d ago`;
 };
 
-type FilterType = "all" | "trades" | "deposits" | "quick_trades" | "earnings";
+type FilterType = "all" | "trades" | "deposits" | "withdrawals" | "quick_trades" | "earnings";
 type StatusFilter = "all" | "confirmed" | "pending" | "failed";
 
 const TelegramSection = ({ userId }: { userId?: string }) => {
@@ -604,7 +604,8 @@ const Profile = () => {
     }
     let result = transactions;
     if (txFilter === "trades") result = result.filter((t: any) => t.type === "buy" || t.type === "sell");
-    else if (txFilter === "deposits") result = result.filter((t: any) => t.type === "deposit" || t.type === "withdraw" || t.type === "withdrawal");
+    else if (txFilter === "deposits") result = result.filter((t: any) => t.type === "deposit");
+    else if (txFilter === "withdrawals") result = result.filter((t: any) => t.type === "withdraw" || t.type === "withdrawal");
     else if (txFilter === "earnings") result = result.filter((t: any) => t.type === "commission" || t.type === "payout" || t.type === "refund");
 
     // Hide expired deposits everywhere except the "failed" status filter
@@ -1256,10 +1257,10 @@ const Profile = () => {
             </motion.button>
           </div>
           <div className="flex gap-2 mb-3 flex-wrap">
-            {(["all", "trades", "quick_trades", "deposits", "earnings"] as FilterType[]).map((f) => (
+            {(["all", "trades", "quick_trades", "deposits", "withdrawals", "earnings"] as FilterType[]).map((f) => (
               <button key={f} onClick={() => { setTxFilter(f); setTxPage(1); }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize ${txFilter === f ? "bg-primary text-primary-foreground" : "glass text-muted-foreground hover:text-foreground"}`}>
-                {f === "deposits" ? "Deposits" : f === "quick_trades" ? "Quick Trades" : f === "trades" ? "Predictions" : f === "earnings" ? "Earnings" : f}
+                {f === "deposits" ? "Deposits" : f === "withdrawals" ? "Withdrawals" : f === "quick_trades" ? "Quick Trades" : f === "trades" ? "Predictions" : f === "earnings" ? "Earnings" : f}
               </button>
             ))}
           </div>
