@@ -77,7 +77,7 @@ interface EnrichedPosition {
 }
 
 type FilterType = "all" | "profit" | "loss";
-type PortfolioTab = "positions" | "orders" | "copy";
+type PortfolioTab = "positions" | "orders" | "copy" | "drafts";
 
 const Sparkline = ({ avgPrice, currentPrice, seed }: { avgPrice: number; currentPrice: number; seed: string }) => {
   const count = 20;
