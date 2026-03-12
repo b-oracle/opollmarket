@@ -183,40 +183,120 @@ async function handleResolve(
     winningPositions = [];
   }
 
-  // Pay out winners
-  let totalPaidOut = 0;
-  for (const pos of winningPositions) {
-    const payout = pos.shares;
-
-    const { data: balance } = await adminClient
-      .from("balances")
-      .select("amount")
-      .eq("user_id", pos.user_id)
-      .single();
-
-    if (balance) {
-      await adminClient
-        .from("balances")
-        .update({ amount: balance.amount + payout, updated_at: new Date().toISOString() })
-        .eq("user_id", pos.user_id);
-    }
-
-    await adminClient.from("transactions").insert({
-      user_id: pos.user_id,
-      market_id: market_id,
-      option_id: pos.option_id,
-      type: "payout",
-      amount: payout,
-      side: pos.side,
-      shares: pos.shares,
-      price: 1,
-      status: "confirmed",
-    });
-
-    totalPaidOut += payout;
+  // Find losing positions to determine if market is one-sided
+  let losingPositions;
+  if (market.market_type === "binary" && winning_side) {
+    const losingSide = winning_side === "yes" ? "no" : "yes";
+    const { data } = await adminClient
+      .from("positions")
+      .select("*")
+      .eq("market_id", market_id)
+      .eq("side", losingSide)
+      .gt("shares", 0);
+    losingPositions = data || [];
+  } else if (market.market_type === "multi" && winning_option_id) {
+    const { data } = await adminClient
+      .from("positions")
+      .select("*")
+      .eq("market_id", market_id)
+      .neq("option_id", winning_option_id)
+      .gt("shares", 0);
+    losingPositions = data || [];
+  } else {
+    losingPositions = [];
   }
 
-  console.log("resolve-market: Success, winners:", winningPositions.length, "paid:", totalPaidOut);
+  const isOneSided = losingPositions.length === 0 || winningPositions.length === 0;
+
+  // Get admin fee percent for one-sided winner refund
+  let adminFeePercent = 2;
+  if (isOneSided && winningPositions.length > 0) {
+    const { data: feeSettings } = await adminClient
+      .from("commission_settings")
+      .select("admin_fee_percent")
+      .limit(1)
+      .single();
+    adminFeePercent = feeSettings?.admin_fee_percent ?? 2;
+  }
+
+  // Pay out winners
+  let totalPaidOut = 0;
+
+  if (winningPositions.length === 0) {
+    // ONE-SIDED: Everyone lost — platform profit, no refund
+    console.log("resolve-market: One-sided loss — all positions lose, platform profit");
+  } else if (isOneSided && losingPositions.length === 0) {
+    // ONE-SIDED: Everyone won — return capital minus admin fee
+    console.log("resolve-market: One-sided win — returning capital minus", adminFeePercent, "% admin fee");
+    for (const pos of winningPositions) {
+      const capital = pos.shares * pos.avg_price;
+      const fee = capital * (adminFeePercent / 100);
+      const payout = capital - fee;
+
+      if (payout <= 0) continue;
+
+      const { data: balance } = await adminClient
+        .from("balances")
+        .select("amount")
+        .eq("user_id", pos.user_id)
+        .single();
+
+      if (balance) {
+        await adminClient
+          .from("balances")
+          .update({ amount: balance.amount + payout, updated_at: new Date().toISOString() })
+          .eq("user_id", pos.user_id);
+      }
+
+      await adminClient.from("transactions").insert({
+        user_id: pos.user_id,
+        market_id: market_id,
+        option_id: pos.option_id,
+        type: "payout",
+        amount: payout,
+        side: pos.side,
+        shares: pos.shares,
+        price: pos.avg_price,
+        status: "confirmed",
+      });
+
+      totalPaidOut += payout;
+    }
+  } else {
+    // NORMAL: Two-sided market — winners get full share value ($1/share)
+    for (const pos of winningPositions) {
+      const payout = pos.shares;
+
+      const { data: balance } = await adminClient
+        .from("balances")
+        .select("amount")
+        .eq("user_id", pos.user_id)
+        .single();
+
+      if (balance) {
+        await adminClient
+          .from("balances")
+          .update({ amount: balance.amount + payout, updated_at: new Date().toISOString() })
+          .eq("user_id", pos.user_id);
+      }
+
+      await adminClient.from("transactions").insert({
+        user_id: pos.user_id,
+        market_id: market_id,
+        option_id: pos.option_id,
+        type: "payout",
+        amount: payout,
+        side: pos.side,
+        shares: pos.shares,
+        price: 1,
+        status: "confirmed",
+      });
+
+      totalPaidOut += payout;
+    }
+  }
+
+  console.log("resolve-market: Success, winners:", winningPositions.length, "losers:", losingPositions.length, "one-sided:", isOneSided, "paid:", totalPaidOut);
 
   // ── Return initial liquidity to creator (minus exit fee) ──
   if (market.initial_liquidity > 0) {
