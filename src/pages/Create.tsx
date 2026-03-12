@@ -53,6 +53,43 @@ import SwapModal from "@/components/SwapModal";
 import FixtureSearch from "@/components/FixtureSearch";
 import { isPriceAutoResolveCategory, getAssetsForCategory, getAssetClassLabel, getResolutionSource } from "@/data/assetClasses";
 
+/** Progress bar with estimated time remaining for market creation */
+const SubmitProgressBar = ({ completedSteps, startTime, estimatedTotalSec }: {
+  submitStep: string;
+  completedSteps: Set<number>;
+  startTime: number;
+  estimatedTotalSec: number;
+}) => {
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    if (!startTime) return;
+    const iv = setInterval(() => setElapsed(Math.floor((Date.now() - startTime) / 1000)), 500);
+    return () => clearInterval(iv);
+  }, [startTime]);
+
+  const stepProgress = (completedSteps.size / 5) * 100;
+  const timeProgress = Math.min((elapsed / estimatedTotalSec) * 100, 95);
+  const progress = Math.max(stepProgress, timeProgress);
+  const remaining = Math.max(0, estimatedTotalSec - elapsed);
+
+  return (
+    <div className="w-full max-w-xs space-y-1.5">
+      <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+        <motion.div
+          className="h-full bg-primary rounded-full"
+          initial={{ width: "0%" }}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        />
+      </div>
+      <div className="flex justify-between text-[10px] text-muted-foreground">
+        <span>{Math.round(progress)}% complete</span>
+        <span>~{remaining}s remaining</span>
+      </div>
+    </div>
+  );
+};
+
 const CATEGORIES = [
   "Crypto", "Commodities", "Forex", "AI & Tech", "Science", "Economy",
   "Entertainment", "Sports", "Politics", "Other",
