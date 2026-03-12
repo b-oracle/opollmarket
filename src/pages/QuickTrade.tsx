@@ -1110,24 +1110,19 @@ export default function QuickTrade() {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">{getPriceLabel(selectedAsset)}</p>
-                <AnimatePresence mode="wait">
-                  {currentPrice != null ? (
-                    <motion.p
-                      key={currentPrice}
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      className={`text-3xl font-bold tabular-nums mt-1 ${
-                        priceDir === "up" ? "text-green-500" : priceDir === "down" ? "text-destructive" : "text-foreground"
-                      }`}
-                    >
-                      {getPricePrefix(selectedAsset)}{formatPrice(currentPrice, selectedAsset)}
-                      {priceDir === "up" && <TrendingUp className="inline w-5 h-5 ml-2" />}
-                      {priceDir === "down" && <TrendingDown className="inline w-5 h-5 ml-2" />}
-                    </motion.p>
-                  ) : (
-                    <div className="h-10 w-40 bg-muted/50 rounded animate-pulse mt-1" />
-                  )}
+                {currentPrice != null ? (
+                  <p
+                    className={`text-3xl font-bold tabular-nums mt-1 transition-colors duration-500 ease-in-out ${
+                      priceDir === "up" ? "text-green-500" : priceDir === "down" ? "text-destructive" : "text-foreground"
+                    }`}
+                  >
+                    {getPricePrefix(selectedAsset)}{formatPrice(currentPrice, selectedAsset)}
+                    {priceDir === "up" && <TrendingUp className="inline w-5 h-5 ml-2 transition-opacity duration-500" />}
+                    {priceDir === "down" && <TrendingDown className="inline w-5 h-5 ml-2 transition-opacity duration-500" />}
+                  </p>
+                ) : (
+                  <div className="h-10 w-40 bg-muted/50 rounded animate-pulse mt-1" />
+                )}
                 </AnimatePresence>
               </div>
 
