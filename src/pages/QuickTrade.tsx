@@ -429,9 +429,12 @@ export default function QuickTrade() {
     setPrevPrice(null);
     setStreamingPrice(null);
     setPriceHistory([]);
+    setOhlcData([]);
     wsActiveRef.current = false;
     consecutiveFailsRef.current = 0;
     lastFetchTimeRef.current = 0;
+    // Clear any stale interpolation state from the previous asset
+    resetInterpolationState(selectedAsset.symbol);
   }, [selectedAsset.symbol]);
 
   useEffect(() => {
