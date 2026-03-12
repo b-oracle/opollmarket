@@ -495,6 +495,22 @@ const Portfolio = () => {
             <Copy className="w-3 h-3" />
             Copy Trades
           </button>
+          <button
+            onClick={() => setActiveTab("drafts")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-xs font-semibold transition-all ${
+              activeTab === "drafts"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <FileEdit className="w-3 h-3" />
+            Drafts
+            {drafts.length > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-500 text-[9px] font-bold">
+                {drafts.length}
+              </span>
+            )}
+          </button>
         </div>
 
         {activeTab === "positions" && (
