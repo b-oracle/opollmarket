@@ -597,7 +597,7 @@ export default function QuickTrade() {
             if (shouldFetch) {
               lastFetchTimeRef.current = now;
               const p = await fetchPriceForAsset(selectedAsset);
-              if (p != null && mounted && !wsActiveRef.current) {
+              if (p != null && isCurrentRun() && !wsActiveRef.current) {
                 consecutiveFailsRef.current = 0;
                 setCurrentPrice((prev) => {
                   setPrevPrice(prev);
