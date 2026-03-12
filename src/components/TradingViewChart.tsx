@@ -89,8 +89,20 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   const targetStreamingPriceRef = useRef<number | null>(null);
   const animationActiveRef = useRef(false);
   const hasInitializedDataRef = useRef(false);
+  const seededDataKeyRef = useRef<string>("");
+  const candleBucketSecRef = useRef<number>(getCandleBucketSeconds(timeframeLabel, chartMs));
   // Track current streaming candle OHLC state
   const currentCandleRef = useRef<{ time: number; open: number; high: number; low: number; close: number } | null>(null);
+
+  useEffect(() => {
+    candleBucketSecRef.current = getCandleBucketSeconds(timeframeLabel, chartMs);
+  }, [timeframeLabel, chartMs]);
+
+  // Reset candle runtime state when timeframe or chart style changes
+  useEffect(() => {
+    currentCandleRef.current = null;
+    lastCandleTimeRef.current = 0;
+  }, [timeframeLabel, chartMs, chartStyle]);
 
   // Countdown timer for active round
   useEffect(() => {
