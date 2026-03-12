@@ -47,14 +47,30 @@ const CommentItem = ({
   isReply = false,
   onReply,
   onLike,
+  onEdit,
+  onDelete,
+  currentUserId,
 }: {
   comment: Comment;
   isReply?: boolean;
   onReply: (commentId: string, author: string) => void;
   onLike: (commentId: string, liked: boolean) => void;
+  onEdit: (commentId: string, newContent: string) => void;
+  onDelete: (commentId: string) => void;
+  currentUserId: string;
 }) => {
   const [showReplies, setShowReplies] = useState(!isReply);
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(comment.content);
+  const isOwner = !!currentUserId && comment.author_wallet === currentUserId;
   const replies = comment.replies || [];
+
+  const handleSaveEdit = () => {
+    const trimmed = editText.trim();
+    if (!trimmed || trimmed === comment.content) { setEditing(false); return; }
+    onEdit(comment.id, trimmed);
+    setEditing(false);
+  };
 
   return (
     <div className={`${isReply ? "ml-8 border-l border-border/30 pl-3" : ""}`}>
@@ -78,7 +94,22 @@ const CommentItem = ({
             )}
             <span className="text-[10px] text-muted-foreground">{formatTimeAgo(comment.created_at)}</span>
           </div>
-          <p className="text-sm text-foreground/90 leading-relaxed break-words">{comment.content}</p>
+          {editing ? (
+            <div className="flex items-center gap-1.5 mt-1">
+              <input
+                type="text"
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSaveEdit()}
+                className="flex-1 text-sm bg-muted/50 border border-border rounded-md px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                autoFocus
+              />
+              <button onClick={handleSaveEdit} className="p-1 text-primary hover:text-primary/80"><Check className="w-3.5 h-3.5" /></button>
+              <button onClick={() => { setEditing(false); setEditText(comment.content); }} className="p-1 text-muted-foreground hover:text-foreground"><X className="w-3.5 h-3.5" /></button>
+            </div>
+          ) : (
+            <p className="text-sm text-foreground/90 leading-relaxed break-words">{comment.content}</p>
+          )}
           <div className="flex items-center gap-4 mt-1.5">
             <button
               onClick={() => onLike(comment.id, !!comment.liked)}
@@ -95,6 +126,16 @@ const CommentItem = ({
                 <CornerDownRight className="w-3 h-3" />
                 Reply
               </button>
+            )}
+            {isOwner && !editing && (
+              <>
+                <button onClick={() => setEditing(true)} className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors">
+                  <Pencil className="w-3 h-3" /> Edit
+                </button>
+                <button onClick={() => onDelete(comment.id)} className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-destructive transition-colors">
+                  <Trash2 className="w-3 h-3" /> Delete
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -119,6 +160,9 @@ const CommentItem = ({
                 isReply
                 onReply={onReply}
                 onLike={onLike}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                currentUserId={currentUserId}
               />
             ))}
         </div>
