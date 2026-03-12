@@ -376,17 +376,21 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
 
       if (chartStyle === "candle" && candleSeriesRef.current) {
         const bucketSec = Math.max(60, Math.floor(chartMs / 1000 / 60));
-        const candleTime = (Math.floor(nowSec / bucketSec) * bucketSec) as UTCTimestamp;
+        const lastTime = lastCandleTimeRef.current || (Math.floor(nowSec / bucketSec) * bucketSec);
+        const elapsed = nowSec - lastTime;
 
         const cur = currentCandleRef.current;
-        if (!cur || cur.time !== candleTime) {
+        if (!cur || elapsed >= bucketSec) {
+          // Start a new candle, ensuring its time is strictly after the last one
+          const newTime = (lastTime + bucketSec) as UTCTimestamp;
           currentCandleRef.current = {
-            time: candleTime,
+            time: newTime,
             open: nextPrice,
             high: nextPrice,
             low: nextPrice,
             close: nextPrice,
           };
+          lastCandleTimeRef.current = newTime;
         } else {
           cur.high = Math.max(cur.high, nextPrice);
           cur.low = Math.min(cur.low, nextPrice);
@@ -401,7 +405,6 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
           low: c.low,
           close: c.close,
         });
-        if (candleTime > lastCandleTimeRef.current) lastCandleTimeRef.current = candleTime;
       } else if (areaSeriesRef.current) {
         const isUp = target >= current;
         const lineColor = isUp ? "#22c55e" : "#ef4444";
