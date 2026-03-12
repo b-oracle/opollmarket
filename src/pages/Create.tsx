@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useAccount } from "wagmi";
 import { useAppKit } from "@reown/appkit/react";
 import { useFilteredConnectors } from "@/hooks/useFilteredConnectors";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { bsc } from "wagmi/chains";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
@@ -134,6 +134,7 @@ const Create = () => {
   const { connect, connectors, isPending } = useFilteredConnectors();
   const { user, loading: authLoading, displayName } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { balance } = useUserBalance();
 
   // Gate thresholds & settings from DB
@@ -239,10 +240,26 @@ const Create = () => {
       .forEach((k) => { try { sessionStorage.removeItem(`create_${k}`); } catch {} });
   };
 
-  // Check for existing drafts on mount
+  // Check for existing drafts on mount (or auto-resume from Portfolio navigation)
   useEffect(() => {
     if (!user) { setDraftLoading(false); return; }
+    const resumeId = (location.state as any)?.resumeDraftId;
     (async () => {
+      if (resumeId) {
+        // Auto-resume a specific draft passed from Portfolio
+        const { data } = await supabase
+          .from("markets")
+          .select("*, market_options!market_options_market_id_fkey(id, label, sort_order)")
+          .eq("id", resumeId)
+          .maybeSingle();
+        if (data) {
+          resumeDraft(data);
+          setDraftLoading(false);
+          // Clear the state so refresh doesn't re-trigger
+          window.history.replaceState({}, document.title);
+          return;
+        }
+      }
       const { data } = await supabase
         .from("markets")
         .select("id, title, description, details, category, end_date, resolution_source, initial_liquidity, market_type, video_url, image_url, auto_resolve, auto_resolve_asset, auto_resolve_operator, auto_resolve_target_price, auto_resolve_deadline, sport_type, sport_match_id, sport_predicted_outcome, sport_league, market_options!market_options_market_id_fkey(id, label, sort_order)")
