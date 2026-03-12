@@ -26,7 +26,17 @@ const METAL_MAP: Record<string, string> = {
   XPD: "palladium",
 };
 
-// Non-metal commodities resolved via Omkar API edge function
+const TWELVE_DATA_COMMODITY_MAP: Record<string, string> = {
+  XAU: "XAU/USD",
+  XAG: "XAG/USD",
+  XPT: "XPT/USD",
+  XPD: "XPD/USD",
+  NG: "NG",
+  COPPER: "COPPER",
+  WTI: "WTI",
+  BRENT: "BRENT",
+};
+
 const EDGE_COMMODITY_SYMBOLS = new Set(["NG", "COPPER", "WTI", "BRENT"]);
 
 type AssetClass = "crypto" | "commodity" | "forex";
@@ -36,6 +46,40 @@ function getAssetClass(symbol: string): AssetClass {
   if (EDGE_COMMODITY_SYMBOLS.has(symbol.toUpperCase())) return "commodity";
   if (symbol.includes("/")) return "forex";
   return "crypto";
+}
+
+// ── Crypto: CoinGecko ──
+async function fetchCryptoPrice(asset: string): Promise<number | null> {
+  const geckoId = ASSET_GECKO_MAP[asset.toUpperCase()];
+  if (!geckoId) return null;
+  try {
+    const resp = await fetch(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${geckoId}&vs_currencies=usd`
+    );
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data[geckoId]?.usd ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// ── Commodities: Twelve Data (primary) → metals.dev / edge function (fallback) ──
+async function fetchCommodityFromTwelveData(symbol: string): Promise<number | null> {
+  const apiKey = Deno.env.get("TWELVE_DATA_API_KEY");
+  if (!apiKey) return null;
+  const tdSymbol = TWELVE_DATA_COMMODITY_MAP[symbol.toUpperCase()];
+  if (!tdSymbol) return null;
+  try {
+    const resp = await fetch(`https://api.twelvedata.com/price?symbol=${tdSymbol}&apikey=${apiKey}`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    if (data.code || data.status === "error") return null;
+    const price = parseFloat(data.price);
+    return isNaN(price) ? null : price;
+  } catch {
+    return null;
+  }
 }
 
 async function fetchMetalPrice(asset: string): Promise<number | null> {
@@ -75,12 +119,34 @@ async function fetchEdgeCommodityPrice(asset: string): Promise<number | null> {
 }
 
 async function fetchCommodityPrice(asset: string): Promise<number | null> {
+  // Try Twelve Data first
+  const price = await fetchCommodityFromTwelveData(asset);
+  if (price !== null) return price;
+
+  // Fallback
   if (METAL_MAP[asset.toUpperCase()]) return fetchMetalPrice(asset);
   if (EDGE_COMMODITY_SYMBOLS.has(asset.toUpperCase())) return fetchEdgeCommodityPrice(asset);
   return null;
 }
 
-async function fetchForexPrice(asset: string): Promise<number | null> {
+// ── Forex: ExchangeRate-API (primary) → Frankfurter (fallback) ──
+async function fetchForexFromExchangeRateApi(asset: string): Promise<number | null> {
+  const apiKey = Deno.env.get("EXCHANGERATE_API_KEY");
+  if (!apiKey) return null;
+  const [base, quote] = asset.split("/");
+  if (!base || !quote) return null;
+  try {
+    const resp = await fetch(`https://v6.exchangerate-api.com/v6/${apiKey}/pair/${base}/${quote}`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    if (data.result !== "success") return null;
+    return data.conversion_rate ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchForexFromFrankfurter(asset: string): Promise<number | null> {
   const [base, quote] = asset.split("/");
   if (!base || !quote) return null;
   try {
@@ -93,35 +159,27 @@ async function fetchForexPrice(asset: string): Promise<number | null> {
   }
 }
 
-// Streak multiplier tiers - configurable via settings
+async function fetchForexPrice(asset: string): Promise<number | null> {
+  const price = await fetchForexFromExchangeRateApi(asset);
+  if (price !== null) return price;
+  return fetchForexFromFrankfurter(asset);
+}
+
+// ── Unified fetcher ──
+async function fetchAssetPrice(asset: string): Promise<number | null> {
+  const assetClass = getAssetClass(asset);
+  if (assetClass === "commodity") return fetchCommodityPrice(asset);
+  if (assetClass === "forex") return fetchForexPrice(asset);
+  return fetchCryptoPrice(asset);
+}
+
+// ── Streak helpers ──
 function getStreakMultiplier(streak: number, s2: number, s3: number, s4: number, s5: number): number {
   if (streak >= 5) return s5;
   if (streak === 4) return s4;
   if (streak === 3) return s3;
   if (streak === 2) return s2;
   return 1.0;
-}
-
-async function fetchCryptoPrice(asset: string): Promise<number | null> {
-  const geckoId = ASSET_GECKO_MAP[asset.toUpperCase()];
-  if (!geckoId) return null;
-  try {
-    const resp = await fetch(
-      `https://api.coingecko.com/api/v3/simple/price?ids=${geckoId}&vs_currencies=usd`
-    );
-    if (!resp.ok) return null;
-    const data = await resp.json();
-    return data[geckoId]?.usd ?? null;
-  } catch {
-    return null;
-  }
-}
-
-async function fetchAssetPrice(asset: string): Promise<number | null> {
-  const assetClass = getAssetClass(asset);
-  if (assetClass === "commodity") return fetchCommodityPrice(asset);
-  if (assetClass === "forex") return fetchForexPrice(asset);
-  return fetchCryptoPrice(asset);
 }
 
 async function getOrCreateStreak(supabase: any, userId: string) {
@@ -131,7 +189,6 @@ async function getOrCreateStreak(supabase: any, userId: string) {
     .eq("user_id", userId)
     .single();
   if (data) return data;
-  // Create new streak row
   const { data: created } = await supabase
     .from("quick_trade_streaks")
     .insert({ user_id: userId, current_streak: 0, best_streak: 0 })
@@ -302,7 +359,6 @@ Deno.serve(async (req) => {
       }
 
       if (winners.length === 0) {
-        // All losers — wager becomes platform profit, no refund
         for (const bet of losers) {
           await supabase
             .from("quick_bets")
@@ -310,7 +366,6 @@ Deno.serve(async (req) => {
             .eq("id", bet.id);
         }
       } else if (losers.length === 0) {
-        // All winners — refund minus commission, increment streak
         for (const bet of winners) {
           const streak = await getOrCreateStreak(supabase, bet.user_id);
           const newStreak = (streak.current_streak || 0) + 1;
@@ -324,7 +379,6 @@ Deno.serve(async (req) => {
             .eq("id", bet.id);
           await creditBalance(supabase, bet.user_id, payout);
 
-          // Update streak
           await supabase
             .from("quick_trade_streaks")
             .upsert({
@@ -344,7 +398,6 @@ Deno.serve(async (req) => {
           }
         }
       } else {
-        // Normal payout with streak bonus
         const distributable = totalLosePool * (1 - platformFee);
 
         for (const bet of winners) {
@@ -361,7 +414,6 @@ Deno.serve(async (req) => {
             .eq("id", bet.id);
           await creditBalance(supabase, bet.user_id, payout);
 
-          // Update streak
           await supabase
             .from("quick_trade_streaks")
             .upsert({
@@ -380,7 +432,6 @@ Deno.serve(async (req) => {
           });
         }
 
-        // Mark losers
         for (const bet of losers) {
           await supabase
             .from("quick_bets")
