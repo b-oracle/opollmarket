@@ -81,7 +81,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("wallet_address, avatar_url")
+        .select("wallet_address, avatar_url, verification_level")
         .eq("id", market.creatorAddress)
         .maybeSingle();
       return data;
