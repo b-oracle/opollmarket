@@ -114,7 +114,7 @@ const AdminTransactions = () => {
       const [depRes, wdRes, betRes] = await Promise.all([
         buildTotalQuery("deposit"),
         buildTotalQuery("withdrawal"),
-        buildTotalQuery("bet"),
+        buildTotalQuery("buy"),
       ]);
 
       setTotals({
