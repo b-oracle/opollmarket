@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { isMarketOpen, getNextOpenTime } from "@/lib/marketHours";
-import { motion, AnimatePresence } from "framer-motion";
+
 import {
   TrendingUp,
   TrendingDown,
