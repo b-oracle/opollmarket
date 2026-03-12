@@ -606,6 +606,12 @@ const Profile = () => {
     if (txFilter === "trades") result = result.filter((t: any) => t.type === "buy" || t.type === "sell");
     else if (txFilter === "deposits") result = result.filter((t: any) => t.type === "deposit" || t.type === "withdraw" || t.type === "withdrawal");
     else if (txFilter === "earnings") result = result.filter((t: any) => t.type === "commission" || t.type === "payout" || t.type === "refund");
+
+    // Hide expired deposits from "all" filter — only show under "failed" status or "deposits" tab
+    if (txFilter === "all" && statusFilter === "all") {
+      result = result.filter((t: any) => !(t.type === "deposit" && t.status === "expired"));
+    }
+
     if (statusFilter !== "all") {
       result = result.filter((t: any) =>
         statusFilter === "failed" ? (t.status === "failed" || t.status === "expired") : t.status === statusFilter
