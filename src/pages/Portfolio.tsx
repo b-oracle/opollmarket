@@ -25,6 +25,9 @@ import {
   Trophy,
   Ban,
   Gift,
+  FileEdit,
+  Trash2,
+  Edit,
 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
