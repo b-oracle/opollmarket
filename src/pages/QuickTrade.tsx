@@ -521,7 +521,7 @@ export default function QuickTrade() {
       // Subscribe to smoothed price stream (~15fps interpolation)
       let lastSmoothUpdate = 0;
       unsubSmooth = subscribeToSmoothedPriceStream(selectedAsset.symbol, (price) => {
-        if (!mounted) return;
+        if (!isCurrentRun()) return;
         const now = Date.now();
         
         setCurrentPrice((prev) => {
