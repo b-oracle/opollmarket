@@ -904,6 +904,7 @@ const Create = () => {
       }
     }
 
+    setCompletedSteps(prev => new Set([...prev, 4]));
     setNewMarketId(data?.id || "");
     setCreatedAsPending(needsReview);
 
