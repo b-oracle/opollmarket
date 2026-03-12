@@ -256,7 +256,7 @@ const AdminTransactions = () => {
           )}
         </div>
         <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 overflow-x-auto scrollbar-hide">
-          {(["all", "deposit", "withdrawal", "bet", "payout"] as const).map((f) => (
+          {(["all", "deposit", "withdrawal", "buy", "payout"] as const).map((f) => (
             <button
               key={f}
               onClick={() => { setPage(0); setFilter(f); }}
