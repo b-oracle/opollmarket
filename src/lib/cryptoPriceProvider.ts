@@ -1,6 +1,8 @@
 /**
  * Multi-provider asset price fetcher with automatic fallback.
  * Supports crypto (CoinGecko → CoinCap → CryptoCompare), commodities, and forex.
+ * Commodities: Twelve Data (via edge proxy) → metals.dev → Omkar/DB fallback
+ * Forex: ExchangeRate API (via edge proxy) → Frankfurter
  * Includes Binance WebSocket streaming for real-time sub-second updates,
  * and smooth interpolation for non-crypto assets.
  */
@@ -113,28 +115,36 @@ export async function fetchCryptoPrice(
 }
 
 // ── Commodity & Forex price fetchers ──
-// All non-crypto assets are fetched via the commodity-price edge function
-// which handles multi-provider fallback server-side (Twelve Data → Omkar → DB cache → static)
+// Twelve Data (via edge proxy) is primary for commodities.
+// ExchangeRate API (via edge proxy) is primary for forex.
+// Both keep API keys secure server-side while the client calls them directly.
 
 const METAL_MAP: Record<string, string> = {
   XAU: "gold", XAG: "silver", XPT: "platinum", XPD: "palladium",
 };
 
-const EDGE_COMMODITY_SYMBOLS = new Set(["NG", "COPPER", "WTI", "BRENT"]);
+const TWELVE_DATA_SYMBOLS: Record<string, string> = {
+  NG: "NG", COPPER: "COPPER", WTI: "WTI", BRENT: "BRENT",
+  XAU: "XAU/USD", XAG: "XAG/USD", XPT: "XPT/USD", XPD: "XPD/USD",
+};
 
-// All commodities (metals + energy) go through the edge function for consistent caching
-async function fetchCommodityViaEdge(asset: string): Promise<number | null> {
+function getEdgeFunctionUrl(fnName: string): string | null {
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+  if (!projectId) return null;
+  return `https://${projectId}.supabase.co/functions/v1/${fnName}`;
+}
+
+// ── Twelve Data via edge proxy (primary for commodities) ──
+async function fetchFromTwelveDataProxy(asset: string): Promise<number | null> {
+  if (!TWELVE_DATA_SYMBOLS[asset]) return null;
+  const url = getEdgeFunctionUrl("commodity-price");
+  if (!url) return null;
   try {
-    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-    if (!projectId) return null;
-    const resp = await fetch(
-      `https://${projectId}.supabase.co/functions/v1/commodity-price`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ asset }),
-      }
-    );
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ asset, provider: "twelve_data" }),
+    });
     if (!resp.ok) return null;
     const data = await resp.json();
     return data?.price ?? null;
@@ -143,6 +153,7 @@ async function fetchCommodityViaEdge(asset: string): Promise<number | null> {
   }
 }
 
+// ── metals.dev fallback for precious metals ──
 async function fetchMetalPrice(asset: string): Promise<number | null> {
   const metalName = METAL_MAP[asset];
   if (!metalName) return null;
@@ -156,28 +167,16 @@ async function fetchMetalPrice(asset: string): Promise<number | null> {
   }
 }
 
-async function fetchCommodityPrice(asset: string): Promise<number | null> {
-  // Try edge function first (handles Twelve Data + Omkar + DB cache + static fallback)
-  const edgePrice = await fetchCommodityViaEdge(asset);
-  if (edgePrice != null) return edgePrice;
-  // Fallback to metals.dev for precious metals
-  if (METAL_MAP[asset]) return fetchMetalPrice(asset);
-  return null;
-}
-
-// Forex: use ExchangeRate-API via edge function, with Frankfurter as client-side fallback
-async function fetchForexViaEdge(asset: string): Promise<number | null> {
+// ── Generic edge function fallback (Omkar + DB cache + static) ──
+async function fetchCommodityViaEdgeFallback(asset: string): Promise<number | null> {
+  const url = getEdgeFunctionUrl("commodity-price");
+  if (!url) return null;
   try {
-    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-    if (!projectId) return null;
-    const resp = await fetch(
-      `https://${projectId}.supabase.co/functions/v1/commodity-price`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ asset, type: "forex" }),
-      }
-    );
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ asset }),
+    });
     if (!resp.ok) return null;
     const data = await resp.json();
     return data?.price ?? null;
@@ -186,6 +185,38 @@ async function fetchForexViaEdge(asset: string): Promise<number | null> {
   }
 }
 
+async function fetchCommodityPrice(asset: string): Promise<number | null> {
+  // 1. Twelve Data (via edge proxy — primary, uses TWELVE_DATA_API_KEY server-side)
+  const tdPrice = await fetchFromTwelveDataProxy(asset);
+  if (tdPrice != null) return tdPrice;
+  // 2. metals.dev for precious metals (free client-side)
+  if (METAL_MAP[asset]) {
+    const metalPrice = await fetchMetalPrice(asset);
+    if (metalPrice != null) return metalPrice;
+  }
+  // 3. Edge function fallback chain (Omkar → DB cache → static)
+  return fetchCommodityViaEdgeFallback(asset);
+}
+
+// ── ExchangeRate API via edge proxy (primary for forex, uses EXCHANGERATE_API_KEY server-side) ──
+async function fetchFromExchangeRateProxy(asset: string): Promise<number | null> {
+  const url = getEdgeFunctionUrl("commodity-price");
+  if (!url) return null;
+  try {
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ asset, type: "forex", provider: "exchangerate" }),
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data?.price ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// ── Frankfurter (free, no key — fallback for forex) ──
 async function fetchForexFromFrankfurter(asset: string): Promise<number | null> {
   const [base, quote] = asset.split("/");
   if (!base || !quote) return null;
@@ -200,10 +231,10 @@ async function fetchForexFromFrankfurter(asset: string): Promise<number | null> 
 }
 
 async function fetchForexPrice(asset: string): Promise<number | null> {
-  // Try edge function (ExchangeRate-API) first
-  const edgePrice = await fetchForexViaEdge(asset);
-  if (edgePrice != null) return edgePrice;
-  // Fallback to Frankfurter
+  // 1. ExchangeRate API (via edge proxy — primary, uses EXCHANGERATE_API_KEY server-side)
+  const erPrice = await fetchFromExchangeRateProxy(asset);
+  if (erPrice != null) return erPrice;
+  // 2. Frankfurter (free client-side fallback)
   return fetchForexFromFrankfurter(asset);
 }
 
@@ -344,7 +375,7 @@ function startInterpolation(asset: string, state: InterpolationState) {
     const elapsed = now - state.lastRealTime;
 
     // Interpolate between prevRealPrice and lastRealPrice, then micro-drift beyond
-    const interpDuration = NON_CRYPTO_POLL_INTERVAL; // Expected time between polls
+    const interpDuration = NON_CRYPTO_POLL_INTERVAL;
 
     let interpolatedPrice: number;
     if (elapsed < interpDuration && state.prevRealPrice > 0) {
