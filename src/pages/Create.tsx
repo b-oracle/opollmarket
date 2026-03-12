@@ -700,9 +700,7 @@ const Create = () => {
       ? new Date(`${endDate}T${autoResolveTime}:00Z`).toISOString()
       : null;
 
-    const { data, error } = await supabase
-      .from("markets")
-      .insert({
+    const marketData = {
         creator_wallet: user.id,
         creator_name: displayName,
         title: title.trim(),
@@ -728,9 +726,33 @@ const Create = () => {
         sport_match_id: autoResolve && category === "Sports" ? sportMatchId : null,
         sport_predicted_outcome: autoResolve && category === "Sports" ? sportPredictedOutcome : null,
         sport_league: autoResolve && category === "Sports" ? sportLeague || null : null,
-      } as any)
-      .select("id")
-      .maybeSingle();
+      };
+
+    let data: { id: string } | null = null;
+    let error: any = null;
+
+    if (draftId) {
+      // Update the existing draft to active/pending
+      const { error: updateError } = await supabase
+        .from("markets")
+        .update(marketData as any)
+        .eq("id", draftId);
+      error = updateError;
+      if (!updateError) data = { id: draftId };
+
+      // Clear draft options if they exist (will be re-inserted below)
+      if (!updateError && marketType !== "binary") {
+        await supabase.from("market_options").delete().eq("market_id", draftId);
+      }
+    } else {
+      const result = await supabase
+        .from("markets")
+        .insert(marketData as any)
+        .select("id")
+        .maybeSingle();
+      data = result.data;
+      error = result.error;
+    }
 
     if (error) {
       console.error("Failed to save market:", error);
