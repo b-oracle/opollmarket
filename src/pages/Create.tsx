@@ -2262,7 +2262,6 @@ const Create = () => {
 
                   {/* Progress bar with estimated time */}
                   <SubmitProgressBar
-                    submitStep={submitStep}
                     completedSteps={completedSteps}
                     startTime={submitStartRef.current}
                     estimatedTotalSec={ESTIMATED_TOTAL_SEC}
