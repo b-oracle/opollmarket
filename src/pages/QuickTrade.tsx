@@ -430,6 +430,8 @@ export default function QuickTrade() {
     setStreamingPrice(null);
     setPriceHistory([]);
     setOhlcData([]);
+    setActiveRound(null);
+    setUserBet(null);
     wsActiveRef.current = false;
     consecutiveFailsRef.current = 0;
     lastFetchTimeRef.current = 0;
@@ -663,48 +665,74 @@ export default function QuickTrade() {
   }, [selectedAsset.symbol]);
 
   // ── Fetch / create active round ──
-  const currentPriceRef = useRef(currentPrice);
-  currentPriceRef.current = currentPrice;
+  const latestRoundContextRef = useRef<{ asset: string; duration: number }>({
+    asset: selectedAsset.symbol,
+    duration: selectedTimeframe.seconds,
+  });
+
+  useEffect(() => {
+    latestRoundContextRef.current = {
+      asset: selectedAsset.symbol,
+      duration: selectedTimeframe.seconds,
+    };
+  }, [selectedAsset.symbol, selectedTimeframe.seconds]);
+
+  const roundRequestIdRef = useRef(0);
 
   const fetchActiveRound = useCallback(async () => {
+    const requestId = ++roundRequestIdRef.current;
+    const requestAsset = selectedAsset.symbol;
+    const requestDuration = selectedTimeframe.seconds;
+
+    const isCurrentRoundRequest = () =>
+      roundRequestIdRef.current === requestId &&
+      latestRoundContextRef.current.asset === requestAsset &&
+      latestRoundContextRef.current.duration === requestDuration;
+
     // Get current open/locked round for this asset + duration
     const { data } = await supabase
       .from("quick_rounds")
       .select("*")
-      .eq("asset", selectedAsset.symbol)
-      .eq("duration_seconds", selectedTimeframe.seconds)
+      .eq("asset", requestAsset)
+      .eq("duration_seconds", requestDuration)
       .in("status", ["open", "locked"])
       .order("created_at", { ascending: false })
       .limit(1);
 
+    if (!isCurrentRoundRequest()) return;
+
     if (data && data.length > 0) {
       setActiveRound(data[0] as unknown as Round);
-    } else {
-      // No active round — create one using a fresh price snapshot for the selected asset
-      const freshPrice = await fetchPriceForAsset(selectedAsset);
-      if (freshPrice != null) {
-        const now = new Date();
-        const locksAt = new Date(now.getTime() + (selectedTimeframe.seconds - LOCK_BUFFER) * 1000);
-        const { data: newRound } = await supabase
-          .from("quick_rounds")
-          .insert({
-            asset: selectedAsset.symbol,
-            duration_seconds: selectedTimeframe.seconds,
-            open_price: freshPrice,
-            status: "open",
-            locks_at: locksAt.toISOString(),
-          })
-          .select()
-          .single();
-        if (newRound) setActiveRound(newRound as unknown as Round);
-      }
+      return;
+    }
+
+    // No active round — create one using a fresh price snapshot for the selected asset
+    const freshPrice = await fetchPriceForAsset(selectedAsset);
+    if (freshPrice == null || !isCurrentRoundRequest()) return;
+
+    const now = new Date();
+    const locksAt = new Date(now.getTime() + (requestDuration - LOCK_BUFFER) * 1000);
+    const { data: newRound } = await supabase
+      .from("quick_rounds")
+      .insert({
+        asset: requestAsset,
+        duration_seconds: requestDuration,
+        open_price: freshPrice,
+        status: "open",
+        locks_at: locksAt.toISOString(),
+      })
+      .select()
+      .single();
+
+    if (newRound && isCurrentRoundRequest()) {
+      setActiveRound(newRound as unknown as Round);
     }
   }, [selectedAsset.symbol, selectedTimeframe.seconds]);
 
   // Fetch round when asset or timeframe changes (not on every price tick)
   useEffect(() => {
     fetchActiveRound();
-  }, [selectedAsset.symbol, selectedTimeframe.seconds]);
+  }, [fetchActiveRound]);
 
   // Also fetch round once we get a price for the first time (to create if needed)
   const hasTriedCreateRef = useRef(false);
@@ -713,7 +741,7 @@ export default function QuickTrade() {
       hasTriedCreateRef.current = true;
       fetchActiveRound();
     }
-  }, [currentPrice, activeRound]);
+  }, [currentPrice, activeRound, fetchActiveRound]);
 
   // Reset create flag when asset/timeframe changes
   useEffect(() => {
