@@ -134,6 +134,7 @@ const Create = () => {
   const { connect, connectors, isPending } = useFilteredConnectors();
   const { user, loading: authLoading, displayName } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { balance } = useUserBalance();
 
   // Gate thresholds & settings from DB
