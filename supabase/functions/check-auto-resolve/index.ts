@@ -194,37 +194,92 @@ Deno.serve(async (req) => {
         .eq("side", winningSide)
         .gt("shares", 0);
 
-      // Pay out winners
-      for (const pos of winningPositions || []) {
-        const payout = pos.shares;
+      // Find losing positions
+      const losingSide = winningSide === "yes" ? "no" : "yes";
+      const { data: losingPositions } = await adminClient
+        .from("positions")
+        .select("*")
+        .eq("market_id", market.id)
+        .eq("side", losingSide)
+        .gt("shares", 0);
 
-        const { data: balance } = await adminClient
-          .from("balances")
-          .select("amount")
-          .eq("user_id", pos.user_id)
+      const winners = winningPositions || [];
+      const losers = losingPositions || [];
+      const isOneSided = losers.length === 0 || winners.length === 0;
+
+      if (winners.length === 0) {
+        // ONE-SIDED: Everyone lost — platform profit, no refund
+        console.log(`Market ${market.id}: One-sided loss — platform profit`);
+      } else if (isOneSided && losers.length === 0) {
+        // ONE-SIDED: Everyone won — return capital minus admin fee
+        const { data: feeSettings } = await adminClient
+          .from("commission_settings")
+          .select("admin_fee_percent")
+          .limit(1)
           .single();
+        const adminFeePercent = feeSettings?.admin_fee_percent ?? 2;
 
-        if (balance) {
-          await adminClient
+        for (const pos of winners) {
+          const capital = pos.shares * pos.avg_price;
+          const fee = capital * (adminFeePercent / 100);
+          const payout = capital - fee;
+          if (payout <= 0) continue;
+
+          const { data: balance } = await adminClient
             .from("balances")
-            .update({
-              amount: balance.amount + payout,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("user_id", pos.user_id);
-        }
+            .select("amount")
+            .eq("user_id", pos.user_id)
+            .single();
 
-        await adminClient.from("transactions").insert({
-          user_id: pos.user_id,
-          market_id: market.id,
-          option_id: pos.option_id,
-          type: "payout",
-          amount: payout,
-          side: pos.side,
-          shares: pos.shares,
-          price: 1,
-          status: "confirmed",
-        });
+          if (balance) {
+            await adminClient
+              .from("balances")
+              .update({ amount: balance.amount + payout, updated_at: new Date().toISOString() })
+              .eq("user_id", pos.user_id);
+          }
+
+          await adminClient.from("transactions").insert({
+            user_id: pos.user_id,
+            market_id: market.id,
+            option_id: pos.option_id,
+            type: "payout",
+            amount: payout,
+            side: pos.side,
+            shares: pos.shares,
+            price: pos.avg_price,
+            status: "confirmed",
+          });
+        }
+      } else {
+        // NORMAL: Two-sided — winners get full share value
+        for (const pos of winners) {
+          const payout = pos.shares;
+
+          const { data: balance } = await adminClient
+            .from("balances")
+            .select("amount")
+            .eq("user_id", pos.user_id)
+            .single();
+
+          if (balance) {
+            await adminClient
+              .from("balances")
+              .update({ amount: balance.amount + payout, updated_at: new Date().toISOString() })
+              .eq("user_id", pos.user_id);
+          }
+
+          await adminClient.from("transactions").insert({
+            user_id: pos.user_id,
+            market_id: market.id,
+            option_id: pos.option_id,
+            type: "payout",
+            amount: payout,
+            side: pos.side,
+            shares: pos.shares,
+            price: 1,
+            status: "confirmed",
+          });
+        }
       }
 
       // Determine asset display label
