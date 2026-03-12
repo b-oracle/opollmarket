@@ -130,8 +130,12 @@ const InlineCommentItem = ({
   return (
     <div className={isReply ? "ml-8 border-l border-border/30 pl-3" : ""}>
       <div className="flex gap-2.5 py-2.5">
-        <div className="w-7 h-7 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0">
-          <span className="text-[10px] font-bold text-primary">{comment.author_name.charAt(0).toUpperCase()}</span>
+        <div className="w-7 h-7 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0 overflow-hidden">
+          {comment.avatar_url ? (
+            <img src={comment.avatar_url} alt={comment.author_name} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-[10px] font-bold text-primary">{comment.author_name.charAt(0).toUpperCase()}</span>
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
