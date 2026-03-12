@@ -29,7 +29,7 @@ const TYPE_STYLES: Record<string, { label: string; class: string }> = {
 const AdminTransactions = () => {
   const [txns, setTxns] = useState<TxRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "deposit" | "withdrawal" | "bet" | "payout">("all");
+  const [filter, setFilter] = useState<"all" | "deposit" | "withdrawal" | "buy" | "payout">("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "confirmed" | "pending" | "failed">("all");
   const [totals, setTotals] = useState({ deposits: 0, withdrawals: 0, bets: 0 });
   const [page, setPage] = useState(0);
