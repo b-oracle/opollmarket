@@ -202,11 +202,12 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
 
     // Fallback: bucket raw price points into candles
     if (!priceHistory) return { candles: [], volumes: [], ma7: [], ma14: [] };
-    const cutoff = Date.now() - chartMs;
+    const lookbackMs = Math.max(chartMs, desiredBucketSec * CANDLE_BUCKETS * 1000);
+    const cutoff = Date.now() - lookbackMs;
     const filtered = priceHistory.filter((pt) => pt.ts >= cutoff);
     if (filtered.length < 2) return { candles: [], volumes: [], ma7: [], ma14: [] };
 
-    const bucketMs = Math.max(Math.floor(chartMs / CANDLE_BUCKETS), 3000);
+    const bucketMs = desiredBucketSec * 1000;
     const candles: CandlestickData[] = [];
     const volumes: { time: UTCTimestamp; value: number; color: string }[] = [];
     let bucketStart = filtered[0].ts;
