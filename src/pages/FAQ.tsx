@@ -303,7 +303,7 @@ const FAQ = () => {
               ) : (
                 <Search className="w-3.5 h-3.5" />
               )}
-              {isStreaming ? "Thinking…" : "Ask AI"}
+              {isStreaming ? "Thinking…" : "Ask OPoll AI"}
             </button>
           </div>
 
