@@ -422,7 +422,7 @@ export default function QuickTrade() {
   const lastFetchTimeRef = useRef(0);
   const [streamingPrice, setStreamingPrice] = useState<number | null>(null);
   const wsActiveRef = useRef(false);
-  
+  const streamRunIdRef = useRef(0);
   // Reset price state when asset changes
   useEffect(() => {
     setCurrentPrice(null);
@@ -436,6 +436,8 @@ export default function QuickTrade() {
 
   useEffect(() => {
     let mounted = true;
+    const streamRunId = ++streamRunIdRef.current;
+    const isCurrentRun = () => mounted && streamRunIdRef.current === streamRunId;
     let pollIv: ReturnType<typeof setInterval> | null = null;
 
     // Skip all price streaming when market is closed
@@ -444,7 +446,7 @@ export default function QuickTrade() {
       // Still fetch one price snapshot so we show "last close" price
       (async () => {
         const p = await fetchPriceForAsset(selectedAsset);
-        if (p != null && mounted) {
+        if (p != null && isCurrentRun()) {
           setCurrentPrice(p);
           setStreamingPrice(p);
         }
@@ -477,7 +479,7 @@ export default function QuickTrade() {
     
     // WS tick handler: just update the target price (no direct state set)
     const handleWsTick = (price: number) => {
-      if (!mounted) return;
+      if (!isCurrentRun()) return;
       wsActiveRef.current = true;
       if (displayedPrice === 0) displayedPrice = price; // seed on first tick
       targetWsPrice = price;
@@ -489,7 +491,7 @@ export default function QuickTrade() {
       const CRYPTO_TICK_MS = 50; // 20fps
       
       cryptoInterpId = setInterval(() => {
-        if (!mounted || targetWsPrice === 0) return;
+        if (!isCurrentRun() || targetWsPrice === 0) return;
         // Lerp toward target
         displayedPrice = displayedPrice + (targetWsPrice - displayedPrice) * LERP_RATE;
         // Snap if very close
@@ -519,7 +521,7 @@ export default function QuickTrade() {
       // Subscribe to smoothed price stream (~15fps interpolation)
       let lastSmoothUpdate = 0;
       unsubSmooth = subscribeToSmoothedPriceStream(selectedAsset.symbol, (price) => {
-        if (!mounted) return;
+        if (!isCurrentRun()) return;
         const now = Date.now();
         
         setCurrentPrice((prev) => {
@@ -553,10 +555,10 @@ export default function QuickTrade() {
         lastFetchTimeRef.current = now;
         
         const p = await fetchPriceForAsset(selectedAsset);
-        if (p != null && mounted) {
+        if (p != null && isCurrentRun()) {
           consecutiveFailsRef.current = 0;
           feedRealPrice(selectedAsset.symbol, p);
-        } else if (p == null && mounted) {
+        } else if (p == null && isCurrentRun()) {
           consecutiveFailsRef.current++;
           if (consecutiveFailsRef.current >= 5 && !disabledAssets.has(selectedAsset.symbol)) {
             try {
@@ -587,7 +589,7 @@ export default function QuickTrade() {
     } else {
       // Crypto: fallback HTTP polling if WS doesn't fire within 3s
       const fallbackTimer = setTimeout(() => {
-        if (!wsActiveRef.current && mounted) {
+        if (!wsActiveRef.current && isCurrentRun()) {
           const poll = async () => {
             const now = Date.now();
             const shouldFetch = now - lastFetchTimeRef.current >= 5000;
@@ -595,7 +597,7 @@ export default function QuickTrade() {
             if (shouldFetch) {
               lastFetchTimeRef.current = now;
               const p = await fetchPriceForAsset(selectedAsset);
-              if (p != null && mounted && !wsActiveRef.current) {
+              if (p != null && isCurrentRun() && !wsActiveRef.current) {
                 consecutiveFailsRef.current = 0;
                 setCurrentPrice((prev) => {
                   setPrevPrice(prev);
@@ -611,7 +613,7 @@ export default function QuickTrade() {
                   return updated.filter((pt) => pt.ts >= maxCutoff);
                 });
               }
-            } else if (mounted && !wsActiveRef.current) {
+            } else if (isCurrentRun() && !wsActiveRef.current) {
               // Jitter tick for alive feel
               setCurrentPrice((cur) => {
                 if (cur == null) return cur;
@@ -675,9 +677,9 @@ export default function QuickTrade() {
     if (data && data.length > 0) {
       setActiveRound(data[0] as unknown as Round);
     } else {
-      // No active round — create one if we have a price
-      const price = currentPriceRef.current;
-      if (price != null) {
+      // No active round — create one using a fresh price snapshot for the selected asset
+      const freshPrice = await fetchPriceForAsset(selectedAsset);
+      if (freshPrice != null) {
         const now = new Date();
         const locksAt = new Date(now.getTime() + (selectedTimeframe.seconds - LOCK_BUFFER) * 1000);
         const { data: newRound } = await supabase
@@ -685,7 +687,7 @@ export default function QuickTrade() {
           .insert({
             asset: selectedAsset.symbol,
             duration_seconds: selectedTimeframe.seconds,
-            open_price: price,
+            open_price: freshPrice,
             status: "open",
             locks_at: locksAt.toISOString(),
           })
