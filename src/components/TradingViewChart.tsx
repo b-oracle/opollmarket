@@ -407,22 +407,28 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
       const nowSec = Math.floor(Date.now() / 1000) as UTCTimestamp;
 
       if (chartStyle === "candle" && candleSeriesRef.current) {
-        const bucketSec = Math.max(60, Math.floor(chartMs / 1000 / 60));
-        const lastTime = lastCandleTimeRef.current || (Math.floor(nowSec / bucketSec) * bucketSec);
-        const elapsed = nowSec - lastTime;
+        const bucketSec = candleBucketSecRef.current;
+        const alignedBucketTime = (Math.floor(nowSec / bucketSec) * bucketSec) as UTCTimestamp;
 
         const cur = currentCandleRef.current;
-        if (!cur || elapsed >= bucketSec) {
-          // Start a new candle, ensuring its time is strictly after the last one
-          const newTime = (lastTime + bucketSec) as UTCTimestamp;
+        if (!cur) {
           currentCandleRef.current = {
-            time: newTime,
+            time: alignedBucketTime,
             open: nextPrice,
             high: nextPrice,
             low: nextPrice,
             close: nextPrice,
           };
-          lastCandleTimeRef.current = newTime;
+          lastCandleTimeRef.current = alignedBucketTime;
+        } else if (alignedBucketTime > cur.time) {
+          currentCandleRef.current = {
+            time: alignedBucketTime,
+            open: cur.close,
+            high: nextPrice,
+            low: nextPrice,
+            close: nextPrice,
+          };
+          lastCandleTimeRef.current = alignedBucketTime;
         } else {
           cur.high = Math.max(cur.high, nextPrice);
           cur.low = Math.min(cur.low, nextPrice);
