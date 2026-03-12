@@ -150,6 +150,32 @@ const Portfolio = () => {
 
   useEffect(() => { track("page_view", { page: "portfolio" }); }, []);
 
+  // Fetch user drafts
+  const { data: drafts = [], isLoading: draftsLoading, refetch: refetchDrafts } = useQuery({
+    queryKey: ["user-drafts", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("markets")
+        .select("id, title, category, image_url, created_at, updated_at, market_type")
+        .eq("creator_wallet", user.id)
+        .eq("status", "draft")
+        .order("updated_at", { ascending: false });
+      if (error) { console.error("Failed to fetch drafts:", error); return []; }
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+
+  const deleteDraft = useCallback(async (draftId: string) => {
+    // Delete options first, then market
+    await supabase.from("market_options").delete().eq("market_id", draftId);
+    const { error } = await supabase.from("markets").delete().eq("id", draftId);
+    if (error) { toast.error("Failed to delete draft"); return; }
+    toast.success("Draft deleted");
+    refetchDrafts();
+  }, [refetchDrafts]);
+
   // Fetch real positions
   const { data: rawPositions = [], isLoading } = useQuery({
     queryKey: ["portfolio-positions", user?.id],
