@@ -490,6 +490,28 @@ const Create = () => {
     }
   }, [user, draftId, title, description, details, category, endDate, resolutionSource, initialLiquidity, marketType, options, videoUrl, imageFile, imagePreview, autoResolve, autoResolveAsset, autoResolveOperator, autoResolveTargetPrice, autoResolveTime, sportType, sportMatchId, sportPredictedOutcome, sportLeague, displayName]);
 
+  // Auto-save draft every 30 seconds
+  const saveDraftRef = useRef(saveDraft);
+  saveDraftRef.current = saveDraft;
+  const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastAutoSaveDataRef = useRef<string>("");
+
+  useEffect(() => {
+    // Only auto-save when user is signed in and has entered at least a title
+    autoSaveTimerRef.current = setInterval(() => {
+      if (!user || !title.trim()) return;
+      // Fingerprint current form data to avoid saving unchanged drafts
+      const fingerprint = JSON.stringify({ title, description, details, category, endDate, resolutionSource, initialLiquidity, marketType, options, videoUrl, autoResolve, autoResolveAsset, autoResolveOperator, autoResolveTargetPrice, autoResolveTime, sportType, sportMatchId, sportPredictedOutcome, sportLeague });
+      if (fingerprint === lastAutoSaveDataRef.current) return;
+      lastAutoSaveDataRef.current = fingerprint;
+      saveDraftRef.current();
+    }, 30000);
+
+    return () => {
+      if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current);
+    };
+  }, [user, title, description, details, category, endDate, resolutionSource, initialLiquidity, marketType, options, videoUrl, autoResolve, autoResolveAsset, autoResolveOperator, autoResolveTargetPrice, autoResolveTime, sportType, sportMatchId, sportPredictedOutcome, sportLeague]);
+
   const addOption = () => {
     if (options.length < 6) setOptions([...options, ""]);
   };
