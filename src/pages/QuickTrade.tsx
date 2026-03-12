@@ -490,10 +490,12 @@ export default function QuickTrade() {
       targetWsPrice = price;
     };
     
-    // Start smooth interpolation loop for crypto (~20fps)
+    // Start smooth interpolation loop for crypto (~20fps for chart, ~2fps for price display)
     if (selectedAsset.assetClass === "crypto") {
       const LERP_RATE = 0.15; // 15% toward target per tick — fast but smooth
-      const CRYPTO_TICK_MS = 50; // 20fps
+      const CRYPTO_TICK_MS = 50; // 20fps for chart
+      let lastDisplayUpdate = 0;
+      const DISPLAY_THROTTLE_MS = 500; // Update price text ~2x/sec
       
       cryptoInterpId = setInterval(() => {
         if (!isCurrentRun() || targetWsPrice === 0) return;
@@ -504,12 +506,19 @@ export default function QuickTrade() {
           displayedPrice = targetWsPrice;
         }
         
-        setCurrentPrice((prev) => {
-          setPrevPrice(prev);
-          return displayedPrice;
-        });
+        // Chart updates at full speed (20fps)
         setStreamingPrice(displayedPrice);
         appendCryptoChartPoint(displayedPrice);
+        
+        // Price display updates slowly (~2x/sec) to avoid blinking
+        const now = Date.now();
+        if (now - lastDisplayUpdate >= DISPLAY_THROTTLE_MS) {
+          lastDisplayUpdate = now;
+          setCurrentPrice((prev) => {
+            setPrevPrice(prev);
+            return displayedPrice;
+          });
+        }
       }, CRYPTO_TICK_MS);
     }
     
@@ -523,17 +532,25 @@ export default function QuickTrade() {
     if (selectedAsset.assetClass !== "crypto") {
       unsubPoller = startNonCryptoHistoryPoller(selectedAsset.symbol);
       
-      // Subscribe to smoothed price stream (~15fps interpolation)
+      // Subscribe to smoothed price stream (~15fps interpolation for chart, ~2fps for display)
       let lastSmoothUpdate = 0;
+      let lastDisplayUpdate = 0;
+      const DISPLAY_THROTTLE_MS = 500;
       unsubSmooth = subscribeToSmoothedPriceStream(selectedAsset.symbol, (price) => {
         if (!isCurrentRun()) return;
         const now = Date.now();
         
-        setCurrentPrice((prev) => {
-          setPrevPrice(prev);
-          return price;
-        });
+        // Chart streaming price updates at full speed
         setStreamingPrice(price);
+        
+        // Price display updates slowly (~2x/sec) to avoid blinking
+        if (now - lastDisplayUpdate >= DISPLAY_THROTTLE_MS) {
+          lastDisplayUpdate = now;
+          setCurrentPrice((prev) => {
+            setPrevPrice(prev);
+            return price;
+          });
+        }
         
         // Append chart points at ~200ms intervals for smooth streaming
         if (now - lastSmoothUpdate >= 200) {
