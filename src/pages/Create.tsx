@@ -2117,9 +2117,17 @@ const Create = () => {
                 <div className="flex gap-3">
                   <button
                     onClick={() => setStep(2)}
-                    className="flex-1 glass py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-95"
+                    className="glass py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-95 px-4"
                   >
                     Back
+                  </button>
+                  <button
+                    onClick={saveDraft}
+                    disabled={savingDraft}
+                    className="glass py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-95 flex items-center justify-center gap-2 px-4 disabled:opacity-50"
+                  >
+                    {savingDraft ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+                    Draft
                   </button>
                   <button
                     onClick={() => {
