@@ -428,8 +428,10 @@ export default function QuickTrade() {
     setCurrentPrice(null);
     setPrevPrice(null);
     setStreamingPrice(null);
+    setPriceHistory([]);
     wsActiveRef.current = false;
     consecutiveFailsRef.current = 0;
+    lastFetchTimeRef.current = 0;
   }, [selectedAsset.symbol]);
 
   useEffect(() => {
