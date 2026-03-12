@@ -142,7 +142,7 @@ const haptic = (style: "light" | "medium" | "heavy" | "success" | "error" = "med
 };
 const AMOUNT_PRESETS = [5, 10, 25, 50, 100];
 
-import { fetchCryptoPrice, fetchCryptoHistory, fetchAssetPrice, fetchOHLCData, subscribeToPriceStream, startNonCryptoHistoryPoller, getNonCryptoHistory, subscribeToSmoothedPriceStream, feedRealPrice, type OHLCCandle } from "@/lib/cryptoPriceProvider";
+import { fetchCryptoPrice, fetchCryptoHistory, fetchAssetPrice, fetchOHLCData, subscribeToPriceStream, startNonCryptoHistoryPoller, getNonCryptoHistory, subscribeToSmoothedPriceStream, feedRealPrice, resetInterpolationState, type OHLCCandle } from "@/lib/cryptoPriceProvider";
 
 // Wrapper that routes by asset class
 async function fetchPriceForAsset(asset: QuickTradeAsset): Promise<number | null> {
@@ -429,9 +429,12 @@ export default function QuickTrade() {
     setPrevPrice(null);
     setStreamingPrice(null);
     setPriceHistory([]);
+    setOhlcData([]);
     wsActiveRef.current = false;
     consecutiveFailsRef.current = 0;
     lastFetchTimeRef.current = 0;
+    // Clear any stale interpolation state from the previous asset
+    resetInterpolationState(selectedAsset.symbol);
   }, [selectedAsset.symbol]);
 
   useEffect(() => {

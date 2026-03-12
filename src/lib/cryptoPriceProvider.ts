@@ -421,6 +421,19 @@ export function feedRealPrice(asset: string, price: number) {
   cache.set(cacheKey, { price, fetchedAt: Date.now(), provider: "polled" });
 }
 
+/**
+ * Reset interpolation state for an asset so stale prices don't leak
+ * when switching between assets.
+ */
+export function resetInterpolationState(asset: string) {
+  const state = interpolationStates.get(asset);
+  if (state) {
+    state.lastRealPrice = 0;
+    state.prevRealPrice = 0;
+    state.lastRealTime = 0;
+  }
+}
+
 // ── Historical price data with fallback ──
 const rawCache = new Map<string, { prices: [number, number][]; fetchedAt: number }>();
 const RAW_CACHE_TTL = 30_000;
