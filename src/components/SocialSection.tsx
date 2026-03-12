@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +8,7 @@ import ActivityFeed from "@/components/ActivityFeed";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Users, UserCheck, Heart, Sparkles, Loader2, ChevronDown,
+  Users, UserCheck, Heart, Sparkles, Loader2, ChevronDown, Search, X,
 } from "lucide-react";
 
 interface SocialSectionProps {
@@ -22,6 +22,13 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
   const { user } = useAuth();
   const [expanded, setExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<"activity" | "followers" | "following" | "suggestions">("activity");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const { data: followers = [], isLoading: loadingFollowers } = useQuery({
     queryKey: ["social-followers", userId],
@@ -57,6 +64,20 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
       return data.map((f: any) => ({ ...f, profile: map.get(f.following_id) }));
     },
     enabled: expanded,
+  });
+
+  const { data: searchResults = [], isLoading: loadingSearch } = useQuery({
+    queryKey: ["social-search", debouncedSearch],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url, bio, verification_level")
+        .eq("is_public", true)
+        .ilike("display_name", `%${debouncedSearch}%`)
+        .limit(20);
+      return (data || []).filter((p: any) => p.id !== userId);
+    },
+    enabled: expanded && activeTab === "suggestions" && debouncedSearch.length >= 2,
   });
 
   const { data: suggestions = [], isLoading: loadingSuggestions } = useQuery({
@@ -194,16 +215,50 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
 
               {activeTab === "suggestions" && (
                 <div className="space-y-1.5">
-                  <p className="text-xs text-muted-foreground px-1 mb-2">Active traders you might want to follow</p>
-                  {loadingSuggestions ? (
-                    <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
-                  ) : suggestions.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Sparkles className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">No suggestions right now</p>
-                    </div>
+                  {/* Search bar */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search by name..."
+                      className="w-full bg-muted/50 border border-border rounded-xl pl-9 pr-9 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground"
+                    />
+                    {searchQuery && (
+                      <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                      </button>
+                    )}
+                  </div>
+
+                  {debouncedSearch.length >= 2 ? (
+                    <>
+                      {loadingSearch ? (
+                        <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                      ) : searchResults.length === 0 ? (
+                        <div className="text-center py-12">
+                          <Search className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">No users found for "{debouncedSearch}"</p>
+                        </div>
+                      ) : (
+                        searchResults.map((s: any, i: number) => renderUserRow(s.id, s, i))
+                      )}
+                    </>
                   ) : (
-                    suggestions.map((s: any, i: number) => renderUserRow(s.id, s, i))
+                    <>
+                      <p className="text-xs text-muted-foreground px-1 mb-2">Active traders you might want to follow</p>
+                      {loadingSuggestions ? (
+                        <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                      ) : suggestions.length === 0 ? (
+                        <div className="text-center py-12">
+                          <Sparkles className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">No suggestions right now</p>
+                        </div>
+                      ) : (
+                        suggestions.map((s: any, i: number) => renderUserRow(s.id, s, i))
+                      )}
+                    </>
                   )}
                 </div>
               )}
