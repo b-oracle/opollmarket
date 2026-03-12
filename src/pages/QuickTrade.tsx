@@ -555,10 +555,10 @@ export default function QuickTrade() {
         lastFetchTimeRef.current = now;
         
         const p = await fetchPriceForAsset(selectedAsset);
-        if (p != null && mounted) {
+        if (p != null && isCurrentRun()) {
           consecutiveFailsRef.current = 0;
           feedRealPrice(selectedAsset.symbol, p);
-        } else if (p == null && mounted) {
+        } else if (p == null && isCurrentRun()) {
           consecutiveFailsRef.current++;
           if (consecutiveFailsRef.current >= 5 && !disabledAssets.has(selectedAsset.symbol)) {
             try {
