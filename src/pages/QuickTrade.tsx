@@ -450,48 +450,59 @@ export default function QuickTrade() {
       return () => { mounted = false; };
     }
     
-    // Throttle WS updates to ~100ms to avoid React re-render storm
-    let lastWsUpdate = 0;
+    // ── Smooth crypto interpolation state ──
+    // Instead of snapping to each WS tick, we lerp between ticks at ~20fps
+    let targetWsPrice = 0;
+    let displayedPrice = 0;
+    let cryptoInterpId: ReturnType<typeof setInterval> | null = null;
+    let lastChartAppend = 0;
     let pendingRaf: number | null = null;
     
+    const appendCryptoChartPoint = (price: number) => {
+      const now = Date.now();
+      if (now - lastChartAppend < 300) return; // throttle chart points to ~3/sec
+      lastChartAppend = now;
+      const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
+      const maxCutoff = now - 4 * 60 * 60 * 1000;
+      setPriceHistory((prev) => {
+        const updated = [...prev, { time: timeLabel, price, ts: now }];
+        const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
+        return filtered.length > 600 ? filtered.slice(-600) : filtered;
+      });
+      const rawCached = rawDataRef.current.get(selectedAsset.symbol) || [];
+      rawDataRef.current.set(selectedAsset.symbol, [...rawCached, [now, price] as [number, number]].filter(([ts]) => ts >= maxCutoff));
+    };
+    
+    // WS tick handler: just update the target price (no direct state set)
     const handleWsTick = (price: number) => {
       if (!mounted) return;
-      const now = Date.now();
-      if (now - lastWsUpdate < 100) return; // throttle to 10 updates/sec
-      lastWsUpdate = now;
       wsActiveRef.current = true;
+      if (displayedPrice === 0) displayedPrice = price; // seed on first tick
+      targetWsPrice = price;
+    };
+    
+    // Start smooth interpolation loop for crypto (~20fps)
+    if (selectedAsset.assetClass === "crypto") {
+      const LERP_RATE = 0.15; // 15% toward target per tick — fast but smooth
+      const CRYPTO_TICK_MS = 50; // 20fps
       
-      if (pendingRaf) cancelAnimationFrame(pendingRaf);
-      pendingRaf = requestAnimationFrame(() => {
-        if (!mounted) return;
+      cryptoInterpId = setInterval(() => {
+        if (!mounted || targetWsPrice === 0) return;
+        // Lerp toward target
+        displayedPrice = displayedPrice + (targetWsPrice - displayedPrice) * LERP_RATE;
+        // Snap if very close
+        if (Math.abs(displayedPrice - targetWsPrice) / targetWsPrice < 0.000001) {
+          displayedPrice = targetWsPrice;
+        }
+        
         setCurrentPrice((prev) => {
           setPrevPrice(prev);
-          return price;
+          return displayedPrice;
         });
-        setStreamingPrice(price);
-        
-        // Append to price history (throttled to every 500ms for chart perf)
-        const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
-        setPriceHistory((prev) => {
-          const maxCutoff = now - 4 * 60 * 60 * 1000;
-          // Only add if last point was >500ms ago
-          if (prev.length > 0 && now - prev[prev.length - 1].ts < 500) {
-            // Update last point in place
-            const updated = [...prev];
-            updated[updated.length - 1] = { time: timeLabel, price, ts: now };
-            return updated;
-          }
-          const updated = [...prev, { time: timeLabel, price, ts: now }];
-          const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
-          return filtered.length > 600 ? filtered.slice(-600) : filtered;
-        });
-        
-        // Update raw cache
-        const rawCached = rawDataRef.current.get(selectedAsset.symbol) || [];
-        const maxCutoff = now - 4 * 60 * 60 * 1000;
-        rawDataRef.current.set(selectedAsset.symbol, [...rawCached, [now, price] as [number, number]].filter(([ts]) => ts >= maxCutoff));
-      });
-    };
+        setStreamingPrice(displayedPrice);
+        appendCryptoChartPoint(displayedPrice);
+      }, CRYPTO_TICK_MS);
+    }
     
     // For crypto: use Binance WebSocket for real-time streaming
     const unsubWs = subscribeToPriceStream(selectedAsset.symbol, handleWsTick);
