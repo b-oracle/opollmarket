@@ -1,9 +1,13 @@
-import { useRef } from "react";
-import { Printer, ArrowLeft } from "lucide-react";
+import { useRef, useState } from "react";
+import { Printer, ArrowLeft, Share2, Copy, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { toast } from "@/components/ui/sonner";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
+import { useAuth } from "@/hooks/useAuth";
+import { getCanonicalOrigin } from "@/lib/canonical";
 
 const slides = [
   // Slide 1 — Hero
