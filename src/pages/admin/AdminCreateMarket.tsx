@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -38,6 +39,7 @@ const CATEGORIES = [
 const AdminCreateMarket = () => {
   const navigate = useNavigate();
   const { user, displayName } = useAuth();
+  const { isFeatureEnabled } = useFeatureToggles();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
@@ -456,15 +458,17 @@ const AdminCreateMarket = () => {
         <div className={shakeClass("description")}>
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-semibold">Description</label>
-            <button
-              type="button"
-              onClick={() => handleAiGenerate("description")}
-              disabled={generatingDesc || !title.trim()}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {generatingDesc ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-              Generate (${aiGenerationCost})
-            </button>
+            {isFeatureEnabled("ai_generate_description") && (
+              <button
+                type="button"
+                onClick={() => handleAiGenerate("description")}
+                disabled={generatingDesc || !title.trim()}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {generatingDesc ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                Generate (${aiGenerationCost})
+              </button>
+            )}
           </div>
           <p className="text-[10px] text-muted-foreground mb-1.5">Type manually for free, or use AI to generate for a fee.</p>
           <textarea
@@ -488,15 +492,17 @@ const AdminCreateMarket = () => {
               More Details <span className="text-xs font-normal text-destructive">*</span>
             </label>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleAiGenerate("details")}
-                disabled={generatingDetails || !title.trim()}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {generatingDetails ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                Generate (${aiGenerationCost})
-              </button>
+              {isFeatureEnabled("ai_generate_details") && (
+                <button
+                  type="button"
+                  onClick={() => handleAiGenerate("details")}
+                  disabled={generatingDetails || !title.trim()}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {generatingDetails ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                  Generate (${aiGenerationCost})
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setShowDetailsPreview(!showDetailsPreview)}
@@ -628,15 +634,17 @@ const AdminCreateMarket = () => {
                   <Upload className="w-6 h-6 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">Click to upload (max 5MB)</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleAiGenerate("image")}
-                  disabled={generatingImage || !title.trim()}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {generatingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                  {generatingImage ? "Generating..." : `✨ Generate Cover Image ($${aiGenerationCost})`}
-                </button>
+                {isFeatureEnabled("ai_generate_image") && (
+                  <button
+                    type="button"
+                    onClick={() => handleAiGenerate("image")}
+                    disabled={generatingImage || !title.trim()}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {generatingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    {generatingImage ? "Generating..." : `✨ Generate Cover Image ($${aiGenerationCost})`}
+                  </button>
+                )}
                 <p className="text-[10px] text-muted-foreground">Upload your own for free, or use AI to generate for a fee.</p>
               </div>
             )}

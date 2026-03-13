@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer, Globe, Plus, Trash2, RefreshCw, ToggleLeft, Copy, ShieldCheck } from "lucide-react";
+import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer, Globe, Plus, Trash2, RefreshCw, ToggleLeft, Copy, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { useAdminContext } from "./AdminLayout";
@@ -75,6 +75,7 @@ const AdminSettings = () => {
   const [goldTrendingMult, setGoldTrendingMult] = useState("");
   const [blueMaxFreeMarkets, setBlueMaxFreeMarkets] = useState("5");
   const [goldMaxFreeMarkets, setGoldMaxFreeMarkets] = useState("20");
+  const [aiGenerationCost, setAiGenerationCost] = useState("0.50");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
@@ -120,6 +121,7 @@ const AdminSettings = () => {
         setGoldTrendingMult(String(d.gold_trending_multiplier ?? 1.5));
         setBlueMaxFreeMarkets(String(d.blue_max_free_markets ?? 5));
         setGoldMaxFreeMarkets(String(d.gold_max_free_markets ?? 20));
+        setAiGenerationCost(String(d.ai_generation_cost ?? 0.5));
         setSettingsId(d.id);
       }
       if (error) console.error(error);
@@ -153,6 +155,7 @@ const AdminSettings = () => {
   const goldTrendingMultNum = parseFloat(goldTrendingMult) || 1.5;
   const blueMaxFreeMarketsNum = parseInt(blueMaxFreeMarkets) || 5;
   const goldMaxFreeMarketsNum = parseInt(goldMaxFreeMarkets) || 20;
+  const aiGenerationCostNum = parseFloat(aiGenerationCost) || 0;
   const totalFee = adminNum + creatorNum;
   const poolPercent = 100 - totalFee;
   const isValid =
@@ -229,8 +232,9 @@ const AdminSettings = () => {
            blue_trending_multiplier: blueTrendingMultNum,
            gold_trending_multiplier: goldTrendingMultNum,
            blue_max_free_markets: blueMaxFreeMarketsNum,
-           gold_max_free_markets: goldMaxFreeMarketsNum,
-          updated_at: new Date().toISOString(),
+            gold_max_free_markets: goldMaxFreeMarketsNum,
+            ai_generation_cost: aiGenerationCostNum,
+           updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
         .eq("id", settingsId);
@@ -268,7 +272,8 @@ const AdminSettings = () => {
           blue_trending_multiplier: blueTrendingMultNum,
            gold_trending_multiplier: goldTrendingMultNum,
            blue_max_free_markets: blueMaxFreeMarketsNum,
-           gold_max_free_markets: goldMaxFreeMarketsNum,
+            gold_max_free_markets: goldMaxFreeMarketsNum,
+            ai_generation_cost: aiGenerationCostNum,
         },
       });
 
@@ -638,6 +643,32 @@ const AdminSettings = () => {
                 <p className="text-[10px] text-muted-foreground">Distributed automatically every 24h to verified creators' bonus balance from their own resolved markets.</p>
               </CardContent>
             </Card>
+          </CardContent>
+        </Card>
+
+        {/* ─── AI Generation Settings ─── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Sparkles className="w-5 h-5" /> AI Generation
+            </CardTitle>
+            <CardDescription>Cost per AI generation (description, details, or image). Individual features can be toggled on/off via Feature Toggles above.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="aiGenerationCost">Cost per Generation ($)</Label>
+              <Input id="aiGenerationCost" type="number" min={0} step={0.1} value={aiGenerationCost} onChange={(e) => setAiGenerationCost(e.target.value)} placeholder="0.50" />
+              <p className="text-[10px] text-muted-foreground">Current: ${aiGenerationCostNum.toFixed(2)}. Charged per AI-generated description, details, or image.</p>
+            </div>
+            <div className="rounded-lg bg-muted/50 p-3 space-y-1">
+              <p className="text-[10px] font-medium text-foreground">Feature Toggles</p>
+              <p className="text-[10px] text-muted-foreground">Use the <strong>Feature Toggles</strong> section at the top of this page to individually enable/disable:</p>
+              <ul className="text-[10px] text-muted-foreground space-y-0.5 ml-3 list-disc">
+                <li><strong>AI Generate Description</strong> — auto-generate market descriptions</li>
+                <li><strong>AI Generate Details</strong> — auto-generate detailed market content</li>
+                <li><strong>AI Generate Image</strong> — auto-generate cover images</li>
+              </ul>
+            </div>
           </CardContent>
         </Card>
 

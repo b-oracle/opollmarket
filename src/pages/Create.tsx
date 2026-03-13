@@ -43,6 +43,7 @@ import {
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -183,6 +184,7 @@ const Create = () => {
   const { open } = useAppKit();
   const { connect, connectors, isPending } = useFilteredConnectors();
   const { user, loading: authLoading, displayName } = useAuth();
+  const { isFeatureEnabled } = useFeatureToggles();
   const navigate = useNavigate();
   const location = useLocation();
   const { balance } = useUserBalance();
@@ -1556,15 +1558,17 @@ const Create = () => {
                     <FileText className="w-4 h-4 text-primary" />
                     Description
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => handleAiGenerate("description")}
-                    disabled={generatingDesc || !title.trim()}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {generatingDesc ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                   Generate (${aiGenerationCost.toFixed(2)})
-                  </button>
+                  {isFeatureEnabled("ai_generate_description") && (
+                    <button
+                      type="button"
+                      onClick={() => handleAiGenerate("description")}
+                      disabled={generatingDesc || !title.trim()}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {generatingDesc ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                     Generate (${aiGenerationCost.toFixed(2)})
+                    </button>
+                  )}
                 </div>
                 <p className="text-[10px] text-muted-foreground mb-1.5">Type manually for free, or use AI to generate for a fee.</p>
                 <textarea
@@ -1586,7 +1590,7 @@ const Create = () => {
                 </div>
               </div>
 
-              <DetailsField details={details} setDetails={setDetails} error={errors.details} touched={!!touched.details} onBlur={() => markTouched("details")} shakeClass={shakeClass("details")} onGenerate={() => handleAiGenerate("details")} generating={generatingDetails} aiCost={aiGenerationCost} />
+              <DetailsField details={details} setDetails={setDetails} error={errors.details} touched={!!touched.details} onBlur={() => markTouched("details")} shakeClass={shakeClass("details")} onGenerate={isFeatureEnabled("ai_generate_details") ? () => handleAiGenerate("details") : undefined} generating={generatingDetails} aiCost={aiGenerationCost} />
 
               {/* Market Type */}
               <div className="glass rounded-xl p-4">
@@ -2052,7 +2056,7 @@ const Create = () => {
                     <ImageIcon className="w-4 h-4 text-primary" />
                     Cover Image <span className="text-xs font-normal text-destructive">*</span>
                   </label>
-                  {!imagePreview && (
+                  {!imagePreview && isFeatureEnabled("ai_generate_image") && (
                     <button
                       type="button"
                       onClick={() => handleAiGenerate("image")}
