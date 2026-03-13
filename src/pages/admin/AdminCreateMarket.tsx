@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,6 +21,7 @@ import {
   EyeOff,
   Zap,
   Trophy,
+  Sparkles,
 } from "lucide-react";
 
 import CategoryIcon from "@/components/CategoryIcon";
@@ -119,6 +120,12 @@ const AdminCreateMarket = () => {
     { value: "draw", label: "Draw" },
   ];
 
+  // AI generation state
+  const [aiGenerationCost, setAiGenerationCost] = useState(0.5);
+  const [generatingDesc, setGeneratingDesc] = useState(false);
+  const [generatingDetails, setGeneratingDetails] = useState(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
+
   // Image state
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -129,6 +136,68 @@ const AdminCreateMarket = () => {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [shakeField, setShakeField] = useState<string | null>(null);
 
+  // Load AI generation cost
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("commission_settings")
+        .select("ai_generation_cost")
+        .limit(1)
+        .single();
+      if (data) setAiGenerationCost(Number((data as any).ai_generation_cost ?? 0.5));
+    })();
+  }, []);
+
+  // AI content generation handler
+  const handleAiGenerate = async (genType: "description" | "details" | "image") => {
+    if (!user) { toast.error("Sign in to use AI generation"); return; }
+    if (!title.trim()) { toast.error("Enter a market question first"); return; }
+
+    const setLoading = genType === "description" ? setGeneratingDesc : genType === "details" ? setGeneratingDetails : setGeneratingImage;
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-market-content", {
+        body: {
+          type: genType,
+          title: title.trim(),
+          category: category || undefined,
+          marketType,
+          options: marketType !== "binary" ? options.filter(o => o.trim()) : undefined,
+        },
+      });
+
+      if (error) {
+        const msg = typeof data === "object" && data?.error ? data.error : error.message || "AI generation failed";
+        toast.error(msg);
+        return;
+      }
+
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      if (genType === "description" && data?.content) {
+        setDescription(data.content);
+        toast.success(`Description generated! ($${data.cost || aiGenerationCost} charged)`);
+      } else if (genType === "details" && data?.content) {
+        setDetails(data.content);
+        toast.success(`Details generated! ($${data.cost || aiGenerationCost} charged)`);
+      } else if (genType === "image" && data?.imageUrl) {
+        setImagePreview(data.imageUrl);
+        setImageFile(null);
+        toast.success(`Cover image generated! ($${data.cost || aiGenerationCost} charged)`);
+      } else {
+        toast.error("No content was generated");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "AI generation failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const touch = (field: string) => setTouched((t) => ({ ...t, [field]: true }));
   const shake = (field: string) => {
     setShakeField(field);
@@ -136,6 +205,7 @@ const AdminCreateMarket = () => {
   };
 
   // Field-level validation
+  const hasImage = !!imageFile || (!!imagePreview && !imagePreview.startsWith("blob:"));
   const errors = {
     title: title.trim().length > 0 && title.trim().length < 10 ? "Min 10 characters" : title.trim().length === 0 ? "Required" : "",
     description: description.trim().length > 0 && description.trim().length < 10 ? "Min 10 characters" : description.trim().length === 0 ? "Required" : "",
@@ -144,7 +214,7 @@ const AdminCreateMarket = () => {
     endDate: !endDate ? "Required" : "",
     resolutionSource: resolutionSource.trim().length > 0 && resolutionSource.trim().length < 5 ? "Min 5 characters" : resolutionSource.trim().length === 0 ? "Required" : "",
     options: marketType === "multi" && options.filter((o) => o.trim()).length < 2 ? "At least 2 options required" : "",
-    image: !imageFile ? "Cover image is required" : "",
+    image: !hasImage ? "Cover image is required" : "",
   };
 
   const fieldError = (field: keyof typeof errors) => touched[field] ? errors[field] : "";
@@ -209,7 +279,7 @@ const AdminCreateMarket = () => {
     endDate &&
     resolutionSource.trim().length >= 5 &&
     (marketType === "binary" || options.filter((o) => o.trim()).length >= 2) &&
-    !!imageFile;
+    hasImage;
 
   const handleSubmit = async () => {
     const allFields = ["title", "description", "details", "category", "endDate", "resolutionSource", "options", "image"];
@@ -224,11 +294,16 @@ const AdminCreateMarket = () => {
     setSubmitting(true);
 
     try {
-      // Upload image if present
+      // Upload image if present (file upload or AI-generated URL)
       let imageUrl: string | null = null;
       if (imageFile) {
         imageUrl = await uploadImage();
         if (!imageUrl) { setSubmitting(false); return; }
+      } else if (imagePreview && !imagePreview.startsWith("blob:")) {
+        imageUrl = imagePreview;
+      }
+
+      if (imageUrl) {
 
         // Moderate uploaded image
         try {
@@ -379,7 +454,18 @@ const AdminCreateMarket = () => {
           </div>
         </div>
         <div className={shakeClass("description")}>
-          <label className="text-sm font-semibold mb-2 block">Description</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-semibold">Description</label>
+            <button
+              type="button"
+              onClick={() => handleAiGenerate("description")}
+              disabled={generatingDesc || !title.trim()}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {generatingDesc ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+              Generate (${aiGenerationCost})
+            </button>
+          </div>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -400,14 +486,25 @@ const AdminCreateMarket = () => {
               <FileText className="w-4 h-4 text-primary" />
               More Details <span className="text-xs font-normal text-destructive">*</span>
             </label>
-            <button
-              type="button"
-              onClick={() => setShowDetailsPreview(!showDetailsPreview)}
-              className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
-            >
-              {showDetailsPreview ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-              {showDetailsPreview ? "Edit" : "Preview"}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleAiGenerate("details")}
+                disabled={generatingDetails || !title.trim()}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {generatingDetails ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                Generate (${aiGenerationCost})
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowDetailsPreview(!showDetailsPreview)}
+                className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+              >
+                {showDetailsPreview ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                {showDetailsPreview ? "Edit" : "Preview"}
+              </button>
+            </div>
           </div>
           {showDetailsPreview ? (
             <div className="bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm min-h-[100px] prose prose-sm dark:prose-invert max-w-none">
@@ -521,13 +618,24 @@ const AdminCreateMarket = () => {
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full h-32 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/40 hover:bg-primary/5 transition-all"
-              >
-                <Upload className="w-6 h-6 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">Click to upload (max 5MB)</span>
-              </button>
+              <div className="space-y-3">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full h-32 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/40 hover:bg-primary/5 transition-all"
+                >
+                  <Upload className="w-6 h-6 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Click to upload (max 5MB)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAiGenerate("image")}
+                  disabled={generatingImage || !title.trim()}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {generatingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  {generatingImage ? "Generating..." : `✨ Generate Cover Image ($${aiGenerationCost})`}
+                </button>
+              </div>
             )}
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
           </>
