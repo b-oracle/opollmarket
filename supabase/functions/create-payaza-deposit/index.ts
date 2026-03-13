@@ -54,6 +54,30 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Fetch live USD→NGN rate with admin markup
+    let ngnAmount = amount; // fallback: treat amount as NGN directly
+    let effectiveRate: number | null = null;
+    try {
+      const rateRes = await fetch(
+        `${Deno.env.get("SUPABASE_URL")}/functions/v1/get-naira-rate`,
+        {
+          headers: {
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+          },
+        }
+      );
+      if (rateRes.ok) {
+        const rateData = await rateRes.json();
+        effectiveRate = rateData.effective_rate;
+        ngnAmount = Math.ceil(amount * effectiveRate);
+        console.log(`[Payaza] USD ${amount} → NGN ${ngnAmount} (rate: ${effectiveRate})`);
+      } else {
+        console.warn("[Payaza] Could not fetch naira rate, using amount as-is");
+      }
+    } catch (e) {
+      console.warn("[Payaza] Rate fetch failed:", e);
+    }
+
     const secretKey = Deno.env.get("PAYAZA_SECRET_KEY");
 
     if (!secretKey) {
