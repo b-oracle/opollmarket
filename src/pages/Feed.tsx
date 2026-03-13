@@ -414,7 +414,7 @@ const Feed = () => {
 
       {/* Empty bookmarks state */}
       {feedTab === "bookmarks" && sortedMarkets.length === 0 ?
-      <div className="flex-1 flex items-center justify-center px-4" style={{ marginTop: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}>
+      <div className="flex-1 flex items-center justify-center px-4" style={{ marginTop: 'calc(3.5rem + env(safe-area-inset-top, 0px))', marginLeft: sidebarLeft }}>
           <div className="text-center space-y-3">
             <Bookmark className="w-12 h-12 text-muted-foreground/30 mx-auto" />
             <p className="text-sm font-medium text-muted-foreground">Your watchlist is empty</p>
