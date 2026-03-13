@@ -36,7 +36,9 @@ interface FiatTransferInfo {
   bank_name: string;
   account_number: string;
   account_name: string;
-  amount: number;
+  amount_ngn: number;
+  amount_usd: number;
+  exchange_rate: number | null;
   currency: string;
   payment_url?: string | null;
   expires_at?: string | null;
@@ -126,6 +128,19 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const [securitySettings, setSecuritySettings] = useState<{ require_pin: boolean; require_totp: boolean } | null>(null);
   const [fiatTransferInfo, setFiatTransferInfo] = useState<FiatTransferInfo | null>(null);
   const [fiatCopied, setFiatCopied] = useState<string | null>(null);
+  const [ngnRate, setNgnRate] = useState<number | null>(null);
+
+  // Fetch live NGN rate when fiat mode is selected
+  useEffect(() => {
+    if (!open || paymentMethod !== "fiat") return;
+    const fetchRate = async () => {
+      try {
+        const { data } = await supabase.functions.invoke("get-naira-rate");
+        if (data?.effective_rate) setNgnRate(data.effective_rate);
+      } catch { /* silent */ }
+    };
+    fetchRate();
+  }, [open, paymentMethod]);
 
   useEffect(() => {
     if (open) {
@@ -141,6 +156,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setPartialInfo(null);
       setDepositCreatedAt(null);
       setTimeRemaining("");
+      setNgnRate(null);
     }
     return () => {
       if (pollInterval) clearInterval(pollInterval);
@@ -396,7 +412,9 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
           bank_name: data.bank_name,
           account_number: data.account_number,
           account_name: data.account_name,
-          amount: data.amount,
+          amount_ngn: data.amount_ngn ?? data.amount,
+          amount_usd: data.amount_usd ?? numAmount,
+          exchange_rate: data.exchange_rate ?? null,
           currency: data.currency,
           payment_url: data.payment_url,
           expires_at: data.expires_at,
@@ -731,9 +749,16 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                     {isDeposit && paymentMethod === "fiat" && (
                       <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border mb-5">
                         <Banknote className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                        <p className="text-[10px] text-muted-foreground">
-                          Pay with bank transfer or card via Payaza. Amount will be charged in Nigerian Naira (NGN) and credited as USD to your balance.
-                        </p>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">
+                            Pay with bank transfer via Payaza. Amount is converted from USD to NGN at the live rate and credited as USD to your balance.
+                          </p>
+                          {ngnRate && numAmount > 0 && (
+                            <p className="text-xs font-semibold text-primary mt-1">
+                              ≈ ₦{Math.ceil(numAmount * ngnRate).toLocaleString()} NGN (₦{ngnRate.toLocaleString()}/USD)
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )}
 
@@ -815,7 +840,12 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                       <div className="space-y-2.5">
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Amount</span>
-                          <span className="font-bold text-lg">${numAmount.toFixed(2)}</span>
+                          <div className="text-right">
+                            <span className="font-bold text-lg">${numAmount.toFixed(2)}</span>
+                            {isDeposit && paymentMethod === "fiat" && ngnRate && (
+                              <p className="text-[10px] text-muted-foreground">≈ ₦{Math.ceil(numAmount * ngnRate).toLocaleString()}</p>
+                            )}
+                          </div>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Payment Method</span>
@@ -1135,9 +1165,12 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                       <div className="rounded-xl bg-muted/50 border border-border p-3 mb-3">
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Amount to Transfer</p>
                         <p className="text-xl font-bold text-primary">
-                          ₦{fiatTransferInfo.amount.toLocaleString()}
+                          ₦{fiatTransferInfo.amount_ngn.toLocaleString()}
                         </p>
-                        <p className="text-[10px] text-muted-foreground">≈ ${numAmount.toFixed(2)} USD</p>
+                        <p className="text-[10px] text-muted-foreground">≈ ${fiatTransferInfo.amount_usd.toFixed(2)} USD</p>
+                        {fiatTransferInfo.exchange_rate && (
+                          <p className="text-[9px] text-muted-foreground mt-0.5">Rate: ₦{fiatTransferInfo.exchange_rate.toLocaleString()}/USD</p>
+                        )}
                       </div>
 
                       {/* Bank Name */}

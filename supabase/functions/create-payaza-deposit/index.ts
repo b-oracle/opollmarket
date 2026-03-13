@@ -54,6 +54,30 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Fetch live USD→NGN rate with admin markup
+    let ngnAmount = amount; // fallback: treat amount as NGN directly
+    let effectiveRate: number | null = null;
+    try {
+      const rateRes = await fetch(
+        `${Deno.env.get("SUPABASE_URL")}/functions/v1/get-naira-rate`,
+        {
+          headers: {
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+          },
+        }
+      );
+      if (rateRes.ok) {
+        const rateData = await rateRes.json();
+        effectiveRate = rateData.effective_rate;
+        ngnAmount = Math.ceil(amount * effectiveRate);
+        console.log(`[Payaza] USD ${amount} → NGN ${ngnAmount} (rate: ${effectiveRate})`);
+      } else {
+        console.warn("[Payaza] Could not fetch naira rate, using amount as-is");
+      }
+    } catch (e) {
+      console.warn("[Payaza] Rate fetch failed:", e);
+    }
+
     const secretKey = Deno.env.get("PAYAZA_SECRET_KEY");
 
     if (!secretKey) {
@@ -98,9 +122,9 @@ Deno.serve(async (req) => {
       customer_last_name: "User",
       customer_email: email,
       customer_phone_number: "08000000000",
-      transaction_amount: amount,
+      transaction_amount: ngnAmount,
       has_amount_validation: true,
-      transaction_description: `Deposit ${amount} NGN`,
+      transaction_description: `Deposit $${amount} USD (₦${ngnAmount} NGN)`,
       expires_in_minutes: 60,
     };
 
@@ -210,7 +234,9 @@ Deno.serve(async (req) => {
         bank_name: bankName,
         account_number: accountNumber,
         account_name: accountName,
-        amount: amount,
+        amount_ngn: ngnAmount,
+        amount_usd: amount,
+        exchange_rate: effectiveRate,
         currency: "NGN",
         expires_at: expiresAt,
         email,

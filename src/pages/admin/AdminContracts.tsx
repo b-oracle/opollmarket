@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Save, FileCode2, Shield, ExternalLink, DollarSign } from "lucide-react";
+import { Loader2, Save, FileCode2, Shield, ExternalLink, DollarSign, ArrowRightLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -11,12 +11,15 @@ const AdminContracts = () => {
   const [nftBuyUrl, setNftBuyUrl] = useState("");
   const [marketCreationFee, setMarketCreationFee] = useState("50");
   const [tokenDecimals, setTokenDecimals] = useState("18");
+  const [nairaRateMarkup, setNairaRateMarkup] = useState("0");
+  const [liveNgnRate, setLiveNgnRate] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState("");
 
   useEffect(() => {
     fetchContracts();
+    fetchLiveRate();
   }, []);
 
   const fetchContracts = async () => {
@@ -35,12 +38,20 @@ const AdminContracts = () => {
         setNftBuyUrl(data.nft_buy_url || "");
         setMarketCreationFee(String(data.market_creation_fee ?? 50));
         setTokenDecimals(String(data.token_decimals ?? 18));
+        setNairaRateMarkup(String((data as any).naira_rate_markup ?? 0));
       }
     } catch (err) {
       console.error("Failed to fetch contract settings:", err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchLiveRate = async () => {
+    try {
+      const { data } = await supabase.functions.invoke("get-naira-rate");
+      if (data?.live_rate) setLiveNgnRate(data.live_rate);
+    } catch { /* silent */ }
   };
 
   const isValidAddress = (addr: string) => {
@@ -83,6 +94,7 @@ const AdminContracts = () => {
         nft_buy_url: nftBuyUrl || null,
         market_creation_fee: parseFloat(marketCreationFee) || 50,
         token_decimals: parseInt(tokenDecimals) || 18,
+        naira_rate_markup: parseFloat(nairaRateMarkup) || 0,
         updated_at: new Date().toISOString(),
         updated_by: user?.id || null,
       };
@@ -239,6 +251,30 @@ const AdminContracts = () => {
             placeholder="18"
             min="0"
             max="18"
+            className="text-sm"
+          />
+        </div>
+
+        {/* Naira Rate Markup */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <ArrowRightLeft className="w-4 h-4 text-primary" />
+            NGN/USD Rate Markup (%)
+          </label>
+          <p className="text-xs text-muted-foreground">
+            Adjust the live USD→NGN exchange rate. Positive = mark up (user pays more NGN), negative = mark down.
+            {liveNgnRate && (
+              <span className="block mt-1 font-semibold text-foreground">
+                Live rate: ₦{liveNgnRate.toLocaleString()}/USD → Effective: ₦{Math.round(liveNgnRate * (1 + (parseFloat(nairaRateMarkup) || 0) / 100)).toLocaleString()}/USD
+              </span>
+            )}
+          </p>
+          <Input
+            type="number"
+            value={nairaRateMarkup}
+            onChange={(e) => setNairaRateMarkup(e.target.value)}
+            placeholder="0"
+            step="0.5"
             className="text-sm"
           />
         </div>
