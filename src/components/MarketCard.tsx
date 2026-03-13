@@ -442,51 +442,6 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
         {/* Content */}
         <div className="relative z-10 w-full overflow-visible">
-          <div className={`absolute top-3 bottom-3 right-2 sm:right-3 z-20 flex w-12 sm:w-14 flex-col items-center justify-end gap-1 ${isMulti || isEnded ? 'pb-1' : 'pb-[4.75rem] sm:pb-[5rem]'}`}>
-            {isBoosted && (
-              <div className="flex flex-col items-center gap-0.5">
-                <div className={`${actionIconSizeClass} rounded-full glass flex items-center justify-center bg-orange-500/20 animate-pulse`}>
-                  <Flame className="w-3.5 h-3.5 text-orange-400" />
-                </div>
-                <span className="text-[9px] text-orange-400 font-semibold leading-none">Hot</span>
-              </div>
-            )}
-            <button onClick={handleLike} className="flex flex-col items-center gap-0.5 group">
-              <div className={`${actionIconSizeClass} rounded-full glass flex items-center justify-center transition-colors ${liked ? 'bg-destructive/20' : 'group-hover:bg-destructive/20'}`}>
-                <Heart className={`w-3.5 h-3.5 transition-colors ${liked ? 'text-destructive fill-destructive' : 'text-foreground/70 group-hover:text-destructive'}`} />
-              </div>
-              <span className="text-[9px] text-muted-foreground leading-none">{formatCount(likeCount)}</span>
-            </button>
-            <button onClick={() => setCommentsOpen(true)} className="flex flex-col items-center gap-0.5 group">
-              <div className={`${actionIconSizeClass} rounded-full glass flex items-center justify-center group-hover:bg-primary/20 transition-colors`}>
-                <MessageCircle className="w-3.5 h-3.5 text-foreground/70 group-hover:text-primary transition-colors" />
-              </div>
-              <span className="text-[9px] text-muted-foreground leading-none">{formatCount(commentCount)}</span>
-            </button>
-            <button onClick={handleBookmark} className="flex flex-col items-center gap-0.5 group">
-              <motion.div
-                className={`${actionIconSizeClass} rounded-full glass flex items-center justify-center transition-colors ${bookmarked ? 'bg-primary/20' : 'group-hover:bg-primary/20'}`}
-                animate={bookmarked ? { scale: [1, 1.3, 1] } : { scale: 1 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-              >
-                <Bookmark className={`w-3.5 h-3.5 transition-colors ${bookmarked ? 'text-primary fill-primary' : 'text-foreground/70 group-hover:text-primary'}`} />
-              </motion.div>
-              <span className="text-[9px] text-muted-foreground leading-none">{bookmarkCount > 0 ? formatCount(bookmarkCount) : (bookmarked ? "Saved" : "Save")}</span>
-            </button>
-            <button onClick={() => navigate(`/market/${market.id}`)} className="flex flex-col items-center gap-0.5 group">
-              <div className={`${actionIconSizeClass} rounded-full glass flex items-center justify-center group-hover:bg-primary/20 transition-colors`}>
-                <ExternalLink className="w-3.5 h-3.5 text-foreground/70 group-hover:text-primary transition-colors" />
-              </div>
-              <span className="text-[9px] text-muted-foreground leading-none">Details</span>
-            </button>
-            <button onClick={handleShare} className="flex flex-col items-center gap-0.5 group">
-              <div className={`${actionIconSizeClass} rounded-full glass flex items-center justify-center group-hover:bg-primary/20 transition-colors`}>
-                <Share2 className="w-3.5 h-3.5 text-foreground/70 group-hover:text-primary transition-colors" />
-              </div>
-              <span className="text-[9px] text-muted-foreground leading-none">Share</span>
-            </button>
-          </div>
-
           {/* Creator line + trending */}
           <div className="flex items-center gap-2 mb-1.5 pr-14 sm:pr-16">
             <div
