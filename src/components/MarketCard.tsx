@@ -400,8 +400,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         <div className="absolute right-3 bottom-2 z-10 flex flex-col items-center justify-end max-h-[calc(var(--feed-card-height,100vh)-6rem)] overflow-hidden gap-[clamp(0.125rem,1vh,0.5rem)]">
           {isBoosted && (
             <div className="flex flex-col items-center gap-0.5">
-              <div className="w-[clamp(1.75rem,4vh,2.25rem)] h-[clamp(1.75rem,4vh,2.25rem)] rounded-full glass flex items-center justify-center bg-orange-500/20 animate-pulse">
-                <Flame className="w-4 h-4 text-orange-400" />
+              <div className="w-[clamp(1.5rem,3.5vh,2.25rem)] h-[clamp(1.5rem,3.5vh,2.25rem)] rounded-full glass flex items-center justify-center bg-orange-500/20 animate-pulse">
+                <Flame className="w-3.5 h-3.5 text-orange-400" />
               </div>
               <span className="text-[9px] text-orange-400 font-semibold leading-none">Hot</span>
             </div>
