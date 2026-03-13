@@ -282,6 +282,26 @@ const AdminContracts = () => {
           />
         </div>
 
+        {/* Fallback Naira Rate */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <ArrowRightLeft className="w-4 h-4 text-primary" />
+            Fallback NGN/USD Rate
+          </label>
+          <p className="text-xs text-muted-foreground">
+            Used when the live rate service is temporarily unavailable. Prevents deposits from defaulting to 1:1.
+          </p>
+          <Input
+            type="number"
+            value={fallbackNairaRate}
+            onChange={(e) => setFallbackNairaRate(e.target.value)}
+            placeholder="1500"
+            step="50"
+            min="100"
+            className="text-sm"
+          />
+        </div>
+
         <Button onClick={handleSave} disabled={!canSave} className="w-full sm:w-auto">
           {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
           Save Settings
