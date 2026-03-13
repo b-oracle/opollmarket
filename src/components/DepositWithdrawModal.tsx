@@ -605,6 +605,10 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     setTab(newTab);
     setAmount("");
     setWalletAddress("");
+    setWithdrawMethod("crypto");
+    setBankCode("044");
+    setAccountNumber("");
+    setAccountName("");
     setStep("input");
     setErrorMsg("");
     setPaymentInfo(null);
