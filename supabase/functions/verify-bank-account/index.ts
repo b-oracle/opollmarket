@@ -127,55 +127,68 @@ Deno.serve(async (req) => {
 });
 
 // ─── Payaza name enquiry ───
-// Uses the Payaza checkout/collection API for name enquiry (payout endpoints are AWS-protected)
-async function tryPayazaNameEnquiry(bankCode: string, accountNumber: string, secretKey: string): Promise<string> {
+async function tryPayazaNameEnquiry(
+  bankCode: string,
+  accountNumber: string,
+  secretKey: string,
+  merchantKey = "",
+): Promise<string> {
   const proxyUrl = Deno.env.get("QUOTAGUARD_URL");
 
-  // The Payaza collection/checkout API accepts Payaza auth; payout endpoints use AWS SigV4
   const endpoints = [
-    "https://router-live.78financials.com/api/request/merchant/nameEnquiry",
+    "https://api.payaza.africa/live/merchant-collection/merchant/bank/name-enquiry",
     "https://api.payaza.africa/live/zap/merchant/bank/name-enquiry",
   ];
 
-  const payloads = [
-    // 78financials router format
-    {
-      service_payload: {
-        request_application: "Payaza",
-        application_module: "USER_MODULE",
-        application_version: "1.0.0",
-        request_class: "MerchantNameEnquiry",
-        "payment_channel": "bank",
-        "payment_type": "nuban",
-        account_number: accountNumber,
-        bank_code: bankCode,
-      },
-    },
-    // Direct format
-    {
-      account_number: accountNumber,
-      bank_code: bankCode,
-      currency: "NGN",
-    },
-  ];
+  const payload = {
+    account_number: accountNumber,
+    bank_code: bankCode,
+    currency: "NGN",
+  };
 
-  for (let i = 0; i < endpoints.length; i++) {
-    const url = endpoints[i];
-    const payload = payloads[i] || payloads[payloads.length - 1];
+  const authVariants: Array<{ label: string; headers: Record<string, string> }> = [];
 
-    try {
+  if (secretKey) {
+    const encodedSecret = btoa(secretKey);
+    authVariants.push({
+      label: "payaza-secret",
+      headers: { Authorization: `Payaza ${encodedSecret}` },
+    });
+    authVariants.push({
+      label: "bearer-secret",
+      headers: { Authorization: `Bearer ${secretKey}` },
+    });
+  }
+
+  if (merchantKey) {
+    const encodedMerchant = btoa(merchantKey);
+    authVariants.push({
+      label: "payaza-merchant",
+      headers: { Authorization: `Payaza ${encodedMerchant}` },
+    });
+    authVariants.push({
+      label: "bearer-merchant",
+      headers: { Authorization: `Bearer ${merchantKey}` },
+    });
+    authVariants.push({
+      label: "x-api-key-merchant",
+      headers: { "x-api-key": merchantKey },
+    });
+  }
+
+  for (const endpoint of endpoints) {
+    for (const auth of authVariants) {
       const fetchOpts: RequestInit = {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Payaza ${btoa(secretKey)}`,
           "Accept": "application/json",
+          ...auth.headers,
         },
         body: JSON.stringify(payload),
       };
 
-      // Try proxy first, then direct
-      const attempts: Array<{ label: string; opts: any }> = [];
+      const attempts: Array<{ label: string; opts: RequestInit & { client?: Deno.HttpClient } }> = [];
       if (proxyUrl) {
         const httpClient = Deno.createHttpClient({ proxy: { url: proxyUrl } });
         attempts.push({ label: "Proxy", opts: { ...fetchOpts, client: httpClient } });
@@ -184,37 +197,43 @@ async function tryPayazaNameEnquiry(bankCode: string, accountNumber: string, sec
 
       for (const attempt of attempts) {
         try {
-          const res = await fetch(url, attempt.opts);
+          const res = await fetch(endpoint, attempt.opts);
           const text = await res.text();
-          console.log(`Payaza ${attempt.label} ${url} → ${res.status}: ${text.substring(0, 300)}`);
-          if (attempt.opts.client) try { attempt.opts.client.close(); } catch {}
+          console.log(`Payaza ${attempt.label} ${auth.label} ${endpoint} → ${res.status}: ${text.substring(0, 300)}`);
+          if (attempt.opts.client) {
+            try { attempt.opts.client.close(); } catch {}
+          }
 
           if (text.includes("<html") || text.includes("<!DOCTYPE")) continue;
 
-          if (res.ok || res.status === 200 || res.status === 201) {
-            try {
-              const data = JSON.parse(text);
-              // Handle nested response structures
-              const responseData = data?.response_content || data?.data || data?.service_response?.response_content || data;
-              const name =
-                responseData?.account_name ||
-                responseData?.accountName ||
-                responseData?.name ||
-                responseData?.beneficiary_name ||
-                responseData?.beneficiaryName ||
-                "";
-              if (name && name.length > 1) return name;
-            } catch { continue; }
+          try {
+            const data = JSON.parse(text);
+            const responseData = data?.response_content || data?.data || data?.service_response?.response_content || data;
+            const name =
+              responseData?.account_name ||
+              responseData?.accountName ||
+              responseData?.beneficiary_name ||
+              responseData?.beneficiaryName ||
+              responseData?.beneficiaryAccountName ||
+              responseData?.name ||
+              "";
+
+            if ((res.ok || res.status === 200 || res.status === 201) && typeof name === "string" && name.trim().length > 1) {
+              return name.trim();
+            }
+          } catch {
+            continue;
           }
         } catch (err) {
-          console.warn(`Payaza ${attempt.label} ${url} error:`, String(err));
-          if (attempt.opts.client) try { attempt.opts.client.close(); } catch {}
+          console.warn(`Payaza ${attempt.label} ${auth.label} ${endpoint} error:`, String(err));
+          if (attempt.opts.client) {
+            try { attempt.opts.client.close(); } catch {}
+          }
         }
       }
-    } catch (err) {
-      console.warn(`Payaza endpoint ${url} error:`, String(err));
     }
   }
+
   return "";
 }
 
