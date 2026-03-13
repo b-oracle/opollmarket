@@ -182,7 +182,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
 
   // Countdown timer for deposit expiry (2 hours)
   useEffect(() => {
-    if (step !== "awaiting_payment" || !depositCreatedAt) {
+    if ((step !== "awaiting_payment" && step !== "awaiting_fiat_transfer") || !depositCreatedAt) {
       setTimeRemaining("");
       return;
     }
