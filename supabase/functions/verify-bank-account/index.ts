@@ -94,10 +94,11 @@ Deno.serve(async (req) => {
     let accountName = "";
 
     const payazaSecretKey = Deno.env.get("PAYAZA_SECRET_KEY");
+    const payazaMerchantKey = Deno.env.get("PAYAZA_MERCHANT_KEY");
 
     // ─── Always use Payaza for name enquiry ───
-    if (payazaSecretKey) {
-      accountName = await tryPayazaNameEnquiry(bank_code, account_number, payazaSecretKey);
+    if (payazaSecretKey || payazaMerchantKey) {
+      accountName = await tryPayazaNameEnquiry(bank_code, account_number, payazaSecretKey ?? "", payazaMerchantKey ?? "");
     }
 
     if (accountName) {
