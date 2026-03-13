@@ -272,7 +272,8 @@ const AdminSettings = () => {
           blue_trending_multiplier: blueTrendingMultNum,
            gold_trending_multiplier: goldTrendingMultNum,
            blue_max_free_markets: blueMaxFreeMarketsNum,
-           gold_max_free_markets: goldMaxFreeMarketsNum,
+            gold_max_free_markets: goldMaxFreeMarketsNum,
+            ai_generation_cost: aiGenerationCostNum,
         },
       });
 
