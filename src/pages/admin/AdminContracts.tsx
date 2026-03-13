@@ -12,6 +12,7 @@ const AdminContracts = () => {
   const [marketCreationFee, setMarketCreationFee] = useState("50");
   const [tokenDecimals, setTokenDecimals] = useState("18");
   const [nairaRateMarkup, setNairaRateMarkup] = useState("0");
+  const [fallbackNairaRate, setFallbackNairaRate] = useState("1500");
   const [liveNgnRate, setLiveNgnRate] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -39,6 +40,7 @@ const AdminContracts = () => {
         setMarketCreationFee(String(data.market_creation_fee ?? 50));
         setTokenDecimals(String(data.token_decimals ?? 18));
         setNairaRateMarkup(String((data as any).naira_rate_markup ?? 0));
+        setFallbackNairaRate(String((data as any).fallback_naira_rate ?? 1500));
       }
     } catch (err) {
       console.error("Failed to fetch contract settings:", err);
@@ -95,6 +97,7 @@ const AdminContracts = () => {
         market_creation_fee: parseFloat(marketCreationFee) || 50,
         token_decimals: parseInt(tokenDecimals) || 18,
         naira_rate_markup: parseFloat(nairaRateMarkup) || 0,
+        fallback_naira_rate: parseFloat(fallbackNairaRate) || 1500,
         updated_at: new Date().toISOString(),
         updated_by: user?.id || null,
       };
@@ -275,6 +278,26 @@ const AdminContracts = () => {
             onChange={(e) => setNairaRateMarkup(e.target.value)}
             placeholder="0"
             step="0.5"
+            className="text-sm"
+          />
+        </div>
+
+        {/* Fallback Naira Rate */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <ArrowRightLeft className="w-4 h-4 text-primary" />
+            Fallback NGN/USD Rate
+          </label>
+          <p className="text-xs text-muted-foreground">
+            Used when the live rate service is temporarily unavailable. Prevents deposits from defaulting to 1:1.
+          </p>
+          <Input
+            type="number"
+            value={fallbackNairaRate}
+            onChange={(e) => setFallbackNairaRate(e.target.value)}
+            placeholder="1500"
+            step="50"
+            min="100"
             className="text-sm"
           />
         </div>

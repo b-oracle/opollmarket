@@ -54,10 +54,22 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Fetch admin-configured fallback rate
+    let configuredFallback = 1500;
+    try {
+      const { data: settings } = await adminClient
+        .from("commission_settings")
+        .select("fallback_naira_rate")
+        .limit(1)
+        .single();
+      if (settings?.fallback_naira_rate) {
+        configuredFallback = Number(settings.fallback_naira_rate);
+      }
+    } catch { /* use default */ }
+
     // Fetch live USD→NGN rate with admin markup
-    const FALLBACK_RATE = 1500; // safety net if rate service is down
-    let ngnAmount = Math.ceil(amount * FALLBACK_RATE);
-    let effectiveRate: number | null = FALLBACK_RATE;
+    let ngnAmount = Math.ceil(amount * configuredFallback);
+    let effectiveRate: number | null = configuredFallback;
     try {
       const rateRes = await fetch(
         `${Deno.env.get("SUPABASE_URL")}/functions/v1/get-naira-rate`,
@@ -73,10 +85,10 @@ Deno.serve(async (req) => {
         ngnAmount = Math.ceil(amount * effectiveRate);
         console.log(`[Payaza] USD ${amount} → NGN ${ngnAmount} (rate: ${effectiveRate})`);
       } else {
-        console.warn(`[Payaza] Rate service returned ${rateRes.status}, using fallback rate ${FALLBACK_RATE}`);
+        console.warn(`[Payaza] Rate service returned ${rateRes.status}, using fallback rate ${configuredFallback}`);
       }
     } catch (e) {
-      console.warn(`[Payaza] Rate fetch failed, using fallback rate ${FALLBACK_RATE}:`, e);
+      console.warn(`[Payaza] Rate fetch failed, using fallback rate ${configuredFallback}:`, e);
     }
 
     const secretKey = Deno.env.get("PAYAZA_SECRET_KEY");
