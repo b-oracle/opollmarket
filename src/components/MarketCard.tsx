@@ -401,7 +401,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
         {/* Content */}
         <div className="relative z-10 w-full overflow-visible">
-          <div className={`absolute inset-y-2 right-0 z-20 flex w-12 sm:w-14 flex-col items-center justify-end gap-1 ${isMulti || isEnded ? 'pb-2' : 'pb-[4.75rem] sm:pb-[5rem]'}`}>
+          <div className={`absolute top-3 bottom-3 right-2 sm:right-3 z-20 flex w-12 sm:w-14 flex-col items-center justify-end gap-1 ${isMulti || isEnded ? 'pb-1' : 'pb-[4.75rem] sm:pb-[5rem]'}`}>
             {isBoosted && (
               <div className="flex flex-col items-center gap-0.5">
                 <div className={`${actionIconSizeClass} rounded-full glass flex items-center justify-center bg-orange-500/20 animate-pulse`}>
