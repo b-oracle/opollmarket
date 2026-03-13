@@ -61,3 +61,7 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.verify-np-payout]
     verify_jwt = false
+  [functions.request-payaza-withdrawal]
+    verify_jwt = false
+  [functions.verify-bank-account]
+    verify_jwt = false
