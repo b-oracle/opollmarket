@@ -132,7 +132,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
           price,
           shares,
         });
-        track("bet_confirmed", { marketId, side, amount: numAmount });
+        track("prediction_confirmed", { marketId, side, amount: numAmount });
       }
       setStep("success");
     } catch (err: any) {
