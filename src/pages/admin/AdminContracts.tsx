@@ -84,8 +84,7 @@ const AdminContracts = () => {
         nft_buy_url: nftBuyUrl || null,
         market_creation_fee: parseFloat(marketCreationFee) || 50,
         token_decimals: parseInt(tokenDecimals) || 18,
-        naira_rate_markup: parseFloat(nairaRateMarkup) || 0,
-        fallback_naira_rate: parseFloat(fallbackNairaRate) || 1500,
+        updated_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         updated_by: user?.id || null,
       };
