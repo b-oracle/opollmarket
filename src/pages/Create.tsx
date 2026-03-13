@@ -103,7 +103,7 @@ interface GateCheck {
   detail?: string;
 }
 
-const DetailsField = ({ details, setDetails, error, touched: fieldTouched, onBlur, shakeClass }: { details: string; setDetails: (v: string) => void; error?: string | null; touched?: boolean; onBlur?: () => void; shakeClass?: string }) => {
+const DetailsField = ({ details, setDetails, error, touched: fieldTouched, onBlur, shakeClass, onGenerate, generating, aiCost }: { details: string; setDetails: (v: string) => void; error?: string | null; touched?: boolean; onBlur?: () => void; shakeClass?: string; onGenerate?: () => void; generating?: boolean; aiCost?: number }) => {
   const [preview, setPreview] = useState(false);
   return (
     <div className={`glass rounded-xl p-4 ${shakeClass || ""} ${fieldTouched && error ? "border-destructive/50" : ""}`}>
@@ -112,16 +112,29 @@ const DetailsField = ({ details, setDetails, error, touched: fieldTouched, onBlu
           <FileText className="w-4 h-4 text-primary" />
           More Details <span className="text-xs font-normal text-destructive">*</span>
         </label>
-        {details.trim() && (
-          <button
-            type="button"
-            onClick={() => setPreview(!preview)}
-            className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {preview ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            {preview ? "Edit" : "Preview"}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {onGenerate && (
+            <button
+              type="button"
+              onClick={onGenerate}
+              disabled={generating}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+              Generate (${(aiCost ?? 0.5).toFixed(2)})
+            </button>
+          )}
+          {details.trim() && (
+            <button
+              type="button"
+              onClick={() => setPreview(!preview)}
+              className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {preview ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              {preview ? "Edit" : "Preview"}
+            </button>
+          )}
+        </div>
       </div>
       {preview ? (
         <div className="bg-muted/50 border border-border rounded-xl px-4 py-3 min-h-[5rem] text-xs text-muted-foreground leading-relaxed">
@@ -187,6 +200,10 @@ const Create = () => {
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [activeMarketCount, setActiveMarketCount] = useState(0);
   const [exceededFreeLimit, setExceededFreeLimit] = useState(false);
+  const [aiGenerationCost, setAiGenerationCost] = useState(0.5);
+  const [generatingDesc, setGeneratingDesc] = useState(false);
+  const [generatingDetails, setGeneratingDetails] = useState(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -205,6 +222,7 @@ const Create = () => {
         setTokenDecimals(Number(data.token_decimals) ?? 18);
         setBlueMaxFreeMarkets(Number((data as any).blue_max_free_markets) || 5);
         setGoldMaxFreeMarkets(Number((data as any).gold_max_free_markets) || 20);
+        setAiGenerationCost(Number((data as any).ai_generation_cost ?? 0.5));
       }
       setSettingsLoaded(true);
     })();
@@ -433,6 +451,56 @@ const Create = () => {
     { value: "away_win", label: "Away Win" },
     { value: "draw", label: "Draw" },
   ];
+  // AI content generation handler
+  const handleAiGenerate = async (genType: "description" | "details" | "image") => {
+    if (!user) { toast.error("Sign in to use AI generation"); return; }
+    if (!title.trim()) { toast.error("Enter a market question first"); return; }
+
+    const setLoading = genType === "description" ? setGeneratingDesc : genType === "details" ? setGeneratingDetails : setGeneratingImage;
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-market-content", {
+        body: {
+          type: genType,
+          title: title.trim(),
+          category: category || undefined,
+          marketType,
+          options: marketType !== "binary" ? options.filter(o => o.trim()) : undefined,
+        },
+      });
+
+      if (error) {
+        const msg = typeof data === "object" && data?.error ? data.error : error.message || "AI generation failed";
+        toast.error(msg);
+        return;
+      }
+
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      if (genType === "description" && data?.content) {
+        setDescription(data.content);
+        toast.success(`Description generated! ($${data.cost || aiGenerationCost} charged)`);
+      } else if (genType === "details" && data?.content) {
+        setDetails(data.content);
+        toast.success(`Details generated! ($${data.cost || aiGenerationCost} charged)`);
+      } else if (genType === "image" && data?.imageUrl) {
+        setImagePreview(data.imageUrl);
+        setImageFile(null); // Clear any file since we have a URL now
+        toast.success(`Cover image generated! ($${data.cost || aiGenerationCost} charged)`);
+      } else {
+        toast.error("No content was generated");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "AI generation failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Image upload state
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -656,8 +724,8 @@ const Create = () => {
   const handleCreateMarket = useCallback(async () => {
     if (!user || !address) return;
 
-    // Validate cover image
-    if (!imageFile) {
+    // Validate cover image (either file upload or AI-generated URL)
+    if (!imageFile && !imagePreview) {
       toast.error("A cover image is required to create a market");
       return;
     }
@@ -781,10 +849,14 @@ const Create = () => {
     const needsReview = isSimilar || isFlagged || feeBypass;
     const marketStatus = needsReview ? "pending" : "active";
 
-    // Image was already uploaded in parallel — extract result
+    // Image was already uploaded in parallel — extract result, or use AI-generated URL
     let imageUrl: string | null = null;
     if (imageUploadResult.status === "fulfilled") {
       imageUrl = imageUploadResult.value as string | null;
+    }
+    // If no file was uploaded but we have an AI-generated image URL, use that
+    if (!imageUrl && imagePreview && !imagePreview.startsWith("blob:")) {
+      imageUrl = imagePreview;
     }
 
     // Save to database
@@ -1478,10 +1550,21 @@ const Create = () => {
               </div>
 
               <div className={`glass rounded-xl p-4 ${shakeClass("description")} ${touched.description && errors.description ? "border-destructive/50" : ""}`}>
-                <label className="flex items-center gap-2 text-sm font-semibold mb-2">
-                  <FileText className="w-4 h-4 text-primary" />
-                  Description
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold">
+                    <FileText className="w-4 h-4 text-primary" />
+                    Description
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => handleAiGenerate("description")}
+                    disabled={generatingDesc || !title.trim()}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {generatingDesc ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                    Generate (${aiGenerationCost.toFixed(2)})
+                  </button>
+                </div>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -1501,7 +1584,7 @@ const Create = () => {
                 </div>
               </div>
 
-              <DetailsField details={details} setDetails={setDetails} error={errors.details} touched={!!touched.details} onBlur={() => markTouched("details")} shakeClass={shakeClass("details")} />
+              <DetailsField details={details} setDetails={setDetails} error={errors.details} touched={!!touched.details} onBlur={() => markTouched("details")} shakeClass={shakeClass("details")} onGenerate={() => handleAiGenerate("details")} generating={generatingDetails} aiCost={aiGenerationCost} />
 
               {/* Market Type */}
               <div className="glass rounded-xl p-4">
@@ -1962,11 +2045,29 @@ const Create = () => {
 
               {/* Cover Image Upload */}
               <div className="glass rounded-xl p-4">
-                <label className="flex items-center gap-2 text-sm font-semibold mb-2">
-                  <ImageIcon className="w-4 h-4 text-primary" />
-                  Cover Image <span className="text-xs font-normal text-destructive">*</span>
-                </label>
-                {imagePreview ? (
+                <div className="flex items-center justify-between mb-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold">
+                    <ImageIcon className="w-4 h-4 text-primary" />
+                    Cover Image <span className="text-xs font-normal text-destructive">*</span>
+                  </label>
+                  {!imagePreview && (
+                    <button
+                      type="button"
+                      onClick={() => handleAiGenerate("image")}
+                      disabled={generatingImage || !title.trim()}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {generatingImage ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                      Generate (${aiGenerationCost.toFixed(2)})
+                    </button>
+                  )}
+                </div>
+                {generatingImage ? (
+                  <div className="w-full h-32 border-2 border-dashed border-primary/30 rounded-xl flex flex-col items-center justify-center gap-2 bg-primary/5">
+                    <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                    <span className="text-xs text-primary font-medium">Generating cover image...</span>
+                  </div>
+                ) : imagePreview ? (
                   <div className="relative rounded-xl overflow-hidden">
                     <img src={imagePreview} alt="Preview" className="w-full h-40 object-cover rounded-xl" />
                     <button

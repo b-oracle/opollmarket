@@ -51,3 +51,5 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.get-deposit-status]
     verify_jwt = false
+  [functions.generate-market-content]
+    verify_jwt = false
