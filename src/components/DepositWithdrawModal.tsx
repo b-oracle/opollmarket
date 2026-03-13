@@ -24,6 +24,7 @@ import {
   Copy,
   Check,
   Banknote,
+  RefreshCw,
   Coins,
 } from "lucide-react";
 
@@ -130,18 +131,22 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const [fiatTransferInfo, setFiatTransferInfo] = useState<FiatTransferInfo | null>(null);
   const [fiatCopied, setFiatCopied] = useState<string | null>(null);
   const [ngnRate, setNgnRate] = useState<number | null>(null);
+  const [rateLoading, setRateLoading] = useState(false);
 
-  // Fetch live NGN rate when fiat mode is selected
+  // Fetch live NGN rate
+  const fetchNgnRate = useCallback(async () => {
+    setRateLoading(true);
+    try {
+      const { data } = await supabase.functions.invoke("get-naira-rate");
+      if (data?.effective_rate) setNgnRate(data.effective_rate);
+    } catch { /* silent */ }
+    setRateLoading(false);
+  }, []);
+
   useEffect(() => {
     if (!open || paymentMethod !== "fiat") return;
-    const fetchRate = async () => {
-      try {
-        const { data } = await supabase.functions.invoke("get-naira-rate");
-        if (data?.effective_rate) setNgnRate(data.effective_rate);
-      } catch { /* silent */ }
-    };
-    fetchRate();
-  }, [open, paymentMethod]);
+    fetchNgnRate();
+  }, [open, paymentMethod, fetchNgnRate]);
 
   useEffect(() => {
     if (open) {
@@ -778,9 +783,20 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                             Pay with bank transfer via Payaza. Amount is converted from USD to NGN at the live rate and credited as USD to your balance.
                           </p>
                           {ngnRate && numAmount > 0 && (
-                            <p className="text-xs font-semibold text-primary mt-1">
-                              ≈ ₦{Math.ceil(numAmount * ngnRate).toLocaleString()} NGN (₦{ngnRate.toLocaleString()}/USD)
-                            </p>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <p className="text-xs font-semibold text-primary">
+                                ≈ ₦{Math.ceil(numAmount * ngnRate).toLocaleString()} NGN (₦{ngnRate.toLocaleString()}/USD)
+                              </p>
+                              <button
+                                type="button"
+                                onClick={fetchNgnRate}
+                                disabled={rateLoading}
+                                className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors"
+                                title="Refresh rate"
+                              >
+                                <RefreshCw className={`w-3 h-3 text-primary ${rateLoading ? "animate-spin" : ""}`} />
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>
