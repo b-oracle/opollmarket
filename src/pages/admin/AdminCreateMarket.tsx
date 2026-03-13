@@ -458,15 +458,17 @@ const AdminCreateMarket = () => {
         <div className={shakeClass("description")}>
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-semibold">Description</label>
-            <button
-              type="button"
-              onClick={() => handleAiGenerate("description")}
-              disabled={generatingDesc || !title.trim()}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {generatingDesc ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-              Generate (${aiGenerationCost})
-            </button>
+            {isFeatureEnabled("ai_generate_description") && (
+              <button
+                type="button"
+                onClick={() => handleAiGenerate("description")}
+                disabled={generatingDesc || !title.trim()}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {generatingDesc ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                Generate (${aiGenerationCost})
+              </button>
+            )}
           </div>
           <p className="text-[10px] text-muted-foreground mb-1.5">Type manually for free, or use AI to generate for a fee.</p>
           <textarea
