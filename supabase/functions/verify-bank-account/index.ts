@@ -223,7 +223,7 @@ async function tryPalmPayNameEnquiry(bankCode: string, accountNumber: string, ap
 
     if (res.ok) {
       const data = JSON.parse(text);
-      if (data?.respCode === "00000000" && data?.data?.status === "Success") {
+      if (data?.respCode === "00000000" && (data?.data?.status === "Success" || data?.data?.Status === "Success")) {
         return data.data.accountName || "";
       }
     }
