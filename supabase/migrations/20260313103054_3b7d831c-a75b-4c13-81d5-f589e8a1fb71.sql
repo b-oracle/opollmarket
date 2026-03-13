@@ -1,0 +1,1 @@
+ALTER TABLE public.commission_settings ADD COLUMN IF NOT EXISTS naira_rate_markup numeric NOT NULL DEFAULT 0;
