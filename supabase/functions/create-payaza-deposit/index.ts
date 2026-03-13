@@ -178,6 +178,21 @@ Deno.serve(async (req) => {
       payazaData = JSON.parse(payazaText);
     } catch {
       console.error("Payaza returned non-JSON response:", payazaText.substring(0, 300));
+
+      if (merchantKey) {
+        console.log("Falling back to checkout_sdk mode after non-JSON direct API response");
+        return new Response(
+          JSON.stringify({
+            mode: "checkout_sdk",
+            transaction_reference: transactionReference,
+            merchant_key: merchantKey,
+            email,
+            fallback_reason: "direct_api_unavailable",
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       return new Response(
         JSON.stringify({ error: "Payment service temporarily unavailable. Please try again later." }),
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -186,6 +201,21 @@ Deno.serve(async (req) => {
 
     if (!payazaResponse.ok) {
       console.error("Payaza API error:", payazaData);
+
+      if (merchantKey) {
+        console.log("Falling back to checkout_sdk mode after direct API error");
+        return new Response(
+          JSON.stringify({
+            mode: "checkout_sdk",
+            transaction_reference: transactionReference,
+            merchant_key: merchantKey,
+            email,
+            fallback_reason: "direct_api_error",
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       return new Response(
         JSON.stringify({ error: "Failed to initiate payment. Please try again." }),
         { status: 500, headers: corsHeaders }
