@@ -152,9 +152,9 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   }, []);
 
   useEffect(() => {
-    if (!open || paymentMethod !== "fiat") return;
-    fetchNgnRate();
-  }, [open, paymentMethod, fetchNgnRate]);
+    if (!open) return;
+    if (paymentMethod === "fiat" || withdrawMethod === "fiat") fetchNgnRate();
+  }, [open, paymentMethod, withdrawMethod, fetchNgnRate]);
 
   useEffect(() => {
     if (open) {
