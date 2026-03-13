@@ -36,7 +36,9 @@ interface FiatTransferInfo {
   bank_name: string;
   account_number: string;
   account_name: string;
-  amount: number;
+  amount_ngn: number;
+  amount_usd: number;
+  exchange_rate: number | null;
   currency: string;
   payment_url?: string | null;
   expires_at?: string | null;
