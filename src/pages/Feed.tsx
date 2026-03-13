@@ -437,6 +437,7 @@ const Feed = () => {
           bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))',
           left: sidebarLeft,
           right: 0,
+          transition: 'left 0.3s ease',
           ['--feed-card-height' as any]: 'calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px) - 4rem - env(safe-area-inset-bottom, 0px))',
         }}
         onTouchStart={pullHandlers.onTouchStart}
