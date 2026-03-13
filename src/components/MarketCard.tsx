@@ -236,6 +236,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   };
 
   const actionIconSizeClass = "w-[clamp(1.5rem,3.2vh,2rem)] h-[clamp(1.5rem,3.2vh,2rem)]";
+  const actionRailBottomClass = isMulti || isEnded ? "bottom-3" : "bottom-[5.8rem] sm:bottom-[6.2rem]";
 
   return (
     <>
