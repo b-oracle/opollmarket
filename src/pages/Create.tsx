@@ -724,8 +724,8 @@ const Create = () => {
   const handleCreateMarket = useCallback(async () => {
     if (!user || !address) return;
 
-    // Validate cover image
-    if (!imageFile) {
+    // Validate cover image (either file upload or AI-generated URL)
+    if (!imageFile && !imagePreview) {
       toast.error("A cover image is required to create a market");
       return;
     }
