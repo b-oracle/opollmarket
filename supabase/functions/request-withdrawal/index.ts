@@ -298,7 +298,56 @@ Deno.serve(async (req) => {
 
           if (payoutRes.ok) {
             const payoutData = await payoutRes.json();
-            payoutId = payoutData.withdrawals?.[0]?.id || payoutData.id;
+            const batchId = payoutData.id;
+            payoutId = payoutData.withdrawals?.[0]?.id || batchId;
+
+            // Step 4: Verify payout with 2FA (TOTP)
+            const totpSecret = Deno.env.get("NOWPAYMENTS_2FA_SECRET");
+            if (totpSecret) {
+              try {
+                const totp = new TOTP({
+                  issuer: "NOWPayments",
+                  label: "payout",
+                  algorithm: "SHA1",
+                  digits: 6,
+                  period: 30,
+                  secret: totpSecret,
+                });
+                const verificationCode = totp.generate();
+
+                const verifyRes = await fetch(
+                  `https://api.nowpayments.io/v1/payout/${batchId}/verify`,
+                  {
+                    method: "POST",
+                    headers: {
+                      "x-api-key": apiKey,
+                      "Authorization": `Bearer ${jwtToken}`,
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ verification_code: verificationCode }),
+                  }
+                );
+
+                if (!verifyRes.ok) {
+                  const verifyErr = await verifyRes.text();
+                  console.error("Payout verification failed:", verifyErr);
+                  // Payout created but not verified — will fall to manual
+                  payoutSuccess = false;
+                  payoutError = `Payout created but verification failed: ${verifyErr}`;
+                  break;
+                }
+
+                console.log("Payout verified successfully for batch:", batchId);
+              } catch (verifyErr) {
+                console.error("TOTP verification error:", verifyErr);
+                payoutSuccess = false;
+                payoutError = `Payout created but TOTP verification error: ${String(verifyErr)}`;
+                break;
+              }
+            } else {
+              console.warn("NOWPAYMENTS_2FA_SECRET not set — payout created but not verified");
+            }
+
             payoutSuccess = true;
             break;
           }
