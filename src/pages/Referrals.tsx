@@ -200,14 +200,14 @@ const Referrals = () => {
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}
                 className="glass rounded-xl p-4 text-center">
                 <Users className="w-5 h-5 text-primary mx-auto mb-1" />
-                <p className="text-xl font-bold">{totalReferrals}</p>
-                <p className="text-[10px] text-muted-foreground">Referrals</p>
+                <p className="text-xl font-bold">{totalSignups}</p>
+                <p className="text-[10px] text-muted-foreground">Signups</p>
               </motion.div>
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
                 className="glass rounded-xl p-4 text-center">
                 <DollarSign className="w-5 h-5 text-primary mx-auto mb-1" />
                 <p className="text-xl font-bold">${totalEarned.toFixed(2)}</p>
-                <p className="text-[10px] text-muted-foreground">Total Earned</p>
+                <p className="text-[10px] text-muted-foreground">Earned ({totalRewarded})</p>
               </motion.div>
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
                 className="glass rounded-xl p-4 text-center">
