@@ -85,10 +85,10 @@ Deno.serve(async (req) => {
         ngnAmount = Math.ceil(amount * effectiveRate);
         console.log(`[Payaza] USD ${amount} → NGN ${ngnAmount} (rate: ${effectiveRate})`);
       } else {
-        console.warn(`[Payaza] Rate service returned ${rateRes.status}, using fallback rate ${FALLBACK_RATE}`);
+        console.warn(`[Payaza] Rate service returned ${rateRes.status}, using fallback rate ${configuredFallback}`);
       }
     } catch (e) {
-      console.warn(`[Payaza] Rate fetch failed, using fallback rate ${FALLBACK_RATE}:`, e);
+      console.warn(`[Payaza] Rate fetch failed, using fallback rate ${configuredFallback}:`, e);
     }
 
     const secretKey = Deno.env.get("PAYAZA_SECRET_KEY");
