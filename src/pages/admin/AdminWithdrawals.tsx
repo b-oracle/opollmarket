@@ -403,6 +403,45 @@ const AdminWithdrawals = () => {
           </div>
         </>
       )}
+
+      {/* Fiat Bank Details Modal */}
+      {fiatDetails && (
+        <>
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50" onClick={() => setFiatDetails(null)} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-xs bg-card border border-border rounded-2xl p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold flex items-center gap-1.5"><Banknote className="w-4 h-4 text-primary" /> Recipient Bank Details</h3>
+              <button onClick={() => setFiatDetails(null)} className="p-1 rounded hover:bg-muted"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="space-y-3">
+              <div className="p-3 rounded-xl bg-muted/50 border border-border">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Account Name</p>
+                <p className="text-sm font-semibold">{fiatDetails.account_name}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-muted/50 border border-border">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Account Number</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-mono font-semibold">{fiatDetails.account_number}</p>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(fiatDetails.account_number); toast.success("Account number copied!"); }}
+                    className="p-1 rounded hover:bg-muted transition-colors"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+                  </button>
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-muted/50 border border-border">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Bank Code</p>
+                <p className="text-sm font-mono font-semibold">{fiatDetails.bank_code}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-muted/50 border border-border">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Withdrawal Amount</p>
+                <p className="text-sm font-bold text-primary">${Number(fiatDetails.amount).toFixed(2)}</p>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
