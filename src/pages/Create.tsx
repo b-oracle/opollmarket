@@ -103,7 +103,7 @@ interface GateCheck {
   detail?: string;
 }
 
-const DetailsField = ({ details, setDetails, error, touched: fieldTouched, onBlur, shakeClass }: { details: string; setDetails: (v: string) => void; error?: string | null; touched?: boolean; onBlur?: () => void; shakeClass?: string }) => {
+const DetailsField = ({ details, setDetails, error, touched: fieldTouched, onBlur, shakeClass, onGenerate, generating, aiCost }: { details: string; setDetails: (v: string) => void; error?: string | null; touched?: boolean; onBlur?: () => void; shakeClass?: string; onGenerate?: () => void; generating?: boolean; aiCost?: number }) => {
   const [preview, setPreview] = useState(false);
   return (
     <div className={`glass rounded-xl p-4 ${shakeClass || ""} ${fieldTouched && error ? "border-destructive/50" : ""}`}>
