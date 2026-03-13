@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
     // ─── Fetch settings ───
     const { data: settings } = await adminClient
       .from("commission_settings")
-      .select("min_withdrawal_amount, withdrawal_cooldown_minutes, withdrawal_multiplier, withdrawal_limit_enabled, withdrawal_fee_percent, naira_payout_markdown, fallback_naira_rate")
+      .select("min_withdrawal_amount, withdrawal_cooldown_minutes, withdrawal_multiplier, withdrawal_limit_enabled, withdrawal_fee_percent, naira_payout_markdown, fallback_naira_rate, payout_provider")
       .limit(1)
       .single();
 
@@ -120,6 +120,7 @@ Deno.serve(async (req) => {
     const withdrawalFeePercent = Math.max(0, Math.min(100, Number(settings?.withdrawal_fee_percent) || 0));
     const payoutMarkdown = Number(settings?.naira_payout_markdown) || 0;
     const fallbackRate = Number(settings?.fallback_naira_rate) || 1500;
+    const preferredProvider = (settings as any)?.payout_provider === "palmpay" ? "palmpay" : "payaza";
 
     if (!amount || amount < minWithdrawal || amount > 50000) {
       return new Response(
@@ -266,40 +267,53 @@ Deno.serve(async (req) => {
       nowpayments_payment_id: transactionReference,
     });
 
-    // ─── Attempt payouts: Payaza first, then PalmPay fallback ───
+    // ─── Attempt payouts: preferred provider first, then fallback ───
     let payoutSuccess = false;
     let payoutProvider = "";
 
-    // ─── Attempt 1: Payaza payout ───
+    console.log(`[Payout] Preferred provider: ${preferredProvider}`);
+
     const payazaSecretKey = Deno.env.get("PAYAZA_SECRET_KEY");
-    if (payazaSecretKey) {
-      payoutSuccess = await tryPayazaPayout({
-        secretKey: payazaSecretKey,
-        transactionReference,
-        ngnPayout,
-        accountNumber: account_number,
-        bankCode: bank_code,
-        accountName: account_name,
-        netAmount,
-      });
+    const palmPayAppId = Deno.env.get("PALMPAY_APP_ID");
+    const palmPayPrivateKey = Deno.env.get("PALMPAY_PRIVATE_KEY");
+
+    const payazaParams = {
+      secretKey: payazaSecretKey || "",
+      transactionReference,
+      ngnPayout,
+      accountNumber: account_number,
+      bankCode: bank_code,
+      accountName: account_name,
+      netAmount,
+    };
+
+    const palmPayParams = {
+      appId: palmPayAppId || "",
+      privateKey: palmPayPrivateKey || "",
+      transactionReference,
+      ngnPayout,
+      accountNumber: account_number,
+      bankCode: bank_code,
+      accountName: account_name,
+      netAmount,
+    };
+
+    // Try preferred provider first
+    if (preferredProvider === "palmpay" && palmPayAppId && palmPayPrivateKey) {
+      payoutSuccess = await tryPalmPayPayout(palmPayParams);
+      if (payoutSuccess) payoutProvider = "palmpay";
+    } else if (payazaSecretKey) {
+      payoutSuccess = await tryPayazaPayout(payazaParams);
       if (payoutSuccess) payoutProvider = "payaza";
     }
 
-    // ─── Attempt 2: PalmPay payout (fallback) ───
+    // Fallback to the other provider
     if (!payoutSuccess) {
-      const palmPayAppId = Deno.env.get("PALMPAY_APP_ID");
-      const palmPayPrivateKey = Deno.env.get("PALMPAY_PRIVATE_KEY");
-      if (palmPayAppId && palmPayPrivateKey) {
-        payoutSuccess = await tryPalmPayPayout({
-          appId: palmPayAppId,
-          privateKey: palmPayPrivateKey,
-          transactionReference,
-          ngnPayout,
-          accountNumber: account_number,
-          bankCode: bank_code,
-          accountName: account_name,
-          netAmount,
-        });
+      if (preferredProvider === "palmpay" && payazaSecretKey) {
+        payoutSuccess = await tryPayazaPayout(payazaParams);
+        if (payoutSuccess) payoutProvider = "payaza";
+      } else if (preferredProvider === "payaza" && palmPayAppId && palmPayPrivateKey) {
+        payoutSuccess = await tryPalmPayPayout(palmPayParams);
         if (payoutSuccess) payoutProvider = "palmpay";
       }
     }
