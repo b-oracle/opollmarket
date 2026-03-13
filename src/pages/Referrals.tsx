@@ -305,7 +305,7 @@ const Referrals = () => {
           <div className="space-y-3">
             {[
               { step: "1", text: "Share your referral link or username code with friends" },
-              { step: "2", text: "Your friend signs up and creates an account" },
+              { step: "2", text: "Your friend signs up — they appear instantly in your referral list as 'Pending'" },
               { step: "3", text: `When they place their first prediction, you earn a $${rewardAmount} bonus credit` },
               { step: "4", text: "Bonus credits are applied as fee credits on your future predictions" },
             ].map((item) => (
