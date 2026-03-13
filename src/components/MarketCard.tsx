@@ -239,7 +239,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
     <>
       <div
         ref={cardRef}
-        className={`snap-item relative w-full flex items-end px-3 sm:px-4 pb-2 overflow-hidden ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}
+        className={`snap-item relative w-full flex items-end pl-3 pr-[4.5rem] pb-2 sm:pl-4 sm:pr-[5rem] lg:pr-[5.5rem] overflow-hidden ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}
         style={{ 
           height: 'var(--feed-card-height)',
           minHeight: 'var(--feed-card-height)',
@@ -397,7 +397,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
 
         {/* Side actions */}
-        <div className="absolute right-3 bottom-2 z-20 flex flex-col items-center justify-end max-h-[calc(var(--feed-card-height,100vh)-6rem)] overflow-hidden gap-[clamp(0.125rem,1vh,0.5rem)]">
+        <div className="absolute inset-y-3 right-2 sm:right-3 lg:right-4 z-30 flex w-12 sm:w-14 flex-col items-center justify-end gap-1.5">
           {isBoosted && (
             <div className="flex flex-col items-center gap-0.5">
               <div className="w-[clamp(1.5rem,3.5vh,2.25rem)] h-[clamp(1.5rem,3.5vh,2.25rem)] rounded-full glass flex items-center justify-center bg-orange-500/20 animate-pulse">
@@ -443,7 +443,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         </div>
 
         {/* Content */}
-        <div className="relative z-10 w-full max-w-[calc(100%-3.5rem)] overflow-hidden">
+        <div className="relative z-10 w-full overflow-hidden">
           {/* Creator line + trending */}
           <div className="flex items-center gap-2 mb-1.5">
             <div
