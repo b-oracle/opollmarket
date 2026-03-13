@@ -42,9 +42,9 @@ const DesktopFooter = () => {
         <div className="grid grid-cols-3 gap-4 lg:gap-8 mb-8">
           {/* Brand */}
           <div>
-            <div className="flex items-center gap-2 mb-3">
-              <img src={logo} alt="OPOLL" className="h-7 w-7" />
-              <span className="text-xl font-bold tracking-tight text-primary">Poll</span>
+            <div className="flex items-center mb-3">
+              <img src={logoLight} alt="OPOLL" className="h-7 object-contain dark:hidden" />
+              <img src={logoDark} alt="OPOLL" className="h-7 object-contain hidden dark:block" />
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed max-w-[240px]">
               Predict the future, earn from it. The social prediction market platform.
