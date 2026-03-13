@@ -63,15 +63,17 @@ Deno.serve(async (req) => {
       bank_code: bank_code,
     };
 
-    // Try multiple endpoint patterns
+    // Try multiple endpoint patterns and auth formats
     const endpoints = [
       "https://api.payaza.africa/live/merchant-payout/name_enquiry/",
       "https://api.payaza.africa/live/merchant-payout/account/name-enquiry/",
+      "https://api.payaza.africa/live/merchant-collection/name-enquiry/",
     ];
     
     const authHeaders = [
       payazaAuthorization,
-      ...(merchantKey ? [`Payaza ${btoa(merchantKey)}`] : []),
+      `Bearer ${secretKey}`,
+      ...(merchantKey ? [`Payaza ${btoa(merchantKey)}`, `Bearer ${merchantKey}`] : []),
     ];
     let payazaResponse: Response | null = null;
     let lastError = "";
