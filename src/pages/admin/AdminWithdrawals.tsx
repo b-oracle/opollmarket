@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { logAuditEvent } from "@/lib/auditLog";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle2, XCircle, Clock, Search, RefreshCw, Copy, QrCode, X, ExternalLink } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Clock, Search, RefreshCw, Copy, QrCode, X, ExternalLink, Banknote } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ const AdminWithdrawals = () => {
   const [noteInput, setNoteInput] = useState("");
   const [txHashInput, setTxHashInput] = useState("");
   const [qrAddress, setQrAddress] = useState<string | null>(null);
+  const [fiatDetails, setFiatDetails] = useState<{ bank_code: string; account_number: string; account_name: string; amount: number } | null>(null);
   const [showActionModal, setShowActionModal] = useState<{
     id: string;
     action: "approve" | "reject";
@@ -192,25 +193,41 @@ const AdminWithdrawals = () => {
                     </TableCell>
                     <TableCell className="font-bold">${Number(w.amount).toFixed(2)}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-mono text-xs max-w-[100px] truncate" title={w.wallet_address}>
-                          {w.wallet_address}
-                        </span>
-                        <button
-                          onClick={() => { navigator.clipboard.writeText(w.wallet_address); toast.success("Wallet address copied!"); }}
-                          className="p-1 rounded hover:bg-muted transition-colors shrink-0"
-                          title="Copy address"
-                        >
-                          <Copy className="w-3 h-3 text-muted-foreground" />
-                        </button>
-                        <button
-                          onClick={() => setQrAddress(w.wallet_address)}
-                          className="p-1 rounded hover:bg-muted transition-colors shrink-0"
-                          title="Show QR code"
-                        >
-                          <QrCode className="w-3 h-3 text-muted-foreground" />
-                        </button>
-                      </div>
+                      {(() => {
+                        const isFiat = w.crypto_currency === "NGN";
+                        const parts = isFiat ? w.wallet_address?.split(":") : null;
+                        return (
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono text-xs max-w-[100px] truncate" title={w.wallet_address}>
+                              {isFiat && parts?.length === 3 ? `${parts[2]}` : w.wallet_address}
+                            </span>
+                            <button
+                              onClick={() => { navigator.clipboard.writeText(isFiat && parts?.length === 3 ? parts[1] : w.wallet_address); toast.success(isFiat ? "Account number copied!" : "Wallet address copied!"); }}
+                              className="p-1 rounded hover:bg-muted transition-colors shrink-0"
+                              title={isFiat ? "Copy account number" : "Copy address"}
+                            >
+                              <Copy className="w-3 h-3 text-muted-foreground" />
+                            </button>
+                            {isFiat && parts?.length === 3 ? (
+                              <button
+                                onClick={() => setFiatDetails({ bank_code: parts[0], account_number: parts[1], account_name: parts[2], amount: w.amount })}
+                                className="p-1 rounded hover:bg-muted transition-colors shrink-0"
+                                title="View bank details"
+                              >
+                                <Banknote className="w-3 h-3 text-muted-foreground" />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => setQrAddress(w.wallet_address)}
+                                className="p-1 rounded hover:bg-muted transition-colors shrink-0"
+                                title="Show QR code"
+                              >
+                                <QrCode className="w-3 h-3 text-muted-foreground" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </TableCell>
                     <TableCell>
                       {w.tx_hash ? (
@@ -383,6 +400,45 @@ const AdminWithdrawals = () => {
             >
               <Copy className="w-3.5 h-3.5" /> Copy Address
             </button>
+          </div>
+        </>
+      )}
+
+      {/* Fiat Bank Details Modal */}
+      {fiatDetails && (
+        <>
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50" onClick={() => setFiatDetails(null)} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-xs bg-card border border-border rounded-2xl p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold flex items-center gap-1.5"><Banknote className="w-4 h-4 text-primary" /> Recipient Bank Details</h3>
+              <button onClick={() => setFiatDetails(null)} className="p-1 rounded hover:bg-muted"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="space-y-3">
+              <div className="p-3 rounded-xl bg-muted/50 border border-border">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Account Name</p>
+                <p className="text-sm font-semibold">{fiatDetails.account_name}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-muted/50 border border-border">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Account Number</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-mono font-semibold">{fiatDetails.account_number}</p>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(fiatDetails.account_number); toast.success("Account number copied!"); }}
+                    className="p-1 rounded hover:bg-muted transition-colors"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+                  </button>
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-muted/50 border border-border">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Bank Code</p>
+                <p className="text-sm font-mono font-semibold">{fiatDetails.bank_code}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-muted/50 border border-border">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Withdrawal Amount</p>
+                <p className="text-sm font-bold text-primary">${Number(fiatDetails.amount).toFixed(2)}</p>
+              </div>
+            </div>
           </div>
         </>
       )}
