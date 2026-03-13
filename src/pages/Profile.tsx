@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAccount, useDisconnect } from "wagmi";
 import { useAppKit } from "@reown/appkit/react";
 import { useFilteredConnectors } from "@/hooks/useFilteredConnectors";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { bsc } from "wagmi/chains";
 import {
   Wallet, Gift, ArrowDownToLine, ArrowUpFromLine, ArrowUpRight, ArrowDownLeft,
