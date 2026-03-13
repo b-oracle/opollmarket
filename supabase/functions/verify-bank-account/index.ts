@@ -78,7 +78,8 @@ Deno.serve(async (req) => {
     let payazaResponse: Response | null = null;
     let lastError = "";
 
-    // Try each endpoint+auth combination until one works
+    // Try each endpoint+auth combination until one succeeds (2xx)
+    // Skip auth-rejection errors (400/401/403) and keep trying
     outer:
     for (const url of endpoints) {
       for (const auth of authHeaders) {
@@ -92,20 +93,23 @@ Deno.serve(async (req) => {
           body: JSON.stringify(payload),
         };
 
+        const tryFetch = async (label: string, opts: any) => {
+          const res = await fetch(url, opts);
+          const preview = await res.clone().text();
+          console.log(`${label} ${url} auth=${auth.substring(0, 20)}... → ${res.status}: ${preview.substring(0, 300)}`);
+          if (preview.includes("<html") || preview.includes("<!DOCTYPE")) return null;
+          return res;
+        };
+
         // Try proxy first
         if (proxyUrl) {
           try {
             const httpClient = Deno.createHttpClient({ proxy: { url: proxyUrl } });
-            const res = await fetch(url, { ...fetchOpts, /* @ts-ignore */ client: httpClient });
+            const res = await tryFetch("Proxy", { ...fetchOpts, /* @ts-ignore */ client: httpClient });
             httpClient.close();
-            const preview = await res.clone().text();
-            console.log(`Proxy ${url} auth=${auth.substring(0, 15)}... → ${res.status}: ${preview.substring(0, 200)}`);
-            if (!preview.includes("<html") && !preview.includes("<!DOCTYPE")) {
-              if (res.ok || (res.status >= 400 && res.status < 500)) {
-                payazaResponse = res;
-                break outer;
-              }
-            }
+            if (res?.ok) { payazaResponse = res; break outer; }
+            // Keep non-auth errors (like 404 = account not found)
+            if (res && res.status === 404) { payazaResponse = res; break outer; }
           } catch (err) {
             lastError = String(err);
           }
@@ -113,15 +117,9 @@ Deno.serve(async (req) => {
 
         // Direct fallback
         try {
-          const res = await fetch(url, fetchOpts);
-          const preview = await res.clone().text();
-          console.log(`Direct ${url} auth=${auth.substring(0, 15)}... → ${res.status}: ${preview.substring(0, 200)}`);
-          if (!preview.includes("<html") && !preview.includes("<!DOCTYPE")) {
-            if (res.ok || (res.status >= 400 && res.status < 500)) {
-              payazaResponse = res;
-              break outer;
-            }
-          }
+          const res = await tryFetch("Direct", fetchOpts);
+          if (res?.ok) { payazaResponse = res; break outer; }
+          if (res && res.status === 404) { payazaResponse = res; break outer; }
         } catch (err) {
           lastError = String(err);
         }
