@@ -142,82 +142,20 @@ Deno.serve(async (req) => {
     let payazaResponse: Response;
 
     if (proxyUrl) {
-      // Route through QuotaGuard static IP proxy
+      // Route through QuotaGuard static IP proxy using Deno's built-in proxy support
       console.log("Using QuotaGuard proxy for Payaza request");
-      const proxy = new URL(proxyUrl);
-      const proxyHost = proxy.hostname;
-      const proxyPort = parseInt(proxy.port) || 9293;
-      const proxyAuth = btoa(`${proxy.username}:${proxy.password}`);
-
-      // Use HTTP CONNECT tunnel via Deno.connect
-      const conn = await Deno.connect({ hostname: proxyHost, port: proxyPort });
-      const connectReq = `CONNECT router.payaza.africa:443 HTTP/1.1\r\nHost: router.payaza.africa:443\r\nProxy-Authorization: Basic ${proxyAuth}\r\n\r\n`;
-      await conn.write(new TextEncoder().encode(connectReq));
-
-      // Read CONNECT response
-      const buf = new Uint8Array(4096);
-      const n = await conn.read(buf);
-      const connectResponse = new TextDecoder().decode(buf.subarray(0, n!));
-      console.log("Proxy CONNECT response:", connectResponse.split("\r\n")[0]);
-
-      if (!connectResponse.includes("200")) {
-        conn.close();
-        console.error("Proxy CONNECT failed:", connectResponse);
-        return new Response(
-          JSON.stringify({ error: "Payment proxy connection failed. Please try again." }),
-          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // Upgrade to TLS
-      const tlsConn = await Deno.startTls(conn, { hostname: "router.payaza.africa" });
-
-      const bodyStr = JSON.stringify(collectionPayload);
-      const httpReq = `POST /api/v1/collection/ HTTP/1.1\r\nHost: router.payaza.africa\r\nContent-Type: application/json\r\nAuthorization: Payaza ${secretKey}\r\nContent-Length: ${new TextEncoder().encode(bodyStr).length}\r\nConnection: close\r\n\r\n${bodyStr}`;
-
-      await tlsConn.write(new TextEncoder().encode(httpReq));
-
-      // Read full response
-      const chunks: Uint8Array[] = [];
-      while (true) {
-        const chunk = new Uint8Array(8192);
-        const bytesRead = await tlsConn.read(chunk);
-        if (bytesRead === null) break;
-        chunks.push(chunk.subarray(0, bytesRead));
-      }
-      tlsConn.close();
-
-      const totalLen = chunks.reduce((acc, c) => acc + c.length, 0);
-      const fullBuf = new Uint8Array(totalLen);
-      let offset = 0;
-      for (const c of chunks) { fullBuf.set(c, offset); offset += c.length; }
-      const rawResponse = new TextDecoder().decode(fullBuf);
-
-      // Split headers and body
-      const headerEnd = rawResponse.indexOf("\r\n\r\n");
-      const statusLine = rawResponse.split("\r\n")[0];
-      const statusCode = parseInt(statusLine.split(" ")[1]) || 500;
-      let responseBody = rawResponse.substring(headerEnd + 4);
-
-      // Handle chunked transfer encoding
-      if (rawResponse.toLowerCase().includes("transfer-encoding: chunked")) {
-        const decoded: string[] = [];
-        let remaining = responseBody;
-        while (remaining.length > 0) {
-          const lineEnd = remaining.indexOf("\r\n");
-          if (lineEnd === -1) break;
-          const chunkSize = parseInt(remaining.substring(0, lineEnd), 16);
-          if (chunkSize === 0) break;
-          decoded.push(remaining.substring(lineEnd + 2, lineEnd + 2 + chunkSize));
-          remaining = remaining.substring(lineEnd + 2 + chunkSize + 2);
-        }
-        responseBody = decoded.join("");
-      }
-
-      payazaResponse = new Response(responseBody, {
-        status: statusCode,
-        headers: { "Content-Type": "application/json" },
+      const httpClient = Deno.createHttpClient({ proxy: { url: proxyUrl } });
+      payazaResponse = await fetch(payazaApiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Payaza ${secretKey}`,
+        },
+        body: JSON.stringify(collectionPayload),
+        // @ts-ignore - Deno-specific option
+        client: httpClient,
       });
+      httpClient.close();
     } else {
       // Direct request (no proxy)
       console.log("No proxy configured, making direct Payaza request");
