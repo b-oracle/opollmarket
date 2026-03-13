@@ -19,6 +19,7 @@ const AdminContracts = () => {
 
   useEffect(() => {
     fetchContracts();
+    fetchLiveRate();
   }, []);
 
   const fetchContracts = async () => {
