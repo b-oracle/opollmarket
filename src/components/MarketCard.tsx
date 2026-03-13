@@ -396,7 +396,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           </div>
         </div>
 
-        <div className={`absolute ${actionRailBottomClass} right-2 sm:right-4 lg:right-6 z-30 flex w-12 sm:w-14 flex-col items-center gap-1.5 pointer-events-auto`}>
+        <div className={`absolute ${actionRailBottomClass} right-2 sm:right-4 lg:right-24 z-30 flex w-12 sm:w-14 flex-col items-center gap-1.5 pointer-events-auto`}>
           {isBoosted && (
             <div className="flex flex-col items-center gap-0.5">
               <div className={`${actionIconSizeClass} rounded-full glass bg-background/70 border border-border shadow-md flex items-center justify-center bg-orange-500/20 animate-pulse`}>
