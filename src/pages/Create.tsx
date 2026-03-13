@@ -112,10 +112,30 @@ const DetailsField = ({ details, setDetails, error, touched: fieldTouched, onBlu
           <FileText className="w-4 h-4 text-primary" />
           More Details <span className="text-xs font-normal text-destructive">*</span>
         </label>
-        {details.trim() && (
-          <button
-            type="button"
-            onClick={() => setPreview(!preview)}
+        <div className="flex items-center gap-2">
+          {onGenerate && (
+            <button
+              type="button"
+              onClick={onGenerate}
+              disabled={generating}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+              Generate (${(aiCost ?? 0.5).toFixed(2)})
+            </button>
+          )}
+          {details.trim() && (
+            <button
+              type="button"
+              onClick={() => setPreview(!preview)}
+              className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {preview ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              {preview ? "Edit" : "Preview"}
+            </button>
+          )}
+        </div>
+      </div>
             className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             {preview ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
