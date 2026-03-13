@@ -720,7 +720,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                     )}
 
                     {/* Info */}
-                    {isDeposit && (
+                    {isDeposit && paymentMethod === "crypto" && (
                       <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border mb-5">
                         <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                         <p className="text-[10px] text-muted-foreground">
