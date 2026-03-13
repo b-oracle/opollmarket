@@ -185,21 +185,11 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
             setStep("success");
             return;
           }
-          // Show fiat transfer info — we store transaction_reference in nowpayments_payment_id
-          setFiatTransferInfo({
-            transaction_reference: resumePaymentId,
-            bank_name: data.bank_name || "Transfer Bank",
-            account_number: data.account_number || "",
-            account_name: data.account_name || "Opoll",
-            amount_ngn: data.amount_ngn || data.pay_amount || 0,
-            amount_usd: data.amount_usd || data.pay_amount || 0,
-            exchange_rate: data.exchange_rate || null,
-            currency: "NGN",
-            expires_at: data.expires_at || null,
-          });
+          // Show simplified fiat pending view (bank details aren't stored for resume)
+          setAmount(String(data.amount_usd || data.pay_amount || 0));
           setPaymentMethod("fiat");
           setDepositCreatedAt(new Date(data.created_at).getTime());
-          setStep("awaiting_fiat_transfer");
+          setStep("awaiting_fiat");
           startPolling(resumePaymentId);
           return;
         }
