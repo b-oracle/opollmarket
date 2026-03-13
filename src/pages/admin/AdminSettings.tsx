@@ -469,7 +469,7 @@ const AdminSettings = () => {
                     <Input id="qtMaxBet" type="number" min={1} step={1} value={qtMaxBet} onChange={(e) => setQtMaxBet(e.target.value)} placeholder="500" />
                   </div>
                 </div>
-                {qtMaxBetNum < qtMinBetNum && <p className="text-[10px] text-destructive">Max bet must be ≥ min bet.</p>}
+                {qtMaxBetNum < qtMinBetNum && <p className="text-[10px] text-destructive">Max trade must be ≥ min trade.</p>}
               </CardContent>
             </Card>
 

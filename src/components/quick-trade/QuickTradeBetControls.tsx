@@ -101,7 +101,7 @@ export default function QuickTradeBetControls({
       {placing && (
         <div className="flex items-center justify-center gap-2 mt-3">
           <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-          <span className="text-xs text-muted-foreground">Placing bet...</span>
+          <span className="text-xs text-muted-foreground">Placing trade...</span>
         </div>
       )}
     </div>

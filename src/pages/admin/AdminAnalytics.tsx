@@ -369,7 +369,7 @@ const AdminAnalytics = () => {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground text-center py-4">No bet events recorded yet</p>
+          <p className="text-sm text-muted-foreground text-center py-4"><p className="text-sm text-muted-foreground text-center py-4">No prediction events recorded yet</p></p>
         )}
       </div>
 

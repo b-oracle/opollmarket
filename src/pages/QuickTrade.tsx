@@ -1072,7 +1072,7 @@ export default function QuickTrade() {
       if (newBet && newBet.length > 0) setUserBet(newBet[0] as unknown as Bet);
     } catch (err: any) {
       haptic("error");
-      toast({ title: "Failed to place bet", description: err.message, variant: "destructive" });
+      toast({ title: "Failed to place trade", description: err.message, variant: "destructive" });
     } finally {
       setPlacing(false);
     }
