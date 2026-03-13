@@ -39,6 +39,7 @@ const CATEGORIES = [
 const AdminCreateMarket = () => {
   const navigate = useNavigate();
   const { user, displayName } = useAuth();
+  const { isFeatureEnabled } = useFeatureToggles();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state

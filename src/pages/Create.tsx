@@ -184,6 +184,7 @@ const Create = () => {
   const { open } = useAppKit();
   const { connect, connectors, isPending } = useFilteredConnectors();
   const { user, loading: authLoading, displayName } = useAuth();
+  const { isFeatureEnabled } = useFeatureToggles();
   const navigate = useNavigate();
   const location = useLocation();
   const { balance } = useUserBalance();
