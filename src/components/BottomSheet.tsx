@@ -14,6 +14,9 @@ interface BottomSheetProps {
 }
 
 const BottomSheet = ({ open, onClose, children, maxHeight = "85dvh", className = "" }: BottomSheetProps) => {
+  const { collapsed } = useSidebarState();
+  const isMobile = useIsMobile();
+  const sidebarLeft = isMobile ? 0 : collapsed ? '4.5rem' : '15rem';
   return (
     <AnimatePresence>
       {open && (
