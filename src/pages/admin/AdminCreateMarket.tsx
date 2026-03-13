@@ -618,13 +618,24 @@ const AdminCreateMarket = () => {
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full h-32 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/40 hover:bg-primary/5 transition-all"
-              >
-                <Upload className="w-6 h-6 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">Click to upload (max 5MB)</span>
-              </button>
+              <div className="space-y-3">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full h-32 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/40 hover:bg-primary/5 transition-all"
+                >
+                  <Upload className="w-6 h-6 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Click to upload (max 5MB)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAiGenerate("image")}
+                  disabled={generatingImage || !title.trim()}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {generatingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  {generatingImage ? "Generating..." : `✨ Generate Cover Image ($${aiGenerationCost})`}
+                </button>
+              </div>
             )}
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
           </>
