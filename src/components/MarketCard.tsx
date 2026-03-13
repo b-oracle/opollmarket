@@ -444,7 +444,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         {/* Content */}
         <div className="relative z-10 w-full overflow-visible">
           {/* Creator line + trending */}
-          <div className="flex items-center gap-2 mb-1.5 pr-14 sm:pr-16 lg:pr-24">
+          <div className="flex items-center gap-2 mb-1.5 pr-14 sm:pr-16 lg:pr-32">
             <div
               className={`flex items-center gap-2 min-w-0 ${market.creatorAddress ? 'cursor-pointer group/creator' : ''}`}
               onClick={(e) => {
