@@ -411,9 +411,10 @@ async function tryPayazaPayout(params: PayazaPayoutParams): Promise<boolean> {
 
   try {
     const proxyUrl = Deno.env.get("QUOTAGUARD_URL");
+    const transactionPin = Deno.env.get("PAYAZA_TRANSACTION_PIN");
     const authVariants = getPayazaAuthVariants(secretKey, merchantKey || undefined);
 
-    const payoutPayload = {
+    const payoutPayload: Record<string, unknown> = {
       transaction_type: "nuban",
       transaction_reference: transactionReference,
       amount: ngnPayout,
@@ -424,6 +425,11 @@ async function tryPayazaPayout(params: PayazaPayoutParams): Promise<boolean> {
       narration: `OPOLL withdrawal $${netAmount.toFixed(2)}`,
       sender_name: "OPOLL",
     };
+
+    // Include transaction PIN if configured
+    if (transactionPin) {
+      payoutPayload.transaction_pin = transactionPin;
+    }
 
     const payazaUrl = "https://api.payaza.africa/live/merchant-payout/initiate_payout/";
 
