@@ -786,9 +786,9 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                           <span className="font-bold text-lg">${numAmount.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Currency</span>
+                          <span className="text-muted-foreground">Payment Method</span>
                           <span className="font-semibold">
-                            {ALL_CRYPTO_OPTIONS.find((c) => c.value === selectedCrypto)?.label}
+                            {isDeposit && paymentMethod === "fiat" ? "Fiat (NGN)" : ALL_CRYPTO_OPTIONS.find((c) => c.value === selectedCrypto)?.label}
                           </span>
                         </div>
                         {!isDeposit && (
@@ -802,7 +802,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
 
                     <div className="space-y-3">
                       <HoldToConfirmButton
-                        onConfirm={isDeposit ? handleDeposit : handleWithdraw}
+                        onConfirm={isDeposit ? (paymentMethod === "fiat" ? handleFiatDeposit : handleDeposit) : handleWithdraw}
                         label={isDeposit ? "Hold to Confirm Deposit" : "Hold to Confirm Withdrawal"}
                       />
                       <p className="text-[10px] text-center text-muted-foreground">Press and hold the button for 1.5s to confirm</p>
