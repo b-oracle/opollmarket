@@ -142,7 +142,7 @@ const Referrals = () => {
     }
   };
 
-  const isDataLoading = authLoading || profileLoading || rewardsLoading;
+  const isDataLoading = authLoading || profileLoading || signupsLoading || rewardsLoading;
 
   if (!authLoading && !user) {
     return (
