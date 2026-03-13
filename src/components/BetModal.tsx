@@ -370,7 +370,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                           setShowTerms(true);
                           return;
                         }
-                        track(orderType === "limit" ? "limit_order_started" : "bet_placed", { marketId, side, amount: numAmount });
+                        track(orderType === "limit" ? "limit_order_started" : "prediction_placed", { marketId, side, amount: numAmount });
                         setStep("confirm");
                       }}
                       disabled={!isValid || !user || !isEmailVerified}
