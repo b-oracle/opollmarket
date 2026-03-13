@@ -385,7 +385,8 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
         body: { amount: numAmount },
       });
       if (error || data?.error) {
-        throw new Error(data?.error || error?.message || "Failed to create fiat deposit");
+        const msg = data?.error || "Payment service temporarily unavailable. Please try again later.";
+        throw new Error(msg);
       }
 
       if (data.mode === "direct_api") {
