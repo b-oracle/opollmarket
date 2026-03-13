@@ -101,11 +101,7 @@ async function tryPayazaNameEnquiry(
     const encodedSecret = btoa(secretKey);
     authVariants.push({
       label: "payaza-secret",
-      headers: { Authorization: `Payaza ${encodedSecret}` },
-    });
-    authVariants.push({
-      label: "bearer-secret",
-      headers: { Authorization: `Bearer ${secretKey}` },
+      headers: { Authorization: `Payaza ${encodedSecret}`, "X-TenantID": "live" },
     });
   }
 
@@ -113,15 +109,7 @@ async function tryPayazaNameEnquiry(
     const encodedMerchant = btoa(merchantKey);
     authVariants.push({
       label: "payaza-merchant",
-      headers: { Authorization: `Payaza ${encodedMerchant}` },
-    });
-    authVariants.push({
-      label: "bearer-merchant",
-      headers: { Authorization: `Bearer ${merchantKey}` },
-    });
-    authVariants.push({
-      label: "x-api-key-merchant",
-      headers: { "x-api-key": merchantKey },
+      headers: { Authorization: `Payaza ${encodedMerchant}`, "X-TenantID": "live" },
     });
   }
 
