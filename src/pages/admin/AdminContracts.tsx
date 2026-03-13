@@ -40,6 +40,7 @@ const AdminContracts = () => {
         setMarketCreationFee(String(data.market_creation_fee ?? 50));
         setTokenDecimals(String(data.token_decimals ?? 18));
         setNairaRateMarkup(String((data as any).naira_rate_markup ?? 0));
+        setFallbackNairaRate(String((data as any).fallback_naira_rate ?? 1500));
       }
     } catch (err) {
       console.error("Failed to fetch contract settings:", err);
