@@ -429,8 +429,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             <span className="text-[9px] text-muted-foreground leading-none">{bookmarkCount > 0 ? formatCount(bookmarkCount) : (bookmarked ? "Saved" : "Save")}</span>
           </button>
           <button onClick={() => navigate(`/market/${market.id}`)} className="flex flex-col items-center gap-0.5 group">
-            <div className="w-[clamp(1.75rem,4vh,2.25rem)] h-[clamp(1.75rem,4vh,2.25rem)] rounded-full glass flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-              <ExternalLink className="w-4 h-4 text-foreground/70 group-hover:text-primary transition-colors" />
+            <div className="w-[clamp(1.5rem,3.5vh,2.25rem)] h-[clamp(1.5rem,3.5vh,2.25rem)] rounded-full glass flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+              <ExternalLink className="w-3.5 h-3.5 text-foreground/70 group-hover:text-primary transition-colors" />
             </div>
             <span className="text-[9px] text-muted-foreground leading-none">Details</span>
           </button>
