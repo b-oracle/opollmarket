@@ -642,7 +642,36 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                       ))}
                     </div>
 
-                    {/* Crypto selector */}
+                    {/* Payment method toggle (deposit only) */}
+                    {isDeposit && fiatEnabled && (
+                      <div className="flex gap-1 p-1 rounded-xl bg-muted/50 mb-4">
+                        <button
+                          onClick={() => setPaymentMethod("crypto")}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                            paymentMethod === "crypto"
+                              ? "bg-primary text-primary-foreground"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <Coins className="w-3.5 h-3.5" />
+                          Crypto
+                        </button>
+                        <button
+                          onClick={() => setPaymentMethod("fiat")}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                            paymentMethod === "fiat"
+                              ? "bg-primary text-primary-foreground"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <Banknote className="w-3.5 h-3.5" />
+                          Fiat (NGN)
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Crypto selector (only for crypto deposits or withdrawals) */}
+                    {(paymentMethod === "crypto" || !isDeposit) && (
                     <div className="mb-5">
                       <label className="text-xs text-muted-foreground mb-1.5 block">
                         {isDeposit ? "Pay with" : "Receive as"}
@@ -664,6 +693,17 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                         ))}
                       </select>
                     </div>
+                    )}
+
+                    {/* Fiat info */}
+                    {isDeposit && paymentMethod === "fiat" && (
+                      <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border mb-5">
+                        <Banknote className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                        <p className="text-[10px] text-muted-foreground">
+                          Pay with bank transfer or card via Payaza. Amount will be charged in Nigerian Naira (NGN) and credited as USD to your balance.
+                        </p>
+                      </div>
+                    )}
 
                     {/* Wallet address for withdrawals */}
                     {!isDeposit && (
