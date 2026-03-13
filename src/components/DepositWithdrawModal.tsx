@@ -1042,13 +1042,23 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                         </div>
                         <div>
                           <label className="text-xs text-muted-foreground mb-1.5 block">Account Name</label>
-                          <input
-                            type="text"
-                            value={accountName}
-                            onChange={(e) => setAccountName(e.target.value)}
-                            placeholder="John Doe"
-                            className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
-                          />
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={accountName}
+                              readOnly
+                              placeholder={accountNameLoading ? "Verifying..." : accountNumber.length === 10 ? "Resolving account..." : "Enter account number first"}
+                              className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm transition-all ${
+                                accountNameResolved ? "border-green-500/50 bg-green-500/5 font-semibold" : "border-border"
+                              }`}
+                            />
+                            {accountNameLoading && (
+                              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                            )}
+                            {accountNameResolved && (
+                              <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
+                            )}
+                          </div>
                         </div>
                         {ngnRate && numAmount > 0 && (
                           <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border">
