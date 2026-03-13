@@ -99,6 +99,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
 
   const [tab, setTab] = useState<Tab>(initialTab);
   const [amount, setAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("crypto");
   const [walletAddress, setWalletAddress] = useState("");
   const [selectedCrypto, setSelectedCrypto] = useState("usdtbsc");
   const [step, setStep] = useState<FlowStep>("input");
