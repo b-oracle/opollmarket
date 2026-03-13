@@ -22,29 +22,53 @@ function generateNonceStr(len = 32): string {
   return result;
 }
 
-// PKCS#1 → PKCS#8 wrapper: prepends the RSA AlgorithmIdentifier sequence
+// Proper ASN.1 DER length encoding
+function encodeDerLength(length: number): Uint8Array {
+  if (length < 0x80) {
+    return new Uint8Array([length]);
+  } else if (length < 0x100) {
+    return new Uint8Array([0x81, length]);
+  } else if (length < 0x10000) {
+    return new Uint8Array([0x82, (length >> 8) & 0xff, length & 0xff]);
+  } else {
+    return new Uint8Array([0x83, (length >> 16) & 0xff, (length >> 8) & 0xff, length & 0xff]);
+  }
+}
+
+// Proper PKCS#1 → PKCS#8 wrapper with correct ASN.1 DER encoding
 function wrapPkcs1ToPkcs8(pkcs1Der: Uint8Array): Uint8Array {
-  // ASN.1 header for PKCS#8 wrapping an RSA key
-  const header = new Uint8Array([
-    0x30, 0x82, 0x00, 0x00, // SEQUENCE (length placeholder)
-    0x02, 0x01, 0x00,       // INTEGER 0 (version)
-    0x30, 0x0d,             // SEQUENCE (AlgorithmIdentifier)
-    0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01, // OID rsaEncryption
-    0x05, 0x00,             // NULL
-    0x04, 0x82, 0x00, 0x00, // OCTET STRING (length placeholder)
+  // AlgorithmIdentifier for RSA: SEQUENCE { OID rsaEncryption, NULL }
+  const algorithmIdentifier = new Uint8Array([
+    0x30, 0x0d,
+    0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01,
+    0x05, 0x00,
   ]);
-  const totalLen = header.length + pkcs1Der.length;
-  const result = new Uint8Array(totalLen);
-  result.set(header);
-  result.set(pkcs1Der, header.length);
-  // Patch outer SEQUENCE length (totalLen - 4)
-  const outerLen = totalLen - 4;
-  result[2] = (outerLen >> 8) & 0xff;
-  result[3] = outerLen & 0xff;
-  // Patch OCTET STRING length
-  const octetLen = pkcs1Der.length;
-  result[header.length - 2] = (octetLen >> 8) & 0xff;
-  result[header.length - 1] = octetLen & 0xff;
+
+  // Version INTEGER 0
+  const version = new Uint8Array([0x02, 0x01, 0x00]);
+
+  // OCTET STRING wrapping the PKCS#1 key
+  const octetStringTag = new Uint8Array([0x04]);
+  const octetStringLen = encodeDerLength(pkcs1Der.length);
+
+  // Total inner content length
+  const innerLen = version.length + algorithmIdentifier.length + octetStringTag.length + octetStringLen.length + pkcs1Der.length;
+
+  // Outer SEQUENCE
+  const sequenceTag = new Uint8Array([0x30]);
+  const sequenceLen = encodeDerLength(innerLen);
+
+  // Assemble
+  const result = new Uint8Array(sequenceTag.length + sequenceLen.length + innerLen);
+  let offset = 0;
+  result.set(sequenceTag, offset); offset += sequenceTag.length;
+  result.set(sequenceLen, offset); offset += sequenceLen.length;
+  result.set(version, offset); offset += version.length;
+  result.set(algorithmIdentifier, offset); offset += algorithmIdentifier.length;
+  result.set(octetStringTag, offset); offset += octetStringTag.length;
+  result.set(octetStringLen, offset); offset += octetStringLen.length;
+  result.set(pkcs1Der, offset);
+
   return result;
 }
 
@@ -61,19 +85,38 @@ async function palmPaySign(body: Record<string, unknown>, privateKeyPem: string)
     .replace(/-----BEGIN (?:RSA )?PRIVATE KEY-----/g, "")
     .replace(/-----END (?:RSA )?PRIVATE KEY-----/g, "")
     .replace(/\s/g, "");
-  let binaryDer = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0));
+  const rawDer = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0));
 
-  if (isPkcs1) {
-    binaryDer = wrapPkcs1ToPkcs8(binaryDer);
+  // Try importing the key - attempt PKCS#8 first, then wrap PKCS#1 if needed
+  let key: CryptoKey;
+  try {
+    // Try direct PKCS#8 import first (handles both PKCS#8 keys and correctly-formatted ones)
+    key = await crypto.subtle.importKey(
+      "pkcs8",
+      rawDer.buffer,
+      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-1" },
+      false,
+      ["sign"]
+    );
+    console.log("PalmPay key imported as PKCS#8 directly");
+  } catch (e1) {
+    console.log("Direct PKCS#8 import failed, trying PKCS#1 wrapping:", String(e1).substring(0, 100));
+    try {
+      // Wrap PKCS#1 to PKCS#8 and retry
+      const pkcs8Der = wrapPkcs1ToPkcs8(rawDer);
+      key = await crypto.subtle.importKey(
+        "pkcs8",
+        pkcs8Der.buffer,
+        { name: "RSASSA-PKCS1-v1_5", hash: "SHA-1" },
+        false,
+        ["sign"]
+      );
+      console.log("PalmPay key imported after PKCS#1→PKCS#8 wrapping");
+    } catch (e2) {
+      console.error("Both PKCS#8 and PKCS#1 wrapping failed:", String(e2));
+      throw new Error("Failed to import PalmPay private key. Please verify the key format.");
+    }
   }
-
-  const key = await crypto.subtle.importKey(
-    "pkcs8",
-    binaryDer.buffer,
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-1" },
-    false,
-    ["sign"]
-  );
 
   const signature = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, encoder.encode(md5Hex));
   return encodeBase64(new Uint8Array(signature));
@@ -131,20 +174,21 @@ Deno.serve(async (req) => {
     const preferredProvider = (settings as any)?.payout_provider === "palmpay" ? "palmpay" : "payaza";
 
     const payazaSecretKey = Deno.env.get("PAYAZA_SECRET_KEY");
+    const payazaMerchantKey = Deno.env.get("PAYAZA_MERCHANT_KEY");
     const palmPayAppId = Deno.env.get("PALMPAY_APP_ID");
     const palmPayPrivateKey = Deno.env.get("PALMPAY_PRIVATE_KEY");
 
     // ─── Try preferred provider first ───
     if (preferredProvider === "palmpay" && palmPayAppId && palmPayPrivateKey) {
       accountName = await tryPalmPayNameEnquiry(bank_code, account_number, palmPayAppId, palmPayPrivateKey);
-    } else if (payazaSecretKey) {
-      accountName = await tryPayazaNameEnquiry(bank_code, account_number, payazaSecretKey);
+    } else if (payazaSecretKey || payazaMerchantKey) {
+      accountName = await tryPayazaNameEnquiry(bank_code, account_number, payazaSecretKey, payazaMerchantKey);
     }
 
     // ─── Fallback to the other provider ───
     if (!accountName) {
-      if (preferredProvider === "palmpay" && payazaSecretKey) {
-        accountName = await tryPayazaNameEnquiry(bank_code, account_number, payazaSecretKey);
+      if (preferredProvider === "palmpay" && (payazaSecretKey || payazaMerchantKey)) {
+        accountName = await tryPayazaNameEnquiry(bank_code, account_number, payazaSecretKey, payazaMerchantKey);
       } else if (preferredProvider === "payaza" && palmPayAppId && palmPayPrivateKey) {
         accountName = await tryPalmPayNameEnquiry(bank_code, account_number, palmPayAppId, palmPayPrivateKey);
       }
@@ -178,9 +222,22 @@ Deno.serve(async (req) => {
 });
 
 // ─── Payaza name enquiry ───
-async function tryPayazaNameEnquiry(bankCode: string, accountNumber: string, secretKey: string): Promise<string> {
-  const payazaAuthorization = encodePayazaAuth(secretKey);
+async function tryPayazaNameEnquiry(bankCode: string, accountNumber: string, secretKey?: string, merchantKey?: string): Promise<string> {
   const proxyUrl = Deno.env.get("QUOTAGUARD_URL");
+
+  // Try multiple auth methods: secret key auth AND merchant key auth
+  const authHeaders: Array<{ label: string; value: string }> = [];
+  if (secretKey) {
+    authHeaders.push({ label: "SecretKey", value: `Payaza ${btoa(secretKey)}` });
+  }
+  if (merchantKey) {
+    // Some Payaza payout endpoints use merchant key directly
+    authHeaders.push({ label: "MerchantKey", value: `Payaza ${btoa(merchantKey)}` });
+  }
+  if (secretKey) {
+    // Also try raw API key format (some endpoints accept this)
+    authHeaders.push({ label: "APIKey", value: secretKey });
+  }
 
   const endpoints = [
     "https://api.payaza.africa/live/merchant-payout/account/name_enquiry/",
@@ -190,47 +247,53 @@ async function tryPayazaNameEnquiry(bankCode: string, accountNumber: string, sec
   ];
 
   const payload = { account_number: accountNumber, bank_code: bankCode, currency: "NGN" };
-  const fetchOpts = {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": payazaAuthorization,
-      "Accept": "application/json",
-    },
-    body: JSON.stringify(payload),
-  };
 
-  for (const url of endpoints) {
-    try {
-      const attempts: Array<{ label: string; opts: any }> = [];
-      if (proxyUrl) {
-        const httpClient = Deno.createHttpClient({ proxy: { url: proxyUrl } });
-        attempts.push({ label: "Proxy", opts: { ...fetchOpts, client: httpClient } });
-      }
-      attempts.push({ label: "Direct", opts: fetchOpts });
+  for (const authConfig of authHeaders) {
+    for (const url of endpoints) {
+      const fetchOpts: RequestInit = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": authConfig.value,
+          "Accept": "application/json",
+        },
+        body: JSON.stringify(payload),
+      };
 
-      for (const attempt of attempts) {
-        try {
-          const res = await fetch(url, attempt.opts);
-          const text = await res.text();
-          console.log(`Payaza ${attempt.label} ${url} → ${res.status}: ${text.substring(0, 200)}`);
-          if (attempt.opts.client) try { attempt.opts.client.close(); } catch {}
-          if (text.includes("<html") || text.includes("<!DOCTYPE")) continue;
-          if (res.ok) {
-            try {
-              const data = JSON.parse(text);
-              const responseData = data?.data || data?.response_content || data;
-              const name = responseData?.account_name || responseData?.accountName || responseData?.name || "";
-              if (name) return name;
-            } catch { continue; }
-          }
-        } catch (err) {
-          console.warn(`Payaza ${attempt.label} ${url} error:`, String(err));
-          if (attempt.opts.client) try { attempt.opts.client.close(); } catch {}
+      try {
+        const attempts: Array<{ label: string; opts: any }> = [];
+        if (proxyUrl) {
+          const httpClient = Deno.createHttpClient({ proxy: { url: proxyUrl } });
+          attempts.push({ label: "Proxy", opts: { ...fetchOpts, client: httpClient } });
         }
+        attempts.push({ label: "Direct", opts: fetchOpts });
+
+        for (const attempt of attempts) {
+          try {
+            const res = await fetch(url, attempt.opts);
+            const text = await res.text();
+            console.log(`Payaza[${authConfig.label}] ${attempt.label} ${url} → ${res.status}: ${text.substring(0, 200)}`);
+            if (attempt.opts.client) try { attempt.opts.client.close(); } catch {}
+            if (text.includes("<html") || text.includes("<!DOCTYPE")) continue;
+            if (res.ok) {
+              try {
+                const data = JSON.parse(text);
+                const responseData = data?.data || data?.response_content || data;
+                const name = responseData?.account_name || responseData?.accountName || responseData?.name || "";
+                if (name) return name;
+              } catch { continue; }
+            }
+            // If we get a non-403 response, the auth is correct but endpoint might be wrong
+            // If 403, try next auth method
+            if (res.status === 403) break; // This auth method doesn't work for this endpoint pattern
+          } catch (err) {
+            console.warn(`Payaza[${authConfig.label}] ${attempt.label} ${url} error:`, String(err));
+            if (attempt.opts.client) try { attempt.opts.client.close(); } catch {}
+          }
+        }
+      } catch (err) {
+        console.warn(`Payaza endpoint ${url} error:`, String(err));
       }
-    } catch (err) {
-      console.warn(`Payaza endpoint ${url} error:`, String(err));
     }
   }
   return "";
