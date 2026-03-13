@@ -285,6 +285,7 @@ const App = () => (
                           <Route path="quick-trade" element={<AdminQuickTrade />} />
                           <Route path="predictions" element={<AdminPredictions />} />
                           <Route path="social" element={<AdminSocial />} />
+                          <Route path="investor-deck" element={<InvestorDeck />} />
                         </Route>
                         <Route path="*" element={<NotFound />} />
                       </Routes>

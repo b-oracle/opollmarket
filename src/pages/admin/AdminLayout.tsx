@@ -35,6 +35,7 @@ const navItems: NavItem[] = [
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3, roles: ["super_admin", "admin"] },
   { to: "/admin/checklist", label: "Launch Checklist", icon: Rocket, roles: ["super_admin"] },
   { to: "/admin/audit-log", label: "Audit Log", icon: History, roles: ["super_admin"] },
+  { to: "/admin/investor-deck", label: "Investor Deck", icon: Presentation, roles: ["super_admin"] },
 ];
 
 const AdminLayout = () => {
