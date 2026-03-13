@@ -2041,11 +2041,29 @@ const Create = () => {
 
               {/* Cover Image Upload */}
               <div className="glass rounded-xl p-4">
-                <label className="flex items-center gap-2 text-sm font-semibold mb-2">
-                  <ImageIcon className="w-4 h-4 text-primary" />
-                  Cover Image <span className="text-xs font-normal text-destructive">*</span>
-                </label>
-                {imagePreview ? (
+                <div className="flex items-center justify-between mb-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold">
+                    <ImageIcon className="w-4 h-4 text-primary" />
+                    Cover Image <span className="text-xs font-normal text-destructive">*</span>
+                  </label>
+                  {!imagePreview && (
+                    <button
+                      type="button"
+                      onClick={() => handleAiGenerate("image")}
+                      disabled={generatingImage || !title.trim()}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {generatingImage ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                      Generate (${aiGenerationCost.toFixed(2)})
+                    </button>
+                  )}
+                </div>
+                {generatingImage ? (
+                  <div className="w-full h-32 border-2 border-dashed border-primary/30 rounded-xl flex flex-col items-center justify-center gap-2 bg-primary/5">
+                    <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                    <span className="text-xs text-primary font-medium">Generating cover image...</span>
+                  </div>
+                ) : imagePreview ? (
                   <div className="relative rounded-xl overflow-hidden">
                     <img src={imagePreview} alt="Preview" className="w-full h-40 object-cover rounded-xl" />
                     <button
