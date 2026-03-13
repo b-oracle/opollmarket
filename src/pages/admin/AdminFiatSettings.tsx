@@ -250,6 +250,61 @@ const AdminFiatSettings = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* ─── NGN Payout Markdown ─── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Percent className="w-5 h-5" /> NGN Payout Rate
+            </CardTitle>
+            <CardDescription>
+              Configure the markdown applied to the live rate for NGN withdrawals. Users receive less NGN per USD compared to deposits.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="nairaPayoutMarkdown">Payout Rate Markdown (%)</Label>
+              <Input
+                id="nairaPayoutMarkdown"
+                type="number"
+                min={0}
+                max={100}
+                step={0.5}
+                value={nairaPayoutMarkdown}
+                onChange={(e) => setNairaPayoutMarkdown(e.target.value)}
+                placeholder="0"
+                disabled={!canEdit}
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Current: {payoutMarkdownNum}%. Subtracted from the live USD→NGN rate for payouts.
+              </p>
+            </div>
+
+            {liveRate !== null && (
+              <div className="rounded-lg border border-border p-3 space-y-1 bg-muted/50">
+                <p className="text-xs font-semibold">Payout Rate Preview</p>
+                <div className="space-y-1 text-[11px]">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Market rate</span>
+                    <span className="font-medium">₦{liveRate.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Markdown ({payoutMarkdownNum}%)</span>
+                    <span className="font-medium text-destructive">−₦{((liveRate * payoutMarkdownNum / 100)).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-border pt-1">
+                    <span className="text-muted-foreground font-semibold">User receives</span>
+                    <span className="font-bold text-primary">₦{effectivePayoutRate?.toLocaleString()}/USD</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Example: $100 withdrawal</span>
+                    <span className="font-medium">₦{effectivePayoutRate ? (effectivePayoutRate * 100).toLocaleString() : "—"}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Save Button */}
