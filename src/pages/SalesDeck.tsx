@@ -292,8 +292,27 @@ const SalesDeck = () => {
               <ArrowLeft className="w-4 h-4 mr-1.5" /> Back
             </Button>
             <Button size="sm" onClick={handlePrint} className="gap-1.5">
-              <Printer className="w-4 h-4" /> Save PDF
+              <Printer className="w-4 h-4" /> PDF
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" className="gap-1.5">
+                  <Share2 className="w-4 h-4" /> Share
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleCopyLink} className="gap-2">
+                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {copied ? "Copied!" : "Copy Link"}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleWhatsApp} className="gap-2">
+                  <span className="text-sm">💬</span> WhatsApp
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleTelegram} className="gap-2">
+                  <span className="text-sm">✈️</span> Telegram
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
