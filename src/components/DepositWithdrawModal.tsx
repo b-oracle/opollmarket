@@ -1,4 +1,6 @@
 import LogoLoader from "@/components/LogoLoader";
+import bpayLogoPrimary from "@/assets/bpay-logo-primary.png";
+import bpayLogoWhite from "@/assets/bpay-logo-white.png";
 import { useState, useCallback, useEffect, useRef } from "react";
 import HoldToConfirmButton from "@/components/HoldToConfirmButton";
 import BottomSheet from "@/components/BottomSheet";
