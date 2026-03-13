@@ -81,7 +81,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("wallet_address, avatar_url, verification_level")
+        .select("wallet_address, avatar_url, verification_level, display_name")
         .eq("id", market.creatorAddress)
         .maybeSingle();
       return data;
@@ -89,8 +89,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
     enabled: !!market.creatorAddress,
     staleTime: 5 * 60 * 1000,
   });
-  const creatorLabel = creatorProfile?.wallet_address
-    ? truncateAddr(creatorProfile.wallet_address)
+  const creatorLabel = creatorProfile?.display_name
+    ? `@${creatorProfile.display_name}`
     : `@${market.creatorName}`;
   const { liked, likeCount, toggleLike } = useMarketLike(market.id);
   const { bookmarked, toggleBookmark } = useBookmark(market.id);
@@ -461,7 +461,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                   <span className="text-[10px] font-bold text-primary">{market.creatorName.charAt(0)}</span>
                 )}
               </div>
-              <span className={`text-xs font-medium text-foreground/80 truncate group-hover/creator:underline ${creatorProfile?.wallet_address ? 'font-mono' : ''}`}>{creatorLabel}</span>
+              <span className="text-xs font-medium text-foreground/80 truncate group-hover/creator:underline">{creatorLabel}</span>
               {creatorProfile?.verification_level && creatorProfile.verification_level !== "none" && (
                 <NftBadge level={creatorProfile.verification_level as VerificationLevel} size={14} />
               )}
