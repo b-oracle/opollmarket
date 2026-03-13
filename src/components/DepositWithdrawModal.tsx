@@ -114,6 +114,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const { balance, bonusBalance } = useUserBalance();
   const { isFeatureEnabled } = useFeatureToggles();
   const fiatEnabled = isFeatureEnabled("fiat_deposit_payaza");
+  const fiatWithdrawalEnabled = isFeatureEnabled("fiat_withdrawal");
 
   const [tab, setTab] = useState<Tab>(initialTab);
   const [amount, setAmount] = useState("");
@@ -933,7 +934,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                     )}
 
                     {/* Withdrawal method toggle */}
-                    {!isDeposit && fiatEnabled && (
+                    {!isDeposit && fiatWithdrawalEnabled && (
                       <div className="flex gap-1 p-1 rounded-xl bg-muted/50 mb-4">
                         <button
                           onClick={() => setWithdrawMethod("crypto")}
