@@ -1537,7 +1537,7 @@ const Profile = () => {
               { icon: Video, label: "How-to Video Tutorials", href: "#", comingSoon: true },
               { icon: HelpCircle, label: "Frequently Asked Questions", href: "/faq" },
               { icon: Download, label: "Download App", href: "__install__" },
-              { icon: Users, label: "Sales Deck (Share & Recruit)", href: "/sales-deck" },
+              ...(isFeatureEnabled("sales_deck") ? [{ icon: Users, label: "Sales Deck (Share & Recruit)", href: "/sales-deck" }] : []),
             ].map((item) => (
               item.comingSoon || item.href === "__install__" || item.href === "__social_tour__" ? (
                 <button
