@@ -441,7 +441,7 @@ const AdminSettings = () => {
               <Zap className="w-5 h-5" /> Quick Trade Settings
             </CardTitle>
             <CardDescription>
-              Configure Quick Trade fees, bet limits, streak multipliers, and available assets.
+              Configure Quick Trade fees, trade limits, streak multipliers, and available assets.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
