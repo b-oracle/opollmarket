@@ -136,6 +136,68 @@ const AdminCreateMarket = () => {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [shakeField, setShakeField] = useState<string | null>(null);
 
+  // Load AI generation cost
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("commission_settings")
+        .select("ai_generation_cost")
+        .limit(1)
+        .single();
+      if (data) setAiGenerationCost(Number((data as any).ai_generation_cost ?? 0.5));
+    })();
+  }, []);
+
+  // AI content generation handler
+  const handleAiGenerate = async (genType: "description" | "details" | "image") => {
+    if (!user) { toast.error("Sign in to use AI generation"); return; }
+    if (!title.trim()) { toast.error("Enter a market question first"); return; }
+
+    const setLoading = genType === "description" ? setGeneratingDesc : genType === "details" ? setGeneratingDetails : setGeneratingImage;
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-market-content", {
+        body: {
+          type: genType,
+          title: title.trim(),
+          category: category || undefined,
+          marketType,
+          options: marketType !== "binary" ? options.filter(o => o.trim()) : undefined,
+        },
+      });
+
+      if (error) {
+        const msg = typeof data === "object" && data?.error ? data.error : error.message || "AI generation failed";
+        toast.error(msg);
+        return;
+      }
+
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      if (genType === "description" && data?.content) {
+        setDescription(data.content);
+        toast.success(`Description generated! ($${data.cost || aiGenerationCost} charged)`);
+      } else if (genType === "details" && data?.content) {
+        setDetails(data.content);
+        toast.success(`Details generated! ($${data.cost || aiGenerationCost} charged)`);
+      } else if (genType === "image" && data?.imageUrl) {
+        setImagePreview(data.imageUrl);
+        setImageFile(null);
+        toast.success(`Cover image generated! ($${data.cost || aiGenerationCost} charged)`);
+      } else {
+        toast.error("No content was generated");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "AI generation failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const touch = (field: string) => setTouched((t) => ({ ...t, [field]: true }));
   const shake = (field: string) => {
     setShakeField(field);
@@ -143,6 +205,7 @@ const AdminCreateMarket = () => {
   };
 
   // Field-level validation
+  const hasImage = !!imageFile || (!!imagePreview && !imagePreview.startsWith("blob:"));
   const errors = {
     title: title.trim().length > 0 && title.trim().length < 10 ? "Min 10 characters" : title.trim().length === 0 ? "Required" : "",
     description: description.trim().length > 0 && description.trim().length < 10 ? "Min 10 characters" : description.trim().length === 0 ? "Required" : "",
@@ -151,7 +214,7 @@ const AdminCreateMarket = () => {
     endDate: !endDate ? "Required" : "",
     resolutionSource: resolutionSource.trim().length > 0 && resolutionSource.trim().length < 5 ? "Min 5 characters" : resolutionSource.trim().length === 0 ? "Required" : "",
     options: marketType === "multi" && options.filter((o) => o.trim()).length < 2 ? "At least 2 options required" : "",
-    image: !imageFile ? "Cover image is required" : "",
+    image: !hasImage ? "Cover image is required" : "",
   };
 
   const fieldError = (field: keyof typeof errors) => touched[field] ? errors[field] : "";
@@ -216,7 +279,7 @@ const AdminCreateMarket = () => {
     endDate &&
     resolutionSource.trim().length >= 5 &&
     (marketType === "binary" || options.filter((o) => o.trim()).length >= 2) &&
-    !!imageFile;
+    hasImage;
 
   const handleSubmit = async () => {
     const allFields = ["title", "description", "details", "category", "endDate", "resolutionSource", "options", "image"];
