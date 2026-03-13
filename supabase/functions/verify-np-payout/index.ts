@@ -1,3 +1,4 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { TOTP, Secret } from "https://esm.sh/otpauth@9.3.6";
 
 const corsHeaders = {
@@ -28,7 +29,6 @@ async function getNowPaymentsJwt(): Promise<string> {
 }
 
 function generateTOTP(secretStr: string): string {
-  // Try base32 first, then hex
   let secret: any;
   try {
     secret = Secret.fromBase32(secretStr.replace(/\s/g, "").toUpperCase());
@@ -36,7 +36,6 @@ function generateTOTP(secretStr: string): string {
     try {
       secret = Secret.fromHex(secretStr.replace(/\s/g, ""));
     } catch {
-      // Last resort: treat as UTF-8
       secret = Secret.fromUTF8(secretStr);
     }
   }
@@ -58,7 +57,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { batch_id } = await req.json();
+    const { batch_id, action } = await req.json();
     if (!batch_id) {
       return new Response(JSON.stringify({ error: "batch_id required" }), {
         status: 400, headers: corsHeaders,
@@ -66,14 +65,6 @@ Deno.serve(async (req) => {
     }
 
     const apiKey = Deno.env.get("NOWPAYMENTS_API_KEY")!;
-    const totpSecret = Deno.env.get("NOWPAYMENTS_2FA_SECRET");
-
-    if (!totpSecret) {
-      return new Response(JSON.stringify({ error: "NOWPAYMENTS_2FA_SECRET not configured" }), {
-        status: 500, headers: corsHeaders,
-      });
-    }
-
     const jwtToken = await getNowPaymentsJwt();
 
     // Check payout status
@@ -84,14 +75,64 @@ Deno.serve(async (req) => {
       },
     });
 
-    const statusData = statusRes.ok ? await statusRes.json() : await statusRes.text();
+    const statusData = statusRes.ok ? await statusRes.json() : null;
     console.log("Payout status:", JSON.stringify(statusData));
 
-    // Generate TOTP code
+    // If action is "status" only, return status without verifying
+    if (action === "status") {
+      return new Response(
+        JSON.stringify({ success: true, payout_status: statusData }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // If action is "update_hash", fetch status and update DB
+    if (action === "update_hash") {
+      const adminClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+
+      const withdrawals = statusData?.withdrawals || [];
+      let updated = 0;
+
+      for (const w of withdrawals) {
+        if (w.hash) {
+          // Update withdrawal_requests
+          const { error: wrErr } = await adminClient
+            .from("withdrawal_requests")
+            .update({ tx_hash: w.hash })
+            .eq("nowpayments_id", String(w.id));
+
+          // Update transactions
+          const { error: txErr } = await adminClient
+            .from("transactions")
+            .update({ tx_hash: w.hash })
+            .eq("nowpayments_payment_id", String(w.id))
+            .eq("type", "withdrawal");
+
+          if (!wrErr && !txErr) updated++;
+          console.log(`Updated hash for withdrawal ${w.id}: ${w.hash}`, wrErr, txErr);
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, updated, payout_status: statusData }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Default: verify payout with 2FA
+    const totpSecret = Deno.env.get("NOWPAYMENTS_2FA_SECRET");
+    if (!totpSecret) {
+      return new Response(JSON.stringify({ error: "NOWPAYMENTS_2FA_SECRET not configured" }), {
+        status: 500, headers: corsHeaders,
+      });
+    }
+
     const verificationCode = generateTOTP(totpSecret);
     console.log("Generated TOTP code successfully, length:", verificationCode.length);
 
-    // Verify payout
     const verifyRes = await fetch(
       `https://api.nowpayments.io/v1/payout/${batch_id}/verify`,
       {
