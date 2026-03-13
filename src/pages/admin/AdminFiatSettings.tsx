@@ -27,7 +27,7 @@ const AdminFiatSettings = () => {
     const fetchSettings = async () => {
       const { data, error } = await supabase
         .from("commission_settings")
-        .select("id, payaza_mode, naira_rate_markup, fallback_naira_rate, naira_payout_markdown")
+        .select("id, payaza_mode, payout_provider, naira_rate_markup, fallback_naira_rate, naira_payout_markdown")
         .limit(1)
         .single();
       if (data) {
