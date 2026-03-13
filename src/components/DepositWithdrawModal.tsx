@@ -1097,22 +1097,34 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                           <span className="text-muted-foreground">Amount</span>
                           <div className="text-right">
                             <span className="font-bold text-lg">${numAmount.toFixed(2)}</span>
-                            {isDeposit && paymentMethod === "fiat" && ngnRate && (
-                              <p className="text-[10px] text-muted-foreground">≈ ₦{Math.ceil(numAmount * ngnRate).toLocaleString()}</p>
+                            {((isDeposit && paymentMethod === "fiat") || (!isDeposit && withdrawMethod === "fiat")) && ngnRate && (
+                              <p className="text-[10px] text-muted-foreground">≈ ₦{Math.floor(numAmount * ngnRate).toLocaleString()}</p>
                             )}
                           </div>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Payment Method</span>
                           <span className="font-semibold">
-                            {isDeposit && paymentMethod === "fiat" ? "Fiat (NGN)" : ALL_CRYPTO_OPTIONS.find((c) => c.value === selectedCrypto)?.label}
+                            {isDeposit && paymentMethod === "fiat" ? "Fiat (NGN)" : !isDeposit && withdrawMethod === "fiat" ? "Bank Transfer (NGN)" : ALL_CRYPTO_OPTIONS.find((c) => c.value === selectedCrypto)?.label}
                           </span>
                         </div>
-                        {!isDeposit && (
+                        {!isDeposit && withdrawMethod === "crypto" && (
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">To Wallet</span>
                             <span className="font-mono text-xs truncate max-w-[180px]">{walletAddress}</span>
                           </div>
+                        )}
+                        {!isDeposit && withdrawMethod === "fiat" && (
+                          <>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Account</span>
+                              <span className="font-mono text-xs">{accountNumber}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Account Name</span>
+                              <span className="text-xs font-semibold truncate max-w-[180px]">{accountName}</span>
+                            </div>
+                          </>
                         )}
                       </div>
                     </div>
