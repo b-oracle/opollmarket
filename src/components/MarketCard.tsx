@@ -406,7 +406,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             </div>
           )}
           <button onClick={handleLike} className="flex flex-col items-center gap-0.5 group">
-            <div className={`${actionIconSizeClass} rounded-full glass bg-background/60 border border-border/60 shadow-md flex items-center justify-center transition-colors ${liked ? 'bg-destructive/20' : 'group-hover:bg-destructive/20'}`}>
+            <div className={`${actionIconSizeClass} rounded-full glass bg-background/70 border border-border shadow-md flex items-center justify-center transition-colors ${liked ? 'bg-destructive/20' : 'group-hover:bg-destructive/20'}`}>
               <Heart className={`w-3.5 h-3.5 transition-colors ${liked ? 'text-destructive fill-destructive' : 'text-foreground group-hover:text-destructive'}`} />
             </div>
             <span className="text-[9px] text-foreground/90 leading-none">{formatCount(likeCount)}</span>
