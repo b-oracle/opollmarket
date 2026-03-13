@@ -2064,6 +2064,7 @@ const Create = () => {
                     </button>
                   )}
                 </div>
+                <p className="text-[10px] text-muted-foreground mb-2">Upload your own for free, or use AI to generate for a fee.</p>
                 {generatingImage ? (
                   <div className="w-full h-32 border-2 border-dashed border-primary/30 rounded-xl flex flex-col items-center justify-center gap-2 bg-primary/5">
                     <Loader2 className="w-6 h-6 text-primary animate-spin" />
