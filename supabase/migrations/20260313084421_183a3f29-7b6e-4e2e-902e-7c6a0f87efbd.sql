@@ -1,0 +1,1 @@
+ALTER TABLE public.commission_settings ADD COLUMN IF NOT EXISTS payaza_mode text NOT NULL DEFAULT 'direct_api';
