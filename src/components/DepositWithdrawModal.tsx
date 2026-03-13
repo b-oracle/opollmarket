@@ -840,7 +840,12 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                       <div className="space-y-2.5">
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Amount</span>
-                          <span className="font-bold text-lg">${numAmount.toFixed(2)}</span>
+                          <div className="text-right">
+                            <span className="font-bold text-lg">${numAmount.toFixed(2)}</span>
+                            {isDeposit && paymentMethod === "fiat" && ngnRate && (
+                              <p className="text-[10px] text-muted-foreground">≈ ₦{Math.ceil(numAmount * ngnRate).toLocaleString()}</p>
+                            )}
+                          </div>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Payment Method</span>
