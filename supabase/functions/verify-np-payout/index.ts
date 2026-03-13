@@ -1,4 +1,3 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { TOTP } from "https://esm.sh/otpauth@9.3.6";
 
 const corsHeaders = {
@@ -34,51 +33,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get("Authorization") || "";
-    const token = authHeader.replace("Bearer ", "");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const isServiceRole = token === serviceRoleKey || token === anonKey;
-
-    if (!isServiceRole) {
-      if (!authHeader?.startsWith("Bearer ")) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401, headers: corsHeaders,
-        });
-      }
-
-      const supabase = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_ANON_KEY")!,
-        { global: { headers: { Authorization: authHeader } } }
-      );
-
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401, headers: corsHeaders,
-        });
-      }
-
-      const adminClient = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        serviceRoleKey
-      );
-
-      const { data: role } = await adminClient
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .in("role", ["admin", "super_admin"])
-        .maybeSingle();
-
-      if (!role) {
-        return new Response(JSON.stringify({ error: "Admin access required" }), {
-          status: 403, headers: corsHeaders,
-        });
-      }
-    }
-
     const { batch_id } = await req.json();
     if (!batch_id) {
       return new Response(JSON.stringify({ error: "batch_id required" }), {
@@ -98,7 +52,7 @@ Deno.serve(async (req) => {
     // Step 1: Get JWT
     const jwtToken = await getNowPaymentsJwt();
 
-    // Step 2: Check payout status first
+    // Step 2: Check payout status
     const statusRes = await fetch(`https://api.nowpayments.io/v1/payout/${batch_id}`, {
       headers: {
         "x-api-key": apiKey,
@@ -107,8 +61,7 @@ Deno.serve(async (req) => {
     });
 
     const statusData = statusRes.ok ? await statusRes.json() : null;
-    const statusText = statusRes.ok ? JSON.stringify(statusData) : await statusRes.text();
-    console.log("Payout status:", statusText);
+    console.log("Payout status:", JSON.stringify(statusData));
 
     // Step 3: Generate TOTP and verify
     const totp = new TOTP({
@@ -120,6 +73,7 @@ Deno.serve(async (req) => {
       secret: totpSecret,
     });
     const verificationCode = totp.generate();
+    console.log("Generated verification code length:", verificationCode.length);
 
     const verifyRes = await fetch(
       `https://api.nowpayments.io/v1/payout/${batch_id}/verify`,
