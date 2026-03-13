@@ -267,40 +267,53 @@ Deno.serve(async (req) => {
       nowpayments_payment_id: transactionReference,
     });
 
-    // ─── Attempt payouts: Payaza first, then PalmPay fallback ───
+    // ─── Attempt payouts: preferred provider first, then fallback ───
     let payoutSuccess = false;
     let payoutProvider = "";
 
-    // ─── Attempt 1: Payaza payout ───
+    console.log(`[Payout] Preferred provider: ${preferredProvider}`);
+
     const payazaSecretKey = Deno.env.get("PAYAZA_SECRET_KEY");
-    if (payazaSecretKey) {
-      payoutSuccess = await tryPayazaPayout({
-        secretKey: payazaSecretKey,
-        transactionReference,
-        ngnPayout,
-        accountNumber: account_number,
-        bankCode: bank_code,
-        accountName: account_name,
-        netAmount,
-      });
+    const palmPayAppId = Deno.env.get("PALMPAY_APP_ID");
+    const palmPayPrivateKey = Deno.env.get("PALMPAY_PRIVATE_KEY");
+
+    const payazaParams = {
+      secretKey: payazaSecretKey || "",
+      transactionReference,
+      ngnPayout,
+      accountNumber: account_number,
+      bankCode: bank_code,
+      accountName: account_name,
+      netAmount,
+    };
+
+    const palmPayParams = {
+      appId: palmPayAppId || "",
+      privateKey: palmPayPrivateKey || "",
+      transactionReference,
+      ngnPayout,
+      accountNumber: account_number,
+      bankCode: bank_code,
+      accountName: account_name,
+      netAmount,
+    };
+
+    // Try preferred provider first
+    if (preferredProvider === "palmpay" && palmPayAppId && palmPayPrivateKey) {
+      payoutSuccess = await tryPalmPayPayout(palmPayParams);
+      if (payoutSuccess) payoutProvider = "palmpay";
+    } else if (payazaSecretKey) {
+      payoutSuccess = await tryPayazaPayout(payazaParams);
       if (payoutSuccess) payoutProvider = "payaza";
     }
 
-    // ─── Attempt 2: PalmPay payout (fallback) ───
+    // Fallback to the other provider
     if (!payoutSuccess) {
-      const palmPayAppId = Deno.env.get("PALMPAY_APP_ID");
-      const palmPayPrivateKey = Deno.env.get("PALMPAY_PRIVATE_KEY");
-      if (palmPayAppId && palmPayPrivateKey) {
-        payoutSuccess = await tryPalmPayPayout({
-          appId: palmPayAppId,
-          privateKey: palmPayPrivateKey,
-          transactionReference,
-          ngnPayout,
-          accountNumber: account_number,
-          bankCode: bank_code,
-          accountName: account_name,
-          netAmount,
-        });
+      if (preferredProvider === "palmpay" && payazaSecretKey) {
+        payoutSuccess = await tryPayazaPayout(payazaParams);
+        if (payoutSuccess) payoutProvider = "payaza";
+      } else if (preferredProvider === "payaza" && palmPayAppId && palmPayPrivateKey) {
+        payoutSuccess = await tryPalmPayPayout(palmPayParams);
         if (payoutSuccess) payoutProvider = "palmpay";
       }
     }
