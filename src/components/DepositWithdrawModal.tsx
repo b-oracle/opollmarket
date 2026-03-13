@@ -114,6 +114,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const { balance, bonusBalance } = useUserBalance();
   const { isFeatureEnabled } = useFeatureToggles();
   const fiatEnabled = isFeatureEnabled("fiat_deposit_payaza");
+  const fiatWithdrawalEnabled = isFeatureEnabled("fiat_withdrawal");
 
   const [tab, setTab] = useState<Tab>(initialTab);
   const [amount, setAmount] = useState("");
