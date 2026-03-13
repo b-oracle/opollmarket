@@ -6,16 +6,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-/** Build a list of auth header values to try, in priority order */
-function getPayazaAuthVariants(secretKey: string, merchantKey?: string): string[] {
-  const variants: string[] = [];
-  if (merchantKey) variants.push(`APIKey ${merchantKey}`);
-  variants.push(`Payaza ${secretKey}`);
-  variants.push(`APIKey ${secretKey}`);
-  if (merchantKey) variants.push(`Bearer ${merchantKey}`);
-  variants.push(`Bearer ${secretKey}`);
-  variants.push(`Payaza ${btoa(secretKey)}`);
-  return variants;
+/** Base64-encode the key (matching official payaza_lib SDK encrypt()) */
+function encodePayazaKey(key: string): string {
+  return btoa(key);
 }
 
 Deno.serve(async (req) => {
