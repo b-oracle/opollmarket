@@ -255,6 +255,30 @@ const AdminContracts = () => {
           />
         </div>
 
+        {/* Naira Rate Markup */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <ArrowRightLeft className="w-4 h-4 text-primary" />
+            NGN/USD Rate Markup (%)
+          </label>
+          <p className="text-xs text-muted-foreground">
+            Adjust the live USD→NGN exchange rate. Positive = mark up (user pays more NGN), negative = mark down.
+            {liveNgnRate && (
+              <span className="block mt-1 font-semibold text-foreground">
+                Live rate: ₦{liveNgnRate.toLocaleString()}/USD → Effective: ₦{Math.round(liveNgnRate * (1 + (parseFloat(nairaRateMarkup) || 0) / 100)).toLocaleString()}/USD
+              </span>
+            )}
+          </p>
+          <Input
+            type="number"
+            value={nairaRateMarkup}
+            onChange={(e) => setNairaRateMarkup(e.target.value)}
+            placeholder="0"
+            step="0.5"
+            className="text-sm"
+          />
+        </div>
+
         <Button onClick={handleSave} disabled={!canSave} className="w-full sm:w-auto">
           {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
           Save Settings
