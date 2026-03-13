@@ -29,7 +29,18 @@ import {
 
 type Tab = "deposit" | "withdraw";
 type PaymentMethod = "crypto" | "fiat";
-type FlowStep = "input" | "confirm" | "executing" | "awaiting_payment" | "awaiting_fiat" | "success" | "partial_success" | "error";
+type FlowStep = "input" | "confirm" | "executing" | "awaiting_payment" | "awaiting_fiat" | "awaiting_fiat_transfer" | "success" | "partial_success" | "error";
+
+interface FiatTransferInfo {
+  transaction_reference: string;
+  bank_name: string;
+  account_number: string;
+  account_name: string;
+  amount: number;
+  currency: string;
+  payment_url?: string | null;
+  expires_at?: string | null;
+}
 
 interface DepositWithdrawModalProps {
   open: boolean;
