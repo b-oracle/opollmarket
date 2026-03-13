@@ -85,7 +85,6 @@ const AdminContracts = () => {
         market_creation_fee: parseFloat(marketCreationFee) || 50,
         token_decimals: parseInt(tokenDecimals) || 18,
         updated_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
         updated_by: user?.id || null,
       };
       console.log("[AdminContracts] Update payload:", updatePayload);
