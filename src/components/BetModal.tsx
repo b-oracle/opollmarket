@@ -132,7 +132,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
           price,
           shares,
         });
-        track("bet_confirmed", { marketId, side, amount: numAmount });
+        track("prediction_confirmed", { marketId, side, amount: numAmount });
       }
       setStep("success");
     } catch (err: any) {
@@ -370,7 +370,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                           setShowTerms(true);
                           return;
                         }
-                        track(orderType === "limit" ? "limit_order_started" : "bet_placed", { marketId, side, amount: numAmount });
+                        track(orderType === "limit" ? "limit_order_started" : "prediction_placed", { marketId, side, amount: numAmount });
                         setStep("confirm");
                       }}
                       disabled={!isValid || !user || !isEmailVerified}
@@ -384,7 +384,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                       onAccept={() => {
                         setShowTerms(false);
                         track("terms_accepted", {});
-                        track(orderType === "limit" ? "limit_order_started" : "bet_placed", { marketId, side, amount: numAmount });
+                        track(orderType === "limit" ? "limit_order_started" : "prediction_placed", { marketId, side, amount: numAmount });
                         setStep("confirm");
                       }}
                       onClose={() => setShowTerms(false)}
@@ -535,7 +535,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                                   const ok = await pushSubscribe();
                                   if (ok) {
                                     toast.success("Push notifications enabled!");
-                                    track("push_enabled_first_bet", {});
+                                    track("push_enabled_first_prediction", {});
                                   }
                                 }}
                                 className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-[10px] font-semibold active:scale-95 transition-transform"
