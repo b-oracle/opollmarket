@@ -934,7 +934,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                     )}
 
                     {/* Withdrawal method toggle */}
-                    {!isDeposit && fiatEnabled && (
+                    {!isDeposit && fiatWithdrawalEnabled && (
                       <div className="flex gap-1 p-1 rounded-xl bg-muted/50 mb-4">
                         <button
                           onClick={() => setWithdrawMethod("crypto")}
