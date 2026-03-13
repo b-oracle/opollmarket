@@ -244,6 +244,9 @@ const Feed = () => {
   const { boostedMarketIds, boostDetails } = useActiveBoosts();
   const { track } = useAnalytics();
   const isDesktop = useIsDesktop();
+  const isMobile = useIsMobile();
+  const { collapsed } = useSidebarState();
+  const sidebarLeft = isMobile ? 0 : collapsed ? '4.5rem' : '15rem';
   const { bookmarkedIds } = useBookmarkedMarkets();
   const { user } = useAuth();
   const [feedTab, setFeedTab] = useState<"foryou" | "bookmarks">("foryou");
