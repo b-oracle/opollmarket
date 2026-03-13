@@ -419,7 +419,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           </button>
           <button onClick={handleBookmark} className="flex flex-col items-center gap-0.5 group">
             <motion.div
-              className={`${actionIconSizeClass} rounded-full glass bg-background/60 border border-border/60 shadow-md flex items-center justify-center transition-colors ${bookmarked ? 'bg-primary/20' : 'group-hover:bg-primary/20'}`}
+              className={`${actionIconSizeClass} rounded-full glass bg-background/70 border border-border shadow-md flex items-center justify-center transition-colors ${bookmarked ? 'bg-primary/20' : 'group-hover:bg-primary/20'}`}
               animate={bookmarked ? { scale: [1, 1.3, 1] } : { scale: 1 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
             >
