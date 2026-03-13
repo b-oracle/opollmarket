@@ -123,6 +123,7 @@ const AdminSettings = () => {
         setBlueMaxFreeMarkets(String(d.blue_max_free_markets ?? 5));
         setGoldMaxFreeMarkets(String(d.gold_max_free_markets ?? 20));
         setAiGenerationCost(String(d.ai_generation_cost ?? 0.5));
+        setPayazaMode(d.payaza_mode === "checkout_sdk" ? "checkout_sdk" : "direct_api");
         setSettingsId(d.id);
       }
       if (error) console.error(error);
