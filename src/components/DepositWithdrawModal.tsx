@@ -141,6 +141,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const [accountName, setAccountName] = useState("");
   const [accountNameLoading, setAccountNameLoading] = useState(false);
   const [accountNameResolved, setAccountNameResolved] = useState(false);
+  const [accountNameResolveFailed, setAccountNameResolveFailed] = useState(false);
   const [ngnPayoutRate, setNgnPayoutRate] = useState<number | null>(null);
 
   // Fetch live NGN rate
