@@ -466,6 +466,7 @@ const AdminCreateMarket = () => {
               Generate (${aiGenerationCost})
             </button>
           </div>
+          <p className="text-[10px] text-muted-foreground mb-1.5">Type manually for free, or use AI to generate for a fee.</p>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -506,6 +507,7 @@ const AdminCreateMarket = () => {
               </button>
             </div>
           </div>
+          <p className="text-[10px] text-muted-foreground mb-1.5">Type manually for free, or use AI to generate for a fee.</p>
           {showDetailsPreview ? (
             <div className="bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm min-h-[100px] prose prose-sm dark:prose-invert max-w-none">
               {details.trim() ? (
@@ -635,6 +637,7 @@ const AdminCreateMarket = () => {
                   {generatingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                   {generatingImage ? "Generating..." : `✨ Generate Cover Image ($${aiGenerationCost})`}
                 </button>
+                <p className="text-[10px] text-muted-foreground">Upload your own for free, or use AI to generate for a fee.</p>
               </div>
             )}
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />

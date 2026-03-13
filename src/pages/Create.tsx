@@ -136,6 +136,7 @@ const DetailsField = ({ details, setDetails, error, touched: fieldTouched, onBlu
           )}
         </div>
       </div>
+      <p className="text-[10px] text-muted-foreground mb-1.5">Type manually for free, or use AI to generate for a fee.</p>
       {preview ? (
         <div className="bg-muted/50 border border-border rounded-xl px-4 py-3 min-h-[5rem] text-xs text-muted-foreground leading-relaxed">
           <ReactMarkdown
@@ -1562,9 +1563,10 @@ const Create = () => {
                     className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {generatingDesc ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                    Generate (${aiGenerationCost.toFixed(2)})
+                   Generate (${aiGenerationCost.toFixed(2)})
                   </button>
                 </div>
+                <p className="text-[10px] text-muted-foreground mb-1.5">Type manually for free, or use AI to generate for a fee.</p>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -2062,6 +2064,7 @@ const Create = () => {
                     </button>
                   )}
                 </div>
+                <p className="text-[10px] text-muted-foreground mb-2">Upload your own for free, or use AI to generate for a fee.</p>
                 {generatingImage ? (
                   <div className="w-full h-32 border-2 border-dashed border-primary/30 rounded-xl flex flex-col items-center justify-center gap-2 bg-primary/5">
                     <Loader2 className="w-6 h-6 text-primary animate-spin" />
