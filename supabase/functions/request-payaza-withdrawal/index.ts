@@ -397,6 +397,7 @@ Deno.serve(async (req) => {
 // ─── Payaza payout attempt ───
 interface PayazaPayoutParams {
   secretKey: string;
+  merchantKey: string;
   transactionReference: string;
   ngnPayout: number;
   accountNumber: string;
@@ -406,11 +407,11 @@ interface PayazaPayoutParams {
 }
 
 async function tryPayazaPayout(params: PayazaPayoutParams): Promise<boolean> {
-  const { secretKey, transactionReference, ngnPayout, accountNumber, bankCode, accountName, netAmount } = params;
+  const { secretKey, merchantKey, transactionReference, ngnPayout, accountNumber, bankCode, accountName, netAmount } = params;
 
   try {
-    const payazaAuthorization = encodePayazaAuth(secretKey);
     const proxyUrl = Deno.env.get("QUOTAGUARD_URL");
+    const authVariants = getPayazaAuthVariants(secretKey, merchantKey || undefined);
 
     const payoutPayload = {
       transaction_type: "nuban",
@@ -425,55 +426,66 @@ async function tryPayazaPayout(params: PayazaPayoutParams): Promise<boolean> {
     };
 
     const payazaUrl = "https://api.payaza.africa/live/merchant-payout/initiate_payout/";
-    let payazaResponse: Response | null = null;
 
-    if (proxyUrl) {
-      try {
-        const httpClient = Deno.createHttpClient({ proxy: { url: proxyUrl } });
+    for (const authValue of authVariants) {
+      const authLabel = authValue.substring(0, 30) + "...";
+      let payazaResponse: Response | null = null;
+
+      // Try with proxy first
+      if (proxyUrl) {
+        try {
+          const httpClient = Deno.createHttpClient({ proxy: { url: proxyUrl } });
+          payazaResponse = await fetch(payazaUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": authValue,
+              "Accept": "application/json",
+            },
+            body: JSON.stringify(payoutPayload),
+            // @ts-ignore
+            client: httpClient,
+          });
+          httpClient.close();
+          const preview = await payazaResponse.clone().text();
+          if (preview.includes("<html") || preview.includes("<!DOCTYPE")) {
+            payazaResponse = null;
+          }
+        } catch (err) {
+          console.warn(`Payaza proxy payout failed (${authLabel}):`, err);
+        }
+      }
+
+      // Direct fallback
+      if (!payazaResponse) {
         payazaResponse = await fetch(payazaUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": payazaAuthorization,
+            "Authorization": authValue,
             "Accept": "application/json",
           },
           body: JSON.stringify(payoutPayload),
-          // @ts-ignore
-          client: httpClient,
         });
-        httpClient.close();
-        const preview = await payazaResponse.clone().text();
-        if (preview.includes("<html") || preview.includes("<!DOCTYPE")) {
-          payazaResponse = null;
-        }
-      } catch (err) {
-        console.error("Payaza proxy payout failed:", err);
       }
-    }
 
-    if (!payazaResponse) {
-      payazaResponse = await fetch(payazaUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": payazaAuthorization,
-          "Accept": "application/json",
-        },
-        body: JSON.stringify(payoutPayload),
-      });
-    }
-
-    if (payazaResponse) {
       const payazaText = await payazaResponse.text();
-      console.log("Payaza payout response:", payazaResponse.status, payazaText.substring(0, 500));
+      console.log(`Payaza payout [${authLabel}] → ${payazaResponse.status}: ${payazaText.substring(0, 300)}`);
 
       if (payazaResponse.ok) {
         try {
           JSON.parse(payazaText);
+          console.log(`Payaza payout SUCCESS with auth: ${authLabel}`);
           return true;
         } catch {
           console.error("Failed to parse Payaza payout response");
         }
+      }
+
+      // If we get a non-auth error (not 401/403), no point trying other auth variants
+      if (payazaResponse.status !== 401 && payazaResponse.status !== 403) {
+        console.warn(`Payaza payout returned ${payazaResponse.status}, stopping auth rotation`);
+        break;
       }
     }
   } catch (err) {
