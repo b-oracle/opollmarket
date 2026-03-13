@@ -53,3 +53,7 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.generate-market-content]
     verify_jwt = false
+  [functions.create-payaza-deposit]
+    verify_jwt = false
+  [functions.payaza-webhook]
+    verify_jwt = false

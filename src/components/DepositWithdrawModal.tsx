@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserBalance } from "@/hooks/useUserBalance";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import {
   X,
   ArrowDownToLine,
@@ -22,10 +23,13 @@ import {
   Clock,
   Copy,
   Check,
+  Banknote,
+  Coins,
 } from "lucide-react";
 
 type Tab = "deposit" | "withdraw";
-type FlowStep = "input" | "confirm" | "executing" | "awaiting_payment" | "success" | "partial_success" | "error";
+type PaymentMethod = "crypto" | "fiat";
+type FlowStep = "input" | "confirm" | "executing" | "awaiting_payment" | "awaiting_fiat" | "success" | "partial_success" | "error";
 
 interface DepositWithdrawModalProps {
   open: boolean;
