@@ -6,16 +6,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-/** Build a list of auth header values to try, in priority order */
-function getPayazaAuthVariants(secretKey: string, merchantKey?: string): string[] {
-  const variants: string[] = [];
-  if (merchantKey) variants.push(`APIKey ${merchantKey}`);
-  variants.push(`Payaza ${secretKey}`);
-  variants.push(`APIKey ${secretKey}`);
-  if (merchantKey) variants.push(`Bearer ${merchantKey}`);
-  variants.push(`Bearer ${secretKey}`);
-  variants.push(`Payaza ${btoa(secretKey)}`);
-  return variants;
+/** Base64-encode the key (matching official payaza_lib SDK encrypt()) */
+function encodePayazaKey(key: string): string {
+  return btoa(key);
 }
 
 Deno.serve(async (req) => {
@@ -365,23 +358,24 @@ async function tryPayazaPayout(params: PayazaPayoutParams): Promise<boolean> {
 
     const payazaUrl = "https://api.payaza.africa/live/merchant-payout/initiate_payout/";
 
-    // Auth variants: raw key first (per SDK docs: "no need to convert to base64")
+    // Per official payaza_lib SDK: base64-encode the secret key, use "Payaza <encoded>" header
+    // Also requires X-TenantID: live
+    const encodedSecret = encodePayazaKey(secretKey);
+    const encodedMerchant = merchantKey ? encodePayazaKey(merchantKey) : null;
+
     const authVariants: string[] = [];
-    // The SDK uses the raw secret key directly
-    authVariants.push(`Payaza ${secretKey}`);
-    if (merchantKey) authVariants.push(`Payaza ${merchantKey}`);
-    // Also try APIKey format
-    authVariants.push(`APIKey ${secretKey}`);
-    if (merchantKey) authVariants.push(`APIKey ${merchantKey}`);
+    authVariants.push(`Payaza ${encodedSecret}`);
+    if (encodedMerchant) authVariants.push(`Payaza ${encodedMerchant}`);
 
     for (const authValue of authVariants) {
       const authLabel = authValue.substring(0, 30) + "...";
       let payazaResponse: Response | null = null;
 
-      const fetchHeaders = {
+      const fetchHeaders: Record<string, string> = {
         "Content-Type": "application/json",
         "Authorization": authValue,
         "Accept": "application/json",
+        "X-TenantID": "live",
       };
 
       // Try with proxy first (for IP whitelisting)
