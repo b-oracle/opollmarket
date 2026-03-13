@@ -86,7 +86,7 @@ const AdminFiatSettings = () => {
         action: "settings_updated",
         targetId: settingsId,
         targetType: "commission_settings",
-        details: { payaza_mode: payazaMode, naira_rate_markup: markupNum, fallback_naira_rate: fallbackNum },
+        details: { payaza_mode: payazaMode, naira_rate_markup: markupNum, fallback_naira_rate: fallbackNum, naira_payout_markdown: payoutMarkdownNum },
       });
 
       toast.success("Fiat settings saved successfully");
