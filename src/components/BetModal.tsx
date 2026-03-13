@@ -535,7 +535,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                                   const ok = await pushSubscribe();
                                   if (ok) {
                                     toast.success("Push notifications enabled!");
-                                    track("push_enabled_first_bet", {});
+                                    track("push_enabled_first_prediction", {});
                                   }
                                 }}
                                 className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-[10px] font-semibold active:scale-95 transition-transform"
