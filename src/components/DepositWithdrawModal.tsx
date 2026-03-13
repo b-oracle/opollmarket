@@ -190,9 +190,17 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
 
   // Auto-resolve account name when bank code + 10-digit account number are entered
   useEffect(() => {
-    if (accountNumber.length !== 10 || !bankCode || withdrawMethod !== "fiat") {
+    if (withdrawMethod !== "fiat") {
       setAccountName("");
       setAccountNameResolved(false);
+      setAccountNameResolveFailed(false);
+      return;
+    }
+
+    if (accountNumber.length !== 10 || !bankCode) {
+      setAccountName("");
+      setAccountNameResolved(false);
+      setAccountNameResolveFailed(false);
       return;
     }
 
@@ -201,22 +209,30 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setAccountNameLoading(true);
       setAccountName("");
       setAccountNameResolved(false);
+      setAccountNameResolveFailed(false);
+
       try {
         const { data, error } = await supabase.functions.invoke("verify-bank-account", {
           body: { bank_code: bankCode, account_number: accountNumber },
         });
+
         if (cancelled) return;
-        if (error || data?.error) {
+
+        if (error || data?.error || !data?.account_name) {
           setAccountName("");
           setAccountNameResolved(false);
-        } else if (data?.account_name) {
-          setAccountName(data.account_name);
-          setAccountNameResolved(true);
+          setAccountNameResolveFailed(true);
+          return;
         }
+
+        setAccountName(data.account_name);
+        setAccountNameResolved(true);
+        setAccountNameResolveFailed(false);
       } catch {
         if (!cancelled) {
           setAccountName("");
           setAccountNameResolved(false);
+          setAccountNameResolveFailed(true);
         }
       } finally {
         if (!cancelled) setAccountNameLoading(false);
