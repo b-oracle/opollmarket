@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
 
     const { data: tx } = await adminClient
       .from("transactions")
-      .select("id, created_at")
+      .select("id, created_at, status, amount, payment_provider")
       .eq("user_id", userId)
       .eq("nowpayments_payment_id", String(payment_id))
       .eq("type", "deposit")
@@ -62,7 +62,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fetch payment details from NOWPayments
+    // ─── Payaza deposits: return DB status directly (no external API to poll) ───
+    if (tx.payment_provider === "payaza") {
+      return new Response(
+        JSON.stringify({
+          payment_status: tx.status === "confirmed" ? "finished" : tx.status === "failed" ? "failed" : "waiting",
+          pay_amount: tx.amount,
+          pay_currency: "NGN",
+          created_at: tx.created_at,
+          provider: "payaza",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ─── NOWPayments deposits: fetch from their API ───
     const apiKey = Deno.env.get("NOWPAYMENTS_API_KEY");
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "Payment service not configured" }), {
