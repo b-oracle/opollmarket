@@ -46,6 +46,7 @@ Deno.serve(async (req) => {
     }
 
     const secretKey = Deno.env.get("PAYAZA_SECRET_KEY");
+    const merchantKey = Deno.env.get("PAYAZA_MERCHANT_KEY");
     if (!secretKey) {
       return new Response(
         JSON.stringify({ error: "Payment service not configured" }),
@@ -53,6 +54,7 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Try both auth formats - Payaza uses different auth for different endpoints
     const payazaAuthorization = encodePayazaAuth(secretKey);
     const proxyUrl = Deno.env.get("QUOTAGUARD_URL");
 
@@ -61,7 +63,16 @@ Deno.serve(async (req) => {
       bank_code: bank_code,
     };
 
-    const nameEnquiryUrl = "https://api.payaza.africa/live/merchant-payout/name_enquiry/";
+    // Try multiple endpoint patterns
+    const endpoints = [
+      "https://api.payaza.africa/live/merchant-payout/name_enquiry/",
+      "https://api.payaza.africa/live/merchant-payout/account/name-enquiry/",
+    ];
+    
+    const authHeaders = [
+      payazaAuthorization,
+      ...(merchantKey ? [`Payaza ${btoa(merchantKey)}`] : []),
+    ];
     let payazaResponse: Response | null = null;
 
     // Try proxy first
