@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { TOTP } from "https://esm.sh/otpauth@9.3.6";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
