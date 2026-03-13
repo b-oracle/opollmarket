@@ -420,7 +420,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           </button>
           <button onClick={handleBookmark} className="flex flex-col items-center gap-0.5 group">
             <motion.div
-              className={`w-[clamp(1.75rem,4vh,2.25rem)] h-[clamp(1.75rem,4vh,2.25rem)] rounded-full glass flex items-center justify-center transition-colors ${bookmarked ? 'bg-primary/20' : 'group-hover:bg-primary/20'}`}
+              className={`w-[clamp(1.5rem,3.5vh,2.25rem)] h-[clamp(1.5rem,3.5vh,2.25rem)] rounded-full glass flex items-center justify-center transition-colors ${bookmarked ? 'bg-primary/20' : 'group-hover:bg-primary/20'}`}
               animate={bookmarked ? { scale: [1, 1.3, 1] } : { scale: 1 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
             >
