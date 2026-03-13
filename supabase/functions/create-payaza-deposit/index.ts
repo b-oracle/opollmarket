@@ -145,8 +145,19 @@ Deno.serve(async (req) => {
       body: JSON.stringify(collectionPayload),
     });
 
-    const payazaData = await payazaResponse.json();
-    console.log("Payaza Collection API response:", JSON.stringify(payazaData));
+    const payazaText = await payazaResponse.text();
+    console.log("Payaza Collection API response status:", payazaResponse.status, "body preview:", payazaText.substring(0, 500));
+
+    let payazaData: any;
+    try {
+      payazaData = JSON.parse(payazaText);
+    } catch {
+      console.error("Payaza returned non-JSON response:", payazaText.substring(0, 300));
+      return new Response(
+        JSON.stringify({ error: "Payment service temporarily unavailable. Please try again later." }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     if (!payazaResponse.ok) {
       console.error("Payaza API error:", payazaData);
