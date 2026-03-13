@@ -59,3 +59,5 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.get-naira-rate]
     verify_jwt = false
+  [functions.verify-np-payout]
+    verify_jwt = false
