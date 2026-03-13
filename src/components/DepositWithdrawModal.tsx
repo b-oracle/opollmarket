@@ -1153,6 +1153,8 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                         transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
                       />
                     </div>
+                    <img src={bpayLogoPrimary} alt="BoundlessPay" className="h-6 mb-3 dark:hidden" />
+                    <img src={bpayLogoWhite} alt="BoundlessPay" className="h-6 mb-3 hidden dark:block" />
                     <h3 className="text-lg font-bold mb-1">Complete Payment</h3>
                     <p className="text-sm text-muted-foreground text-center mb-2">
                       A Payaza payment window has opened. Complete your payment there.
