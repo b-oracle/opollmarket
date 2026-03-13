@@ -634,15 +634,17 @@ const AdminCreateMarket = () => {
                   <Upload className="w-6 h-6 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">Click to upload (max 5MB)</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleAiGenerate("image")}
-                  disabled={generatingImage || !title.trim()}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {generatingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                  {generatingImage ? "Generating..." : `✨ Generate Cover Image ($${aiGenerationCost})`}
-                </button>
+                {isFeatureEnabled("ai_generate_image") && (
+                  <button
+                    type="button"
+                    onClick={() => handleAiGenerate("image")}
+                    disabled={generatingImage || !title.trim()}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {generatingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    {generatingImage ? "Generating..." : `✨ Generate Cover Image ($${aiGenerationCost})`}
+                  </button>
+                )}
                 <p className="text-[10px] text-muted-foreground">Upload your own for free, or use AI to generate for a fee.</p>
               </div>
             )}
