@@ -136,13 +136,6 @@ const DetailsField = ({ details, setDetails, error, touched: fieldTouched, onBlu
           )}
         </div>
       </div>
-            className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {preview ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            {preview ? "Edit" : "Preview"}
-          </button>
-        )}
-      </div>
       {preview ? (
         <div className="bg-muted/50 border border-border rounded-xl px-4 py-3 min-h-[5rem] text-xs text-muted-foreground leading-relaxed">
           <ReactMarkdown
