@@ -538,7 +538,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           </div>
 
           {/* Prediction buttons with action column */}
-          <div className="relative">
+          <div className="relative pr-14 sm:pr-16 lg:pr-32">
 
             {/* Buttons */}
             {isEnded ? (
