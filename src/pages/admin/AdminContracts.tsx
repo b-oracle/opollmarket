@@ -11,9 +11,6 @@ const AdminContracts = () => {
   const [nftBuyUrl, setNftBuyUrl] = useState("");
   const [marketCreationFee, setMarketCreationFee] = useState("50");
   const [tokenDecimals, setTokenDecimals] = useState("18");
-  const [nairaRateMarkup, setNairaRateMarkup] = useState("0");
-  const [fallbackNairaRate, setFallbackNairaRate] = useState("1500");
-  const [liveNgnRate, setLiveNgnRate] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState("");
