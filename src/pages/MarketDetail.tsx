@@ -865,8 +865,8 @@ const MarketDetail = () => {
       </div>
 
       {!isMulti && !commentsReached && !shareOpen && (
-        <div className="fixed left-0 right-0 md:left-60 z-[60] px-4 pb-4 pt-3 bg-gradient-to-t from-background via-background to-transparent md:bottom-0" style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}>
-          <div className="w-full max-w-lg md:max-w-4xl mx-auto flex gap-3">
+        <div className="fixed left-0 right-0 lg:left-60 z-[60] px-4 pb-4 pt-3 bg-gradient-to-t from-background via-background to-transparent lg:bottom-0" style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}>
+          <div className="w-full max-w-lg lg:max-w-4xl mx-auto flex gap-3">
             {isEnded ? (
               <div className={`flex-1 text-center py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 ${
                     market?.status === "resolved" ? "bg-primary/10 text-primary" : market?.status === "cancelled" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"
