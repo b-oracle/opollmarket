@@ -126,6 +126,8 @@ Deno.serve(async (req) => {
     const virtualAccountEndpoint = "/live/merchant-collection/merchant/virtual_account/generate_virtual_account/";
     const fullUrl = `${payazaBaseUrl}${virtualAccountEndpoint}`;
 
+    const webhookUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/payaza-webhook`;
+
     const virtualAccountPayload = {
       account_name: firstName,
       account_type: "Dynamic",
@@ -139,6 +141,8 @@ Deno.serve(async (req) => {
       has_amount_validation: true,
       transaction_description: `Deposit $${amount} USD (₦${ngnAmount} NGN)`,
       expires_in_minutes: 60,
+      callback_url: webhookUrl,
+      webhook_url: webhookUrl,
     };
 
     const payazaAuthorization = encodePayazaAuth(secretKey);
