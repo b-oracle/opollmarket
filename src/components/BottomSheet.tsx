@@ -33,7 +33,7 @@ const BottomSheet = ({ open, onClose, children, maxHeight = "85dvh", className =
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.95 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center p-4 pointer-events-none"
+            className="fixed inset-0 z-[80] flex items-center justify-center p-4 pointer-events-none"
           >
             <div
               className={`glass-strong rounded-2xl overflow-y-auto w-full max-w-lg pointer-events-auto ${className}`}
