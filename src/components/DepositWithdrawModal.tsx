@@ -94,7 +94,8 @@ const ALL_CRYPTO_OPTIONS = CRYPTO_GROUPS.flatMap((g) => g.options);
 const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePaymentId }: DepositWithdrawModalProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { balance, bonusBalance } = useUserBalance();
+  const { isFeatureEnabled } = useFeatureToggles();
+  const fiatEnabled = isFeatureEnabled("fiat_deposit_payaza");
 
   const [tab, setTab] = useState<Tab>(initialTab);
   const [amount, setAmount] = useState("");
