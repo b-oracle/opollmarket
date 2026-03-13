@@ -136,6 +136,7 @@ const DetailsField = ({ details, setDetails, error, touched: fieldTouched, onBlu
           )}
         </div>
       </div>
+      <p className="text-[10px] text-muted-foreground mb-1.5">Type manually for free, or use AI to generate for a fee.</p>
       {preview ? (
         <div className="bg-muted/50 border border-border rounded-xl px-4 py-3 min-h-[5rem] text-xs text-muted-foreground leading-relaxed">
           <ReactMarkdown
