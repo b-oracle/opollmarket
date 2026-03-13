@@ -1364,6 +1364,7 @@ const Profile = () => {
                   onClick={() => {
                     if (isPendingDeposit) {
                       setResumePaymentId(tx.nowpayments_payment_id);
+                      setResumeProvider((tx as any).payment_provider || null);
                       setModalTab("deposit");
                       setModalOpen(true);
                       return;
