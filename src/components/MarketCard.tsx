@@ -89,8 +89,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
     enabled: !!market.creatorAddress,
     staleTime: 5 * 60 * 1000,
   });
-  const creatorLabel = creatorProfile?.wallet_address
-    ? truncateAddr(creatorProfile.wallet_address)
+  const creatorLabel = creatorProfile?.display_name
+    ? `@${creatorProfile.display_name}`
     : `@${market.creatorName}`;
   const { liked, likeCount, toggleLike } = useMarketLike(market.id);
   const { bookmarked, toggleBookmark } = useBookmark(market.id);
