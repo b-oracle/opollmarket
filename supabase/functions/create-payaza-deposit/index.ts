@@ -48,21 +48,12 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Get payaza_mode from commission_settings
-    const { data: settings } = await adminClient
-      .from("commission_settings")
-      .select("payaza_mode")
-      .limit(1)
-      .maybeSingle();
-
-    const mode = (settings as any)?.payaza_mode || "direct_api";
-
     const merchantKey = Deno.env.get("PAYAZA_MERCHANT_KEY");
     const secretKey = Deno.env.get("PAYAZA_SECRET_KEY");
 
-    if (!merchantKey && !secretKey) {
+    if (!secretKey) {
       return new Response(
-        JSON.stringify({ error: "Fiat payment service not configured" }),
+        JSON.stringify({ error: "Fiat payment service not configured (missing secret key)" }),
         { status: 500, headers: corsHeaders }
       );
     }
@@ -84,33 +75,7 @@ Deno.serve(async (req) => {
     });
 
     // ─── CHECKOUT SDK MODE ───
-    if (mode === "checkout_sdk") {
-      if (!merchantKey) {
-        return new Response(
-          JSON.stringify({ error: "Checkout SDK not configured (missing merchant key)" }),
-          { status: 500, headers: corsHeaders }
-        );
-      }
-
-      return new Response(
-        JSON.stringify({
-          mode: "checkout_sdk",
-          transaction_reference: transactionReference,
-          merchant_key: merchantKey,
-          email,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // ─── DIRECT API MODE ───
-    if (!secretKey) {
-      return new Response(
-        JSON.stringify({ error: "Direct API not configured (missing secret key)" }),
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
+    // ─── DIRECT API MODE (always) ───
     const webhookUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/payaza-webhook`;
 
     const collectionPayload = {
@@ -134,59 +99,75 @@ Deno.serve(async (req) => {
       },
     };
 
-    console.log("Calling Payaza Collection API:", JSON.stringify(collectionPayload));
-
-    const proxyUrl = Deno.env.get("QUOTAGUARD_URL");
-    const payazaApiUrl = "https://router.payaza.africa/api/v1/collection/";
     const payazaAuthorization = `Payaza ${secretKey}`;
+    const proxyUrl = Deno.env.get("QUOTAGUARD_URL");
 
-    let payazaResponse: Response;
+    // Try multiple known Payaza API endpoints
+    const payazaEndpoints = [
+      "https://router-live.78financials.com/api/v1/collection/",
+      "https://router.payaza.africa/api/v1/collection/",
+    ];
 
-    try {
+    let payazaResponse: Response | null = null;
+    let lastError: string = "";
+
+    for (const endpoint of payazaEndpoints) {
+      // Try direct first (no proxy)
+      try {
+        console.log(`Trying Payaza direct: ${endpoint}`);
+        payazaResponse = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": payazaAuthorization,
+          },
+          body: JSON.stringify(collectionPayload),
+        });
+        const preview = await payazaResponse.clone().text();
+        console.log(`Direct response ${endpoint}: status=${payazaResponse.status}, body=${preview.substring(0, 200)}`);
+        // If we got a JSON response (even an error), use it
+        if (payazaResponse.headers.get("content-type")?.includes("json") || !preview.includes("<html")) {
+          break;
+        }
+        console.log("Direct returned HTML, trying next option...");
+        payazaResponse = null;
+      } catch (err) {
+        lastError = String(err);
+        console.error(`Direct fetch to ${endpoint} failed:`, lastError);
+      }
+
+      // Try with proxy
       if (proxyUrl) {
-        // Route through QuotaGuard static IP proxy using Deno's built-in proxy support
-        console.log("Using QuotaGuard proxy for Payaza request");
-        const httpClient = Deno.createHttpClient({ proxy: { url: proxyUrl } });
-        payazaResponse = await fetch(payazaApiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": payazaAuthorization,
-          },
-          body: JSON.stringify(collectionPayload),
-          // @ts-ignore - Deno-specific option
-          client: httpClient,
-        });
-        httpClient.close();
-      } else {
-        // Direct request (no proxy)
-        console.log("No proxy configured, making direct Payaza request");
-        payazaResponse = await fetch(payazaApiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": payazaAuthorization,
-          },
-          body: JSON.stringify(collectionPayload),
-        });
+        try {
+          console.log(`Trying Payaza via proxy: ${endpoint}`);
+          const httpClient = Deno.createHttpClient({ proxy: { url: proxyUrl } });
+          payazaResponse = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": payazaAuthorization,
+            },
+            body: JSON.stringify(collectionPayload),
+            // @ts-ignore - Deno-specific option
+            client: httpClient,
+          });
+          httpClient.close();
+          const preview = await payazaResponse.clone().text();
+          console.log(`Proxy response ${endpoint}: status=${payazaResponse.status}, body=${preview.substring(0, 200)}`);
+          if (payazaResponse.headers.get("content-type")?.includes("json") || !preview.includes("<html")) {
+            break;
+          }
+          console.log("Proxy returned HTML, trying next option...");
+          payazaResponse = null;
+        } catch (err) {
+          lastError = String(err);
+          console.error(`Proxy fetch to ${endpoint} failed:`, lastError);
+        }
       }
-    } catch (fetchErr) {
-      console.error("Payaza request failed:", fetchErr);
+    }
 
-      if (merchantKey) {
-        console.log("Falling back to checkout_sdk mode after direct API request failure");
-        return new Response(
-          JSON.stringify({
-            mode: "checkout_sdk",
-            transaction_reference: transactionReference,
-            merchant_key: merchantKey,
-            email,
-            fallback_reason: "direct_api_request_failed",
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
+    if (!payazaResponse) {
+      console.error("All Payaza endpoints failed. Last error:", lastError);
       return new Response(
         JSON.stringify({ error: "Payment service temporarily unavailable. Please try again later." }),
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -194,54 +175,24 @@ Deno.serve(async (req) => {
     }
 
     const payazaText = await payazaResponse.text();
-    console.log("Payaza Collection API response status:", payazaResponse.status, "body preview:", payazaText.substring(0, 500));
+    console.log("Payaza final response status:", payazaResponse.status, "body:", payazaText.substring(0, 500));
 
     let payazaData: any;
     try {
       payazaData = JSON.parse(payazaText);
     } catch {
-      console.error("Payaza returned non-JSON response:", payazaText.substring(0, 300));
-
-      if (merchantKey) {
-        console.log("Falling back to checkout_sdk mode after non-JSON direct API response");
-        return new Response(
-          JSON.stringify({
-            mode: "checkout_sdk",
-            transaction_reference: transactionReference,
-            merchant_key: merchantKey,
-            email,
-            fallback_reason: "direct_api_unavailable",
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
+      console.error("Payaza returned non-JSON:", payazaText.substring(0, 300));
       return new Response(
-        JSON.stringify({ error: "Payment service temporarily unavailable. Please try again later." }),
-        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Payment service returned an invalid response. Please try again." }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     if (!payazaResponse.ok) {
       console.error("Payaza API error:", payazaData);
-
-      if (merchantKey) {
-        console.log("Falling back to checkout_sdk mode after direct API error");
-        return new Response(
-          JSON.stringify({
-            mode: "checkout_sdk",
-            transaction_reference: transactionReference,
-            merchant_key: merchantKey,
-            email,
-            fallback_reason: "direct_api_error",
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
       return new Response(
-        JSON.stringify({ error: "Failed to initiate payment. Please try again." }),
-        { status: 500, headers: corsHeaders }
+        JSON.stringify({ error: payazaData?.message || "Failed to initiate payment. Please try again." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
