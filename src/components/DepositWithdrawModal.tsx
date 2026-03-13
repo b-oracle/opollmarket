@@ -49,6 +49,7 @@ interface DepositWithdrawModalProps {
   onClose: () => void;
   initialTab?: Tab;
   resumePaymentId?: string | null;
+  resumeProvider?: string | null;
 }
 
 interface PaymentInfo {
