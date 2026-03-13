@@ -128,6 +128,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const [securitySettings, setSecuritySettings] = useState<{ require_pin: boolean; require_totp: boolean } | null>(null);
   const [fiatTransferInfo, setFiatTransferInfo] = useState<FiatTransferInfo | null>(null);
   const [fiatCopied, setFiatCopied] = useState<string | null>(null);
+  const [ngnRate, setNgnRate] = useState<number | null>(null);
 
   useEffect(() => {
     if (open) {
