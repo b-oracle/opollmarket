@@ -226,6 +226,7 @@ const AdminFiatSettings = () => {
               </button>
             </div>
           </CardContent>
+        </Card>
 
         {/* ─── Naira Exchange Rate ─── */}
         <Card>
