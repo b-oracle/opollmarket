@@ -1190,6 +1190,8 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                           transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
                         />
                       </div>
+                      <img src={bpayLogoPrimary} alt="BoundlessPay" className="h-6 mx-auto mb-2 dark:hidden" />
+                      <img src={bpayLogoWhite} alt="BoundlessPay" className="h-6 mx-auto mb-2 hidden dark:block" />
                       <h3 className="text-base font-bold mb-1">Complete Bank Transfer</h3>
                       <p className="text-[11px] text-muted-foreground mb-4">
                         Transfer the exact amount below to the account provided
