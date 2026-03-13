@@ -57,3 +57,5 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.payaza-webhook]
     verify_jwt = false
+  [functions.get-naira-rate]
+    verify_jwt = false
