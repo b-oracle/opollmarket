@@ -7,9 +7,22 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-function encodePayazaAuth(secretKey: string): string {
-  const encoded = btoa(secretKey);
-  return `Payaza ${encoded}`;
+/** Build a list of auth header values to try, in priority order */
+function getPayazaAuthVariants(secretKey: string, merchantKey?: string): string[] {
+  const variants: string[] = [];
+  // 1. APIKey with merchant key (most common for server-side payouts)
+  if (merchantKey) variants.push(`APIKey ${merchantKey}`);
+  // 2. Payaza scheme with raw secret key (no base64)
+  variants.push(`Payaza ${secretKey}`);
+  // 3. APIKey with secret key
+  variants.push(`APIKey ${secretKey}`);
+  // 4. Bearer with merchant key
+  if (merchantKey) variants.push(`Bearer ${merchantKey}`);
+  // 5. Bearer with secret key
+  variants.push(`Bearer ${secretKey}`);
+  // 6. Legacy: Payaza with base64-encoded secret key
+  variants.push(`Payaza ${btoa(secretKey)}`);
+  return variants;
 }
 
 // ─── PalmPay helpers ───
