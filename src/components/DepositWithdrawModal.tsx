@@ -29,7 +29,18 @@ import {
 
 type Tab = "deposit" | "withdraw";
 type PaymentMethod = "crypto" | "fiat";
-type FlowStep = "input" | "confirm" | "executing" | "awaiting_payment" | "awaiting_fiat" | "success" | "partial_success" | "error";
+type FlowStep = "input" | "confirm" | "executing" | "awaiting_payment" | "awaiting_fiat" | "awaiting_fiat_transfer" | "success" | "partial_success" | "error";
+
+interface FiatTransferInfo {
+  transaction_reference: string;
+  bank_name: string;
+  account_number: string;
+  account_name: string;
+  amount: number;
+  currency: string;
+  payment_url?: string | null;
+  expires_at?: string | null;
+}
 
 interface DepositWithdrawModalProps {
   open: boolean;
@@ -113,6 +124,8 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const [timeRemaining, setTimeRemaining] = useState<string>("");
   const [showSecurityModal, setShowSecurityModal] = useState(false);
   const [securitySettings, setSecuritySettings] = useState<{ require_pin: boolean; require_totp: boolean } | null>(null);
+  const [fiatTransferInfo, setFiatTransferInfo] = useState<FiatTransferInfo | null>(null);
+  const [fiatCopied, setFiatCopied] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -169,7 +182,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
 
   // Countdown timer for deposit expiry (2 hours)
   useEffect(() => {
-    if (step !== "awaiting_payment" || !depositCreatedAt) {
+    if ((step !== "awaiting_payment" && step !== "awaiting_fiat_transfer") || !depositCreatedAt) {
       setTimeRemaining("");
       return;
     }
@@ -375,21 +388,39 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
         throw new Error(data?.error || error?.message || "Failed to create fiat deposit");
       }
 
-      // Open Payaza inline checkout popup
-      const payazaUrl = `https://checkout.payaza.africa/pay/${data.transaction_reference}?merchant_key=${encodeURIComponent(data.merchant_key)}&amount=${numAmount}&currency=NGN&email=${encodeURIComponent(data.email)}&callback_url=${encodeURIComponent(window.location.href)}`;
-
-      // Use Payaza's redirect-based checkout
-      // We'll open in a new window and poll for confirmation
-      const payazaWindow = window.open(payazaUrl, "_blank", "width=500,height=700,scrollbars=yes");
-
-      setStep("awaiting_fiat");
-      // Start polling the transaction status
-      startPolling(data.transaction_reference);
+      if (data.mode === "direct_api") {
+        // Show in-app bank transfer details
+        setFiatTransferInfo({
+          transaction_reference: data.transaction_reference,
+          bank_name: data.bank_name,
+          account_number: data.account_number,
+          account_name: data.account_name,
+          amount: data.amount,
+          currency: data.currency,
+          payment_url: data.payment_url,
+          expires_at: data.expires_at,
+        });
+        setDepositCreatedAt(Date.now());
+        setStep("awaiting_fiat_transfer");
+        startPolling(data.transaction_reference);
+      } else {
+        // Checkout SDK mode — open popup
+        const payazaUrl = `https://checkout.payaza.africa/pay/${data.transaction_reference}?merchant_key=${encodeURIComponent(data.merchant_key)}&amount=${numAmount}&currency=NGN&email=${encodeURIComponent(data.email)}&callback_url=${encodeURIComponent(window.location.href)}`;
+        window.open(payazaUrl, "_blank", "width=500,height=700,scrollbars=yes");
+        setStep("awaiting_fiat");
+        startPolling(data.transaction_reference);
+      }
     } catch (err: any) {
       setErrorMsg(err.message || "Something went wrong");
       setStep("error");
     }
   }, [numAmount, startPolling]);
+
+  const copyFiatDetail = useCallback((text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setFiatCopied(label);
+    setTimeout(() => setFiatCopied(null), 2000);
+  }, []);
 
   const executeWithdraw = useCallback(async () => {
     setStep("executing");
@@ -989,7 +1020,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                   </motion.div>
                 )}
 
-                {/* AWAITING FIAT */}
+                {/* AWAITING FIAT (checkout SDK popup) */}
                 {step === "awaiting_fiat" && (
                   <motion.div
                     key="awaiting_fiat"
@@ -1028,6 +1059,168 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                     <p className="text-[10px] text-muted-foreground text-center mb-4">
                       Your balance will be credited automatically once payment is confirmed.
                     </p>
+                    <button
+                      onClick={handleClose}
+                      className="w-full glass py-3 rounded-xl font-semibold text-sm text-muted-foreground transition-all active:scale-95"
+                    >
+                      Close (payment will still be tracked)
+                    </button>
+                  </motion.div>
+                )}
+
+                {/* AWAITING FIAT TRANSFER (Direct API — bank transfer details) */}
+                {step === "awaiting_fiat_transfer" && fiatTransferInfo && (
+                  <motion.div
+                    key="awaiting_fiat_transfer"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                  >
+                    {/* Progress Stepper */}
+                    <div className="flex items-center justify-between mb-5 px-2">
+                      {[
+                        { label: "Created", done: true },
+                        { label: "Transfer", done: false, active: true },
+                        { label: "Confirming", done: false },
+                        { label: "Credited", done: false },
+                      ].map((s, i, arr) => (
+                        <div key={s.label} className="flex items-center flex-1 last:flex-none">
+                          <div className="flex flex-col items-center">
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
+                              s.done
+                                ? "bg-primary text-primary-foreground"
+                                : s.active
+                                  ? "bg-primary/20 border-2 border-primary text-primary"
+                                  : "bg-muted border border-border text-muted-foreground"
+                            }`}>
+                              {s.done ? <Check className="w-3.5 h-3.5" /> : i + 1}
+                            </div>
+                            <span className={`text-[9px] mt-1 font-medium ${
+                              s.done || s.active ? "text-primary" : "text-muted-foreground"
+                            }`}>{s.label}</span>
+                          </div>
+                          {i < arr.length - 1 && (
+                            <div className={`flex-1 h-0.5 mx-1 mt-[-14px] rounded-full ${
+                              s.done ? "bg-primary" : "bg-border"
+                            }`} />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="glass rounded-xl p-4 mb-4 text-center">
+                      <div className="w-14 h-14 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center mx-auto mb-3 relative">
+                        <Banknote className="w-7 h-7 text-primary" />
+                        <motion.div
+                          className="absolute inset-0 rounded-full border-2 border-primary/40"
+                          animate={{ scale: [1, 1.3, 1], opacity: [0.6, 0, 0.6] }}
+                          transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                        />
+                      </div>
+                      <h3 className="text-base font-bold mb-1">Complete Bank Transfer</h3>
+                      <p className="text-[11px] text-muted-foreground mb-4">
+                        Transfer the exact amount below to the account provided
+                      </p>
+
+                      {/* Countdown timer */}
+                      {timeRemaining && timeRemaining !== "Expired" && (
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold mb-4 bg-primary/10 text-primary border border-primary/20">
+                          <Clock className="w-3.5 h-3.5" />
+                          {timeRemaining} remaining
+                        </div>
+                      )}
+
+                      {/* Amount to send */}
+                      <div className="rounded-xl bg-muted/50 border border-border p-3 mb-3">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Amount to Transfer</p>
+                        <p className="text-xl font-bold text-primary">
+                          ₦{fiatTransferInfo.amount.toLocaleString()}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">≈ ${numAmount.toFixed(2)} USD</p>
+                      </div>
+
+                      {/* Bank Name */}
+                      <div className="rounded-xl bg-muted/50 border border-border p-3 mb-3">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Bank Name</p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-bold">{fiatTransferInfo.bank_name}</p>
+                          <button
+                            onClick={() => copyFiatDetail(fiatTransferInfo.bank_name, "bank")}
+                            className="shrink-0 w-8 h-8 rounded-lg glass flex items-center justify-center transition-all active:scale-95"
+                          >
+                            {fiatCopied === "bank" ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Account Number */}
+                      <div className="rounded-xl bg-muted/50 border border-border p-3 mb-3">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Account Number</p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-lg font-bold font-mono tracking-wider select-all">{fiatTransferInfo.account_number}</p>
+                          <button
+                            onClick={() => copyFiatDetail(fiatTransferInfo.account_number, "account")}
+                            className="shrink-0 w-8 h-8 rounded-lg glass flex items-center justify-center transition-all active:scale-95"
+                          >
+                            {fiatCopied === "account" ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Account Name */}
+                      <div className="rounded-xl bg-muted/50 border border-border p-3 mb-3">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Account Name</p>
+                        <p className="text-sm font-semibold">{fiatTransferInfo.account_name}</p>
+                      </div>
+
+                      {/* Payment URL fallback */}
+                      {fiatTransferInfo.payment_url && (
+                        <a
+                          href={fiatTransferInfo.payment_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm transition-all active:scale-95 mb-3"
+                        >
+                          <Banknote className="w-4 h-4" />
+                          Pay Online Instead
+                        </a>
+                      )}
+
+                      {/* Live status indicator */}
+                      <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary/5 border border-primary/20">
+                        <motion.div
+                          className="w-2 h-2 rounded-full bg-primary"
+                          animate={{ opacity: [1, 0.3, 1] }}
+                          transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                        />
+                        <p className="text-xs text-primary font-semibold">
+                          Listening for your payment...
+                        </p>
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                        >
+                          <Loader2 className="w-3.5 h-3.5 text-primary" />
+                        </motion.div>
+                      </div>
+                    </div>
+
+                    {/* Tips */}
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border">
+                        <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                        <p className="text-[10px] text-muted-foreground">
+                          Transfer the <strong className="text-foreground">exact amount</strong> shown above. Incorrect amounts may delay confirmation.
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border">
+                        <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                        <p className="text-[10px] text-muted-foreground">
+                          You can close this modal — your payment will still be tracked and credited automatically once confirmed.
+                        </p>
+                      </div>
+                    </div>
+
                     <button
                       onClick={handleClose}
                       className="w-full glass py-3 rounded-xl font-semibold text-sm text-muted-foreground transition-all active:scale-95"

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer, Globe, Plus, Trash2, RefreshCw, ToggleLeft, Copy, ShieldCheck, Sparkles } from "lucide-react";
+import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer, Globe, Plus, Trash2, RefreshCw, ToggleLeft, Copy, ShieldCheck, Sparkles, Banknote } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { useAdminContext } from "./AdminLayout";
@@ -76,6 +76,7 @@ const AdminSettings = () => {
   const [blueMaxFreeMarkets, setBlueMaxFreeMarkets] = useState("5");
   const [goldMaxFreeMarkets, setGoldMaxFreeMarkets] = useState("20");
   const [aiGenerationCost, setAiGenerationCost] = useState("0.50");
+  const [payazaMode, setPayazaMode] = useState<"checkout_sdk" | "direct_api">("direct_api");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
@@ -122,6 +123,7 @@ const AdminSettings = () => {
         setBlueMaxFreeMarkets(String(d.blue_max_free_markets ?? 5));
         setGoldMaxFreeMarkets(String(d.gold_max_free_markets ?? 20));
         setAiGenerationCost(String(d.ai_generation_cost ?? 0.5));
+        setPayazaMode(d.payaza_mode === "checkout_sdk" ? "checkout_sdk" : "direct_api");
         setSettingsId(d.id);
       }
       if (error) console.error(error);
@@ -233,7 +235,8 @@ const AdminSettings = () => {
            gold_trending_multiplier: goldTrendingMultNum,
            blue_max_free_markets: blueMaxFreeMarketsNum,
             gold_max_free_markets: goldMaxFreeMarketsNum,
-            ai_generation_cost: aiGenerationCostNum,
+             ai_generation_cost: aiGenerationCostNum,
+             payaza_mode: payazaMode,
            updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
@@ -273,7 +276,8 @@ const AdminSettings = () => {
            gold_trending_multiplier: goldTrendingMultNum,
            blue_max_free_markets: blueMaxFreeMarketsNum,
             gold_max_free_markets: goldMaxFreeMarketsNum,
-            ai_generation_cost: aiGenerationCostNum,
+             ai_generation_cost: aiGenerationCostNum,
+             payaza_mode: payazaMode,
         },
       });
 
@@ -301,6 +305,62 @@ const AdminSettings = () => {
       {/* ─── Feature Toggles (Super Admin only) ─── */}
       <FeatureTogglesCard />
 
+      {/* ─── Fiat Payment Mode ─── */}
+      <Card className="mb-6 max-w-4xl">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Banknote className="w-5 h-5" /> Fiat Payment Mode (Payaza)
+          </CardTitle>
+          <CardDescription>
+            Choose how fiat (NGN) deposits are processed. Direct API shows bank transfer details in-app; Checkout SDK opens a popup window.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-3">
+            <button
+              onClick={() => canEdit && setPayazaMode("direct_api")}
+              className={`flex-1 rounded-xl border-2 p-4 text-left transition-all ${
+                payazaMode === "direct_api"
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-muted-foreground/30"
+              } ${!canEdit ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                  payazaMode === "direct_api" ? "border-primary" : "border-muted-foreground/40"
+                }`}>
+                  {payazaMode === "direct_api" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                </div>
+                <span className="text-sm font-bold">Direct API</span>
+                <Badge variant="default" className="text-[10px]">Recommended</Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground ml-6">
+                Bank transfer details shown in-app. Works even when checkout domain is down.
+              </p>
+            </button>
+            <button
+              onClick={() => canEdit && setPayazaMode("checkout_sdk")}
+              className={`flex-1 rounded-xl border-2 p-4 text-left transition-all ${
+                payazaMode === "checkout_sdk"
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-muted-foreground/30"
+              } ${!canEdit ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                  payazaMode === "checkout_sdk" ? "border-primary" : "border-muted-foreground/40"
+                }`}>
+                  {payazaMode === "checkout_sdk" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                </div>
+                <span className="text-sm font-bold">Checkout SDK</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground ml-6">
+                Opens Payaza popup window. Requires checkout.payaza.africa to be online.
+              </p>
+            </button>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl">
         {/* ─── Market Prediction Fees ─── */}

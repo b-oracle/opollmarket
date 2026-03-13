@@ -251,6 +251,7 @@ export type Database = {
           min_withdrawal_amount: number
           nft_buy_url: string | null
           nft_contract_address: string | null
+          payaza_mode: string
           qt_disabled_assets: string
           qt_enabled_assets: string
           qt_enabled_timeframes: string
@@ -291,6 +292,7 @@ export type Database = {
           min_withdrawal_amount?: number
           nft_buy_url?: string | null
           nft_contract_address?: string | null
+          payaza_mode?: string
           qt_disabled_assets?: string
           qt_enabled_assets?: string
           qt_enabled_timeframes?: string
@@ -331,6 +333,7 @@ export type Database = {
           min_withdrawal_amount?: number
           nft_buy_url?: string | null
           nft_contract_address?: string | null
+          payaza_mode?: string
           qt_disabled_assets?: string
           qt_enabled_assets?: string
           qt_enabled_timeframes?: string
