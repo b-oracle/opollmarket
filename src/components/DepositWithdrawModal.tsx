@@ -134,6 +134,12 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const [fiatCopied, setFiatCopied] = useState<string | null>(null);
   const [ngnRate, setNgnRate] = useState<number | null>(null);
   const [rateLoading, setRateLoading] = useState(false);
+  // Withdrawal-specific state for NGN payouts
+  const [withdrawMethod, setWithdrawMethod] = useState<PaymentMethod>("crypto");
+  const [bankCode, setBankCode] = useState("044");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [accountName, setAccountName] = useState("");
+  const [ngnPayoutRate, setNgnPayoutRate] = useState<number | null>(null);
 
   // Fetch live NGN rate
   const fetchNgnRate = useCallback(async () => {
