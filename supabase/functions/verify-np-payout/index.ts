@@ -63,17 +63,33 @@ Deno.serve(async (req) => {
     const statusData = statusRes.ok ? await statusRes.json() : null;
     console.log("Payout status:", JSON.stringify(statusData));
 
-    // Step 3: Generate TOTP and verify
-    const totp = new TOTP({
-      issuer: "NOWPayments",
-      label: "payout",
-      algorithm: "SHA1",
-      digits: 6,
-      period: 30,
-      secret: totpSecret,
-    });
-    const verificationCode = totp.generate();
-    console.log("Generated verification code length:", verificationCode.length);
+    // Step 3: Generate TOTP — try as hex first, then base32
+    let verificationCode: string;
+    try {
+      // Try treating secret as hex
+      const totp = new TOTP({
+        issuer: "NOWPayments",
+        label: "payout",
+        algorithm: "SHA1",
+        digits: 6,
+        period: 30,
+        secret: TOTP.Secret ? new (await import("https://esm.sh/otpauth@9.3.6")).Secret({ hex: totpSecret }) : totpSecret,
+      });
+      verificationCode = totp.generate();
+    } catch {
+      // Fallback: use raw secret string with manual TOTP
+      const { Secret } = await import("https://esm.sh/otpauth@9.3.6");
+      const secret = Secret.fromHex(totpSecret);
+      const totp = new TOTP({
+        issuer: "NOWPayments",
+        label: "payout",
+        algorithm: "SHA1",
+        digits: 6,
+        period: 30,
+        secret,
+      });
+      verificationCode = totp.generate();
+    }
 
     const verifyRes = await fetch(
       `https://api.nowpayments.io/v1/payout/${batch_id}/verify`,
