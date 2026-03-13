@@ -434,7 +434,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             <span className="text-[9px] text-foreground/90 leading-none">Details</span>
           </button>
           <button onClick={handleShare} className="flex flex-col items-center gap-0.5 group">
-            <div className={`${actionIconSizeClass} rounded-full glass bg-background/60 border border-border/60 shadow-md flex items-center justify-center group-hover:bg-primary/20 transition-colors`}>
+            <div className={`${actionIconSizeClass} rounded-full glass bg-background/70 border border-border shadow-md flex items-center justify-center group-hover:bg-primary/20 transition-colors`}>
               <Share2 className="w-3.5 h-3.5 text-foreground group-hover:text-primary transition-colors" />
             </div>
             <span className="text-[9px] text-foreground/90 leading-none">Share</span>
