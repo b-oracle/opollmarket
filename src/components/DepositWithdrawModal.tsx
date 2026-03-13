@@ -272,7 +272,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       if (!user) return [];
       const { data } = await supabase
         .from("transactions")
-        .select("id, amount, status, nowpayments_payment_id, created_at")
+        .select("id, amount, status, nowpayments_payment_id, payment_provider, created_at")
         .eq("user_id", user.id)
         .eq("type", "deposit")
         .in("status", ["pending", "partial"])
