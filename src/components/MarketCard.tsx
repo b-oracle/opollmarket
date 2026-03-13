@@ -496,7 +496,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           {/* Prediction buttons with action column */}
           <div className="relative">
             {/* Action buttons column - positioned above the right side */}
-            <div className="absolute bottom-full right-0 mb-2 z-20 flex flex-col items-center gap-1.5">
+            <div className="absolute bottom-full right-0 mb-4 z-20 flex flex-col items-center gap-1">
               {isBoosted && (
                 <div className="flex flex-col items-center gap-0.5">
                   <div className="w-9 h-9 rounded-full glass flex items-center justify-center bg-orange-500/20 animate-pulse">
