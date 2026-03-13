@@ -134,6 +134,12 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const [fiatCopied, setFiatCopied] = useState<string | null>(null);
   const [ngnRate, setNgnRate] = useState<number | null>(null);
   const [rateLoading, setRateLoading] = useState(false);
+  // Withdrawal-specific state for NGN payouts
+  const [withdrawMethod, setWithdrawMethod] = useState<PaymentMethod>("crypto");
+  const [bankCode, setBankCode] = useState("044");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [accountName, setAccountName] = useState("");
+  const [ngnPayoutRate, setNgnPayoutRate] = useState<number | null>(null);
 
   // Fetch live NGN rate
   const fetchNgnRate = useCallback(async () => {
@@ -146,15 +152,16 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   }, []);
 
   useEffect(() => {
-    if (!open || paymentMethod !== "fiat") return;
-    fetchNgnRate();
-  }, [open, paymentMethod, fetchNgnRate]);
+    if (!open) return;
+    if (paymentMethod === "fiat" || withdrawMethod === "fiat") fetchNgnRate();
+  }, [open, paymentMethod, withdrawMethod, fetchNgnRate]);
 
   useEffect(() => {
     if (open) {
       setTab(initialTab);
       setAmount("");
       setPaymentMethod("crypto");
+      setWithdrawMethod("crypto");
       setWalletAddress("");
       setSelectedCrypto("usdtbsc");
       setStep("input");
@@ -165,6 +172,10 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setDepositCreatedAt(null);
       setTimeRemaining("");
       setNgnRate(null);
+      setBankCode("044");
+      setAccountNumber("");
+      setAccountName("");
+      setNgnPayoutRate(null);
     }
     return () => {
       if (pollInterval) clearInterval(pollInterval);
@@ -336,7 +347,9 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const isDeposit = tab === "deposit";
   const maxAvailable = isDeposit ? MAX_AMOUNT : balance;
   const isValid = numAmount >= MIN_AMOUNT && numAmount <= Math.min(MAX_AMOUNT, maxAvailable);
-  const isWithdrawValid = isValid && walletAddress.trim().length >= 10;
+  const isWithdrawValid = isValid && (withdrawMethod === "fiat"
+    ? accountNumber.trim().length >= 10 && accountName.trim().length >= 2
+    : walletAddress.trim().length >= 10);
 
   const handleAmountChange = (val: string) => {
     const cleaned = val.replace(/[^0-9.]/g, "");
@@ -476,6 +489,39 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     setStep("executing");
     setErrorMsg("");
     try {
+      // Determine which withdrawal path to take
+      if (withdrawMethod === "fiat") {
+        const { data, error } = await supabase.functions.invoke("request-payaza-withdrawal", {
+          body: {
+            amount: numAmount,
+            bank_code: bankCode,
+            account_number: accountNumber.trim(),
+            account_name: accountName.trim(),
+          },
+        });
+
+        if (error) {
+          let specificMsg = "";
+          try {
+            const ctx = (error as any).context;
+            if (ctx && typeof ctx.json === "function") {
+              const body = await ctx.json();
+              specificMsg = body?.error || "";
+            }
+          } catch {}
+          if (!specificMsg && data?.error) specificMsg = data.error;
+          throw new Error(specificMsg || error.message || "Withdrawal request failed");
+        }
+        if (data?.error) throw new Error(data.error);
+
+        setNgnPayoutRate(data?.payout_rate || null);
+        queryClient.invalidateQueries({ queryKey: ["balance"] });
+        queryClient.invalidateQueries({ queryKey: ["eligible_withdrawal"] });
+        setStep("success");
+        return;
+      }
+
+      // Crypto withdrawal path
       const { data, error } = await supabase.functions.invoke("request-withdrawal", {
         body: {
           amount: numAmount,
@@ -510,7 +556,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setErrorMsg(err.message || "Something went wrong");
       setStep("error");
     }
-  }, [numAmount, walletAddress, selectedCrypto, queryClient]);
+  }, [numAmount, walletAddress, selectedCrypto, queryClient, withdrawMethod, bankCode, accountNumber, accountName]);
 
   const handleWithdraw = useCallback(async () => {
     // Check if user has security requirements
@@ -542,6 +588,10 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     setPollInterval(null);
     setAmount("");
     setWalletAddress("");
+    setWithdrawMethod("crypto");
+    setBankCode("044");
+    setAccountNumber("");
+    setAccountName("");
     setStep("input");
     setErrorMsg("");
     setPaymentInfo(null);
@@ -555,6 +605,10 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     setTab(newTab);
     setAmount("");
     setWalletAddress("");
+    setWithdrawMethod("crypto");
+    setBankCode("044");
+    setAccountNumber("");
+    setAccountName("");
     setStep("input");
     setErrorMsg("");
     setPaymentInfo(null);
@@ -795,8 +849,36 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                       </div>
                     )}
 
-                    {/* Crypto selector (only for crypto deposits or withdrawals) */}
-                    {(paymentMethod === "crypto" || !isDeposit) && (
+                    {/* Withdrawal method toggle */}
+                    {!isDeposit && fiatEnabled && (
+                      <div className="flex gap-1 p-1 rounded-xl bg-muted/50 mb-4">
+                        <button
+                          onClick={() => setWithdrawMethod("crypto")}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                            withdrawMethod === "crypto"
+                              ? "bg-primary text-primary-foreground"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <Coins className="w-3.5 h-3.5" />
+                          Crypto
+                        </button>
+                        <button
+                          onClick={() => setWithdrawMethod("fiat")}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                            withdrawMethod === "fiat"
+                              ? "bg-primary text-primary-foreground"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <Banknote className="w-3.5 h-3.5" />
+                          Bank (NGN)
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Crypto selector (only for crypto deposits or crypto withdrawals) */}
+                    {((isDeposit && paymentMethod === "crypto") || (!isDeposit && withdrawMethod === "crypto")) && (
                     <div className="mb-5">
                       <label className="text-xs text-muted-foreground mb-1.5 block">
                         {isDeposit ? "Pay with" : "Receive as"}
@@ -820,7 +902,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                     </div>
                     )}
 
-                    {/* Fiat info */}
+                    {/* Fiat deposit info */}
                     {isDeposit && paymentMethod === "fiat" && (
                       <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border mb-5">
                         <Banknote className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
@@ -848,8 +930,8 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                       </div>
                     )}
 
-                    {/* Wallet address for withdrawals */}
-                    {!isDeposit && (
+                    {/* Wallet address for crypto withdrawals */}
+                    {!isDeposit && withdrawMethod === "crypto" && (
                       <div className="mb-5">
                         <label className="text-xs text-muted-foreground mb-1.5 block">Your Wallet Address</label>
                         <input
@@ -859,6 +941,93 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                           placeholder="0x... or T... or bc1..."
                           className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all font-mono"
                         />
+                      </div>
+                    )}
+
+                    {/* Bank details for NGN withdrawals */}
+                    {!isDeposit && withdrawMethod === "fiat" && (
+                      <div className="space-y-3 mb-5">
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1.5 block">Bank</label>
+                          <select
+                            value={bankCode}
+                            onChange={(e) => setBankCode(e.target.value)}
+                            className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all appearance-none"
+                          >
+                            <option value="044">Access Bank</option>
+                            <option value="023">Citibank</option>
+                            <option value="063">Diamond (Access)</option>
+                            <option value="050">Ecobank</option>
+                            <option value="084">Enterprise Bank</option>
+                            <option value="070">Fidelity Bank</option>
+                            <option value="011">First Bank</option>
+                            <option value="214">FCMB</option>
+                            <option value="058">GTBank</option>
+                            <option value="030">Heritage Bank</option>
+                            <option value="301">Jaiz Bank</option>
+                            <option value="082">Keystone Bank</option>
+                            <option value="526">Kuda Bank</option>
+                            <option value="100004">OPay</option>
+                            <option value="100002">Paga</option>
+                            <option value="999991">PalmPay</option>
+                            <option value="076">Polaris Bank</option>
+                            <option value="101">Providus Bank</option>
+                            <option value="221">Stanbic IBTC</option>
+                            <option value="068">Standard Chartered</option>
+                            <option value="232">Sterling Bank</option>
+                            <option value="100">SunTrust Bank</option>
+                            <option value="032">Union Bank</option>
+                            <option value="033">United Bank (UBA)</option>
+                            <option value="215">Unity Bank</option>
+                            <option value="035">Wema Bank</option>
+                            <option value="057">Zenith Bank</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1.5 block">Account Number</label>
+                          <input
+                            type="text"
+                            value={accountNumber}
+                            onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                            placeholder="0123456789"
+                            maxLength={10}
+                            className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1.5 block">Account Name</label>
+                          <input
+                            type="text"
+                            value={accountName}
+                            onChange={(e) => setAccountName(e.target.value)}
+                            placeholder="John Doe"
+                            className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                          />
+                        </div>
+                        {ngnRate && numAmount > 0 && (
+                          <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border">
+                            <Banknote className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-[10px] text-muted-foreground">
+                                You'll receive NGN to your bank account at the current payout rate.
+                              </p>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <p className="text-xs font-semibold text-primary">
+                                  ≈ ₦{Math.floor(numAmount * ngnRate).toLocaleString()} NGN
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={fetchNgnRate}
+                                  disabled={rateLoading}
+                                  className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors"
+                                  title="Refresh rate"
+                                >
+                                  <RefreshCw className={`w-3 h-3 text-primary ${rateLoading ? "animate-spin" : ""}`} />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -928,22 +1097,34 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                           <span className="text-muted-foreground">Amount</span>
                           <div className="text-right">
                             <span className="font-bold text-lg">${numAmount.toFixed(2)}</span>
-                            {isDeposit && paymentMethod === "fiat" && ngnRate && (
-                              <p className="text-[10px] text-muted-foreground">≈ ₦{Math.ceil(numAmount * ngnRate).toLocaleString()}</p>
+                            {((isDeposit && paymentMethod === "fiat") || (!isDeposit && withdrawMethod === "fiat")) && ngnRate && (
+                              <p className="text-[10px] text-muted-foreground">≈ ₦{Math.floor(numAmount * ngnRate).toLocaleString()}</p>
                             )}
                           </div>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Payment Method</span>
                           <span className="font-semibold">
-                            {isDeposit && paymentMethod === "fiat" ? "Fiat (NGN)" : ALL_CRYPTO_OPTIONS.find((c) => c.value === selectedCrypto)?.label}
+                            {isDeposit && paymentMethod === "fiat" ? "Fiat (NGN)" : !isDeposit && withdrawMethod === "fiat" ? "Bank Transfer (NGN)" : ALL_CRYPTO_OPTIONS.find((c) => c.value === selectedCrypto)?.label}
                           </span>
                         </div>
-                        {!isDeposit && (
+                        {!isDeposit && withdrawMethod === "crypto" && (
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">To Wallet</span>
                             <span className="font-mono text-xs truncate max-w-[180px]">{walletAddress}</span>
                           </div>
+                        )}
+                        {!isDeposit && withdrawMethod === "fiat" && (
+                          <>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Account</span>
+                              <span className="font-mono text-xs">{accountNumber}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Account Name</span>
+                              <span className="text-xs font-semibold truncate max-w-[180px]">{accountName}</span>
+                            </div>
+                          </>
                         )}
                       </div>
                     </div>

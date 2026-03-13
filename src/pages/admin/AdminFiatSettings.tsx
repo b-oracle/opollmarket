@@ -15,6 +15,7 @@ const AdminFiatSettings = () => {
   const [payazaMode, setPayazaMode] = useState<"checkout_sdk" | "direct_api">("direct_api");
   const [nairaRateMarkup, setNairaRateMarkup] = useState("");
   const [fallbackNairaRate, setFallbackNairaRate] = useState("");
+  const [nairaPayoutMarkdown, setNairaPayoutMarkdown] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
@@ -25,7 +26,7 @@ const AdminFiatSettings = () => {
     const fetchSettings = async () => {
       const { data, error } = await supabase
         .from("commission_settings")
-        .select("id, payaza_mode, naira_rate_markup, fallback_naira_rate")
+        .select("id, payaza_mode, naira_rate_markup, fallback_naira_rate, naira_payout_markdown")
         .limit(1)
         .single();
       if (data) {
@@ -33,6 +34,7 @@ const AdminFiatSettings = () => {
         setPayazaMode(d.payaza_mode === "checkout_sdk" ? "checkout_sdk" : "direct_api");
         setNairaRateMarkup(String(d.naira_rate_markup ?? 0));
         setFallbackNairaRate(String(d.fallback_naira_rate ?? 1500));
+        setNairaPayoutMarkdown(String(d.naira_payout_markdown ?? 0));
         setSettingsId(d.id);
       }
       if (error) console.error(error);
@@ -56,9 +58,11 @@ const AdminFiatSettings = () => {
 
   const markupNum = parseFloat(nairaRateMarkup) || 0;
   const fallbackNum = parseFloat(fallbackNairaRate) || 1500;
+  const payoutMarkdownNum = parseFloat(nairaPayoutMarkdown) || 0;
   const effectiveRate = liveRate ? Math.round(liveRate * (1 + markupNum / 100) * 100) / 100 : null;
+  const effectivePayoutRate = liveRate ? Math.round(liveRate * (1 - payoutMarkdownNum / 100) * 100) / 100 : null;
 
-  const isValid = markupNum >= 0 && markupNum <= 100 && fallbackNum > 0;
+  const isValid = markupNum >= 0 && markupNum <= 100 && fallbackNum > 0 && payoutMarkdownNum >= 0 && payoutMarkdownNum <= 100;
 
   const handleSave = async () => {
     if (!isValid || !settingsId) return;
@@ -71,6 +75,7 @@ const AdminFiatSettings = () => {
           payaza_mode: payazaMode,
           naira_rate_markup: markupNum,
           fallback_naira_rate: fallbackNum,
+          naira_payout_markdown: payoutMarkdownNum,
           updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
@@ -81,7 +86,7 @@ const AdminFiatSettings = () => {
         action: "settings_updated",
         targetId: settingsId,
         targetType: "commission_settings",
-        details: { payaza_mode: payazaMode, naira_rate_markup: markupNum, fallback_naira_rate: fallbackNum },
+        details: { payaza_mode: payazaMode, naira_rate_markup: markupNum, fallback_naira_rate: fallbackNum, naira_payout_markdown: payoutMarkdownNum },
       });
 
       toast.success("Fiat settings saved successfully");
@@ -243,6 +248,61 @@ const AdminFiatSettings = () => {
                 <p className="text-[10px] text-muted-foreground">Click "Fetch" to see the current live rate.</p>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* ─── NGN Payout Markdown ─── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Percent className="w-5 h-5" /> NGN Payout Rate
+            </CardTitle>
+            <CardDescription>
+              Configure the markdown applied to the live rate for NGN withdrawals. Users receive less NGN per USD compared to deposits.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="nairaPayoutMarkdown">Payout Rate Markdown (%)</Label>
+              <Input
+                id="nairaPayoutMarkdown"
+                type="number"
+                min={0}
+                max={100}
+                step={0.5}
+                value={nairaPayoutMarkdown}
+                onChange={(e) => setNairaPayoutMarkdown(e.target.value)}
+                placeholder="0"
+                disabled={!canEdit}
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Current: {payoutMarkdownNum}%. Subtracted from the live USD→NGN rate for payouts.
+              </p>
+            </div>
+
+            {liveRate !== null && (
+              <div className="rounded-lg border border-border p-3 space-y-1 bg-muted/50">
+                <p className="text-xs font-semibold">Payout Rate Preview</p>
+                <div className="space-y-1 text-[11px]">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Market rate</span>
+                    <span className="font-medium">₦{liveRate.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Markdown ({payoutMarkdownNum}%)</span>
+                    <span className="font-medium text-destructive">−₦{((liveRate * payoutMarkdownNum / 100)).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-border pt-1">
+                    <span className="text-muted-foreground font-semibold">User receives</span>
+                    <span className="font-bold text-primary">₦{effectivePayoutRate?.toLocaleString()}/USD</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Example: $100 withdrawal</span>
+                    <span className="font-medium">₦{effectivePayoutRate ? (effectivePayoutRate * 100).toLocaleString() : "—"}</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
