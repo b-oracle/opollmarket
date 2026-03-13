@@ -358,23 +358,24 @@ async function tryPayazaPayout(params: PayazaPayoutParams): Promise<boolean> {
 
     const payazaUrl = "https://api.payaza.africa/live/merchant-payout/initiate_payout/";
 
-    // Auth variants: raw key first (per SDK docs: "no need to convert to base64")
+    // Per official payaza_lib SDK: base64-encode the secret key, use "Payaza <encoded>" header
+    // Also requires X-TenantID: live
+    const encodedSecret = encodePayazaKey(secretKey);
+    const encodedMerchant = merchantKey ? encodePayazaKey(merchantKey) : null;
+
     const authVariants: string[] = [];
-    // The SDK uses the raw secret key directly
-    authVariants.push(`Payaza ${secretKey}`);
-    if (merchantKey) authVariants.push(`Payaza ${merchantKey}`);
-    // Also try APIKey format
-    authVariants.push(`APIKey ${secretKey}`);
-    if (merchantKey) authVariants.push(`APIKey ${merchantKey}`);
+    authVariants.push(`Payaza ${encodedSecret}`);
+    if (encodedMerchant) authVariants.push(`Payaza ${encodedMerchant}`);
 
     for (const authValue of authVariants) {
       const authLabel = authValue.substring(0, 30) + "...";
       let payazaResponse: Response | null = null;
 
-      const fetchHeaders = {
+      const fetchHeaders: Record<string, string> = {
         "Content-Type": "application/json",
         "Authorization": authValue,
         "Accept": "application/json",
+        "X-TenantID": "live",
       };
 
       // Try with proxy first (for IP whitelisting)
