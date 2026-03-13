@@ -371,13 +371,14 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     queryFn: async () => {
       const { data } = await supabase
         .from("commission_settings")
-        .select("withdrawal_cooldown_minutes, withdrawal_multiplier, withdrawal_limit_enabled")
+        .select("withdrawal_cooldown_minutes, withdrawal_multiplier, withdrawal_limit_enabled, min_withdrawal_amount")
         .limit(1)
         .single();
       return {
         cooldown: (data as any)?.withdrawal_cooldown_minutes ?? 5,
         multiplier: (data as any)?.withdrawal_multiplier ?? 2,
         limitEnabled: (data as any)?.withdrawal_limit_enabled ?? true,
+        minAmount: Number((data as any)?.min_withdrawal_amount) || 5,
       };
     },
     enabled: tab === "withdraw",
