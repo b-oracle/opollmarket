@@ -37,8 +37,7 @@ const BottomSheet = ({ open, onClose, children, maxHeight = "85dvh", className =
             exit={{ opacity: 0, y: 100, scale: 0.95 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="fixed right-0 z-[60] max-w-lg mx-auto"
-            style={{ left: sidebarLeft, bottom: undefined }}
-            style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
+            style={{ left: sidebarLeft, bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
           >
             <div
               className={`glass-strong rounded-t-3xl overflow-y-auto md:pb-0 ${className}`}
