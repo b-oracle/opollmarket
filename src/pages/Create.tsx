@@ -187,6 +187,10 @@ const Create = () => {
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [activeMarketCount, setActiveMarketCount] = useState(0);
   const [exceededFreeLimit, setExceededFreeLimit] = useState(false);
+  const [aiGenerationCost, setAiGenerationCost] = useState(0.5);
+  const [generatingDesc, setGeneratingDesc] = useState(false);
+  const [generatingDetails, setGeneratingDetails] = useState(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
 
   useEffect(() => {
     (async () => {
