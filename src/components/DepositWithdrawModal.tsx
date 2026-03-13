@@ -489,6 +489,39 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     setStep("executing");
     setErrorMsg("");
     try {
+      // Determine which withdrawal path to take
+      if (withdrawMethod === "fiat") {
+        const { data, error } = await supabase.functions.invoke("request-payaza-withdrawal", {
+          body: {
+            amount: numAmount,
+            bank_code: bankCode,
+            account_number: accountNumber.trim(),
+            account_name: accountName.trim(),
+          },
+        });
+
+        if (error) {
+          let specificMsg = "";
+          try {
+            const ctx = (error as any).context;
+            if (ctx && typeof ctx.json === "function") {
+              const body = await ctx.json();
+              specificMsg = body?.error || "";
+            }
+          } catch {}
+          if (!specificMsg && data?.error) specificMsg = data.error;
+          throw new Error(specificMsg || error.message || "Withdrawal request failed");
+        }
+        if (data?.error) throw new Error(data.error);
+
+        setNgnPayoutRate(data?.payout_rate || null);
+        queryClient.invalidateQueries({ queryKey: ["balance"] });
+        queryClient.invalidateQueries({ queryKey: ["eligible_withdrawal"] });
+        setStep("success");
+        return;
+      }
+
+      // Crypto withdrawal path
       const { data, error } = await supabase.functions.invoke("request-withdrawal", {
         body: {
           amount: numAmount,
@@ -523,7 +556,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setErrorMsg(err.message || "Something went wrong");
       setStep("error");
     }
-  }, [numAmount, walletAddress, selectedCrypto, queryClient]);
+  }, [numAmount, walletAddress, selectedCrypto, queryClient, withdrawMethod, bankCode, accountNumber, accountName]);
 
   const handleWithdraw = useCallback(async () => {
     // Check if user has security requirements
