@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Save, FileCode2, Shield, ExternalLink, DollarSign, ArrowRightLeft } from "lucide-react";
+import { Loader2, Save, FileCode2, Shield, ExternalLink, DollarSign } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -11,16 +11,12 @@ const AdminContracts = () => {
   const [nftBuyUrl, setNftBuyUrl] = useState("");
   const [marketCreationFee, setMarketCreationFee] = useState("50");
   const [tokenDecimals, setTokenDecimals] = useState("18");
-  const [nairaRateMarkup, setNairaRateMarkup] = useState("0");
-  const [fallbackNairaRate, setFallbackNairaRate] = useState("1500");
-  const [liveNgnRate, setLiveNgnRate] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState("");
 
   useEffect(() => {
     fetchContracts();
-    fetchLiveRate();
   }, []);
 
   const fetchContracts = async () => {
@@ -39,8 +35,6 @@ const AdminContracts = () => {
         setNftBuyUrl(data.nft_buy_url || "");
         setMarketCreationFee(String(data.market_creation_fee ?? 50));
         setTokenDecimals(String(data.token_decimals ?? 18));
-        setNairaRateMarkup(String((data as any).naira_rate_markup ?? 0));
-        setFallbackNairaRate(String((data as any).fallback_naira_rate ?? 1500));
       }
     } catch (err) {
       console.error("Failed to fetch contract settings:", err);
@@ -49,12 +43,6 @@ const AdminContracts = () => {
     }
   };
 
-  const fetchLiveRate = async () => {
-    try {
-      const { data } = await supabase.functions.invoke("get-naira-rate");
-      if (data?.live_rate) setLiveNgnRate(data.live_rate);
-    } catch { /* silent */ }
-  };
 
   const isValidAddress = (addr: string) => {
     if (!addr) return true;
@@ -96,8 +84,6 @@ const AdminContracts = () => {
         nft_buy_url: nftBuyUrl || null,
         market_creation_fee: parseFloat(marketCreationFee) || 50,
         token_decimals: parseInt(tokenDecimals) || 18,
-        naira_rate_markup: parseFloat(nairaRateMarkup) || 0,
-        fallback_naira_rate: parseFloat(fallbackNairaRate) || 1500,
         updated_at: new Date().toISOString(),
         updated_by: user?.id || null,
       };
@@ -258,49 +244,6 @@ const AdminContracts = () => {
           />
         </div>
 
-        {/* Naira Rate Markup */}
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <ArrowRightLeft className="w-4 h-4 text-primary" />
-            NGN/USD Rate Markup (%)
-          </label>
-          <p className="text-xs text-muted-foreground">
-            Adjust the live USD→NGN exchange rate. Positive = mark up (user pays more NGN), negative = mark down.
-            {liveNgnRate && (
-              <span className="block mt-1 font-semibold text-foreground">
-                Live rate: ₦{liveNgnRate.toLocaleString()}/USD → Effective: ₦{Math.round(liveNgnRate * (1 + (parseFloat(nairaRateMarkup) || 0) / 100)).toLocaleString()}/USD
-              </span>
-            )}
-          </p>
-          <Input
-            type="number"
-            value={nairaRateMarkup}
-            onChange={(e) => setNairaRateMarkup(e.target.value)}
-            placeholder="0"
-            step="0.5"
-            className="text-sm"
-          />
-        </div>
-
-        {/* Fallback Naira Rate */}
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <ArrowRightLeft className="w-4 h-4 text-primary" />
-            Fallback NGN/USD Rate
-          </label>
-          <p className="text-xs text-muted-foreground">
-            Used when the live rate service is temporarily unavailable. Prevents deposits from defaulting to 1:1.
-          </p>
-          <Input
-            type="number"
-            value={fallbackNairaRate}
-            onChange={(e) => setFallbackNairaRate(e.target.value)}
-            placeholder="1500"
-            step="50"
-            min="100"
-            className="text-sm"
-          />
-        </div>
 
         <Button onClick={handleSave} disabled={!canSave} className="w-full sm:w-auto">
           {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
