@@ -74,43 +74,56 @@ Deno.serve(async (req) => {
       ...(merchantKey ? [`Payaza ${btoa(merchantKey)}`] : []),
     ];
     let payazaResponse: Response | null = null;
+    let lastError = "";
 
-    // Try proxy first
-    if (proxyUrl) {
-      try {
-        const httpClient = Deno.createHttpClient({ proxy: { url: proxyUrl } });
-        payazaResponse = await fetch(nameEnquiryUrl, {
+    // Try each endpoint+auth combination until one works
+    outer:
+    for (const url of endpoints) {
+      for (const auth of authHeaders) {
+        const fetchOpts = {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": payazaAuthorization,
+            "Authorization": auth,
             "Accept": "application/json",
           },
           body: JSON.stringify(payload),
-          // @ts-ignore
-          client: httpClient,
-        });
-        httpClient.close();
-        const preview = await payazaResponse.clone().text();
-        if (preview.includes("<html") || preview.includes("<!DOCTYPE")) {
-          payazaResponse = null;
-        }
-      } catch (err) {
-        console.error("Proxy name enquiry failed:", err);
-      }
-    }
+        };
 
-    // Fallback: direct
-    if (!payazaResponse) {
-      payazaResponse = await fetch(nameEnquiryUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": payazaAuthorization,
-          "Accept": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+        // Try proxy first
+        if (proxyUrl) {
+          try {
+            const httpClient = Deno.createHttpClient({ proxy: { url: proxyUrl } });
+            const res = await fetch(url, { ...fetchOpts, /* @ts-ignore */ client: httpClient });
+            httpClient.close();
+            const preview = await res.clone().text();
+            console.log(`Proxy ${url} auth=${auth.substring(0, 15)}... → ${res.status}: ${preview.substring(0, 200)}`);
+            if (!preview.includes("<html") && !preview.includes("<!DOCTYPE")) {
+              if (res.ok || (res.status >= 400 && res.status < 500)) {
+                payazaResponse = res;
+                break outer;
+              }
+            }
+          } catch (err) {
+            lastError = String(err);
+          }
+        }
+
+        // Direct fallback
+        try {
+          const res = await fetch(url, fetchOpts);
+          const preview = await res.clone().text();
+          console.log(`Direct ${url} auth=${auth.substring(0, 15)}... → ${res.status}: ${preview.substring(0, 200)}`);
+          if (!preview.includes("<html") && !preview.includes("<!DOCTYPE")) {
+            if (res.ok || (res.status >= 400 && res.status < 500)) {
+              payazaResponse = res;
+              break outer;
+            }
+          }
+        } catch (err) {
+          lastError = String(err);
+        }
+      }
     }
 
     if (!payazaResponse) {
