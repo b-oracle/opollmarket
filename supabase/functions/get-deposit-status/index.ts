@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
         JSON.stringify({
           payment_status: tx.status === "confirmed" ? "finished" : tx.status === "failed" ? "failed" : "waiting",
           pay_amount: tx.amount,
+          amount_usd: tx.amount,
           pay_currency: "NGN",
           created_at: tx.created_at,
           provider: "payaza",
