@@ -404,6 +404,7 @@ const Referrals = () => {
               })()}
             </div>
           )}
+        </div>
       </div>
       <BottomNav />
     </div>
