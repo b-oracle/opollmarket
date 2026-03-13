@@ -525,7 +525,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
           <p className="text-[11px] text-muted-foreground mb-2 pr-14 sm:pr-16 lg:pr-32 line-clamp-2">{market.description}</p>
 
-          <div className="flex items-center gap-3 mb-3 pr-14 sm:pr-16 lg:pr-24 text-[11px] text-muted-foreground">
+          <div className="flex items-center gap-3 mb-3 pr-14 sm:pr-16 lg:pr-32 text-[11px] text-muted-foreground">
             <span className="flex items-center gap-1">
               <TrendingUp className="w-3 h-3" /> {formatVolume(market.volume)} vol
             </span>
