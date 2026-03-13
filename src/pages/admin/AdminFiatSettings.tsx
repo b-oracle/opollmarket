@@ -86,7 +86,7 @@ const AdminFiatSettings = () => {
       if (error) throw error;
 
       logAuditEvent({
-        action: "fiat_settings_updated",
+        action: "settings_updated",
         targetId: settingsId,
         targetType: "commission_settings",
         details: { payaza_mode: payazaMode, payout_provider: payoutProvider, naira_rate_markup: markupNum, fallback_naira_rate: fallbackNum, naira_payout_markdown: payoutMarkdownNum },
