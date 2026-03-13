@@ -413,9 +413,9 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           </button>
           <button onClick={() => setCommentsOpen(true)} className="flex flex-col items-center gap-0.5 group">
             <div className={`${actionIconSizeClass} rounded-full glass bg-background/70 border border-border shadow-md flex items-center justify-center group-hover:bg-primary/20 transition-colors`}>
-              <MessageCircle className="w-3.5 h-3.5 text-foreground group-hover:text-primary transition-colors" />
+              <MessageCircle className="w-5 h-5 text-foreground group-hover:text-primary transition-colors" />
             </div>
-            <span className="text-[9px] text-foreground/90 leading-none">{formatCount(commentCount)}</span>
+            <span className="text-[10px] font-semibold text-foreground/90 leading-none">{formatCount(commentCount)}</span>
           </button>
           <button onClick={handleBookmark} className="flex flex-col items-center gap-0.5 group">
             <motion.div
