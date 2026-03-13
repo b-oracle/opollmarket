@@ -443,7 +443,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         </div>
 
         {/* Content */}
-        <div className="relative z-10 w-full max-w-[calc(100%-3.5rem)] overflow-hidden">
+        <div className="relative z-10 w-full overflow-hidden">
           {/* Creator line + trending */}
           <div className="flex items-center gap-2 mb-1.5">
             <div
