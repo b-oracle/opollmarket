@@ -141,6 +141,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const [accountName, setAccountName] = useState("");
   const [accountNameLoading, setAccountNameLoading] = useState(false);
   const [accountNameResolved, setAccountNameResolved] = useState(false);
+  const [accountNameResolveFailed, setAccountNameResolveFailed] = useState(false);
   const [ngnPayoutRate, setNgnPayoutRate] = useState<number | null>(null);
 
   // Fetch live NGN rate
@@ -179,6 +180,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setAccountName("");
       setAccountNameLoading(false);
       setAccountNameResolved(false);
+      setAccountNameResolveFailed(false);
       setNgnPayoutRate(null);
     }
     return () => {
@@ -188,9 +190,17 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
 
   // Auto-resolve account name when bank code + 10-digit account number are entered
   useEffect(() => {
-    if (accountNumber.length !== 10 || !bankCode || withdrawMethod !== "fiat") {
+    if (withdrawMethod !== "fiat") {
       setAccountName("");
       setAccountNameResolved(false);
+      setAccountNameResolveFailed(false);
+      return;
+    }
+
+    if (accountNumber.length !== 10 || !bankCode) {
+      setAccountName("");
+      setAccountNameResolved(false);
+      setAccountNameResolveFailed(false);
       return;
     }
 
@@ -199,22 +209,30 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setAccountNameLoading(true);
       setAccountName("");
       setAccountNameResolved(false);
+      setAccountNameResolveFailed(false);
+
       try {
         const { data, error } = await supabase.functions.invoke("verify-bank-account", {
           body: { bank_code: bankCode, account_number: accountNumber },
         });
+
         if (cancelled) return;
-        if (error || data?.error) {
+
+        if (error || data?.error || !data?.account_name) {
           setAccountName("");
           setAccountNameResolved(false);
-        } else if (data?.account_name) {
-          setAccountName(data.account_name);
-          setAccountNameResolved(true);
+          setAccountNameResolveFailed(true);
+          return;
         }
+
+        setAccountName(data.account_name);
+        setAccountNameResolved(true);
+        setAccountNameResolveFailed(false);
       } catch {
         if (!cancelled) {
           setAccountName("");
           setAccountNameResolved(false);
+          setAccountNameResolveFailed(true);
         }
       } finally {
         if (!cancelled) setAccountNameLoading(false);
@@ -394,7 +412,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const maxAvailable = isDeposit ? MAX_AMOUNT : balance;
   const isValid = numAmount >= MIN_AMOUNT && numAmount <= Math.min(MAX_AMOUNT, maxAvailable);
   const isWithdrawValid = isValid && (withdrawMethod === "fiat"
-    ? accountNumber.trim().length >= 10 && accountNameResolved && accountName.trim().length >= 2
+    ? accountNumber.trim().length >= 10 && accountName.trim().length >= 2
     : walletAddress.trim().length >= 10);
 
   const handleAmountChange = (val: string) => {
@@ -639,6 +657,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     setAccountNumber("");
     setAccountName("");
     setAccountNameResolved(false);
+    setAccountNameResolveFailed(false);
     setAccountNameLoading(false);
     setStep("input");
     setErrorMsg("");
@@ -658,6 +677,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     setAccountNumber("");
     setAccountName("");
     setAccountNameResolved(false);
+    setAccountNameResolveFailed(false);
     setAccountNameLoading(false);
     setStep("input");
     setErrorMsg("");
@@ -1050,19 +1070,29 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                             <input
                               type="text"
                               value={accountName}
-                              readOnly
-                              placeholder={accountNameLoading ? "Verifying..." : accountNumber.length === 10 ? "Resolving account..." : "Enter account number first"}
-                              className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm transition-all ${
-                                accountNameResolved ? "border-green-500/50 bg-green-500/5 font-semibold" : "border-border"
+                              readOnly={accountNameLoading}
+                              onChange={(e) => {
+                                setAccountName(e.target.value);
+                                setAccountNameResolved(false);
+                                setAccountNameResolveFailed(false);
+                              }}
+                              placeholder={accountNameLoading ? "Verifying..." : accountNumber.length === 10 ? "Auto-resolve or type manually" : "Enter account number first"}
+                              className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm transition-all pr-10 ${
+                                accountNameResolved ? "border-primary bg-primary/5 font-semibold" : "border-border"
                               }`}
                             />
                             {accountNameLoading && (
                               <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
                             )}
-                            {accountNameResolved && (
-                              <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
+                            {!accountNameLoading && accountNameResolved && (
+                              <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
                             )}
                           </div>
+                          {accountNameResolveFailed && (
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              Couldn’t auto-verify account name right now — you can type it manually.
+                            </p>
+                          )}
                         </div>
                         {ngnRate && numAmount > 0 && (
                           <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border">
