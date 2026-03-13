@@ -347,7 +347,9 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const isDeposit = tab === "deposit";
   const maxAvailable = isDeposit ? MAX_AMOUNT : balance;
   const isValid = numAmount >= MIN_AMOUNT && numAmount <= Math.min(MAX_AMOUNT, maxAvailable);
-  const isWithdrawValid = isValid && walletAddress.trim().length >= 10;
+  const isWithdrawValid = isValid && (withdrawMethod === "fiat"
+    ? accountNumber.trim().length >= 10 && accountName.trim().length >= 2
+    : walletAddress.trim().length >= 10);
 
   const handleAmountChange = (val: string) => {
     const cleaned = val.replace(/[^0-9.]/g, "");
