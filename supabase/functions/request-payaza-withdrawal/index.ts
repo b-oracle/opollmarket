@@ -1,5 +1,4 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { createSign, createHash } from "node:crypto";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,59 +9,14 @@ const corsHeaders = {
 /** Build a list of auth header values to try, in priority order */
 function getPayazaAuthVariants(secretKey: string, merchantKey?: string): string[] {
   const variants: string[] = [];
-  // 1. APIKey with merchant key (most common for server-side payouts)
   if (merchantKey) variants.push(`APIKey ${merchantKey}`);
-  // 2. Payaza scheme with raw secret key (no base64)
   variants.push(`Payaza ${secretKey}`);
-  // 3. APIKey with secret key
   variants.push(`APIKey ${secretKey}`);
-  // 4. Bearer with merchant key
   if (merchantKey) variants.push(`Bearer ${merchantKey}`);
-  // 5. Bearer with secret key
   variants.push(`Bearer ${secretKey}`);
-  // 6. Legacy: Payaza with base64-encoded secret key
   variants.push(`Payaza ${btoa(secretKey)}`);
   return variants;
 }
-
-// ─── PalmPay helpers ───
-function generateNonceStr(len = 32): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
-  const arr = new Uint8Array(len);
-  crypto.getRandomValues(arr);
-  for (let i = 0; i < len; i++) result += chars[arr[i] % chars.length];
-  return result;
-}
-
-/** Normalize a PEM key that may have literal \n or \\n instead of real newlines */
-function normalizePem(pem: string): string {
-  let normalized = pem.replace(/\\n/g, "\n").replace(/\\r/g, "");
-  normalized = normalized.replace(/(-----BEGIN [A-Z ]+-----)/g, "$1\n");
-  normalized = normalized.replace(/(-----END [A-Z ]+-----)/g, "\n$1");
-  normalized = normalized.replace(/\n{3,}/g, "\n\n");
-  return normalized.trim();
-}
-
-/**
- * PalmPay signing using node:crypto (handles PEM format natively).
- * sort params → MD5 → uppercase hex → SHA1WithRSA sign → base64
- */
-function palmPaySign(body: Record<string, unknown>, privateKeyPem: string): string {
-  const keys = Object.keys(body)
-    .filter(k => body[k] !== null && body[k] !== undefined && body[k] !== "")
-    .sort();
-  const strA = keys.map(k => `${k}=${body[k]}`).join("&");
-
-  const md5Hex = createHash("md5").update(strA).digest("hex").toUpperCase();
-  const normalizedKey = normalizePem(privateKeyPem);
-
-  const signer = createSign("SHA1");
-  signer.update(md5Hex);
-  return signer.sign(normalizedKey, "base64");
-}
-
-const PALMPAY_BASE_URL = "https://open-gw-prod.palmpay-inc.com";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -125,7 +79,7 @@ Deno.serve(async (req) => {
     // ─── Fetch settings ───
     const { data: settings } = await adminClient
       .from("commission_settings")
-      .select("min_withdrawal_amount, withdrawal_cooldown_minutes, withdrawal_multiplier, withdrawal_limit_enabled, withdrawal_fee_percent, naira_payout_markdown, fallback_naira_rate, payout_provider")
+      .select("min_withdrawal_amount, withdrawal_cooldown_minutes, withdrawal_multiplier, withdrawal_limit_enabled, withdrawal_fee_percent, naira_payout_markdown, fallback_naira_rate")
       .limit(1)
       .single();
 
@@ -133,7 +87,6 @@ Deno.serve(async (req) => {
     const withdrawalFeePercent = Math.max(0, Math.min(100, Number(settings?.withdrawal_fee_percent) || 0));
     const payoutMarkdown = Number(settings?.naira_payout_markdown) || 0;
     const fallbackRate = Number(settings?.fallback_naira_rate) || 1500;
-    const preferredProvider = (settings as any)?.payout_provider === "palmpay" ? "palmpay" : "payaza";
 
     if (!amount || amount < minWithdrawal || amount > 50000) {
       return new Response(
@@ -279,55 +232,23 @@ Deno.serve(async (req) => {
       nowpayments_payment_id: transactionReference,
     });
 
-    // ─── Attempt payouts ───
+    // ─── Attempt Payaza payout ───
     let payoutSuccess = false;
-    let payoutProvider = "";
-
-    console.log(`[Payout] Preferred provider: ${preferredProvider}`);
 
     const payazaSecretKey = Deno.env.get("PAYAZA_SECRET_KEY");
     const payazaMerchantKey = Deno.env.get("PAYAZA_MERCHANT_KEY");
-    const palmPayAppId = Deno.env.get("PALMPAY_APP_ID");
-    const palmPayPrivateKey = Deno.env.get("PALMPAY_PRIVATE_KEY");
 
-    const payazaParams = {
-      secretKey: payazaSecretKey || "",
-      merchantKey: payazaMerchantKey || "",
-      transactionReference,
-      ngnPayout,
-      accountNumber: account_number,
-      bankCode: bank_code,
-      accountName: account_name,
-      netAmount,
-    };
-
-    const palmPayParams = {
-      appId: palmPayAppId || "",
-      privateKey: palmPayPrivateKey || "",
-      transactionReference,
-      ngnPayout,
-      accountNumber: account_number,
-      bankCode: bank_code,
-      accountName: account_name,
-      netAmount,
-    };
-
-    if (preferredProvider === "palmpay" && palmPayAppId && palmPayPrivateKey) {
-      payoutSuccess = await tryPalmPayPayout(palmPayParams);
-      if (payoutSuccess) payoutProvider = "palmpay";
-    } else if (payazaSecretKey) {
-      payoutSuccess = await tryPayazaPayout(payazaParams);
-      if (payoutSuccess) payoutProvider = "payaza";
-    }
-
-    if (!payoutSuccess) {
-      if (preferredProvider === "palmpay" && payazaSecretKey) {
-        payoutSuccess = await tryPayazaPayout(payazaParams);
-        if (payoutSuccess) payoutProvider = "payaza";
-      } else if (preferredProvider === "payaza" && palmPayAppId && palmPayPrivateKey) {
-        payoutSuccess = await tryPalmPayPayout(palmPayParams);
-        if (payoutSuccess) payoutProvider = "palmpay";
-      }
+    if (payazaSecretKey) {
+      payoutSuccess = await tryPayazaPayout({
+        secretKey: payazaSecretKey,
+        merchantKey: payazaMerchantKey || "",
+        transactionReference,
+        ngnPayout,
+        accountNumber: account_number,
+        bankCode: bank_code,
+        accountName: account_name,
+        netAmount,
+      });
     }
 
     if (payoutSuccess) {
@@ -342,7 +263,7 @@ Deno.serve(async (req) => {
 
       await adminClient
         .from("transactions")
-        .update({ status: "confirmed", payment_provider: payoutProvider })
+        .update({ status: "confirmed", payment_provider: "payaza" })
         .eq("nowpayments_payment_id", transactionReference)
         .eq("type", "withdrawal");
     }
@@ -496,78 +417,6 @@ async function tryPayazaPayout(params: PayazaPayoutParams): Promise<boolean> {
     }
   } catch (err) {
     console.error("Payaza payout error:", err);
-  }
-  return false;
-}
-
-// ─── PalmPay payout attempt (using node:crypto) ───
-interface PalmPayPayoutParams {
-  appId: string;
-  privateKey: string;
-  transactionReference: string;
-  ngnPayout: number;
-  accountNumber: string;
-  bankCode: string;
-  accountName: string;
-  netAmount: number;
-}
-
-async function tryPalmPayPayout(params: PalmPayPayoutParams): Promise<boolean> {
-  const { appId, privateKey, transactionReference, ngnPayout, accountNumber, bankCode, accountName, netAmount } = params;
-
-  try {
-    const amountInKobo = ngnPayout * 100;
-    const notifyUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/payaza-webhook`;
-
-    const body: Record<string, unknown> = {
-      requestTime: Date.now(),
-      version: "V1.1",
-      nonceStr: generateNonceStr(),
-      orderId: transactionReference.substring(0, 32),
-      payeeName: accountName,
-      payeeBankCode: bankCode,
-      payeeBankAccNo: accountNumber,
-      amount: amountInKobo,
-      currency: "NGN",
-      notifyUrl: notifyUrl,
-      remark: `OPOLL withdrawal $${netAmount.toFixed(2)}`,
-    };
-
-    console.log("PalmPay payout: signing with node:crypto...");
-    const signature = palmPaySign(body, privateKey);
-    const url = `${PALMPAY_BASE_URL}/api/v2/merchant/payment/payout`;
-
-    console.log(`PalmPay payout → ${url}, amount: ₦${ngnPayout} (${amountInKobo} kobo)`);
-
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${appId}`,
-        "Signature": signature,
-        "CountryCode": "NG",
-      },
-      body: JSON.stringify(body),
-    });
-
-    const text = await res.text();
-    console.log(`PalmPay payout response: ${res.status} ${text.substring(0, 500)}`);
-
-    if (res.ok) {
-      try {
-        const data = JSON.parse(text);
-        if (data?.respCode === "00000000" && (data?.data?.orderStatus === 2 || data?.data?.orderStatus === 1)) {
-          console.log(`PalmPay payout success: orderNo=${data.data.orderNo}, orderId=${data.data.orderId}`);
-          return true;
-        }
-        console.warn(`PalmPay payout not successful: respCode=${data?.respCode}, orderStatus=${data?.data?.orderStatus}`);
-      } catch {
-        console.error("Failed to parse PalmPay payout response");
-      }
-    }
-  } catch (err) {
-    console.error("PalmPay payout error:", err);
   }
   return false;
 }

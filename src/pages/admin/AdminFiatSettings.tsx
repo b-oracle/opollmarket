@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Banknote, RefreshCw, DollarSign, Percent, ArrowLeftRight } from "lucide-react";
+import { Loader2, Save, Banknote, RefreshCw, DollarSign, Percent } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { useAdminContext } from "./AdminLayout";
@@ -13,7 +13,6 @@ import { logAuditEvent } from "@/lib/auditLog";
 const AdminFiatSettings = () => {
   const { canEdit } = useAdminContext();
   const [payazaMode, setPayazaMode] = useState<"checkout_sdk" | "direct_api">("direct_api");
-  const [payoutProvider, setPayoutProvider] = useState<"payaza" | "palmpay">("payaza");
   const [nairaRateMarkup, setNairaRateMarkup] = useState("");
   const [fallbackNairaRate, setFallbackNairaRate] = useState("");
   const [nairaPayoutMarkdown, setNairaPayoutMarkdown] = useState("");
@@ -27,13 +26,12 @@ const AdminFiatSettings = () => {
     const fetchSettings = async () => {
       const { data, error } = await supabase
         .from("commission_settings")
-        .select("id, payaza_mode, payout_provider, naira_rate_markup, fallback_naira_rate, naira_payout_markdown")
+        .select("id, payaza_mode, naira_rate_markup, fallback_naira_rate, naira_payout_markdown")
         .limit(1)
         .single();
       if (data) {
         const d = data as any;
         setPayazaMode(d.payaza_mode === "checkout_sdk" ? "checkout_sdk" : "direct_api");
-        setPayoutProvider(d.payout_provider === "palmpay" ? "palmpay" : "payaza");
         setNairaRateMarkup(String(d.naira_rate_markup ?? 0));
         setFallbackNairaRate(String(d.fallback_naira_rate ?? 1500));
         setNairaPayoutMarkdown(String(d.naira_payout_markdown ?? 0));
@@ -75,7 +73,7 @@ const AdminFiatSettings = () => {
         .from("commission_settings")
         .update({
           payaza_mode: payazaMode,
-          payout_provider: payoutProvider,
+          payout_provider: "payaza",
           naira_rate_markup: markupNum,
           fallback_naira_rate: fallbackNum,
           naira_payout_markdown: payoutMarkdownNum,
@@ -89,7 +87,7 @@ const AdminFiatSettings = () => {
         action: "settings_updated",
         targetId: settingsId,
         targetType: "commission_settings",
-        details: { payaza_mode: payazaMode, payout_provider: payoutProvider, naira_rate_markup: markupNum, fallback_naira_rate: fallbackNum, naira_payout_markdown: payoutMarkdownNum },
+        details: { payaza_mode: payazaMode, payout_provider: "payaza", naira_rate_markup: markupNum, fallback_naira_rate: fallbackNum, naira_payout_markdown: payoutMarkdownNum },
       });
 
       toast.success("Fiat settings saved successfully");
@@ -165,63 +163,6 @@ const AdminFiatSettings = () => {
                 </div>
                 <p className="text-[11px] text-muted-foreground ml-6">
                   Opens Payaza popup window. Requires checkout.payaza.africa to be online.
-                </p>
-              </button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* ─── Payout Provider ─── */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <ArrowLeftRight className="w-5 h-5" /> Payout Provider
-            </CardTitle>
-            <CardDescription>
-              Choose the primary provider for NGN bank payouts. The other provider is used as automatic fallback.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-3">
-              <button
-                onClick={() => canEdit && setPayoutProvider("payaza")}
-                className={`flex-1 rounded-xl border-2 p-4 text-left transition-all ${
-                  payoutProvider === "payaza"
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-muted-foreground/30"
-                } ${!canEdit ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
-              >
-                <div className="flex items-center gap-2 mb-1.5">
-                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                    payoutProvider === "payaza" ? "border-primary" : "border-muted-foreground/40"
-                  }`}>
-                    {payoutProvider === "payaza" && <div className="w-2 h-2 rounded-full bg-primary" />}
-                  </div>
-                  <span className="text-sm font-bold">Payaza</span>
-                  <Badge variant="default" className="text-[10px]">Default</Badge>
-                </div>
-                <p className="text-[11px] text-muted-foreground ml-6">
-                  Primary payout via Payaza. PalmPay used as fallback if Payaza fails.
-                </p>
-              </button>
-              <button
-                onClick={() => canEdit && setPayoutProvider("palmpay")}
-                className={`flex-1 rounded-xl border-2 p-4 text-left transition-all ${
-                  payoutProvider === "palmpay"
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-muted-foreground/30"
-                } ${!canEdit ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
-              >
-                <div className="flex items-center gap-2 mb-1.5">
-                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                    payoutProvider === "palmpay" ? "border-primary" : "border-muted-foreground/40"
-                  }`}>
-                    {payoutProvider === "palmpay" && <div className="w-2 h-2 rounded-full bg-primary" />}
-                  </div>
-                  <span className="text-sm font-bold">PalmPay</span>
-                </div>
-                <p className="text-[11px] text-muted-foreground ml-6">
-                  Primary payout via PalmPay. Payaza used as fallback if PalmPay fails.
                 </p>
               </button>
             </div>
