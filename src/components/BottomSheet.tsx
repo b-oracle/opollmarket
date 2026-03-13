@@ -24,7 +24,7 @@ const BottomSheet = ({ open, onClose, children, maxHeight = "85dvh", className =
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[60]"
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[80]"
           />
 
           {/* Panel — centered on all viewports */}
