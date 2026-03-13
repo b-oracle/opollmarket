@@ -503,7 +503,6 @@ const AdminCreateMarket = () => {
                   Generate (${aiGenerationCost})
                 </button>
               )}
-              </button>
               <button
                 type="button"
                 onClick={() => setShowDetailsPreview(!showDetailsPreview)}
