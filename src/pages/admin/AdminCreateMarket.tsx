@@ -637,6 +637,7 @@ const AdminCreateMarket = () => {
                   {generatingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                   {generatingImage ? "Generating..." : `✨ Generate Cover Image ($${aiGenerationCost})`}
                 </button>
+                <p className="text-[10px] text-muted-foreground">Upload your own for free, or use AI to generate for a fee.</p>
               </div>
             )}
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
