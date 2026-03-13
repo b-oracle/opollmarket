@@ -171,6 +171,62 @@ const AdminFiatSettings = () => {
           </CardContent>
         </Card>
 
+        {/* ─── Payout Provider ─── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ArrowLeftRight className="w-5 h-5" /> Payout Provider
+            </CardTitle>
+            <CardDescription>
+              Choose the primary provider for NGN bank payouts. The other provider is used as automatic fallback.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-3">
+              <button
+                onClick={() => canEdit && setPayoutProvider("payaza")}
+                className={`flex-1 rounded-xl border-2 p-4 text-left transition-all ${
+                  payoutProvider === "payaza"
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-muted-foreground/30"
+                } ${!canEdit ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+              >
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                    payoutProvider === "payaza" ? "border-primary" : "border-muted-foreground/40"
+                  }`}>
+                    {payoutProvider === "payaza" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                  </div>
+                  <span className="text-sm font-bold">Payaza</span>
+                  <Badge variant="default" className="text-[10px]">Default</Badge>
+                </div>
+                <p className="text-[11px] text-muted-foreground ml-6">
+                  Primary payout via Payaza. PalmPay used as fallback if Payaza fails.
+                </p>
+              </button>
+              <button
+                onClick={() => canEdit && setPayoutProvider("palmpay")}
+                className={`flex-1 rounded-xl border-2 p-4 text-left transition-all ${
+                  payoutProvider === "palmpay"
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-muted-foreground/30"
+                } ${!canEdit ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+              >
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                    payoutProvider === "palmpay" ? "border-primary" : "border-muted-foreground/40"
+                  }`}>
+                    {payoutProvider === "palmpay" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                  </div>
+                  <span className="text-sm font-bold">PalmPay</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground ml-6">
+                  Primary payout via PalmPay. Payaza used as fallback if PalmPay fails.
+                </p>
+              </button>
+            </div>
+          </CardContent>
+
         {/* ─── Naira Exchange Rate ─── */}
         <Card>
           <CardHeader>
