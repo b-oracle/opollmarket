@@ -461,7 +461,7 @@ const AdminSettings = () => {
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="qtMinBet" className="text-xs">Min Bet ($)</Label>
+                    <Label htmlFor="qtMinBet" className="text-xs">Min Trade ($)</Label>
                     <Input id="qtMinBet" type="number" min={0} step={1} value={qtMinBet} onChange={(e) => setQtMinBet(e.target.value)} placeholder="1" />
                   </div>
                   <div className="space-y-1.5">
