@@ -120,6 +120,12 @@ const AdminCreateMarket = () => {
     { value: "draw", label: "Draw" },
   ];
 
+  // AI generation state
+  const [aiGenerationCost, setAiGenerationCost] = useState(0.5);
+  const [generatingDesc, setGeneratingDesc] = useState(false);
+  const [generatingDetails, setGeneratingDetails] = useState(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
+
   // Image state
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
