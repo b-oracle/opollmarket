@@ -400,7 +400,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           {isBoosted && (
             <div className="flex flex-col items-center gap-0.5">
               <div className={`${actionIconSizeClass} rounded-full glass bg-background/70 border border-border shadow-md flex items-center justify-center bg-orange-500/20 animate-pulse`}>
-                <Flame className="w-3.5 h-3.5 text-orange-400" />
+                <Flame className="w-4.5 h-4.5 text-orange-400" />
               </div>
               <span className="text-[9px] text-foreground/90 font-semibold leading-none">Hot</span>
             </div>
