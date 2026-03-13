@@ -424,7 +424,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
               animate={bookmarked ? { scale: [1, 1.3, 1] } : { scale: 1 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
             >
-              <Bookmark className={`w-4 h-4 transition-colors ${bookmarked ? 'text-primary fill-primary' : 'text-foreground/70 group-hover:text-primary'}`} />
+              <Bookmark className={`w-3.5 h-3.5 transition-colors ${bookmarked ? 'text-primary fill-primary' : 'text-foreground/70 group-hover:text-primary'}`} />
             </motion.div>
             <span className="text-[9px] text-muted-foreground leading-none">{bookmarkCount > 0 ? formatCount(bookmarkCount) : (bookmarked ? "Saved" : "Save")}</span>
           </button>
