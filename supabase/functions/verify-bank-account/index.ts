@@ -46,173 +46,107 @@ Deno.serve(async (req) => {
     }
 
     const secretKey = Deno.env.get("PAYAZA_SECRET_KEY");
-    const merchantKey = Deno.env.get("PAYAZA_MERCHANT_KEY");
     if (!secretKey) {
+      // No key configured — allow manual confirmation
       return new Response(
-        JSON.stringify({ error: "Payment service not configured" }),
-        { status: 500, headers: corsHeaders }
+        JSON.stringify({ account_name: "", manual_confirm: true, message: "Please confirm your account name manually" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Try both auth formats - Payaza uses different auth for different endpoints
     const payazaAuthorization = encodePayazaAuth(secretKey);
     const proxyUrl = Deno.env.get("QUOTAGUARD_URL");
 
-
-    // Try multiple endpoint, payload, and auth patterns (Payaza docs are inconsistent per product)
+    // Prioritised endpoint list — most likely working first
     const endpoints = [
+      "https://api.payaza.africa/live/merchant-payout/account/name_enquiry/",
       "https://api.payaza.africa/live/merchant-payout/name_enquiry/",
       "https://api.payaza.africa/live/merchant-payout/name-enquiry/",
-      "https://api.payaza.africa/live/merchant-payout/account/name-enquiry/",
       "https://api.payaza.africa/live/merchant-payout/resolve_account/",
-      "https://api.payaza.africa/live/merchant-collection/name-enquiry/",
     ];
 
-    const authHeaders = Array.from(new Set([
-      payazaAuthorization,
-      `Bearer ${secretKey}`,
-      `Payaza key=${secretKey}`,
-      `Payaza secret_key=${secretKey}`,
-      ...(merchantKey
-        ? [
-            `Payaza ${btoa(merchantKey)}`,
-            `Bearer ${merchantKey}`,
-            `Payaza key=${merchantKey}`,
-            `Payaza merchant_key=${merchantKey}`,
-          ]
-        : []),
-    ]));
-
-    const payloadVariants = [
-      { account_number: account_number, bank_code: bank_code },
-      { accountNumber: account_number, bankCode: bank_code },
-      { account_number: account_number, bank_code: bank_code, currency: "NGN" },
-    ];
-
-    let payazaResponse: Response | null = null;
-    let payazaResponseText = "";
-    let lastError = "";
-    let lastNonAuthFailure: { status: number; body: string } | null = null;
-
-    const isAuthFormatError = (status: number, body: string) => {
-      const authErr = /authorization header|invalid key=value pair|missing equal-sign|invalid authorization|unauthorized/i;
-      return [400, 401, 403].includes(status) && authErr.test(body);
+    const payload = {
+      account_number,
+      bank_code,
+      currency: "NGN",
     };
 
-    // Try each endpoint + payload + auth combination until success
-    outer:
+    const fetchOpts = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": payazaAuthorization,
+        "Accept": "application/json",
+      },
+      body: JSON.stringify(payload),
+    };
+
+    let accountName = "";
+
     for (const url of endpoints) {
-      for (const payloadBody of payloadVariants) {
-        for (const auth of authHeaders) {
-          const fetchOpts = {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": auth,
-              "Accept": "application/json",
-            },
-            body: JSON.stringify(payloadBody),
-          };
+      try {
+        // Try via proxy first, then direct
+        const attempts: Array<{ label: string; opts: any }> = [];
 
-          const tryFetch = async (label: string, opts: any) => {
-            const res = await fetch(url, opts);
-            const preview = await res.clone().text();
-            console.log(`${label} ${url} auth=${auth.substring(0, 20)}... payload=${JSON.stringify(payloadBody)} → ${res.status}: ${preview.substring(0, 250)}`);
-            if (preview.includes("<html") || preview.includes("<!DOCTYPE")) return null;
-            return { res, preview };
-          };
+        if (proxyUrl) {
+          const httpClient = Deno.createHttpClient({ proxy: { url: proxyUrl } });
+          attempts.push({ label: "Proxy", opts: { ...fetchOpts, /* @ts-ignore */ client: httpClient } });
+        }
+        attempts.push({ label: "Direct", opts: fetchOpts });
 
-          // Try proxy first
-          if (proxyUrl) {
-            try {
-              const httpClient = Deno.createHttpClient({ proxy: { url: proxyUrl } });
-              const result = await tryFetch("Proxy", { ...fetchOpts, /* @ts-ignore */ client: httpClient });
-              httpClient.close();
-
-              if (result) {
-                const { res, preview } = result;
-                if (res.ok) {
-                  payazaResponse = res;
-                  payazaResponseText = preview;
-                  break outer;
-                }
-                if (!isAuthFormatError(res.status, preview)) {
-                  lastNonAuthFailure = { status: res.status, body: preview };
-                }
-              }
-            } catch (err) {
-              lastError = String(err);
-            }
-          }
-
-          // Direct fallback
+        for (const attempt of attempts) {
           try {
-            const result = await tryFetch("Direct", fetchOpts);
-            if (result) {
-              const { res, preview } = result;
-              if (res.ok) {
-                payazaResponse = res;
-                payazaResponseText = preview;
-                break outer;
-              }
-              if (!isAuthFormatError(res.status, preview)) {
-                lastNonAuthFailure = { status: res.status, body: preview };
+            const res = await fetch(url, attempt.opts);
+            const text = await res.text();
+            console.log(`${attempt.label} ${url} → ${res.status}: ${text.substring(0, 200)}`);
+
+            // Close proxy client if applicable
+            if (attempt.opts.client) {
+              try { attempt.opts.client.close(); } catch {}
+            }
+
+            if (text.includes("<html") || text.includes("<!DOCTYPE")) continue;
+
+            if (res.ok) {
+              try {
+                const data = JSON.parse(text);
+                const responseData = data?.data || data?.response_content || data;
+                accountName = responseData?.account_name || responseData?.accountName || responseData?.name || "";
+                if (accountName) break;
+              } catch {
+                continue;
               }
             }
           } catch (err) {
-            lastError = String(err);
+            console.warn(`${attempt.label} ${url} fetch error:`, String(err));
+            if (attempt.opts.client) {
+              try { attempt.opts.client.close(); } catch {}
+            }
           }
         }
+
+        if (accountName) break;
+      } catch (err) {
+        console.warn(`Endpoint ${url} error:`, String(err));
       }
     }
 
-    if (!payazaResponse) {
-      if (lastNonAuthFailure) {
-        return new Response(
-          JSON.stringify({ error: "Account verification failed", details: lastNonAuthFailure.body?.slice(0, 240) }),
-          { status: 400, headers: corsHeaders }
-        );
-      }
-
-      console.error("All Payaza name enquiry attempts failed. Last error:", lastError);
+    // If name enquiry succeeded, return the name
+    if (accountName) {
       return new Response(
-        JSON.stringify({ error: "Could not verify account name right now. Please confirm account name manually and continue." }),
-        { status: 503, headers: corsHeaders }
+        JSON.stringify({ account_name: accountName }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const responseText = payazaResponseText || await payazaResponse.text();
-    console.log("Payaza name enquiry response:", payazaResponse.status, responseText.substring(0, 500));
-
-    let data: any;
-    try {
-      data = JSON.parse(responseText);
-    } catch {
-      return new Response(
-        JSON.stringify({ error: "Invalid response from payment service" }),
-        { status: 502, headers: corsHeaders }
-      );
-    }
-
-    if (!payazaResponse.ok) {
-      return new Response(
-        JSON.stringify({ error: data?.message || "Account verification failed" }),
-        { status: 400, headers: corsHeaders }
-      );
-    }
-
-    const responseData = data?.data || data?.response_content || data;
-    const accountName = responseData?.account_name || responseData?.accountName || responseData?.name || "";
-
-    if (!accountName) {
-      return new Response(
-        JSON.stringify({ error: "Could not resolve account name" }),
-        { status: 404, headers: corsHeaders }
-      );
-    }
-
+    // Graceful degradation: all endpoints failed — allow manual confirmation
+    console.warn("All Payaza name enquiry endpoints failed. Falling back to manual confirmation.");
     return new Response(
-      JSON.stringify({ account_name: accountName }),
+      JSON.stringify({
+        account_name: "",
+        manual_confirm: true,
+        message: "We couldn't auto-verify the account name. Please confirm it manually before proceeding.",
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
