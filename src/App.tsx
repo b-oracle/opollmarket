@@ -66,6 +66,7 @@ const QuickTrade = lazy(() => import("./pages/QuickTrade"));
 const UserProfile = lazy(() => import("./pages/UserProfile"));
 const Followers = lazy(() => import("./pages/Followers"));
 const SetupSecurity = lazy(() => import("./pages/SetupSecurity"));
+const SalesDeck = lazy(() => import("./pages/SalesDeck"));
 
 const queryClient = new QueryClient();
 
