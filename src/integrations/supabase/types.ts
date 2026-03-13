@@ -250,6 +250,7 @@ export type Database = {
           min_nft_balance: number
           min_token_balance: number
           min_withdrawal_amount: number
+          naira_payout_markdown: number
           naira_rate_markup: number
           nft_buy_url: string | null
           nft_contract_address: string | null
@@ -293,6 +294,7 @@ export type Database = {
           min_nft_balance?: number
           min_token_balance?: number
           min_withdrawal_amount?: number
+          naira_payout_markdown?: number
           naira_rate_markup?: number
           nft_buy_url?: string | null
           nft_contract_address?: string | null
@@ -336,6 +338,7 @@ export type Database = {
           min_nft_balance?: number
           min_token_balance?: number
           min_withdrawal_amount?: number
+          naira_payout_markdown?: number
           naira_rate_markup?: number
           nft_buy_url?: string | null
           nft_contract_address?: string | null

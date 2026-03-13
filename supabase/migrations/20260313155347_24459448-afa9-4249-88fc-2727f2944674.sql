@@ -1,0 +1,1 @@
+ALTER TABLE public.commission_settings ADD COLUMN IF NOT EXISTS naira_payout_markdown numeric NOT NULL DEFAULT 0;
