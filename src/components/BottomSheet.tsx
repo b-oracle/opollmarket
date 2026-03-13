@@ -14,9 +14,6 @@ interface BottomSheetProps {
 }
 
 const BottomSheet = ({ open, onClose, children, maxHeight = "85dvh", className = "" }: BottomSheetProps) => {
-  const { collapsed } = useSidebarState();
-  const isMobile = useIsMobile();
-  const sidebarLeft = isMobile ? 0 : collapsed ? '4.5rem' : '15rem';
   return (
     <AnimatePresence>
       {open && (
@@ -30,20 +27,18 @@ const BottomSheet = ({ open, onClose, children, maxHeight = "85dvh", className =
             className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[60]"
           />
 
-          {/* Panel */}
+          {/* Panel — centered on all viewports */}
           <motion.div
-            initial={{ opacity: 0, y: 100, scale: 0.95 }}
+            initial={{ opacity: 0, y: 40, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 100, scale: 0.95 }}
+            exit={{ opacity: 0, y: 40, scale: 0.95 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed right-0 z-[60] max-w-lg mx-auto"
-            style={{ left: sidebarLeft, bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 pointer-events-none"
           >
             <div
-              className={`glass-strong rounded-t-3xl overflow-y-auto md:pb-0 ${className}`}
+              className={`glass-strong rounded-2xl overflow-y-auto w-full max-w-lg pointer-events-auto ${className}`}
               style={{
                 maxHeight,
-                paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))",
                 WebkitOverflowScrolling: "touch",
                 touchAction: "pan-y",
                 overscrollBehavior: "contain",
