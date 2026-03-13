@@ -502,7 +502,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           )}
 
           {isBoosted && boostEndsAt && (
-            <div className="mb-2">
+            <div className="mb-2 pr-14 sm:pr-16">
               <BoostCountdown endsAt={boostEndsAt} tier={boostTier} />
             </div>
           )}
