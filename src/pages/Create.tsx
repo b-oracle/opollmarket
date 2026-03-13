@@ -849,10 +849,14 @@ const Create = () => {
     const needsReview = isSimilar || isFlagged || feeBypass;
     const marketStatus = needsReview ? "pending" : "active";
 
-    // Image was already uploaded in parallel — extract result
+    // Image was already uploaded in parallel — extract result, or use AI-generated URL
     let imageUrl: string | null = null;
     if (imageUploadResult.status === "fulfilled") {
       imageUrl = imageUploadResult.value as string | null;
+    }
+    // If no file was uploaded but we have an AI-generated image URL, use that
+    if (!imageUrl && imagePreview && !imagePreview.startsWith("blob:")) {
+      imageUrl = imagePreview;
     }
 
     // Save to database
