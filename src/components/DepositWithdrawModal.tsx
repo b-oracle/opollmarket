@@ -638,6 +638,8 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     setBankCode("044");
     setAccountNumber("");
     setAccountName("");
+    setAccountNameResolved(false);
+    setAccountNameLoading(false);
     setStep("input");
     setErrorMsg("");
     setPaymentInfo(null);
