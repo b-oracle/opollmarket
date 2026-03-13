@@ -122,9 +122,9 @@ Deno.serve(async (req) => {
       customer_last_name: "User",
       customer_email: email,
       customer_phone_number: "08000000000",
-      transaction_amount: amount,
+      transaction_amount: ngnAmount,
       has_amount_validation: true,
-      transaction_description: `Deposit ${amount} NGN`,
+      transaction_description: `Deposit $${amount} USD (₦${ngnAmount} NGN)`,
       expires_in_minutes: 60,
     };
 
