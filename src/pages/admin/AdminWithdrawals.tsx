@@ -193,25 +193,41 @@ const AdminWithdrawals = () => {
                     </TableCell>
                     <TableCell className="font-bold">${Number(w.amount).toFixed(2)}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-mono text-xs max-w-[100px] truncate" title={w.wallet_address}>
-                          {w.wallet_address}
-                        </span>
-                        <button
-                          onClick={() => { navigator.clipboard.writeText(w.wallet_address); toast.success("Wallet address copied!"); }}
-                          className="p-1 rounded hover:bg-muted transition-colors shrink-0"
-                          title="Copy address"
-                        >
-                          <Copy className="w-3 h-3 text-muted-foreground" />
-                        </button>
-                        <button
-                          onClick={() => setQrAddress(w.wallet_address)}
-                          className="p-1 rounded hover:bg-muted transition-colors shrink-0"
-                          title="Show QR code"
-                        >
-                          <QrCode className="w-3 h-3 text-muted-foreground" />
-                        </button>
-                      </div>
+                      {(() => {
+                        const isFiat = w.crypto_currency === "NGN";
+                        const parts = isFiat ? w.wallet_address?.split(":") : null;
+                        return (
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono text-xs max-w-[100px] truncate" title={w.wallet_address}>
+                              {isFiat && parts?.length === 3 ? `${parts[2]}` : w.wallet_address}
+                            </span>
+                            <button
+                              onClick={() => { navigator.clipboard.writeText(isFiat && parts?.length === 3 ? parts[1] : w.wallet_address); toast.success(isFiat ? "Account number copied!" : "Wallet address copied!"); }}
+                              className="p-1 rounded hover:bg-muted transition-colors shrink-0"
+                              title={isFiat ? "Copy account number" : "Copy address"}
+                            >
+                              <Copy className="w-3 h-3 text-muted-foreground" />
+                            </button>
+                            {isFiat && parts?.length === 3 ? (
+                              <button
+                                onClick={() => setFiatDetails({ bank_code: parts[0], account_number: parts[1], account_name: parts[2], amount: w.amount })}
+                                className="p-1 rounded hover:bg-muted transition-colors shrink-0"
+                                title="View bank details"
+                              >
+                                <Banknote className="w-3 h-3 text-muted-foreground" />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => setQrAddress(w.wallet_address)}
+                                className="p-1 rounded hover:bg-muted transition-colors shrink-0"
+                                title="Show QR code"
+                              >
+                                <QrCode className="w-3 h-3 text-muted-foreground" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </TableCell>
                     <TableCell>
                       {w.tx_hash ? (
