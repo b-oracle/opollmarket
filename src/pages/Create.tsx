@@ -209,6 +209,7 @@ const Create = () => {
         setTokenDecimals(Number(data.token_decimals) ?? 18);
         setBlueMaxFreeMarkets(Number((data as any).blue_max_free_markets) || 5);
         setGoldMaxFreeMarkets(Number((data as any).gold_max_free_markets) || 20);
+        setAiGenerationCost(Number((data as any).ai_generation_cost ?? 0.5));
       }
       setSettingsLoaded(true);
     })();
