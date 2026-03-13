@@ -240,6 +240,7 @@ export type Database = {
           copy_trade_commission_percent: number
           creator_fee_percent: number
           exit_fee_percent: number
+          fallback_naira_rate: number
           gold_max_free_markets: number
           gold_revenue_share_percent: number
           gold_trending_multiplier: number
@@ -282,6 +283,7 @@ export type Database = {
           copy_trade_commission_percent?: number
           creator_fee_percent?: number
           exit_fee_percent?: number
+          fallback_naira_rate?: number
           gold_max_free_markets?: number
           gold_revenue_share_percent?: number
           gold_trending_multiplier?: number
@@ -324,6 +326,7 @@ export type Database = {
           copy_trade_commission_percent?: number
           creator_fee_percent?: number
           exit_fee_percent?: number
+          fallback_naira_rate?: number
           gold_max_free_markets?: number
           gold_revenue_share_percent?: number
           gold_trending_multiplier?: number

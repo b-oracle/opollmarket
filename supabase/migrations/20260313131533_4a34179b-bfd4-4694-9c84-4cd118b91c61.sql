@@ -1,0 +1,1 @@
+ALTER TABLE public.commission_settings ADD COLUMN IF NOT EXISTS fallback_naira_rate numeric NOT NULL DEFAULT 1500;
