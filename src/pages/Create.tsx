@@ -43,6 +43,7 @@ import {
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
