@@ -356,7 +356,7 @@ async function tryPayazaPayout(params: PayazaPayoutParams): Promise<boolean> {
 
     console.log("[Payaza] Payout payload:", JSON.stringify(payoutPayload).substring(0, 500));
 
-    const payazaUrl = "https://api.payaza.africa/live/merchant-payout/initiate_payout/";
+    const payazaUrl = "https://api.payaza.africa/live/payout-receptor/payout";
 
     // Per official payaza_lib SDK: base64-encode the secret key, use "Payaza <encoded>" header
     // Also requires X-TenantID: live
