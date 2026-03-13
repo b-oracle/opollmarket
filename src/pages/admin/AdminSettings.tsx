@@ -232,8 +232,9 @@ const AdminSettings = () => {
            blue_trending_multiplier: blueTrendingMultNum,
            gold_trending_multiplier: goldTrendingMultNum,
            blue_max_free_markets: blueMaxFreeMarketsNum,
-           gold_max_free_markets: goldMaxFreeMarketsNum,
-          updated_at: new Date().toISOString(),
+            gold_max_free_markets: goldMaxFreeMarketsNum,
+            ai_generation_cost: aiGenerationCostNum,
+           updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
         .eq("id", settingsId);
