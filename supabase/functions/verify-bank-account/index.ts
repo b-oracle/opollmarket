@@ -127,8 +127,9 @@ Deno.serve(async (req) => {
     }
 
     if (!payazaResponse) {
+      console.error("All Payaza name enquiry attempts failed. Last error:", lastError);
       return new Response(
-        JSON.stringify({ error: "Could not reach payment service" }),
+        JSON.stringify({ error: "Could not reach payment service. Please try again." }),
         { status: 503, headers: corsHeaders }
       );
     }
