@@ -75,6 +75,7 @@ const AdminFiatSettings = () => {
           payaza_mode: payazaMode,
           naira_rate_markup: markupNum,
           fallback_naira_rate: fallbackNum,
+          naira_payout_markdown: payoutMarkdownNum,
           updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
