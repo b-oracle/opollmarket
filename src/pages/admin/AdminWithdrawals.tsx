@@ -25,6 +25,19 @@ const statusColors: Record<string, string> = {
   rejected: "bg-destructive/10 text-destructive border-destructive/20",
 };
 
+const BANK_CODE_TO_NAME: Record<string, string> = {
+  "044": "Access Bank", "023": "Citibank", "063": "Diamond (Access)", "050": "Ecobank",
+  "084": "Enterprise Bank", "070": "Fidelity Bank", "011": "First Bank", "214": "FCMB",
+  "058": "GTBank", "030": "Heritage Bank", "301": "Jaiz Bank", "082": "Keystone Bank",
+  "526": "Kuda Bank", "100004": "OPay", "100002": "Paga", "999991": "PalmPay",
+  "076": "Polaris Bank", "101": "Providus Bank", "221": "Stanbic IBTC",
+  "068": "Standard Chartered", "232": "Sterling Bank", "100": "SunTrust Bank",
+  "032": "Union Bank", "033": "United Bank (UBA)", "215": "Unity Bank",
+  "035": "Wema Bank", "057": "Zenith Bank",
+};
+
+const getBankName = (code: string) => BANK_CODE_TO_NAME[code] || code;
+
 const AdminWithdrawals = () => {
   const { canEdit } = useAdminContext();
   const queryClient = useQueryClient();
@@ -431,8 +444,8 @@ const AdminWithdrawals = () => {
                 </div>
               </div>
               <div className="p-3 rounded-xl bg-muted/50 border border-border">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Bank Code</p>
-                <p className="text-sm font-mono font-semibold">{fiatDetails.bank_code}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Bank</p>
+                <p className="text-sm font-semibold">{getBankName(fiatDetails.bank_code)}</p>
               </div>
               <div className="p-3 rounded-xl bg-muted/50 border border-border">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Withdrawal Amount</p>
