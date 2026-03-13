@@ -85,7 +85,7 @@ async function tryPayazaNameEnquiry(
   const proxyUrl = Deno.env.get("QUOTAGUARD_URL");
 
   const endpoints = [
-    "https://api.payaza.africa/live/merchant-collection/merchant/bank/name-enquiry",
+    "https://api.payaza.africa/live/payaza-account/api/v1/mainaccounts/merchant/provider/enquiry",
     "https://api.payaza.africa/live/zap/merchant/bank/name-enquiry",
   ];
 
