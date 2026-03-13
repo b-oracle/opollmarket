@@ -55,6 +55,7 @@ const AdminQuickTrade = lazy(() => import("./pages/admin/AdminQuickTrade"));
 const AdminPredictions = lazy(() => import("./pages/admin/AdminPredictions"));
 const AdminSocial = lazy(() => import("./pages/admin/AdminSocial"));
 const InvestorDeck = lazy(() => import("./pages/admin/InvestorDeck"));
+const AdminFiatSettings = lazy(() => import("./pages/admin/AdminFiatSettings"));
 const Referrals = lazy(() => import("./pages/Referrals"));
 const FAQ = lazy(() => import("./pages/FAQ"));
 const Disclaimer = lazy(() => import("./pages/Disclaimer"));
@@ -287,6 +288,7 @@ const App = () => (
                           <Route path="quick-trade" element={<AdminQuickTrade />} />
                           <Route path="predictions" element={<AdminPredictions />} />
                           <Route path="social" element={<AdminSocial />} />
+                          <Route path="fiat-settings" element={<AdminFiatSettings />} />
                           <Route path="investor-deck" element={<InvestorDeck />} />
                         </Route>
                         <Route path="*" element={<NotFound />} />
