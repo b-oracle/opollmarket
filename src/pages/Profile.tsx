@@ -326,6 +326,7 @@ const Profile = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<"deposit" | "withdraw">("deposit");
   const [resumePaymentId, setResumePaymentId] = useState<string | null>(null);
+  const [resumeProvider, setResumeProvider] = useState<string | null>(null);
   const [txFilter, setTxFilter] = useState<FilterType>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [txPage, setTxPage] = useState(1);
@@ -578,8 +579,8 @@ const Profile = () => {
     enabled: !!user,
   });
 
-  const openDeposit = () => { setResumePaymentId(null); setModalTab("deposit"); setModalOpen(true); };
-  const openWithdraw = () => { setResumePaymentId(null); setModalTab("withdraw"); setModalOpen(true); };
+  const openDeposit = () => { setResumePaymentId(null); setResumeProvider(null); setModalTab("deposit"); setModalOpen(true); };
+  const openWithdraw = () => { setResumePaymentId(null); setResumeProvider(null); setModalTab("withdraw"); setModalOpen(true); };
 
   const filteredTx = useMemo(() => {
     if (txFilter === "quick_trades") {
@@ -1363,6 +1364,7 @@ const Profile = () => {
                   onClick={() => {
                     if (isPendingDeposit) {
                       setResumePaymentId(tx.nowpayments_payment_id);
+                      setResumeProvider((tx as any).payment_provider || null);
                       setModalTab("deposit");
                       setModalOpen(true);
                       return;
@@ -1601,7 +1603,7 @@ const Profile = () => {
         </div>
       </div>
 
-      <DepositWithdrawModal open={modalOpen} onClose={() => { setModalOpen(false); setResumePaymentId(null); }} initialTab={modalTab} resumePaymentId={resumePaymentId} />
+      <DepositWithdrawModal open={modalOpen} onClose={() => { setModalOpen(false); setResumePaymentId(null); setResumeProvider(null); }} initialTab={modalTab} resumePaymentId={resumePaymentId} resumeProvider={resumeProvider} />
       <InstallAppModal open={installOpen} onClose={() => setInstallOpen(false)} />
       
       <BottomNav />

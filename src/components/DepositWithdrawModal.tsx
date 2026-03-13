@@ -49,6 +49,7 @@ interface DepositWithdrawModalProps {
   onClose: () => void;
   initialTab?: Tab;
   resumePaymentId?: string | null;
+  resumeProvider?: string | null;
 }
 
 interface PaymentInfo {
@@ -104,7 +105,7 @@ const CRYPTO_GROUPS = [
 
 const ALL_CRYPTO_OPTIONS = CRYPTO_GROUPS.flatMap((g) => g.options);
 
-const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePaymentId }: DepositWithdrawModalProps) => {
+const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePaymentId, resumeProvider }: DepositWithdrawModalProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { balance, bonusBalance } = useUserBalance();
@@ -171,6 +172,29 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setStep("executing");
       setErrorMsg("");
       try {
+        // For Payaza (fiat) deposits, fetch the transaction from DB and show fiat transfer UI
+        if (resumeProvider === "payaza") {
+          const { data, error } = await supabase.functions.invoke("get-deposit-status", {
+            body: { payment_id: resumePaymentId },
+          });
+          if (error || data?.error) {
+            throw new Error(data?.error || error?.message || "Failed to fetch payment details");
+          }
+          // If already confirmed, show success
+          if (data.payment_status === "finished") {
+            setStep("success");
+            return;
+          }
+          // Show simplified fiat pending view (bank details aren't stored for resume)
+          setAmount(String(data.amount_usd || data.pay_amount || 0));
+          setPaymentMethod("fiat");
+          setDepositCreatedAt(new Date(data.created_at).getTime());
+          setStep("awaiting_fiat");
+          startPolling(resumePaymentId);
+          return;
+        }
+
+        // Crypto deposits — existing flow
         const { data, error } = await supabase.functions.invoke("get-deposit-status", {
           body: { payment_id: resumePaymentId },
         });
@@ -194,7 +218,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     };
 
     fetchPaymentDetails();
-  }, [open, resumePaymentId, user]);
+  }, [open, resumePaymentId, resumeProvider, user]);
 
   // Countdown timer for deposit expiry (2 hours)
   useEffect(() => {
