@@ -990,7 +990,7 @@ export default function QuickTrade() {
 
     const amt = parseFloat(betAmount);
     if (isNaN(amt) || amt < qtMinBet) {
-      toast({ title: `Minimum bet is $${qtMinBet}`, variant: "destructive" });
+      toast({ title: `Minimum trade is $${qtMinBet}`, variant: "destructive" });
       return;
     }
     if (amt > qtMaxBet) {
