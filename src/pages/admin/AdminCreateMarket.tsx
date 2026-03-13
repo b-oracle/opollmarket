@@ -466,6 +466,7 @@ const AdminCreateMarket = () => {
               Generate (${aiGenerationCost})
             </button>
           </div>
+          <p className="text-[10px] text-muted-foreground mb-1.5">Type manually for free, or use AI to generate for a fee.</p>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
