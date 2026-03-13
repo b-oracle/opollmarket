@@ -194,6 +194,8 @@
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
     scrollbar-width: none;
+    scroll-padding-top: 0px;
+    scroll-padding-bottom: 0px;
   }
 
   .snap-feed::-webkit-scrollbar {
