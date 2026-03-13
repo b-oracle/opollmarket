@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
 import BottomSheet from "@/components/BottomSheet";
 import {
+  ArrowLeft,
   TrendingUp,
   TrendingDown,
   Wallet,
