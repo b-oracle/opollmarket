@@ -1533,10 +1533,21 @@ const Create = () => {
               </div>
 
               <div className={`glass rounded-xl p-4 ${shakeClass("description")} ${touched.description && errors.description ? "border-destructive/50" : ""}`}>
-                <label className="flex items-center gap-2 text-sm font-semibold mb-2">
-                  <FileText className="w-4 h-4 text-primary" />
-                  Description
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold">
+                    <FileText className="w-4 h-4 text-primary" />
+                    Description
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => handleAiGenerate("description")}
+                    disabled={generatingDesc || !title.trim()}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {generatingDesc ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                    Generate (${aiGenerationCost.toFixed(2)})
+                  </button>
+                </div>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
