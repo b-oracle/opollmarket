@@ -177,6 +177,8 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setBankCode("044");
       setAccountNumber("");
       setAccountName("");
+      setAccountNameLoading(false);
+      setAccountNameResolved(false);
       setNgnPayoutRate(null);
     }
     return () => {
