@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
     // ─── Fetch settings ───
     const { data: settings } = await adminClient
       .from("commission_settings")
-      .select("min_withdrawal_amount, withdrawal_cooldown_minutes, withdrawal_multiplier, withdrawal_limit_enabled, withdrawal_fee_percent, naira_payout_markdown, fallback_naira_rate")
+      .select("min_withdrawal_amount, withdrawal_cooldown_minutes, withdrawal_multiplier, withdrawal_limit_enabled, withdrawal_fee_percent, naira_payout_markdown, fallback_naira_rate, payout_provider")
       .limit(1)
       .single();
 
@@ -120,6 +120,7 @@ Deno.serve(async (req) => {
     const withdrawalFeePercent = Math.max(0, Math.min(100, Number(settings?.withdrawal_fee_percent) || 0));
     const payoutMarkdown = Number(settings?.naira_payout_markdown) || 0;
     const fallbackRate = Number(settings?.fallback_naira_rate) || 1500;
+    const preferredProvider = (settings as any)?.payout_provider === "palmpay" ? "palmpay" : "payaza";
 
     if (!amount || amount < minWithdrawal || amount > 50000) {
       return new Response(
