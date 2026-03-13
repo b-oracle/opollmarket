@@ -388,21 +388,39 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
         throw new Error(data?.error || error?.message || "Failed to create fiat deposit");
       }
 
-      // Open Payaza inline checkout popup
-      const payazaUrl = `https://checkout.payaza.africa/pay/${data.transaction_reference}?merchant_key=${encodeURIComponent(data.merchant_key)}&amount=${numAmount}&currency=NGN&email=${encodeURIComponent(data.email)}&callback_url=${encodeURIComponent(window.location.href)}`;
-
-      // Use Payaza's redirect-based checkout
-      // We'll open in a new window and poll for confirmation
-      const payazaWindow = window.open(payazaUrl, "_blank", "width=500,height=700,scrollbars=yes");
-
-      setStep("awaiting_fiat");
-      // Start polling the transaction status
-      startPolling(data.transaction_reference);
+      if (data.mode === "direct_api") {
+        // Show in-app bank transfer details
+        setFiatTransferInfo({
+          transaction_reference: data.transaction_reference,
+          bank_name: data.bank_name,
+          account_number: data.account_number,
+          account_name: data.account_name,
+          amount: data.amount,
+          currency: data.currency,
+          payment_url: data.payment_url,
+          expires_at: data.expires_at,
+        });
+        setDepositCreatedAt(Date.now());
+        setStep("awaiting_fiat_transfer");
+        startPolling(data.transaction_reference);
+      } else {
+        // Checkout SDK mode — open popup
+        const payazaUrl = `https://checkout.payaza.africa/pay/${data.transaction_reference}?merchant_key=${encodeURIComponent(data.merchant_key)}&amount=${numAmount}&currency=NGN&email=${encodeURIComponent(data.email)}&callback_url=${encodeURIComponent(window.location.href)}`;
+        window.open(payazaUrl, "_blank", "width=500,height=700,scrollbars=yes");
+        setStep("awaiting_fiat");
+        startPolling(data.transaction_reference);
+      }
     } catch (err: any) {
       setErrorMsg(err.message || "Something went wrong");
       setStep("error");
     }
   }, [numAmount, startPolling]);
+
+  const copyFiatDetail = useCallback((text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setFiatCopied(label);
+    setTimeout(() => setFiatCopied(null), 2000);
+  }, []);
 
   const executeWithdraw = useCallback(async () => {
     setStep("executing");
