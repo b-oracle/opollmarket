@@ -523,7 +523,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             )}
           </h2>
 
-          <p className="text-[11px] text-muted-foreground mb-2 pr-14 sm:pr-16 lg:pr-32 line-clamp-2">{market.description}</p>
+          <p className="text-[11px] sm:text-sm lg:text-base text-muted-foreground font-medium mb-2 sm:mb-3 pr-14 sm:pr-16 lg:pr-32 line-clamp-2 leading-relaxed">{market.description}</p>
 
           <div className="flex items-center gap-3 mb-3 pr-14 sm:pr-16 lg:pr-32 text-[11px] text-muted-foreground">
             <span className="flex items-center gap-1">
