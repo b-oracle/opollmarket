@@ -994,7 +994,7 @@ export default function QuickTrade() {
       return;
     }
     if (amt > qtMaxBet) {
-      toast({ title: `Maximum bet is $${qtMaxBet}`, variant: "destructive" });
+      toast({ title: `Maximum trade is $${qtMaxBet}`, variant: "destructive" });
       return;
     }
     if (amt > balance) {
