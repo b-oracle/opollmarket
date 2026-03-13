@@ -16,7 +16,8 @@ Deno.serve(async (req) => {
     console.log("Payaza webhook payload:", JSON.stringify(body));
 
     // Payaza sends transaction_reference and status in the webhook
-    const reference = body.transaction_reference || body.data?.transaction_reference;
+    // For virtual accounts, the reference may come as account_reference
+    const reference = body.transaction_reference || body.account_reference || body.data?.transaction_reference || body.data?.account_reference;
     const status = body.status || body.data?.status;
 
     if (!reference) {
