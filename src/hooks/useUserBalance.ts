@@ -14,8 +14,8 @@ export const useUserBalance = () => {
         .select("amount, bonus_balance")
         .eq("user_id", user.id)
         .eq("currency", "USDT")
-        .single();
-      if (error) return { amount: 0, bonus: 0 };
+        .maybeSingle();
+      if (error || !data) return { amount: 0, bonus: 0 };
       return { amount: Number(data.amount), bonus: Number(data.bonus_balance ?? 0) };
     },
     enabled: !!user,
