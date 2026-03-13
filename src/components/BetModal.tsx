@@ -384,7 +384,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                       onAccept={() => {
                         setShowTerms(false);
                         track("terms_accepted", {});
-                        track(orderType === "limit" ? "limit_order_started" : "bet_placed", { marketId, side, amount: numAmount });
+                        track(orderType === "limit" ? "limit_order_started" : "prediction_placed", { marketId, side, amount: numAmount });
                         setStep("confirm");
                       }}
                       onClose={() => setShowTerms(false)}
