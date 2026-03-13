@@ -430,7 +430,7 @@ const Feed = () => {
 
       <div
         ref={containerRef}
-        className="snap-feed w-full max-w-3xl mx-auto"
+        className="snap-feed w-full"
         style={{ 
           position: 'fixed',
           top: 'calc(3.5rem + env(safe-area-inset-top, 0px))',
