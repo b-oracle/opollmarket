@@ -1139,9 +1139,12 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                       <div className="rounded-xl bg-muted/50 border border-border p-3 mb-3">
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Amount to Transfer</p>
                         <p className="text-xl font-bold text-primary">
-                          ₦{fiatTransferInfo.amount.toLocaleString()}
+                          ₦{fiatTransferInfo.amount_ngn.toLocaleString()}
                         </p>
-                        <p className="text-[10px] text-muted-foreground">≈ ${numAmount.toFixed(2)} USD</p>
+                        <p className="text-[10px] text-muted-foreground">≈ ${fiatTransferInfo.amount_usd.toFixed(2)} USD</p>
+                        {fiatTransferInfo.exchange_rate && (
+                          <p className="text-[9px] text-muted-foreground mt-0.5">Rate: ₦{fiatTransferInfo.exchange_rate.toLocaleString()}/USD</p>
+                        )}
                       </div>
 
                       {/* Bank Name */}
