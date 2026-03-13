@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import logoLight from "@/assets/blue-opoll-logo.png";
-import logoDark from "@/assets/watermark-logo.png";
 import { Video, HelpCircle, FileText, Shield, Scale } from "lucide-react";
 import { toast } from "sonner";
 
