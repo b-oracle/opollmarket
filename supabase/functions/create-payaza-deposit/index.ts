@@ -48,21 +48,12 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Get payaza_mode from commission_settings
-    const { data: settings } = await adminClient
-      .from("commission_settings")
-      .select("payaza_mode")
-      .limit(1)
-      .maybeSingle();
-
-    const mode = (settings as any)?.payaza_mode || "direct_api";
-
     const merchantKey = Deno.env.get("PAYAZA_MERCHANT_KEY");
     const secretKey = Deno.env.get("PAYAZA_SECRET_KEY");
 
-    if (!merchantKey && !secretKey) {
+    if (!secretKey) {
       return new Response(
-        JSON.stringify({ error: "Fiat payment service not configured" }),
+        JSON.stringify({ error: "Fiat payment service not configured (missing secret key)" }),
         { status: 500, headers: corsHeaders }
       );
     }
