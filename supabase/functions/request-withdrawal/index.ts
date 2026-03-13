@@ -255,6 +255,7 @@ Deno.serve(async (req) => {
     let payoutSuccess = false;
     let payoutId = null;
     let payoutError = null;
+    let payoutTxHash: string | null = null;
 
     try {
       // Step 1: Authenticate with NOWPayments to get JWT
