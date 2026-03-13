@@ -1562,9 +1562,10 @@ const Create = () => {
                     className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {generatingDesc ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                    Generate (${aiGenerationCost.toFixed(2)})
+                   Generate (${aiGenerationCost.toFixed(2)})
                   </button>
                 </div>
+                <p className="text-[10px] text-muted-foreground mb-1.5">Type manually for free, or use AI to generate for a fee.</p>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
