@@ -1,0 +1,1 @@
+ALTER TABLE public.commission_settings ADD COLUMN IF NOT EXISTS ai_generation_cost numeric NOT NULL DEFAULT 0.50;
