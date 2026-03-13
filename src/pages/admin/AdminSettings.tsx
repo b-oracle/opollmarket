@@ -155,6 +155,7 @@ const AdminSettings = () => {
   const goldTrendingMultNum = parseFloat(goldTrendingMult) || 1.5;
   const blueMaxFreeMarketsNum = parseInt(blueMaxFreeMarkets) || 5;
   const goldMaxFreeMarketsNum = parseInt(goldMaxFreeMarkets) || 20;
+  const aiGenerationCostNum = parseFloat(aiGenerationCost) || 0;
   const totalFee = adminNum + creatorNum;
   const poolPercent = 100 - totalFee;
   const isValid =
