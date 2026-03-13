@@ -22,22 +22,50 @@ function generateNonceStr(len = 32): string {
   return result;
 }
 
+// PKCS#1 → PKCS#8 wrapper: prepends the RSA AlgorithmIdentifier sequence
+function wrapPkcs1ToPkcs8(pkcs1Der: Uint8Array): Uint8Array {
+  // ASN.1 header for PKCS#8 wrapping an RSA key
+  const header = new Uint8Array([
+    0x30, 0x82, 0x00, 0x00, // SEQUENCE (length placeholder)
+    0x02, 0x01, 0x00,       // INTEGER 0 (version)
+    0x30, 0x0d,             // SEQUENCE (AlgorithmIdentifier)
+    0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01, // OID rsaEncryption
+    0x05, 0x00,             // NULL
+    0x04, 0x82, 0x00, 0x00, // OCTET STRING (length placeholder)
+  ]);
+  const totalLen = header.length + pkcs1Der.length;
+  const result = new Uint8Array(totalLen);
+  result.set(header);
+  result.set(pkcs1Der, header.length);
+  // Patch outer SEQUENCE length (totalLen - 4)
+  const outerLen = totalLen - 4;
+  result[2] = (outerLen >> 8) & 0xff;
+  result[3] = outerLen & 0xff;
+  // Patch OCTET STRING length
+  const octetLen = pkcs1Der.length;
+  result[header.length - 2] = (octetLen >> 8) & 0xff;
+  result[header.length - 1] = octetLen & 0xff;
+  return result;
+}
+
 async function palmPaySign(body: Record<string, unknown>, privateKeyPem: string): Promise<string> {
-  // Step 1: Sort params by ASCII key order, build key=value string
   const keys = Object.keys(body).filter(k => body[k] !== null && body[k] !== undefined && body[k] !== "").sort();
   const strA = keys.map(k => `${k}=${body[k]}`).join("&");
 
-  // Step 2: MD5(strA) → uppercase hex
   const encoder = new TextEncoder();
   const md5Buffer = await stdCrypto.subtle.digest("MD5", encoder.encode(strA));
   const md5Hex = Array.from(new Uint8Array(md5Buffer)).map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
 
-  // Step 3: SHA1WithRSA sign the md5Hex with private key
+  const isPkcs1 = privateKeyPem.includes("BEGIN RSA PRIVATE KEY");
   const pemBody = privateKeyPem
     .replace(/-----BEGIN (?:RSA )?PRIVATE KEY-----/g, "")
     .replace(/-----END (?:RSA )?PRIVATE KEY-----/g, "")
     .replace(/\s/g, "");
-  const binaryDer = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0));
+  let binaryDer = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0));
+
+  if (isPkcs1) {
+    binaryDer = wrapPkcs1ToPkcs8(binaryDer);
+  }
 
   const key = await crypto.subtle.importKey(
     "pkcs8",

@@ -23,6 +23,29 @@ function generateNonceStr(len = 32): string {
   return result;
 }
 
+// PKCS#1 → PKCS#8 wrapper
+function wrapPkcs1ToPkcs8(pkcs1Der: Uint8Array): Uint8Array {
+  const header = new Uint8Array([
+    0x30, 0x82, 0x00, 0x00,
+    0x02, 0x01, 0x00,
+    0x30, 0x0d,
+    0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01,
+    0x05, 0x00,
+    0x04, 0x82, 0x00, 0x00,
+  ]);
+  const totalLen = header.length + pkcs1Der.length;
+  const result = new Uint8Array(totalLen);
+  result.set(header);
+  result.set(pkcs1Der, header.length);
+  const outerLen = totalLen - 4;
+  result[2] = (outerLen >> 8) & 0xff;
+  result[3] = outerLen & 0xff;
+  const octetLen = pkcs1Der.length;
+  result[header.length - 2] = (octetLen >> 8) & 0xff;
+  result[header.length - 1] = octetLen & 0xff;
+  return result;
+}
+
 async function palmPaySign(body: Record<string, unknown>, privateKeyPem: string): Promise<string> {
   const keys = Object.keys(body).filter(k => body[k] !== null && body[k] !== undefined && body[k] !== "").sort();
   const strA = keys.map(k => `${k}=${body[k]}`).join("&");
@@ -31,11 +54,16 @@ async function palmPaySign(body: Record<string, unknown>, privateKeyPem: string)
   const md5Buffer = await stdCrypto.subtle.digest("MD5", encoder.encode(strA));
   const md5Hex = Array.from(new Uint8Array(md5Buffer)).map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
 
+  const isPkcs1 = privateKeyPem.includes("BEGIN RSA PRIVATE KEY");
   const pemBody = privateKeyPem
     .replace(/-----BEGIN (?:RSA )?PRIVATE KEY-----/g, "")
     .replace(/-----END (?:RSA )?PRIVATE KEY-----/g, "")
     .replace(/\s/g, "");
-  const binaryDer = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0));
+  let binaryDer = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0));
+
+  if (isPkcs1) {
+    binaryDer = wrapPkcs1ToPkcs8(binaryDer);
+  }
 
   const key = await crypto.subtle.importKey(
     "pkcs8",
