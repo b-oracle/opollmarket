@@ -15,6 +15,7 @@ const AdminFiatSettings = () => {
   const [payazaMode, setPayazaMode] = useState<"checkout_sdk" | "direct_api">("direct_api");
   const [nairaRateMarkup, setNairaRateMarkup] = useState("");
   const [fallbackNairaRate, setFallbackNairaRate] = useState("");
+  const [nairaPayoutMarkdown, setNairaPayoutMarkdown] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
