@@ -505,7 +505,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           )}
 
           <h2
-            className="text-base sm:text-lg font-bold leading-tight mb-1.5 pr-14 sm:pr-16 lg:pr-32 cursor-pointer hover:text-primary transition-colors"
+            className="text-base sm:text-xl lg:text-2xl font-extrabold leading-snug sm:leading-snug mb-2 sm:mb-3 pr-14 sm:pr-16 lg:pr-32 cursor-pointer hover:text-primary transition-colors"
             onClick={() => navigate(`/market/${market.id}`)}
           >
             {market.title}{" "}
