@@ -305,6 +305,62 @@ const AdminSettings = () => {
       {/* ─── Feature Toggles (Super Admin only) ─── */}
       <FeatureTogglesCard />
 
+      {/* ─── Fiat Payment Mode ─── */}
+      <Card className="mb-6 max-w-4xl">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Banknote className="w-5 h-5" /> Fiat Payment Mode (Payaza)
+          </CardTitle>
+          <CardDescription>
+            Choose how fiat (NGN) deposits are processed. Direct API shows bank transfer details in-app; Checkout SDK opens a popup window.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-3">
+            <button
+              onClick={() => canEdit && setPayazaMode("direct_api")}
+              className={`flex-1 rounded-xl border-2 p-4 text-left transition-all ${
+                payazaMode === "direct_api"
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-muted-foreground/30"
+              } ${!canEdit ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                  payazaMode === "direct_api" ? "border-primary" : "border-muted-foreground/40"
+                }`}>
+                  {payazaMode === "direct_api" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                </div>
+                <span className="text-sm font-bold">Direct API</span>
+                <Badge variant="default" className="text-[10px]">Recommended</Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground ml-6">
+                Bank transfer details shown in-app. Works even when checkout domain is down.
+              </p>
+            </button>
+            <button
+              onClick={() => canEdit && setPayazaMode("checkout_sdk")}
+              className={`flex-1 rounded-xl border-2 p-4 text-left transition-all ${
+                payazaMode === "checkout_sdk"
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-muted-foreground/30"
+              } ${!canEdit ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                  payazaMode === "checkout_sdk" ? "border-primary" : "border-muted-foreground/40"
+                }`}>
+                  {payazaMode === "checkout_sdk" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                </div>
+                <span className="text-sm font-bold">Checkout SDK</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground ml-6">
+                Opens Payaza popup window. Requires checkout.payaza.africa to be online.
+              </p>
+            </button>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl">
         {/* ─── Market Prediction Fees ─── */}
