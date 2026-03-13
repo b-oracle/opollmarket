@@ -244,8 +244,11 @@ const Feed = () => {
   const { boostedMarketIds, boostDetails } = useActiveBoosts();
   const { track } = useAnalytics();
   const isDesktop = useIsDesktop();
+  const isMobile = useIsMobile();
+  const { collapsed } = useSidebarState();
   const { bookmarkedIds } = useBookmarkedMarkets();
   const { user } = useAuth();
+  const sidebarLeft = isMobile ? 0 : collapsed ? '4.5rem' : '15rem';
   const [feedTab, setFeedTab] = useState<"foryou" | "bookmarks">("foryou");
 
   useEffect(() => {track("page_view", { page: "feed" });}, []);
