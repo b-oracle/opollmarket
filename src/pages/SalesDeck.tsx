@@ -230,8 +230,32 @@ const slides = [
 const SalesDeck = () => {
   const navigate = useNavigate();
   const deckRef = useRef<HTMLDivElement>(null);
+  const { displayName } = useAuth();
+  const [copied, setCopied] = useState(false);
 
   const handlePrint = () => window.print();
+
+  const getShareUrl = () => {
+    const base = `${getCanonicalOrigin()}/auth`;
+    return displayName ? `${base}?ref=${encodeURIComponent(displayName)}` : base;
+  };
+
+  const handleCopyLink = async () => {
+    await navigator.clipboard.writeText(getShareUrl());
+    setCopied(true);
+    toast.success("Link copied with your referral code!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleWhatsApp = () => {
+    const text = `🔥 Check out oPoll Market — predict real-world events and win! Join here: ${getShareUrl()}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+  };
+
+  const handleTelegram = () => {
+    const text = `🔥 Check out oPoll Market — predict real-world events and win!`;
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(getShareUrl())}&text=${encodeURIComponent(text)}`, "_blank");
+  };
 
   return (
     <>
