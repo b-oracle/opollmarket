@@ -43,12 +43,6 @@ const AdminContracts = () => {
     }
   };
 
-  const fetchLiveRate = async () => {
-    try {
-      const { data } = await supabase.functions.invoke("get-naira-rate");
-      if (data?.live_rate) setLiveNgnRate(data.live_rate);
-    } catch { /* silent */ }
-  };
 
   const isValidAddress = (addr: string) => {
     if (!addr) return true;
