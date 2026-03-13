@@ -2056,7 +2056,7 @@ const Create = () => {
                     <ImageIcon className="w-4 h-4 text-primary" />
                     Cover Image <span className="text-xs font-normal text-destructive">*</span>
                   </label>
-                  {!imagePreview && (
+                  {!imagePreview && isFeatureEnabled("ai_generate_image") && (
                     <button
                       type="button"
                       onClick={() => handleAiGenerate("image")}
