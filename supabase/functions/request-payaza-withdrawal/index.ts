@@ -315,7 +315,7 @@ Deno.serve(async (req) => {
   }
 });
 
-// ─── Payaza payout attempt ───
+// ─── Payaza payout attempt (correct payload format per official payaza_lib SDK) ───
 interface PayazaPayoutParams {
   secretKey: string;
   merchantKey: string;
@@ -333,42 +333,64 @@ async function tryPayazaPayout(params: PayazaPayoutParams): Promise<boolean> {
   try {
     const proxyUrl = Deno.env.get("QUOTAGUARD_URL");
     const transactionPin = Deno.env.get("PAYAZA_TRANSACTION_PIN");
-    const authVariants = getPayazaAuthVariants(secretKey, merchantKey || undefined);
 
+    // Correct Payaza payout payload structure (matches official payaza_lib npm package)
     const payoutPayload: Record<string, unknown> = {
       transaction_type: "nuban",
-      transaction_reference: transactionReference,
-      amount: ngnPayout,
-      currency: "NGN",
-      account_number: accountNumber,
-      bank_code: bankCode,
-      account_name: accountName,
-      narration: `OPOLL withdrawal $${netAmount.toFixed(2)}`,
-      sender_name: "OPOLL",
+      service_payload: {
+        payout_amount: ngnPayout,
+        transaction_pin: transactionPin ? Number(transactionPin) : undefined,
+        account_reference: accountNumber,
+        currency: "NGN",
+        payout_beneficiaries: [
+          {
+            credit_amount: ngnPayout,
+            account_number: accountNumber,
+            account_name: accountName,
+            bank_code: bankCode,
+            narration: `OPOLL withdrawal $${netAmount.toFixed(2)}`,
+            transaction_reference: transactionReference,
+            sender: {
+              sender_name: "OPOLL",
+              sender_id: "",
+              sender_phone_number: "",
+              sender_address: "",
+            },
+          },
+        ],
+      },
     };
 
-    // Include transaction PIN if configured
-    if (transactionPin) {
-      payoutPayload.transaction_pin = transactionPin;
-    }
+    console.log("[Payaza] Payout payload:", JSON.stringify(payoutPayload).substring(0, 500));
 
     const payazaUrl = "https://api.payaza.africa/live/merchant-payout/initiate_payout/";
+
+    // Auth variants: raw key first (per SDK docs: "no need to convert to base64")
+    const authVariants: string[] = [];
+    // The SDK uses the raw secret key directly
+    authVariants.push(`Payaza ${secretKey}`);
+    if (merchantKey) authVariants.push(`Payaza ${merchantKey}`);
+    // Also try APIKey format
+    authVariants.push(`APIKey ${secretKey}`);
+    if (merchantKey) authVariants.push(`APIKey ${merchantKey}`);
 
     for (const authValue of authVariants) {
       const authLabel = authValue.substring(0, 30) + "...";
       let payazaResponse: Response | null = null;
 
-      // Try with proxy first
+      const fetchHeaders = {
+        "Content-Type": "application/json",
+        "Authorization": authValue,
+        "Accept": "application/json",
+      };
+
+      // Try with proxy first (for IP whitelisting)
       if (proxyUrl) {
         try {
           const httpClient = Deno.createHttpClient({ proxy: { url: proxyUrl } });
           payazaResponse = await fetch(payazaUrl, {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": authValue,
-              "Accept": "application/json",
-            },
+            headers: fetchHeaders,
             body: JSON.stringify(payoutPayload),
             // @ts-ignore
             client: httpClient,
@@ -376,6 +398,7 @@ async function tryPayazaPayout(params: PayazaPayoutParams): Promise<boolean> {
           httpClient.close();
           const preview = await payazaResponse.clone().text();
           if (preview.includes("<html") || preview.includes("<!DOCTYPE")) {
+            console.warn(`Payaza proxy returned HTML page (${authLabel})`);
             payazaResponse = null;
           }
         } catch (err) {
@@ -387,29 +410,36 @@ async function tryPayazaPayout(params: PayazaPayoutParams): Promise<boolean> {
       if (!payazaResponse) {
         payazaResponse = await fetch(payazaUrl, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": authValue,
-            "Accept": "application/json",
-          },
+          headers: fetchHeaders,
           body: JSON.stringify(payoutPayload),
         });
       }
 
       const payazaText = await payazaResponse.text();
-      console.log(`Payaza payout [${authLabel}] → ${payazaResponse.status}: ${payazaText.substring(0, 300)}`);
+      console.log(`Payaza payout [${authLabel}] → ${payazaResponse.status}: ${payazaText.substring(0, 500)}`);
 
       if (payazaResponse.ok) {
         try {
-          JSON.parse(payazaText);
-          console.log(`Payaza payout SUCCESS with auth: ${authLabel}`);
+          const result = JSON.parse(payazaText);
+          // Check for success indicators in the response
+          const isSuccess = result?.status === 201 || result?.status === 200 || 
+                           result?.type === "success" || 
+                           result?.response_code === "00" ||
+                           result?.message?.toLowerCase()?.includes("success");
+          
+          if (isSuccess) {
+            console.log(`Payaza payout SUCCESS with auth: ${authLabel}`);
+            return true;
+          }
+          console.warn(`Payaza payout response OK but not clearly successful:`, JSON.stringify(result).substring(0, 300));
+          // Still treat 2xx as success if parseable
           return true;
         } catch {
           console.error("Failed to parse Payaza payout response");
         }
       }
 
-      // If we get a non-auth error (not 401/403), no point trying other auth variants
+      // If we get a non-auth error (not 401/403), stop trying other auth variants
       if (payazaResponse.status !== 401 && payazaResponse.status !== 403) {
         console.warn(`Payaza payout returned ${payazaResponse.status}, stopping auth rotation`);
         break;
