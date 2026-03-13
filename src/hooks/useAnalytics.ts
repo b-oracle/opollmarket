@@ -4,7 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 type EventName =
   | "page_view"
   | "bet_placed"
+  | "prediction_placed"
   | "bet_confirmed"
+  | "prediction_confirmed"
   | "deposit_started"
   | "withdrawal_requested"
   | "market_created"
@@ -18,7 +20,8 @@ type EventName =
   | "limit_order_placed"
   | "limit_order_started"
   | "limit_order_cancelled"
-  | "push_enabled_first_bet";
+  | "push_enabled_first_bet"
+  | "push_enabled_first_prediction";
 
 interface EventProperties {
   [key: string]: string | number | boolean | undefined;
