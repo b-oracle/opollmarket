@@ -36,6 +36,7 @@ const AdminWithdrawals = () => {
   const [noteInput, setNoteInput] = useState("");
   const [txHashInput, setTxHashInput] = useState("");
   const [qrAddress, setQrAddress] = useState<string | null>(null);
+  const [fiatDetails, setFiatDetails] = useState<{ bank_code: string; account_number: string; account_name: string; amount: number } | null>(null);
   const [showActionModal, setShowActionModal] = useState<{
     id: string;
     action: "approve" | "reject";
