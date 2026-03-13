@@ -239,7 +239,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
     <>
       <div
         ref={cardRef}
-        className={`snap-item relative w-full flex items-end pl-3 pr-[4.5rem] pb-2 sm:pl-4 sm:pr-[5rem] lg:pr-[5.5rem] overflow-hidden ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}
+        className={`snap-item relative w-full flex items-end px-3 sm:px-4 pb-2 overflow-hidden ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}
         style={{ 
           height: 'var(--feed-card-height)',
           minHeight: 'var(--feed-card-height)',
@@ -396,51 +396,6 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
 
 
-        {/* Side actions */}
-        <div className="absolute inset-y-3 right-2 sm:right-3 lg:right-4 z-30 flex w-12 sm:w-14 flex-col items-center justify-end gap-1.5">
-          {isBoosted && (
-            <div className="flex flex-col items-center gap-0.5">
-              <div className="w-[clamp(1.5rem,3.5vh,2.25rem)] h-[clamp(1.5rem,3.5vh,2.25rem)] rounded-full glass flex items-center justify-center bg-orange-500/20 animate-pulse">
-                <Flame className="w-3.5 h-3.5 text-orange-400" />
-              </div>
-              <span className="text-[9px] text-orange-400 font-semibold leading-none">Hot</span>
-            </div>
-          )}
-          <button onClick={handleLike} className="flex flex-col items-center gap-0.5 group">
-            <div className={`w-[clamp(1.5rem,3.5vh,2.25rem)] h-[clamp(1.5rem,3.5vh,2.25rem)] rounded-full glass flex items-center justify-center transition-colors ${liked ? 'bg-destructive/20' : 'group-hover:bg-destructive/20'}`}>
-              <Heart className={`w-3.5 h-3.5 transition-colors ${liked ? 'text-destructive fill-destructive' : 'text-foreground/70 group-hover:text-destructive'}`} />
-            </div>
-            <span className="text-[9px] text-muted-foreground leading-none">{formatCount(likeCount)}</span>
-          </button>
-          <button onClick={() => setCommentsOpen(true)} className="flex flex-col items-center gap-0.5 group">
-            <div className="w-[clamp(1.5rem,3.5vh,2.25rem)] h-[clamp(1.5rem,3.5vh,2.25rem)] rounded-full glass flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-              <MessageCircle className="w-3.5 h-3.5 text-foreground/70 group-hover:text-primary transition-colors" />
-            </div>
-            <span className="text-[9px] text-muted-foreground leading-none">{formatCount(commentCount)}</span>
-          </button>
-          <button onClick={handleBookmark} className="flex flex-col items-center gap-0.5 group">
-            <motion.div
-              className={`w-[clamp(1.5rem,3.5vh,2.25rem)] h-[clamp(1.5rem,3.5vh,2.25rem)] rounded-full glass flex items-center justify-center transition-colors ${bookmarked ? 'bg-primary/20' : 'group-hover:bg-primary/20'}`}
-              animate={bookmarked ? { scale: [1, 1.3, 1] } : { scale: 1 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-            >
-              <Bookmark className={`w-3.5 h-3.5 transition-colors ${bookmarked ? 'text-primary fill-primary' : 'text-foreground/70 group-hover:text-primary'}`} />
-            </motion.div>
-            <span className="text-[9px] text-muted-foreground leading-none">{bookmarkCount > 0 ? formatCount(bookmarkCount) : (bookmarked ? "Saved" : "Save")}</span>
-          </button>
-          <button onClick={() => navigate(`/market/${market.id}`)} className="flex flex-col items-center gap-0.5 group">
-            <div className="w-[clamp(1.5rem,3.5vh,2.25rem)] h-[clamp(1.5rem,3.5vh,2.25rem)] rounded-full glass flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-              <ExternalLink className="w-3.5 h-3.5 text-foreground/70 group-hover:text-primary transition-colors" />
-            </div>
-            <span className="text-[9px] text-muted-foreground leading-none">Details</span>
-          </button>
-          <button onClick={handleShare} className="flex flex-col items-center gap-0.5 group">
-            <div className="w-[clamp(1.5rem,3.5vh,2.25rem)] h-[clamp(1.5rem,3.5vh,2.25rem)] rounded-full glass flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-              <Share2 className="w-3.5 h-3.5 text-foreground/70 group-hover:text-primary transition-colors" />
-            </div>
-            <span className="text-[9px] text-muted-foreground leading-none">Share</span>
-          </button>
-        </div>
 
         {/* Content */}
         <div className="relative z-10 w-full overflow-hidden">
@@ -538,102 +493,149 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             </span>
           </div>
 
-          {/* Prediction buttons */}
-          {isEnded ? (
-            <div className={`w-full text-center py-3 rounded-xl border flex items-center justify-center gap-2 ${
-              market.status === "resolved"
-                ? "bg-primary/5 border-primary/20"
-                : market.status === "cancelled"
-                  ? "bg-destructive/5 border-destructive/20"
-                  : "bg-muted/50 border-border/50"
-            }`}>
-              {market.status === "resolved" ? <CheckCircle2 className="w-4 h-4 text-primary" /> : market.status === "cancelled" ? <XCircle className="w-4 h-4 text-destructive" /> : <Clock className="w-4 h-4 text-muted-foreground" />}
-              <span className={`text-sm font-semibold ${
-                market.status === "resolved" ? "text-primary" : market.status === "cancelled" ? "text-destructive" : "text-muted-foreground"
-              }`}>{market.status === "resolved" ? "Market Ended — Resolution Completed" : market.status === "cancelled" ? "Market Cancelled" : "Market Ended — Awaiting Resolution"}</span>
-            </div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.4 }}
-            >
-              {isMulti && market.options ? (
-                <div className="space-y-2">
-                  {market.options.slice(0, 4).map((opt, i) => {
-                    const pct = Math.round(opt.price * 100);
-                    const color = optionColors[i % optionColors.length];
-                    return (
-                      <button
-                        key={opt.id}
-                        onClick={() => setBetModal({ open: true, side: "yes", optionLabel: opt.label, optionPrice: pct, optionColor: color })}
-                        className="w-full relative rounded-xl px-4 py-3 flex items-center justify-between transition-all active:scale-[0.98] overflow-hidden"
-                        style={{
-                          background: colorAlpha(color, 0.1),
-                        }}
-                      >
-                        {/* Fill bar showing probability */}
-                        <div
-                          className="absolute inset-0 rounded-xl"
-                          style={{
-                            background: `linear-gradient(90deg, ${colorAlpha(color, 0.12)} 0%, ${colorAlpha(color, 0.04)} ${pct}%, transparent ${pct}%)`,
-                          }}
-                        />
-
-                        <div className="flex items-center gap-2.5 relative z-10">
-                          <div
-                            className="w-2.5 h-2.5 rounded-full shrink-0"
-                            style={{ backgroundColor: color, boxShadow: `0 0 6px ${colorAlpha(color, 0.5)}` }}
-                          />
-                          <span className="text-sm font-semibold">{opt.label}</span>
-                        </div>
-                        <div className="flex items-center gap-2 relative z-10">
-                          <span className="text-sm font-bold" style={{ color }}>
-                            {pct}¢
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                  {market.options.length > 4 && (
-                    <button
-                      onClick={() => navigate(`/market/${market.id}`)}
-                      className="w-full text-center text-xs text-primary font-semibold py-1"
-                    >
-                      +{market.options.length - 4} more options →
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setBetModal({ open: true, side: "yes" })}
-                      className="flex-1 btn-yes py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all active:scale-95"
-                    >
-                      Buy Yes {yesPercent}¢
-                    </button>
-                    <button
-                      onClick={() => setBetModal({ open: true, side: "no" })}
-                      className="flex-1 btn-no py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all active:scale-95"
-                    >
-                      Buy No {noPercent}¢
-                    </button>
+          {/* Prediction buttons with action column */}
+          <div className="relative">
+            {/* Action buttons column - positioned above the right side */}
+            <div className="absolute bottom-full right-0 mb-2 z-20 flex flex-col items-center gap-1.5">
+              {isBoosted && (
+                <div className="flex flex-col items-center gap-0.5">
+                  <div className="w-9 h-9 rounded-full glass flex items-center justify-center bg-orange-500/20 animate-pulse">
+                    <Flame className="w-3.5 h-3.5 text-orange-400" />
                   </div>
-                  {isActive && (
-                    <motion.p
-                      className="text-[10px] text-muted-foreground/50 font-medium text-center lg:hidden"
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 1.2, duration: 0.5, ease: "easeOut" }}
-                    >
-                      ← Swipe left for NO · Swipe right for YES →
-                    </motion.p>
-                  )}
+                  <span className="text-[9px] text-orange-400 font-semibold leading-none">Hot</span>
                 </div>
               )}
-            </motion.div>
-          )}
+              <button onClick={handleLike} className="flex flex-col items-center gap-0.5 group">
+                <div className={`w-9 h-9 rounded-full glass flex items-center justify-center transition-colors ${liked ? 'bg-destructive/20' : 'group-hover:bg-destructive/20'}`}>
+                  <Heart className={`w-3.5 h-3.5 transition-colors ${liked ? 'text-destructive fill-destructive' : 'text-foreground/70 group-hover:text-destructive'}`} />
+                </div>
+                <span className="text-[9px] text-muted-foreground leading-none">{formatCount(likeCount)}</span>
+              </button>
+              <button onClick={() => setCommentsOpen(true)} className="flex flex-col items-center gap-0.5 group">
+                <div className="w-9 h-9 rounded-full glass flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <MessageCircle className="w-3.5 h-3.5 text-foreground/70 group-hover:text-primary transition-colors" />
+                </div>
+                <span className="text-[9px] text-muted-foreground leading-none">{formatCount(commentCount)}</span>
+              </button>
+              <button onClick={handleBookmark} className="flex flex-col items-center gap-0.5 group">
+                <motion.div
+                  className={`w-9 h-9 rounded-full glass flex items-center justify-center transition-colors ${bookmarked ? 'bg-primary/20' : 'group-hover:bg-primary/20'}`}
+                  animate={bookmarked ? { scale: [1, 1.3, 1] } : { scale: 1 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                >
+                  <Bookmark className={`w-3.5 h-3.5 transition-colors ${bookmarked ? 'text-primary fill-primary' : 'text-foreground/70 group-hover:text-primary'}`} />
+                </motion.div>
+                <span className="text-[9px] text-muted-foreground leading-none">{bookmarkCount > 0 ? formatCount(bookmarkCount) : (bookmarked ? "Saved" : "Save")}</span>
+              </button>
+              <button onClick={() => navigate(`/market/${market.id}`)} className="flex flex-col items-center gap-0.5 group">
+                <div className="w-9 h-9 rounded-full glass flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <ExternalLink className="w-3.5 h-3.5 text-foreground/70 group-hover:text-primary transition-colors" />
+                </div>
+                <span className="text-[9px] text-muted-foreground leading-none">Details</span>
+              </button>
+              <button onClick={handleShare} className="flex flex-col items-center gap-0.5 group">
+                <div className="w-9 h-9 rounded-full glass flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <Share2 className="w-3.5 h-3.5 text-foreground/70 group-hover:text-primary transition-colors" />
+                </div>
+                <span className="text-[9px] text-muted-foreground leading-none">Share</span>
+              </button>
+            </div>
+
+            {/* Buttons */}
+            {isEnded ? (
+              <div className={`w-full text-center py-3 rounded-xl border flex items-center justify-center gap-2 ${
+                market.status === "resolved"
+                  ? "bg-primary/5 border-primary/20"
+                  : market.status === "cancelled"
+                    ? "bg-destructive/5 border-destructive/20"
+                    : "bg-muted/50 border-border/50"
+              }`}>
+                {market.status === "resolved" ? <CheckCircle2 className="w-4 h-4 text-primary" /> : market.status === "cancelled" ? <XCircle className="w-4 h-4 text-destructive" /> : <Clock className="w-4 h-4 text-muted-foreground" />}
+                <span className={`text-sm font-semibold ${
+                  market.status === "resolved" ? "text-primary" : market.status === "cancelled" ? "text-destructive" : "text-muted-foreground"
+                }`}>{market.status === "resolved" ? "Market Ended — Resolution Completed" : market.status === "cancelled" ? "Market Cancelled" : "Market Ended — Awaiting Resolution"}</span>
+              </div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.4 }}
+              >
+                {isMulti && market.options ? (
+                  <div className="space-y-2">
+                    {market.options.slice(0, 4).map((opt, i) => {
+                      const pct = Math.round(opt.price * 100);
+                      const color = optionColors[i % optionColors.length];
+                      return (
+                        <button
+                          key={opt.id}
+                          onClick={() => setBetModal({ open: true, side: "yes", optionLabel: opt.label, optionPrice: pct, optionColor: color })}
+                          className="w-full relative rounded-xl px-4 py-3 flex items-center justify-between transition-all active:scale-[0.98] overflow-hidden"
+                          style={{
+                            background: colorAlpha(color, 0.1),
+                          }}
+                        >
+                          <div
+                            className="absolute inset-0 rounded-xl"
+                            style={{
+                              background: `linear-gradient(90deg, ${colorAlpha(color, 0.12)} 0%, ${colorAlpha(color, 0.04)} ${pct}%, transparent ${pct}%)`,
+                            }}
+                          />
+                          <div className="flex items-center gap-2.5 relative z-10">
+                            <div
+                              className="w-2.5 h-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: color, boxShadow: `0 0 6px ${colorAlpha(color, 0.5)}` }}
+                            />
+                            <span className="text-sm font-semibold">{opt.label}</span>
+                          </div>
+                          <div className="flex items-center gap-2 relative z-10">
+                            <span className="text-sm font-bold" style={{ color }}>
+                              {pct}¢
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                    {market.options.length > 4 && (
+                      <button
+                        onClick={() => navigate(`/market/${market.id}`)}
+                        className="w-full text-center text-xs text-primary font-semibold py-1"
+                      >
+                        +{market.options.length - 4} more options →
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setBetModal({ open: true, side: "yes" })}
+                        className="flex-1 btn-yes py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all active:scale-95"
+                      >
+                        Buy Yes {yesPercent}¢
+                      </button>
+                      <button
+                        onClick={() => setBetModal({ open: true, side: "no" })}
+                        className="flex-1 btn-no py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all active:scale-95"
+                      >
+                        Buy No {noPercent}¢
+                      </button>
+                    </div>
+                    {isActive && (
+                      <motion.p
+                        className="text-[10px] text-muted-foreground/50 font-medium text-center lg:hidden"
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 1.2, duration: 0.5, ease: "easeOut" }}
+                      >
+                        ← Swipe left for NO · Swipe right for YES →
+                      </motion.p>
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </div>
 
 
         </div>
