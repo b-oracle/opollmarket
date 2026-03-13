@@ -1,9 +1,13 @@
-import { useRef } from "react";
-import { Printer, ArrowLeft } from "lucide-react";
+import { useRef, useState } from "react";
+import { Printer, ArrowLeft, Share2, Copy, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { toast } from "@/components/ui/sonner";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
+import { useAuth } from "@/hooks/useAuth";
+import { getCanonicalOrigin } from "@/lib/canonical";
 
 const slides = [
   // Slide 1 — Hero
@@ -226,8 +230,32 @@ const slides = [
 const SalesDeck = () => {
   const navigate = useNavigate();
   const deckRef = useRef<HTMLDivElement>(null);
+  const { displayName } = useAuth();
+  const [copied, setCopied] = useState(false);
 
   const handlePrint = () => window.print();
+
+  const getShareUrl = () => {
+    const base = `${getCanonicalOrigin()}/auth`;
+    return displayName ? `${base}?ref=${encodeURIComponent(displayName)}` : base;
+  };
+
+  const handleCopyLink = async () => {
+    await navigator.clipboard.writeText(getShareUrl());
+    setCopied(true);
+    toast.success("Link copied with your referral code!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleWhatsApp = () => {
+    const text = `🔥 Check out oPoll Market — predict real-world events and win! Join here: ${getShareUrl()}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+  };
+
+  const handleTelegram = () => {
+    const text = `🔥 Check out oPoll Market — predict real-world events and win!`;
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(getShareUrl())}&text=${encodeURIComponent(text)}`, "_blank");
+  };
 
   return (
     <>
@@ -264,8 +292,27 @@ const SalesDeck = () => {
               <ArrowLeft className="w-4 h-4 mr-1.5" /> Back
             </Button>
             <Button size="sm" onClick={handlePrint} className="gap-1.5">
-              <Printer className="w-4 h-4" /> Save PDF
+              <Printer className="w-4 h-4" /> PDF
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" className="gap-1.5">
+                  <Share2 className="w-4 h-4" /> Share
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleCopyLink} className="gap-2">
+                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {copied ? "Copied!" : "Copy Link"}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleWhatsApp} className="gap-2">
+                  <span className="text-sm">💬</span> WhatsApp
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleTelegram} className="gap-2">
+                  <span className="text-sm">✈️</span> Telegram
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
