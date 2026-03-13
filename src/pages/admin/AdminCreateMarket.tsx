@@ -492,14 +492,17 @@ const AdminCreateMarket = () => {
               More Details <span className="text-xs font-normal text-destructive">*</span>
             </label>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleAiGenerate("details")}
-                disabled={generatingDetails || !title.trim()}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {generatingDetails ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                Generate (${aiGenerationCost})
+              {isFeatureEnabled("ai_generate_details") && (
+                <button
+                  type="button"
+                  onClick={() => handleAiGenerate("details")}
+                  disabled={generatingDetails || !title.trim()}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {generatingDetails ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                  Generate (${aiGenerationCost})
+                </button>
+              )}
               </button>
               <button
                 type="button"
