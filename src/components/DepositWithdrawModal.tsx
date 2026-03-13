@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserBalance } from "@/hooks/useUserBalance";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import {
   X,
   ArrowDownToLine,
@@ -22,10 +23,13 @@ import {
   Clock,
   Copy,
   Check,
+  Banknote,
+  Coins,
 } from "lucide-react";
 
 type Tab = "deposit" | "withdraw";
-type FlowStep = "input" | "confirm" | "executing" | "awaiting_payment" | "success" | "partial_success" | "error";
+type PaymentMethod = "crypto" | "fiat";
+type FlowStep = "input" | "confirm" | "executing" | "awaiting_payment" | "awaiting_fiat" | "success" | "partial_success" | "error";
 
 interface DepositWithdrawModalProps {
   open: boolean;
@@ -91,9 +95,12 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { balance, bonusBalance } = useUserBalance();
+  const { isFeatureEnabled } = useFeatureToggles();
+  const fiatEnabled = isFeatureEnabled("fiat_deposit_payaza");
 
   const [tab, setTab] = useState<Tab>(initialTab);
   const [amount, setAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("crypto");
   const [walletAddress, setWalletAddress] = useState("");
   const [selectedCrypto, setSelectedCrypto] = useState("usdtbsc");
   const [step, setStep] = useState<FlowStep>("input");
@@ -111,6 +118,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     if (open) {
       setTab(initialTab);
       setAmount("");
+      setPaymentMethod("crypto");
       setWalletAddress("");
       setSelectedCrypto("usdtbsc");
       setStep("input");
@@ -355,6 +363,33 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setStep("error");
     }
   }, [numAmount, selectedCrypto, startPolling]);
+
+  const handleFiatDeposit = useCallback(async () => {
+    setStep("executing");
+    setErrorMsg("");
+    try {
+      const { data, error } = await supabase.functions.invoke("create-payaza-deposit", {
+        body: { amount: numAmount },
+      });
+      if (error || data?.error) {
+        throw new Error(data?.error || error?.message || "Failed to create fiat deposit");
+      }
+
+      // Open Payaza inline checkout popup
+      const payazaUrl = `https://checkout.payaza.africa/pay/${data.transaction_reference}?merchant_key=${encodeURIComponent(data.merchant_key)}&amount=${numAmount}&currency=NGN&email=${encodeURIComponent(data.email)}&callback_url=${encodeURIComponent(window.location.href)}`;
+
+      // Use Payaza's redirect-based checkout
+      // We'll open in a new window and poll for confirmation
+      const payazaWindow = window.open(payazaUrl, "_blank", "width=500,height=700,scrollbars=yes");
+
+      setStep("awaiting_fiat");
+      // Start polling the transaction status
+      startPolling(data.transaction_reference);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Something went wrong");
+      setStep("error");
+    }
+  }, [numAmount, startPolling]);
 
   const executeWithdraw = useCallback(async () => {
     setStep("executing");
@@ -607,7 +642,36 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                       ))}
                     </div>
 
-                    {/* Crypto selector */}
+                    {/* Payment method toggle (deposit only) */}
+                    {isDeposit && fiatEnabled && (
+                      <div className="flex gap-1 p-1 rounded-xl bg-muted/50 mb-4">
+                        <button
+                          onClick={() => setPaymentMethod("crypto")}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                            paymentMethod === "crypto"
+                              ? "bg-primary text-primary-foreground"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <Coins className="w-3.5 h-3.5" />
+                          Crypto
+                        </button>
+                        <button
+                          onClick={() => setPaymentMethod("fiat")}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                            paymentMethod === "fiat"
+                              ? "bg-primary text-primary-foreground"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <Banknote className="w-3.5 h-3.5" />
+                          Fiat (NGN)
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Crypto selector (only for crypto deposits or withdrawals) */}
+                    {(paymentMethod === "crypto" || !isDeposit) && (
                     <div className="mb-5">
                       <label className="text-xs text-muted-foreground mb-1.5 block">
                         {isDeposit ? "Pay with" : "Receive as"}
@@ -629,6 +693,17 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                         ))}
                       </select>
                     </div>
+                    )}
+
+                    {/* Fiat info */}
+                    {isDeposit && paymentMethod === "fiat" && (
+                      <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border mb-5">
+                        <Banknote className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                        <p className="text-[10px] text-muted-foreground">
+                          Pay with bank transfer or card via Payaza. Amount will be charged in Nigerian Naira (NGN) and credited as USD to your balance.
+                        </p>
+                      </div>
+                    )}
 
                     {/* Wallet address for withdrawals */}
                     {!isDeposit && (
@@ -645,7 +720,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                     )}
 
                     {/* Info */}
-                    {isDeposit && (
+                    {isDeposit && paymentMethod === "crypto" && (
                       <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border mb-5">
                         <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                         <p className="text-[10px] text-muted-foreground">
@@ -711,9 +786,9 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                           <span className="font-bold text-lg">${numAmount.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Currency</span>
+                          <span className="text-muted-foreground">Payment Method</span>
                           <span className="font-semibold">
-                            {ALL_CRYPTO_OPTIONS.find((c) => c.value === selectedCrypto)?.label}
+                            {isDeposit && paymentMethod === "fiat" ? "Fiat (NGN)" : ALL_CRYPTO_OPTIONS.find((c) => c.value === selectedCrypto)?.label}
                           </span>
                         </div>
                         {!isDeposit && (
@@ -727,7 +802,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
 
                     <div className="space-y-3">
                       <HoldToConfirmButton
-                        onConfirm={isDeposit ? handleDeposit : handleWithdraw}
+                        onConfirm={isDeposit ? (paymentMethod === "fiat" ? handleFiatDeposit : handleDeposit) : handleWithdraw}
                         label={isDeposit ? "Hold to Confirm Deposit" : "Hold to Confirm Withdrawal"}
                       />
                       <p className="text-[10px] text-center text-muted-foreground">Press and hold the button for 1.5s to confirm</p>
@@ -905,6 +980,54 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                       </div>
                     </div>
 
+                    <button
+                      onClick={handleClose}
+                      className="w-full glass py-3 rounded-xl font-semibold text-sm text-muted-foreground transition-all active:scale-95"
+                    >
+                      Close (payment will still be tracked)
+                    </button>
+                  </motion.div>
+                )}
+
+                {/* AWAITING FIAT */}
+                {step === "awaiting_fiat" && (
+                  <motion.div
+                    key="awaiting_fiat"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex flex-col items-center py-8"
+                  >
+                    <div className="w-14 h-14 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center mx-auto mb-4 relative">
+                      <Banknote className="w-7 h-7 text-primary" />
+                      <motion.div
+                        className="absolute inset-0 rounded-full border-2 border-primary/40"
+                        animate={{ scale: [1, 1.3, 1], opacity: [0.6, 0, 0.6] }}
+                        transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                      />
+                    </div>
+                    <h3 className="text-lg font-bold mb-1">Complete Payment</h3>
+                    <p className="text-sm text-muted-foreground text-center mb-2">
+                      A Payaza payment window has opened. Complete your payment there.
+                    </p>
+                    <div className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-primary/5 border border-primary/20 mb-4">
+                      <motion.div
+                        className="w-2 h-2 rounded-full bg-primary"
+                        animate={{ opacity: [1, 0.3, 1] }}
+                        transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                      />
+                      <p className="text-xs text-primary font-semibold">
+                        Waiting for payment confirmation...
+                      </p>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                      >
+                        <Loader2 className="w-3.5 h-3.5 text-primary" />
+                      </motion.div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground text-center mb-4">
+                      Your balance will be credited automatically once payment is confirmed.
+                    </p>
                     <button
                       onClick={handleClose}
                       className="w-full glass py-3 rounded-xl font-semibold text-sm text-muted-foreground transition-all active:scale-95"

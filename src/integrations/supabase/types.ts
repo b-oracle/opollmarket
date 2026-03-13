@@ -1404,6 +1404,7 @@ export type Database = {
           market_id: string | null
           nowpayments_payment_id: string | null
           option_id: string | null
+          payment_provider: string | null
           price: number | null
           shares: number | null
           side: string | null
@@ -1420,6 +1421,7 @@ export type Database = {
           market_id?: string | null
           nowpayments_payment_id?: string | null
           option_id?: string | null
+          payment_provider?: string | null
           price?: number | null
           shares?: number | null
           side?: string | null
@@ -1436,6 +1438,7 @@ export type Database = {
           market_id?: string | null
           nowpayments_payment_id?: string | null
           option_id?: string | null
+          payment_provider?: string | null
           price?: number | null
           shares?: number | null
           side?: string | null
