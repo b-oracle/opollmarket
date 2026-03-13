@@ -286,7 +286,7 @@ Deno.serve(async (req) => {
     console.log(`[Payout] Preferred provider: ${preferredProvider}`);
 
     const payazaSecretKey = Deno.env.get("PAYAZA_SECRET_KEY");
-    const palmPayAppId = Deno.env.get("PALMPAY_APP_ID");
+    const payazaMerchantKey = Deno.env.get("PAYAZA_MERCHANT_KEY");
     const palmPayPrivateKey = Deno.env.get("PALMPAY_PRIVATE_KEY");
 
     const payazaParams = {
