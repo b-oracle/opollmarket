@@ -235,6 +235,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
     return n.toString();
   };
 
+  const actionIconSizeClass = "w-[clamp(1.5rem,3.2vh,2rem)] h-[clamp(1.5rem,3.2vh,2rem)]";
+
   return (
     <>
       <div
