@@ -43,7 +43,24 @@ const Referrals = () => {
 
   const referralLink = user && profileName ? `${window.location.origin}/?ref=${encodeURIComponent(profileName)}` : "";
 
-  // Fetch referral rewards
+  // Fetch ALL referred signups (profiles where referred_by = current user)
+  const { data: referredSignups = [], isLoading: signupsLoading } = useQuery({
+    queryKey: ["referred_signups", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, email, created_at")
+        .eq("referred_by", user.id)
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+    enabled: !!user,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+
+  // Fetch referral rewards (only created after first prediction)
   const { data: rewards = [], isLoading: rewardsLoading } = useQuery({
     queryKey: ["referral_rewards", user?.id],
     queryFn: async () => {
@@ -92,24 +109,13 @@ const Referrals = () => {
     gcTime: 60 * 60 * 1000,
   });
 
-  // Fetch referred user profiles
-  const { data: referredProfiles = [] } = useQuery({
-    queryKey: ["referred_profiles", rewards],
-    queryFn: async () => {
-      if (rewards.length === 0) return [];
-      const ids = rewards.map((r: any) => r.referred_id);
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, display_name, email, created_at")
-        .in("id", ids);
-      return data || [];
-    },
-    enabled: rewards.length > 0,
-    staleTime: 5 * 60 * 1000,
-  });
+  // Build a set of rewarded user IDs for quick lookup
+  const rewardedUserIds = new Set(rewards.map((r: any) => r.referred_id));
+  const rewardByUserId = new Map(rewards.map((r: any) => [r.referred_id, r]));
 
   const totalEarned = rewards.reduce((sum: number, r: any) => sum + Number(r.amount), 0);
-  const totalReferrals = rewards.length;
+  const totalSignups = referredSignups.length;
+  const totalRewarded = rewards.length;
 
   const handleCopy = async () => {
     try {
@@ -136,7 +142,7 @@ const Referrals = () => {
     }
   };
 
-  const isDataLoading = authLoading || profileLoading || rewardsLoading;
+  const isDataLoading = authLoading || profileLoading || signupsLoading || rewardsLoading;
 
   if (!authLoading && !user) {
     return (
@@ -194,14 +200,14 @@ const Referrals = () => {
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}
                 className="glass rounded-xl p-4 text-center">
                 <Users className="w-5 h-5 text-primary mx-auto mb-1" />
-                <p className="text-xl font-bold">{totalReferrals}</p>
-                <p className="text-[10px] text-muted-foreground">Referrals</p>
+                <p className="text-xl font-bold">{totalSignups}</p>
+                <p className="text-[10px] text-muted-foreground">Signups</p>
               </motion.div>
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
                 className="glass rounded-xl p-4 text-center">
                 <DollarSign className="w-5 h-5 text-primary mx-auto mb-1" />
                 <p className="text-xl font-bold">${totalEarned.toFixed(2)}</p>
-                <p className="text-[10px] text-muted-foreground">Total Earned</p>
+                <p className="text-[10px] text-muted-foreground">Earned ({totalRewarded})</p>
               </motion.div>
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
                 className="glass rounded-xl p-4 text-center">
@@ -299,7 +305,7 @@ const Referrals = () => {
           <div className="space-y-3">
             {[
               { step: "1", text: "Share your referral link or username code with friends" },
-              { step: "2", text: "Your friend signs up and creates an account" },
+              { step: "2", text: "Your friend signs up — they appear instantly in your referral list as 'Pending'" },
               { step: "3", text: `When they place their first prediction, you earn a $${rewardAmount} bonus credit` },
               { step: "4", text: "Bonus credits are applied as fee credits on your future predictions" },
             ].map((item) => (
@@ -316,7 +322,7 @@ const Referrals = () => {
         {/* Referral History */}
         <div className="mb-6">
           <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Referral History</h3>
-          {rewardsLoading ? (
+          {signupsLoading ? (
             <div className="space-y-2">
               {[0, 1, 2].map((i) => (
                 <div key={i} className="glass rounded-xl p-3.5 flex items-center gap-3">
@@ -329,7 +335,7 @@ const Referrals = () => {
                 </div>
               ))}
             </div>
-          ) : rewards.length === 0 ? (
+          ) : referredSignups.length === 0 ? (
             <div className="glass rounded-xl p-8 text-center">
               <Gift className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">No referrals yet. Share your link to start earning!</p>
@@ -337,31 +343,38 @@ const Referrals = () => {
           ) : (
             <div className="space-y-2">
               {(() => {
-                const totalPages = Math.max(1, Math.ceil(rewards.length / ITEMS_PER_PAGE));
-                const paginatedRewards = rewards.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+                const totalPages = Math.max(1, Math.ceil(referredSignups.length / ITEMS_PER_PAGE));
+                const paginated = referredSignups.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
                 return (
                   <>
-                    {paginatedRewards.map((reward: any, i: number) => {
-                      const profile = referredProfiles.find((p: any) => p.id === reward.referred_id);
-                      const name = profile?.display_name || profile?.email?.split("@")[0] || "User";
+                    {paginated.map((signup: any, i: number) => {
+                      const isRewarded = rewardedUserIds.has(signup.id);
+                      const reward = rewardByUserId.get(signup.id);
+                      const name = signup.display_name || signup.email?.split("@")[0] || "User";
                       return (
                         <motion.div
-                          key={reward.id}
+                          key={signup.id}
                           initial={{ opacity: 0, y: 12 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: i * 0.05 }}
                           className="glass rounded-xl p-3.5 flex items-center gap-3"
                         >
-                          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                            <Gift className="w-4 h-4 text-primary" />
+                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isRewarded ? 'bg-primary/10' : 'bg-muted/50'}`}>
+                            <Gift className={`w-4 h-4 ${isRewarded ? 'text-primary' : 'text-muted-foreground'}`} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <span className="text-sm font-semibold truncate block">{name}</span>
                             <span className="text-[10px] text-muted-foreground">
-                              {new Date(reward.created_at).toLocaleDateString()}
+                              Joined {new Date(signup.created_at).toLocaleDateString()}
                             </span>
                           </div>
-                          <span className="text-sm font-bold text-primary">+${Number(reward.amount).toFixed(2)}</span>
+                          {isRewarded ? (
+                            <span className="text-sm font-bold text-primary">+${Number(reward.amount).toFixed(2)}</span>
+                          ) : (
+                            <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-muted text-muted-foreground">
+                              Pending
+                            </span>
+                          )}
                         </motion.div>
                       );
                     })}
