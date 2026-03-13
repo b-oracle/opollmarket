@@ -364,6 +364,33 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     }
   }, [numAmount, selectedCrypto, startPolling]);
 
+  const handleFiatDeposit = useCallback(async () => {
+    setStep("executing");
+    setErrorMsg("");
+    try {
+      const { data, error } = await supabase.functions.invoke("create-payaza-deposit", {
+        body: { amount: numAmount },
+      });
+      if (error || data?.error) {
+        throw new Error(data?.error || error?.message || "Failed to create fiat deposit");
+      }
+
+      // Open Payaza inline checkout popup
+      const payazaUrl = `https://checkout.payaza.africa/pay/${data.transaction_reference}?merchant_key=${encodeURIComponent(data.merchant_key)}&amount=${numAmount}&currency=NGN&email=${encodeURIComponent(data.email)}&callback_url=${encodeURIComponent(window.location.href)}`;
+
+      // Use Payaza's redirect-based checkout
+      // We'll open in a new window and poll for confirmation
+      const payazaWindow = window.open(payazaUrl, "_blank", "width=500,height=700,scrollbars=yes");
+
+      setStep("awaiting_fiat");
+      // Start polling the transaction status
+      startPolling(data.transaction_reference);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Something went wrong");
+      setStep("error");
+    }
+  }, [numAmount, startPolling]);
+
   const executeWithdraw = useCallback(async () => {
     setStep("executing");
     setErrorMsg("");
