@@ -989,6 +989,54 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                   </motion.div>
                 )}
 
+                {/* AWAITING FIAT */}
+                {step === "awaiting_fiat" && (
+                  <motion.div
+                    key="awaiting_fiat"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex flex-col items-center py-8"
+                  >
+                    <div className="w-14 h-14 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center mx-auto mb-4 relative">
+                      <Banknote className="w-7 h-7 text-primary" />
+                      <motion.div
+                        className="absolute inset-0 rounded-full border-2 border-primary/40"
+                        animate={{ scale: [1, 1.3, 1], opacity: [0.6, 0, 0.6] }}
+                        transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                      />
+                    </div>
+                    <h3 className="text-lg font-bold mb-1">Complete Payment</h3>
+                    <p className="text-sm text-muted-foreground text-center mb-2">
+                      A Payaza payment window has opened. Complete your payment there.
+                    </p>
+                    <div className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-primary/5 border border-primary/20 mb-4">
+                      <motion.div
+                        className="w-2 h-2 rounded-full bg-primary"
+                        animate={{ opacity: [1, 0.3, 1] }}
+                        transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                      />
+                      <p className="text-xs text-primary font-semibold">
+                        Waiting for payment confirmation...
+                      </p>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                      >
+                        <Loader2 className="w-3.5 h-3.5 text-primary" />
+                      </motion.div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground text-center mb-4">
+                      Your balance will be credited automatically once payment is confirmed.
+                    </p>
+                    <button
+                      onClick={handleClose}
+                      className="w-full glass py-3 rounded-xl font-semibold text-sm text-muted-foreground transition-all active:scale-95"
+                    >
+                      Close (payment will still be tracked)
+                    </button>
+                  </motion.div>
+                )}
+
                 {/* SUCCESS */}
                 {step === "success" && (
                   <motion.div
