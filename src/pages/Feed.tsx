@@ -1,5 +1,6 @@
 import SEOHead from "@/components/SEOHead";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useSidebarState } from "@/hooks/useSidebarState";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import PullToRefreshIndicator from "@/components/PullToRefreshIndicator";
 import { toast } from "sonner";
@@ -243,6 +244,9 @@ const Feed = () => {
   const { boostedMarketIds, boostDetails } = useActiveBoosts();
   const { track } = useAnalytics();
   const isDesktop = useIsDesktop();
+  const isMobile = useIsMobile();
+  const { collapsed } = useSidebarState();
+  const sidebarLeft = isMobile ? 0 : collapsed ? '4.5rem' : '15rem';
   const { bookmarkedIds } = useBookmarkedMarkets();
   const { user } = useAuth();
   const [feedTab, setFeedTab] = useState<"foryou" | "bookmarks">("foryou");
@@ -410,7 +414,7 @@ const Feed = () => {
 
       {/* Empty bookmarks state */}
       {feedTab === "bookmarks" && sortedMarkets.length === 0 ?
-      <div className="flex-1 flex items-center justify-center px-4" style={{ marginTop: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}>
+      <div className="flex-1 flex items-center justify-center px-4" style={{ marginTop: 'calc(3.5rem + env(safe-area-inset-top, 0px))', marginLeft: isMobile ? undefined : (collapsed ? '4.5rem' : '15rem') }}>
           <div className="text-center space-y-3">
             <Bookmark className="w-12 h-12 text-muted-foreground/30 mx-auto" />
             <p className="text-sm font-medium text-muted-foreground">Your watchlist is empty</p>
@@ -431,7 +435,7 @@ const Feed = () => {
           position: 'fixed',
           top: 'calc(3.5rem + env(safe-area-inset-top, 0px))',
           bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))',
-          left: 0,
+          left: sidebarLeft,
           right: 0,
           ['--feed-card-height' as any]: 'calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px) - 4rem - env(safe-area-inset-bottom, 0px))',
         }}
