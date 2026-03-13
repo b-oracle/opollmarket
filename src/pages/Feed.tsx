@@ -428,9 +428,12 @@ const Feed = () => {
         ref={containerRef}
         className="snap-feed w-full max-w-3xl mx-auto"
         style={{ 
-          marginTop: 'calc(3.5rem + env(safe-area-inset-top, 0px))',
-          height: 'calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px) - 4rem - env(safe-area-inset-bottom, 0px))',
-          ['--feed-card-height' as any]: 'calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px) - 4rem - env(safe-area-inset-bottom, 0px))'
+          position: 'fixed',
+          top: 'calc(3.5rem + env(safe-area-inset-top, 0px))',
+          bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))',
+          left: 0,
+          right: 0,
+          ['--feed-card-height' as any]: 'calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px) - 4rem - env(safe-area-inset-bottom, 0px))',
         }}
         onTouchStart={pullHandlers.onTouchStart}
         onTouchMove={pullHandlers.onTouchMove}
