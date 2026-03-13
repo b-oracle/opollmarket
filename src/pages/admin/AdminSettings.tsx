@@ -465,7 +465,7 @@ const AdminSettings = () => {
                     <Input id="qtMinBet" type="number" min={0} step={1} value={qtMinBet} onChange={(e) => setQtMinBet(e.target.value)} placeholder="1" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="qtMaxBet" className="text-xs">Max Bet ($)</Label>
+                    <Label htmlFor="qtMaxBet" className="text-xs">Max Trade ($)</Label>
                     <Input id="qtMaxBet" type="number" min={1} step={1} value={qtMaxBet} onChange={(e) => setQtMaxBet(e.target.value)} placeholder="500" />
                   </div>
                 </div>
