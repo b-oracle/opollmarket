@@ -1,4 +1,4 @@
-import { TOTP } from "https://esm.sh/otpauth@9.3.6";
+import { TOTP, Secret } from "https://esm.sh/otpauth@9.3.6";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,6 +27,31 @@ async function getNowPaymentsJwt(): Promise<string> {
   return token;
 }
 
+function generateTOTP(secretStr: string): string {
+  // Try base32 first, then hex
+  let secret: any;
+  try {
+    secret = Secret.fromBase32(secretStr.replace(/\s/g, "").toUpperCase());
+  } catch {
+    try {
+      secret = Secret.fromHex(secretStr.replace(/\s/g, ""));
+    } catch {
+      // Last resort: treat as UTF-8
+      secret = Secret.fromUTF8(secretStr);
+    }
+  }
+
+  const totp = new TOTP({
+    issuer: "NOWPayments",
+    label: "payout",
+    algorithm: "SHA1",
+    digits: 6,
+    period: 30,
+    secret,
+  });
+  return totp.generate();
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -49,10 +74,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Step 1: Get JWT
     const jwtToken = await getNowPaymentsJwt();
 
-    // Step 2: Check payout status
+    // Check payout status
     const statusRes = await fetch(`https://api.nowpayments.io/v1/payout/${batch_id}`, {
       headers: {
         "x-api-key": apiKey,
@@ -60,37 +84,14 @@ Deno.serve(async (req) => {
       },
     });
 
-    const statusData = statusRes.ok ? await statusRes.json() : null;
+    const statusData = statusRes.ok ? await statusRes.json() : await statusRes.text();
     console.log("Payout status:", JSON.stringify(statusData));
 
-    // Step 3: Generate TOTP — try as hex first, then base32
-    let verificationCode: string;
-    try {
-      // Try treating secret as hex
-      const totp = new TOTP({
-        issuer: "NOWPayments",
-        label: "payout",
-        algorithm: "SHA1",
-        digits: 6,
-        period: 30,
-        secret: TOTP.Secret ? new (await import("https://esm.sh/otpauth@9.3.6")).Secret({ hex: totpSecret }) : totpSecret,
-      });
-      verificationCode = totp.generate();
-    } catch {
-      // Fallback: use raw secret string with manual TOTP
-      const { Secret } = await import("https://esm.sh/otpauth@9.3.6");
-      const secret = Secret.fromHex(totpSecret);
-      const totp = new TOTP({
-        issuer: "NOWPayments",
-        label: "payout",
-        algorithm: "SHA1",
-        digits: 6,
-        period: 30,
-        secret,
-      });
-      verificationCode = totp.generate();
-    }
+    // Generate TOTP code
+    const verificationCode = generateTOTP(totpSecret);
+    console.log("Generated TOTP code successfully, length:", verificationCode.length);
 
+    // Verify payout
     const verifyRes = await fetch(
       `https://api.nowpayments.io/v1/payout/${batch_id}/verify`,
       {
