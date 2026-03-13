@@ -161,6 +161,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setTab(initialTab);
       setAmount("");
       setPaymentMethod("crypto");
+      setWithdrawMethod("crypto");
       setWalletAddress("");
       setSelectedCrypto("usdtbsc");
       setStep("input");
@@ -171,6 +172,10 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setDepositCreatedAt(null);
       setTimeRemaining("");
       setNgnRate(null);
+      setBankCode("044");
+      setAccountNumber("");
+      setAccountName("");
+      setNgnPayoutRate(null);
     }
     return () => {
       if (pollInterval) clearInterval(pollInterval);
