@@ -1,5 +1,6 @@
 import SEOHead from "@/components/SEOHead";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useSidebarState } from "@/hooks/useSidebarState";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import PullToRefreshIndicator from "@/components/PullToRefreshIndicator";
 import { toast } from "sonner";
