@@ -371,13 +371,14 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     queryFn: async () => {
       const { data } = await supabase
         .from("commission_settings")
-        .select("withdrawal_cooldown_minutes, withdrawal_multiplier, withdrawal_limit_enabled")
+        .select("withdrawal_cooldown_minutes, withdrawal_multiplier, withdrawal_limit_enabled, min_withdrawal_amount")
         .limit(1)
         .single();
       return {
         cooldown: (data as any)?.withdrawal_cooldown_minutes ?? 5,
         multiplier: (data as any)?.withdrawal_multiplier ?? 2,
         limitEnabled: (data as any)?.withdrawal_limit_enabled ?? true,
+        minAmount: Number((data as any)?.min_withdrawal_amount) || 5,
       };
     },
     enabled: tab === "withdraw",
@@ -418,7 +419,8 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const numAmount = parseFloat(amount) || 0;
   const isDeposit = tab === "deposit";
   const maxAvailable = isDeposit ? MAX_AMOUNT : balance;
-  const isValid = numAmount >= MIN_AMOUNT && numAmount <= Math.min(MAX_AMOUNT, maxAvailable);
+  const effectiveMin = isDeposit ? MIN_AMOUNT : (withdrawSettings?.minAmount ?? 5);
+  const isValid = numAmount >= effectiveMin && numAmount <= Math.min(MAX_AMOUNT, maxAvailable);
   const isWithdrawValid = isValid && (withdrawMethod === "fiat"
     ? accountNumber.trim().length >= 10 && accountName.trim().length >= 2
     : walletAddress.trim().length >= 10);
@@ -879,6 +881,9 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                       </div>
                       {!isDeposit && numAmount > balance && (
                         <p className="text-[10px] text-destructive mt-1">Insufficient balance (bonus cannot be withdrawn)</p>
+                      )}
+                      {!isDeposit && numAmount > 0 && numAmount < effectiveMin && (
+                        <p className="text-[10px] text-destructive mt-1">Minimum withdrawal is ${effectiveMin}</p>
                       )}
                     </div>
 
