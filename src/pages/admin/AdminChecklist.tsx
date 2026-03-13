@@ -35,7 +35,7 @@ const CHECKLIST_ITEMS: ChecklistItem[] = [
   // User Experience
   { id: "mobile_tested", label: "Mobile layout tested", description: "Verify feed, market detail, and portfolio on small screens.", category: "User Experience", icon: Users },
   { id: "terms_disclaimer", label: "Terms & disclaimer pages live", description: "Ensure legal pages are accessible and linked in the app.", category: "User Experience", icon: Users },
-  { id: "onboarding_flow", label: "Signup flow tested", description: "Walk through signup, email verification, and first bet.", category: "User Experience", icon: Users },
+  { id: "onboarding_flow", label: "Signup flow tested", description: "Walk through signup, email verification, and first prediction.", category: "User Experience", icon: Users },
 
   // Launch
   { id: "domain_configured", label: "Custom domain connected", description: "Point your domain to the published app.", category: "Launch", icon: Globe },

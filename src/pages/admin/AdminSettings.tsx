@@ -425,7 +425,7 @@ const AdminSettings = () => {
                 <span className="font-medium">{exitFeeNum}%</span>
               </div>
               <div className="border-t border-border pt-1.5 flex justify-between text-sm">
-                <span className="text-muted-foreground">Pool (bet amount)</span>
+                <span className="text-muted-foreground">Pool (trade amount)</span>
                 <span className={`font-bold ${poolPercent < 0 ? "text-destructive" : "text-primary"}`}>{poolPercent.toFixed(1)}%</span>
               </div>
             </div>
@@ -441,7 +441,7 @@ const AdminSettings = () => {
               <Zap className="w-5 h-5" /> Quick Trade Settings
             </CardTitle>
             <CardDescription>
-              Configure Quick Trade fees, bet limits, streak multipliers, and available assets.
+              Configure Quick Trade fees, trade limits, streak multipliers, and available assets.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -455,21 +455,21 @@ const AdminSettings = () => {
             {/* Min/Max Bet */}
             <Card className="border-dashed">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2"><DollarSign className="w-4 h-4" /> Bet Limits</CardTitle>
-                <CardDescription className="text-xs">Minimum and maximum bet amounts for Quick Trade rounds.</CardDescription>
+                <CardTitle className="text-sm flex items-center gap-2"><DollarSign className="w-4 h-4" /> Trade Limits</CardTitle>
+                <CardDescription className="text-xs">Minimum and maximum trade amounts for Quick Trade rounds.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="qtMinBet" className="text-xs">Min Bet ($)</Label>
+                    <Label htmlFor="qtMinBet" className="text-xs">Min Trade ($)</Label>
                     <Input id="qtMinBet" type="number" min={0} step={1} value={qtMinBet} onChange={(e) => setQtMinBet(e.target.value)} placeholder="1" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="qtMaxBet" className="text-xs">Max Bet ($)</Label>
+                    <Label htmlFor="qtMaxBet" className="text-xs">Max Trade ($)</Label>
                     <Input id="qtMaxBet" type="number" min={1} step={1} value={qtMaxBet} onChange={(e) => setQtMaxBet(e.target.value)} placeholder="500" />
                   </div>
                 </div>
-                {qtMaxBetNum < qtMinBetNum && <p className="text-[10px] text-destructive">Max bet must be ≥ min bet.</p>}
+                {qtMaxBetNum < qtMinBetNum && <p className="text-[10px] text-destructive">Max trade must be ≥ min trade.</p>}
               </CardContent>
             </Card>
 

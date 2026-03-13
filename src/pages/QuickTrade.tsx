@@ -990,11 +990,11 @@ export default function QuickTrade() {
 
     const amt = parseFloat(betAmount);
     if (isNaN(amt) || amt < qtMinBet) {
-      toast({ title: `Minimum bet is $${qtMinBet}`, variant: "destructive" });
+      toast({ title: `Minimum trade is $${qtMinBet}`, variant: "destructive" });
       return;
     }
     if (amt > qtMaxBet) {
-      toast({ title: `Maximum bet is $${qtMaxBet}`, variant: "destructive" });
+      toast({ title: `Maximum trade is $${qtMaxBet}`, variant: "destructive" });
       return;
     }
     if (amt > balance) {
@@ -1046,7 +1046,7 @@ export default function QuickTrade() {
       queryClient.invalidateQueries({ queryKey: ["balance"] });
 
       haptic("success");
-      toast({ title: `${side.toUpperCase()} bet placed!`, description: `$${amt} on ${selectedAsset.symbol}` });
+      toast({ title: `${side.toUpperCase()} trade placed!`, description: `$${amt} on ${selectedAsset.symbol}` });
 
       // Trigger copy-trade for followers (fire-and-forget)
       supabase.functions.invoke("copy-trade", {
@@ -1072,7 +1072,7 @@ export default function QuickTrade() {
       if (newBet && newBet.length > 0) setUserBet(newBet[0] as unknown as Bet);
     } catch (err: any) {
       haptic("error");
-      toast({ title: "Failed to place bet", description: err.message, variant: "destructive" });
+      toast({ title: "Failed to place trade", description: err.message, variant: "destructive" });
     } finally {
       setPlacing(false);
     }

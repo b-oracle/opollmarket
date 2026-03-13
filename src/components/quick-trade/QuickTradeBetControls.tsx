@@ -32,7 +32,7 @@ export default function QuickTradeBetControls({
         userBet.side === "up" ? "border-green-500/30 bg-green-500/5" : "border-destructive/30 bg-destructive/5"
       }`}>
         <p className="text-sm font-semibold text-foreground mb-1">
-          Your bet: <span className={userBet.side === "up" ? "text-green-500" : "text-destructive"}>
+          Your trade: <span className={userBet.side === "up" ? "text-green-500" : "text-destructive"}>
             {userBet.side.toUpperCase()}
           </span> — ${Number(userBet.amount).toFixed(2)}
         </p>
@@ -101,7 +101,7 @@ export default function QuickTradeBetControls({
       {placing && (
         <div className="flex items-center justify-center gap-2 mt-3">
           <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-          <span className="text-xs text-muted-foreground">Placing bet...</span>
+          <span className="text-xs text-muted-foreground">Placing trade...</span>
         </div>
       )}
     </div>
