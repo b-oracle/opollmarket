@@ -294,11 +294,16 @@ const AdminCreateMarket = () => {
     setSubmitting(true);
 
     try {
-      // Upload image if present
+      // Upload image if present (file upload or AI-generated URL)
       let imageUrl: string | null = null;
       if (imageFile) {
         imageUrl = await uploadImage();
         if (!imageUrl) { setSubmitting(false); return; }
+      } else if (imagePreview && !imagePreview.startsWith("blob:")) {
+        imageUrl = imagePreview;
+      }
+
+      if (imageUrl) {
 
         // Moderate uploaded image
         try {
