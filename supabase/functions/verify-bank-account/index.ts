@@ -93,36 +93,11 @@ Deno.serve(async (req) => {
 
     let accountName = "";
 
-    // ─── Fetch preferred payout provider from settings ───
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-    const { data: settings } = await adminClient
-      .from("commission_settings")
-      .select("payout_provider")
-      .limit(1)
-      .single();
-    const preferredProvider = (settings as any)?.payout_provider === "palmpay" ? "palmpay" : "payaza";
-
     const payazaSecretKey = Deno.env.get("PAYAZA_SECRET_KEY");
-    const palmPayAppId = Deno.env.get("PALMPAY_APP_ID");
-    const palmPayPrivateKey = Deno.env.get("PALMPAY_PRIVATE_KEY");
 
-    // ─── Try preferred provider first ───
-    if (preferredProvider === "palmpay" && palmPayAppId && palmPayPrivateKey) {
-      accountName = await tryPalmPayNameEnquiry(bank_code, account_number, palmPayAppId, palmPayPrivateKey);
-    } else if (payazaSecretKey) {
+    // ─── Always use Payaza for name enquiry ───
+    if (payazaSecretKey) {
       accountName = await tryPayazaNameEnquiry(bank_code, account_number, payazaSecretKey);
-    }
-
-    // ─── Fallback to the other provider ───
-    if (!accountName) {
-      if (preferredProvider === "palmpay" && payazaSecretKey) {
-        accountName = await tryPayazaNameEnquiry(bank_code, account_number, payazaSecretKey);
-      } else if (preferredProvider === "payaza" && palmPayAppId && palmPayPrivateKey) {
-        accountName = await tryPalmPayNameEnquiry(bank_code, account_number, palmPayAppId, palmPayPrivateKey);
-      }
     }
 
     if (accountName) {
