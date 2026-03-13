@@ -455,8 +455,8 @@ const AdminSettings = () => {
             {/* Min/Max Bet */}
             <Card className="border-dashed">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2"><DollarSign className="w-4 h-4" /> Bet Limits</CardTitle>
-                <CardDescription className="text-xs">Minimum and maximum bet amounts for Quick Trade rounds.</CardDescription>
+                <CardTitle className="text-sm flex items-center gap-2"><DollarSign className="w-4 h-4" /> Trade Limits</CardTitle>
+                <CardDescription className="text-xs">Minimum and maximum trade amounts for Quick Trade rounds.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
