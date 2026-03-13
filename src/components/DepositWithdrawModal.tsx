@@ -882,6 +882,9 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                       {!isDeposit && numAmount > balance && (
                         <p className="text-[10px] text-destructive mt-1">Insufficient balance (bonus cannot be withdrawn)</p>
                       )}
+                      {!isDeposit && numAmount > 0 && numAmount < effectiveMin && (
+                        <p className="text-[10px] text-destructive mt-1">Minimum withdrawal is ${effectiveMin}</p>
+                      )}
                     </div>
 
                     {/* Presets */}
