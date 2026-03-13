@@ -438,6 +438,56 @@ const Create = () => {
     { value: "away_win", label: "Away Win" },
     { value: "draw", label: "Draw" },
   ];
+  // AI content generation handler
+  const handleAiGenerate = async (genType: "description" | "details" | "image") => {
+    if (!user) { toast.error("Sign in to use AI generation"); return; }
+    if (!title.trim()) { toast.error("Enter a market question first"); return; }
+
+    const setLoading = genType === "description" ? setGeneratingDesc : genType === "details" ? setGeneratingDetails : setGeneratingImage;
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-market-content", {
+        body: {
+          type: genType,
+          title: title.trim(),
+          category: category || undefined,
+          marketType,
+          options: marketType !== "binary" ? options.filter(o => o.trim()) : undefined,
+        },
+      });
+
+      if (error) {
+        const msg = typeof data === "object" && data?.error ? data.error : error.message || "AI generation failed";
+        toast.error(msg);
+        return;
+      }
+
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      if (genType === "description" && data?.content) {
+        setDescription(data.content);
+        toast.success(`Description generated! ($${data.cost || aiGenerationCost} charged)`);
+      } else if (genType === "details" && data?.content) {
+        setDetails(data.content);
+        toast.success(`Details generated! ($${data.cost || aiGenerationCost} charged)`);
+      } else if (genType === "image" && data?.imageUrl) {
+        setImagePreview(data.imageUrl);
+        setImageFile(null); // Clear any file since we have a URL now
+        toast.success(`Cover image generated! ($${data.cost || aiGenerationCost} charged)`);
+      } else {
+        toast.error("No content was generated");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "AI generation failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Image upload state
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
