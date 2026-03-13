@@ -507,6 +507,7 @@ const AdminCreateMarket = () => {
               </button>
             </div>
           </div>
+          <p className="text-[10px] text-muted-foreground mb-1.5">Type manually for free, or use AI to generate for a fee.</p>
           {showDetailsPreview ? (
             <div className="bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm min-h-[100px] prose prose-sm dark:prose-invert max-w-none">
               {details.trim() ? (
