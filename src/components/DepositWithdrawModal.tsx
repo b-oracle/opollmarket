@@ -130,18 +130,22 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const [fiatTransferInfo, setFiatTransferInfo] = useState<FiatTransferInfo | null>(null);
   const [fiatCopied, setFiatCopied] = useState<string | null>(null);
   const [ngnRate, setNgnRate] = useState<number | null>(null);
+  const [rateLoading, setRateLoading] = useState(false);
 
-  // Fetch live NGN rate when fiat mode is selected
+  // Fetch live NGN rate
+  const fetchNgnRate = useCallback(async () => {
+    setRateLoading(true);
+    try {
+      const { data } = await supabase.functions.invoke("get-naira-rate");
+      if (data?.effective_rate) setNgnRate(data.effective_rate);
+    } catch { /* silent */ }
+    setRateLoading(false);
+  }, []);
+
   useEffect(() => {
     if (!open || paymentMethod !== "fiat") return;
-    const fetchRate = async () => {
-      try {
-        const { data } = await supabase.functions.invoke("get-naira-rate");
-        if (data?.effective_rate) setNgnRate(data.effective_rate);
-      } catch { /* silent */ }
-    };
-    fetchRate();
-  }, [open, paymentMethod]);
+    fetchNgnRate();
+  }, [open, paymentMethod, fetchNgnRate]);
 
   useEffect(() => {
     if (open) {
