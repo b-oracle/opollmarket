@@ -425,7 +425,7 @@ const AdminSettings = () => {
                 <span className="font-medium">{exitFeeNum}%</span>
               </div>
               <div className="border-t border-border pt-1.5 flex justify-between text-sm">
-                <span className="text-muted-foreground">Pool (bet amount)</span>
+                <span className="text-muted-foreground">Pool (trade amount)</span>
                 <span className={`font-bold ${poolPercent < 0 ? "text-destructive" : "text-primary"}`}>{poolPercent.toFixed(1)}%</span>
               </div>
             </div>
