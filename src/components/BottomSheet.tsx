@@ -1,5 +1,7 @@
 import { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSidebarState } from "@/hooks/useSidebarState";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface BottomSheetProps {
   open: boolean;
