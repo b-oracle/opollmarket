@@ -305,13 +305,19 @@ Deno.serve(async (req) => {
             const totpSecret = Deno.env.get("NOWPAYMENTS_2FA_SECRET");
             if (totpSecret) {
               try {
+                let secret: any;
+                try {
+                  secret = Secret.fromBase32(totpSecret.replace(/\s/g, "").toUpperCase());
+                } catch {
+                  try { secret = Secret.fromHex(totpSecret.replace(/\s/g, "")); } catch { secret = Secret.fromUTF8(totpSecret); }
+                }
                 const totp = new TOTP({
                   issuer: "NOWPayments",
                   label: "payout",
                   algorithm: "SHA1",
                   digits: 6,
                   period: 30,
-                  secret: totpSecret,
+                  secret,
                 });
                 const verificationCode = totp.generate();
 
@@ -331,13 +337,37 @@ Deno.serve(async (req) => {
                 if (!verifyRes.ok) {
                   const verifyErr = await verifyRes.text();
                   console.error("Payout verification failed:", verifyErr);
-                  // Payout created but not verified — will fall to manual
                   payoutSuccess = false;
                   payoutError = `Payout created but verification failed: ${verifyErr}`;
                   break;
                 }
 
                 console.log("Payout verified successfully for batch:", batchId);
+
+                // Step 5: Poll for tx hash (up to 30s)
+                for (let poll = 0; poll < 6; poll++) {
+                  await new Promise((r) => setTimeout(r, 5000));
+                  try {
+                    const pollRes = await fetch(`https://api.nowpayments.io/v1/payout/${batchId}`, {
+                      headers: {
+                        "x-api-key": apiKey,
+                        "Authorization": `Bearer ${jwtToken}`,
+                      },
+                    });
+                    if (pollRes.ok) {
+                      const pollData = await pollRes.json();
+                      const w = pollData.withdrawals?.[0];
+                      if (w?.hash) {
+                        payoutTxHash = w.hash;
+                        console.log("Got tx hash:", payoutTxHash);
+                        break;
+                      }
+                      if (w?.status === "FINISHED" || w?.status === "FAILED") break;
+                    }
+                  } catch (pollErr) {
+                    console.warn("Poll error:", pollErr);
+                  }
+                }
               } catch (verifyErr) {
                 console.error("TOTP verification error:", verifyErr);
                 payoutSuccess = false;
