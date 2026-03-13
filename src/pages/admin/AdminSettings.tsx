@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer, Globe, Plus, Trash2, RefreshCw, ToggleLeft, Copy, ShieldCheck } from "lucide-react";
+import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer, Globe, Plus, Trash2, RefreshCw, ToggleLeft, Copy, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { useAdminContext } from "./AdminLayout";
