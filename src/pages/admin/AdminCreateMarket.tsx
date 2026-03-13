@@ -486,14 +486,25 @@ const AdminCreateMarket = () => {
               <FileText className="w-4 h-4 text-primary" />
               More Details <span className="text-xs font-normal text-destructive">*</span>
             </label>
-            <button
-              type="button"
-              onClick={() => setShowDetailsPreview(!showDetailsPreview)}
-              className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
-            >
-              {showDetailsPreview ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-              {showDetailsPreview ? "Edit" : "Preview"}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleAiGenerate("details")}
+                disabled={generatingDetails || !title.trim()}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {generatingDetails ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                Generate (${aiGenerationCost})
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowDetailsPreview(!showDetailsPreview)}
+                className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+              >
+                {showDetailsPreview ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                {showDetailsPreview ? "Edit" : "Preview"}
+              </button>
+            </div>
           </div>
           {showDetailsPreview ? (
             <div className="bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm min-h-[100px] prose prose-sm dark:prose-invert max-w-none">
