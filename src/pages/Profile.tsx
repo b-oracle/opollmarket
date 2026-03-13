@@ -1603,7 +1603,7 @@ const Profile = () => {
         </div>
       </div>
 
-      <DepositWithdrawModal open={modalOpen} onClose={() => { setModalOpen(false); setResumePaymentId(null); }} initialTab={modalTab} resumePaymentId={resumePaymentId} />
+      <DepositWithdrawModal open={modalOpen} onClose={() => { setModalOpen(false); setResumePaymentId(null); setResumeProvider(null); }} initialTab={modalTab} resumePaymentId={resumePaymentId} resumeProvider={resumeProvider} />
       <InstallAppModal open={installOpen} onClose={() => setInstallOpen(false)} />
       
       <BottomNav />

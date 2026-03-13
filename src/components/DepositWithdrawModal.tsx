@@ -172,6 +172,39 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setStep("executing");
       setErrorMsg("");
       try {
+        // For Payaza (fiat) deposits, fetch the transaction from DB and show fiat transfer UI
+        if (resumeProvider === "payaza") {
+          const { data, error } = await supabase.functions.invoke("get-deposit-status", {
+            body: { payment_id: resumePaymentId },
+          });
+          if (error || data?.error) {
+            throw new Error(data?.error || error?.message || "Failed to fetch payment details");
+          }
+          // If already confirmed, show success
+          if (data.payment_status === "finished") {
+            setStep("success");
+            return;
+          }
+          // Show fiat transfer info — we store transaction_reference in nowpayments_payment_id
+          setFiatTransferInfo({
+            transaction_reference: resumePaymentId,
+            bank_name: data.bank_name || "Transfer Bank",
+            account_number: data.account_number || "",
+            account_name: data.account_name || "Opoll",
+            amount_ngn: data.amount_ngn || data.pay_amount || 0,
+            amount_usd: data.amount_usd || data.pay_amount || 0,
+            exchange_rate: data.exchange_rate || null,
+            currency: "NGN",
+            expires_at: data.expires_at || null,
+          });
+          setPaymentMethod("fiat");
+          setDepositCreatedAt(new Date(data.created_at).getTime());
+          setStep("awaiting_fiat_transfer");
+          startPolling(resumePaymentId);
+          return;
+        }
+
+        // Crypto deposits — existing flow
         const { data, error } = await supabase.functions.invoke("get-deposit-status", {
           body: { payment_id: resumePaymentId },
         });
@@ -195,7 +228,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     };
 
     fetchPaymentDetails();
-  }, [open, resumePaymentId, user]);
+  }, [open, resumePaymentId, resumeProvider, user]);
 
   // Countdown timer for deposit expiry (2 hours)
   useEffect(() => {
