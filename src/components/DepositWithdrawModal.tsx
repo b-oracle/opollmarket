@@ -218,7 +218,15 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
 
         if (cancelled) return;
 
-        if (error || data?.error || !data?.account_name) {
+        if (error || data?.error) {
+          setAccountName("");
+          setAccountNameResolved(false);
+          setAccountNameResolveFailed(true);
+          return;
+        }
+
+        // Graceful fallback: API couldn't auto-verify, allow manual entry
+        if (!data?.account_name) {
           setAccountName("");
           setAccountNameResolved(false);
           setAccountNameResolveFailed(true);
