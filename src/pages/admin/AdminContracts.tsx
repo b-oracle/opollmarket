@@ -38,12 +38,20 @@ const AdminContracts = () => {
         setNftBuyUrl(data.nft_buy_url || "");
         setMarketCreationFee(String(data.market_creation_fee ?? 50));
         setTokenDecimals(String(data.token_decimals ?? 18));
+        setNairaRateMarkup(String((data as any).naira_rate_markup ?? 0));
       }
     } catch (err) {
       console.error("Failed to fetch contract settings:", err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchLiveRate = async () => {
+    try {
+      const { data } = await supabase.functions.invoke("get-naira-rate");
+      if (data?.live_rate) setLiveNgnRate(data.live_rate);
+    } catch { /* silent */ }
   };
 
   const isValidAddress = (addr: string) => {
