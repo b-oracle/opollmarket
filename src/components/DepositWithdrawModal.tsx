@@ -180,6 +180,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setAccountName("");
       setAccountNameLoading(false);
       setAccountNameResolved(false);
+      setAccountNameResolveFailed(false);
       setNgnPayoutRate(null);
     }
     return () => {
