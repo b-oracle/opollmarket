@@ -749,9 +749,16 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                     {isDeposit && paymentMethod === "fiat" && (
                       <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border mb-5">
                         <Banknote className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                        <p className="text-[10px] text-muted-foreground">
-                          Pay with bank transfer or card via Payaza. Amount will be charged in Nigerian Naira (NGN) and credited as USD to your balance.
-                        </p>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">
+                            Pay with bank transfer via Payaza. Amount is converted from USD to NGN at the live rate and credited as USD to your balance.
+                          </p>
+                          {ngnRate && numAmount > 0 && (
+                            <p className="text-xs font-semibold text-primary mt-1">
+                              ≈ ₦{Math.ceil(numAmount * ngnRate).toLocaleString()} NGN (₦{ngnRate.toLocaleString()}/USD)
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )}
 
