@@ -413,8 +413,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             <span className="text-[9px] text-muted-foreground leading-none">{formatCount(likeCount)}</span>
           </button>
           <button onClick={() => setCommentsOpen(true)} className="flex flex-col items-center gap-0.5 group">
-            <div className="w-[clamp(1.75rem,4vh,2.25rem)] h-[clamp(1.75rem,4vh,2.25rem)] rounded-full glass flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-              <MessageCircle className="w-4 h-4 text-foreground/70 group-hover:text-primary transition-colors" />
+            <div className="w-[clamp(1.5rem,3.5vh,2.25rem)] h-[clamp(1.5rem,3.5vh,2.25rem)] rounded-full glass flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+              <MessageCircle className="w-3.5 h-3.5 text-foreground/70 group-hover:text-primary transition-colors" />
             </div>
             <span className="text-[9px] text-muted-foreground leading-none">{formatCount(commentCount)}</span>
           </button>
