@@ -186,7 +186,49 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     };
   }, [initialTab, open]);
 
-  // Resume a pending deposit by fetching payment details
+  // Auto-resolve account name when bank code + 10-digit account number are entered
+  useEffect(() => {
+    if (accountNumber.length !== 10 || !bankCode || withdrawMethod !== "fiat") {
+      setAccountName("");
+      setAccountNameResolved(false);
+      return;
+    }
+
+    let cancelled = false;
+    const resolve = async () => {
+      setAccountNameLoading(true);
+      setAccountName("");
+      setAccountNameResolved(false);
+      try {
+        const { data, error } = await supabase.functions.invoke("verify-bank-account", {
+          body: { bank_code: bankCode, account_number: accountNumber },
+        });
+        if (cancelled) return;
+        if (error || data?.error) {
+          setAccountName("");
+          setAccountNameResolved(false);
+        } else if (data?.account_name) {
+          setAccountName(data.account_name);
+          setAccountNameResolved(true);
+        }
+      } catch {
+        if (!cancelled) {
+          setAccountName("");
+          setAccountNameResolved(false);
+        }
+      } finally {
+        if (!cancelled) setAccountNameLoading(false);
+      }
+    };
+
+    const debounce = setTimeout(resolve, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(debounce);
+    };
+  }, [accountNumber, bankCode, withdrawMethod]);
+
+
   useEffect(() => {
     if (!open || !resumePaymentId || !user) return;
 
