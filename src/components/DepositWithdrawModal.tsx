@@ -651,12 +651,56 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                                   </span>
                                 </div>
                                 <button
-                                  onClick={() => {
+                                  onClick={async () => {
                                     setAmount(Number(tx.amount).toFixed(2));
-                                    if (tx.nowpayments_payment_id) {
-                                      startPolling(tx.nowpayments_payment_id);
+                                    const provider = (tx as any).payment_provider;
+                                    if (provider === "payaza" && tx.nowpayments_payment_id) {
+                                      // Resume fiat deposit — fetch status and show fiat transfer UI
+                                      setStep("executing");
+                                      setErrorMsg("");
+                                      try {
+                                        const { data, error } = await supabase.functions.invoke("get-deposit-status", {
+                                          body: { payment_id: tx.nowpayments_payment_id },
+                                        });
+                                        if (error || data?.error) throw new Error(data?.error || error?.message || "Failed");
+                                        if (data.payment_status === "finished") {
+                                          setStep("success");
+                                          return;
+                                        }
+                                        setPaymentMethod("fiat");
+                                        setDepositCreatedAt(new Date(tx.created_at).getTime());
+                                        setStep("awaiting_fiat");
+                                        startPolling(tx.nowpayments_payment_id);
+                                      } catch (err: any) {
+                                        setErrorMsg(err.message || "Could not load payment details");
+                                        setStep("error");
+                                      }
+                                    } else if (tx.nowpayments_payment_id) {
+                                      // Resume crypto deposit
+                                      setStep("executing");
+                                      setErrorMsg("");
+                                      try {
+                                        const { data, error } = await supabase.functions.invoke("get-deposit-status", {
+                                          body: { payment_id: tx.nowpayments_payment_id },
+                                        });
+                                        if (error || data?.error) throw new Error(data?.error || error?.message || "Failed");
+                                        setPaymentInfo({
+                                          payment_id: tx.nowpayments_payment_id,
+                                          pay_address: data.pay_address,
+                                          pay_amount: data.pay_amount,
+                                          pay_currency: data.pay_currency,
+                                          expiration_estimate_date: data.expiration_estimate_date,
+                                        });
+                                        setDepositCreatedAt(new Date(tx.created_at).getTime());
+                                        setStep("awaiting_payment");
+                                        startPolling(tx.nowpayments_payment_id);
+                                      } catch (err: any) {
+                                        setErrorMsg(err.message || "Could not load payment details");
+                                        setStep("error");
+                                      }
+                                    } else {
+                                      setStep("confirm");
                                     }
-                                    setStep("confirm");
                                   }}
                                   className="text-[10px] font-semibold text-primary px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors shrink-0"
                                 >
