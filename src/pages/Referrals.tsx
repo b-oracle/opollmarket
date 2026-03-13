@@ -43,7 +43,24 @@ const Referrals = () => {
 
   const referralLink = user && profileName ? `${window.location.origin}/?ref=${encodeURIComponent(profileName)}` : "";
 
-  // Fetch referral rewards
+  // Fetch ALL referred signups (profiles where referred_by = current user)
+  const { data: referredSignups = [], isLoading: signupsLoading } = useQuery({
+    queryKey: ["referred_signups", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, email, created_at")
+        .eq("referred_by", user.id)
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+    enabled: !!user,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+
+  // Fetch referral rewards (only created after first prediction)
   const { data: rewards = [], isLoading: rewardsLoading } = useQuery({
     queryKey: ["referral_rewards", user?.id],
     queryFn: async () => {
@@ -92,24 +109,13 @@ const Referrals = () => {
     gcTime: 60 * 60 * 1000,
   });
 
-  // Fetch referred user profiles
-  const { data: referredProfiles = [] } = useQuery({
-    queryKey: ["referred_profiles", rewards],
-    queryFn: async () => {
-      if (rewards.length === 0) return [];
-      const ids = rewards.map((r: any) => r.referred_id);
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, display_name, email, created_at")
-        .in("id", ids);
-      return data || [];
-    },
-    enabled: rewards.length > 0,
-    staleTime: 5 * 60 * 1000,
-  });
+  // Build a set of rewarded user IDs for quick lookup
+  const rewardedUserIds = new Set(rewards.map((r: any) => r.referred_id));
+  const rewardByUserId = new Map(rewards.map((r: any) => [r.referred_id, r]));
 
   const totalEarned = rewards.reduce((sum: number, r: any) => sum + Number(r.amount), 0);
-  const totalReferrals = rewards.length;
+  const totalSignups = referredSignups.length;
+  const totalRewarded = rewards.length;
 
   const handleCopy = async () => {
     try {
