@@ -45,7 +45,7 @@ const TopBar = () => {
     <>
     <header
       ref={headerRef}
-      className={`fixed top-0 left-0 right-0 z-50 border-0 transition-all duration-300 ${collapsed ? "md:left-[4.5rem]" : "md:left-60"} ${
+      className={`fixed top-0 left-0 right-0 z-50 border-0 transition-all duration-300 ${collapsed ? "lg:left-[4.5rem]" : "lg:left-60"} ${
         scrolled
           ? "shadow-[0_2px_12px_-3px_hsl(var(--foreground)/0.12)]"
           : "shadow-[0_1px_8px_-2px_hsl(var(--foreground)/0.08)]"
@@ -57,12 +57,12 @@ const TopBar = () => {
         WebkitBackdropFilter: scrolled ? 'blur(48px) saturate(1.4)' : 'blur(30px) saturate(1.2)',
       }}
     >
-      <div className="flex items-center justify-between h-14 max-w-lg md:max-w-full mx-auto px-4">
-        <div className="flex items-center gap-1.5 cursor-pointer md:hidden" onClick={() => navigate("/")}>
+        <div className="flex items-center justify-between h-14 max-w-lg lg:max-w-full mx-auto px-4">
+        <div className="flex items-center gap-1.5 cursor-pointer lg:hidden" onClick={() => navigate("/")}>
           <img src={logo} alt="OPOLL" className="h-8 w-8" />
           <span className="text-[28px] font-bold tracking-tight text-primary leading-[32px] -ml-0.5">Poll</span>
         </div>
-        <div className="hidden md:block" />
+        <div className="hidden lg:block" />
         <div className="flex items-center gap-2">
           {/* Admin mode toggle for admin users */}
           {hasAdminAccess && user && (
