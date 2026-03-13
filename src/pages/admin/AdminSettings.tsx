@@ -645,6 +645,32 @@ const AdminSettings = () => {
           </CardContent>
         </Card>
 
+        {/* ─── AI Generation Settings ─── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Sparkles className="w-5 h-5" /> AI Generation
+            </CardTitle>
+            <CardDescription>Cost per AI generation (description, details, or image). Individual features can be toggled on/off via Feature Toggles above.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="aiGenerationCost">Cost per Generation ($)</Label>
+              <Input id="aiGenerationCost" type="number" min={0} step={0.1} value={aiGenerationCost} onChange={(e) => setAiGenerationCost(e.target.value)} placeholder="0.50" />
+              <p className="text-[10px] text-muted-foreground">Current: ${aiGenerationCostNum.toFixed(2)}. Charged per AI-generated description, details, or image.</p>
+            </div>
+            <div className="rounded-lg bg-muted/50 p-3 space-y-1">
+              <p className="text-[10px] font-medium text-foreground">Feature Toggles</p>
+              <p className="text-[10px] text-muted-foreground">Use the <strong>Feature Toggles</strong> section at the top of this page to individually enable/disable:</p>
+              <ul className="text-[10px] text-muted-foreground space-y-0.5 ml-3 list-disc">
+                <li><strong>AI Generate Description</strong> — auto-generate market descriptions</li>
+                <li><strong>AI Generate Details</strong> — auto-generate detailed market content</li>
+                <li><strong>AI Generate Image</strong> — auto-generate cover images</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* ─── Creator Gate ─── */}
         <Card>
           <CardHeader>
