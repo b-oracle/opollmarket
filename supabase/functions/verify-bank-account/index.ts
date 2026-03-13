@@ -58,10 +58,6 @@ Deno.serve(async (req) => {
     const payazaAuthorization = encodePayazaAuth(secretKey);
     const proxyUrl = Deno.env.get("QUOTAGUARD_URL");
 
-    const payload = {
-      account_number: account_number,
-      bank_code: bank_code,
-    };
 
     // Try multiple endpoint, payload, and auth patterns (Payaza docs are inconsistent per product)
     const endpoints = [
