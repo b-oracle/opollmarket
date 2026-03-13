@@ -479,7 +479,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
           {/* Live badges line — scrollable */}
           {market.autoResolve && (
-            <div className="flex items-center gap-1.5 mb-2 pr-14 sm:pr-16 lg:pr-24 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-1.5 mb-2 pr-14 sm:pr-16 lg:pr-32 overflow-x-auto scrollbar-hide">
               <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold flex items-center gap-0.5 bg-destructive/15 text-destructive border border-destructive/30 shrink-0">
                 <Radio className="w-2.5 h-2.5 animate-pulse" /> Live
               </span>
