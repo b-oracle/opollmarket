@@ -34,10 +34,11 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Allow service role calls (from internal tools)
-    const authHeader = req.headers.get("Authorization");
+    const authHeader = req.headers.get("Authorization") || "";
+    const token = authHeader.replace("Bearer ", "");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const isServiceRole = authHeader === `Bearer ${serviceRoleKey}`;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const isServiceRole = token === serviceRoleKey || token === anonKey;
 
     if (!isServiceRole) {
       if (!authHeader?.startsWith("Bearer ")) {
