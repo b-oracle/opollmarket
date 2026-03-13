@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
 import BottomSheet from "@/components/BottomSheet";
 import {
+  ArrowLeft,
   TrendingUp,
   TrendingDown,
   Wallet,
@@ -401,7 +402,15 @@ const Portfolio = () => {
       <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top, 0px))' }}>
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-5">
-          <h1 className="text-2xl font-bold mb-1">Portfolio</h1>
+          <div className="flex items-center gap-3 mb-1">
+            <button
+              onClick={() => navigate(-1)}
+              className="w-9 h-9 rounded-xl glass flex items-center justify-center shrink-0 hover:bg-muted/50 active:scale-95 transition-all"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-2xl font-bold">Portfolio</h1>
+          </div>
           <p className="text-sm text-muted-foreground">
             {isLoading ? "Loading..." : `${enriched.length} active position${enriched.length !== 1 ? "s" : ""}`}
           </p>
