@@ -322,7 +322,7 @@ const Referrals = () => {
         {/* Referral History */}
         <div className="mb-6">
           <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Referral History</h3>
-          {rewardsLoading ? (
+          {signupsLoading ? (
             <div className="space-y-2">
               {[0, 1, 2].map((i) => (
                 <div key={i} className="glass rounded-xl p-3.5 flex items-center gap-3">
@@ -335,7 +335,7 @@ const Referrals = () => {
                 </div>
               ))}
             </div>
-          ) : rewards.length === 0 ? (
+          ) : referredSignups.length === 0 ? (
             <div className="glass rounded-xl p-8 text-center">
               <Gift className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">No referrals yet. Share your link to start earning!</p>
@@ -343,31 +343,38 @@ const Referrals = () => {
           ) : (
             <div className="space-y-2">
               {(() => {
-                const totalPages = Math.max(1, Math.ceil(rewards.length / ITEMS_PER_PAGE));
-                const paginatedRewards = rewards.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+                const totalPages = Math.max(1, Math.ceil(referredSignups.length / ITEMS_PER_PAGE));
+                const paginated = referredSignups.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
                 return (
                   <>
-                    {paginatedRewards.map((reward: any, i: number) => {
-                      const profile = referredProfiles.find((p: any) => p.id === reward.referred_id);
-                      const name = profile?.display_name || profile?.email?.split("@")[0] || "User";
+                    {paginated.map((signup: any, i: number) => {
+                      const isRewarded = rewardedUserIds.has(signup.id);
+                      const reward = rewardByUserId.get(signup.id);
+                      const name = signup.display_name || signup.email?.split("@")[0] || "User";
                       return (
                         <motion.div
-                          key={reward.id}
+                          key={signup.id}
                           initial={{ opacity: 0, y: 12 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: i * 0.05 }}
                           className="glass rounded-xl p-3.5 flex items-center gap-3"
                         >
-                          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                            <Gift className="w-4 h-4 text-primary" />
+                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isRewarded ? 'bg-primary/10' : 'bg-muted/50'}`}>
+                            <Gift className={`w-4 h-4 ${isRewarded ? 'text-primary' : 'text-muted-foreground'}`} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <span className="text-sm font-semibold truncate block">{name}</span>
                             <span className="text-[10px] text-muted-foreground">
-                              {new Date(reward.created_at).toLocaleDateString()}
+                              Joined {new Date(signup.created_at).toLocaleDateString()}
                             </span>
                           </div>
-                          <span className="text-sm font-bold text-primary">+${Number(reward.amount).toFixed(2)}</span>
+                          {isRewarded ? (
+                            <span className="text-sm font-bold text-primary">+${Number(reward.amount).toFixed(2)}</span>
+                          ) : (
+                            <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-muted text-muted-foreground">
+                              Pending
+                            </span>
+                          )}
                         </motion.div>
                       );
                     })}
@@ -397,7 +404,6 @@ const Referrals = () => {
               })()}
             </div>
           )}
-        </div>
       </div>
       <BottomNav />
     </div>
