@@ -458,6 +458,7 @@ Deno.serve(async (req) => {
       crypto_currency: payCurrency,
       status: "completed",
       nowpayments_id: payoutId ? String(payoutId) : null,
+      tx_hash: payoutTxHash,
     });
 
     // Insert confirmed withdrawal transaction
@@ -467,6 +468,7 @@ Deno.serve(async (req) => {
       amount,
       status: "confirmed",
       nowpayments_payment_id: payoutId ? String(payoutId) : null,
+      tx_hash: payoutTxHash,
     });
 
     // Notify user
