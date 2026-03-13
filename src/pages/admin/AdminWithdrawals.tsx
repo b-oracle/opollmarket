@@ -444,8 +444,9 @@ const AdminWithdrawals = () => {
                 </div>
               </div>
               <div className="p-3 rounded-xl bg-muted/50 border border-border">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Bank Code</p>
-                <p className="text-sm font-mono font-semibold">{fiatDetails.bank_code}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Bank</p>
+                <p className="text-sm font-semibold">{getBankName(fiatDetails.bank_code)}</p>
+              </div>
               </div>
               <div className="p-3 rounded-xl bg-muted/50 border border-border">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Withdrawal Amount</p>
