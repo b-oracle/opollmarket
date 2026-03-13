@@ -33,6 +33,7 @@ const AdminFiatSettings = () => {
       if (data) {
         const d = data as any;
         setPayazaMode(d.payaza_mode === "checkout_sdk" ? "checkout_sdk" : "direct_api");
+        setPayoutProvider(d.payout_provider === "palmpay" ? "palmpay" : "payaza");
         setNairaRateMarkup(String(d.naira_rate_markup ?? 0));
         setFallbackNairaRate(String(d.fallback_naira_rate ?? 1500));
         setNairaPayoutMarkdown(String(d.naira_payout_markdown ?? 0));
