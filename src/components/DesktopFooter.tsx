@@ -42,8 +42,7 @@ const DesktopFooter = () => {
           {/* Brand */}
           <div>
             <div className="flex items-center mb-3">
-              <img src={logoLight} alt="OPOLL" className="h-7 object-contain dark:hidden" />
-              <img src={logoDark} alt="OPOLL" className="h-7 object-contain hidden dark:block" />
+              <img src={logoLight} alt="OPOLL" className="h-7 object-contain" />
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed max-w-[240px]">
               Predict the future, earn from it. The social prediction market platform.
