@@ -454,7 +454,18 @@ const AdminCreateMarket = () => {
           </div>
         </div>
         <div className={shakeClass("description")}>
-          <label className="text-sm font-semibold mb-2 block">Description</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-semibold">Description</label>
+            <button
+              type="button"
+              onClick={() => handleAiGenerate("description")}
+              disabled={generatingDesc || !title.trim()}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {generatingDesc ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+              Generate (${aiGenerationCost})
+            </button>
+          </div>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
