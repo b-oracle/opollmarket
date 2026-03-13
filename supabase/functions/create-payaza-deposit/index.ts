@@ -137,7 +137,8 @@ Deno.serve(async (req) => {
     console.log("Calling Payaza Collection API:", JSON.stringify(collectionPayload));
 
     const proxyUrl = Deno.env.get("QUOTAGUARD_URL");
-    const payazaApiUrl = "https://router.payaza.africa/api/v1/collection/";
+    const payazaApiUrl = "https://router-live.78financials.com/api/request/secure/payloadhandler";
+    const payazaAuthorization = `Payaza ${btoa(secretKey)}`;
 
     let payazaResponse: Response;
 
@@ -149,7 +150,7 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Payaza ${secretKey}`,
+          "Authorization": payazaAuthorization,
         },
         body: JSON.stringify(collectionPayload),
         // @ts-ignore - Deno-specific option
@@ -163,7 +164,7 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Payaza ${secretKey}`,
+          "Authorization": payazaAuthorization,
         },
         body: JSON.stringify(collectionPayload),
       });
