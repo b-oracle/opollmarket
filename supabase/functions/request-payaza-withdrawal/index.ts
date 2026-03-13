@@ -23,26 +23,41 @@ function generateNonceStr(len = 32): string {
   return result;
 }
 
-// PKCS#1 → PKCS#8 wrapper
+// Proper ASN.1 DER length encoding
+function encodeDerLength(length: number): Uint8Array {
+  if (length < 0x80) {
+    return new Uint8Array([length]);
+  } else if (length < 0x100) {
+    return new Uint8Array([0x81, length]);
+  } else if (length < 0x10000) {
+    return new Uint8Array([0x82, (length >> 8) & 0xff, length & 0xff]);
+  } else {
+    return new Uint8Array([0x83, (length >> 16) & 0xff, (length >> 8) & 0xff, length & 0xff]);
+  }
+}
+
+// Proper PKCS#1 → PKCS#8 wrapper with correct ASN.1 DER encoding
 function wrapPkcs1ToPkcs8(pkcs1Der: Uint8Array): Uint8Array {
-  const header = new Uint8Array([
-    0x30, 0x82, 0x00, 0x00,
-    0x02, 0x01, 0x00,
+  const algorithmIdentifier = new Uint8Array([
     0x30, 0x0d,
     0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01,
     0x05, 0x00,
-    0x04, 0x82, 0x00, 0x00,
   ]);
-  const totalLen = header.length + pkcs1Der.length;
-  const result = new Uint8Array(totalLen);
-  result.set(header);
-  result.set(pkcs1Der, header.length);
-  const outerLen = totalLen - 4;
-  result[2] = (outerLen >> 8) & 0xff;
-  result[3] = outerLen & 0xff;
-  const octetLen = pkcs1Der.length;
-  result[header.length - 2] = (octetLen >> 8) & 0xff;
-  result[header.length - 1] = octetLen & 0xff;
+  const version = new Uint8Array([0x02, 0x01, 0x00]);
+  const octetStringTag = new Uint8Array([0x04]);
+  const octetStringLen = encodeDerLength(pkcs1Der.length);
+  const innerLen = version.length + algorithmIdentifier.length + octetStringTag.length + octetStringLen.length + pkcs1Der.length;
+  const sequenceTag = new Uint8Array([0x30]);
+  const sequenceLen = encodeDerLength(innerLen);
+  const result = new Uint8Array(sequenceTag.length + sequenceLen.length + innerLen);
+  let offset = 0;
+  result.set(sequenceTag, offset); offset += sequenceTag.length;
+  result.set(sequenceLen, offset); offset += sequenceLen.length;
+  result.set(version, offset); offset += version.length;
+  result.set(algorithmIdentifier, offset); offset += algorithmIdentifier.length;
+  result.set(octetStringTag, offset); offset += octetStringTag.length;
+  result.set(octetStringLen, offset); offset += octetStringLen.length;
+  result.set(pkcs1Der, offset);
   return result;
 }
 
@@ -54,24 +69,31 @@ async function palmPaySign(body: Record<string, unknown>, privateKeyPem: string)
   const md5Buffer = await stdCrypto.subtle.digest("MD5", encoder.encode(strA));
   const md5Hex = Array.from(new Uint8Array(md5Buffer)).map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
 
-  const isPkcs1 = privateKeyPem.includes("BEGIN RSA PRIVATE KEY");
   const pemBody = privateKeyPem
     .replace(/-----BEGIN (?:RSA )?PRIVATE KEY-----/g, "")
     .replace(/-----END (?:RSA )?PRIVATE KEY-----/g, "")
     .replace(/\s/g, "");
-  let binaryDer = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0));
+  const rawDer = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0));
 
-  if (isPkcs1) {
-    binaryDer = wrapPkcs1ToPkcs8(binaryDer);
+  let key: CryptoKey;
+  try {
+    key = await crypto.subtle.importKey(
+      "pkcs8", rawDer.buffer,
+      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-1" },
+      false, ["sign"]
+    );
+  } catch {
+    try {
+      const pkcs8Der = wrapPkcs1ToPkcs8(rawDer);
+      key = await crypto.subtle.importKey(
+        "pkcs8", pkcs8Der.buffer,
+        { name: "RSASSA-PKCS1-v1_5", hash: "SHA-1" },
+        false, ["sign"]
+      );
+    } catch (e2) {
+      throw new Error("Failed to import PalmPay private key: " + String(e2));
+    }
   }
-
-  const key = await crypto.subtle.importKey(
-    "pkcs8",
-    binaryDer.buffer,
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-1" },
-    false,
-    ["sign"]
-  );
 
   const signature = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, encoder.encode(md5Hex));
   return encodeBase64(new Uint8Array(signature));
