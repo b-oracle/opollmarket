@@ -105,7 +105,7 @@ const CRYPTO_GROUPS = [
 
 const ALL_CRYPTO_OPTIONS = CRYPTO_GROUPS.flatMap((g) => g.options);
 
-const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePaymentId }: DepositWithdrawModalProps) => {
+const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePaymentId, resumeProvider }: DepositWithdrawModalProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { balance, bonusBalance } = useUserBalance();
