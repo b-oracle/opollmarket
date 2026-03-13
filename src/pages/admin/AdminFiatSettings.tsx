@@ -13,6 +13,7 @@ import { logAuditEvent } from "@/lib/auditLog";
 const AdminFiatSettings = () => {
   const { canEdit } = useAdminContext();
   const [payazaMode, setPayazaMode] = useState<"checkout_sdk" | "direct_api">("direct_api");
+  const [payoutProvider, setPayoutProvider] = useState<"payaza" | "palmpay">("payaza");
   const [nairaRateMarkup, setNairaRateMarkup] = useState("");
   const [fallbackNairaRate, setFallbackNairaRate] = useState("");
   const [nairaPayoutMarkdown, setNairaPayoutMarkdown] = useState("");
