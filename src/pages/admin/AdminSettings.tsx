@@ -235,7 +235,8 @@ const AdminSettings = () => {
            gold_trending_multiplier: goldTrendingMultNum,
            blue_max_free_markets: blueMaxFreeMarketsNum,
             gold_max_free_markets: goldMaxFreeMarketsNum,
-            ai_generation_cost: aiGenerationCostNum,
+             ai_generation_cost: aiGenerationCostNum,
+             payaza_mode: payazaMode,
            updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
