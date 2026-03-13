@@ -75,6 +75,7 @@ const AdminFiatSettings = () => {
         .from("commission_settings")
         .update({
           payaza_mode: payazaMode,
+          payout_provider: payoutProvider,
           naira_rate_markup: markupNum,
           fallback_naira_rate: fallbackNum,
           naira_payout_markdown: payoutMarkdownNum,
