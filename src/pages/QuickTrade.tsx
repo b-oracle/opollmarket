@@ -1046,7 +1046,7 @@ export default function QuickTrade() {
       queryClient.invalidateQueries({ queryKey: ["balance"] });
 
       haptic("success");
-      toast({ title: `${side.toUpperCase()} bet placed!`, description: `$${amt} on ${selectedAsset.symbol}` });
+      toast({ title: `${side.toUpperCase()} trade placed!`, description: `$${amt} on ${selectedAsset.symbol}` });
 
       // Trigger copy-trade for followers (fire-and-forget)
       supabase.functions.invoke("copy-trade", {
