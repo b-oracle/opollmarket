@@ -461,7 +461,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                   <span className="text-[10px] font-bold text-primary">{market.creatorName.charAt(0)}</span>
                 )}
               </div>
-              <span className={`text-xs font-medium text-foreground/80 truncate group-hover/creator:underline ${creatorProfile?.wallet_address ? 'font-mono' : ''}`}>{creatorLabel}</span>
+              <span className="text-xs font-medium text-foreground/80 truncate group-hover/creator:underline">{creatorLabel}</span>
               {creatorProfile?.verification_level && creatorProfile.verification_level !== "none" && (
                 <NftBadge level={creatorProfile.verification_level as VerificationLevel} size={14} />
               )}
