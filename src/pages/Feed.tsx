@@ -430,12 +430,10 @@ const Feed = () => {
         style={{ 
           position: 'fixed',
           top: 'calc(3.5rem + env(safe-area-inset-top, 0px))',
+          bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))',
           left: 0,
           right: 0,
-          height: 'calc(100vh - 3.5rem - 4rem)',
-          // @ts-ignore – dvh override for modern browsers
-          ...({ height: 'calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px) - 4rem - env(safe-area-inset-bottom, 0px))' } as any),
-          ['--feed-card-height' as any]: 'calc(100vh - 3.5rem - 4rem)',
+          ['--feed-card-height' as any]: 'calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px) - 4rem - env(safe-area-inset-bottom, 0px))',
         }}
         onTouchStart={pullHandlers.onTouchStart}
         onTouchMove={pullHandlers.onTouchMove}
