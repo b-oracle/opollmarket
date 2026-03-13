@@ -447,7 +447,6 @@ const AdminWithdrawals = () => {
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Bank</p>
                 <p className="text-sm font-semibold">{getBankName(fiatDetails.bank_code)}</p>
               </div>
-              </div>
               <div className="p-3 rounded-xl bg-muted/50 border border-border">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Withdrawal Amount</p>
                 <p className="text-sm font-bold text-primary">${Number(fiatDetails.amount).toFixed(2)}</p>
