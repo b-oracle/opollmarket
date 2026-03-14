@@ -69,6 +69,7 @@ export const useCommissionSettings = () => {
         qt_enabled_assets: String(d.qt_enabled_assets ?? "BTC,ETH,BNB,SOL,XRP,DOGE,XAU,XAG,EUR/USD,GBP/USD,USD/JPY"),
         qt_enabled_timeframes: String(d.qt_enabled_timeframes ?? "60,180,300,900"),
         qt_disabled_assets: String(d.qt_disabled_assets ?? ""),
+        auto_resolve_fee: Number(d.auto_resolve_fee ?? 0),
       };
     },
     staleTime: 60_000,
