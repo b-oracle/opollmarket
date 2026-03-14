@@ -961,6 +961,18 @@ const Create = () => {
       });
     }
 
+    // Record auto-resolve fee transaction
+    if (autoResolve && autoResolveFee > 0) {
+      await supabase.from("transactions").insert({
+        user_id: user.id,
+        type: "buy",
+        amount: autoResolveFee,
+        market_id: data?.id,
+        status: "confirmed",
+        side: "auto_resolve_fee",
+      });
+    }
+
     // Save options for multi/range markets
     if (marketType !== "binary" && data?.id) {
       const validOptions = options.filter(o => o.trim());
