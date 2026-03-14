@@ -563,7 +563,7 @@ function QuickTradeChart({
               <stop offset="100%" stopColor={color} stopOpacity={0} />
             </linearGradient>
           </defs>
-          <YAxis domain={[(d: number) => d - (d * 0.001), (d: number) => d + (d * 0.001)]} hide />
+          <YAxis domain={[(d: number) => d - (d * 0.0001), (d: number) => d + (d * 0.0001)]} hide />
           <XAxis dataKey="ts" hide />
           <RechartsTooltip content={tooltipContent} cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '3 3' }} />
           {targetReferenceLine}

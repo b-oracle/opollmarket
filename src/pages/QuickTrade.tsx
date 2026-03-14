@@ -684,31 +684,19 @@ export default function QuickTrade() {
       pollIv = setInterval(pollNonCrypto, 10_000);
 
     } else {
-      // Crypto: resilient fallback when WS is missing or becomes stale
-      let microTickIv: ReturnType<typeof setInterval> | null = null;
-      const WS_STALE_MS = 2500;
-
+      // Crypto: simple HTTP fallback when WS is not delivering ticks
       const fallbackTimer = setTimeout(() => {
-        if (!isCurrentRun()) return;
+        if (!isCurrentRun() || wsActiveRef.current) return;
 
-        let lastRealPrice = 0;
-        let prevRealPrice = 0;
-
-        // Real price fetch every 1s while WS is stale
         const poll = async () => {
+          if (!isCurrentRun() || wsActiveRef.current) return;
           const now = Date.now();
-          const wsFresh = lastWsTickAtRef.current > 0 && now - lastWsTickAtRef.current < WS_STALE_MS;
-          if (wsFresh) return;
-
-          const shouldFetch = now - lastFetchTimeRef.current >= 1000;
-          if (!shouldFetch) return;
-
+          if (now - lastFetchTimeRef.current < 5000) return;
           lastFetchTimeRef.current = now;
+
           const p = await fetchPriceForAsset(selectedAsset);
           if (p != null && isCurrentRun()) {
             consecutiveFailsRef.current = 0;
-            prevRealPrice = lastRealPrice || p;
-            lastRealPrice = p;
             applyDisplayPrice(p);
             applyStreamingPrice(p);
 
@@ -717,48 +705,21 @@ export default function QuickTrade() {
             const rawCached = rawDataRef.current.get(streamAssetSymbol) || [];
             rawDataRef.current.set(
               streamAssetSymbol,
-              [...rawCached, [now, p] as [number, number]].filter(([ts]) => ts >= maxCutoff).slice(-2000),
+              [...rawCached, [now, p] as [number, number]].filter(([ts]) => ts >= maxCutoff).slice(-500),
             );
 
             setPriceHistory((prev) => {
-              const updated = [...prev, { time: timeLabel, price: p, ts: now }];
+              const jitter = p * (Math.random() - 0.5) * 0.0001;
+              const updated = [...prev, { time: timeLabel, price: p + jitter, ts: now }];
               const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
-              return filtered.length > 2000 ? filtered.slice(-2000) : filtered;
+              return filtered.length > 500 ? filtered.slice(-500) : filtered;
             });
           }
         };
 
         poll();
-        pollIv = setInterval(poll, 1000);
-
-        // Micro-tick interpolation (~12fps) while WS is stale
-        microTickIv = setInterval(() => {
-          if (!isCurrentRun()) return;
-
-          const now = Date.now();
-          const wsFresh = lastWsTickAtRef.current > 0 && now - lastWsTickAtRef.current < WS_STALE_MS;
-          if (wsFresh) return;
-
-          setCurrentPrice((cur) => {
-            if (cur == null) return cur;
-            const base = lastRealPrice || cur;
-            const momentum = lastRealPrice && prevRealPrice ? (lastRealPrice - prevRealPrice) * (Math.random() * 0.3) : 0;
-            const jitter = base * (Math.random() - 0.5) * 0.002;
-            const tickPrice = base + jitter + momentum;
-
-            applyStreamingPrice(tickPrice);
-            const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
-            setPriceHistory((prev) => {
-              const maxCutoff = now - 4 * 60 * 60 * 1000;
-              const updated = [...prev, { time: timeLabel, price: tickPrice, ts: now }];
-              const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
-              return filtered.length > 2000 ? filtered.slice(-2000) : filtered;
-            });
-
-            return cur;
-          });
-        }, 80);
-      }, 1500);
+        pollIv = setInterval(poll, 5000);
+      }, 3000);
 
       return () => {
         mounted = false;
@@ -768,7 +729,6 @@ export default function QuickTrade() {
         if (pendingRaf) cancelAnimationFrame(pendingRaf);
         clearTimeout(fallbackTimer);
         if (pollIv) clearInterval(pollIv);
-        if (microTickIv) clearInterval(microTickIv);
       };
     }
 
