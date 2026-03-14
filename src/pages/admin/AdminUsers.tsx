@@ -169,20 +169,16 @@ const AdminUsers = () => {
 
   useEffect(() => {
     const fetchStats = async () => {
-      const [{ count: userCount }, { data: balData }, { data: depData }, { data: wdData }, { data: earnData }] = await Promise.all([
-        supabase.from("profiles").select("*", { count: "exact", head: true }),
-        supabase.from("balances").select("amount"),
-        supabase.from("transactions").select("amount").eq("type", "deposit").eq("status", "confirmed"),
-        supabase.from("transactions").select("amount").eq("type", "withdrawal").eq("status", "confirmed"),
-        supabase.from("transactions").select("amount").eq("type", "payout").eq("status", "confirmed"),
-      ]);
-      setStats({
-        totalUsers: userCount ?? 0,
-        totalBalance: balData?.reduce((s, b) => s + Number(b.amount), 0) ?? 0,
-        totalDeposits: depData?.reduce((s, d) => s + Number(d.amount), 0) ?? 0,
-        totalWithdrawals: wdData?.reduce((s, w) => s + Number(w.amount), 0) ?? 0,
-        totalEarnings: earnData?.reduce((s, e) => s + Number(e.amount), 0) ?? 0,
-      });
+      const { data } = await supabase.rpc("get_admin_user_stats");
+      if (data) {
+        setStats({
+          totalUsers: Number(data.total_users) || 0,
+          totalBalance: Number(data.total_balance) || 0,
+          totalDeposits: Number(data.total_deposits) || 0,
+          totalWithdrawals: Number(data.total_withdrawals) || 0,
+          totalEarnings: Number(data.total_earnings) || 0,
+        });
+      }
     };
     fetchStats();
   }, []);
