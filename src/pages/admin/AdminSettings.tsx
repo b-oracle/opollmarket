@@ -395,8 +395,20 @@ const AdminSettings = () => {
                 <span className="font-medium">{adminNum}%</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Creator Commission</span>
+                <span className="text-muted-foreground">Creator (No Tick)</span>
                 <span className="font-medium">{creatorNum}%</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Creator (Blue Tick)</span>
+                <span className="font-medium">{creatorBlueNum}%</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Creator (Gold Tick)</span>
+                <span className="font-medium">{creatorGoldNum}%</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Referrer Commission</span>
+                <span className="font-medium">{referrerCommissionNum}%</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Early Exit Fee</span>
