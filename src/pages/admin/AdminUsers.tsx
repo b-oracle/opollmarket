@@ -203,7 +203,7 @@ const AdminUsers = () => {
               <span className="text-lg">{s.icon}</span>
               <p className="text-[11px] text-muted-foreground font-medium">{s.label}</p>
             </div>
-            <p className="text-lg font-bold">{s.value}</p>
+            <p className={`text-lg font-bold ${s.label === "Total Earnings" ? "text-green-500" : s.label === "Total Losses" ? "text-red-500" : ""}`}>{s.value}</p>
           </div>
         ))}
       </div>
