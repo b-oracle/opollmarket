@@ -912,7 +912,7 @@ export default function QuickTrade() {
     setHistoryPage(0);
   }, [selectedAsset.symbol]);
 
-  // ── User recent bets ──
+  // ── User recent trades ──
   useEffect(() => {
     if (!user) return;
     const load = async () => {
