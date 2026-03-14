@@ -227,6 +227,7 @@ const Create = () => {
         setBlueMaxFreeMarkets(Number((data as any).blue_max_free_markets) || 5);
         setGoldMaxFreeMarkets(Number((data as any).gold_max_free_markets) || 20);
         setAiGenerationCost(Number((data as any).ai_generation_cost ?? 0.5));
+        setAutoResolveFee(Number((data as any).auto_resolve_fee ?? 0));
       }
       setSettingsLoaded(true);
     })();
