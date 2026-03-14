@@ -52,12 +52,15 @@ const AdminQuickTrade = () => {
 
   useEffect(() => {
     const fetch = async () => {
-      const fetchAllData = async (table: any) => {
+      const fetchAllData = async (table: any, selectCols?: string) => {
         let allData: any[] = [];
         let page = 0;
         let hasMore = true;
         while (hasMore) {
-          const { data } = await supabase.from(table).select("*").order("created_at", { ascending: false }).range(page * 1000, (page + 1) * 1000 - 1);
+          const query = selectCols
+            ? supabase.from(table).select(selectCols).order("created_at", { ascending: false }).range(page * 1000, (page + 1) * 1000 - 1)
+            : supabase.from(table).select("*").order("created_at", { ascending: false }).range(page * 1000, (page + 1) * 1000 - 1);
+          const { data } = await query;
           if (data && data.length > 0) {
             allData = [...allData, ...data];
             page++;
@@ -69,12 +72,14 @@ const AdminQuickTrade = () => {
         return allData;
       };
 
-      const [roundData, betData] = await Promise.all([
+      const [roundData, betData, bonusTxData] = await Promise.all([
         fetchAllData("quick_rounds"),
         fetchAllData("quick_bets"),
+        supabase.from("transactions").select("amount, created_at").eq("type", "qt_one_sided_bonus").eq("status", "confirmed").then(r => r.data || []),
       ]);
       setRounds(roundData || []);
       setBets(betData || []);
+      setBonusTxs(bonusTxData as any[]);
 
       const userIds = [...new Set((betData || []).map(b => b.user_id))];
       if (userIds.length > 0) {
