@@ -1,11 +1,12 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState, useEffect } from "react";
 import {
   AreaChart, Area, XAxis, YAxis, ResponsiveContainer, ReferenceLine,
   Tooltip as RechartsTooltip, ComposedChart, Bar, Cell, Line
 } from "recharts";
 import TradingViewChart from "@/components/TradingViewChart";
 import type { OHLCCandle } from "@/lib/cryptoPriceProvider";
-import { Loader2 } from "lucide-react";
+import { Loader2, Moon } from "lucide-react";
+import { isMarketOpen, getNextOpenTime } from "@/lib/marketHours";
 
 interface QuickTradeChartProps {
   chartType: "area" | "candle" | "tv";
