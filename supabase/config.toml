@@ -67,3 +67,7 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.qt-price-broadcaster]
     verify_jwt = false
+  [functions.create-broadcast-payment]
+    verify_jwt = false
+  [functions.send-market-broadcast]
+    verify_jwt = false
