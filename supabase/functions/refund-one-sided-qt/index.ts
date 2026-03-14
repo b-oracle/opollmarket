@@ -74,6 +74,15 @@ Deno.serve(async (req) => {
         const totalCredit = feeRefund + bonus;
 
         userRefunds[bet.user_id] = (userRefunds[bet.user_id] || 0) + totalCredit;
+
+        // Record as transaction for accounting
+        await supabase.from("transactions").insert({
+          user_id: bet.user_id,
+          type: "qt_one_sided_bonus",
+          amount: totalCredit,
+          status: "confirmed",
+          side: "credit",
+        });
         totalRefunded += totalCredit;
       }
     }

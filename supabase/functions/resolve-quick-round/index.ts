@@ -478,12 +478,24 @@ Deno.serve(async (req) => {
             ? Number(bet.amount) * 1.005
             : Number(bet.amount) * (1 - platformFee);
           const payout = basePayout * multiplier;
+          const bonusAmount = qtOneSidedBonus ? Number(bet.amount) * 0.005 * multiplier : 0;
 
           await supabase
             .from("quick_bets")
             .update({ payout, status: "won", streak: newStreak })
             .eq("id", bet.id);
           await creditBalance(supabase, bet.user_id, payout);
+
+          // Record bonus as a transaction for accounting
+          if (qtOneSidedBonus && bonusAmount > 0) {
+            await supabase.from("transactions").insert({
+              user_id: bet.user_id,
+              type: "qt_one_sided_bonus",
+              amount: bonusAmount,
+              status: "confirmed",
+              side: "credit",
+            });
+          }
 
           await supabase
             .from("quick_trade_streaks")

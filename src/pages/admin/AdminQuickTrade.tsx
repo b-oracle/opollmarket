@@ -195,7 +195,8 @@ const AdminQuickTrade = () => {
     { label: "Total Wagered", value: `$${stats.totalWagered.toFixed(2)}`, icon: DollarSign, color: "text-chart-4" },
     { label: "Total Payouts", value: `$${stats.totalPayout.toFixed(2)}`, icon: TrendingUp, color: "text-primary" },
     { label: "Total Refunded", value: `$${stats.totalRefunded.toFixed(2)}`, icon: RotateCcw, color: "text-muted-foreground" },
-    { label: "Platform Profit", value: `$${stats.platformProfit.toFixed(2)}`, icon: BarChart3, color: stats.platformProfit >= 0 ? "text-chart-3" : "text-destructive", tooltip: "Fees retained from winning pools + full stakes from rounds with no winners" },
+    { label: "Bonus Paid", value: `$${stats.totalBonusPaid.toFixed(2)}`, icon: Gift, color: "text-chart-2", tooltip: "0.5% bonus paid to winners in one-sided markets (no losers)" },
+    { label: "Platform Profit", value: `$${stats.platformProfit.toFixed(2)}`, icon: BarChart3, color: stats.platformProfit >= 0 ? "text-chart-3" : "text-destructive", tooltip: "Wagered - Payouts - Refunded - Bonus Paid" },
   ];
 
   return (
