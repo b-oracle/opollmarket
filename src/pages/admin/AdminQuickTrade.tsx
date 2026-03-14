@@ -302,7 +302,7 @@ const AdminQuickTrade = () => {
                           <span className="text-xs font-medium truncate">{t.name}</span>
                           <span className={`text-xs font-semibold ${t.profit >= 0 ? "text-emerald-500" : "text-destructive"}`}>{t.profit >= 0 ? "+" : ""}${t.profit.toFixed(2)}</span>
                         </div>
-                        <span className="text-[10px] text-muted-foreground">{t.bets} bets · ${t.wagered.toFixed(0)} wagered</span>
+                        <span className="text-[10px] text-muted-foreground">{t.bets} trades · ${t.wagered.toFixed(0)} wagered</span>
                       </div>
                     </div>
                   ))}
