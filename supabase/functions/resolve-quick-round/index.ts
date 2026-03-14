@@ -327,7 +327,7 @@ Deno.serve(async (req) => {
     // Get commission rate
     const { data: settings } = await supabase
       .from("commission_settings")
-      .select("id, admin_fee_percent, creator_fee_percent, quick_trade_fee_percent, qt_streak_2x, qt_streak_3x, qt_streak_4x, qt_streak_5x, qt_disabled_assets")
+      .select("id, admin_fee_percent, creator_fee_percent, quick_trade_fee_percent, qt_streak_2x, qt_streak_3x, qt_streak_4x, qt_streak_5x, qt_disabled_assets, qt_one_sided_bonus")
       .limit(1)
       .single();
     const platformFee = settings?.quick_trade_fee_percent != null
