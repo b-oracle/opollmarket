@@ -107,8 +107,8 @@ Deno.serve(async (req) => {
       // Notify user
       await supabase.from("notifications").insert({
         user_id: userId,
-        title: "Quick Trade Bonus Credit 🎁",
-        message: `You've been credited $${amount.toFixed(2)} as a one-sided market bonus refund. Thank you for trading!`,
+        title: "QuickTrade Winning Bonus! 💰",
+        message: `You've been credited $${amount.toFixed(2)} as a bonus for winning in one-sided rounds. Keep trading!`,
         type: "payout",
       });
 
