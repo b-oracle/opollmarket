@@ -95,6 +95,7 @@ async function tryPayazaNameEnquiry(
     currency: "NGN",
   };
 
+  // Only use secret key for auth (merchant key is an account reference, not an API key)
   const authVariants: Array<{ label: string; headers: Record<string, string> }> = [];
 
   if (secretKey) {
@@ -102,14 +103,6 @@ async function tryPayazaNameEnquiry(
     authVariants.push({
       label: "payaza-secret",
       headers: { Authorization: `Payaza ${encodedSecret}`, "X-TenantID": "live" },
-    });
-  }
-
-  if (merchantKey) {
-    const encodedMerchant = btoa(merchantKey);
-    authVariants.push({
-      label: "payaza-merchant",
-      headers: { Authorization: `Payaza ${encodedMerchant}`, "X-TenantID": "live" },
     });
   }
 
