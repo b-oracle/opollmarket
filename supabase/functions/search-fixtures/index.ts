@@ -94,7 +94,6 @@ Deno.serve(async (req) => {
         { headers }
       );
       const fixtureData = await fixtureResp.json();
-      console.log(`Football fixtures API response for team ${teamId}: ${fixtureData?.response?.length ?? 0} results, errors: ${JSON.stringify(fixtureData?.errors || {})}`);
       const rawFixtures = fixtureData?.response || [];
 
       const fixtures = rawFixtures.map((f: any) => ({
