@@ -1075,7 +1075,7 @@ const Create = () => {
       setSubmitStep("first_prediction");
       toast.success("Market created! Now place your first prediction to make it official.");
     }
-  }, [user, address, title, description, category, endDate, resolutionSource, initialLiquidity, marketType, options, feeBypass, marketCreationFee, videoUrl, draftId]);
+  }, [user, address, title, description, category, endDate, resolutionSource, initialLiquidity, marketType, options, feeBypass, marketCreationFee, videoUrl, draftId, creationBoost, creationBoostTier, creationBroadcast]);
 
   // Token-gate verification using wallet NFTs
   const runGateCheck = async () => {
