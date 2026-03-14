@@ -66,6 +66,7 @@ const AdminSettings = () => {
   const [qtStreak3, setQtStreak3] = useState("");
   const [qtStreak4, setQtStreak4] = useState("");
   const [qtStreak5, setQtStreak5] = useState("");
+  const [qtOneSidedBonus, setQtOneSidedBonus] = useState(true);
   const [qtEnabledAssets, setQtEnabledAssets] = useState<Set<string>>(new Set(ALL_ASSETS.map(a => a.symbol)));
   const [qtDisabledAssets, setQtDisabledAssets] = useState<Set<string>>(new Set());
   const [qtEnabledTimeframes, setQtEnabledTimeframes] = useState<Set<number>>(new Set(ALL_TIMEFRAMES.map(t => t.seconds)));
