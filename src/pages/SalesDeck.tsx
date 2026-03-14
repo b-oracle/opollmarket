@@ -37,7 +37,7 @@ const slides = [
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { step: "1", emoji: "🔍", title: "Pick a Market", desc: "Browse hundreds of prediction markets on trending topics — from BTC price to election results." },
-            { step: "2", emoji: "💰", title: "Place Your Bet", desc: "Buy YES or NO shares at dynamic prices. The earlier you're right, the bigger your profit." },
+            { step: "2", emoji: "💰", title: "Place Your Prediction", desc: "Buy YES or NO shares at dynamic prices. The earlier you're right, the bigger your profit." },
             { step: "3", emoji: "🎉", title: "Cash Out", desc: "When the event resolves, winning shares pay out $1 each. Withdraw your profits in crypto." },
           ].map((item, i) => (
             <div key={i} className="bg-white/5 rounded-2xl p-6 border border-white/10 text-center">
