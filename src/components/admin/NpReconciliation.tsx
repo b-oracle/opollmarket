@@ -465,7 +465,7 @@ const NpReconciliation = () => {
               <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
             )}
             <p className="text-xs font-semibold">
-              Checked {fixedResults.total_checked} expired deposits — {fixedResults.fixed.length} recovered, {fixedResults.skipped.length} skipped
+              Checked {fixedResults.total_checked ?? 0} expired deposits — {(fixedResults.fixed || []).length} recovered, {(fixedResults.skipped || []).length} skipped
             </p>
           </div>
           {fixedResults.fixed.length > 0 && (
