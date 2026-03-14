@@ -369,6 +369,25 @@ const Portfolio = () => {
     }
   }, [sellTarget, user?.id, queryClient]);
 
+  const openPortfolioShare = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    activeCaptureRef.current = portfolioCardRef.current;
+    setShareTitle("My Portfolio Performance");
+    setShareUrl(`${window.location.origin}/portfolio`);
+    setShareModalOpen(true);
+  };
+
+  const openPositionShare = (pos: EnrichedPosition, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSharePositionData(pos);
+    const ref = positionCardRefs.current.get(pos.id);
+    activeCaptureRef.current = ref || null;
+    setShareTitle(`${pos.marketTitle} - ${pos.side.toUpperCase()}`);
+    setShareUrl(`${window.location.origin}/market/${pos.marketId}`);
+    setShareModalOpen(true);
+  };
+
+
   if (authLoading) {
     return (
       <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
