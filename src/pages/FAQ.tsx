@@ -146,17 +146,53 @@ const faqSections = [
   },
 ];
 
+const MAX_AI_RESPONSES = 3;
+
+const findBestFaqMatch = (userQuery: string) => {
+  const words = userQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  let bestMatch: { question: string; answer: string } | null = null;
+  let bestScore = 0;
+
+  for (const section of faqSections) {
+    for (const item of section.items) {
+      const text = (item.question + " " + item.answer).toLowerCase();
+      const score = words.reduce((acc, word) => acc + (text.includes(word) ? 1 : 0), 0);
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = item;
+      }
+    }
+  }
+
+  return bestScore >= 1 ? bestMatch : null;
+};
+
 const FAQ = () => {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [aiAnswer, setAiAnswer] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [showAiAnswer, setShowAiAnswer] = useState(false);
+  const [isLimitFallback, setIsLimitFallback] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const aiUsageCount = useRef(0);
 
   const handleAskAI = useCallback(async () => {
     const trimmed = query.trim();
     if (!trimmed || trimmed.length < 3 || isStreaming) return;
+
+    // Check session limit
+    if (aiUsageCount.current >= MAX_AI_RESPONSES) {
+      const match = findBestFaqMatch(trimmed);
+      setIsLimitFallback(true);
+      setShowAiAnswer(true);
+      if (match) {
+        setAiAnswer(`**You've reached the AI assist limit for this session.** Here's a related answer from our FAQ:\n\n**${match.question}**\n\n${match.answer}`);
+      } else {
+        setAiAnswer("**You've reached the AI assist limit for this session.** Please browse the FAQ sections below for answers, or reload the page to start a new session.");
+      }
+      return;
+    }
 
     abortRef.current?.abort();
     const controller = new AbortController();
@@ -165,6 +201,7 @@ const FAQ = () => {
     setIsStreaming(true);
     setAiAnswer("");
     setShowAiAnswer(true);
+    setIsLimitFallback(false);
 
     try {
       const resp = await fetch(CHAT_URL, {
@@ -242,6 +279,9 @@ const FAQ = () => {
           } catch { /* ignore */ }
         }
       }
+
+      // Increment usage count on successful AI response
+      aiUsageCount.current += 1;
     } catch (e: any) {
       if (e.name !== "AbortError") {
         toast.error("Failed to get answer. Please try again.");
