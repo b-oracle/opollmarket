@@ -171,6 +171,7 @@ const AdminSettings = () => {
   const blueMaxFreeMarketsNum = parseInt(blueMaxFreeMarkets) || 5;
   const goldMaxFreeMarketsNum = parseInt(goldMaxFreeMarkets) || 20;
   const aiGenerationCostNum = parseFloat(aiGenerationCost) || 0;
+  const autoResolveFeeNum = parseFloat(autoResolveFee) || 0;
   const maxTotalFee = Math.max(adminNum + creatorNum, adminNum + creatorBlueNum, adminNum + creatorGoldNum) + referrerCommissionNum;
   const totalFee = adminNum + creatorNum + referrerCommissionNum;
   const poolPercent = 100 - totalFee;
