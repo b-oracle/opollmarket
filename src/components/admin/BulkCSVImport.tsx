@@ -211,6 +211,8 @@ const BulkCSVImport = ({ onComplete }: BulkCSVImportProps) => {
             resolution_source: m.resolution_source,
             initial_liquidity: m.initial_liquidity,
             liquidity: m.initial_liquidity,
+            volume: 0,
+            participants: 0,
             market_type: m.market_type,
             trending: m.trending,
             status: "active",

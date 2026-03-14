@@ -277,7 +277,8 @@ async function handleResolve(
   console.log("resolve-market: Success, winners:", winningPositions.length, "losers:", losingPositions.length, "one-sided:", isOneSided, "paid:", totalPaidOut);
 
   // ── Return initial liquidity to creator (minus exit fee) ──
-  if (market.initial_liquidity > 0) {
+  // Only refund if the liquidity was actually paid (verified), not admin-simulated
+  if (market.initial_liquidity > 0 && market.liquidity_verified) {
     const creatorUserId = market.creator_wallet;
 
     // Get exit fee from commission_settings
