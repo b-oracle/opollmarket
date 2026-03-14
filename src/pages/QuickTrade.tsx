@@ -854,7 +854,7 @@ export default function QuickTrade() {
     return () => clearInterval(iv);
   }, [activeRound]);
 
-  // ── Check user bet on this round ──
+  // ── Check user trade on this round ──
   useEffect(() => {
     if (!user || !activeRound) {
       setUserBet(null);
@@ -912,7 +912,7 @@ export default function QuickTrade() {
     setHistoryPage(0);
   }, [selectedAsset.symbol]);
 
-  // ── User recent bets ──
+  // ── User recent trades ──
   useEffect(() => {
     if (!user) return;
     const load = async () => {
@@ -966,7 +966,7 @@ export default function QuickTrade() {
                 haptic("error");
               }
             } else {
-              // No bet placed, still flash neutral
+              // No trade placed, still flash neutral
               setResolveFlash(resolvedResult === "up" ? "win" : "lose");
               setTimeout(() => setResolveFlash(null), 1500);
             }
@@ -980,7 +980,7 @@ export default function QuickTrade() {
     return () => { supabase.removeChannel(channel); };
   }, [fetchActiveRound, user, fireWinConfetti]);
 
-  // ── Place bet ──
+  // ── Place trade ──
   const placeBet = async (side: "up" | "down") => {
     if (!user) {
       navigate("/auth");
@@ -1018,7 +1018,7 @@ export default function QuickTrade() {
         return;
       }
 
-      // Insert bet
+      // Insert trade
       const { error: betErr } = await supabase.from("quick_bets").insert({
         user_id: user.id,
         round_id: activeRound.id,
@@ -1035,7 +1035,7 @@ export default function QuickTrade() {
       // We need an edge function for placing quick bets. For now, let's use the existing place-bet pattern.
 
       // Workaround: use RPC or a simpler approach — actually balances can't be updated by users.
-      // Let's create the bet and handle deduction in the resolve function by tracking it.
+      // Let's create the trade and handle deduction in the resolve function by tracking it.
       // Better approach: deduct via an edge function call.
 
       // For now, we'll invoke a simple function
@@ -1062,7 +1062,7 @@ export default function QuickTrade() {
         },
       }).catch(() => {});
 
-      // Reload bet state
+      // Reload trade state
       const { data: newBet } = await supabase
         .from("quick_bets")
         .select("*")
@@ -1326,7 +1326,7 @@ export default function QuickTrade() {
                       })()}
                     </div>
                     {/* Countdown timer removed — already shown prominently in header above */}
-                    {/* "Price to beat" badge — only when user has an active bet */}
+                    {/* "Price to beat" badge — only when user has an active trade */}
                     {userBet && activeRound?.open_price && (
                       <div className="absolute bottom-2 right-2 z-10">
                         <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold backdrop-blur-sm border bg-amber-500/10 text-amber-500 border-amber-500/30">

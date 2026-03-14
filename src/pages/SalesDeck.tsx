@@ -37,7 +37,7 @@ const slides = [
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { step: "1", emoji: "🔍", title: "Pick a Market", desc: "Browse hundreds of prediction markets on trending topics — from BTC price to election results." },
-            { step: "2", emoji: "💰", title: "Place Your Bet", desc: "Buy YES or NO shares at dynamic prices. The earlier you're right, the bigger your profit." },
+            { step: "2", emoji: "💰", title: "Place Your Prediction", desc: "Buy YES or NO shares at dynamic prices. The earlier you're right, the bigger your profit." },
             { step: "3", emoji: "🎉", title: "Cash Out", desc: "When the event resolves, winning shares pay out $1 each. Withdraw your profits in crypto." },
           ].map((item, i) => (
             <div key={i} className="bg-white/5 rounded-2xl p-6 border border-white/10 text-center">
@@ -119,7 +119,7 @@ const slides = [
         <div className="space-y-4">
           {[
             { icon: "🎯", title: "Win Predictions", desc: "Buy shares at low prices, earn $1 per share when you're right. 2x–20x returns possible.", tag: "TRADING" },
-            { icon: "⚡", title: "Quick Trade Streaks", desc: "Build winning streaks in 30s rounds for up to 5x multiplier on your bets.", tag: "GAMING" },
+            { icon: "⚡", title: "Quick Trade Streaks", desc: "Build winning streaks in 30s rounds for up to 5x multiplier on your trades.", tag: "GAMING" },
             { icon: "👥", title: "Copy Trade Commissions", desc: "Let others copy your trades and earn a commission on their profits.", tag: "PASSIVE" },
             { icon: "🔗", title: "Refer Friends", desc: "Share your referral link and earn bonus balance when friends sign up and trade.", tag: "REFERRAL" },
             { icon: "🏪", title: "Create Markets", desc: "Launch your own prediction markets and earn creator fees on every trade.", tag: "CREATOR" },
@@ -185,8 +185,8 @@ const slides = [
         <div className="space-y-5">
           {[
             { step: "1", title: "Sign Up Free", desc: "Create your account with just an email. No credit card, no KYC hassle.", color: "from-[hsl(193,98%,50%)] to-[hsl(193,80%,35%)]" },
-            { step: "2", title: "Deposit Crypto", desc: "Fund your account with BTC, ETH, BNB, USDT or 50+ other cryptocurrencies.", color: "from-[hsl(145,80%,42%)] to-[hsl(145,60%,30%)]" },
-            { step: "3", title: "Start Predicting", desc: "Browse markets, place your bets, and start earning. It's that simple.", color: "from-[hsl(280,80%,55%)] to-[hsl(280,60%,40%)]" },
+            { step: "2", title: "Deposit Stablecoins", desc: "Fund your account with USDT, USDC, or DAI across multiple networks.", color: "from-[hsl(145,80%,42%)] to-[hsl(145,60%,30%)]" },
+            { step: "3", title: "Start Predicting", desc: "Browse markets, place your predictions, and start earning. It's that simple.", color: "from-[hsl(280,80%,55%)] to-[hsl(280,60%,40%)]" },
             { step: "4", title: "Withdraw Profits", desc: "Cash out your winnings directly to your crypto wallet anytime.", color: "from-[hsl(30,90%,50%)] to-[hsl(30,70%,35%)]" },
           ].map((item, i) => (
             <div key={i} className="flex items-center gap-5">

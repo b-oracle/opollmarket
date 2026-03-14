@@ -46,7 +46,7 @@ const AdminPredictions = () => {
   const [profileMap, setProfileMap] = useState<Map<string, string>>(new Map());
   const [marketPage, setMarketPage] = useState(1);
   const [betPage, setBetPage] = useState(1);
-  const [activeTab, setActiveTab] = useState<"overview" | "markets" | "bets">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "markets" | "predictions">("overview");
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -221,8 +221,8 @@ const AdminPredictions = () => {
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl bg-muted/50 w-fit">
-        {(["overview", "markets", "bets"] as const).map(t => (
-          <button key={t} onClick={() => setActiveTab(t)} className={`px-4 py-2 rounded-lg text-xs font-semibold capitalize transition-all ${activeTab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{t}</button>
+        {([{ key: "overview", label: "Overview" }, { key: "markets", label: "Markets" }, { key: "predictions", label: "Predictions" }] as const).map(t => (
+          <button key={t.key} onClick={() => setActiveTab(t.key as any)} className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === t.key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{t.label}</button>
         ))}
       </div>
 
@@ -369,7 +369,7 @@ const AdminPredictions = () => {
         </div>
       )}
 
-      {activeTab === "bets" && (
+      {activeTab === "predictions" && (
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

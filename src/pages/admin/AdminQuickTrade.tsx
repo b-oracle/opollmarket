@@ -47,7 +47,7 @@ const AdminQuickTrade = () => {
   const [profileMap, setProfileMap] = useState<Map<string, string>>(new Map());
   const [roundPage, setRoundPage] = useState(1);
   const [betPage, setBetPage] = useState(1);
-  const [activeTab, setActiveTab] = useState<"overview" | "rounds" | "bets">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "rounds" | "trades">("overview");
 
   useEffect(() => {
     const fetch = async () => {
@@ -174,7 +174,7 @@ const AdminQuickTrade = () => {
 
   const cards = [
     { label: "Total Rounds", value: stats.totalRounds, icon: Timer, color: "text-primary" },
-    { label: "Total Bets", value: stats.totalBets, icon: Zap, color: "text-blue-500" },
+    { label: "Total Trades", value: stats.totalBets, icon: Zap, color: "text-blue-500" },
     { label: "Unique Traders", value: stats.uniqueTraders, icon: Users, color: "text-emerald-500" },
     { label: "Total Wagered", value: `$${stats.totalWagered.toFixed(2)}`, icon: DollarSign, color: "text-amber-500" },
     { label: "Total Payouts", value: `$${stats.totalPayout.toFixed(2)}`, icon: TrendingUp, color: "text-purple-500" },
@@ -207,8 +207,8 @@ const AdminQuickTrade = () => {
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl bg-muted/50 w-fit">
-        {(["overview", "rounds", "bets"] as const).map(t => (
-          <button key={t} onClick={() => setActiveTab(t)} className={`px-4 py-2 rounded-lg text-xs font-semibold capitalize transition-all ${activeTab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{t}</button>
+        {([{ key: "overview", label: "Overview" }, { key: "rounds", label: "Rounds" }, { key: "trades", label: "Trades" }] as const).map(t => (
+          <button key={t.key} onClick={() => setActiveTab(t.key as any)} className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === t.key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{t.label}</button>
         ))}
       </div>
 
@@ -217,7 +217,7 @@ const AdminQuickTrade = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Volume chart */}
             <div className="bg-card border border-border rounded-xl p-5">
-              <h3 className="text-sm font-semibold mb-4">Daily Volume & Bets</h3>
+              <h3 className="text-sm font-semibold mb-4">Daily Volume & Trades</h3>
               <div className="h-52">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={stats.chartData}>
@@ -302,7 +302,7 @@ const AdminQuickTrade = () => {
                           <span className="text-xs font-medium truncate">{t.name}</span>
                           <span className={`text-xs font-semibold ${t.profit >= 0 ? "text-emerald-500" : "text-destructive"}`}>{t.profit >= 0 ? "+" : ""}${t.profit.toFixed(2)}</span>
                         </div>
-                        <span className="text-[10px] text-muted-foreground">{t.bets} bets · ${t.wagered.toFixed(0)} wagered</span>
+                        <span className="text-[10px] text-muted-foreground">{t.bets} trades · ${t.wagered.toFixed(0)} wagered</span>
                       </div>
                     </div>
                   ))}
@@ -357,7 +357,7 @@ const AdminQuickTrade = () => {
         </div>
       )}
 
-      {activeTab === "bets" && (
+      {activeTab === "trades" && (
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
