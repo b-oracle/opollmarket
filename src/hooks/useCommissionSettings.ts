@@ -33,6 +33,9 @@ export const useCommissionSettings = () => {
         return {
           admin_fee_percent: 2,
           creator_fee_percent: 3,
+          creator_fee_blue_percent: 3,
+          creator_fee_gold_percent: 3,
+          referrer_commission_percent: 0,
           exit_fee_percent: 5,
           quick_trade_fee_percent: 5,
           qt_min_bet: 1,
