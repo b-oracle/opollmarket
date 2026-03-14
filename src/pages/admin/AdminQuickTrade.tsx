@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Zap, TrendingUp, TrendingDown, Users, DollarSign, Timer, BarChart3, Trophy, Flame, CheckCircle, RotateCcw, Info } from "lucide-react";
+import { Loader2, Zap, TrendingUp, TrendingDown, Users, DollarSign, Timer, BarChart3, Trophy, Flame, CheckCircle, RotateCcw, Info, Gift } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -46,18 +46,22 @@ const AdminQuickTrade = () => {
   const [rounds, setRounds] = useState<RoundRow[]>([]);
   const [bets, setBets] = useState<BetRow[]>([]);
   const [profileMap, setProfileMap] = useState<Map<string, string>>(new Map());
+  const [bonusTxs, setBonusTxs] = useState<{ amount: number; created_at: string }[]>([]);
   const [roundPage, setRoundPage] = useState(1);
   const [betPage, setBetPage] = useState(1);
   const [activeTab, setActiveTab] = useState<"overview" | "rounds" | "trades">("overview");
 
   useEffect(() => {
     const fetch = async () => {
-      const fetchAllData = async (table: any) => {
+      const fetchAllData = async (table: any, selectCols?: string) => {
         let allData: any[] = [];
         let page = 0;
         let hasMore = true;
         while (hasMore) {
-          const { data } = await supabase.from(table).select("*").order("created_at", { ascending: false }).range(page * 1000, (page + 1) * 1000 - 1);
+          const query = selectCols
+            ? supabase.from(table).select(selectCols).order("created_at", { ascending: false }).range(page * 1000, (page + 1) * 1000 - 1)
+            : supabase.from(table).select("*").order("created_at", { ascending: false }).range(page * 1000, (page + 1) * 1000 - 1);
+          const { data } = await query;
           if (data && data.length > 0) {
             allData = [...allData, ...data];
             page++;
@@ -69,12 +73,14 @@ const AdminQuickTrade = () => {
         return allData;
       };
 
-      const [roundData, betData] = await Promise.all([
+      const [roundData, betData, bonusTxData] = await Promise.all([
         fetchAllData("quick_rounds"),
         fetchAllData("quick_bets"),
+        supabase.from("transactions").select("amount, created_at").eq("type", "qt_one_sided_bonus").eq("status", "confirmed").then(r => r.data || []),
       ]);
       setRounds(roundData || []);
       setBets(betData || []);
+      setBonusTxs(bonusTxData as any[]);
 
       const userIds = [...new Set((betData || []).map(b => b.user_id))];
       if (userIds.length > 0) {
@@ -105,7 +111,9 @@ const AdminQuickTrade = () => {
     const totalWagered = filteredBets.reduce((sum, b) => sum + Number(b.amount), 0);
     const totalPayout = filteredBets.filter(b => b.status === "won").reduce((sum, b) => sum + Number(b.payout || 0), 0);
     const totalRefunded = filteredBets.filter(b => b.status === "refunded").reduce((sum, b) => sum + Number(b.payout || 0), 0);
-    const platformProfit = totalWagered - totalPayout - totalRefunded;
+    const filteredBonusTxs = days ? bonusTxs.filter(t => t.created_at >= cutoff) : bonusTxs;
+    const totalBonusPaid = filteredBonusTxs.reduce((sum, t) => sum + Number(t.amount), 0);
+    const platformProfit = totalWagered - totalPayout - totalRefunded - totalBonusPaid;
     const uniqueTraders = new Set(filteredBets.map(b => b.user_id)).size;
     const wonBets = filteredBets.filter(b => b.status === "won").length;
     const lostBets = filteredBets.filter(b => b.status === "lost").length;
@@ -159,7 +167,7 @@ const AdminQuickTrade = () => {
       .sort((a, b) => b.profit - a.profit)
       .slice(0, 10);
 
-    return { totalRounds, resolvedRounds, totalBets, totalWagered, totalPayout, totalRefunded, platformProfit, uniqueTraders, wonBets, lostBets, assetData, chartData, topTraders };
+    return { totalRounds, resolvedRounds, totalBets, totalWagered, totalPayout, totalRefunded, totalBonusPaid, platformProfit, uniqueTraders, wonBets, lostBets, assetData, chartData, topTraders };
   }, [rounds, bets, range, profileMap]);
 
   const paginatedRounds = useMemo(() => {
@@ -187,7 +195,8 @@ const AdminQuickTrade = () => {
     { label: "Total Wagered", value: `$${stats.totalWagered.toFixed(2)}`, icon: DollarSign, color: "text-chart-4" },
     { label: "Total Payouts", value: `$${stats.totalPayout.toFixed(2)}`, icon: TrendingUp, color: "text-primary" },
     { label: "Total Refunded", value: `$${stats.totalRefunded.toFixed(2)}`, icon: RotateCcw, color: "text-muted-foreground" },
-    { label: "Platform Profit", value: `$${stats.platformProfit.toFixed(2)}`, icon: BarChart3, color: stats.platformProfit >= 0 ? "text-chart-3" : "text-destructive", tooltip: "Fees retained from winning pools + full stakes from rounds with no winners" },
+    { label: "Bonus Paid", value: `$${stats.totalBonusPaid.toFixed(2)}`, icon: Gift, color: "text-chart-2", tooltip: "0.5% bonus paid to winners in one-sided markets (no losers)" },
+    { label: "Platform Profit", value: `$${stats.platformProfit.toFixed(2)}`, icon: BarChart3, color: stats.platformProfit >= 0 ? "text-chart-3" : "text-destructive", tooltip: "Wagered - Payouts - Refunded - Bonus Paid" },
   ];
 
   return (
