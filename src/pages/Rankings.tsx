@@ -463,11 +463,8 @@ const Rankings = () => {
     referralSort === "totalEarned" ? b.totalEarned - a.totalEarned : b.totalReferrals - a.totalReferrals
   );
 
-  const sortedTraders = [...traders].sort((a, b) => {
-    if (traderSort === "pnl") return b.pnl - a.pnl;
-    if (traderSort === "volume") return b.volume - a.volume;
-    return b.trades - a.trades;
-  });
+  // Sorting is now handled server-side by the RPC
+  const sortedTraders = traders;
 
   const loading = tab === "referrers" ? refLoading : tab === "quick" ? (quickSubTab === "streaks" ? streakLoading : quickLoading) : tradeLoading;
 
