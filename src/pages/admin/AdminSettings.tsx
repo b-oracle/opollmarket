@@ -125,6 +125,7 @@ const AdminSettings = () => {
         setGoldMaxFreeMarkets(String(d.gold_max_free_markets ?? 20));
         setAiGenerationCost(String(d.ai_generation_cost ?? 0.5));
         setPayazaMode(d.payaza_mode === "checkout_sdk" ? "checkout_sdk" : "direct_api");
+        setQtOneSidedBonus(d.qt_one_sided_bonus !== false);
         setSettingsId(d.id);
       }
       if (error) console.error(error);
