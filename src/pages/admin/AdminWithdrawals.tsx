@@ -275,7 +275,9 @@ const AdminWithdrawals = () => {
                       </span>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground max-w-[120px] truncate">
-                      {w.admin_note || "—"}
+                      {w.admin_note || (w.nowpayments_id ? (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20 text-[10px] font-semibold">Auto</span>
+                      ) : "—")}
                     </TableCell>
                     <TableCell className="text-right">
                       {w.status === "pending" && canEdit && (
