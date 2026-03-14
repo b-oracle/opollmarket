@@ -1035,7 +1035,7 @@ export default function QuickTrade() {
       // We need an edge function for placing quick bets. For now, let's use the existing place-bet pattern.
 
       // Workaround: use RPC or a simpler approach — actually balances can't be updated by users.
-      // Let's create the bet and handle deduction in the resolve function by tracking it.
+      // Let's create the trade and handle deduction in the resolve function by tracking it.
       // Better approach: deduct via an edge function call.
 
       // For now, we'll invoke a simple function
