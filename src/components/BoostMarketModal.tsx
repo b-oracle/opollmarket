@@ -212,7 +212,7 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
                 </div>
                 <div className="flex justify-between border-t border-border pt-2 mt-2">
                   <span className="font-bold text-foreground">Total</span>
-                  <span className="font-bold text-foreground">${selectedTier.price} USD</span>
+                  <span className="font-bold text-foreground">{`$${selectedTier.price} USD`}</span>
                 </div>
               </div>
             </div>
