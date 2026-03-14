@@ -711,7 +711,7 @@ export default function QuickTrade() {
               // Jitter tick for alive feel
               setCurrentPrice((cur) => {
                 if (cur == null) return cur;
-                const jitter = cur * (Math.random() - 0.5) * 0.0001;
+                const jitter = cur * (Math.random() - 0.5) * 0.00035;
                 const tickPrice = cur + jitter;
                 applyStreamingPrice(tickPrice);
                 const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
