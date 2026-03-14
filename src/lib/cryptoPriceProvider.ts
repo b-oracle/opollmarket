@@ -120,10 +120,10 @@ export async function fetchCryptoPrice(
   return cached?.price ?? null;
 }
 
-// ── Commodity & Forex price fetchers ──
-// Twelve Data (via edge proxy) is primary for commodities.
-// ExchangeRate API (via edge proxy) is primary for forex.
-// Both keep API keys secure server-side while the client calls them directly.
+// ── Commodity & Forex: Realtime-first, edge function fallback ──
+// The server-side qt-price-broadcaster writes prices to commodity_price_cache every 60s.
+// Clients subscribe to Realtime updates on that table. Direct edge function calls
+// are only used as initial bootstrap / rare fallback.
 
 const METAL_MAP: Record<string, string> = {
   XAU: "gold", XAG: "silver", XPT: "platinum", XPD: "palladium",
@@ -152,8 +152,86 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 8
   }
 }
 
-// ── Single edge function call for commodities (handles full fallback chain server-side) ──
-async function fetchCommodityPrice(asset: string): Promise<number | null> {
+// ── Realtime price cache (populated by Supabase Realtime subscription) ──
+const realtimePriceCache = new Map<string, { price: number; updatedAt: number }>();
+let realtimeChannelActive = false;
+
+/**
+ * Start a single Supabase Realtime subscription on commodity_price_cache.
+ * All non-crypto asset prices flow through here instead of per-client polling.
+ */
+function ensureRealtimeSubscription() {
+  if (realtimeChannelActive) return;
+  realtimeChannelActive = true;
+
+  const channel = supabase
+    .channel("qt-price-stream")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "commodity_price_cache" },
+      (payload) => {
+        const row = (payload.new as any);
+        if (!row?.asset || row?.price == null) return;
+        const asset = row.asset as string;
+        const price = Number(row.price);
+        if (isNaN(price)) return;
+
+        realtimePriceCache.set(asset, { price, updatedAt: Date.now() });
+
+        // Feed into interpolation system for smooth chart streaming
+        // Determine the original symbol (strip forex: prefix if present)
+        const originalSymbol = asset.startsWith("forex:") ? asset.slice(6) : asset;
+        feedRealPrice(originalSymbol, price);
+
+        // Also update the main cache
+        cache.set(originalSymbol.toUpperCase(), { price, fetchedAt: Date.now(), provider: "realtime" });
+      }
+    )
+    .subscribe();
+}
+
+/**
+ * Get cached price from Realtime subscription.
+ */
+function getRealtimePrice(asset: string): number | null {
+  const entry = realtimePriceCache.get(asset);
+  if (!entry) return null;
+  // Accept if less than 5 minutes old (broadcaster runs every 60s, some buffer)
+  if (Date.now() - entry.updatedAt > 300_000) return null;
+  return entry.price;
+}
+
+/**
+ * Bootstrap: load all prices from commodity_price_cache table once.
+ * This populates the cache immediately while waiting for Realtime updates.
+ */
+let bootstrapDone = false;
+async function bootstrapNonCryptoPrices() {
+  if (bootstrapDone) return;
+  bootstrapDone = true;
+
+  try {
+    const { data } = await supabase
+      .from("commodity_price_cache")
+      .select("asset, price, updated_at");
+
+    if (data) {
+      for (const row of data) {
+        const age = Date.now() - new Date(row.updated_at).getTime();
+        if (age < 300_000) { // less than 5 min old
+          realtimePriceCache.set(row.asset, { price: row.price, updatedAt: Date.now() - age });
+          const originalSymbol = row.asset.startsWith("forex:") ? row.asset.slice(6) : row.asset;
+          cache.set(originalSymbol.toUpperCase(), { price: row.price, fetchedAt: Date.now() - age, provider: "db_bootstrap" });
+        }
+      }
+    }
+  } catch {
+    // non-critical
+  }
+}
+
+// ── Direct edge function calls (fallback only) ──
+async function fetchCommodityPriceDirect(asset: string): Promise<number | null> {
   const url = getEdgeFunctionUrl("commodity-price");
   if (!url) return null;
   try {
@@ -170,8 +248,7 @@ async function fetchCommodityPrice(asset: string): Promise<number | null> {
   }
 }
 
-// ── Single edge function call for forex (handles full fallback chain server-side) ──
-async function fetchForexPrice(asset: string): Promise<number | null> {
+async function fetchForexPriceDirect(asset: string): Promise<number | null> {
   const url = getEdgeFunctionUrl("commodity-price");
   if (!url) return null;
   try {
@@ -188,6 +265,32 @@ async function fetchForexPrice(asset: string): Promise<number | null> {
   }
 }
 
+// ── Unified commodity/forex price fetcher (Realtime-first) ──
+async function fetchCommodityPrice(asset: string): Promise<number | null> {
+  // Ensure Realtime is active and bootstrap is loaded
+  ensureRealtimeSubscription();
+  await bootstrapNonCryptoPrices();
+
+  // Try Realtime cache first (zero API calls)
+  const rtPrice = getRealtimePrice(asset);
+  if (rtPrice != null) return rtPrice;
+
+  // Fallback: direct edge function call (rare, only if broadcaster hasn't run yet)
+  return fetchCommodityPriceDirect(asset);
+}
+
+async function fetchForexPrice(asset: string): Promise<number | null> {
+  ensureRealtimeSubscription();
+  await bootstrapNonCryptoPrices();
+
+  // Try Realtime cache (keyed as forex:PAIR)
+  const rtPrice = getRealtimePrice(`forex:${asset}`);
+  if (rtPrice != null) return rtPrice;
+
+  // Fallback
+  return fetchForexPriceDirect(asset);
+}
+
 /**
  * Fetch price for any supported asset (crypto, commodity, or forex).
  */
@@ -200,11 +303,11 @@ export async function fetchAssetPrice(asset: string): Promise<number | null> {
 }
 
 // ── Non-crypto price history accumulator ──
-// Builds rolling history via periodic polling so charts fill up smoothly.
+// Builds rolling history via Realtime-fed prices so charts fill up smoothly.
 
 const nonCryptoHistory = new Map<string, [number, number][]>();
 const NON_CRYPTO_MAX_POINTS = 1000;
-const NON_CRYPTO_POLL_INTERVAL = 10_000; // poll every 10 seconds for smooth charts
+const NON_CRYPTO_POLL_INTERVAL = 30_000; // reduced from 10s since Realtime feeds prices
 const activePollers = new Map<string, { timer: ReturnType<typeof setInterval>; refCount: number }>();
 
 function appendPricePoint(asset: string, price: number) {
@@ -221,9 +324,13 @@ function appendPricePoint(asset: string, price: number) {
 
 /**
  * Start polling for a non-crypto asset's price history.
+ * Now uses Realtime-cached prices (no API calls) with edge function fallback.
  * Returns an unsubscribe function. Multiple callers share the same poller.
  */
 export function startNonCryptoHistoryPoller(asset: string): () => void {
+  ensureRealtimeSubscription();
+  bootstrapNonCryptoPrices();
+
   const existing = activePollers.get(asset);
   if (existing) {
     existing.refCount++;
