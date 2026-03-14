@@ -171,12 +171,13 @@ const AdminUsers = () => {
     const fetchStats = async () => {
       const { data } = await supabase.rpc("get_admin_user_stats");
       if (data) {
+        const d = data as Record<string, number>;
         setStats({
-          totalUsers: Number(data.total_users) || 0,
-          totalBalance: Number(data.total_balance) || 0,
-          totalDeposits: Number(data.total_deposits) || 0,
-          totalWithdrawals: Number(data.total_withdrawals) || 0,
-          totalEarnings: Number(data.total_earnings) || 0,
+          totalUsers: Number(d.total_users) || 0,
+          totalBalance: Number(d.total_balance) || 0,
+          totalDeposits: Number(d.total_deposits) || 0,
+          totalWithdrawals: Number(d.total_withdrawals) || 0,
+          totalEarnings: Number(d.total_earnings) || 0,
         });
       }
     };
