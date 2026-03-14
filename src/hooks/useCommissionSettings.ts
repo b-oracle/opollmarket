@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 export interface CommissionSettings {
   admin_fee_percent: number;
   creator_fee_percent: number;
+  creator_fee_blue_percent: number;
+  creator_fee_gold_percent: number;
+  referrer_commission_percent: number;
   exit_fee_percent: number;
   quick_trade_fee_percent: number;
   qt_min_bet: number;
