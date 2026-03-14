@@ -151,6 +151,13 @@ const Portfolio = () => {
   const { data: commission } = useCommissionSettings();
   const exitFeePercent = commission?.exit_fee_percent ?? 5;
   const { bonusBalance } = useUserBalance();
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [shareTitle, setShareTitle] = useState("");
+  const [shareUrl, setShareUrl] = useState("");
+  const activeCaptureRef = useRef<HTMLDivElement | null>(null);
+  const portfolioCardRef = useRef<HTMLDivElement | null>(null);
+  const positionCardRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+  const [sharePositionData, setSharePositionData] = useState<EnrichedPosition | null>(null);
 
   useEffect(() => { track("page_view", { page: "portfolio" }); }, []);
 
