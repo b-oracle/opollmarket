@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Loader2, Receipt, BarChart3, MessageSquare, Bookmark, Gift, TrendingUp, TrendingDown,
-  ArrowUpFromLine, ArrowDownToLine, Zap, Banknote, Lock, Shield, ShieldOff, RotateCcw
+  ArrowUpFromLine, ArrowDownToLine, Zap, Banknote, Lock, Shield, ShieldOff, RotateCcw,
+  Wallet, DollarSign, Trophy, Skull
 } from "lucide-react";
 import { format } from "date-fns";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -120,6 +121,87 @@ const SecuritySummary = ({ userId }: { userId: string }) => {
           No Security
         </span>
       )}
+    </div>
+  );
+};
+
+const UserSummaryCards = ({ userId }: { userId: string }) => {
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ["admin-user-summary", userId],
+    queryFn: async () => {
+      const [txRes, qbRes, balRes, refRes] = await Promise.all([
+        supabase
+          .from("transactions")
+          .select("type, status, amount")
+          .eq("user_id", userId)
+          .eq("status", "confirmed"),
+        supabase
+          .from("quick_bets")
+          .select("status, amount, payout")
+          .eq("user_id", userId)
+          .in("status", ["won", "lost"]),
+        supabase
+          .from("balances")
+          .select("amount, bonus_balance")
+          .eq("user_id", userId)
+          .maybeSingle(),
+        supabase
+          .from("referral_rewards")
+          .select("amount")
+          .eq("referrer_id", userId),
+      ]);
+
+      const txns = txRes.data || [];
+      const qbs = qbRes.data || [];
+      const bal = balRes.data;
+      const refs = refRes.data || [];
+
+      const deposited = txns.filter(t => t.type === "deposit").reduce((s, t) => s + Number(t.amount), 0);
+      const withdrawn = txns.filter(t => t.type === "withdrawal").reduce((s, t) => s + Number(t.amount), 0);
+      const balance = bal ? Number(bal.amount) + Number(bal.bonus_balance ?? 0) : 0;
+
+      const payouts = txns.filter(t => t.type === "payout").reduce((s, t) => s + Number(t.amount), 0);
+      const refunds = txns.filter(t => t.type === "refund").reduce((s, t) => s + Number(t.amount), 0);
+      const qtWins = qbs.filter(q => q.status === "won").reduce((s, q) => s + Number(q.payout || 0), 0);
+      const refRewards = refs.reduce((s, r) => s + Number(r.amount), 0);
+      const totalWins = payouts + refunds + qtWins + refRewards;
+
+      const buys = txns.filter(t => t.type === "buy" && t.amount).reduce((s, t) => s + Number(t.amount), 0);
+      const qtLosses = qbs.filter(q => q.status === "lost").reduce((s, q) => s + Number(q.amount), 0);
+      const totalLosses = Math.max(0, buys - payouts - refunds) + qtLosses;
+
+      return { deposited, withdrawn, balance, totalWins, totalLosses };
+    },
+    enabled: !!userId,
+  });
+
+  if (isLoading || !stats) return (
+    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
+      {[...Array(5)].map((_, i) => (
+        <div key={i} className="h-16 rounded-xl bg-muted/30 animate-pulse" />
+      ))}
+    </div>
+  );
+
+  const cards = [
+    { label: "Deposited", value: stats.deposited, icon: ArrowDownToLine, cls: "text-primary" },
+    { label: "Withdrawn", value: stats.withdrawn, icon: ArrowUpFromLine, cls: "text-amber-500" },
+    { label: "Balance", value: stats.balance, icon: Wallet, cls: "text-foreground" },
+    { label: "Total Wins", value: stats.totalWins, icon: Trophy, cls: "text-green-500" },
+    { label: "Total Losses", value: stats.totalLosses, icon: Skull, cls: "text-red-500" },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
+      {cards.map(c => (
+        <div key={c.label} className="p-2.5 rounded-xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-1.5 mb-1">
+            <c.icon className={`w-3.5 h-3.5 ${c.cls}`} />
+            <span className="text-[10px] text-muted-foreground font-medium">{c.label}</span>
+          </div>
+          <p className={`text-sm font-bold ${c.cls}`}>${c.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+        </div>
+      ))}
     </div>
   );
 };
@@ -451,6 +533,7 @@ const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDra
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-4" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain", willChange: "scroll-position" } as React.CSSProperties}>
+              <UserSummaryCards userId={userId} />
               {renderContent()}
             </div>
           </motion.div>
