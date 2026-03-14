@@ -1,13 +1,19 @@
 /**
  * Multi-provider asset price fetcher with automatic fallback.
  * Supports crypto (CoinGecko → CoinCap → CryptoCompare), commodities, and forex.
- * Commodities: Twelve Data (via edge proxy) → metals.dev → Omkar/DB fallback
- * Forex: ExchangeRate API (via edge proxy) → Frankfurter
- * Includes Binance WebSocket streaming for real-time sub-second updates,
+ * 
+ * NON-CRYPTO OPTIMIZATION:
+ * Instead of each client polling the commodity-price edge function individually,
+ * a server-side "qt-price-broadcaster" fetches all non-crypto prices every 60s
+ * and writes them to commodity_price_cache. Clients subscribe to Supabase Realtime
+ * on that table, so N users = 1 API call (not N calls).
+ * 
+ * Includes Binance WebSocket streaming for real-time sub-second crypto updates,
  * and smooth interpolation for non-crypto assets.
  */
 
 import { getAssetClass } from "@/data/assetClasses";
+import { supabase } from "@/integrations/supabase/client";
 
 // ── ID maps per provider ──
 const GECKO_IDS: Record<string, string> = {
