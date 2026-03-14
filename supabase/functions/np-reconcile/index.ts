@@ -311,7 +311,7 @@ Deno.serve(async (req) => {
     // Step 3: Fetch all deposit transactions from DB
     const { data: dbDeposits } = await adminClient
       .from("transactions")
-      .select("id, user_id, amount, status, nowpayments_payment_id, created_at")
+      .select("id, user_id, amount, status, nowpayments_payment_id, payment_provider, created_at")
       .eq("type", "deposit")
       .order("created_at");
 
