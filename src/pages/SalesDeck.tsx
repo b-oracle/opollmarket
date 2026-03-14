@@ -119,7 +119,7 @@ const slides = [
         <div className="space-y-4">
           {[
             { icon: "🎯", title: "Win Predictions", desc: "Buy shares at low prices, earn $1 per share when you're right. 2x–20x returns possible.", tag: "TRADING" },
-            { icon: "⚡", title: "Quick Trade Streaks", desc: "Build winning streaks in 30s rounds for up to 5x multiplier on your bets.", tag: "GAMING" },
+            { icon: "⚡", title: "Quick Trade Streaks", desc: "Build winning streaks in 30s rounds for up to 5x multiplier on your trades.", tag: "GAMING" },
             { icon: "👥", title: "Copy Trade Commissions", desc: "Let others copy your trades and earn a commission on their profits.", tag: "PASSIVE" },
             { icon: "🔗", title: "Refer Friends", desc: "Share your referral link and earn bonus balance when friends sign up and trade.", tag: "REFERRAL" },
             { icon: "🏪", title: "Create Markets", desc: "Launch your own prediction markets and earn creator fees on every trade.", tag: "CREATOR" },
