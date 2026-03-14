@@ -27,6 +27,8 @@ const statusColors: Record<string, string> = {
   active: "bg-green-500/10 text-green-500",
   cancelled: "bg-destructive/10 text-destructive",
   expired: "bg-muted text-muted-foreground",
+  "boost_ended": "bg-blue-500/10 text-blue-500",
+  "payment_expired": "bg-yellow-500/10 text-yellow-500",
 };
 
 const tierLabels: Record<string, string> = {
