@@ -18,6 +18,7 @@ export interface CommissionSettings {
   qt_enabled_assets: string;
   qt_enabled_timeframes: string;
   qt_disabled_assets: string;
+  auto_resolve_fee: number;
 }
 
 export const useCommissionSettings = () => {
