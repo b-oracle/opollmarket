@@ -178,6 +178,7 @@ const AdminUsers = () => {
           totalDeposits: Number(d.total_deposits) || 0,
           totalWithdrawals: Number(d.total_withdrawals) || 0,
           totalEarnings: Number(d.total_earnings) || 0,
+          totalLosses: Number(d.total_losses) || 0,
         });
       }
     };
