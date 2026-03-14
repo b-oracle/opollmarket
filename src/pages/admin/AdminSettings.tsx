@@ -220,6 +220,9 @@ const AdminSettings = () => {
         .update({
           admin_fee_percent: adminNum,
           creator_fee_percent: creatorNum,
+          creator_fee_blue_percent: creatorBlueNum,
+          creator_fee_gold_percent: creatorGoldNum,
+          referrer_commission_percent: referrerCommissionNum,
           referral_reward_amount: referralNum,
           min_token_balance: tokenNum,
           min_gold_token_balance: goldTokenNum,
