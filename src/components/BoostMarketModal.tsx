@@ -181,7 +181,7 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
               onClick={() => setStep("confirm")}
               className="w-full py-3.5 rounded-xl font-bold text-sm bg-primary text-primary-foreground transition-all active:scale-95 flex items-center justify-center gap-2"
             >
-              Continue – ${selectedTier.price}
+              {`Continue – $${selectedTier.price}`}
             </button>
           </>
         )}
