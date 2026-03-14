@@ -67,14 +67,12 @@ const AdminAnalytics = () => {
       });
 
       // Paginated fetch helper
-      const fetchPaginated = async <T,>(table: string, select: string, filters: (q: any) => any): Promise<T[]> => {
+      const fetchPaginated = async (buildQuery: (page: number) => any): Promise<any[]> => {
         let all: any[] = [];
         let page = 0;
         let hasMore = true;
         while (hasMore) {
-          let q = supabase.from(table).select(select).range(page * 1000, (page + 1) * 1000 - 1);
-          q = filters(q);
-          const { data } = await q;
+          const { data } = await buildQuery(page);
           if (data && data.length > 0) {
             all = [...all, ...data];
             page++;
@@ -83,7 +81,7 @@ const AdminAnalytics = () => {
             hasMore = false;
           }
         }
-        return all as T[];
+        return all;
       };
 
       // Parallel fetches
