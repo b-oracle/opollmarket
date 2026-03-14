@@ -117,7 +117,7 @@ const AdminMarkets = () => {
       .from("markets")
       .select("status, market_type, volume, participants, liquidity, trending, polymarket_id");
     if (!data) return;
-    const stats: MarketStats = {
+    const stats: MarketStatsData = {
       total: data.length,
       active: data.filter(m => m.status === "active").length,
       binary: data.filter(m => m.market_type === "binary").length,
