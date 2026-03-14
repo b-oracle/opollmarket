@@ -459,6 +459,39 @@ const AdminDashboard = () => {
               </div>
             </div>
 
+            {/* Provider Breakdown */}
+            {stats.providerBreakdown.length > 0 && (
+              <div className="mt-4">
+                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider block mb-2">Credited by Provider</span>
+                <div className="grid grid-cols-2 gap-3">
+                  {(() => {
+                    const crypto = stats.providerBreakdown.find(p => p.provider === "crypto");
+                    const fiat = stats.providerBreakdown.find(p => p.provider === "fiat");
+                    return (
+                      <>
+                        <div className="rounded-lg bg-blue-500/5 border border-blue-500/10 p-3">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <div className="w-2 h-2 rounded-full bg-blue-500" />
+                            <span className="text-[10px] text-muted-foreground font-medium">Crypto (Stablecoins)</span>
+                          </div>
+                          <p className="text-base font-bold text-blue-500">{fmt(crypto?.amount ?? 0)}</p>
+                          <p className="text-[10px] text-muted-foreground">{crypto?.count ?? 0} deposits</p>
+                        </div>
+                        <div className="rounded-lg bg-amber-500/5 border border-amber-500/10 p-3">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <div className="w-2 h-2 rounded-full bg-amber-500" />
+                            <span className="text-[10px] text-muted-foreground font-medium">Fiat (NGN)</span>
+                          </div>
+                          <p className="text-base font-bold text-amber-500">{fmt(fiat?.amount ?? 0)}</p>
+                          <p className="text-[10px] text-muted-foreground">{fiat?.count ?? 0} deposits</p>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+
             {/* Info note */}
             <div className="mt-4 flex items-start gap-2 rounded-lg bg-muted/30 border border-border p-3">
               <Info className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
