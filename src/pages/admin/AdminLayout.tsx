@@ -3,7 +3,7 @@ import { useNavigate, Outlet, NavLink, useLocation, useOutletContext } from "rea
 import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard, ShoppingBag, MessageSquare, Users, LogOut, Loader2,
-  ArrowLeft, PlusCircle, Receipt, Settings, Coins, Menu, X, ArrowUpFromLine, Zap, BarChart3, Rocket, FileCode2, ShieldAlert, Eye, History, ArrowDownToLine, UserCheck, TrendingUp, Presentation, Scale,
+  ArrowLeft, PlusCircle, Receipt, Settings, Coins, Menu, X, ArrowUpFromLine, Zap, BarChart3, Rocket, FileCode2, ShieldAlert, Eye, History, ArrowDownToLine, UserCheck, TrendingUp, Presentation, Scale, Gift,
 } from "lucide-react";
 
 type NavItem = {
@@ -30,6 +30,7 @@ const navItems: NavItem[] = [
   { to: "/admin/moderation", label: "Moderation", icon: ShieldAlert, roles: ["super_admin", "admin", "moderator"] },
   { to: "/admin/comments", label: "Comments", icon: MessageSquare, roles: ["super_admin", "admin", "moderator"] },
   { to: "/admin/users", label: "Users", icon: Users, roles: ["super_admin", "admin", "moderator"] },
+  { to: "/admin/referrals", label: "Referrals", icon: Gift, roles: ["super_admin", "admin"] },
   { to: "/admin/commissions", label: "Commissions", icon: Coins, roles: ["super_admin", "admin"] },
   { to: "/admin/settings", label: "Settings", icon: Settings, roles: ["super_admin"] },
   { to: "/admin/contracts", label: "Smart Contracts", icon: FileCode2, roles: ["super_admin"] },

@@ -57,6 +57,7 @@ const AdminPredictions = lazy(() => import("./pages/admin/AdminPredictions"));
 const AdminSocial = lazy(() => import("./pages/admin/AdminSocial"));
 const InvestorDeck = lazy(() => import("./pages/admin/InvestorDeck"));
 const AdminFiatSettings = lazy(() => import("./pages/admin/AdminFiatSettings"));
+const AdminReferrals = lazy(() => import("./pages/admin/AdminReferrals"));
 const Referrals = lazy(() => import("./pages/Referrals"));
 const FAQ = lazy(() => import("./pages/FAQ"));
 const Disclaimer = lazy(() => import("./pages/Disclaimer"));
@@ -291,6 +292,7 @@ const App = () => (
                           <Route path="predictions" element={<AdminPredictions />} />
                           <Route path="social" element={<AdminSocial />} />
                           <Route path="fiat-settings" element={<AdminFiatSettings />} />
+                          <Route path="referrals" element={<AdminReferrals />} />
                           <Route path="investor-deck" element={<InvestorDeck />} />
                         </Route>
                         <Route path="*" element={<NotFound />} />
