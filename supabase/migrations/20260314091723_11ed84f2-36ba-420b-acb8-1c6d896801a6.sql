@@ -1,0 +1,1 @@
+ALTER TABLE commission_settings ADD COLUMN qt_one_sided_bonus boolean NOT NULL DEFAULT true;
