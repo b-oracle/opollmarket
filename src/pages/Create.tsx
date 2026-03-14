@@ -2733,6 +2733,7 @@ const Create = () => {
             </motion.div>
           )}
         </AnimatePresence>
+        </>)}
       </div>
       
       <BottomNav />
