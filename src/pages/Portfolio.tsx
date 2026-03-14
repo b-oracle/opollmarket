@@ -681,15 +681,23 @@ const Portfolio = () => {
                           </span>
                         </div>
                       </div>
-                      {pos.status === "active" && (
+                      <div className="flex items-center gap-2">
                         <button
-                          onClick={(e) => openSell(pos, e)}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-[10px] font-bold uppercase tracking-wider hover:bg-destructive/20 transition-all active:scale-95"
+                          onClick={(e) => openPositionShare(pos, e)}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold hover:bg-primary/20 transition-all active:scale-95"
                         >
-                          <LogOut className="w-3 h-3" />
-                          Sell
+                          <Share2 className="w-3 h-3" />
                         </button>
-                      )}
+                        {pos.status === "active" && (
+                          <button
+                            onClick={(e) => openSell(pos, e)}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-[10px] font-bold uppercase tracking-wider hover:bg-destructive/20 transition-all active:scale-95"
+                          >
+                            <LogOut className="w-3 h-3" />
+                            Sell
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </motion.div>
                 ))}
