@@ -548,14 +548,14 @@ export default function QuickTrade() {
 
     const appendCryptoChartPoint = (price: number) => {
       const now = Date.now();
-      if (now - lastChartAppend < 300) return; // throttle chart points to ~3/sec
+      if (now - lastChartAppend < 80) return; // throttle chart points to ~12/sec for vibrant streaming
       lastChartAppend = now;
       const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
       const maxCutoff = now - 4 * 60 * 60 * 1000;
       setPriceHistory((prev) => {
         const updated = [...prev, { time: timeLabel, price, ts: now }];
-        const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
-        return filtered.length > 600 ? filtered.slice(-600) : filtered;
+        const filtered = updated.filter((pt) => pt.ts >= maxCutoff).slice(-2000);
+        return filtered.length > 2000 ? filtered.slice(-2000) : filtered;
       });
       const rawCached = rawDataRef.current.get(streamAssetSymbol) || [];
       rawDataRef.current.set(streamAssetSymbol, [...rawCached, [now, price] as [number, number]].filter(([ts]) => ts >= maxCutoff));
@@ -571,8 +571,8 @@ export default function QuickTrade() {
 
     // Start smooth interpolation loop for crypto (~20fps for chart, ~2fps for price display)
     if (selectedAsset.assetClass === "crypto") {
-      const LERP_RATE = 0.15; // 15% toward target per tick — fast but smooth
-      const CRYPTO_TICK_MS = 50; // 20fps for chart
+      const LERP_RATE = 0.25; // 25% toward target per tick — fast, responsive movement
+      const CRYPTO_TICK_MS = 40; // 25fps for chart
       let lastDisplayUpdate = 0;
       const DISPLAY_THROTTLE_MS = 500; // Update price text ~2x/sec
 
@@ -626,14 +626,14 @@ export default function QuickTrade() {
         }
 
         // Append chart points at ~200ms intervals for smooth streaming
-        if (now - lastSmoothUpdate >= 200) {
+        if (now - lastSmoothUpdate >= 100) {
           lastSmoothUpdate = now;
           const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
           const maxCutoff = now - 4 * 60 * 60 * 1000;
 
           setPriceHistory((prev) => {
             const updated = [...prev, { time: timeLabel, price, ts: now }];
-            const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
+            const filtered = updated.filter((pt) => pt.ts >= maxCutoff).slice(-2000);
             return filtered.length > 800 ? filtered.slice(-800) : filtered;
           });
 
