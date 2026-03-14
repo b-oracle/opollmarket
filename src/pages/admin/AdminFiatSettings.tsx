@@ -61,10 +61,11 @@ const AdminFiatSettings = () => {
   const markupNum = parseFloat(nairaRateMarkup) || 0;
   const fallbackNum = parseFloat(fallbackNairaRate) || 1500;
   const payoutMarkdownNum = parseFloat(nairaPayoutMarkdown) || 0;
+  const fallbackPayoutNum = parseFloat(fallbackPayoutNairaRate) || 1500;
   const effectiveRate = liveRate ? Math.round(liveRate * (1 + markupNum / 100) * 100) / 100 : null;
   const effectivePayoutRate = liveRate ? Math.round(liveRate * (1 - payoutMarkdownNum / 100) * 100) / 100 : null;
 
-  const isValid = markupNum >= 0 && markupNum <= 100 && fallbackNum > 0 && payoutMarkdownNum >= 0 && payoutMarkdownNum <= 100;
+  const isValid = markupNum >= 0 && markupNum <= 100 && fallbackNum > 0 && payoutMarkdownNum >= 0 && payoutMarkdownNum <= 100 && fallbackPayoutNum > 0;
 
   const handleSave = async () => {
     if (!isValid || !settingsId) return;
