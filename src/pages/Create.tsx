@@ -2233,7 +2233,7 @@ const Create = () => {
                   })}
                 </div>
                 {(() => {
-                  const totalNeeded = parseFloat(initialLiquidity) + (feeBypass ? marketCreationFee : 0);
+                  const totalNeeded = parseFloat(initialLiquidity) + (feeBypass ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0);
                   const shortfall = totalNeeded - balance;
                   return totalNeeded > balance && balance >= 0 ? (
                     <div className="mt-2 space-y-2">
