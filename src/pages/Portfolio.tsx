@@ -1,5 +1,5 @@
 // Loader2 imported from lucide below
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,7 +29,10 @@ import {
   FileEdit,
   Trash2,
   Edit,
+  Share2,
 } from "lucide-react";
+import ShareModal from "@/components/ShareModal";
+import { PortfolioSummaryShareCard, PositionShareCard } from "@/components/PortfolioShareCards";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import WinCelebrationModal from "@/components/WinCelebrationModal";
