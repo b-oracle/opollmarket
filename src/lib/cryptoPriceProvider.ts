@@ -66,9 +66,19 @@ async function fetchFromCryptoCompare(sym: string): Promise<number | null> {
   return d?.USD ?? null;
 }
 
+async function fetchFromBinanceSpot(sym: string): Promise<number | null> {
+  const binanceSym = BINANCE_SYMS[sym];
+  if (!binanceSym) return null;
+  const r = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${binanceSym}`);
+  if (!r.ok) return null;
+  const d = await r.json();
+  const price = parseFloat(d?.price);
+  return Number.isFinite(price) ? price : null;
+}
+
 // ── Cache & backoff state ──
 const cache = new Map<string, { price: number; fetchedAt: number; provider: string }>();
-const CACHE_TTL = 5_000;
+const CACHE_TTL = 1_500;
 let failCount = 0;
 
 export async function fetchCryptoPrice(
@@ -99,6 +109,7 @@ export async function fetchCryptoPrice(
   const ccSym = CRYPTOCOMPARE_SYMS[sym];
 
   const providers: Array<{ name: string; fn: () => Promise<number | null> }> = [];
+  if (BINANCE_SYMS[sym]) providers.push({ name: "binance", fn: () => fetchFromBinanceSpot(sym) });
   if (gId) providers.push({ name: "coingecko", fn: () => fetchFromCoinGecko(gId) });
   if (ccId) providers.push({ name: "coincap", fn: () => fetchFromCoinCap(ccId) });
   if (ccSym) providers.push({ name: "cryptocompare", fn: () => fetchFromCryptoCompare(ccSym) });

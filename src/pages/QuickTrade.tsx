@@ -157,7 +157,7 @@ async function fetchRawPriceData(asset: QuickTradeAsset): Promise<[number, numbe
 }
 
 // ── SessionStorage-backed chart cache helpers ──
-const CHART_CACHE_PREFIX = "qt_chart_";
+const CHART_CACHE_PREFIX = "qt_chart_v2_";
 const CHART_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 function getSessionCache<T>(key: string): T | null {
@@ -689,7 +689,7 @@ export default function QuickTrade() {
         if (!wsActiveRef.current && isCurrentRun()) {
           const poll = async () => {
             const now = Date.now();
-            const shouldFetch = now - lastFetchTimeRef.current >= 5000;
+            const shouldFetch = now - lastFetchTimeRef.current >= 1500;
 
             if (shouldFetch) {
               lastFetchTimeRef.current = now;
@@ -711,7 +711,7 @@ export default function QuickTrade() {
               // Jitter tick for alive feel
               setCurrentPrice((cur) => {
                 if (cur == null) return cur;
-                const jitter = cur * (Math.random() - 0.5) * 0.0001;
+                const jitter = cur * (Math.random() - 0.5) * 0.00035;
                 const tickPrice = cur + jitter;
                 applyStreamingPrice(tickPrice);
                 const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
@@ -719,7 +719,7 @@ export default function QuickTrade() {
                   const maxCutoff = now - 4 * 60 * 60 * 1000;
                   const updated = [...prev, { time: timeLabel, price: tickPrice, ts: now }];
                   const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
-                  return filtered.length > 500 ? filtered.slice(-500) : filtered;
+                  return filtered.length > 2000 ? filtered.slice(-2000) : filtered;
                 });
                 return cur;
               });
