@@ -328,7 +328,24 @@ const Feed = () => {
     };
     container.addEventListener("scroll", handleScroll, { passive: true });
     return () => container.removeEventListener("scroll", handleScroll);
-  }, [sortedMarkets.length, isDesktop]);
+  }, [sortedMarkets.length, isDesktop, hasMore]);
+
+  // IntersectionObserver for desktop grid infinite scroll
+  useEffect(() => {
+    if (!isDesktop) return;
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          setVisibleCount((c) => c + 20);
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [isDesktop, hasMore]);
 
   if (isLoading) {
     return (
