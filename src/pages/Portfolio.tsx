@@ -1,5 +1,5 @@
 // Loader2 imported from lucide below
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,7 +29,10 @@ import {
   FileEdit,
   Trash2,
   Edit,
+  Share2,
 } from "lucide-react";
+import ShareModal from "@/components/ShareModal";
+import { PortfolioSummaryShareCard, PositionShareCard } from "@/components/PortfolioShareCards";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import WinCelebrationModal from "@/components/WinCelebrationModal";
@@ -148,6 +151,13 @@ const Portfolio = () => {
   const { data: commission } = useCommissionSettings();
   const exitFeePercent = commission?.exit_fee_percent ?? 5;
   const { bonusBalance } = useUserBalance();
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [shareTitle, setShareTitle] = useState("");
+  const [shareUrl, setShareUrl] = useState("");
+  const activeCaptureRef = useRef<HTMLDivElement | null>(null);
+  const portfolioCardRef = useRef<HTMLDivElement | null>(null);
+  const positionCardRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+  const [sharePositionData, setSharePositionData] = useState<EnrichedPosition | null>(null);
 
   useEffect(() => { track("page_view", { page: "portfolio" }); }, []);
 
@@ -359,6 +369,25 @@ const Portfolio = () => {
     }
   }, [sellTarget, user?.id, queryClient]);
 
+  const openPortfolioShare = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    activeCaptureRef.current = portfolioCardRef.current;
+    setShareTitle("My Portfolio Performance");
+    setShareUrl(`${window.location.origin}/portfolio`);
+    setShareModalOpen(true);
+  };
+
+  const openPositionShare = (pos: EnrichedPosition, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSharePositionData(pos);
+    const ref = positionCardRefs.current.get(pos.id);
+    activeCaptureRef.current = ref || null;
+    setShareTitle(`${pos.marketTitle} - ${pos.side.toUpperCase()}`);
+    setShareUrl(`${window.location.origin}/market/${pos.marketId}`);
+    setShareModalOpen(true);
+  };
+
+
   if (authLoading) {
     return (
       <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
@@ -439,6 +468,14 @@ const Portfolio = () => {
           </div>
 
           <div className="grid grid-cols-3 gap-3 pt-3 border-t border-border">
+            <div className="col-span-3 flex justify-end mb-1">
+              <button
+                onClick={openPortfolioShare}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold hover:bg-primary/20 transition-all active:scale-95"
+              >
+                <Share2 className="w-3 h-3" /> Share
+              </button>
+            </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 text-muted-foreground mb-0.5">
                 <DollarSign className="w-3 h-3" />
@@ -644,15 +681,23 @@ const Portfolio = () => {
                           </span>
                         </div>
                       </div>
-                      {pos.status === "active" && (
+                      <div className="flex items-center gap-2">
                         <button
-                          onClick={(e) => openSell(pos, e)}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-[10px] font-bold uppercase tracking-wider hover:bg-destructive/20 transition-all active:scale-95"
+                          onClick={(e) => openPositionShare(pos, e)}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold hover:bg-primary/20 transition-all active:scale-95"
                         >
-                          <LogOut className="w-3 h-3" />
-                          Sell
+                          <Share2 className="w-3 h-3" />
                         </button>
-                      )}
+                        {pos.status === "active" && (
+                          <button
+                            onClick={(e) => openSell(pos, e)}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-[10px] font-bold uppercase tracking-wider hover:bg-destructive/20 transition-all active:scale-95"
+                          >
+                            <LogOut className="w-3 h-3" />
+                            Sell
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </motion.div>
                 ))}
@@ -1024,7 +1069,41 @@ const Portfolio = () => {
         profit={winModal.profit}
       />
 
-      
+      {/* Off-screen share cards */}
+      <PortfolioSummaryShareCard
+        ref={portfolioCardRef}
+        totalInvested={totalInvested}
+        totalValue={totalValue}
+        totalPnl={totalPnl}
+        totalPnlPercent={totalPnlPercent}
+        totalMaxPayout={totalMaxPayout}
+        positionCount={enriched.length}
+      />
+      {filtered.map((pos) => (
+        <PositionShareCard
+          key={`share-${pos.id}`}
+          ref={(el) => { positionCardRefs.current.set(pos.id, el); }}
+          marketTitle={pos.marketTitle}
+          side={pos.side}
+          shares={pos.shares}
+          avgPrice={pos.avgPrice}
+          currentPrice={pos.currentPrice}
+          invested={pos.invested}
+          currentValue={pos.currentValue}
+          unrealizedPnl={pos.unrealizedPnl}
+          pnlPercent={pos.pnlPercent}
+          maxPayout={pos.maxPayout}
+        />
+      ))}
+
+      <ShareModal
+        open={shareModalOpen}
+        onOpenChange={setShareModalOpen}
+        title={shareTitle}
+        marketUrl={shareUrl}
+        captureRef={activeCaptureRef as React.RefObject<HTMLElement | null>}
+      />
+
       <BottomNav />
     </div>
   );
