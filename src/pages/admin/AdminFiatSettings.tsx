@@ -285,6 +285,23 @@ const AdminFiatSettings = () => {
               </p>
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="fallbackPayoutNairaRate">Fallback Payout Rate (₦ per $1)</Label>
+              <Input
+                id="fallbackPayoutNairaRate"
+                type="number"
+                min={1}
+                step={1}
+                value={fallbackPayoutNairaRate}
+                onChange={(e) => setFallbackPayoutNairaRate(e.target.value)}
+                placeholder="1500"
+                disabled={!canEdit}
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Used when the live exchange rate API is unavailable for payouts. Current: ₦{fallbackPayoutNum.toLocaleString()}
+              </p>
+            </div>
+
             {liveRate !== null && (
               <div className="rounded-lg border border-border p-3 space-y-1 bg-muted/50">
                 <p className="text-xs font-semibold">Payout Rate Preview</p>
