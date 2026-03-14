@@ -277,6 +277,7 @@ const App = () => (
                           <Route path="transactions" element={<AdminTransactions />} />
                           <Route path="withdrawals" element={<AdminWithdrawals />} />
                           <Route path="deposits" element={<AdminDeposits />} />
+                          <Route path="reconciliation" element={<AdminReconciliation />} />
                           <Route path="boosts" element={<AdminBoosts />} />
                           <Route path="users" element={<AdminUsers />} />
                           <Route path="commissions" element={<AdminCommissions />} />
