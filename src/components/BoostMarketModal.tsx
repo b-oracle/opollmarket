@@ -178,18 +178,10 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
             </div>
 
             <button
-              onClick={handleCreatePayment}
-              disabled={loading}
-              className="w-full py-3.5 rounded-xl font-bold text-sm bg-primary text-primary-foreground transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+              onClick={() => setStep("confirm")}
+              className="w-full py-3.5 rounded-xl font-bold text-sm bg-primary text-primary-foreground transition-all active:scale-95 flex items-center justify-center gap-2"
             >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating payment...
-                </>
-              ) : (
-                `Pay $${selectedTier.price} & Boost`
-              )}
+              Continue – ${selectedTier.price}
             </button>
           </>
         )}
