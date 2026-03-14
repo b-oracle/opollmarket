@@ -141,29 +141,16 @@ const Index = () => {
     });
   }, [markets, boostedMarketIds, filter, searchQuery, categoryFilter]);
 
-  // Reset visible count when filters change
+  // Reset page when filters change
   useEffect(() => {
-    setVisibleCount(20);
+    setCurrentPage(1);
   }, [filter, searchQuery, categoryFilter]);
 
-  const visibleMarkets = useMemo(() => filteredMarkets.slice(0, visibleCount), [filteredMarkets, visibleCount]);
-  const hasMore = visibleCount < filteredMarkets.length;
-
-  // IntersectionObserver for infinite scroll
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore) {
-          setVisibleCount((c) => c + 20);
-        }
-      },
-      { rootMargin: "200px" }
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [hasMore]);
+  const totalPages = Math.ceil(filteredMarkets.length / ITEMS_PER_PAGE);
+  const paginatedMarkets = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredMarkets.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredMarkets, currentPage]);
 
   const { data: platformStats } = useQuery({
     queryKey: ["platform-stats"],
