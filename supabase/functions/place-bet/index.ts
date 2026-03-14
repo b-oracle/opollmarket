@@ -261,7 +261,7 @@ Deno.serve(async (req) => {
     // Update market volume, participants & AMM prices
     const { data: mkt } = await supabase
       .from("markets")
-      .select("volume, participants, yes_price, no_price, market_type")
+      .select("volume, participants, yes_price, no_price, market_type, initial_liquidity")
       .eq("id", marketId)
       .single();
 
