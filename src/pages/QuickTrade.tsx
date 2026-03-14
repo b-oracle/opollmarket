@@ -459,6 +459,7 @@ export default function QuickTrade() {
   const lastFetchTimeRef = useRef(0);
   const [streamingPrice, setStreamingPrice] = useState<number | null>(null);
   const wsActiveRef = useRef(false);
+  const lastWsTickAtRef = useRef(0);
   const streamRunIdRef = useRef(0);
   // Reset price state when asset changes
   useEffect(() => {
@@ -473,6 +474,7 @@ export default function QuickTrade() {
     setActiveRound(null);
     setUserBet(null);
     wsActiveRef.current = false;
+    lastWsTickAtRef.current = 0;
     consecutiveFailsRef.current = 0;
     lastFetchTimeRef.current = 0;
 
@@ -565,6 +567,7 @@ export default function QuickTrade() {
     const handleWsTick = (price: number) => {
       if (!isCurrentRun()) return;
       wsActiveRef.current = true;
+      lastWsTickAtRef.current = Date.now();
       if (displayedPrice === 0) displayedPrice = price; // seed on first tick
       targetWsPrice = price;
     };
@@ -684,77 +687,80 @@ export default function QuickTrade() {
       pollIv = setInterval(pollNonCrypto, 10_000);
 
     } else {
-      // Crypto: fallback HTTP polling if WS doesn't fire within 1.5s
+      // Crypto: resilient fallback when WS is missing or becomes stale
+      let microTickIv: ReturnType<typeof setInterval> | null = null;
+      const WS_STALE_MS = 2500;
+
       const fallbackTimer = setTimeout(() => {
-        if (!wsActiveRef.current && isCurrentRun()) {
-          let lastRealPrice = 0;
-          let prevRealPrice = 0;
+        if (!isCurrentRun()) return;
 
-          // Real price fetch every 1s
-          const poll = async () => {
-            const now = Date.now();
-            const shouldFetch = now - lastFetchTimeRef.current >= 1000;
+        let lastRealPrice = 0;
+        let prevRealPrice = 0;
 
-            if (shouldFetch) {
-              lastFetchTimeRef.current = now;
-              const p = await fetchPriceForAsset(selectedAsset);
-              if (p != null && isCurrentRun() && !wsActiveRef.current) {
-                consecutiveFailsRef.current = 0;
-                prevRealPrice = lastRealPrice || p;
-                lastRealPrice = p;
-                applyDisplayPrice(p);
-                applyStreamingPrice(p);
-                const maxCutoff = now - 4 * 60 * 60 * 1000;
-                const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
-                const rawCached = rawDataRef.current.get(streamAssetSymbol) || [];
-                rawDataRef.current.set(streamAssetSymbol, [...rawCached, [now, p] as [number, number]].filter(([ts]) => ts >= maxCutoff));
-                setPriceHistory((prev) => {
-                  const updated = [...prev, { time: timeLabel, price: p, ts: now }];
-                  return updated.filter((pt) => pt.ts >= maxCutoff);
-                });
-              }
-            }
-          };
-          poll();
-          pollIv = setInterval(poll, 1000);
+        // Real price fetch every 1s while WS is stale
+        const poll = async () => {
+          const now = Date.now();
+          const wsFresh = lastWsTickAtRef.current > 0 && now - lastWsTickAtRef.current < WS_STALE_MS;
+          if (wsFresh) return;
 
-          // Micro-tick interpolation loop (~12fps) for chart vibrancy between polls
-          const microTickIv = setInterval(() => {
-            if (!isCurrentRun() || wsActiveRef.current) return;
-            const now = Date.now();
-            setCurrentPrice((cur) => {
-              if (cur == null) return cur;
-              const base = lastRealPrice || cur;
-              // Brownian drift + momentum from last two real prices
-              const momentum = lastRealPrice && prevRealPrice ? (lastRealPrice - prevRealPrice) * (Math.random() * 0.3) : 0;
-              const jitter = base * (Math.random() - 0.5) * 0.002;
-              const tickPrice = base + jitter + momentum;
-              applyStreamingPrice(tickPrice);
-              const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
-              setPriceHistory((prev) => {
-                const maxCutoff = now - 4 * 60 * 60 * 1000;
-                const updated = [...prev, { time: timeLabel, price: tickPrice, ts: now }];
-                const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
-                return filtered.length > 2000 ? filtered.slice(-2000) : filtered;
-              });
-              return cur;
+          const shouldFetch = now - lastFetchTimeRef.current >= 1000;
+          if (!shouldFetch) return;
+
+          lastFetchTimeRef.current = now;
+          const p = await fetchPriceForAsset(selectedAsset);
+          if (p != null && isCurrentRun()) {
+            consecutiveFailsRef.current = 0;
+            prevRealPrice = lastRealPrice || p;
+            lastRealPrice = p;
+            applyDisplayPrice(p);
+            applyStreamingPrice(p);
+
+            const maxCutoff = now - 4 * 60 * 60 * 1000;
+            const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
+            const rawCached = rawDataRef.current.get(streamAssetSymbol) || [];
+            rawDataRef.current.set(
+              streamAssetSymbol,
+              [...rawCached, [now, p] as [number, number]].filter(([ts]) => ts >= maxCutoff).slice(-2000),
+            );
+
+            setPriceHistory((prev) => {
+              const updated = [...prev, { time: timeLabel, price: p, ts: now }];
+              const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
+              return filtered.length > 2000 ? filtered.slice(-2000) : filtered;
             });
-          }, 80);
+          }
+        };
 
-          // Extend cleanup to clear micro-tick interval
-          const origPollIv = pollIv;
-          return () => {
-            mounted = false;
-            wsActiveRef.current = false;
-            unsubWs();
-            if (cryptoInterpId) clearInterval(cryptoInterpId);
-            if (pendingRaf) cancelAnimationFrame(pendingRaf);
-            clearTimeout(fallbackTimer);
-            if (origPollIv) clearInterval(origPollIv);
-            if (pollIv) clearInterval(pollIv);
-            clearInterval(microTickIv);
-          };
-        }
+        poll();
+        pollIv = setInterval(poll, 1000);
+
+        // Micro-tick interpolation (~12fps) while WS is stale
+        microTickIv = setInterval(() => {
+          if (!isCurrentRun()) return;
+
+          const now = Date.now();
+          const wsFresh = lastWsTickAtRef.current > 0 && now - lastWsTickAtRef.current < WS_STALE_MS;
+          if (wsFresh) return;
+
+          setCurrentPrice((cur) => {
+            if (cur == null) return cur;
+            const base = lastRealPrice || cur;
+            const momentum = lastRealPrice && prevRealPrice ? (lastRealPrice - prevRealPrice) * (Math.random() * 0.3) : 0;
+            const jitter = base * (Math.random() - 0.5) * 0.002;
+            const tickPrice = base + jitter + momentum;
+
+            applyStreamingPrice(tickPrice);
+            const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
+            setPriceHistory((prev) => {
+              const maxCutoff = now - 4 * 60 * 60 * 1000;
+              const updated = [...prev, { time: timeLabel, price: tickPrice, ts: now }];
+              const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
+              return filtered.length > 2000 ? filtered.slice(-2000) : filtered;
+            });
+
+            return cur;
+          });
+        }, 80);
       }, 1500);
 
       return () => {
@@ -765,6 +771,7 @@ export default function QuickTrade() {
         if (pendingRaf) cancelAnimationFrame(pendingRaf);
         clearTimeout(fallbackTimer);
         if (pollIv) clearInterval(pollIv);
+        if (microTickIv) clearInterval(microTickIv);
       };
     }
 
