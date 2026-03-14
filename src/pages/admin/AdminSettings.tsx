@@ -741,6 +741,25 @@ const AdminSettings = () => {
           </CardContent>
         </Card>
 
+        {/* ─── Auto-Resolve Fee ─── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Zap className="w-5 h-5" /> Auto-Resolve Fee
+            </CardTitle>
+            <CardDescription>
+              Platform fee charged to creators who enable auto-resolve on their markets.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="autoResolveFee">Auto-Resolve Fee ($)</Label>
+              <Input id="autoResolveFee" type="number" min={0} step={0.5} value={autoResolveFee} onChange={(e) => setAutoResolveFee(e.target.value)} placeholder="0" />
+              <p className="text-[10px] text-muted-foreground">Current: ${autoResolveFeeNum.toFixed(2)}. Set to 0 to disable. Charged at market creation when auto-resolve is enabled.</p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* ─── Creator Gate ─── */}
         <Card>
           <CardHeader>
