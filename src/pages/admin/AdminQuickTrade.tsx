@@ -206,7 +206,7 @@ const AdminQuickTrade = () => {
     { label: "Total Payouts", value: `$${stats.totalPayout.toFixed(2)}`, icon: TrendingUp, color: "text-primary" },
     { label: "Total Refunded", value: `$${stats.totalRefunded.toFixed(2)}`, icon: RotateCcw, color: "text-muted-foreground" },
     { label: "Bonus Paid", value: `$${stats.totalBonusPaid.toFixed(2)}`, icon: Gift, color: "text-chart-2", tooltip: "0.5% bonus paid to winners in one-sided markets (no losers)" },
-    { label: "Platform Profit", value: `$${stats.platformProfit.toFixed(2)}`, icon: BarChart3, color: stats.platformProfit >= 0 ? "text-chart-3" : "text-destructive", tooltip: "Wagered - Payouts - Refunded - Bonus Paid" },
+    { label: "Platform Profit", value: `$${stats.platformProfit.toFixed(2)}`, icon: BarChart3, color: stats.platformProfit >= 0 ? "text-green-500" : "text-red-500", tooltip: "Wagered - Payouts - Refunded - Bonus Paid" },
   ];
 
   return (
@@ -250,7 +250,7 @@ const AdminQuickTrade = () => {
                 </span>
                 <c.icon className={`w-4 h-4 ${c.color}`} />
               </div>
-              <span className="text-lg font-bold">{c.value}</span>
+              <span className={`text-lg font-bold ${c.label === "Platform Profit" ? c.color : ""}`}>{c.value}</span>
             </div>
           ))}
         </div>
@@ -319,7 +319,7 @@ const AdminQuickTrade = () => {
               <h3 className="text-sm font-semibold mb-4">Win / Loss Distribution</h3>
               <div className="flex items-center gap-6 justify-center py-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-chart-3">{stats.wonBets}</div>
+                  <div className="text-2xl font-bold text-green-500">{stats.wonBets}</div>
                   <div className="text-[10px] text-muted-foreground uppercase">Wins</div>
                 </div>
                 <div className="w-px h-10 bg-border" />
@@ -335,8 +335,8 @@ const AdminQuickTrade = () => {
               </div>
               {stats.totalBets > 0 && (
                 <div className="h-2 rounded-full overflow-hidden flex bg-muted mt-2">
-                  <div className="bg-chart-3" style={{ width: `${(stats.wonBets / stats.totalBets) * 100}%` }} />
-                  <div className="bg-destructive" style={{ width: `${(stats.lostBets / stats.totalBets) * 100}%` }} />
+                  <div className="bg-green-500" style={{ width: `${(stats.wonBets / stats.totalBets) * 100}%` }} />
+                  <div className="bg-red-500" style={{ width: `${(stats.lostBets / stats.totalBets) * 100}%` }} />
                 </div>
               )}
             </div>
@@ -351,7 +351,7 @@ const AdminQuickTrade = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-medium truncate">{t.name}</span>
-                          <span className={`text-xs font-semibold ${t.profit >= 0 ? "text-chart-3" : "text-destructive"}`}>{t.profit >= 0 ? "+" : ""}${t.profit.toFixed(2)}</span>
+                          <span className={`text-xs font-semibold ${t.profit >= 0 ? "text-green-500" : "text-red-500"}`}>{t.profit >= 0 ? "+" : ""}${t.profit.toFixed(2)}</span>
                         </div>
                         <span className="text-[10px] text-muted-foreground">{t.bets} trades · ${t.wagered.toFixed(0)} wagered</span>
                       </div>
