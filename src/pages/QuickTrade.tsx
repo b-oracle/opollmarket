@@ -571,8 +571,8 @@ export default function QuickTrade() {
 
     // Start smooth interpolation loop for crypto (~20fps for chart, ~2fps for price display)
     if (selectedAsset.assetClass === "crypto") {
-      const LERP_RATE = 0.15; // 15% toward target per tick — fast but smooth
-      const CRYPTO_TICK_MS = 50; // 20fps for chart
+      const LERP_RATE = 0.25; // 25% toward target per tick — fast, responsive movement
+      const CRYPTO_TICK_MS = 40; // 25fps for chart
       let lastDisplayUpdate = 0;
       const DISPLAY_THROTTLE_MS = 500; // Update price text ~2x/sec
 
