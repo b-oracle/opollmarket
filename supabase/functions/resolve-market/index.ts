@@ -292,18 +292,7 @@ async function handleResolve(
     const liquidityRefund = market.initial_liquidity - feeAmount;
 
     if (liquidityRefund > 0) {
-      const { data: creatorBal } = await adminClient
-        .from("balances")
-        .select("amount")
-        .eq("user_id", creatorUserId)
-        .single();
-
-      if (creatorBal) {
-        await adminClient
-          .from("balances")
-          .update({ amount: creatorBal.amount + liquidityRefund, updated_at: new Date().toISOString() })
-          .eq("user_id", creatorUserId);
-      }
+      await adminClient.rpc("adjust_balance", { _user_id: creatorUserId, _delta: liquidityRefund });
 
       await adminClient.from("transactions").insert({
         user_id: creatorUserId,
