@@ -327,7 +327,7 @@ Deno.serve(async (req) => {
     // Get commission rate
     const { data: settings } = await supabase
       .from("commission_settings")
-      .select("id, admin_fee_percent, creator_fee_percent, quick_trade_fee_percent, qt_streak_2x, qt_streak_3x, qt_streak_4x, qt_streak_5x, qt_disabled_assets")
+      .select("id, admin_fee_percent, creator_fee_percent, quick_trade_fee_percent, qt_streak_2x, qt_streak_3x, qt_streak_4x, qt_streak_5x, qt_disabled_assets, qt_one_sided_bonus")
       .limit(1)
       .single();
     const platformFee = settings?.quick_trade_fee_percent != null
@@ -339,6 +339,7 @@ Deno.serve(async (req) => {
     const s3 = Number(settings?.qt_streak_3x ?? 1.10);
     const s4 = Number(settings?.qt_streak_4x ?? 1.15);
     const s5 = Number(settings?.qt_streak_5x ?? 1.25);
+    const qtOneSidedBonus = settings?.qt_one_sided_bonus !== false;
 
     let resolvedCount = 0;
 
@@ -473,8 +474,10 @@ Deno.serve(async (req) => {
           const streak = await getOrCreateStreak(supabase, bet.user_id);
           const newStreak = (streak.current_streak || 0) + 1;
           const multiplier = getStreakMultiplier(newStreak, s2, s3, s4, s5);
-          const baseRefund = Number(bet.amount) * (1 - platformFee);
-          const payout = baseRefund * multiplier;
+          const basePayout = qtOneSidedBonus
+            ? Number(bet.amount) * 1.005
+            : Number(bet.amount) * (1 - platformFee);
+          const payout = basePayout * multiplier;
 
           await supabase
             .from("quick_bets")

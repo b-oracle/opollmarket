@@ -262,6 +262,7 @@ export type Database = {
           qt_enabled_timeframes: string
           qt_max_bet: number
           qt_min_bet: number
+          qt_one_sided_bonus: boolean
           qt_streak_2x: number
           qt_streak_3x: number
           qt_streak_4x: number
@@ -308,6 +309,7 @@ export type Database = {
           qt_enabled_timeframes?: string
           qt_max_bet?: number
           qt_min_bet?: number
+          qt_one_sided_bonus?: boolean
           qt_streak_2x?: number
           qt_streak_3x?: number
           qt_streak_4x?: number
@@ -354,6 +356,7 @@ export type Database = {
           qt_enabled_timeframes?: string
           qt_max_bet?: number
           qt_min_bet?: number
+          qt_one_sided_bonus?: boolean
           qt_streak_2x?: number
           qt_streak_3x?: number
           qt_streak_4x?: number

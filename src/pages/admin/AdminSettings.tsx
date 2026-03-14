@@ -66,6 +66,7 @@ const AdminSettings = () => {
   const [qtStreak3, setQtStreak3] = useState("");
   const [qtStreak4, setQtStreak4] = useState("");
   const [qtStreak5, setQtStreak5] = useState("");
+  const [qtOneSidedBonus, setQtOneSidedBonus] = useState(true);
   const [qtEnabledAssets, setQtEnabledAssets] = useState<Set<string>>(new Set(ALL_ASSETS.map(a => a.symbol)));
   const [qtDisabledAssets, setQtDisabledAssets] = useState<Set<string>>(new Set());
   const [qtEnabledTimeframes, setQtEnabledTimeframes] = useState<Set<number>>(new Set(ALL_TIMEFRAMES.map(t => t.seconds)));
@@ -124,6 +125,7 @@ const AdminSettings = () => {
         setGoldMaxFreeMarkets(String(d.gold_max_free_markets ?? 20));
         setAiGenerationCost(String(d.ai_generation_cost ?? 0.5));
         setPayazaMode(d.payaza_mode === "checkout_sdk" ? "checkout_sdk" : "direct_api");
+        setQtOneSidedBonus(d.qt_one_sided_bonus !== false);
         setSettingsId(d.id);
       }
       if (error) console.error(error);
@@ -236,7 +238,8 @@ const AdminSettings = () => {
            blue_max_free_markets: blueMaxFreeMarketsNum,
             gold_max_free_markets: goldMaxFreeMarketsNum,
              ai_generation_cost: aiGenerationCostNum,
-             payaza_mode: payazaMode,
+              payaza_mode: payazaMode,
+              qt_one_sided_bonus: qtOneSidedBonus,
            updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
@@ -276,8 +279,9 @@ const AdminSettings = () => {
            gold_trending_multiplier: goldTrendingMultNum,
            blue_max_free_markets: blueMaxFreeMarketsNum,
             gold_max_free_markets: goldMaxFreeMarketsNum,
-             ai_generation_cost: aiGenerationCostNum,
-             payaza_mode: payazaMode,
+              ai_generation_cost: aiGenerationCostNum,
+              payaza_mode: payazaMode,
+              qt_one_sided_bonus: qtOneSidedBonus,
         },
       });
 
@@ -395,6 +399,20 @@ const AdminSettings = () => {
               <Label htmlFor="quickTradeFee">Platform Fee (%)</Label>
               <Input id="quickTradeFee" type="number" min={0} max={100} step={0.5} value={quickTradeFee} onChange={(e) => setQuickTradeFee(e.target.value)} placeholder="5" />
               <p className="text-[10px] text-muted-foreground">Deducted from losing pool before distributing to winners</p>
+            </div>
+
+            {/* One-Sided Bonus Toggle */}
+            <div className="flex items-center justify-between rounded-lg border border-border p-3">
+              <div className="space-y-0.5">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <Gift className="w-4 h-4 text-primary" /> One-Sided Bonus
+                </Label>
+                <p className="text-[10px] text-muted-foreground">No fee + 0.5% bonus when all bets are on the winning side</p>
+              </div>
+              <Switch
+                checked={qtOneSidedBonus}
+                onCheckedChange={setQtOneSidedBonus}
+              />
             </div>
 
             {/* Min/Max Bet */}
