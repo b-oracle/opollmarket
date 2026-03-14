@@ -82,6 +82,8 @@ interface MarketStatsData {
   trending: number;
   avgVolume: number;
   polymarket: number;
+  boostedActive: number;
+  boostedTotal: number;
 }
 
 const AdminMarkets = () => {
