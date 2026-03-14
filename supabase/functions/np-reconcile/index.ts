@@ -173,6 +173,7 @@ Deno.serve(async (req) => {
         .select("id, user_id, amount, nowpayments_payment_id, created_at")
         .eq("type", "deposit")
         .eq("status", "expired")
+        .neq("payment_provider", "payaza")
         .not("nowpayments_payment_id", "is", null)
         .order("created_at");
 
