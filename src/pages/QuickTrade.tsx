@@ -604,6 +604,37 @@ export default function QuickTrade() {
     // For crypto: use Binance WebSocket for real-time streaming
     const unsubWs = subscribeToPriceStream(streamAssetSymbol, handleWsTick);
 
+    // Also subscribe to smoothed interpolation for crypto fallback
+    // When WS is active, real WS ticks dominate via the lerp loop above.
+    // When WS is stale/blocked, feedRealPrice from HTTP polls drives this
+    // interpolation system to provide Brownian drift = vibrant chart.
+    let unsubCryptoSmooth: (() => void) | null = null;
+    if (selectedAsset.assetClass === "crypto") {
+      let lastSmoothChartAppend = 0;
+      let lastSmoothDisplayUpdate = 0;
+      const SMOOTH_DISPLAY_THROTTLE = 500;
+
+      unsubCryptoSmooth = subscribeToSmoothedPriceStream(streamAssetSymbol, (price) => {
+        if (!isCurrentRun()) return;
+        // Only use smooth interpolation when WS is NOT active
+        const now = Date.now();
+        const wsStale = lastWsTickAtRef.current === 0 || (now - lastWsTickAtRef.current) > 5000;
+        if (!wsStale) return; // WS is delivering data, skip interpolated prices
+
+        // Update the lerp target so the main crypto loop picks it up
+        targetWsPrice = price;
+        displayedPrice = price;
+
+        applyStreamingPrice(price);
+        appendCryptoChartPoint(price);
+
+        if (now - lastSmoothDisplayUpdate >= SMOOTH_DISPLAY_THROTTLE) {
+          lastSmoothDisplayUpdate = now;
+          applyDisplayPrice(price);
+        }
+      });
+    }
+
     // For non-crypto assets: use smooth interpolation + polling
     let unsubPoller: (() => void) | null = null;
     let unsubSmooth: (() => void) | null = null;
