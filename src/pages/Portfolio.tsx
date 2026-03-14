@@ -686,7 +686,7 @@ const Portfolio = () => {
                           onClick={(e) => openPositionShare(pos, e)}
                           className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold hover:bg-primary/20 transition-all active:scale-95"
                         >
-                          <Share2 className="w-3 h-3" />
+                          <Share2 className="w-3 h-3" /> Share
                         </button>
                         {pos.status === "active" && (
                           <button
