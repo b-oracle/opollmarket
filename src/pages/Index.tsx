@@ -545,13 +545,45 @@ const Index = () => {
             );
           })}
         </div>
-        {hasMore && (
-          <div ref={sentinelRef} className="flex justify-center py-6">
-            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 py-6">
+            <button
+              onClick={() => { setCurrentPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-muted text-muted-foreground disabled:opacity-40 hover:bg-accent transition-colors"
+            >
+              Previous
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+              .reduce<(number | string)[]>((acc, p, idx, arr) => {
+                if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push("...");
+                acc.push(p);
+                return acc;
+              }, [])
+              .map((item, idx) =>
+                typeof item === "string" ? (
+                  <span key={`ellipsis-${idx}`} className="text-xs text-muted-foreground px-1">…</span>
+                ) : (
+                  <button
+                    key={item}
+                    onClick={() => { setCurrentPage(item); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                    className={`w-8 h-8 rounded-lg text-xs font-semibold transition-colors ${
+                      currentPage === item ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                )
+              )}
+            <button
+              onClick={() => { setCurrentPage((p) => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-muted text-muted-foreground disabled:opacity-40 hover:bg-accent transition-colors"
+            >
+              Next
+            </button>
           </div>
-        )}
-        {!hasMore && filteredMarkets.length > 20 && (
-          <p className="text-center text-xs text-muted-foreground py-4">You've seen all markets</p>
         )}
       </div>
       <BoostMarketModal open={!!boostModalMarket} onClose={() => setBoostModalMarket(null)} marketId={boostModalMarket?.id || ""} marketTitle={boostModalMarket?.title || ""} />
