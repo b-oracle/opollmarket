@@ -361,7 +361,10 @@ const FAQ = () => {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-3.5 h-3.5 text-primary" />
-                      <span className="text-xs font-semibold text-primary">AI Answer</span>
+                      <span className="text-xs font-semibold text-primary">{isLimitFallback ? "FAQ Match" : "AI Answer"}</span>
+                      {!isLimitFallback && aiUsageCount.current < MAX_AI_RESPONSES && (
+                        <span className="text-[10px] text-muted-foreground">({MAX_AI_RESPONSES - aiUsageCount.current} left)</span>
+                      )}
                     </div>
                     <button
                       onClick={clearAnswer}
