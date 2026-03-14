@@ -36,6 +36,7 @@ const AdminFiatSettings = () => {
         setNairaRateMarkup(String(d.naira_rate_markup ?? 0));
         setFallbackNairaRate(String(d.fallback_naira_rate ?? 1500));
         setNairaPayoutMarkdown(String(d.naira_payout_markdown ?? 0));
+        setFallbackPayoutNairaRate(String(d.fallback_payout_naira_rate ?? 1500));
         setSettingsId(d.id);
       }
       if (error) console.error(error);
