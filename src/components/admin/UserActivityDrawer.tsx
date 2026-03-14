@@ -443,12 +443,16 @@ const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDra
           <div className="space-y-2">
             {data.map((r: any) => (
               <div key={r.id} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border/50">
-                <Gift className={`w-4 h-4 shrink-0 ${r.referrer_id === userId ? "text-primary" : "text-neon-yes"}`} />
+                <Gift className={`w-4 h-4 shrink-0 ${r.referrer_id === userId ? "text-neon-yes" : "text-primary"}`} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold">{r.referrer_id === userId ? "Referred someone" : "Was referred"}</p>
+                  <p className="text-xs font-bold">{r.referrer_id === userId ? "Referred someone" : "Was referred by someone"}</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">{formatDate(r.created_at)}</p>
                 </div>
-                <p className="text-sm font-bold text-neon-yes shrink-0">+${Number(r.amount).toLocaleString()}</p>
+                {r.referrer_id === userId ? (
+                  <p className="text-sm font-bold text-neon-yes shrink-0">+${Number(r.amount).toLocaleString()}</p>
+                ) : (
+                  <p className="text-sm font-bold text-muted-foreground shrink-0">${Number(r.amount).toLocaleString()}</p>
+                )}
               </div>
             ))}
           </div>
