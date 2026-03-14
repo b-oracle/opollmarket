@@ -1062,7 +1062,7 @@ export default function QuickTrade() {
         },
       }).catch(() => {});
 
-      // Reload bet state
+      // Reload trade state
       const { data: newBet } = await supabase
         .from("quick_bets")
         .select("*")
