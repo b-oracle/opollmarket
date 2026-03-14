@@ -16,6 +16,7 @@ const AdminFiatSettings = () => {
   const [nairaRateMarkup, setNairaRateMarkup] = useState("");
   const [fallbackNairaRate, setFallbackNairaRate] = useState("");
   const [nairaPayoutMarkdown, setNairaPayoutMarkdown] = useState("");
+  const [fallbackPayoutNairaRate, setFallbackPayoutNairaRate] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
