@@ -199,7 +199,7 @@ const UserSummaryCards = ({ userId }: { userId: string }) => {
             <c.icon className={`w-3.5 h-3.5 ${c.cls}`} />
             <span className="text-[10px] text-muted-foreground font-medium">{c.label}</span>
           </div>
-          <p className={`text-sm font-bold ${c.cls}`}>${c.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p className={`text-sm font-bold ${c.cls}`}>{c.label === "Total Losses" ? "-" : ""}${c.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </div>
       ))}
     </div>
