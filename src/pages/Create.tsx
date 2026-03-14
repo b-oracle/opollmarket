@@ -204,6 +204,7 @@ const Create = () => {
   const [activeMarketCount, setActiveMarketCount] = useState(0);
   const [exceededFreeLimit, setExceededFreeLimit] = useState(false);
   const [aiGenerationCost, setAiGenerationCost] = useState(0.5);
+  const [autoResolveFee, setAutoResolveFee] = useState(0);
   const [generatingDesc, setGeneratingDesc] = useState(false);
   const [generatingDetails, setGeneratingDetails] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
