@@ -52,7 +52,7 @@ interface BoostMarketModalProps {
   marketTitle: string;
 }
 
-type Step = "select" | "pay" | "success";
+type Step = "select" | "confirm" | "pay" | "success";
 
 const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketModalProps) => {
   const [selectedTier, setSelectedTier] = useState<BoostTier>(BOOST_TIERS[1]);
