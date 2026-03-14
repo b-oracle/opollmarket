@@ -157,7 +157,7 @@ async function fetchRawPriceData(asset: QuickTradeAsset): Promise<[number, numbe
 }
 
 // ── SessionStorage-backed chart cache helpers ──
-const CHART_CACHE_PREFIX = "qt_chart_v2_";
+const CHART_CACHE_PREFIX = "qt_chart_";
 const CHART_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 function getSessionCache<T>(key: string): T | null {
