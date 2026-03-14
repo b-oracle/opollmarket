@@ -1069,7 +1069,41 @@ const Portfolio = () => {
         profit={winModal.profit}
       />
 
-      
+      {/* Off-screen share cards */}
+      <PortfolioSummaryShareCard
+        ref={portfolioCardRef}
+        totalInvested={totalInvested}
+        totalValue={totalValue}
+        totalPnl={totalPnl}
+        totalPnlPercent={totalPnlPercent}
+        totalMaxPayout={totalMaxPayout}
+        positionCount={enriched.length}
+      />
+      {filtered.map((pos) => (
+        <PositionShareCard
+          key={`share-${pos.id}`}
+          ref={(el) => { positionCardRefs.current.set(pos.id, el); }}
+          marketTitle={pos.marketTitle}
+          side={pos.side}
+          shares={pos.shares}
+          avgPrice={pos.avgPrice}
+          currentPrice={pos.currentPrice}
+          invested={pos.invested}
+          currentValue={pos.currentValue}
+          unrealizedPnl={pos.unrealizedPnl}
+          pnlPercent={pos.pnlPercent}
+          maxPayout={pos.maxPayout}
+        />
+      ))}
+
+      <ShareModal
+        open={shareModalOpen}
+        onOpenChange={setShareModalOpen}
+        title={shareTitle}
+        marketUrl={shareUrl}
+        captureRef={activeCaptureRef as React.RefObject<HTMLElement | null>}
+      />
+
       <BottomNav />
     </div>
   );
