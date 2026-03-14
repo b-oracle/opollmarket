@@ -455,7 +455,7 @@ const Rankings = () => {
   }, []);
 
   const { referrers, loading: refLoading } = useReferralLeaderboard(timePeriod);
-  const { traders, loading: tradeLoading } = useTradingLeaderboard(timePeriod);
+  const { traders, loading: tradeLoading } = useTradingLeaderboard(timePeriod, traderSort);
   const { quickTraders, loading: quickLoading } = useQuickTradeLeaderboard(timePeriod);
   const { streakUsers, loading: streakLoading } = useStreakLeaderboard();
 
