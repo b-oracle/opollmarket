@@ -129,15 +129,30 @@ Deno.serve(async (req) => {
 
     // Get upcoming games — use date range for non-football sports
     const today = new Date().toISOString().split("T")[0];
-    const futureDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     const currentSeason = season || new Date().getFullYear();
 
+    // Try with season first; for many sports APIs season is required
     const fixtureResp = await fetch(
       `https://${sportConfig.host}${sportConfig.fixturePath}?team=${teamId}&season=${currentSeason}`,
       { headers }
     );
     const fixtureData = await fixtureResp.json();
-    const rawFixtures = (fixtureData?.response || []).filter((f: any) => {
+    console.log(`Non-football fixtures API (${sportKey}) for team ${teamId}, season ${currentSeason}: ${fixtureData?.response?.length ?? 0} results`);
+
+    // Also try previous season year in case current season spans years
+    let allFixtures = fixtureData?.response || [];
+    if (allFixtures.length === 0 && !season) {
+      const prevSeason = new Date().getFullYear() - 1;
+      const fallbackResp = await fetch(
+        `https://${sportConfig.host}${sportConfig.fixturePath}?team=${teamId}&season=${prevSeason}`,
+        { headers }
+      );
+      const fallbackData = await fallbackResp.json();
+      console.log(`Fallback season ${prevSeason}: ${fallbackData?.response?.length ?? 0} results`);
+      allFixtures = fallbackData?.response || [];
+    }
+
+    const rawFixtures = allFixtures.filter((f: any) => {
       const gameDate = f.date || f.game?.date?.start;
       return gameDate && new Date(gameDate) >= new Date(today);
     }).slice(0, 20);
