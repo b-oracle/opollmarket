@@ -93,15 +93,20 @@ async function fetchFromOmkar(commodityName: string, apiKey: string): Promise<nu
   }
 }
 
-async function fetchMetalPrice(asset: string): Promise<number | null> {
+async function fetchMetalPrice(asset: string, apiKey?: string): Promise<number | null> {
   const metalName = METAL_MAP[asset];
   if (!metalName) return null;
+  const key = apiKey || "demo";
   try {
-    const resp = await fetch(`https://api.metals.dev/v1/latest?api_key=demo&currency=USD&unit=toz`);
-    if (!resp.ok) return null;
+    const resp = await fetch(`https://api.metals.dev/v1/latest?api_key=${key}&currency=USD&unit=toz`);
+    if (!resp.ok) {
+      console.error(`metals.dev error [${resp.status}]`);
+      return null;
+    }
     const data = await resp.json();
     return data?.metals?.[metalName] ?? null;
-  } catch {
+  } catch (e) {
+    console.error("metals.dev fetch error:", e);
     return null;
   }
 }
@@ -258,8 +263,27 @@ Deno.serve(async (req) => {
     }
 
     let price: number | null = null;
+    const metalsDevKey = Deno.env.get("METALS_DEV_API_KEY");
 
-    // 2. Try Twelve Data (primary)
+    // 2. For precious metals (XAU, XAG, XPT, XPD): metals.dev is PRIMARY
+    if (METAL_MAP[normalizedAsset]) {
+      price = await fetchMetalPrice(normalizedAsset, metalsDevKey || undefined);
+      if (price !== null) {
+        cache.set(normalizedAsset, { price, fetchedAt: Date.now() });
+        try {
+          const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+          const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+          const supabase = createClient(supabaseUrl, serviceKey);
+          await setDbCachedPrice(supabase, normalizedAsset, price);
+        } catch {}
+        return new Response(JSON.stringify({ price, source: "metals_dev" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.log(`metals.dev failed for ${normalizedAsset}, trying fallbacks`);
+    }
+
+    // 3. Try Twelve Data (primary for non-metals, fallback for metals)
     const twelveDataKey = Deno.env.get("TWELVE_DATA_API_KEY");
     if (twelveDataKey) {
       price = await fetchFromTwelveData(normalizedAsset, twelveDataKey);
@@ -276,11 +300,6 @@ Deno.serve(async (req) => {
         });
       }
       console.log(`Twelve Data failed for ${normalizedAsset}, trying fallback`);
-    }
-
-    // 3. Try metals.dev for precious metals
-    if (METAL_MAP[normalizedAsset]) {
-      price = await fetchMetalPrice(normalizedAsset);
     }
 
     // 4. Try Omkar API for energy/base metals
