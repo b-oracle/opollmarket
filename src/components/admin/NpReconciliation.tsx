@@ -222,12 +222,7 @@ const NpReconciliation = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-            <div className="rounded-lg bg-primary/5 border border-primary/10 p-2.5">
-              <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium block mb-0.5">DB Credited</span>
-              <p className="text-base font-bold text-primary">{fmt(summary.db_total_credited)}</p>
-              <p className="text-[9px] text-muted-foreground">{summary.matched_count} matched deposits</p>
-            </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
             <div className="rounded-lg bg-destructive/5 border border-destructive/10 p-2.5">
               <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium block mb-0.5">Excess Credited</span>
               <p className="text-base font-bold text-destructive">{fmt(summary.total_excess)}</p>
