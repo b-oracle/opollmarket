@@ -267,9 +267,10 @@ const Feed = () => {
     prevBookmarkCount.current = bookmarkedIds.size;
   }, [bookmarkedIds.size]);
 
-  // Reset to first card when switching tabs
+  // Reset to first card and visible count when switching tabs
   useEffect(() => {
     setActiveIndex(0);
+    setVisibleCount(20);
     containerRef.current?.scrollTo({ top: 0 });
   }, [feedTab]);
 
