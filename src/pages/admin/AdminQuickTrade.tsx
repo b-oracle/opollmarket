@@ -319,7 +319,7 @@ const AdminQuickTrade = () => {
               <h3 className="text-sm font-semibold mb-4">Win / Loss Distribution</h3>
               <div className="flex items-center gap-6 justify-center py-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-chart-3">{stats.wonBets}</div>
+                  <div className="text-2xl font-bold text-green-500">{stats.wonBets}</div>
                   <div className="text-[10px] text-muted-foreground uppercase">Wins</div>
                 </div>
                 <div className="w-px h-10 bg-border" />
