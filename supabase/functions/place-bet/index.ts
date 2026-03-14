@@ -240,12 +240,8 @@ Deno.serve(async (req) => {
     });
     if (posError) {
       console.error("Position insert error:", posError);
-      // Refund balance
-      await supabase.from("balances").update({
-        amount: currentBalance,
-        bonus_balance: currentBonus,
-        updated_at: new Date().toISOString(),
-      }).eq("user_id", userId).eq("currency", "USDT");
+      // Refund balance atomically
+      await supabase.rpc("adjust_balance", { _user_id: userId, _delta: mainDeduct, _bonus_delta: bonusForFees });
       return new Response(JSON.stringify({ error: "Failed to create position" }), {
         status: 500, headers: corsHeaders,
       });
