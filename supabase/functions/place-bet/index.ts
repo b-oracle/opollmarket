@@ -267,8 +267,10 @@ Deno.serve(async (req) => {
 
     if (mkt) {
       const isMulti = mkt.market_type === "multi" || mkt.market_type === "range";
+      const newVolume = Number(mkt.volume) + poolAmount;
       const updateFields: Record<string, any> = {
-        volume: Number(mkt.volume) + poolAmount,
+        volume: newVolume,
+        liquidity: Number(mkt.initial_liquidity) + newVolume,
         participants: mkt.participants + 1,
       };
 

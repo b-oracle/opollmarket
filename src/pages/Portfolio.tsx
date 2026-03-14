@@ -309,14 +309,15 @@ const Portfolio = () => {
       if (exitFee > 0) {
         const { data: mkt } = await supabase
           .from("markets")
-          .select("volume, liquidity")
+          .select("volume, initial_liquidity")
           .eq("id", sellTarget.marketId)
           .single();
 
         if (mkt) {
+          const newVolume = Number(mkt.volume) + exitFee;
           await supabase.from("markets").update({
-            volume: Number(mkt.volume) + exitFee,
-            liquidity: Number(mkt.liquidity) + exitFee,
+            volume: newVolume,
+            liquidity: Number(mkt.initial_liquidity) + newVolume,
           }).eq("id", sellTarget.marketId);
         }
       }
