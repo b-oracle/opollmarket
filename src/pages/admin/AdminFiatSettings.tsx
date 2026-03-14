@@ -16,6 +16,7 @@ const AdminFiatSettings = () => {
   const [nairaRateMarkup, setNairaRateMarkup] = useState("");
   const [fallbackNairaRate, setFallbackNairaRate] = useState("");
   const [nairaPayoutMarkdown, setNairaPayoutMarkdown] = useState("");
+  const [fallbackPayoutNairaRate, setFallbackPayoutNairaRate] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
@@ -26,7 +27,7 @@ const AdminFiatSettings = () => {
     const fetchSettings = async () => {
       const { data, error } = await supabase
         .from("commission_settings")
-        .select("id, payaza_mode, naira_rate_markup, fallback_naira_rate, naira_payout_markdown")
+        .select("id, payaza_mode, naira_rate_markup, fallback_naira_rate, naira_payout_markdown, fallback_payout_naira_rate")
         .limit(1)
         .single();
       if (data) {
@@ -35,6 +36,7 @@ const AdminFiatSettings = () => {
         setNairaRateMarkup(String(d.naira_rate_markup ?? 0));
         setFallbackNairaRate(String(d.fallback_naira_rate ?? 1500));
         setNairaPayoutMarkdown(String(d.naira_payout_markdown ?? 0));
+        setFallbackPayoutNairaRate(String(d.fallback_payout_naira_rate ?? 1500));
         setSettingsId(d.id);
       }
       if (error) console.error(error);
@@ -59,10 +61,11 @@ const AdminFiatSettings = () => {
   const markupNum = parseFloat(nairaRateMarkup) || 0;
   const fallbackNum = parseFloat(fallbackNairaRate) || 1500;
   const payoutMarkdownNum = parseFloat(nairaPayoutMarkdown) || 0;
+  const fallbackPayoutNum = parseFloat(fallbackPayoutNairaRate) || 1500;
   const effectiveRate = liveRate ? Math.round(liveRate * (1 + markupNum / 100) * 100) / 100 : null;
   const effectivePayoutRate = liveRate ? Math.round(liveRate * (1 - payoutMarkdownNum / 100) * 100) / 100 : null;
 
-  const isValid = markupNum >= 0 && markupNum <= 100 && fallbackNum > 0 && payoutMarkdownNum >= 0 && payoutMarkdownNum <= 100;
+  const isValid = markupNum >= 0 && markupNum <= 100 && fallbackNum > 0 && payoutMarkdownNum >= 0 && payoutMarkdownNum <= 100 && fallbackPayoutNum > 0;
 
   const handleSave = async () => {
     if (!isValid || !settingsId) return;
@@ -77,6 +80,7 @@ const AdminFiatSettings = () => {
           naira_rate_markup: markupNum,
           fallback_naira_rate: fallbackNum,
           naira_payout_markdown: payoutMarkdownNum,
+          fallback_payout_naira_rate: fallbackPayoutNum,
           updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
@@ -87,7 +91,7 @@ const AdminFiatSettings = () => {
         action: "settings_updated",
         targetId: settingsId,
         targetType: "commission_settings",
-        details: { payaza_mode: payazaMode, payout_provider: "payaza", naira_rate_markup: markupNum, fallback_naira_rate: fallbackNum, naira_payout_markdown: payoutMarkdownNum },
+        details: { payaza_mode: payazaMode, payout_provider: "payaza", naira_rate_markup: markupNum, fallback_naira_rate: fallbackNum, naira_payout_markdown: payoutMarkdownNum, fallback_payout_naira_rate: fallbackPayoutNum },
       });
 
       toast.success("Fiat settings saved successfully");
@@ -278,6 +282,23 @@ const AdminFiatSettings = () => {
               />
               <p className="text-[10px] text-muted-foreground">
                 Current: {payoutMarkdownNum}%. Subtracted from the live USD→NGN rate for payouts.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="fallbackPayoutNairaRate">Fallback Payout Rate (₦ per $1)</Label>
+              <Input
+                id="fallbackPayoutNairaRate"
+                type="number"
+                min={1}
+                step={1}
+                value={fallbackPayoutNairaRate}
+                onChange={(e) => setFallbackPayoutNairaRate(e.target.value)}
+                placeholder="1500"
+                disabled={!canEdit}
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Used when the live exchange rate API is unavailable for payouts. Current: ₦{fallbackPayoutNum.toLocaleString()}
               </p>
             </div>
 
