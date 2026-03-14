@@ -399,8 +399,10 @@ const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDra
                   <p className="text-[10px] text-muted-foreground mt-0.5">{formatDate(qb.created_at)}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-sm font-bold">${Number(qb.amount).toLocaleString()}</p>
-                  {qb.payout > 0 && <p className="text-[10px] text-neon-yes font-medium">+${Number(qb.payout).toLocaleString()}</p>}
+                  <p className={`text-sm font-bold ${qb.status === "lost" ? "text-neon-no" : ""}`}>
+                    {qb.status === "lost" ? "-" : ""}${Number(qb.amount).toLocaleString()}
+                  </p>
+                  {qb.status === "won" && qb.payout > 0 && <p className="text-[10px] text-neon-yes font-medium">+${Number(qb.payout).toLocaleString()}</p>}
                 </div>
               </div>
             ))}
