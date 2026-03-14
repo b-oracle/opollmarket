@@ -436,7 +436,7 @@ const AdminQuickTrade = () => {
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${b.status === "won" ? "bg-chart-3/10 text-chart-3" : b.status === "lost" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"}`}>{b.status}</span>
                     </td>
                     <td className="px-4 py-3">
-                      {b.streak > 1 ? <span className="flex items-center gap-1 text-xs font-semibold text-chart-4"><Flame className="w-3 h-3" />{b.streak}×</span> : <span className="text-muted-foreground text-xs">—</span>}
+                      {b.streak > 1 ? <span className="flex items-center gap-1 text-xs font-semibold text-amber-500"><Flame className="w-3 h-3" />{b.streak}×</span> : <span className="text-muted-foreground text-xs">—</span>}
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(b.created_at).toLocaleDateString()}</td>
                   </tr>
