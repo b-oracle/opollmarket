@@ -209,8 +209,11 @@ const AdminPredictions = () => {
     const cancelledMarkets = filteredMarkets.filter(m => m.status === "cancelled").length;
     const activeMarkets = filteredMarkets.filter(m => m.status === "active").length;
 
+    const totalSells = filteredTx.filter(t => t.type === "sell").reduce((s, t) => s + Number(t.amount), 0);
+    const netLiquidity = totalLiquidity + totalWagered - totalPayouts - totalRefunds - totalSells;
+
     return {
-      totalMarkets, totalPredictions, uniqueTraders, totalWagered, totalLiquidity,
+      totalMarkets, totalPredictions, uniqueTraders, totalWagered, totalLiquidity, netLiquidity,
       totalCreationFees, totalAiFees, totalCommissions, totalPayouts, totalRefunds,
       totalForfeitures, totalBoosts, platformProfit,
       categoryData, chartData, topTraders, resolvedMarkets, cancelledMarkets, activeMarkets,
@@ -245,7 +248,7 @@ const AdminPredictions = () => {
 
   const financialCards = [
     { label: "Total Wagered", value: fmt(stats.totalWagered), icon: DollarSign, color: "text-amber-500", tooltip: "Sum of all prediction amounts (escrowed until resolution)" },
-    { label: "Total Liquidity", value: fmt(stats.totalLiquidity + stats.totalWagered), icon: Wallet, color: "text-blue-500", tooltip: "Initial liquidity + total wagered across all markets" },
+    { label: "Total Liquidity", value: fmt(stats.netLiquidity), icon: Wallet, color: "text-blue-500", tooltip: "Initial liquidity + wagered − payouts − sells − refunds" },
     { label: "Commissions", value: fmt(stats.totalCommissions), icon: Percent, color: "text-purple-500", tooltip: "Admin + Creator fees collected per prediction" },
     { label: "Creation Fees", value: fmt(stats.totalCreationFees), icon: Landmark, color: "text-orange-500", tooltip: "Fees paid by creators to list markets" },
     { label: "AI Fees", value: fmt(stats.totalAiFees), icon: Sparkles, color: "text-cyan-500", tooltip: "Fees for AI-generated market content" },
