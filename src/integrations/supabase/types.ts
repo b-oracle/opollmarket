@@ -238,6 +238,8 @@ export type Database = {
           blue_revenue_share_percent: number
           blue_trending_multiplier: number
           copy_trade_commission_percent: number
+          creator_fee_blue_percent: number
+          creator_fee_gold_percent: number
           creator_fee_percent: number
           exit_fee_percent: number
           fallback_naira_rate: number
@@ -269,6 +271,7 @@ export type Database = {
           qt_streak_5x: number
           quick_trade_fee_percent: number
           referral_reward_amount: number
+          referrer_commission_percent: number
           token_contract_address: string | null
           token_decimals: number | null
           updated_at: string
@@ -285,6 +288,8 @@ export type Database = {
           blue_revenue_share_percent?: number
           blue_trending_multiplier?: number
           copy_trade_commission_percent?: number
+          creator_fee_blue_percent?: number
+          creator_fee_gold_percent?: number
           creator_fee_percent?: number
           exit_fee_percent?: number
           fallback_naira_rate?: number
@@ -316,6 +321,7 @@ export type Database = {
           qt_streak_5x?: number
           quick_trade_fee_percent?: number
           referral_reward_amount?: number
+          referrer_commission_percent?: number
           token_contract_address?: string | null
           token_decimals?: number | null
           updated_at?: string
@@ -332,6 +338,8 @@ export type Database = {
           blue_revenue_share_percent?: number
           blue_trending_multiplier?: number
           copy_trade_commission_percent?: number
+          creator_fee_blue_percent?: number
+          creator_fee_gold_percent?: number
           creator_fee_percent?: number
           exit_fee_percent?: number
           fallback_naira_rate?: number
@@ -363,6 +371,7 @@ export type Database = {
           qt_streak_5x?: number
           quick_trade_fee_percent?: number
           referral_reward_amount?: number
+          referrer_commission_percent?: number
           token_contract_address?: string | null
           token_decimals?: number | null
           updated_at?: string

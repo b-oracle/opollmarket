@@ -81,17 +81,52 @@ Deno.serve(async (req) => {
     // Fetch commission settings
     const { data: commData } = await supabase
       .from("commission_settings")
-      .select("admin_fee_percent, creator_fee_percent, referral_reward_amount")
+      .select("admin_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, referral_reward_amount")
       .limit(1)
       .single();
 
     const adminFeePercent = Number(commData?.admin_fee_percent ?? 2) / 100;
-    const creatorFeePercent = Number(commData?.creator_fee_percent ?? 3) / 100;
+    const creatorFeeNonePercent = Number(commData?.creator_fee_percent ?? 3) / 100;
+    const creatorFeeBluePercent = Number(commData?.creator_fee_blue_percent ?? 3) / 100;
+    const creatorFeeGoldPercent = Number(commData?.creator_fee_gold_percent ?? 3) / 100;
+    const referrerCommissionPercent = Number(commData?.referrer_commission_percent ?? 0) / 100;
     const referralRewardAmount = Number(commData?.referral_reward_amount ?? 5);
+
+    // Look up creator's verification level
+    const { data: market } = await supabase
+      .from("markets")
+      .select("creator_wallet")
+      .eq("id", marketId)
+      .single();
+
+    let creatorFeePercent = creatorFeeNonePercent;
+    if (market?.creator_wallet) {
+      const { data: creatorProfile } = await supabase
+        .from("profiles")
+        .select("verification_level")
+        .eq("id", market.creator_wallet)
+        .single();
+
+      const level = creatorProfile?.verification_level || "none";
+      if (level === "gold") creatorFeePercent = creatorFeeGoldPercent;
+      else if (level === "blue") creatorFeePercent = creatorFeeBluePercent;
+    }
+
+    // Look up trader's referrer for per-trade commission
+    let referrerId: string | null = null;
+    if (referrerCommissionPercent > 0) {
+      const { data: traderProfile } = await supabase
+        .from("profiles")
+        .select("referred_by")
+        .eq("id", userId)
+        .single();
+      referrerId = traderProfile?.referred_by || null;
+    }
 
     const adminAmount = amount * adminFeePercent;
     const creatorAmount = amount * creatorFeePercent;
-    const totalFees = adminAmount + creatorAmount;
+    const referrerAmount = referrerId ? amount * referrerCommissionPercent : 0;
+    const totalFees = adminAmount + creatorAmount + referrerAmount;
     const totalCost = amount;
 
     // Check balance
@@ -177,51 +212,84 @@ Deno.serve(async (req) => {
     }
 
     // --- Credit creator commission ---
-    if (creatorAmount > 0) {
-      const { data: market } = await supabase
-        .from("markets")
-        .select("creator_wallet")
-        .eq("id", marketId)
+    if (creatorAmount > 0 && market?.creator_wallet) {
+      const creatorId = market.creator_wallet;
+
+      const { data: creatorBal } = await supabase
+        .from("balances")
+        .select("amount")
+        .eq("user_id", creatorId)
+        .eq("currency", "USDT")
         .single();
 
-      if (market?.creator_wallet) {
-        // creator_wallet stores user ID
-        const creatorId = market.creator_wallet;
-
-        const { data: creatorBal } = await supabase
+      if (creatorBal) {
+        await supabase
           .from("balances")
-          .select("amount")
+          .update({ amount: Number(creatorBal.amount) + creatorAmount, updated_at: new Date().toISOString() })
           .eq("user_id", creatorId)
-          .eq("currency", "USDT")
-          .single();
-
-        if (creatorBal) {
-          await supabase
-            .from("balances")
-            .update({ amount: Number(creatorBal.amount) + creatorAmount, updated_at: new Date().toISOString() })
-            .eq("user_id", creatorId)
-            .eq("currency", "USDT");
-        } else {
-          await supabase.from("balances").insert({
-            user_id: creatorId,
-            amount: creatorAmount,
-            currency: "USDT",
-          });
-        }
-
-        await supabase.from("transactions").insert({
+          .eq("currency", "USDT");
+      } else {
+        await supabase.from("balances").insert({
           user_id: creatorId,
-          type: "commission",
           amount: creatorAmount,
-          market_id: marketId,
-          option_id: optionId || null,
-          side,
-          status: "confirmed",
+          currency: "USDT",
         });
       }
+
+      await supabase.from("transactions").insert({
+        user_id: creatorId,
+        type: "commission",
+        amount: creatorAmount,
+        market_id: marketId,
+        option_id: optionId || null,
+        side,
+        status: "confirmed",
+      });
     }
 
-    const poolAmount = amount - adminAmount - creatorAmount;
+    // --- Credit referrer commission (per-trade) ---
+    if (referrerId && referrerAmount > 0) {
+      const { data: referrerBal } = await supabase
+        .from("balances")
+        .select("amount")
+        .eq("user_id", referrerId)
+        .eq("currency", "USDT")
+        .single();
+
+      if (referrerBal) {
+        await supabase
+          .from("balances")
+          .update({ amount: Number(referrerBal.amount) + referrerAmount, updated_at: new Date().toISOString() })
+          .eq("user_id", referrerId)
+          .eq("currency", "USDT");
+      } else {
+        await supabase.from("balances").insert({
+          user_id: referrerId,
+          amount: referrerAmount,
+          currency: "USDT",
+        });
+      }
+
+      await supabase.from("transactions").insert({
+        user_id: referrerId,
+        type: "commission",
+        amount: referrerAmount,
+        market_id: marketId,
+        option_id: optionId || null,
+        side: "referral",
+        status: "confirmed",
+      });
+
+      await supabase.from("notifications").insert({
+        user_id: referrerId,
+        title: "Referral Commission 💰",
+        message: `You earned $${referrerAmount.toFixed(2)} commission from a referral's trade!`,
+        type: "referral",
+        market_id: marketId,
+      });
+    }
+
+    const poolAmount = amount - adminAmount - creatorAmount - referrerAmount;
 
     // Insert position
     const { error: posError } = await supabase.from("positions").insert({

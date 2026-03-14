@@ -48,6 +48,9 @@ const AdminSettings = () => {
   const { canEdit } = useAdminContext();
   const [adminFee, setAdminFee] = useState("");
   const [creatorFee, setCreatorFee] = useState("");
+  const [creatorFeeBlue, setCreatorFeeBlue] = useState("");
+  const [creatorFeeGold, setCreatorFeeGold] = useState("");
+  const [referrerCommission, setReferrerCommission] = useState("");
   const [referralReward, setReferralReward] = useState("");
   const [minTokenBalance, setMinTokenBalance] = useState("");
   const [minGoldTokenBalance, setMinGoldTokenBalance] = useState("");
@@ -93,6 +96,9 @@ const AdminSettings = () => {
         const d = data as any;
         setAdminFee(String(d.admin_fee_percent));
         setCreatorFee(String(d.creator_fee_percent));
+        setCreatorFeeBlue(String(d.creator_fee_blue_percent ?? d.creator_fee_percent ?? 3));
+        setCreatorFeeGold(String(d.creator_fee_gold_percent ?? d.creator_fee_percent ?? 3));
+        setReferrerCommission(String(d.referrer_commission_percent ?? 0));
         setReferralReward(String(d.referral_reward_amount ?? 5));
         setMinTokenBalance(String(d.min_token_balance ?? 10000000));
         setMinGoldTokenBalance(String(d.min_gold_token_balance ?? 100000000));
@@ -136,6 +142,9 @@ const AdminSettings = () => {
 
   const adminNum = parseFloat(adminFee) || 0;
   const creatorNum = parseFloat(creatorFee) || 0;
+  const creatorBlueNum = parseFloat(creatorFeeBlue) || 0;
+  const creatorGoldNum = parseFloat(creatorFeeGold) || 0;
+  const referrerCommissionNum = parseFloat(referrerCommission) || 0;
   const referralNum = parseFloat(referralReward) || 0;
   const tokenNum = parseFloat(minTokenBalance) || 0;
   const goldTokenNum = parseFloat(minGoldTokenBalance) || 0;
@@ -160,10 +169,11 @@ const AdminSettings = () => {
   const blueMaxFreeMarketsNum = parseInt(blueMaxFreeMarkets) || 5;
   const goldMaxFreeMarketsNum = parseInt(goldMaxFreeMarkets) || 20;
   const aiGenerationCostNum = parseFloat(aiGenerationCost) || 0;
-  const totalFee = adminNum + creatorNum;
+  const maxTotalFee = Math.max(adminNum + creatorNum, adminNum + creatorBlueNum, adminNum + creatorGoldNum) + referrerCommissionNum;
+  const totalFee = adminNum + creatorNum + referrerCommissionNum;
   const poolPercent = 100 - totalFee;
   const isValid =
-    adminNum >= 0 && creatorNum >= 0 && totalFee <= 100 &&
+    adminNum >= 0 && creatorNum >= 0 && creatorBlueNum >= 0 && creatorGoldNum >= 0 && referrerCommissionNum >= 0 && maxTotalFee <= 100 &&
     referralNum >= 0 && tokenNum >= 0 && nftNum >= 0 &&
     minWithdrawNum >= 0 && withdrawalCooldownNum >= 0 && withdrawalMultiplierNum >= 1 && exitFeeNum >= 0 && exitFeeNum <= 100 && withdrawalFeeNum >= 0 && withdrawalFeeNum <= 100 && copyTradeCommissionNum >= 0 && copyTradeCommissionNum <= 100 &&
     quickTradeFeeNum >= 0 && quickTradeFeeNum <= 100 &&
@@ -210,6 +220,9 @@ const AdminSettings = () => {
         .update({
           admin_fee_percent: adminNum,
           creator_fee_percent: creatorNum,
+          creator_fee_blue_percent: creatorBlueNum,
+          creator_fee_gold_percent: creatorGoldNum,
+          referrer_commission_percent: referrerCommissionNum,
           referral_reward_amount: referralNum,
           min_token_balance: tokenNum,
           min_gold_token_balance: goldTokenNum,
@@ -255,6 +268,9 @@ const AdminSettings = () => {
         details: {
           admin_fee_percent: adminNum,
           creator_fee_percent: creatorNum,
+          creator_fee_blue_percent: creatorBlueNum,
+          creator_fee_gold_percent: creatorGoldNum,
+          referrer_commission_percent: referrerCommissionNum,
            exit_fee_percent: exitFeeNum,
            withdrawal_fee_percent: withdrawalFeeNum,
           copy_trade_commission_percent: copyTradeCommissionNum,
@@ -328,8 +344,21 @@ const AdminSettings = () => {
               <Input id="adminFee" type="number" min={0} max={100} step={0.1} value={adminFee} onChange={(e) => setAdminFee(e.target.value)} placeholder="2" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="creatorFee">Market Creator Fee (%)</Label>
+              <Label htmlFor="creatorFee">Creator Fee — No Tick (%)</Label>
               <Input id="creatorFee" type="number" min={0} max={100} step={0.1} value={creatorFee} onChange={(e) => setCreatorFee(e.target.value)} placeholder="3" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="creatorFeeBlue">Creator Fee — Blue Tick (%)</Label>
+              <Input id="creatorFeeBlue" type="number" min={0} max={100} step={0.1} value={creatorFeeBlue} onChange={(e) => setCreatorFeeBlue(e.target.value)} placeholder="4" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="creatorFeeGold">Creator Fee — Gold Tick (%)</Label>
+              <Input id="creatorFeeGold" type="number" min={0} max={100} step={0.1} value={creatorFeeGold} onChange={(e) => setCreatorFeeGold(e.target.value)} placeholder="5" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="referrerCommission">Referrer Commission (%)</Label>
+              <Input id="referrerCommission" type="number" min={0} max={100} step={0.1} value={referrerCommission} onChange={(e) => setReferrerCommission(e.target.value)} placeholder="1" />
+              <p className="text-[10px] text-muted-foreground">% of each trade paid to the trader's referrer</p>
             </div>
 
             <Card className="border-dashed">
@@ -366,8 +395,20 @@ const AdminSettings = () => {
                 <span className="font-medium">{adminNum}%</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Creator Commission</span>
+                <span className="text-muted-foreground">Creator (No Tick)</span>
                 <span className="font-medium">{creatorNum}%</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Creator (Blue Tick)</span>
+                <span className="font-medium">{creatorBlueNum}%</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Creator (Gold Tick)</span>
+                <span className="font-medium">{creatorGoldNum}%</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Referrer Commission</span>
+                <span className="font-medium">{referrerCommissionNum}%</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Early Exit Fee</span>
@@ -379,7 +420,7 @@ const AdminSettings = () => {
               </div>
             </div>
 
-            {totalFee > 100 && <p className="text-xs text-destructive">Total fees cannot exceed 100%.</p>}
+            {maxTotalFee > 100 && <p className="text-xs text-destructive">Total fees cannot exceed 100%.</p>}
           </CardContent>
         </Card>
 
