@@ -80,6 +80,7 @@ const AdminSettings = () => {
   const [blueMaxFreeMarkets, setBlueMaxFreeMarkets] = useState("5");
   const [goldMaxFreeMarkets, setGoldMaxFreeMarkets] = useState("20");
   const [aiGenerationCost, setAiGenerationCost] = useState("0.50");
+  const [autoResolveFee, setAutoResolveFee] = useState("0");
   const [payazaMode, setPayazaMode] = useState<"checkout_sdk" | "direct_api">("direct_api"); // kept for save compatibility
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
