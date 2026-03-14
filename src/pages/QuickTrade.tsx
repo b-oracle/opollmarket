@@ -534,9 +534,8 @@ export default function QuickTrade() {
         consecutiveFailsRef.current = 0;
         applyDisplayPrice(p);
         applyStreamingPrice(p);
-        if (selectedAsset.assetClass !== "crypto") {
-          feedRealPrice(streamAssetSymbol, p);
-        }
+        // Seed the smooth interpolation system so fallback has data immediately
+        feedRealPrice(streamAssetSymbol, p);
       }
     })();
 
