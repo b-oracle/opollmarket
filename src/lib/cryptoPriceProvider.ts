@@ -78,7 +78,7 @@ async function fetchFromBinanceSpot(sym: string): Promise<number | null> {
 
 // ── Cache & backoff state ──
 const cache = new Map<string, { price: number; fetchedAt: number; provider: string }>();
-const CACHE_TTL = 1_500;
+const CACHE_TTL = 5_000;
 let failCount = 0;
 
 export async function fetchCryptoPrice(
@@ -109,7 +109,6 @@ export async function fetchCryptoPrice(
   const ccSym = CRYPTOCOMPARE_SYMS[sym];
 
   const providers: Array<{ name: string; fn: () => Promise<number | null> }> = [];
-  if (BINANCE_SYMS[sym]) providers.push({ name: "binance", fn: () => fetchFromBinanceSpot(sym) });
   if (gId) providers.push({ name: "coingecko", fn: () => fetchFromCoinGecko(gId) });
   if (ccId) providers.push({ name: "coincap", fn: () => fetchFromCoinCap(ccId) });
   if (ccSym) providers.push({ name: "cryptocompare", fn: () => fetchFromCryptoCompare(ccSym) });
