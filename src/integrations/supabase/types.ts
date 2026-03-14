@@ -234,6 +234,7 @@ export type Database = {
         Row: {
           admin_fee_percent: number
           ai_generation_cost: number
+          auto_resolve_fee: number
           blue_max_free_markets: number
           blue_revenue_share_percent: number
           blue_trending_multiplier: number
@@ -284,6 +285,7 @@ export type Database = {
         Insert: {
           admin_fee_percent?: number
           ai_generation_cost?: number
+          auto_resolve_fee?: number
           blue_max_free_markets?: number
           blue_revenue_share_percent?: number
           blue_trending_multiplier?: number
@@ -334,6 +336,7 @@ export type Database = {
         Update: {
           admin_fee_percent?: number
           ai_generation_cost?: number
+          auto_resolve_fee?: number
           blue_max_free_markets?: number
           blue_revenue_share_percent?: number
           blue_trending_multiplier?: number

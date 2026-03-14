@@ -1,0 +1,1 @@
+ALTER TABLE public.commission_settings ADD COLUMN auto_resolve_fee numeric NOT NULL DEFAULT 0;

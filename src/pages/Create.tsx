@@ -204,6 +204,7 @@ const Create = () => {
   const [activeMarketCount, setActiveMarketCount] = useState(0);
   const [exceededFreeLimit, setExceededFreeLimit] = useState(false);
   const [aiGenerationCost, setAiGenerationCost] = useState(0.5);
+  const [autoResolveFee, setAutoResolveFee] = useState(0);
   const [generatingDesc, setGeneratingDesc] = useState(false);
   const [generatingDetails, setGeneratingDetails] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
@@ -226,6 +227,7 @@ const Create = () => {
         setBlueMaxFreeMarkets(Number((data as any).blue_max_free_markets) || 5);
         setGoldMaxFreeMarkets(Number((data as any).gold_max_free_markets) || 20);
         setAiGenerationCost(Number((data as any).ai_generation_cost ?? 0.5));
+        setAutoResolveFee(Number((data as any).auto_resolve_fee ?? 0));
       }
       setSettingsLoaded(true);
     })();
@@ -810,7 +812,7 @@ const Create = () => {
     }
 
     // Referral bonus can only cover the creation fee portion, not liquidity
-    const feeAmount = feeBypass ? marketCreationFee : 0;
+    const feeAmount = (feeBypass ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0);
     const bonusForFee = Math.min(Number(bal.bonus_balance || 0), feeAmount);
 
     // Use secure server-side function to deduct balance (RLS blocks client-side updates)
@@ -924,7 +926,7 @@ const Create = () => {
     if (error) {
       console.error("Failed to save market:", error);
       // Refund via secure RPC (rollback the deduction)
-      const feeAmount = feeBypass ? marketCreationFee : 0;
+      const feeAmount = (feeBypass ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0);
       const bonusForFee = Math.min(Number(bal.bonus_balance || 0), feeAmount);
       await supabase.rpc("deduct_market_liquidity" as any, {
         _user_id: user.id,
@@ -956,6 +958,18 @@ const Create = () => {
         market_id: data?.id,
         status: "confirmed",
         side: "market_creation_fee",
+      });
+    }
+
+    // Record auto-resolve fee transaction
+    if (autoResolve && autoResolveFee > 0) {
+      await supabase.from("transactions").insert({
+        user_id: user.id,
+        type: "buy",
+        amount: autoResolveFee,
+        market_id: data?.id,
+        status: "confirmed",
+        side: "auto_resolve_fee",
       });
     }
 
@@ -2219,7 +2233,7 @@ const Create = () => {
                   })}
                 </div>
                 {(() => {
-                  const totalNeeded = parseFloat(initialLiquidity) + (feeBypass ? marketCreationFee : 0);
+                  const totalNeeded = parseFloat(initialLiquidity) + (feeBypass ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0);
                   const shortfall = totalNeeded - balance;
                   return totalNeeded > balance && balance >= 0 ? (
                     <div className="mt-2 space-y-2">
@@ -2287,8 +2301,7 @@ const Create = () => {
                 </div>
               </div>
 
-              {/* Fee breakdown */}
-              {feeBypass && initialLiquidity && (
+              {(feeBypass || (autoResolve && autoResolveFee > 0)) && initialLiquidity && (
                 <div className="glass rounded-xl p-4">
                   <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-primary" />
@@ -2299,13 +2312,21 @@ const Create = () => {
                       <span className="text-muted-foreground">Initial Liquidity</span>
                       <span className="font-medium">${initialLiquidity} USDT</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Creation Fee <span className="text-[10px]">(non-refundable)</span></span>
-                      <span className="font-medium">${marketCreationFee} USDT</span>
-                    </div>
+                    {feeBypass && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Creation Fee <span className="text-[10px]">(non-refundable)</span></span>
+                        <span className="font-medium">${marketCreationFee} USDT</span>
+                      </div>
+                    )}
+                    {autoResolve && autoResolveFee > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Auto-Resolve Fee <span className="text-[10px]">(platform)</span></span>
+                        <span className="font-medium">${autoResolveFee} USDT</span>
+                      </div>
+                    )}
                     <div className="border-t border-border pt-1.5 flex justify-between">
                       <span className="font-semibold">Total</span>
-                      <span className="font-bold text-primary">${(parseFloat(initialLiquidity) + marketCreationFee).toFixed(2)} USDT</span>
+                      <span className="font-bold text-primary">${(parseFloat(initialLiquidity) + (feeBypass ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0)).toFixed(2)} USDT</span>
                     </div>
                   </div>
                 </div>

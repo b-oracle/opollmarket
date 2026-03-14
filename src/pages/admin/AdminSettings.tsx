@@ -80,6 +80,7 @@ const AdminSettings = () => {
   const [blueMaxFreeMarkets, setBlueMaxFreeMarkets] = useState("5");
   const [goldMaxFreeMarkets, setGoldMaxFreeMarkets] = useState("20");
   const [aiGenerationCost, setAiGenerationCost] = useState("0.50");
+  const [autoResolveFee, setAutoResolveFee] = useState("0");
   const [payazaMode, setPayazaMode] = useState<"checkout_sdk" | "direct_api">("direct_api"); // kept for save compatibility
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -130,6 +131,7 @@ const AdminSettings = () => {
         setBlueMaxFreeMarkets(String(d.blue_max_free_markets ?? 5));
         setGoldMaxFreeMarkets(String(d.gold_max_free_markets ?? 20));
         setAiGenerationCost(String(d.ai_generation_cost ?? 0.5));
+        setAutoResolveFee(String(d.auto_resolve_fee ?? 0));
         setPayazaMode(d.payaza_mode === "checkout_sdk" ? "checkout_sdk" : "direct_api");
         setQtOneSidedBonus(d.qt_one_sided_bonus !== false);
         setSettingsId(d.id);
@@ -169,6 +171,7 @@ const AdminSettings = () => {
   const blueMaxFreeMarketsNum = parseInt(blueMaxFreeMarkets) || 5;
   const goldMaxFreeMarketsNum = parseInt(goldMaxFreeMarkets) || 20;
   const aiGenerationCostNum = parseFloat(aiGenerationCost) || 0;
+  const autoResolveFeeNum = parseFloat(autoResolveFee) || 0;
   const maxTotalFee = Math.max(adminNum + creatorNum, adminNum + creatorBlueNum, adminNum + creatorGoldNum) + referrerCommissionNum;
   const totalFee = adminNum + creatorNum + referrerCommissionNum;
   const poolPercent = 100 - totalFee;
@@ -250,9 +253,10 @@ const AdminSettings = () => {
            gold_trending_multiplier: goldTrendingMultNum,
            blue_max_free_markets: blueMaxFreeMarketsNum,
             gold_max_free_markets: goldMaxFreeMarketsNum,
-             ai_generation_cost: aiGenerationCostNum,
-              payaza_mode: payazaMode,
-              qt_one_sided_bonus: qtOneSidedBonus,
+              ai_generation_cost: aiGenerationCostNum,
+              auto_resolve_fee: autoResolveFeeNum,
+               payaza_mode: payazaMode,
+               qt_one_sided_bonus: qtOneSidedBonus,
            updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
@@ -295,9 +299,10 @@ const AdminSettings = () => {
            gold_trending_multiplier: goldTrendingMultNum,
            blue_max_free_markets: blueMaxFreeMarketsNum,
             gold_max_free_markets: goldMaxFreeMarketsNum,
-              ai_generation_cost: aiGenerationCostNum,
-              payaza_mode: payazaMode,
-              qt_one_sided_bonus: qtOneSidedBonus,
+               ai_generation_cost: aiGenerationCostNum,
+               auto_resolve_fee: autoResolveFeeNum,
+               payaza_mode: payazaMode,
+               qt_one_sided_bonus: qtOneSidedBonus,
         },
       });
 
@@ -732,6 +737,25 @@ const AdminSettings = () => {
                 <li><strong>AI Generate Details</strong> — auto-generate detailed market content</li>
                 <li><strong>AI Generate Image</strong> — auto-generate cover images</li>
               </ul>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ─── Auto-Resolve Fee ─── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Zap className="w-5 h-5" /> Auto-Resolve Fee
+            </CardTitle>
+            <CardDescription>
+              Platform fee charged to creators who enable auto-resolve on their markets.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="autoResolveFee">Auto-Resolve Fee ($)</Label>
+              <Input id="autoResolveFee" type="number" min={0} step={0.5} value={autoResolveFee} onChange={(e) => setAutoResolveFee(e.target.value)} placeholder="0" />
+              <p className="text-[10px] text-muted-foreground">Current: ${autoResolveFeeNum.toFixed(2)}. Set to 0 to disable. Charged at market creation when auto-resolve is enabled.</p>
             </div>
           </CardContent>
         </Card>
