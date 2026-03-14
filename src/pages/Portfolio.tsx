@@ -305,8 +305,8 @@ const Portfolio = () => {
 
       if (balError) throw balError;
 
-      // 2b. Return exit fee to market pool (increase volume/liquidity)
-      if (exitFee > 0) {
+      // 2b. Update market: volume includes sell, liquidity decreases by amount leaving pool
+      {
         const { data: mkt } = await supabase
           .from("markets")
           .select("volume, initial_liquidity")
@@ -314,10 +314,13 @@ const Portfolio = () => {
           .single();
 
         if (mkt) {
-          const newVolume = Number(mkt.volume) + exitFee;
+          // Volume = total buys + total sells
+          const newVolume = Number(mkt.volume) + grossProceeds;
+          // Liquidity decreases: the net proceeds leave the pool, exit fee stays
+          const newLiquidity = Number(mkt.initial_liquidity) + newVolume - grossProceeds + exitFee;
           await supabase.from("markets").update({
             volume: newVolume,
-            liquidity: Number(mkt.initial_liquidity) + newVolume,
+            liquidity: Math.max(0, newLiquidity),
           }).eq("id", sellTarget.marketId);
         }
       }
