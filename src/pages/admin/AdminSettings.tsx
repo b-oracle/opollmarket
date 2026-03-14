@@ -142,6 +142,9 @@ const AdminSettings = () => {
 
   const adminNum = parseFloat(adminFee) || 0;
   const creatorNum = parseFloat(creatorFee) || 0;
+  const creatorBlueNum = parseFloat(creatorFeeBlue) || 0;
+  const creatorGoldNum = parseFloat(creatorFeeGold) || 0;
+  const referrerCommissionNum = parseFloat(referrerCommission) || 0;
   const referralNum = parseFloat(referralReward) || 0;
   const tokenNum = parseFloat(minTokenBalance) || 0;
   const goldTokenNum = parseFloat(minGoldTokenBalance) || 0;
@@ -166,7 +169,8 @@ const AdminSettings = () => {
   const blueMaxFreeMarketsNum = parseInt(blueMaxFreeMarkets) || 5;
   const goldMaxFreeMarketsNum = parseInt(goldMaxFreeMarkets) || 20;
   const aiGenerationCostNum = parseFloat(aiGenerationCost) || 0;
-  const totalFee = adminNum + creatorNum;
+  const maxTotalFee = Math.max(adminNum + creatorNum, adminNum + creatorBlueNum, adminNum + creatorGoldNum) + referrerCommissionNum;
+  const totalFee = adminNum + creatorNum + referrerCommissionNum;
   const poolPercent = 100 - totalFee;
   const isValid =
     adminNum >= 0 && creatorNum >= 0 && totalFee <= 100 &&
