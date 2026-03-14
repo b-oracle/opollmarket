@@ -335,8 +335,8 @@ const AdminQuickTrade = () => {
               </div>
               {stats.totalBets > 0 && (
                 <div className="h-2 rounded-full overflow-hidden flex bg-muted mt-2">
-                  <div className="bg-chart-3" style={{ width: `${(stats.wonBets / stats.totalBets) * 100}%` }} />
-                  <div className="bg-destructive" style={{ width: `${(stats.lostBets / stats.totalBets) * 100}%` }} />
+                  <div className="bg-green-500" style={{ width: `${(stats.wonBets / stats.totalBets) * 100}%` }} />
+                  <div className="bg-red-500" style={{ width: `${(stats.lostBets / stats.totalBets) * 100}%` }} />
                 </div>
               )}
             </div>
