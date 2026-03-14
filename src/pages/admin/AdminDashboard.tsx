@@ -323,6 +323,7 @@ const AdminDashboard = () => {
     return { gross, grossCount, credited, confirmedCount: confirmed.length, partialCount: partial.length, pendingAmt, pendingCount: pending.length, expiredAmt, expiredCount: expired.length, providers };
   }, [allDepositTxns, depositRange]);
 
+  if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="w-6 h-6 text-primary animate-spin" />
