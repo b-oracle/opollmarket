@@ -29,65 +29,60 @@ Deno.serve(async (req) => {
         ? (Number(settings.admin_fee_percent) + Number(settings.creator_fee_percent)) / 100
         : 0.05;
 
-    // Find all resolved rounds
-    const { data: rounds, error: roundsErr } = await supabase
-      .from("quick_rounds")
-      .select("id")
-      .eq("status", "resolved")
-      .not("result", "eq", "flat");
-
-    if (roundsErr) throw roundsErr;
-    if (!rounds || rounds.length === 0) {
-      return new Response(JSON.stringify({ message: "No resolved rounds found", refunded: 0 }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Fetch ALL bets with their round info in one go (paginated)
+    let allBets: any[] = [];
+    let page = 0;
+    let hasMore = true;
+    while (hasMore) {
+      const { data } = await supabase
+        .from("quick_bets")
+        .select("id, user_id, amount, status, round_id")
+        .in("status", ["won", "lost"])
+        .order("created_at", { ascending: false })
+        .range(page * 1000, (page + 1) * 1000 - 1);
+      if (data && data.length > 0) {
+        allBets = [...allBets, ...data];
+        page++;
+        if (data.length < 1000) hasMore = false;
+      } else {
+        hasMore = false;
+      }
     }
 
-    let totalRefunded = 0;
-    let totalUsers = 0;
+    // Group bets by round
+    const roundBets = new Map<string, any[]>();
+    for (const bet of allBets) {
+      const arr = roundBets.get(bet.round_id) || [];
+      arr.push(bet);
+      roundBets.set(bet.round_id, arr);
+    }
+
+    // Find one-sided rounds (all won, no lost)
     const userRefunds: Record<string, number> = {};
+    let totalRefunded = 0;
 
-    for (const round of rounds) {
-      // Get all bets for this round that are settled (won/lost)
-      const { data: bets } = await supabase
-        .from("quick_bets")
-        .select("*")
-        .eq("round_id", round.id)
-        .in("status", ["won", "lost"]);
+    for (const [roundId, bets] of roundBets.entries()) {
+      const hasLosers = bets.some((b: any) => b.status === "lost");
+      if (hasLosers) continue;
 
-      if (!bets || bets.length === 0) continue;
-
-      const losers = bets.filter((b: any) => b.status === "lost");
       const winners = bets.filter((b: any) => b.status === "won");
-
-      // Only process one-sided rounds (no losers, all winners)
-      if (losers.length > 0 || winners.length === 0) continue;
+      if (winners.length === 0) continue;
 
       for (const bet of winners) {
         const amount = Number(bet.amount);
-        // They were charged: amount * (1 - platformFee) * multiplier
-        // They should have gotten: amount * 1.005 * multiplier
-        // Difference per unit = amount * (1 - (1 - platformFee)) + amount * 0.005
-        //                      = amount * platformFee + amount * 0.005
         const feeRefund = amount * platformFee;
         const bonus = amount * 0.005;
         const totalCredit = feeRefund + bonus;
 
         userRefunds[bet.user_id] = (userRefunds[bet.user_id] || 0) + totalCredit;
-
-        // Record as transaction for accounting
-        await supabase.from("transactions").insert({
-          user_id: bet.user_id,
-          type: "qt_one_sided_bonus",
-          amount: totalCredit,
-          status: "confirmed",
-          side: "credit",
-        });
         totalRefunded += totalCredit;
       }
     }
 
-    // Credit each user
+    console.log(`Found ${Object.keys(userRefunds).length} users to refund, total: $${totalRefunded.toFixed(2)}`);
+
+    // Credit each user and record transaction
+    let totalUsers = 0;
     for (const [userId, amount] of Object.entries(userRefunds)) {
       const { data: bal } = await supabase
         .from("balances")
@@ -104,11 +99,20 @@ Deno.serve(async (req) => {
           .eq("currency", "USDT");
       }
 
+      // Record transaction for accounting
+      await supabase.from("transactions").insert({
+        user_id: userId,
+        type: "qt_one_sided_bonus",
+        amount,
+        status: "confirmed",
+        side: "credit",
+      });
+
       // Notify user
       await supabase.from("notifications").insert({
         user_id: userId,
-        title: "Quick Trade Bonus Credit 🎁",
-        message: `You've been credited $${amount.toFixed(2)} as a one-sided market bonus refund. Thank you for trading!`,
+        title: "QuickTrade Winning Bonus! 💰",
+        message: `You've been credited $${amount.toFixed(2)} as a bonus for winning in one-sided rounds. Keep trading!`,
         type: "payout",
       });
 
