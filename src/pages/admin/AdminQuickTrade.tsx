@@ -167,7 +167,7 @@ const AdminQuickTrade = () => {
       .sort((a, b) => b.profit - a.profit)
       .slice(0, 10);
 
-    return { totalRounds, resolvedRounds, totalBets, totalWagered, totalPayout, totalRefunded, platformProfit, uniqueTraders, wonBets, lostBets, assetData, chartData, topTraders };
+    return { totalRounds, resolvedRounds, totalBets, totalWagered, totalPayout, totalRefunded, totalBonusPaid, platformProfit, uniqueTraders, wonBets, lostBets, assetData, chartData, topTraders };
   }, [rounds, bets, range, profileMap]);
 
   const paginatedRounds = useMemo(() => {
