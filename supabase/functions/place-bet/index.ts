@@ -212,51 +212,84 @@ Deno.serve(async (req) => {
     }
 
     // --- Credit creator commission ---
-    if (creatorAmount > 0) {
-      const { data: market } = await supabase
-        .from("markets")
-        .select("creator_wallet")
-        .eq("id", marketId)
+    if (creatorAmount > 0 && market?.creator_wallet) {
+      const creatorId = market.creator_wallet;
+
+      const { data: creatorBal } = await supabase
+        .from("balances")
+        .select("amount")
+        .eq("user_id", creatorId)
+        .eq("currency", "USDT")
         .single();
 
-      if (market?.creator_wallet) {
-        // creator_wallet stores user ID
-        const creatorId = market.creator_wallet;
-
-        const { data: creatorBal } = await supabase
+      if (creatorBal) {
+        await supabase
           .from("balances")
-          .select("amount")
+          .update({ amount: Number(creatorBal.amount) + creatorAmount, updated_at: new Date().toISOString() })
           .eq("user_id", creatorId)
-          .eq("currency", "USDT")
-          .single();
-
-        if (creatorBal) {
-          await supabase
-            .from("balances")
-            .update({ amount: Number(creatorBal.amount) + creatorAmount, updated_at: new Date().toISOString() })
-            .eq("user_id", creatorId)
-            .eq("currency", "USDT");
-        } else {
-          await supabase.from("balances").insert({
-            user_id: creatorId,
-            amount: creatorAmount,
-            currency: "USDT",
-          });
-        }
-
-        await supabase.from("transactions").insert({
+          .eq("currency", "USDT");
+      } else {
+        await supabase.from("balances").insert({
           user_id: creatorId,
-          type: "commission",
           amount: creatorAmount,
-          market_id: marketId,
-          option_id: optionId || null,
-          side,
-          status: "confirmed",
+          currency: "USDT",
         });
       }
+
+      await supabase.from("transactions").insert({
+        user_id: creatorId,
+        type: "commission",
+        amount: creatorAmount,
+        market_id: marketId,
+        option_id: optionId || null,
+        side,
+        status: "confirmed",
+      });
     }
 
-    const poolAmount = amount - adminAmount - creatorAmount;
+    // --- Credit referrer commission (per-trade) ---
+    if (referrerId && referrerAmount > 0) {
+      const { data: referrerBal } = await supabase
+        .from("balances")
+        .select("amount")
+        .eq("user_id", referrerId)
+        .eq("currency", "USDT")
+        .single();
+
+      if (referrerBal) {
+        await supabase
+          .from("balances")
+          .update({ amount: Number(referrerBal.amount) + referrerAmount, updated_at: new Date().toISOString() })
+          .eq("user_id", referrerId)
+          .eq("currency", "USDT");
+      } else {
+        await supabase.from("balances").insert({
+          user_id: referrerId,
+          amount: referrerAmount,
+          currency: "USDT",
+        });
+      }
+
+      await supabase.from("transactions").insert({
+        user_id: referrerId,
+        type: "commission",
+        amount: referrerAmount,
+        market_id: marketId,
+        option_id: optionId || null,
+        side: "referral",
+        status: "confirmed",
+      });
+
+      await supabase.from("notifications").insert({
+        user_id: referrerId,
+        title: "Referral Commission 💰",
+        message: `You earned $${referrerAmount.toFixed(2)} commission from a referral's trade!`,
+        type: "referral",
+        market_id: marketId,
+      });
+    }
+
+    const poolAmount = amount - adminAmount - creatorAmount - referrerAmount;
 
     // Insert position
     const { error: posError } = await supabase.from("positions").insert({
