@@ -65,3 +65,5 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.verify-bank-account]
     verify_jwt = false
+  [functions.qt-price-broadcaster]
+    verify_jwt = false
