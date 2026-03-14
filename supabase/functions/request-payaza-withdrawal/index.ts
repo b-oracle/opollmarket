@@ -328,12 +328,14 @@ async function tryPayazaPayout(params: PayazaPayoutParams): Promise<boolean> {
     const transactionPin = Deno.env.get("PAYAZA_TRANSACTION_PIN");
 
     // Correct Payaza payout payload structure (matches official payaza_lib npm package)
+    // account_reference = merchant's own account reference (PAYAZA_MERCHANT_KEY), NOT the recipient's bank account
+    const merchantAccountRef = Deno.env.get("PAYAZA_MERCHANT_KEY") || "";
     const payoutPayload: Record<string, unknown> = {
       transaction_type: "nuban",
       service_payload: {
         payout_amount: ngnPayout,
         transaction_pin: transactionPin ? Number(transactionPin) : undefined,
-        account_reference: accountNumber,
+        account_reference: merchantAccountRef ? Number(merchantAccountRef) : undefined,
         currency: "NGN",
         payout_beneficiaries: [
           {
@@ -363,9 +365,9 @@ async function tryPayazaPayout(params: PayazaPayoutParams): Promise<boolean> {
     const encodedSecret = encodePayazaKey(secretKey);
     const encodedMerchant = merchantKey ? encodePayazaKey(merchantKey) : null;
 
+    // Only use the secret key for auth (merchant key is an account reference, not an API key)
     const authVariants: string[] = [];
     authVariants.push(`Payaza ${encodedSecret}`);
-    if (encodedMerchant) authVariants.push(`Payaza ${encodedMerchant}`);
 
     for (const authValue of authVariants) {
       const authLabel = authValue.substring(0, 30) + "...";
