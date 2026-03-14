@@ -459,6 +459,7 @@ export default function QuickTrade() {
   const lastFetchTimeRef = useRef(0);
   const [streamingPrice, setStreamingPrice] = useState<number | null>(null);
   const wsActiveRef = useRef(false);
+  const lastWsTickAtRef = useRef(0);
   const streamRunIdRef = useRef(0);
   // Reset price state when asset changes
   useEffect(() => {
@@ -473,6 +474,7 @@ export default function QuickTrade() {
     setActiveRound(null);
     setUserBet(null);
     wsActiveRef.current = false;
+    lastWsTickAtRef.current = 0;
     consecutiveFailsRef.current = 0;
     lastFetchTimeRef.current = 0;
 
@@ -565,6 +567,7 @@ export default function QuickTrade() {
     const handleWsTick = (price: number) => {
       if (!isCurrentRun()) return;
       wsActiveRef.current = true;
+      lastWsTickAtRef.current = Date.now();
       if (displayedPrice === 0) displayedPrice = price; // seed on first tick
       targetWsPrice = price;
     };
@@ -684,19 +687,24 @@ export default function QuickTrade() {
       pollIv = setInterval(pollNonCrypto, 10_000);
 
     } else {
-      // Crypto: simple HTTP fallback when WS is not delivering ticks
+      // Crypto: HTTP fallback when WS is unavailable OR stale
+      const WS_STALE_MS = 8_000;
       const fallbackTimer = setTimeout(() => {
-        if (!isCurrentRun() || wsActiveRef.current) return;
+        if (!isCurrentRun()) return;
 
         const poll = async () => {
-          if (!isCurrentRun() || wsActiveRef.current) return;
+          if (!isCurrentRun()) return;
           const now = Date.now();
+          const wsStale = lastWsTickAtRef.current === 0 || (now - lastWsTickAtRef.current) > WS_STALE_MS;
+          if (!wsStale) return;
           if (now - lastFetchTimeRef.current < 5000) return;
           lastFetchTimeRef.current = now;
 
           const p = await fetchPriceForAsset(selectedAsset);
           if (p != null && isCurrentRun()) {
             consecutiveFailsRef.current = 0;
+            if (displayedPrice === 0) displayedPrice = p;
+            targetWsPrice = p;
             applyDisplayPrice(p);
             applyStreamingPrice(p);
 
@@ -724,6 +732,7 @@ export default function QuickTrade() {
       return () => {
         mounted = false;
         wsActiveRef.current = false;
+        lastWsTickAtRef.current = 0;
         unsubWs();
         if (cryptoInterpId) clearInterval(cryptoInterpId);
         if (pendingRaf) cancelAnimationFrame(pendingRaf);
