@@ -476,6 +476,7 @@ const Portfolio = () => {
                 <Share2 className="w-3 h-3" /> Share
               </button>
             </div>
+            <div className="text-center">
               <div className="flex items-center justify-center gap-1 text-muted-foreground mb-0.5">
                 <DollarSign className="w-3 h-3" />
                 <span className="text-[10px]">Invested</span>
