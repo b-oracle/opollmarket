@@ -548,7 +548,7 @@ export default function QuickTrade() {
 
     const appendCryptoChartPoint = (price: number) => {
       const now = Date.now();
-      if (now - lastChartAppend < 300) return; // throttle chart points to ~3/sec
+      if (now - lastChartAppend < 80) return; // throttle chart points to ~12/sec for vibrant streaming
       lastChartAppend = now;
       const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
       const maxCutoff = now - 4 * 60 * 60 * 1000;
