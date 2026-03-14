@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin, ShieldAlert, ShieldCheck, Ban, BarChart3, Users, DollarSign, Layers, Clock, Archive } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin, ShieldAlert, ShieldCheck, Ban, BarChart3, Users, DollarSign, Layers, Clock, Archive, Flame } from "lucide-react";
 import { toast } from "sonner";
 import { logAuditEvent } from "@/lib/auditLog";
 import { motion, AnimatePresence } from "framer-motion";
@@ -82,6 +82,8 @@ interface MarketStatsData {
   trending: number;
   avgVolume: number;
   polymarket: number;
+  boostedActive: number;
+  boostedTotal: number;
 }
 
 const AdminMarkets = () => {
@@ -113,9 +115,10 @@ const AdminMarkets = () => {
   const [globalStats, setGlobalStats] = useState<MarketStatsData | null>(null);
 
   const fetchGlobalStats = async () => {
-    const { data } = await supabase
-      .from("markets")
-      .select("status, market_type, volume, participants, liquidity, trending, polymarket_id");
+    const [{ data }, { data: boosts }] = await Promise.all([
+      supabase.from("markets").select("status, market_type, volume, participants, liquidity, trending, polymarket_id"),
+      supabase.from("market_boosts").select("status"),
+    ]);
     if (!data) return;
     const stats: MarketStatsData = {
       total: data.length,
@@ -133,6 +136,8 @@ const AdminMarkets = () => {
       trending: data.filter(m => m.trending).length,
       avgVolume: 0,
       polymarket: data.filter(m => m.polymarket_id).length,
+      boostedActive: boosts?.filter(b => b.status === "active").length ?? 0,
+      boostedTotal: boosts?.length ?? 0,
     };
     const activeWithVolume = data.filter(m => m.status === "active" && Number(m.volume) > 0);
     stats.avgVolume = activeWithVolume.length > 0 ? stats.totalVolume / activeWithVolume.length : 0;
@@ -411,7 +416,7 @@ const AdminMarkets = () => {
 
       {/* Analytics Summary Cards */}
       {globalStats && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
           {[
             { label: "Active", value: globalStats.active, sub: `${globalStats.binary} binary · ${globalStats.multi} multi`, icon: CheckCircle, color: "text-emerald-500" },
             { label: "Pending / Draft", value: `${globalStats.pending} / ${globalStats.draft}`, icon: Clock, color: "text-yellow-500" },
@@ -419,6 +424,7 @@ const AdminMarkets = () => {
             { label: "Resolved", value: globalStats.resolved, sub: `${globalStats.cancelled} cancelled`, icon: Archive, color: "text-blue-500" },
             { label: "Total Volume", value: `$${globalStats.totalVolume >= 1_000_000 ? (globalStats.totalVolume / 1_000_000).toFixed(1) + "M" : globalStats.totalVolume >= 1_000 ? (globalStats.totalVolume / 1_000).toFixed(1) + "K" : globalStats.totalVolume.toFixed(0)}`, sub: `${globalStats.totalParticipants.toLocaleString()} participants`, icon: DollarSign, color: "text-primary" },
             { label: "Trending", value: globalStats.trending, sub: `${globalStats.polymarket} polymarket`, icon: TrendingUp, color: "text-pink-500" },
+            { label: "Boosted", value: globalStats.boostedActive, sub: `${globalStats.boostedTotal} total all-time`, icon: Flame, color: "text-orange-500" },
           ].map((card) => (
             <div key={card.label} className="bg-card border border-border/50 rounded-xl p-3 space-y-1">
               <div className="flex items-center gap-1.5">
