@@ -52,12 +52,29 @@ const CHART_COLORS = [
   "#ec4899",
 ];
 
+type DepositRangeKey = "7d" | "30d" | "90d" | "all";
+const DEPOSIT_RANGES: { key: DepositRangeKey; label: string; days: number | null }[] = [
+  { key: "7d", label: "7D", days: 7 },
+  { key: "30d", label: "30D", days: 30 },
+  { key: "90d", label: "90D", days: 90 },
+  { key: "all", label: "All", days: null },
+];
+
+interface DepositTxn {
+  amount: number;
+  status: string;
+  payment_provider: string | null;
+  created_at: string;
+}
+
 const AdminDashboard = () => {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [categoryData, setCategoryData] = useState<{ name: string; volume: number; count: number }[]>([]);
   const [statusData, setStatusData] = useState<{ name: string; value: number }[]>([]);
   const [activityData, setActivityData] = useState<{ date: string; markets: number; bets: number }[]>([]);
+  const [allDepositTxns, setAllDepositTxns] = useState<DepositTxn[]>([]);
+  const [depositRange, setDepositRange] = useState<DepositRangeKey>("all");
 
   useEffect(() => {
     const fetchAll = async () => {
