@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import AdminPagination from "@/components/admin/AdminPagination";
 import NpReconciliation from "@/components/admin/NpReconciliation";
+import PayazaReconciliation from "@/components/admin/PayazaReconciliation";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -254,8 +255,9 @@ const AdminDeposits = () => {
         <AdminPagination page={page} totalItems={data?.total || 0} pageSize={PAGE_SIZE} onPageChange={setPage} />
       </div>
 
-      {/* Deposit Reconciliation Tool */}
+      {/* Deposit Reconciliation Tools */}
       <NpReconciliation />
+      <PayazaReconciliation />
     </div>
   );
 };
