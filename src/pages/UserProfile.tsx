@@ -171,27 +171,11 @@ const UserProfile = () => {
     queryFn: async () => {
       if (!id) return null;
 
-      // Prediction PnL rank: compute from positions
-      const { data: allTraders } = await supabase
-        .from("transactions")
-        .select("user_id, amount, side, type, status")
-        .in("type", ["buy", "sell", "payout", "refund"])
-        .eq("status", "confirmed");
-
+      // Prediction PnL rank: use the server-side RPC for consistency
+      const { data: predLeaderboard } = await supabase.rpc("get_prediction_leaderboard", { _limit: 500, _sort: "pnl" } as any);
       let predictionRank: number | null = null;
-      if (allTraders) {
-        const pnlMap = new Map<string, number>();
-        for (const t of allTraders) {
-          const uid = t.user_id;
-          const cur = pnlMap.get(uid) || 0;
-          if (t.type === "payout" || t.type === "sell" || t.type === "refund") {
-            pnlMap.set(uid, cur + Number(t.amount));
-          } else if (t.type === "buy") {
-            pnlMap.set(uid, cur - Number(t.amount));
-          }
-        }
-        const sorted = [...pnlMap.entries()].sort((a, b) => b[1] - a[1]);
-        const idx = sorted.findIndex(([uid]) => uid === id);
+      if (predLeaderboard && Array.isArray(predLeaderboard)) {
+        const idx = predLeaderboard.findIndex((r: any) => r.user_id === id);
         predictionRank = idx >= 0 ? idx + 1 : null;
       }
 
