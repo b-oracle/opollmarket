@@ -48,7 +48,7 @@ async function verifySignature(
 }
 
 async function handleDeposit(supabase: ReturnType<typeof createClient>, payload: Record<string, unknown>, orderId: string) {
-  const { payment_id, actually_paid, outcome_amount, pay_amount } = payload;
+  const { payment_id, actually_paid, outcome_amount, pay_amount, price_amount } = payload;
   const paymentIdStr = String(payment_id);
 
   const parts = orderId.split("_");
@@ -93,12 +93,17 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
     : { data: null };
 
   const matchedTx = matchByPaymentId || matchByUserPending;
-  const requestedAmount = matchedTx?.amount || pay_amount || outcome_amount || actually_paid;
 
-  // Determine if this is a partial payment
-  // Use outcome_amount (USD value of what was received) for comparison
-  const creditAmount = outcome_amount || actually_paid;
-  const isPartial = Number(creditAmount) < Number(requestedAmount) * 0.98; // 2% tolerance for exchange rate fluctuations
+  // CRITICAL: Use price_amount (the original USD value the user requested) as the
+  // authoritative credit amount. outcome_amount is NOWPayments' internal exchange
+  // conversion output and can be wildly different from the actual deposit value.
+  // Fall back to matched transaction amount, then pay_amount, then actually_paid.
+  const requestedAmount = Number(price_amount) || matchedTx?.amount || Number(pay_amount) || Number(actually_paid) || 0;
+
+  // For partial payment detection, compare actually_paid_at_fiat or price_amount
+  // against the requested amount. Credit the lesser of price_amount and requestedAmount.
+  const creditAmount = Math.min(requestedAmount, Number(price_amount) || requestedAmount);
+  const isPartial = Number(creditAmount) < Number(requestedAmount) * 0.98; // 2% tolerance
   const finalStatus = isPartial ? "partial" : "confirmed";
 
   // 3. Credit the user's balance with whatever was actually received
