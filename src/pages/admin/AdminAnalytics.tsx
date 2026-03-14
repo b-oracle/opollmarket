@@ -86,14 +86,14 @@ const AdminAnalytics = () => {
 
       // Parallel fetches
       const [eventsData, quickBetsData, txData, polyMarkets, { data: adminRoles }] = await Promise.all([
-        fetchPaginated<EventRow>("analytics_events", "event_name, user_id, created_at, properties", (q: any) =>
-          q.gte("created_at", sinceISO).order("created_at", { ascending: false })
+        fetchPaginated((p) =>
+          supabase.from("analytics_events").select("event_name, user_id, created_at, properties").gte("created_at", sinceISO).order("created_at", { ascending: false }).range(p * 1000, (p + 1) * 1000 - 1)
         ),
-        fetchPaginated<any>("quick_bets", "id, user_id, amount, payout, status, side, created_at, round_id", (q: any) =>
-          q.gte("created_at", sinceISO).in("status", ["won", "lost"])
+        fetchPaginated((p) =>
+          supabase.from("quick_bets").select("id, user_id, amount, payout, status, side, created_at, round_id").gte("created_at", sinceISO).in("status", ["won", "lost"]).range(p * 1000, (p + 1) * 1000 - 1)
         ),
-        fetchPaginated<any>("transactions", "id, user_id, type, amount, status, market_id, created_at", (q: any) =>
-          q.gte("created_at", sinceISO).eq("status", "confirmed").in("type", ["deposit", "withdrawal", "buy", "payout", "commission"])
+        fetchPaginated((p) =>
+          supabase.from("transactions").select("id, user_id, type, amount, status, market_id, created_at").gte("created_at", sinceISO).eq("status", "confirmed").in("type", ["deposit", "withdrawal", "buy", "payout", "commission"]).range(p * 1000, (p + 1) * 1000 - 1)
         ),
         supabase.from("markets").select("id, title, polymarket_id").not("polymarket_id", "is", null).then(r => r.data || []),
         supabase.from("user_roles").select("user_id").eq("role", "admin"),
