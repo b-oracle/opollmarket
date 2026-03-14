@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { TrendingUp, Users, MessageSquare, ShoppingBag, Loader2, DollarSign, Activity, Gift, UserPlus, Zap, UserCheck, Heart, ArrowDownLeft, ArrowUpRight, Wallet, Scale, Info } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
@@ -52,12 +52,29 @@ const CHART_COLORS = [
   "#ec4899",
 ];
 
+type DepositRangeKey = "7d" | "30d" | "90d" | "all";
+const DEPOSIT_RANGES: { key: DepositRangeKey; label: string; days: number | null }[] = [
+  { key: "7d", label: "7D", days: 7 },
+  { key: "30d", label: "30D", days: 30 },
+  { key: "90d", label: "90D", days: 90 },
+  { key: "all", label: "All", days: null },
+];
+
+interface DepositTxn {
+  amount: number;
+  status: string;
+  payment_provider: string | null;
+  created_at: string;
+}
+
 const AdminDashboard = () => {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [categoryData, setCategoryData] = useState<{ name: string; volume: number; count: number }[]>([]);
   const [statusData, setStatusData] = useState<{ name: string; value: number }[]>([]);
   const [activityData, setActivityData] = useState<{ date: string; markets: number; bets: number }[]>([]);
+  const [allDepositTxns, setAllDepositTxns] = useState<DepositTxn[]>([]);
+  const [depositRange, setDepositRange] = useState<DepositRangeKey>("all");
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -166,6 +183,22 @@ const AdminDashboard = () => {
       };
       const providerBreakdown = await fetchProviderBreakdown();
 
+      // Fetch ALL deposit transactions with dates for time-range filtering
+      const fetchAllDepositTxns = async (): Promise<DepositTxn[]> => {
+        const rows: DepositTxn[] = [];
+        let from = 0;
+        const batchSize = 1000;
+        while (true) {
+          const { data, error } = await supabase.from("transactions").select("amount, status, payment_provider, created_at").eq("type", "deposit").range(from, from + batchSize - 1);
+          if (error || !data || data.length === 0) break;
+          rows.push(...(data as DepositTxn[]));
+          if (data.length < batchSize) break;
+          from += batchSize;
+        }
+        return rows;
+      };
+      setAllDepositTxns(await fetchAllDepositTxns());
+
       const totalVolume = marketRows?.reduce((sum, m) => sum + Number(m.volume), 0) ?? 0;
       const totalRewardsPaid = rewardRows.reduce((sum, r) => sum + Number(r.amount), 0);
       const quickTradeVolume = qtBetRows.reduce((sum, b) => sum + Number(b.amount), 0);
@@ -256,6 +289,39 @@ const AdminDashboard = () => {
     };
     fetchAll();
   }, []);
+
+
+  const depositRecon = useMemo(() => {
+    const rangeDef = DEPOSIT_RANGES.find(r => r.key === depositRange)!;
+    let cutoff = "";
+    if (rangeDef.days) {
+      const d = new Date();
+      d.setDate(d.getDate() - rangeDef.days);
+      cutoff = d.toISOString();
+    }
+    const filtered = rangeDef.days ? allDepositTxns.filter(t => t.created_at >= cutoff) : allDepositTxns;
+    const gross = filtered.reduce((s, t) => s + Number(t.amount), 0);
+    const grossCount = filtered.length;
+    const confirmed = filtered.filter(t => t.status === "confirmed");
+    const partial = filtered.filter(t => t.status === "partial");
+    const pending = filtered.filter(t => t.status === "pending");
+    const expired = filtered.filter(t => t.status === "expired");
+    const confirmedAmt = confirmed.reduce((s, t) => s + Number(t.amount), 0);
+    const partialAmt = partial.reduce((s, t) => s + Number(t.amount), 0);
+    const pendingAmt = pending.reduce((s, t) => s + Number(t.amount), 0);
+    const expiredAmt = expired.reduce((s, t) => s + Number(t.amount), 0);
+    const credited = confirmedAmt + partialAmt;
+    const provMap = new Map<string, { amount: number; count: number }>();
+    [...confirmed, ...partial].forEach(t => {
+      const key = t.payment_provider === "payaza" ? "fiat" : "crypto";
+      const e = provMap.get(key) || { amount: 0, count: 0 };
+      e.amount += Number(t.amount);
+      e.count++;
+      provMap.set(key, e);
+    });
+    const providers = Array.from(provMap.entries()).map(([provider, d]) => ({ provider, ...d }));
+    return { gross, grossCount, credited, confirmedCount: confirmed.length, partialCount: partial.length, pendingAmt, pendingCount: pending.length, expiredAmt, expiredCount: expired.length, providers };
+  }, [allDepositTxns, depositRange]);
 
   if (loading) {
     return (
@@ -372,22 +438,23 @@ const AdminDashboard = () => {
       })()}
 
       {/* Deposit Reconciliation Card */}
-      {stats && (() => {
-        const gross = stats.grossDeposits;
-        const confirmed = stats.totalDeposits;
-        const partial = stats.partialDepositsAmount;
-        const pending = stats.pendingDepositsAmount;
-        const expired = stats.expiredDepositsAmount;
-        const credited = confirmed + partial;
-        const unprocessed = pending + expired;
+      {(() => {
+        const { gross, grossCount, credited, confirmedCount, partialCount, pendingAmt, pendingCount, expiredAmt, expiredCount, providers } = depositRecon;
         const fmt = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(1)}K` : `$${v.toFixed(2)}`;
         const maxBar = Math.max(gross, 1);
 
         return (
           <div className="bg-card border border-border rounded-xl p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Scale className="w-5 h-5 text-primary" />
-              <h3 className="text-sm font-semibold">Deposit Reconciliation</h3>
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <Scale className="w-5 h-5 text-primary" />
+                <h3 className="text-sm font-semibold">Deposit Reconciliation</h3>
+              </div>
+              <div className="flex gap-1 p-1 rounded-xl bg-muted/50">
+                {DEPOSIT_RANGES.map(r => (
+                  <button key={r.key} onClick={() => setDepositRange(r.key)} className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${depositRange === r.key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{r.label}</button>
+                ))}
+              </div>
             </div>
 
             {/* Breakdown grid */}
@@ -395,22 +462,22 @@ const AdminDashboard = () => {
               <div className="rounded-lg bg-muted/30 border border-border p-3">
                 <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium block mb-1">Gross Requested</span>
                 <p className="text-lg font-bold">{fmt(gross)}</p>
-                <p className="text-[10px] text-muted-foreground">{stats.grossDepositCount} total deposits</p>
+                <p className="text-[10px] text-muted-foreground">{grossCount} total deposits</p>
               </div>
               <div className="rounded-lg bg-green-500/5 border border-green-500/10 p-3">
                 <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium block mb-1">Net Credited</span>
                 <p className="text-lg font-bold text-green-500">{fmt(credited)}</p>
-                <p className="text-[10px] text-muted-foreground">{stats.depositCount} confirmed{stats.partialDepositCount > 0 ? ` + ${stats.partialDepositCount} partial` : ''}</p>
+                <p className="text-[10px] text-muted-foreground">{confirmedCount} confirmed{partialCount > 0 ? ` + ${partialCount} partial` : ''}</p>
               </div>
               <div className="rounded-lg bg-yellow-500/5 border border-yellow-500/10 p-3">
                 <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium block mb-1">Pending</span>
-                <p className="text-lg font-bold text-yellow-500">{fmt(pending)}</p>
-                <p className="text-[10px] text-muted-foreground">{stats.pendingDepositCount} awaiting</p>
+                <p className="text-lg font-bold text-yellow-500">{fmt(pendingAmt)}</p>
+                <p className="text-[10px] text-muted-foreground">{pendingCount} awaiting</p>
               </div>
               <div className="rounded-lg bg-destructive/5 border border-destructive/10 p-3">
                 <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium block mb-1">Expired</span>
-                <p className="text-lg font-bold text-destructive">{fmt(expired)}</p>
-                <p className="text-[10px] text-muted-foreground">{stats.expiredDepositCount} never completed</p>
+                <p className="text-lg font-bold text-destructive">{fmt(expiredAmt)}</p>
+                <p className="text-[10px] text-muted-foreground">{expiredCount} never completed</p>
               </div>
             </div>
 
@@ -422,25 +489,13 @@ const AdminDashboard = () => {
               </div>
               <div className="h-3 bg-muted rounded-full overflow-hidden flex">
                 {credited > 0 && (
-                  <div
-                    className="h-full bg-green-500 transition-all"
-                    style={{ width: `${(credited / maxBar) * 100}%` }}
-                    title={`Credited: ${fmt(credited)}`}
-                  />
+                  <div className="h-full bg-green-500 transition-all" style={{ width: `${(credited / maxBar) * 100}%` }} title={`Credited: ${fmt(credited)}`} />
                 )}
-                {pending > 0 && (
-                  <div
-                    className="h-full bg-yellow-500 transition-all"
-                    style={{ width: `${(pending / maxBar) * 100}%` }}
-                    title={`Pending: ${fmt(pending)}`}
-                  />
+                {pendingAmt > 0 && (
+                  <div className="h-full bg-yellow-500 transition-all" style={{ width: `${(pendingAmt / maxBar) * 100}%` }} title={`Pending: ${fmt(pendingAmt)}`} />
                 )}
-                {expired > 0 && (
-                  <div
-                    className="h-full bg-destructive transition-all"
-                    style={{ width: `${(expired / maxBar) * 100}%` }}
-                    title={`Expired: ${fmt(expired)}`}
-                  />
+                {expiredAmt > 0 && (
+                  <div className="h-full bg-destructive transition-all" style={{ width: `${(expiredAmt / maxBar) * 100}%` }} title={`Expired: ${fmt(expiredAmt)}`} />
                 )}
               </div>
               <div className="flex items-center gap-4 mt-1.5">
@@ -450,23 +505,23 @@ const AdminDashboard = () => {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
-                  <span className="text-[10px] text-muted-foreground">Pending ({fmt(pending)})</span>
+                  <span className="text-[10px] text-muted-foreground">Pending ({fmt(pendingAmt)})</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-2.5 h-2.5 rounded-full bg-destructive" />
-                  <span className="text-[10px] text-muted-foreground">Expired ({fmt(expired)})</span>
+                  <span className="text-[10px] text-muted-foreground">Expired ({fmt(expiredAmt)})</span>
                 </div>
               </div>
             </div>
 
             {/* Provider Breakdown */}
-            {stats.providerBreakdown.length > 0 && (
+            {providers.length > 0 && (
               <div className="mt-4">
                 <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider block mb-2">Credited by Provider</span>
                 <div className="grid grid-cols-2 gap-3">
                   {(() => {
-                    const crypto = stats.providerBreakdown.find(p => p.provider === "crypto");
-                    const fiat = stats.providerBreakdown.find(p => p.provider === "fiat");
+                    const crypto = providers.find(p => p.provider === "crypto");
+                    const fiat = providers.find(p => p.provider === "fiat");
                     return (
                       <>
                         <div className="rounded-lg bg-blue-500/5 border border-blue-500/10 p-3">
