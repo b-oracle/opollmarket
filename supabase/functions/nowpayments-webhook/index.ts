@@ -308,6 +308,8 @@ Deno.serve(async (req) => {
       await handleDeposit(supabase, payload, order_id);
     } else if (prefix === "boost") {
       await handleBoost(supabase, payload, order_id);
+    } else if (prefix === "broadcast") {
+      await handleBroadcast(supabase, payload, order_id);
     } else {
       console.log("Unknown order_id prefix:", order_id);
     }
