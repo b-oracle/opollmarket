@@ -2368,7 +2368,7 @@ const Create = () => {
                 </div>
               </div>
 
-              {(feeBypass || (autoResolve && autoResolveFee > 0)) && initialLiquidity && (
+              {((feeBypass || (autoResolve && autoResolveFee > 0) || creationBoost || creationBroadcast) && initialLiquidity) && (
                 <div className="glass rounded-xl p-4">
                   <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-primary" />
@@ -2391,9 +2391,21 @@ const Create = () => {
                         <span className="font-medium">${autoResolveFee} USDT</span>
                       </div>
                     )}
+                    {creationBoost && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Boost ({creationBoostTier})</span>
+                        <span className="font-medium">${BOOST_TIER_PRICES[creationBoostTier]} USDT</span>
+                      </div>
+                    )}
+                    {creationBroadcast && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Broadcast Alert</span>
+                        <span className="font-medium">${BROADCAST_PRICE} USDT</span>
+                      </div>
+                    )}
                     <div className="border-t border-border pt-1.5 flex justify-between">
                       <span className="font-semibold">Total</span>
-                      <span className="font-bold text-primary">${(parseFloat(initialLiquidity) + (feeBypass ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0)).toFixed(2)} USDT</span>
+                      <span className="font-bold text-primary">${(parseFloat(initialLiquidity) + (feeBypass ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0) + (creationBoost ? BOOST_TIER_PRICES[creationBoostTier] : 0) + (creationBroadcast ? BROADCAST_PRICE : 0)).toFixed(2)} USDT</span>
                     </div>
                   </div>
                 </div>
