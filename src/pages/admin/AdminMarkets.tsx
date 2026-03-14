@@ -424,6 +424,7 @@ const AdminMarkets = () => {
             { label: "Resolved", value: globalStats.resolved, sub: `${globalStats.cancelled} cancelled`, icon: Archive, color: "text-blue-500" },
             { label: "Total Volume", value: `$${globalStats.totalVolume >= 1_000_000 ? (globalStats.totalVolume / 1_000_000).toFixed(1) + "M" : globalStats.totalVolume >= 1_000 ? (globalStats.totalVolume / 1_000).toFixed(1) + "K" : globalStats.totalVolume.toFixed(0)}`, sub: `${globalStats.totalParticipants.toLocaleString()} participants`, icon: DollarSign, color: "text-primary" },
             { label: "Trending", value: globalStats.trending, sub: `${globalStats.polymarket} polymarket`, icon: TrendingUp, color: "text-pink-500" },
+            { label: "Boosted", value: globalStats.boostedActive, sub: `${globalStats.boostedTotal} total all-time`, icon: Flame, color: "text-orange-500" },
           ].map((card) => (
             <div key={card.label} className="bg-card border border-border/50 rounded-xl p-3 space-y-1">
               <div className="flex items-center gap-1.5">
