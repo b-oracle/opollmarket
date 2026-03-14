@@ -357,7 +357,7 @@ const AdminQuickTrade = () => {
         </div>
       )}
 
-      {activeTab === "bets" && (
+      {activeTab === "trades" && (
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
