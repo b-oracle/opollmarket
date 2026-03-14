@@ -3,22 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { TrendingUp, Users, MessageSquare, ShoppingBag, Loader2, DollarSign, Activity, Gift, UserPlus, Zap, UserCheck, Heart, ArrowDownLeft, ArrowUpRight, Wallet, Scale, Info } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
 
-      // Fetch ALL deposit transactions for time-range filtering on reconciliation card
-      const fetchAllDepositTxns = async (): Promise<DepositTxn[]> => {
-        const rows: DepositTxn[] = [];
-        let from = 0;
-        const batchSize = 1000;
-        while (true) {
-          const { data, error } = await supabase.from("transactions").select("amount, status, payment_provider, created_at").eq("type", "deposit").range(from, from + batchSize - 1);
-          if (error || !data || data.length === 0) break;
-          rows.push(...(data as DepositTxn[]));
-          if (data.length < batchSize) break;
-          from += batchSize;
-        }
-        return rows;
-      };
-      const depositTxns = await fetchAllDepositTxns();
-      setAllDepositTxns(depositTxns);
 
 interface Stats {
   totalMarkets: number;
