@@ -27,6 +27,8 @@ const statusColors: Record<string, string> = {
   active: "bg-green-500/10 text-green-500",
   cancelled: "bg-destructive/10 text-destructive",
   expired: "bg-muted text-muted-foreground",
+  "boost_ended": "bg-blue-500/10 text-blue-500",
+  "payment_expired": "bg-yellow-500/10 text-yellow-500",
 };
 
 const tierLabels: Record<string, string> = {
@@ -157,9 +159,26 @@ const AdminBoosts = () => {
                   <span className="text-sm font-bold truncate max-w-[250px]">
                     {boost.market_title}
                   </span>
-                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${statusColors[boost.status] || statusColors.expired}`}>
-                    {boost.status}
-                  </span>
+                  {(() => {
+                    let displayStatus = boost.status;
+                    let colorKey = boost.status;
+                    if (boost.status === "expired") {
+                      const boostEnded = new Date(boost.ends_at) <= new Date();
+                      const hadPayment = !!boost.nowpayments_payment_id || !!boost.tx_hash;
+                      if (boostEnded && hadPayment) {
+                        displayStatus = "Boost Ended";
+                        colorKey = "boost_ended";
+                      } else {
+                        displayStatus = "Payment Expired";
+                        colorKey = "payment_expired";
+                      }
+                    }
+                    return (
+                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${statusColors[colorKey] || statusColors.expired}`}>
+                        {displayStatus}
+                      </span>
+                    );
+                  })()}
                   <span className="text-xs font-medium text-muted-foreground">
                     {tierLabels[boost.tier] || boost.tier}
                   </span>
