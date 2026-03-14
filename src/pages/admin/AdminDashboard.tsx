@@ -290,7 +290,39 @@ const AdminDashboard = () => {
     fetchAll();
   }, []);
 
-  if (loading) {
+
+  const depositRecon = useMemo(() => {
+    const rangeDef = DEPOSIT_RANGES.find(r => r.key === depositRange)!;
+    let cutoff = "";
+    if (rangeDef.days) {
+      const d = new Date();
+      d.setDate(d.getDate() - rangeDef.days);
+      cutoff = d.toISOString();
+    }
+    const filtered = rangeDef.days ? allDepositTxns.filter(t => t.created_at >= cutoff) : allDepositTxns;
+    const gross = filtered.reduce((s, t) => s + Number(t.amount), 0);
+    const grossCount = filtered.length;
+    const confirmed = filtered.filter(t => t.status === "confirmed");
+    const partial = filtered.filter(t => t.status === "partial");
+    const pending = filtered.filter(t => t.status === "pending");
+    const expired = filtered.filter(t => t.status === "expired");
+    const confirmedAmt = confirmed.reduce((s, t) => s + Number(t.amount), 0);
+    const partialAmt = partial.reduce((s, t) => s + Number(t.amount), 0);
+    const pendingAmt = pending.reduce((s, t) => s + Number(t.amount), 0);
+    const expiredAmt = expired.reduce((s, t) => s + Number(t.amount), 0);
+    const credited = confirmedAmt + partialAmt;
+    const provMap = new Map<string, { amount: number; count: number }>();
+    [...confirmed, ...partial].forEach(t => {
+      const key = t.payment_provider === "payaza" ? "fiat" : "crypto";
+      const e = provMap.get(key) || { amount: 0, count: 0 };
+      e.amount += Number(t.amount);
+      e.count++;
+      provMap.set(key, e);
+    });
+    const providers = Array.from(provMap.entries()).map(([provider, d]) => ({ provider, ...d }));
+    return { gross, grossCount, credited, confirmedCount: confirmed.length, partialCount: partial.length, pendingAmt, pendingCount: pending.length, expiredAmt, expiredCount: expired.length, providers };
+  }, [allDepositTxns, depositRange]);
+
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="w-6 h-6 text-primary animate-spin" />
