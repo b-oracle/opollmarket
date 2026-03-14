@@ -235,18 +235,7 @@ async function handleResolve(
 
       if (payout <= 0) continue;
 
-      const { data: balance } = await adminClient
-        .from("balances")
-        .select("amount")
-        .eq("user_id", pos.user_id)
-        .single();
-
-      if (balance) {
-        await adminClient
-          .from("balances")
-          .update({ amount: balance.amount + payout, updated_at: new Date().toISOString() })
-          .eq("user_id", pos.user_id);
-      }
+      await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout });
 
       await adminClient.from("transactions").insert({
         user_id: pos.user_id,
@@ -267,18 +256,7 @@ async function handleResolve(
     for (const pos of winningPositions) {
       const payout = pos.shares;
 
-      const { data: balance } = await adminClient
-        .from("balances")
-        .select("amount")
-        .eq("user_id", pos.user_id)
-        .single();
-
-      if (balance) {
-        await adminClient
-          .from("balances")
-          .update({ amount: balance.amount + payout, updated_at: new Date().toISOString() })
-          .eq("user_id", pos.user_id);
-      }
+      await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout });
 
       await adminClient.from("transactions").insert({
         user_id: pos.user_id,
@@ -314,18 +292,7 @@ async function handleResolve(
     const liquidityRefund = market.initial_liquidity - feeAmount;
 
     if (liquidityRefund > 0) {
-      const { data: creatorBal } = await adminClient
-        .from("balances")
-        .select("amount")
-        .eq("user_id", creatorUserId)
-        .single();
-
-      if (creatorBal) {
-        await adminClient
-          .from("balances")
-          .update({ amount: creatorBal.amount + liquidityRefund, updated_at: new Date().toISOString() })
-          .eq("user_id", creatorUserId);
-      }
+      await adminClient.rpc("adjust_balance", { _user_id: creatorUserId, _delta: liquidityRefund });
 
       await adminClient.from("transactions").insert({
         user_id: creatorUserId,
@@ -390,32 +357,11 @@ async function handleResolve(
         commissionAmount = copierProfit * (earning.commission_percent / 100);
 
         // Deduct commission from copier's balance
-        const { data: copierBal } = await adminClient
-          .from("balances")
-          .select("amount")
-          .eq("user_id", earning.copier_user_id)
-          .single();
+        // Deduct commission from copier (atomic)
+        await adminClient.rpc("adjust_balance", { _user_id: earning.copier_user_id, _delta: -commissionAmount });
 
-        if (copierBal) {
-          await adminClient
-            .from("balances")
-            .update({ amount: Math.max(0, copierBal.amount - commissionAmount), updated_at: new Date().toISOString() })
-            .eq("user_id", earning.copier_user_id);
-        }
-
-        // Credit commission to trader's balance
-        const { data: traderBal } = await adminClient
-          .from("balances")
-          .select("amount")
-          .eq("user_id", earning.trader_user_id)
-          .single();
-
-        if (traderBal) {
-          await adminClient
-            .from("balances")
-            .update({ amount: traderBal.amount + commissionAmount, updated_at: new Date().toISOString() })
-            .eq("user_id", earning.trader_user_id);
-        }
+        // Credit commission to trader (atomic)
+        await adminClient.rpc("adjust_balance", { _user_id: earning.trader_user_id, _delta: commissionAmount });
 
         // Get copier's display name for the commission transaction
         const { data: copierProfile } = await adminClient

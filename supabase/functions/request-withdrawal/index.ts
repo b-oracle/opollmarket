@@ -219,37 +219,47 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check balance (main balance only, not bonus)
-    const { data: balance } = await adminClient
-      .from("balances")
-      .select("amount")
-      .eq("user_id", userId)
-      .eq("currency", "USDT")
-      .single();
+    // Atomic balance debit with row lock (main balance only, not bonus)
+    const { data: debitResult } = await adminClient.rpc("debit_balance_atomic", {
+      _user_id: userId,
+      _main_deduct: amount,
+      _bonus_deduct: 0,
+    });
 
-    const currentBalance = Number(balance?.amount || 0);
-    if (currentBalance < amount) {
+    if (!debitResult?.success) {
       return new Response(
         JSON.stringify({ error: "Insufficient balance" }),
         { status: 400, headers: corsHeaders }
       );
     }
 
-    // Deduct balance immediately
-    await adminClient
-      .from("balances")
-      .update({
-        amount: currentBalance - amount,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", userId)
-      .eq("currency", "USDT");
-
     const payCurrency = crypto_currency || "usdtbsc";
 
     // Calculate fee and net payout
     const feeAmount = withdrawalFeePercent > 0 ? (amount * withdrawalFeePercent) / 100 : 0;
     const netAmount = amount - feeAmount;
+
+    // Credit withdrawal fee to admin as tracked revenue
+    if (feeAmount > 0) {
+      const { data: adminRole } = await adminClient
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin")
+        .limit(1)
+        .single();
+
+      if (adminRole) {
+        await adminClient.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: feeAmount });
+
+        await adminClient.from("transactions").insert({
+          user_id: adminRole.user_id,
+          type: "commission",
+          amount: feeAmount,
+          side: "withdrawal_fee",
+          status: "confirmed",
+        });
+      }
+    }
 
     // JWT-based payout flow
     let payoutSuccess = false;

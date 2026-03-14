@@ -23,7 +23,6 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify caller is admin
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
@@ -77,35 +76,35 @@ Deno.serve(async (req) => {
       });
     }
 
-  if (market.status === "cancelled") {
-    return new Response(JSON.stringify({ error: "Market already cancelled" }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+    if (market.status === "cancelled") {
+      return new Response(JSON.stringify({ error: "Market already cancelled" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-  if (market.status === "resolved") {
-    return new Response(JSON.stringify({ error: "Cannot cancel a resolved market. Payouts have already been distributed." }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+    if (market.status === "resolved") {
+      return new Response(JSON.stringify({ error: "Cannot cancel a resolved market. Payouts have already been distributed." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-  // Prevent re-cancellation: check for existing refund transactions
-  const { count: existingRefunds } = await adminClient
-    .from("transactions")
-    .select("id", { count: "exact", head: true })
-    .eq("market_id", market_id)
-    .in("type", ["refund", "payout"]);
+    // Prevent re-cancellation
+    const { count: existingRefunds } = await adminClient
+      .from("transactions")
+      .select("id", { count: "exact", head: true })
+      .eq("market_id", market_id)
+      .in("type", ["refund", "payout"]);
 
-  if (existingRefunds && existingRefunds > 0) {
-    return new Response(JSON.stringify({ error: `Market already has ${existingRefunds} payout/refund transactions. Cannot cancel to avoid duplicate refunds.` }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+    if (existingRefunds && existingRefunds > 0) {
+      return new Response(JSON.stringify({ error: `Market already has ${existingRefunds} payout/refund transactions. Cannot cancel to avoid duplicate refunds.` }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    // Find all buy transactions for this market and refund them
+    // --- Refund buy transactions (atomic) ---
     const { data: transactions } = await adminClient
       .from("transactions")
       .select("*")
@@ -119,22 +118,7 @@ Deno.serve(async (req) => {
 
     for (const tx of transactions || []) {
       const refundAmount = tx.amount;
-
-      const { data: balance } = await adminClient
-        .from("balances")
-        .select("amount")
-        .eq("user_id", tx.user_id)
-        .single();
-
-      if (balance) {
-        await adminClient
-          .from("balances")
-          .update({
-            amount: Number(balance.amount) + refundAmount,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("user_id", tx.user_id);
-      }
+      await adminClient.rpc("adjust_balance", { _user_id: tx.user_id, _delta: refundAmount });
 
       await adminClient.from("transactions").insert({
         user_id: tx.user_id,
@@ -155,7 +139,34 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Handle creation fee based on reason
+    // --- Claw back commissions (admin, creator, referrer) ---
+    const { data: commissionTxns } = await adminClient
+      .from("transactions")
+      .select("*")
+      .eq("market_id", market_id)
+      .eq("type", "commission")
+      .eq("status", "confirmed");
+
+    let totalCommissionsClawed = 0;
+    for (const commTx of commissionTxns || []) {
+      await adminClient.rpc("adjust_balance", { _user_id: commTx.user_id, _delta: -commTx.amount });
+
+      await adminClient.from("transactions").insert({
+        user_id: commTx.user_id,
+        market_id: market_id,
+        type: "refund",
+        amount: commTx.amount,
+        side: "commission_clawback",
+        status: "confirmed",
+      });
+      totalCommissionsClawed += commTx.amount;
+    }
+
+    if (totalCommissionsClawed > 0) {
+      console.log("cancel-market: Clawed back commissions:", totalCommissionsClawed);
+    }
+
+    // --- Handle creation fee ---
     let creationFeeRefunded = 0;
     let creationFeeForfeited = 0;
     const { data: feeTxns } = await adminClient
@@ -166,11 +177,8 @@ Deno.serve(async (req) => {
       .eq("status", "confirmed");
 
     if (isModerationReject) {
-      // Moderation rejection: FORFEIT the creation fee (no refund)
       for (const feeTx of feeTxns || []) {
         creationFeeForfeited += feeTx.amount;
-
-        // Record forfeiture transaction for audit trail
         await adminClient.from("transactions").insert({
           user_id: feeTx.user_id,
           market_id: market_id,
@@ -181,23 +189,8 @@ Deno.serve(async (req) => {
         });
       }
     } else {
-      // Normal cancellation: refund the creation fee
       for (const feeTx of feeTxns || []) {
-        const { data: feeBalance } = await adminClient
-          .from("balances")
-          .select("amount")
-          .eq("user_id", feeTx.user_id)
-          .single();
-
-        if (feeBalance) {
-          await adminClient
-            .from("balances")
-            .update({
-              amount: Number(feeBalance.amount) + feeTx.amount,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("user_id", feeTx.user_id);
-        }
+        await adminClient.rpc("adjust_balance", { _user_id: feeTx.user_id, _delta: feeTx.amount });
 
         await adminClient.from("transactions").insert({
           user_id: feeTx.user_id,
@@ -216,27 +209,61 @@ Deno.serve(async (req) => {
       }
     }
 
+    // --- Return initial liquidity to creator ---
+    let liquidityRefunded = 0;
+    if (market.initial_liquidity > 0) {
+      const creatorUserId = market.creator_wallet;
+      await adminClient.rpc("adjust_balance", { _user_id: creatorUserId, _delta: market.initial_liquidity });
+
+      await adminClient.from("transactions").insert({
+        user_id: creatorUserId,
+        market_id: market_id,
+        type: "refund",
+        amount: market.initial_liquidity,
+        side: "liquidity_return",
+        status: "confirmed",
+      });
+
+      liquidityRefunded = market.initial_liquidity;
+      if (!refundedUsers.has(creatorUserId)) {
+        refundedUsers.add(creatorUserId);
+        usersRefunded++;
+      }
+      console.log("cancel-market: Returned initial liquidity to creator:", liquidityRefunded);
+    }
+
     // Notify the creator
     if (feeTxns && feeTxns.length > 0) {
       const creatorUserId = feeTxns[0].user_id;
 
       if (isModerationReject) {
+        const liqNote = liquidityRefunded > 0 ? ` Initial liquidity of $${liquidityRefunded.toFixed(2)} has been refunded.` : "";
         await adminClient.from("notifications").insert({
           user_id: creatorUserId,
           title: "Market Rejected — Content Violation ⛔",
-          message: `Your market "${market.title}" was rejected for violating content guidelines. Your $${creationFeeForfeited} creation fee has been forfeited. Initial liquidity has been refunded to your balance.`,
+          message: `Your market "${market.title}" was rejected for violating content guidelines. Your $${creationFeeForfeited.toFixed(2)} creation fee has been forfeited.${liqNote}`,
           type: "moderation",
           market_id: market_id,
         });
-      } else if (creationFeeRefunded > 0) {
+      } else {
+        const feeNote = creationFeeRefunded > 0 ? `Your $${creationFeeRefunded.toFixed(2)} creation fee has been refunded. ` : "";
+        const liqNote = liquidityRefunded > 0 ? `Initial liquidity of $${liquidityRefunded.toFixed(2)} has been returned.` : "";
         await adminClient.from("notifications").insert({
           user_id: creatorUserId,
-          title: "Market Cancelled — Fee Refunded 💰",
-          message: `Your market "${market.title}" was cancelled by the System-Mod Engine. Your $${creationFeeRefunded} creation fee has been refunded to your balance.`,
+          title: "Market Cancelled — Refunded 💰",
+          message: `Your market "${market.title}" was cancelled by the System-Mod Engine. ${feeNote}${liqNote}`,
           type: "refund",
           market_id: market_id,
         });
       }
+    } else if (liquidityRefunded > 0) {
+      await adminClient.from("notifications").insert({
+        user_id: market.creator_wallet,
+        title: "Market Cancelled — Liquidity Returned 💰",
+        message: `Your market "${market.title}" was cancelled. Initial liquidity of $${liquidityRefunded.toFixed(2)} has been returned to your balance.`,
+        type: "refund",
+        market_id: market_id,
+      });
     }
 
     // Update market status
@@ -250,8 +277,10 @@ Deno.serve(async (req) => {
         success: true,
         users_refunded: usersRefunded,
         total_refunded: totalRefunded,
+        commissions_clawed_back: totalCommissionsClawed,
         creation_fee_refunded: creationFeeRefunded,
         creation_fee_forfeited: creationFeeForfeited,
+        liquidity_refunded: liquidityRefunded,
         moderation_reject: isModerationReject,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
