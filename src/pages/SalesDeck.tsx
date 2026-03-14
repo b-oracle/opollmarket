@@ -220,7 +220,7 @@ const slides = [
         </div>
         <div className="mt-12 space-y-2 text-white/30 text-xs">
           <p>No minimum deposit • Instant signup • Crypto-powered</p>
-          <p>opollmarket.lovable.app</p>
+          <p>opoll.org</p>
         </div>
       </div>
     ),

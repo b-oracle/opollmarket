@@ -23,7 +23,7 @@ const WinCelebrationModal = ({ open, onClose, market, side, payout, profit }: Wi
 
   const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Trader";
   const referralCode = user?.user_metadata?.display_name || user?.id || "";
-  const referralLink = `https://opollmarket.lovable.app${referralCode ? `?ref=${referralCode}` : ""}`;
+  const referralLink = `https://opoll.org${referralCode ? `?ref=${referralCode}` : ""}`;
 
   const handleShare = () => {
     setShareOpen(true);

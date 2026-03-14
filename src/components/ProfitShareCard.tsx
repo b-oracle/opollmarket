@@ -172,7 +172,7 @@ const ProfitShareCard = forwardRef<HTMLDivElement, ProfitShareCardProps>(
               color: colors.primary,
               wordBreak: "break-all",
             }}>
-              opollmarket.lovable.app{referralCode ? `?ref=${referralCode}` : ""}
+              opoll.org{referralCode ? `?ref=${referralCode}` : ""}
             </div>
           </div>
         </div>

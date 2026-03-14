@@ -233,7 +233,7 @@ export const PositionShareCard = forwardRef<HTMLDivElement, PositionShareCardPro
               textAlign: "center",
             }}
           >
-            opollmarket.lovable.app
+            opoll.org
           </div>
         </div>
       </div>
