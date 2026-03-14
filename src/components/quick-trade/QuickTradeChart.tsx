@@ -369,7 +369,67 @@ function SVGCandleChart({
   );
 }
 
-function QuickTradeChart({
+/** Countdown + "Market Closed" overlay for non-crypto assets */
+function MarketClosedOverlay({ assetClass }: { assetClass: string }) {
+  const nextOpen = getNextOpenTime(assetClass);
+
+  // Countdown to Sunday 5 PM ET
+  const [countdown, setCountdown] = useState("");
+  useEffect(() => {
+    const calc = () => {
+      const now = new Date();
+      const etStr = now.toLocaleString("en-US", { timeZone: "America/New_York" });
+      const et = new Date(etStr);
+      const day = et.getDay();
+      const hour = et.getHours();
+
+      // Calculate days until Sunday 17:00 ET
+      let daysUntil = (7 - day) % 7; // days until Sunday
+      if (day === 0 && hour >= 17) daysUntil = 7; // already past Sunday 5pm
+      if (daysUntil === 0) daysUntil = 7;
+
+      const target = new Date(et);
+      target.setDate(target.getDate() + daysUntil);
+      target.setHours(17, 0, 0, 0);
+
+      const diff = target.getTime() - et.getTime();
+      if (diff <= 0) return "Opening soon...";
+
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      return `${h}h ${m}m ${s}s`;
+    };
+    setCountdown(calc());
+    const interval = setInterval(() => setCountdown(calc()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="relative h-[220px] overflow-hidden rounded-lg bg-muted/10 border border-destructive/20">
+      {/* Subtle grid background */}
+      <div className="absolute inset-0 opacity-[0.03]" style={{
+        backgroundImage: "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)",
+        backgroundSize: "20px 20px",
+      }} />
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+        <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-destructive/10 border border-destructive/25">
+          <Moon className="w-5 h-5 text-destructive" />
+          <span className="text-sm font-bold text-destructive uppercase tracking-wider">Market Closed</span>
+        </div>
+        <p className="text-xs text-muted-foreground">{nextOpen}</p>
+        {countdown && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card/80 border border-border">
+            <span className="text-[10px] text-muted-foreground">Opens in</span>
+            <span className="text-sm font-bold tabular-nums text-foreground">{countdown}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
   chartType, chartMs, priceHistory, ohlcData, streamingPrice,
   historyLoading, activeRound, userBet, resolveFlash, timeframeLabel, assetClass,
 }: QuickTradeChartProps) {
