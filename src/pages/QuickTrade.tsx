@@ -626,7 +626,7 @@ export default function QuickTrade() {
         }
 
         // Append chart points at ~200ms intervals for smooth streaming
-        if (now - lastSmoothUpdate >= 200) {
+        if (now - lastSmoothUpdate >= 100) {
           lastSmoothUpdate = now;
           const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
           const maxCutoff = now - 4 * 60 * 60 * 1000;
