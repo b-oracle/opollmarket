@@ -420,7 +420,7 @@ const AdminSettings = () => {
               </div>
             </div>
 
-            {totalFee > 100 && <p className="text-xs text-destructive">Total fees cannot exceed 100%.</p>}
+            {maxTotalFee > 100 && <p className="text-xs text-destructive">Total fees cannot exceed 100%.</p>}
           </CardContent>
         </Card>
 
