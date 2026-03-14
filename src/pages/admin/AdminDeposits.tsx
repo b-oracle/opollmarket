@@ -255,9 +255,6 @@ const AdminDeposits = () => {
         <AdminPagination page={page} totalItems={data?.total || 0} pageSize={PAGE_SIZE} onPageChange={setPage} />
       </div>
 
-      {/* Deposit Reconciliation Tools */}
-      <NpReconciliation />
-      <PayazaReconciliation />
     </div>
   );
 };
