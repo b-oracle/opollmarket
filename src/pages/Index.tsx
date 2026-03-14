@@ -558,6 +558,14 @@ const Index = () => {
             );
           })}
         </div>
+        {hasMore && (
+          <div ref={sentinelRef} className="flex justify-center py-6">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        )}
+        {!hasMore && filteredMarkets.length > 20 && (
+          <p className="text-center text-xs text-muted-foreground py-4">You've seen all markets</p>
+        )}
       </div>
       <BoostMarketModal open={!!boostModalMarket} onClose={() => setBoostModalMarket(null)} marketId={boostModalMarket?.id || ""} marketTitle={boostModalMarket?.title || ""} />
       

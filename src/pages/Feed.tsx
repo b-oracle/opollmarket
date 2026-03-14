@@ -306,14 +306,12 @@ const Feed = () => {
       const snappedTop = index * itemHeight;
       const offset = Math.abs(container.scrollTop - snappedTop);
 
-      const maxScroll = container.scrollHeight - container.clientHeight;
       // Load more when approaching the end
       if (index >= sortedMarkets.length - 5 && hasMore) {
         setVisibleCount((c) => c + 20);
       }
 
-      const maxScroll = container.scrollHeight - container.clientHeight;
-      const isAtEnd = container.scrollTop >= maxScroll - 5;
+      const isAtEnd = container.scrollTop >= (container.scrollHeight - container.clientHeight) - 5;
       const isOnLastCard = index >= sortedMarkets.length - 1;
 
       if (isAtEnd && isOnLastCard && sortedMarkets.length > 0 && !hasMore && !endToastShown.current) {
