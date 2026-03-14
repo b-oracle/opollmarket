@@ -209,6 +209,14 @@ const Create = () => {
   const [generatingDetails, setGeneratingDetails] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
 
+  // Boost & Broadcast add-ons at creation
+  const [creationBoost, setCreationBoost] = useState(false);
+  const [creationBoostTier, setCreationBoostTier] = useState<"flash" | "standard" | "whale">("flash");
+  const [creationBroadcast, setCreationBroadcast] = useState(false);
+  const BOOST_TIER_PRICES: Record<string, number> = { flash: 20, standard: 50, whale: 150 };
+  const BOOST_TIER_HOURS: Record<string, number> = { flash: 12, standard: 24, whale: 168 };
+  const BROADCAST_PRICE = 5;
+
   useEffect(() => {
     (async () => {
       const { data } = await supabase
