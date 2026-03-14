@@ -46,6 +46,7 @@ const AdminQuickTrade = () => {
   const [rounds, setRounds] = useState<RoundRow[]>([]);
   const [bets, setBets] = useState<BetRow[]>([]);
   const [profileMap, setProfileMap] = useState<Map<string, string>>(new Map());
+  const [bonusTxs, setBonusTxs] = useState<{ amount: number; created_at: string }[]>([]);
   const [roundPage, setRoundPage] = useState(1);
   const [betPage, setBetPage] = useState(1);
   const [activeTab, setActiveTab] = useState<"overview" | "rounds" | "trades">("overview");
