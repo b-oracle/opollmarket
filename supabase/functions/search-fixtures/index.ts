@@ -78,12 +78,14 @@ Deno.serve(async (req) => {
         });
       }
 
-      const currentSeason = season || new Date().getFullYear();
+      // Use `next` parameter WITHOUT season — season filter conflicts with upcoming fixtures
+      // because football seasons span calendar years (e.g., 2025/2026 season = "2025")
       const fixtureResp = await fetch(
-        `https://${sportConfig.host}${sportConfig.fixturePath}?team=${teamId}&season=${currentSeason}&next=20`,
+        `https://${sportConfig.host}${sportConfig.fixturePath}?team=${teamId}&next=20`,
         { headers }
       );
       const fixtureData = await fixtureResp.json();
+      console.log(`Football fixtures API response for team ${teamId}: ${fixtureData?.response?.length ?? 0} results, errors: ${JSON.stringify(fixtureData?.errors || {})}`);
       const rawFixtures = fixtureData?.response || [];
 
       const fixtures = rawFixtures.map((f: any) => ({
