@@ -57,7 +57,7 @@ interface Summary {
   np_total_outcome: number;
   np_total_gross: number;
   total_excess: number;
-  np_fees_retained: number;
+  unmatched_gap: number;
   matched_count: number;
   affected_count: number;
   db_no_np_record: number;
@@ -210,24 +210,19 @@ const NpReconciliation = () => {
               <p className="text-base font-bold">{fmt(summary.np_total_gross)}</p>
               <p className="text-[9px] text-muted-foreground">users requested total</p>
             </div>
-            <div className="rounded-lg bg-green-500/5 border border-green-500/10 p-2.5">
-              <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium block mb-0.5">NP Outcome (Net)</span>
-              <p className="text-base font-bold text-green-500">{fmt(summary.np_total_outcome)}</p>
-              <p className="text-[9px] text-muted-foreground">after NP fees</p>
-            </div>
-            <div className="rounded-lg bg-yellow-500/5 border border-yellow-500/10 p-2.5">
-              <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium block mb-0.5">NP Fees Retained</span>
-              <p className="text-base font-bold text-yellow-500">{fmt(summary.np_fees_retained)}</p>
-              <p className="text-[9px] text-muted-foreground">gross − outcome</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
             <div className="rounded-lg bg-primary/5 border border-primary/10 p-2.5">
               <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium block mb-0.5">DB Credited</span>
               <p className="text-base font-bold text-primary">{fmt(summary.db_total_credited)}</p>
               <p className="text-[9px] text-muted-foreground">{summary.matched_count} matched deposits</p>
             </div>
+            <div className={`rounded-lg p-2.5 ${Math.abs(summary.unmatched_gap) > 0.01 ? "bg-yellow-500/5 border border-yellow-500/10" : "bg-muted/30 border border-border"}`}>
+              <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium block mb-0.5">Gap (Gross − Credited)</span>
+              <p className={`text-base font-bold ${Math.abs(summary.unmatched_gap) > 0.01 ? "text-yellow-500" : ""}`}>{fmt(summary.unmatched_gap)}</p>
+              <p className="text-[9px] text-muted-foreground">NP fees + partials</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
             <div className="rounded-lg bg-destructive/5 border border-destructive/10 p-2.5">
               <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium block mb-0.5">Excess Credited</span>
               <p className="text-base font-bold text-destructive">{fmt(summary.total_excess)}</p>
