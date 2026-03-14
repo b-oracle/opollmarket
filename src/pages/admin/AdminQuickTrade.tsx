@@ -104,7 +104,8 @@ const AdminQuickTrade = () => {
     const totalBets = filteredBets.length;
     const totalWagered = filteredBets.reduce((sum, b) => sum + Number(b.amount), 0);
     const totalPayout = filteredBets.filter(b => b.status === "won").reduce((sum, b) => sum + Number(b.payout || 0), 0);
-    const platformProfit = totalWagered - totalPayout;
+    const totalRefunded = filteredBets.filter(b => b.status === "refunded").reduce((sum, b) => sum + Number(b.payout || 0), 0);
+    const platformProfit = totalWagered - totalPayout - totalRefunded;
     const uniqueTraders = new Set(filteredBets.map(b => b.user_id)).size;
     const wonBets = filteredBets.filter(b => b.status === "won").length;
     const lostBets = filteredBets.filter(b => b.status === "lost").length;
@@ -156,7 +157,7 @@ const AdminQuickTrade = () => {
       .sort((a, b) => b.profit - a.profit)
       .slice(0, 10);
 
-    return { totalRounds, resolvedRounds, totalBets, totalWagered, totalPayout, platformProfit, uniqueTraders, wonBets, lostBets, assetData, chartData, topTraders };
+    return { totalRounds, resolvedRounds, totalBets, totalWagered, totalPayout, totalRefunded, platformProfit, uniqueTraders, wonBets, lostBets, assetData, chartData, topTraders };
   }, [rounds, bets, range, profileMap]);
 
   const paginatedRounds = useMemo(() => {
