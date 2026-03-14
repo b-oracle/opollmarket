@@ -253,19 +253,7 @@ async function getOrCreateStreak(supabase: any, userId: string) {
 }
 
 async function creditBalance(supabase: any, userId: string, amount: number) {
-  const { data: bal } = await supabase
-    .from("balances")
-    .select("amount")
-    .eq("user_id", userId)
-    .eq("currency", "USDT")
-    .single();
-  if (bal) {
-    await supabase
-      .from("balances")
-      .update({ amount: Number(bal.amount) + amount, updated_at: new Date().toISOString() })
-      .eq("user_id", userId)
-      .eq("currency", "USDT");
-  }
+  await supabase.rpc("adjust_balance", { _user_id: userId, _delta: amount });
 }
 
 Deno.serve(async (req) => {
