@@ -980,7 +980,7 @@ export default function QuickTrade() {
     return () => { supabase.removeChannel(channel); };
   }, [fetchActiveRound, user, fireWinConfetti]);
 
-  // ── Place bet ──
+  // ── Place trade ──
   const placeBet = async (side: "up" | "down") => {
     if (!user) {
       navigate("/auth");
