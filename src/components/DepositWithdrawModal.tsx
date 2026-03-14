@@ -89,21 +89,6 @@ const CRYPTO_GROUPS = [
       { value: "dai", label: "DAI" },
     ],
   },
-  {
-    label: "Popular Crypto",
-    options: [
-      { value: "btc", label: "Bitcoin (BTC)" },
-      { value: "eth", label: "Ethereum (ETH)" },
-      { value: "bnbbsc", label: "BNB (BSC)" },
-      { value: "sol", label: "Solana (SOL)" },
-      { value: "ltc", label: "Litecoin (LTC)" },
-      { value: "xrp", label: "XRP" },
-      { value: "doge", label: "Dogecoin (DOGE)" },
-      { value: "maticmainnet", label: "MATIC (Polygon)" },
-      { value: "avaxc", label: "AVAX (C-Chain)" },
-      { value: "ton", label: "TON" },
-    ],
-  },
 ];
 
 const ALL_CRYPTO_OPTIONS = CRYPTO_GROUPS.flatMap((g) => g.options);
