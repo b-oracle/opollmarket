@@ -443,7 +443,7 @@ function startInterpolation(asset: string, state: InterpolationState) {
       interpolatedPrice = state.prevRealPrice + (state.lastRealPrice - state.prevRealPrice) * eased;
     } else {
       // Beyond interpolation window: add tiny Brownian drift for "alive" feel
-      const drift = state.lastRealPrice * (Math.random() - 0.5) * 0.00005;
+      const drift = state.lastRealPrice * (Math.random() - 0.5) * 0.0002;
       interpolatedPrice = state.lastRealPrice + drift;
     }
 
