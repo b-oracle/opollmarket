@@ -2241,28 +2241,87 @@ const Create = () => {
                   })}
                 </div>
                 {(() => {
-                  const totalNeeded = parseFloat(initialLiquidity) + (feeBypass ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0);
-                  const shortfall = totalNeeded - balance;
-                  return totalNeeded > balance && balance >= 0 ? (
-                    <div className="mt-2 space-y-2">
-                      <p className="text-[10px] text-destructive flex items-center gap-1">
-                        ⚠️ Total cost (${totalNeeded.toFixed(2)}) exceeds your balance by ${shortfall.toFixed(2)}
-                      </p>
+                    const boostCost = creationBoost ? BOOST_TIER_PRICES[creationBoostTier] : 0;
+                    const broadcastCost = creationBroadcast ? BROADCAST_PRICE : 0;
+                    const totalNeeded = parseFloat(initialLiquidity) + (feeBypass ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0) + boostCost + broadcastCost;
+                    const shortfall = totalNeeded - balance;
+                    return totalNeeded > balance && balance >= 0 ? (
+                      <div className="mt-2 space-y-2">
+                        <p className="text-[10px] text-destructive flex items-center gap-1">
+                          ⚠️ Total cost (${totalNeeded.toFixed(2)}) exceeds your balance by ${shortfall.toFixed(2)}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setDepositModalOpen(true)}
+                          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold transition-all active:scale-95"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          Add Funds to Continue
+                        </button>
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+
+                {/* Boost & Broadcast Add-ons */}
+                <div className="glass rounded-xl p-4 space-y-3">
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-primary" />
+                    Promote Your Market <span className="text-[10px] font-normal text-muted-foreground">(optional)</span>
+                  </h3>
+
+                  {/* Boost Toggle */}
+                  <div className={`rounded-xl border p-3 transition-all ${creationBoost ? "border-primary/40 bg-primary/5" : "border-border"}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold">⚡ Boost Market</p>
+                        <p className="text-[10px] text-muted-foreground">Featured placement on the feed</p>
+                      </div>
                       <button
-                        type="button"
-                        onClick={() => setDepositModalOpen(true)}
-                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold transition-all active:scale-95"
+                        onClick={() => setCreationBoost(!creationBoost)}
+                        className={`w-11 h-6 rounded-full transition-colors relative ${creationBoost ? "bg-primary" : "bg-muted"}`}
                       >
-                        <Plus className="w-3.5 h-3.5" />
-                        Add Funds to Continue
+                        <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${creationBoost ? "translate-x-[22px]" : "translate-x-0.5"}`} />
                       </button>
                     </div>
-                  ) : null;
-                })()}
-              </div>
+                    {creationBoost && (
+                      <div className="flex gap-2 mt-2.5">
+                        {(["flash", "standard", "whale"] as const).map((t) => (
+                          <button
+                            key={t}
+                            onClick={() => setCreationBoostTier(t)}
+                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
+                              creationBoostTier === t
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-muted/50 text-muted-foreground border-border hover:border-primary/50"
+                            }`}
+                          >
+                            {t === "flash" ? "Flash $20" : t === "standard" ? "Standard $50" : "Whale $150"}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
-              {/* Review card */}
-              <div className="glass rounded-xl p-4">
+                  {/* Broadcast Toggle */}
+                  <div className={`rounded-xl border p-3 transition-all ${creationBroadcast ? "border-primary/40 bg-primary/5" : "border-border"}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold">📢 Broadcast Market</p>
+                        <p className="text-[10px] text-muted-foreground">Push notification to all users — $5</p>
+                      </div>
+                      <button
+                        onClick={() => setCreationBroadcast(!creationBroadcast)}
+                        className={`w-11 h-6 rounded-full transition-colors relative ${creationBroadcast ? "bg-primary" : "bg-muted"}`}
+                      >
+                        <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${creationBroadcast ? "translate-x-[22px]" : "translate-x-0.5"}`} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Review card */}
+                <div className="glass rounded-xl p-4">
                 <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-primary" />
                   Market Preview
