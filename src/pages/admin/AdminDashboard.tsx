@@ -437,9 +437,9 @@ const AdminDashboard = () => {
             <div className="mt-4 flex items-start gap-2 rounded-lg bg-muted/30 border border-border p-3">
               <Info className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
               <p className="text-[10px] text-muted-foreground leading-relaxed">
-                <strong>Net Credited</strong> reflects actual funds added to user balances (after payment processor fees). 
-                <strong> Gross Requested</strong> includes all deposit attempts. The difference between NOWPayments balance 
-                and Net Credited is due to processor fees (~0.5-1%) deducted before crediting.
+                <strong>Net Credited</strong> reflects actual funds added to user balances (after payment processor fees) across all providers (crypto &amp; fiat/NGN). 
+                <strong> Gross Requested</strong> includes all deposit attempts. For crypto deposits, the difference is due to processor fees (~0.5-1%) deducted before crediting. 
+                For fiat (NGN) deposits, the credited amount reflects the USD equivalent at the exchange rate applied.
               </p>
             </div>
           </div>
