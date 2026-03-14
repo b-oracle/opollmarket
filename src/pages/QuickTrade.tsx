@@ -633,7 +633,7 @@ export default function QuickTrade() {
 
           setPriceHistory((prev) => {
             const updated = [...prev, { time: timeLabel, price, ts: now }];
-            const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
+            const filtered = updated.filter((pt) => pt.ts >= maxCutoff).slice(-2000);
             return filtered.length > 800 ? filtered.slice(-800) : filtered;
           });
 
