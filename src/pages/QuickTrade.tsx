@@ -719,7 +719,7 @@ export default function QuickTrade() {
                   const maxCutoff = now - 4 * 60 * 60 * 1000;
                   const updated = [...prev, { time: timeLabel, price: tickPrice, ts: now }];
                   const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
-                  return filtered.length > 500 ? filtered.slice(-500) : filtered;
+                  return filtered.length > 2000 ? filtered.slice(-2000) : filtered;
                 });
                 return cur;
               });
