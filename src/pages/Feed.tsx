@@ -250,6 +250,8 @@ const Feed = () => {
   const { bookmarkedIds } = useBookmarkedMarkets();
   const { user } = useAuth();
   const [feedTab, setFeedTab] = useState<"foryou" | "bookmarks">("foryou");
+  const [visibleCount, setVisibleCount] = useState(20);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {track("page_view", { page: "feed" });}, []);
 
@@ -265,9 +267,10 @@ const Feed = () => {
     prevBookmarkCount.current = bookmarkedIds.size;
   }, [bookmarkedIds.size]);
 
-  // Reset to first card when switching tabs
+  // Reset to first card and visible count when switching tabs
   useEffect(() => {
     setActiveIndex(0);
+    setVisibleCount(20);
     containerRef.current?.scrollTo({ top: 0 });
   }, [feedTab]);
 
@@ -276,7 +279,7 @@ const Feed = () => {
     scrollRef: containerRef,
   });
 
-  const sortedMarkets = useMemo(() => {
+  const allSortedMarkets = useMemo(() => {
     const base = [...markets].sort((a, b) => {
       const aBoost = boostedMarketIds.has(a.id) ? 2 : a.trending ? 1 : 0;
       const bBoost = boostedMarketIds.has(b.id) ? 2 : b.trending ? 1 : 0;
@@ -285,6 +288,9 @@ const Feed = () => {
     if (feedTab === "bookmarks") return base.filter((m) => bookmarkedIds.has(m.id));
     return base;
   }, [markets, boostedMarketIds, feedTab, bookmarkedIds]);
+
+  const sortedMarkets = useMemo(() => allSortedMarkets.slice(0, visibleCount), [allSortedMarkets, visibleCount]);
+  const hasMore = visibleCount < allSortedMarkets.length;
 
   const endToastShown = useRef(false);
 
@@ -300,11 +306,15 @@ const Feed = () => {
       const snappedTop = index * itemHeight;
       const offset = Math.abs(container.scrollTop - snappedTop);
 
-      const maxScroll = container.scrollHeight - container.clientHeight;
-      const isAtEnd = container.scrollTop >= maxScroll - 5;
+      // Load more when approaching the end
+      if (index >= sortedMarkets.length - 5 && hasMore) {
+        setVisibleCount((c) => c + 20);
+      }
+
+      const isAtEnd = container.scrollTop >= (container.scrollHeight - container.clientHeight) - 5;
       const isOnLastCard = index >= sortedMarkets.length - 1;
 
-      if (isAtEnd && isOnLastCard && sortedMarkets.length > 0 && !endToastShown.current) {
+      if (isAtEnd && isOnLastCard && sortedMarkets.length > 0 && !hasMore && !endToastShown.current) {
         endToastShown.current = true;
         toast("Nothing more to see 👀", { duration: 2000, position: "top-center" });
         setTimeout(() => {
@@ -316,7 +326,24 @@ const Feed = () => {
     };
     container.addEventListener("scroll", handleScroll, { passive: true });
     return () => container.removeEventListener("scroll", handleScroll);
-  }, [sortedMarkets.length, isDesktop]);
+  }, [sortedMarkets.length, isDesktop, hasMore]);
+
+  // IntersectionObserver for desktop grid infinite scroll
+  useEffect(() => {
+    if (!isDesktop) return;
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          setVisibleCount((c) => c + 20);
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [isDesktop, hasMore]);
 
   if (isLoading) {
     return (
@@ -413,7 +440,7 @@ const Feed = () => {
       <PullToRefreshIndicator pulling={pulling} refreshing={refreshing} pullDistance={pullDistance} pullProgress={pullProgress} spinControls={spinControls} />
 
       {/* Empty bookmarks state */}
-      {feedTab === "bookmarks" && sortedMarkets.length === 0 ?
+      {feedTab === "bookmarks" && allSortedMarkets.length === 0 ?
       <div className="flex-1 flex items-center justify-center px-4" style={{ marginTop: 'calc(3.5rem + env(safe-area-inset-top, 0px))', marginLeft: !isDesktop ? undefined : (collapsed ? '4.5rem' : '15rem'), transition: 'margin-left 0.3s ease' }}>
           <div className="text-center space-y-3">
             <Bookmark className="w-12 h-12 text-muted-foreground/30 mx-auto" />

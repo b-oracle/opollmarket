@@ -63,6 +63,8 @@ const Index = () => {
   const [filter, setFilter] = useState<"trending" | "boosted" | "new" | "all" | "live">("all");
   const [boostModalMarket, setBoostModalMarket] = useState<{ id: string; title: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [visibleCount, setVisibleCount] = useState(20);
+  const sentinelRef = useRef<HTMLDivElement>(null);
   const { track } = useAnalytics();
 
   useEffect(() => { track("page_view", { page: "home" }); }, []);
@@ -138,6 +140,30 @@ const Index = () => {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
   }, [markets, boostedMarketIds, filter, searchQuery, categoryFilter]);
+
+  // Reset visible count when filters change
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [filter, searchQuery, categoryFilter]);
+
+  const visibleMarkets = useMemo(() => filteredMarkets.slice(0, visibleCount), [filteredMarkets, visibleCount]);
+  const hasMore = visibleCount < filteredMarkets.length;
+
+  // IntersectionObserver for infinite scroll
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          setVisibleCount((c) => c + 20);
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore]);
 
   const { data: platformStats } = useQuery({
     queryKey: ["platform-stats"],
@@ -433,7 +459,7 @@ const Index = () => {
           {!isLoading && filteredMarkets.length === 0 && (
             <div className="text-center py-8 text-muted-foreground text-sm">No markets found.</div>
           )}
-          {filteredMarkets.map((market, i) => {
+          {visibleMarkets.map((market, i) => {
             const yesPercent = Math.round(market.yesPrice * 100);
             const noPercent = 100 - yesPercent;
             const isMulti = market.marketType !== "binary";
@@ -532,6 +558,14 @@ const Index = () => {
             );
           })}
         </div>
+        {hasMore && (
+          <div ref={sentinelRef} className="flex justify-center py-6">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        )}
+        {!hasMore && filteredMarkets.length > 20 && (
+          <p className="text-center text-xs text-muted-foreground py-4">You've seen all markets</p>
+        )}
       </div>
       <BoostMarketModal open={!!boostModalMarket} onClose={() => setBoostModalMarket(null)} marketId={boostModalMarket?.id || ""} marketTitle={boostModalMarket?.title || ""} />
       
