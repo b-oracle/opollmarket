@@ -153,30 +153,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (currentBalance < mainDeduct) {
-      return new Response(JSON.stringify({ error: "Insufficient main balance" }), {
+    // Atomic debit with row-level lock to prevent race conditions
+    const { data: debitResult } = await supabase.rpc("debit_balance_atomic", {
+      _user_id: userId,
+      _main_deduct: mainDeduct,
+      _bonus_deduct: bonusForFees,
+    });
+
+    if (!debitResult?.success) {
+      return new Response(JSON.stringify({ error: debitResult?.error || "Insufficient balance" }), {
         status: 400, headers: corsHeaders,
       });
     }
 
-    const { error: balError } = await supabase
-      .from("balances")
-      .update({
-        amount: currentBalance - mainDeduct,
-        bonus_balance: currentBonus - bonusForFees,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", userId)
-      .eq("currency", "USDT");
-
-    if (balError) {
-      console.error("Balance deduct error:", balError);
-      return new Response(JSON.stringify({ error: "Failed to deduct balance" }), {
-        status: 500, headers: corsHeaders,
-      });
-    }
-
-    // --- Credit admin commission ---
+    // --- Credit admin commission (atomic) ---
     const { data: adminRole } = await supabase
       .from("user_roles")
       .select("user_id")
@@ -185,20 +175,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (adminRole && adminAmount > 0) {
-      const { data: adminBal } = await supabase
-        .from("balances")
-        .select("amount")
-        .eq("user_id", adminRole.user_id)
-        .eq("currency", "USDT")
-        .single();
-
-      if (adminBal) {
-        await supabase
-          .from("balances")
-          .update({ amount: Number(adminBal.amount) + adminAmount, updated_at: new Date().toISOString() })
-          .eq("user_id", adminRole.user_id)
-          .eq("currency", "USDT");
-      }
+      await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: adminAmount });
 
       await supabase.from("transactions").insert({
         user_id: adminRole.user_id,
@@ -211,30 +188,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- Credit creator commission ---
+    // --- Credit creator commission (atomic) ---
     if (creatorAmount > 0 && market?.creator_wallet) {
       const creatorId = market.creator_wallet;
-
-      const { data: creatorBal } = await supabase
-        .from("balances")
-        .select("amount")
-        .eq("user_id", creatorId)
-        .eq("currency", "USDT")
-        .single();
-
-      if (creatorBal) {
-        await supabase
-          .from("balances")
-          .update({ amount: Number(creatorBal.amount) + creatorAmount, updated_at: new Date().toISOString() })
-          .eq("user_id", creatorId)
-          .eq("currency", "USDT");
-      } else {
-        await supabase.from("balances").insert({
-          user_id: creatorId,
-          amount: creatorAmount,
-          currency: "USDT",
-        });
-      }
+      await supabase.rpc("adjust_balance", { _user_id: creatorId, _delta: creatorAmount });
 
       await supabase.from("transactions").insert({
         user_id: creatorId,
@@ -247,28 +204,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- Credit referrer commission (per-trade) ---
+    // --- Credit referrer commission per-trade (atomic) ---
     if (referrerId && referrerAmount > 0) {
-      const { data: referrerBal } = await supabase
-        .from("balances")
-        .select("amount")
-        .eq("user_id", referrerId)
-        .eq("currency", "USDT")
-        .single();
-
-      if (referrerBal) {
-        await supabase
-          .from("balances")
-          .update({ amount: Number(referrerBal.amount) + referrerAmount, updated_at: new Date().toISOString() })
-          .eq("user_id", referrerId)
-          .eq("currency", "USDT");
-      } else {
-        await supabase.from("balances").insert({
-          user_id: referrerId,
-          amount: referrerAmount,
-          currency: "USDT",
-        });
-      }
+      await supabase.rpc("adjust_balance", { _user_id: referrerId, _delta: referrerAmount });
 
       await supabase.from("transactions").insert({
         user_id: referrerId,
