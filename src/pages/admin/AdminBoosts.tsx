@@ -163,9 +163,9 @@ const AdminBoosts = () => {
                     let displayStatus = boost.status;
                     let colorKey = boost.status;
                     if (boost.status === "expired") {
-                      const boostEnded = new Date(boost.ends_at) <= new Date();
-                      const hadPayment = !!boost.nowpayments_payment_id || !!boost.tx_hash;
-                      if (boostEnded && hadPayment) {
+                      // tx_hash confirms actual payment was made — boost ran and ended
+                      // nowpayments_payment_id alone just means a payment was initiated, not completed
+                      if (boost.tx_hash) {
                         displayStatus = "Boost Ended";
                         colorKey = "boost_ended";
                       } else {
