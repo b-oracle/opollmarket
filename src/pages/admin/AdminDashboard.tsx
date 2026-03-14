@@ -141,6 +141,30 @@ const AdminDashboard = () => {
         supabase.from("transactions").select("*", { count: "exact", head: true }).eq("type", "deposit").eq("status", "partial"),
       ]);
 
+      // Fetch provider breakdown for credited deposits (confirmed + partial)
+      const fetchProviderBreakdown = async (): Promise<{ provider: string; amount: number; count: number }[]> => {
+        const allRows: { amount: number; payment_provider: string | null }[] = [];
+        let from = 0;
+        const batchSize = 1000;
+        while (true) {
+          const { data, error } = await supabase.from("transactions").select("amount, payment_provider").eq("type", "deposit").in("status", ["confirmed", "partial"]).range(from, from + batchSize - 1);
+          if (error || !data || data.length === 0) break;
+          allRows.push(...data);
+          if (data.length < batchSize) break;
+          from += batchSize;
+        }
+        const map = new Map<string, { amount: number; count: number }>();
+        allRows.forEach(r => {
+          const key = r.payment_provider === "payaza" ? "fiat" : "crypto";
+          const e = map.get(key) || { amount: 0, count: 0 };
+          e.amount += Number(r.amount);
+          e.count++;
+          map.set(key, e);
+        });
+        return Array.from(map.entries()).map(([provider, d]) => ({ provider, ...d }));
+      };
+      const providerBreakdown = await fetchProviderBreakdown();
+
       const totalVolume = marketRows?.reduce((sum, m) => sum + Number(m.volume), 0) ?? 0;
       const totalRewardsPaid = rewardRows.reduce((sum, r) => sum + Number(r.amount), 0);
       const quickTradeVolume = qtBetRows.reduce((sum, b) => sum + Number(b.amount), 0);
