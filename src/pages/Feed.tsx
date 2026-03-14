@@ -307,10 +307,16 @@ const Feed = () => {
       const offset = Math.abs(container.scrollTop - snappedTop);
 
       const maxScroll = container.scrollHeight - container.clientHeight;
+      // Load more when approaching the end
+      if (index >= sortedMarkets.length - 5 && hasMore) {
+        setVisibleCount((c) => c + 20);
+      }
+
+      const maxScroll = container.scrollHeight - container.clientHeight;
       const isAtEnd = container.scrollTop >= maxScroll - 5;
       const isOnLastCard = index >= sortedMarkets.length - 1;
 
-      if (isAtEnd && isOnLastCard && sortedMarkets.length > 0 && !endToastShown.current) {
+      if (isAtEnd && isOnLastCard && sortedMarkets.length > 0 && !hasMore && !endToastShown.current) {
         endToastShown.current = true;
         toast("Nothing more to see 👀", { duration: 2000, position: "top-center" });
         setTimeout(() => {
