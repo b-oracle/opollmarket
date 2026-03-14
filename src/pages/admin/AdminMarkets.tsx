@@ -408,6 +408,29 @@ const AdminMarkets = () => {
           )}
         </div>
       </div>
+
+      {/* Analytics Summary Cards */}
+      {globalStats && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+          {[
+            { label: "Active", value: globalStats.active, sub: `${globalStats.binary} binary · ${globalStats.multi} multi`, icon: CheckCircle, color: "text-emerald-500" },
+            { label: "Pending / Draft", value: `${globalStats.pending} / ${globalStats.draft}`, icon: Clock, color: "text-yellow-500" },
+            { label: "Ended → Resolve", value: globalStats.ended, icon: Gavel, color: "text-orange-500" },
+            { label: "Resolved", value: globalStats.resolved, sub: `${globalStats.cancelled} cancelled`, icon: Archive, color: "text-blue-500" },
+            { label: "Total Volume", value: `$${globalStats.totalVolume >= 1_000_000 ? (globalStats.totalVolume / 1_000_000).toFixed(1) + "M" : globalStats.totalVolume >= 1_000 ? (globalStats.totalVolume / 1_000).toFixed(1) + "K" : globalStats.totalVolume.toFixed(0)}`, sub: `${globalStats.totalParticipants.toLocaleString()} participants`, icon: DollarSign, color: "text-primary" },
+            { label: "Trending", value: globalStats.trending, sub: `${globalStats.polymarket} polymarket`, icon: TrendingUp, color: "text-pink-500" },
+          ].map((card) => (
+            <div key={card.label} className="bg-card border border-border/50 rounded-xl p-3 space-y-1">
+              <div className="flex items-center gap-1.5">
+                <card.icon className={`w-3.5 h-3.5 ${card.color}`} />
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">{card.label}</span>
+              </div>
+              <p className="text-lg font-bold">{card.value}</p>
+              {card.sub && <p className="text-[10px] text-muted-foreground">{card.sub}</p>}
+            </div>
+          ))}
+        </div>
+      )}
       <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 overflow-x-auto scrollbar-hide">
         {(["all", "pending", "active", "ended", "resolved", "cancelled", "polymarket"] as const).map((f) => (
           <button
