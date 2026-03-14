@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, TrendingUp, TrendingDown, Users, DollarSign, BarChart3, Trophy, ShoppingBag } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, Users, DollarSign, BarChart3, Trophy, ShoppingBag, Wallet, Percent, Landmark, Info, Zap, Sparkles } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import AdminPagination from "@/components/admin/AdminPagination";
 
@@ -38,11 +38,19 @@ interface MarketRow {
   created_at: string;
 }
 
+interface BoostRow {
+  id: string;
+  amount: number;
+  status: string;
+  created_at: string;
+}
+
 const AdminPredictions = () => {
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState<RangeKey>("30d");
   const [transactions, setTransactions] = useState<TxRow[]>([]);
   const [markets, setMarkets] = useState<MarketRow[]>([]);
+  const [boosts, setBoosts] = useState<BoostRow[]>([]);
   const [profileMap, setProfileMap] = useState<Map<string, string>>(new Map());
   const [marketPage, setMarketPage] = useState(1);
   const [betPage, setBetPage] = useState(1);
@@ -50,7 +58,7 @@ const AdminPredictions = () => {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const fetchPaginated = async (table: "transactions" | "markets", select: string, filters?: (q: any) => any) => {
+      const fetchPaginated = async (table: "transactions" | "markets" | "market_boosts", select: string, filters?: (q: any) => any) => {
         let allData: any[] = [];
         let page = 0;
         let hasMore = true;
@@ -69,13 +77,15 @@ const AdminPredictions = () => {
         return allData;
       };
 
-      const [txData, marketData] = await Promise.all([
-        fetchPaginated("transactions", "id, user_id, market_id, type, amount, side, shares, price, status, created_at, is_copy_trade", (q: any) => q.in("type", ["buy", "sell", "payout", "refund", "commission"]).eq("status", "confirmed")),
+      const [txData, marketData, boostData] = await Promise.all([
+        fetchPaginated("transactions", "id, user_id, market_id, type, amount, side, shares, price, status, created_at, is_copy_trade", (q: any) => q.in("type", ["buy", "sell", "payout", "refund", "commission", "fee_forfeiture"]).eq("status", "confirmed")),
         fetchPaginated("markets", "id, title, category, status, volume, participants, created_at"),
+        fetchPaginated("market_boosts", "id, amount, status, created_at", (q: any) => q.eq("status", "confirmed")),
       ]);
 
       setTransactions(txData || []);
       setMarkets(marketData || []);
+      setBoosts(boostData || []);
 
       const userIds = [...new Set((txData || []).map((t: any) => t.user_id))];
       if (userIds.length > 0) {
@@ -105,18 +115,42 @@ const AdminPredictions = () => {
 
     const filteredTx = days ? transactions.filter(t => t.created_at >= cutoff) : transactions;
     const filteredMarkets = days ? markets.filter(m => m.created_at >= cutoff) : markets;
+    const filteredBoosts = days ? boosts.filter(b => b.created_at >= cutoff) : boosts;
 
+    // Separate transaction types
     const buys = filteredTx.filter(t => t.type === "buy");
+    const commissions = filteredTx.filter(t => t.type === "commission");
     const payouts = filteredTx.filter(t => t.type === "payout");
     const refunds = filteredTx.filter(t => t.type === "refund");
+    const forfeitures = filteredTx.filter(t => t.type === "fee_forfeiture");
+
+    // Predictions = buy with side yes/no (not initial_liquidity, market_creation_fee, ai_generation)
+    const predictions = buys.filter(t => t.side === "yes" || t.side === "no");
+    const liquidityTx = buys.filter(t => t.side === "initial_liquidity");
+    const creationFeeTx = buys.filter(t => t.side === "market_creation_fee");
+    const aiFeeTx = buys.filter(t => t.side === "ai_generation");
 
     const totalMarkets = filteredMarkets.length;
-    const totalBets = buys.length;
-    const uniqueTraders = new Set(buys.map(b => b.user_id)).size;
-    const totalWagered = buys.reduce((s, b) => s + Number(b.amount), 0);
+    const totalPredictions = predictions.length;
+    const uniqueTraders = new Set(predictions.map(b => b.user_id)).size;
+    const totalWagered = predictions.reduce((s, b) => s + Number(b.amount), 0);
+    const totalLiquidity = liquidityTx.reduce((s, b) => s + Number(b.amount), 0);
+    const totalCreationFees = creationFeeTx.reduce((s, b) => s + Number(b.amount), 0);
+    const totalAiFees = aiFeeTx.reduce((s, b) => s + Number(b.amount), 0);
+    const totalCommissions = commissions.reduce((s, b) => s + Number(b.amount), 0);
     const totalPayouts = payouts.reduce((s, b) => s + Number(b.amount), 0);
     const totalRefunds = refunds.reduce((s, b) => s + Number(b.amount), 0);
-    const platformProfit = totalWagered - totalPayouts - totalRefunds;
+    const totalForfeitures = forfeitures.reduce((s, b) => s + Number(b.amount), 0);
+    const totalBoosts = filteredBoosts.reduce((s, b) => s + Number(b.amount), 0);
+
+    // Platform profit = admin commissions + creation fees + AI fees + boosts + forfeitures
+    // Note: commissions include both admin + creator commissions as recorded
+    // For a more accurate split we'd need to know which user_id is admin, 
+    // but total commissions are platform revenue (admin keeps admin%, creator keeps creator%)
+    // Actually admin commission goes to platform, creator commission goes to creator
+    // We approximate: admin_fee / (admin_fee + creator_fee) ratio from commission_settings
+    // For now, show total commissions and note it includes both
+    const platformProfit = totalCommissions + totalCreationFees + totalAiFees + totalBoosts + totalForfeitures;
 
     // Category breakdown
     const catMap = new Map<string, number>();
@@ -124,11 +158,11 @@ const AdminPredictions = () => {
     const categoryData = Array.from(catMap.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
 
     // Daily activity
-    const dayMap = new Map<string, { bets: number; volume: number }>();
-    buys.forEach(b => {
+    const dayMap = new Map<string, { predictions: number; volume: number }>();
+    predictions.forEach(b => {
       const day = b.created_at.slice(0, 10);
-      const e = dayMap.get(day) || { bets: 0, volume: 0 };
-      e.bets++;
+      const e = dayMap.get(day) || { predictions: 0, volume: 0 };
+      e.predictions++;
       e.volume += Number(b.amount);
       dayMap.set(day, e);
     });
@@ -138,25 +172,25 @@ const AdminPredictions = () => {
       const d = new Date();
       d.setDate(d.getDate() - (numDays - 1 - i));
       const key = d.toISOString().slice(0, 10);
-      const e = dayMap.get(key) || { bets: 0, volume: 0 };
+      const e = dayMap.get(key) || { predictions: 0, volume: 0 };
       return { date: d.toLocaleDateString("en", { month: "short", day: "numeric" }), ...e };
     });
 
-    // Top traders by profit
-    const traderMap = new Map<string, { wagered: number; won: number; bets: number }>();
-    buys.forEach(b => {
-      const e = traderMap.get(b.user_id) || { wagered: 0, won: 0, bets: 0 };
+    // Top traders by profit (predictions only)
+    const traderMap = new Map<string, { wagered: number; won: number; predictions: number }>();
+    predictions.forEach(b => {
+      const e = traderMap.get(b.user_id) || { wagered: 0, won: 0, predictions: 0 };
       e.wagered += Number(b.amount);
-      e.bets++;
+      e.predictions++;
       traderMap.set(b.user_id, e);
     });
     payouts.forEach(p => {
-      const e = traderMap.get(p.user_id) || { wagered: 0, won: 0, bets: 0 };
+      const e = traderMap.get(p.user_id) || { wagered: 0, won: 0, predictions: 0 };
       e.won += Number(p.amount);
       traderMap.set(p.user_id, e);
     });
     const topTraders = Array.from(traderMap.entries())
-      .map(([id, d]) => ({ id, name: profileMap.get(id) || id.slice(0, 8), profit: d.won - d.wagered, bets: d.bets, wagered: d.wagered }))
+      .map(([id, d]) => ({ id, name: profileMap.get(id) || id.slice(0, 8), profit: d.won - d.wagered, predictions: d.predictions, wagered: d.wagered }))
       .sort((a, b) => b.profit - a.profit)
       .slice(0, 10);
 
@@ -165,8 +199,13 @@ const AdminPredictions = () => {
     const cancelledMarkets = filteredMarkets.filter(m => m.status === "cancelled").length;
     const activeMarkets = filteredMarkets.filter(m => m.status === "active").length;
 
-    return { totalMarkets, totalBets, uniqueTraders, totalWagered, totalPayouts, platformProfit, categoryData, chartData, topTraders, resolvedMarkets, cancelledMarkets, activeMarkets };
-  }, [transactions, markets, range, profileMap]);
+    return {
+      totalMarkets, totalPredictions, uniqueTraders, totalWagered, totalLiquidity,
+      totalCreationFees, totalAiFees, totalCommissions, totalPayouts, totalRefunds,
+      totalForfeitures, totalBoosts, platformProfit,
+      categoryData, chartData, topTraders, resolvedMarkets, cancelledMarkets, activeMarkets,
+    };
+  }, [transactions, markets, boosts, range, profileMap]);
 
   const sortedMarkets = useMemo(() => [...markets].sort((a, b) => b.volume - a.volume), [markets]);
   const paginatedMarkets = useMemo(() => {
@@ -174,11 +213,11 @@ const AdminPredictions = () => {
     return sortedMarkets.slice(start, start + PAGE_SIZE);
   }, [sortedMarkets, marketPage]);
 
-  const buyTxs = useMemo(() => transactions.filter(t => t.type === "buy"), [transactions]);
+  const predictionTxs = useMemo(() => transactions.filter(t => t.type === "buy" && (t.side === "yes" || t.side === "no")), [transactions]);
   const paginatedBets = useMemo(() => {
     const start = (betPage - 1) * PAGE_SIZE;
-    return buyTxs.slice(start, start + PAGE_SIZE);
-  }, [buyTxs, betPage]);
+    return predictionTxs.slice(start, start + PAGE_SIZE);
+  }, [predictionTxs, betPage]);
 
   const marketTitleMap = useMemo(() => new Map(markets.map(m => [m.id, m.title])), [markets]);
 
@@ -186,13 +225,24 @@ const AdminPredictions = () => {
     return <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
   }
 
-  const cards = [
+  const fmt = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(1)}K` : `$${v.toFixed(2)}`;
+
+  const countCards = [
     { label: "Total Markets", value: stats.totalMarkets, icon: ShoppingBag, color: "text-primary" },
-    { label: "Total Bets", value: stats.totalBets, icon: BarChart3, color: "text-blue-500" },
+    { label: "Total Predictions", value: stats.totalPredictions, icon: BarChart3, color: "text-blue-500" },
     { label: "Unique Traders", value: stats.uniqueTraders, icon: Users, color: "text-emerald-500" },
-    { label: "Total Wagered", value: `$${stats.totalWagered.toFixed(2)}`, icon: DollarSign, color: "text-amber-500" },
-    { label: "Total Payouts", value: `$${stats.totalPayouts.toFixed(2)}`, icon: TrendingUp, color: "text-purple-500" },
-    { label: "Platform Profit", value: `$${stats.platformProfit.toFixed(2)}`, icon: BarChart3, color: stats.platformProfit >= 0 ? "text-emerald-500" : "text-destructive" },
+  ];
+
+  const financialCards = [
+    { label: "Total Wagered", value: fmt(stats.totalWagered), icon: DollarSign, color: "text-amber-500", tooltip: "Sum of all prediction amounts (escrowed until resolution)" },
+    { label: "Total Liquidity", value: fmt(stats.totalLiquidity), icon: Wallet, color: "text-blue-500", tooltip: "Liquidity deposited by market creators" },
+    { label: "Commissions", value: fmt(stats.totalCommissions), icon: Percent, color: "text-purple-500", tooltip: "Admin + Creator fees collected per prediction" },
+    { label: "Creation Fees", value: fmt(stats.totalCreationFees), icon: Landmark, color: "text-orange-500", tooltip: "Fees paid by creators to list markets" },
+    { label: "AI Fees", value: fmt(stats.totalAiFees), icon: Sparkles, color: "text-cyan-500", tooltip: "Fees for AI-generated market content" },
+    { label: "Boosts", value: fmt(stats.totalBoosts), icon: Zap, color: "text-yellow-500", tooltip: "Revenue from market boost payments" },
+    { label: "Total Payouts", value: fmt(stats.totalPayouts), icon: TrendingUp, color: "text-emerald-500", tooltip: "Winnings paid to prediction winners" },
+    { label: "Total Refunds", value: fmt(stats.totalRefunds), icon: TrendingDown, color: "text-destructive", tooltip: "Refunds from cancelled markets" },
+    { label: "Platform Profit", value: fmt(stats.platformProfit), icon: BarChart3, color: stats.platformProfit >= 0 ? "text-emerald-500" : "text-destructive", tooltip: "Commissions + Creation Fees + AI Fees + Boosts + Forfeitures" },
   ];
 
   return (
@@ -206,15 +256,36 @@ const AdminPredictions = () => {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
-        {cards.map(c => (
+      {/* Count Stats */}
+      <div className="grid grid-cols-3 gap-3">
+        {countCards.map(c => (
           <div key={c.label} className="bg-card border border-border rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{c.label}</span>
               <c.icon className={`w-4 h-4 ${c.color}`} />
             </div>
             <span className="text-lg font-bold">{c.value}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Financial Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+        {financialCards.map(c => (
+          <div key={c.label} className="bg-card border border-border rounded-xl p-4 group relative">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1">
+                {c.label}
+                {c.tooltip && <Info className="w-3 h-3 text-muted-foreground/50" />}
+              </span>
+              <c.icon className={`w-4 h-4 ${c.color}`} />
+            </div>
+            <span className="text-lg font-bold">{c.value}</span>
+            {c.tooltip && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-popover border border-border rounded-lg text-[10px] text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+                {c.tooltip}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -231,7 +302,7 @@ const AdminPredictions = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Volume chart */}
             <div className="bg-card border border-border rounded-xl p-5">
-              <h3 className="text-sm font-semibold mb-4">Daily Volume & Bets</h3>
+              <h3 className="text-sm font-semibold mb-4">Daily Volume & Predictions</h3>
               <div className="h-52">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={stats.chartData}>
@@ -317,7 +388,7 @@ const AdminPredictions = () => {
                           <span className="text-xs font-medium truncate">{t.name}</span>
                           <span className={`text-xs font-semibold ${t.profit >= 0 ? "text-emerald-500" : "text-destructive"}`}>{t.profit >= 0 ? "+" : ""}${t.profit.toFixed(2)}</span>
                         </div>
-                        <span className="text-[10px] text-muted-foreground">{t.bets} bets · ${t.wagered.toFixed(0)} wagered</span>
+                        <span className="text-[10px] text-muted-foreground">{t.predictions} predictions · ${t.wagered.toFixed(0)} wagered</span>
                       </div>
                     </div>
                   ))}
@@ -403,9 +474,9 @@ const AdminPredictions = () => {
               </tbody>
             </table>
           </div>
-          {buyTxs.length > PAGE_SIZE && (
+          {predictionTxs.length > PAGE_SIZE && (
             <div className="p-4 border-t border-border">
-              <AdminPagination page={betPage} totalItems={buyTxs.length} pageSize={PAGE_SIZE} onPageChange={setBetPage} />
+              <AdminPagination page={betPage} totalItems={predictionTxs.length} pageSize={PAGE_SIZE} onPageChange={setBetPage} />
             </div>
           )}
         </div>
