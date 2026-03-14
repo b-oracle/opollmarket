@@ -48,7 +48,9 @@ const AdminSettings = () => {
   const { canEdit } = useAdminContext();
   const [adminFee, setAdminFee] = useState("");
   const [creatorFee, setCreatorFee] = useState("");
-  const [referralReward, setReferralReward] = useState("");
+  const [creatorFeeBlue, setCreatorFeeBlue] = useState("");
+  const [creatorFeeGold, setCreatorFeeGold] = useState("");
+  const [referrerCommission, setReferrerCommission] = useState("");
   const [minTokenBalance, setMinTokenBalance] = useState("");
   const [minGoldTokenBalance, setMinGoldTokenBalance] = useState("");
   const [minNftBalance, setMinNftBalance] = useState("");
