@@ -2,6 +2,14 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Gift, Users, DollarSign, TrendingUp, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import AdminPagination from "@/components/admin/AdminPagination";
+
+const TIME_RANGES = [
+  { label: "7d", days: 7 },
+  { label: "14d", days: 14 },
+  { label: "30d", days: 30 },
+  { label: "All", days: 0 },
+];
 
 interface ReferralRow {
   id: string;
@@ -28,23 +36,31 @@ const AdminReferrals = () => {
     totalRewards: 0, totalAmount: 0, uniqueReferrers: 0, avgRewardAmount: 0, topReferrers: [],
   });
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1);
+  const [range, setRange] = useState(1); // index into TIME_RANGES
   const PAGE_SIZE = 20;
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      setPage(1);
 
-      // Fetch all referral rewards
+      const sinceISO = TIME_RANGES[range].days > 0
+        ? new Date(Date.now() - TIME_RANGES[range].days * 86400000).toISOString()
+        : null;
+
+      // Fetch referral rewards (paginated to handle >1000)
       let allRewards: any[] = [];
       let p = 0;
       let hasMore = true;
       while (hasMore) {
-        const { data } = await supabase
+        let q = supabase
           .from("referral_rewards")
           .select("id, referrer_id, referred_id, amount, created_at")
           .order("created_at", { ascending: false })
           .range(p * 1000, (p + 1) * 1000 - 1);
+        if (sinceISO) q = q.gte("created_at", sinceISO);
+        const { data } = await q;
         if (data && data.length > 0) {
           allRewards = [...allRewards, ...data];
           p++;
@@ -54,7 +70,7 @@ const AdminReferrals = () => {
         }
       }
 
-      // Get unique user IDs for profile lookup
+      // Profile lookup
       const userIds = [...new Set([
         ...allRewards.map(r => r.referrer_id),
         ...allRewards.map(r => r.referred_id),
@@ -108,15 +124,7 @@ const AdminReferrals = () => {
       setLoading(false);
     };
     fetchData();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 text-primary animate-spin" />
-      </div>
-    );
-  }
+  }, [range]);
 
   const filtered = search.trim()
     ? referrals.filter(r =>
@@ -127,8 +135,7 @@ const AdminReferrals = () => {
       )
     : referrals;
 
-  const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const statCards = [
     { label: "Total Referrals", value: stats.totalRewards.toLocaleString(), icon: Gift, color: "text-primary" },
@@ -139,144 +146,157 @@ const AdminReferrals = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Referrals</h2>
-
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {statCards.map(card => (
-          <div key={card.label} className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{card.label}</span>
-              <card.icon className={`w-4 h-4 ${card.color}`} />
-            </div>
-            <span className="text-xl font-bold">{card.value}</span>
-          </div>
-        ))}
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Referrals</h2>
+        <div className="flex gap-1 bg-muted rounded-lg p-0.5">
+          {TIME_RANGES.map((tr, i) => (
+            <button
+              key={tr.label}
+              onClick={() => setRange(i)}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                range === i ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tr.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Top Referrers */}
-      {stats.topReferrers.length > 0 && (
-        <div className="bg-card border border-border rounded-xl p-5">
-          <h3 className="text-sm font-semibold mb-4">Top Referrers</h3>
-          <div className="space-y-3">
-            {stats.topReferrers.map((r, i) => (
-              <div key={r.id} className="flex items-center gap-3">
-                <span className="text-xs font-bold text-muted-foreground w-5">{i + 1}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium truncate">{r.name}</span>
-                    <span className="text-xs text-muted-foreground">{r.count} referrals · ${r.totalEarned.toFixed(2)}</span>
-                  </div>
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-primary"
-                      style={{ width: `${(r.count / (stats.topReferrers[0]?.count || 1)) * 100}%` }}
-                    />
-                  </div>
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-6 h-6 text-primary animate-spin" />
+        </div>
+      ) : (
+        <>
+          {/* Stat cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {statCards.map(card => (
+              <div key={card.label} className="bg-card border border-border rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{card.label}</span>
+                  <card.icon className={`w-4 h-4 ${card.color}`} />
                 </div>
+                <span className="text-xl font-bold">{card.value}</span>
               </div>
             ))}
           </div>
-        </div>
-      )}
 
-      {/* Referral History */}
-      <div className="bg-card border border-border rounded-xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold">Referral History ({filtered.length})</h3>
-          <div className="relative w-56">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-            <Input
-              placeholder="Search by name or ID..."
-              value={search}
-              onChange={e => { setSearch(e.target.value); setPage(0); }}
-              className="pl-8 h-8 text-xs"
-            />
-          </div>
-        </div>
+          {/* Top Referrers */}
+          {stats.topReferrers.length > 0 && (
+            <div className="bg-card border border-border rounded-xl p-5">
+              <h3 className="text-sm font-semibold mb-4">Top Referrers</h3>
+              <div className="space-y-3">
+                {stats.topReferrers.map((r, i) => (
+                  <div key={r.id} className="flex items-center gap-3">
+                    <span className="text-xs font-bold text-muted-foreground w-5">{i + 1}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-medium truncate">{r.name}</span>
+                        <span className="text-xs text-muted-foreground">{r.count} referrals · ${r.totalEarned.toFixed(2)}</span>
+                      </div>
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-primary"
+                          style={{ width: `${(r.count / (stats.topReferrers[0]?.count || 1)) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-        {paginated.length > 0 ? (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-2 px-2 text-muted-foreground font-medium">Referrer</th>
-                    <th className="text-left py-2 px-2 text-muted-foreground font-medium">Referred User</th>
-                    <th className="text-right py-2 px-2 text-muted-foreground font-medium">Reward</th>
-                    <th className="text-right py-2 px-2 text-muted-foreground font-medium">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginated.map(r => (
-                    <tr key={r.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                      <td className="py-2.5 px-2 font-medium">{r.referrer_name}</td>
-                      <td className="py-2.5 px-2 text-muted-foreground">{r.referred_name}</td>
-                      <td className="py-2.5 px-2 text-right text-green-500 font-medium">${Number(r.amount).toFixed(2)}</td>
-                      <td className="py-2.5 px-2 text-right text-muted-foreground">
-                        {new Date(r.created_at).toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {/* Referral History */}
+          <div className="bg-card border border-border rounded-xl">
+            <div className="flex items-center justify-between p-5 pb-3">
+              <h3 className="text-sm font-semibold">Referral History ({filtered.length})</h3>
+              <div className="relative w-56">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or ID..."
+                  value={search}
+                  onChange={e => { setSearch(e.target.value); setPage(1); }}
+                  className="pl-8 h-8 text-xs"
+                />
+              </div>
             </div>
 
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4">
-                <span className="text-xs text-muted-foreground">
-                  Page {page + 1} of {totalPages}
-                </span>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => setPage(p => Math.max(0, p - 1))}
-                    disabled={page === 0}
-                    className="px-3 py-1.5 rounded-md text-xs font-medium bg-muted hover:bg-muted/80 disabled:opacity-40 transition-colors"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-                    disabled={page >= totalPages - 1}
-                    className="px-3 py-1.5 rounded-md text-xs font-medium bg-muted hover:bg-muted/80 disabled:opacity-40 transition-colors"
-                  >
-                    Next
-                  </button>
+            {paginated.length > 0 ? (
+              <>
+                <div className="overflow-x-auto px-5">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-2 px-2 text-muted-foreground font-medium">Referrer</th>
+                        <th className="text-left py-2 px-2 text-muted-foreground font-medium">Referred User</th>
+                        <th className="text-right py-2 px-2 text-muted-foreground font-medium">Reward</th>
+                        <th className="text-right py-2 px-2 text-muted-foreground font-medium">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginated.map(r => (
+                        <tr key={r.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                          <td className="py-2.5 px-2 font-medium">{r.referrer_name}</td>
+                          <td className="py-2.5 px-2 text-muted-foreground">{r.referred_name}</td>
+                          <td className="py-2.5 px-2 text-right text-green-500 font-medium">${Number(r.amount).toFixed(2)}</td>
+                          <td className="py-2.5 px-2 text-right text-muted-foreground">
+                            {new Date(r.created_at).toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              </div>
+                <AdminPagination
+                  page={page}
+                  totalItems={filtered.length}
+                  pageSize={PAGE_SIZE}
+                  onPageChange={setPage}
+                />
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                {search ? "No referrals matching your search" : "No referral rewards recorded yet"}
+              </p>
             )}
-          </>
-        ) : (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            {search ? "No referrals matching your search" : "No referral rewards recorded yet"}
-          </p>
-        )}
-      </div>
+          </div>
 
-      {/* Pending Referrals (users referred but haven't made first bet) */}
-      <PendingReferrals />
+          {/* Pending Referrals */}
+          <PendingReferrals range={range} />
+        </>
+      )}
     </div>
   );
 };
 
-/** Shows users who were referred but haven't earned a reward yet */
-const PendingReferrals = () => {
+const PendingReferrals = ({ range }: { range: number }) => {
   const [pending, setPending] = useState<{ id: string; name: string; referrer: string; created_at: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 15;
 
   useEffect(() => {
-    const fetch = async () => {
-      // Get profiles with referred_by set
-      const { data: referred } = await supabase
+    const fetchPending = async () => {
+      setLoading(true);
+      setPage(1);
+
+      const sinceISO = TIME_RANGES[range].days > 0
+        ? new Date(Date.now() - TIME_RANGES[range].days * 86400000).toISOString()
+        : null;
+
+      let q = supabase
         .from("profiles")
         .select("id, display_name, email, referred_by, created_at")
         .not("referred_by", "is", null)
         .order("created_at", { ascending: false })
         .limit(500);
+      if (sinceISO) q = q.gte("created_at", sinceISO);
 
-      if (!referred || referred.length === 0) { setLoading(false); return; }
+      const { data: referred } = await q;
+      if (!referred || referred.length === 0) { setLoading(false); setPending([]); return; }
 
-      // Get which ones already have rewards
       const referredIds = referred.map(r => r.id);
       const { data: rewarded } = await supabase
         .from("referral_rewards")
@@ -285,7 +305,6 @@ const PendingReferrals = () => {
 
       const rewardedSet = new Set((rewarded || []).map(r => r.referred_id));
 
-      // Get referrer names
       const referrerIds = [...new Set(referred.map(r => r.referred_by).filter(Boolean))] as string[];
       const referrerMap = new Map<string, string>();
       if (referrerIds.length > 0) {
@@ -298,7 +317,6 @@ const PendingReferrals = () => {
 
       const pendingList = referred
         .filter(r => !rewardedSet.has(r.id))
-        .slice(0, 20)
         .map(r => ({
           id: r.id,
           name: r.display_name || r.email || r.id.slice(0, 8),
@@ -309,15 +327,19 @@ const PendingReferrals = () => {
       setPending(pendingList);
       setLoading(false);
     };
-    fetch();
-  }, []);
+    fetchPending();
+  }, [range]);
 
   if (loading || pending.length === 0) return null;
 
+  const paginated = pending.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   return (
-    <div className="bg-card border border-border rounded-xl p-5">
-      <h3 className="text-sm font-semibold mb-4">Pending Referrals (awaiting first prediction)</h3>
-      <div className="overflow-x-auto">
+    <div className="bg-card border border-border rounded-xl">
+      <div className="p-5 pb-3">
+        <h3 className="text-sm font-semibold">Pending Referrals ({pending.length}) — awaiting first prediction</h3>
+      </div>
+      <div className="overflow-x-auto px-5">
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-border">
@@ -327,7 +349,7 @@ const PendingReferrals = () => {
             </tr>
           </thead>
           <tbody>
-            {pending.map(p => (
+            {paginated.map(p => (
               <tr key={p.id} className="border-b border-border/50">
                 <td className="py-2.5 px-2 font-medium">{p.name}</td>
                 <td className="py-2.5 px-2 text-muted-foreground">{p.referrer}</td>
@@ -339,6 +361,12 @@ const PendingReferrals = () => {
           </tbody>
         </table>
       </div>
+      <AdminPagination
+        page={page}
+        totalItems={pending.length}
+        pageSize={PAGE_SIZE}
+        onPageChange={setPage}
+      />
     </div>
   );
 };
