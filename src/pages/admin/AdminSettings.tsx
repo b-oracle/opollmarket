@@ -253,9 +253,10 @@ const AdminSettings = () => {
            gold_trending_multiplier: goldTrendingMultNum,
            blue_max_free_markets: blueMaxFreeMarketsNum,
             gold_max_free_markets: goldMaxFreeMarketsNum,
-             ai_generation_cost: aiGenerationCostNum,
-              payaza_mode: payazaMode,
-              qt_one_sided_bonus: qtOneSidedBonus,
+              ai_generation_cost: aiGenerationCostNum,
+              auto_resolve_fee: autoResolveFeeNum,
+               payaza_mode: payazaMode,
+               qt_one_sided_bonus: qtOneSidedBonus,
            updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
