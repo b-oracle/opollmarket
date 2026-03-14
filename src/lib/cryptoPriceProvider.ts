@@ -68,7 +68,7 @@ async function fetchFromCryptoCompare(sym: string): Promise<number | null> {
 
 // ── Cache & backoff state ──
 const cache = new Map<string, { price: number; fetchedAt: number; provider: string }>();
-const CACHE_TTL = 5_000;
+const CACHE_TTL = 1_500;
 let failCount = 0;
 
 export async function fetchCryptoPrice(

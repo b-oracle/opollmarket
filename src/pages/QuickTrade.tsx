@@ -689,7 +689,7 @@ export default function QuickTrade() {
         if (!wsActiveRef.current && isCurrentRun()) {
           const poll = async () => {
             const now = Date.now();
-            const shouldFetch = now - lastFetchTimeRef.current >= 5000;
+            const shouldFetch = now - lastFetchTimeRef.current >= 1500;
 
             if (shouldFetch) {
               lastFetchTimeRef.current = now;
