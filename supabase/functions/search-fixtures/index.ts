@@ -57,16 +57,24 @@ Deno.serve(async (req) => {
     // For football: search teams, then get their upcoming fixtures
     if (sportKey === "football") {
       // Search teams
-      const teamUrl = `https://${sportConfig.host}${sportConfig.teamPath}?search=${encodeURIComponent(team.trim())}`;
-      console.log("Football team search URL:", teamUrl);
-      const teamResp = await fetch(teamUrl, { headers });
+      const teamResp = await fetch(
+        `https://${sportConfig.host}${sportConfig.teamPath}?search=${encodeURIComponent(team.trim())}`,
+        { headers }
+      );
       const teamData = await teamResp.json();
-      console.log("Football team search status:", teamResp.status, "results:", teamData?.response?.length ?? 0, "errors:", JSON.stringify(teamData?.errors || {}));
+
+      // Check for API errors (suspended account, rate limit, etc.)
+      if (teamData?.errors && Object.keys(teamData.errors).length > 0) {
+        console.error("API-Football team search errors:", JSON.stringify(teamData.errors));
+        return new Response(JSON.stringify({ fixtures: [], error: "Sports data API is currently unavailable" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const teams = teamData?.response?.slice(0, 5) || [];
 
       if (teams.length === 0) {
-        console.log("No teams found, returning empty fixtures");
-        return new Response(JSON.stringify({ fixtures: [], debug: { teamSearchStatus: teamResp.status, errors: teamData?.errors } }), {
+        return new Response(JSON.stringify({ fixtures: [] }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
