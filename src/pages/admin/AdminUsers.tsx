@@ -165,7 +165,7 @@ const AdminUsers = () => {
     }
   };
 
-  const [stats, setStats] = useState({ totalUsers: 0, totalBalance: 0, totalDeposits: 0, totalWithdrawals: 0, totalEarnings: 0 });
+  const [stats, setStats] = useState({ totalUsers: 0, totalBalance: 0, totalDeposits: 0, totalWithdrawals: 0, totalEarnings: 0, totalLosses: 0 });
 
   useEffect(() => {
     const fetchStats = async () => {
