@@ -375,9 +375,10 @@ Deno.serve(async (req) => {
       created_at: string;
     }> = [];
 
-    // Check each DB deposit
+    // Check each DB deposit (skip Payaza — handled by payaza-reconcile)
     for (const db of dbDeposits) {
       if (db.status === "pending" || db.status === "expired") continue;
+      if ((db as any).payment_provider === "payaza") continue;
 
       if (db.nowpayments_payment_id) {
         const np = npByPaymentId.get(db.nowpayments_payment_id);
