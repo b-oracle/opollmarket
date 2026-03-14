@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Zap, Flame, Crown, Copy, Check, Loader2, AlertTriangle, ChevronLeft } from "lucide-react";
+import { X, Zap, Flame, Crown, Copy, Check, Loader2, AlertTriangle, ChevronLeft, Megaphone } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -45,6 +45,8 @@ const BOOST_TIERS: BoostTier[] = [
   },
 ];
 
+const BROADCAST_PRICE = 5;
+
 interface BoostMarketModalProps {
   open: boolean;
   onClose: () => void;
@@ -55,12 +57,14 @@ interface BoostMarketModalProps {
 type Step = "select" | "confirm" | "pay" | "success";
 
 const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketModalProps) => {
-  const [selectedTier, setSelectedTier] = useState<BoostTier>(BOOST_TIERS[1]);
+  const [selectedTier, setSelectedTier] = useState<BoostTier | null>(null);
+  const [broadcastSelected, setBroadcastSelected] = useState(false);
   const [step, setStep] = useState<Step>("select");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState<{
-    boost_id: string;
+    boost_id?: string;
+    broadcast_id?: string;
     pay_address: string;
     pay_amount: number;
     pay_currency: string;
@@ -78,9 +82,14 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
       setStep("select");
       setPaymentInfo(null);
       setLoading(false);
+      setSelectedTier(null);
+      setBroadcastSelected(false);
       if (pollRef.current) clearInterval(pollRef.current);
     }
   }, [open]);
+
+  const totalPrice = (selectedTier?.price || 0) + (broadcastSelected ? BROADCAST_PRICE : 0);
+  const hasSelection = selectedTier || broadcastSelected;
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -88,16 +97,31 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const startPolling = (boostId: string) => {
+  const startPolling = (boostId?: string, broadcastId?: string) => {
     if (pollRef.current) clearInterval(pollRef.current);
     pollRef.current = setInterval(async () => {
-      const { data } = await supabase
-        .from("market_boosts")
-        .select("status")
-        .eq("id", boostId)
-        .single();
+      let boostDone = !boostId;
+      let broadcastDone = !broadcastId;
 
-      if (data?.status === "active") {
+      if (boostId) {
+        const { data } = await supabase
+          .from("market_boosts")
+          .select("status")
+          .eq("id", boostId)
+          .single();
+        if (data?.status === "active") boostDone = true;
+      }
+
+      if (broadcastId) {
+        const { data } = await supabase
+          .from("market_broadcasts")
+          .select("status")
+          .eq("id", broadcastId)
+          .single();
+        if (data?.status === "sent") broadcastDone = true;
+      }
+
+      if (boostDone && broadcastDone) {
         if (pollRef.current) clearInterval(pollRef.current);
         setStep("success");
       }
@@ -109,26 +133,56 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        toast.error("Please sign in to boost a market");
+        toast.error("Please sign in first");
         setLoading(false);
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke("create-boost-payment", {
-        body: { market_id: marketId, tier: selectedTier.id },
-      });
+      // For now, create the first applicable payment. If both selected, boost takes priority for payment address.
+      // NOWPayments supports single payment per invoice — we create the boost payment (higher amount includes broadcast if both selected).
+      if (selectedTier) {
+        const { data, error } = await supabase.functions.invoke("create-boost-payment", {
+          body: { market_id: marketId, tier: selectedTier.id },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+        let broadcastId: string | undefined;
+        if (broadcastSelected) {
+          // Create broadcast payment separately
+          const { data: bData, error: bError } = await supabase.functions.invoke("create-broadcast-payment", {
+            body: { market_id: marketId },
+          });
+          if (!bError && bData && !bData.error) {
+            broadcastId = bData.broadcast_id;
+          }
+        }
 
-      setPaymentInfo({
-        boost_id: data.boost_id,
-        pay_address: data.pay_address,
-        pay_amount: data.pay_amount,
-        pay_currency: data.pay_currency,
-      });
-      setStep("pay");
-      startPolling(data.boost_id);
+        setPaymentInfo({
+          boost_id: data.boost_id,
+          broadcast_id: broadcastId,
+          pay_address: data.pay_address,
+          pay_amount: data.pay_amount,
+          pay_currency: data.pay_currency,
+        });
+        setStep("pay");
+        startPolling(data.boost_id, broadcastId);
+      } else if (broadcastSelected) {
+        const { data, error } = await supabase.functions.invoke("create-broadcast-payment", {
+          body: { market_id: marketId },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+
+        setPaymentInfo({
+          broadcast_id: data.broadcast_id,
+          pay_address: data.pay_address,
+          pay_amount: data.pay_amount,
+          pay_currency: data.pay_currency,
+        });
+        setStep("pay");
+        startPolling(undefined, data.broadcast_id);
+      }
     } catch (err: any) {
       toast.error(err?.message || "Failed to create payment");
     } finally {
@@ -145,7 +199,7 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
         <div className="flex items-center gap-2">
           <Zap className="w-5 h-5 text-primary" />
           <h2 className="text-lg font-bold">
-            {step === "success" ? "Boost Active! 🚀" : "Boost Market"}
+            {step === "success" ? "All Set! 🚀" : "Promote Market"}
           </h2>
         </div>
         <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors">
@@ -156,32 +210,61 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
       <div className="space-y-5">
         {step === "select" && (
           <>
-            <div className="grid grid-cols-3 gap-3">
-              {BOOST_TIERS.map((tier) => (
-                <button
-                  key={tier.id}
-                  onClick={() => setSelectedTier(tier)}
-                  className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
-                    selectedTier.id === tier.id
-                      ? "border-primary/50 bg-primary/5 scale-105"
-                      : "border-border bg-muted/30 hover:border-muted-foreground/30"
-                  }`}
-                >
-                  <div style={{ color: tier.color }}>{tier.icon}</div>
-                  <span className="text-sm font-bold">{tier.label}</span>
-                  <span className="text-xs text-muted-foreground">{tier.duration}</span>
-                  <span className="text-sm font-bold px-3 py-1 rounded-md bg-background border border-border">
-                    ${tier.price}
-                  </span>
-                </button>
-              ))}
+            {/* Boost Section */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">⚡ Boost Market</p>
+              <div className="grid grid-cols-3 gap-3">
+                {BOOST_TIERS.map((tier) => (
+                  <button
+                    key={tier.id}
+                    onClick={() => setSelectedTier(selectedTier?.id === tier.id ? null : tier)}
+                    className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
+                      selectedTier?.id === tier.id
+                        ? "border-primary/50 bg-primary/5 scale-105"
+                        : "border-border bg-muted/30 hover:border-muted-foreground/30"
+                    }`}
+                  >
+                    <div style={{ color: tier.color }}>{tier.icon}</div>
+                    <span className="text-sm font-bold">{tier.label}</span>
+                    <span className="text-xs text-muted-foreground">{tier.duration}</span>
+                    <span className="text-sm font-bold px-3 py-1 rounded-md bg-background border border-border">
+                      ${tier.price}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Broadcast Section */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">📢 Broadcast</p>
+              <button
+                onClick={() => setBroadcastSelected(!broadcastSelected)}
+                className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all ${
+                  broadcastSelected
+                    ? "border-primary/50 bg-primary/5"
+                    : "border-border bg-muted/30 hover:border-muted-foreground/30"
+                }`}
+              >
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${broadcastSelected ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
+                  <Megaphone className="w-7 h-7" />
+                </div>
+                <div className="flex-1 text-left">
+                  <span className="text-sm font-bold block">Alert</span>
+                  <span className="text-xs text-muted-foreground">Push notification to all users</span>
+                </div>
+                <span className="text-sm font-bold px-3 py-1 rounded-md bg-background border border-border">
+                  ${BROADCAST_PRICE}
+                </span>
+              </button>
             </div>
 
             <button
               onClick={() => setStep("confirm")}
-              className="w-full py-3.5 rounded-xl font-bold text-sm bg-primary text-primary-foreground transition-all active:scale-95 flex items-center justify-center gap-2"
+              disabled={!hasSelection}
+              className="w-full py-3.5 rounded-xl font-bold text-sm bg-primary text-primary-foreground transition-all active:scale-95 disabled:opacity-40 flex items-center justify-center gap-2"
             >
-              {`Continue – $${selectedTier.price}`}
+              {hasSelection ? `Continue – $${totalPrice}` : "Select an option"}
             </button>
           </>
         )}
@@ -191,28 +274,38 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
             <div className="flex items-center gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20">
               <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
               <p className="text-sm text-foreground">
-                Are you sure you want to boost this market? This action will initiate a payment that cannot be reversed.
+                Are you sure? This will initiate a payment that cannot be reversed.
               </p>
             </div>
 
             <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Boost Summary</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Order Summary</p>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Market</span>
                   <span className="font-medium text-foreground text-right max-w-[60%] truncate">{marketTitle}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Tier</span>
-                  <span className="font-medium text-foreground">{selectedTier.label}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Duration</span>
-                  <span className="font-medium text-foreground">{selectedTier.duration}</span>
-                </div>
+                {selectedTier && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Boost Tier</span>
+                      <span className="font-medium text-foreground">{selectedTier.label} ({selectedTier.duration})</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Boost Cost</span>
+                      <span className="font-medium text-foreground">${selectedTier.price}</span>
+                    </div>
+                  </>
+                )}
+                {broadcastSelected && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Broadcast Alert</span>
+                    <span className="font-medium text-foreground">${BROADCAST_PRICE}</span>
+                  </div>
+                )}
                 <div className="flex justify-between border-t border-border pt-2 mt-2">
                   <span className="font-bold text-foreground">Total</span>
-                  <span className="font-bold text-foreground">{`$${selectedTier.price} USD`}</span>
+                  <span className="font-bold text-foreground">${totalPrice} USD</span>
                 </div>
               </div>
             </div>
@@ -252,7 +345,6 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
             </div>
 
             <div className="glass rounded-xl p-4 space-y-3">
-              {/* QR Code */}
               <div className="flex justify-center">
                 <div className="rounded-xl bg-white p-3 inline-block">
                   <img
@@ -281,7 +373,12 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
             </div>
 
             <p className="text-xs text-center text-muted-foreground">
-              The boost will activate automatically once payment is confirmed. This usually takes 1-5 minutes.
+              {selectedTier && broadcastSelected
+                ? "Both boost and broadcast will activate once all payments are confirmed."
+                : selectedTier
+                ? "The boost will activate automatically once payment is confirmed."
+                : "The broadcast will be sent once payment is confirmed."}
+              {" "}This usually takes 1-5 minutes.
             </p>
           </>
         )}
@@ -289,12 +386,23 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
         {step === "success" && (
           <div className="text-center space-y-4 py-4">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-              <Zap className="w-8 h-8 text-primary" />
+              {broadcastSelected && !selectedTier ? (
+                <Megaphone className="w-8 h-8 text-primary" />
+              ) : (
+                <Zap className="w-8 h-8 text-primary" />
+              )}
             </div>
             <div>
-              <p className="font-bold text-lg">Boost is Live!</p>
+              <p className="font-bold text-lg">
+                {selectedTier && broadcastSelected
+                  ? "Boost & Broadcast Live!"
+                  : selectedTier
+                  ? "Boost is Live!"
+                  : "Broadcast Sent!"}
+              </p>
               <p className="text-sm text-muted-foreground mt-1">
-                Your {selectedTier.label} boost ({selectedTier.duration}) is now active.
+                {selectedTier && `Your ${selectedTier.label} boost (${selectedTier.duration}) is now active. `}
+                {broadcastSelected && "A push notification has been sent to all users."}
               </p>
             </div>
             <button
