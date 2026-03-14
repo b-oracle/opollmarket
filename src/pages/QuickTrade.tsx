@@ -1307,8 +1307,8 @@ export default function QuickTrade() {
                         </div>
                       ) : (
                         <div className="flex items-center gap-1.5">
-                          <Moon className="w-2.5 h-2.5 text-muted-foreground" />
-                          <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Closed</span>
+                          <Moon className="w-2.5 h-2.5 text-destructive" />
+                          <span className="text-[9px] font-bold text-destructive uppercase tracking-wider">Closed</span>
                         </div>
                       )}
                       {userBet && activeRound?.open_price && currentPrice != null && (() => {
