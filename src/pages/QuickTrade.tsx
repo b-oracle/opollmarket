@@ -1018,7 +1018,7 @@ export default function QuickTrade() {
         return;
       }
 
-      // Insert bet
+      // Insert trade
       const { error: betErr } = await supabase.from("quick_bets").insert({
         user_id: user.id,
         round_id: activeRound.id,
