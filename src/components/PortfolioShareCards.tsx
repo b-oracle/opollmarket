@@ -107,7 +107,7 @@ export const PortfolioSummaryShareCard = forwardRef<HTMLDivElement, PortfolioSum
               textAlign: "center",
             }}
           >
-            {positionCount} active position{positionCount !== 1 ? "s" : ""} • opollmarket.lovable.app
+            {positionCount} active position{positionCount !== 1 ? "s" : ""} • opoll.org
           </div>
         </div>
       </div>
@@ -233,7 +233,7 @@ export const PositionShareCard = forwardRef<HTMLDivElement, PositionShareCardPro
               textAlign: "center",
             }}
           >
-            opollmarket.lovable.app
+            opoll.org
           </div>
         </div>
       </div>
