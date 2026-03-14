@@ -429,7 +429,7 @@ function MarketClosedOverlay({ assetClass }: { assetClass: string }) {
   );
 }
 
-
+function QuickTradeChart({
   chartType, chartMs, priceHistory, ohlcData, streamingPrice,
   historyLoading, activeRound, userBet, resolveFlash, timeframeLabel, assetClass,
 }: QuickTradeChartProps) {
