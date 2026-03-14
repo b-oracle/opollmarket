@@ -966,7 +966,7 @@ export default function QuickTrade() {
                 haptic("error");
               }
             } else {
-              // No bet placed, still flash neutral
+              // No trade placed, still flash neutral
               setResolveFlash(resolvedResult === "up" ? "win" : "lose");
               setTimeout(() => setResolveFlash(null), 1500);
             }
