@@ -90,7 +90,7 @@ const NpReconciliation = () => {
     });
   }, []);
 
-  const fmt = (v: number) => `$${v.toFixed(2)}`;
+  const fmt = (v: number) => `$${(v ?? 0).toFixed(2)}`;
 
   const runAudit = async () => {
     setLoading(true);
