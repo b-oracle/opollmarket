@@ -1,8 +1,9 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Zap, TrendingUp, TrendingDown, Users, DollarSign, Timer, BarChart3, Trophy, Flame } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { Loader2, Zap, TrendingUp, TrendingDown, Users, DollarSign, Timer, BarChart3, Trophy, Flame, CheckCircle, RotateCcw, Info } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import AdminPagination from "@/components/admin/AdminPagination";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type RangeKey = "7d" | "30d" | "all";
 const RANGES: { key: RangeKey; label: string; days: number | null }[] = [
@@ -103,7 +104,8 @@ const AdminQuickTrade = () => {
     const totalBets = filteredBets.length;
     const totalWagered = filteredBets.reduce((sum, b) => sum + Number(b.amount), 0);
     const totalPayout = filteredBets.filter(b => b.status === "won").reduce((sum, b) => sum + Number(b.payout || 0), 0);
-    const platformProfit = totalWagered - totalPayout;
+    const totalRefunded = filteredBets.filter(b => b.status === "refunded").reduce((sum, b) => sum + Number(b.payout || 0), 0);
+    const platformProfit = totalWagered - totalPayout - totalRefunded;
     const uniqueTraders = new Set(filteredBets.map(b => b.user_id)).size;
     const wonBets = filteredBets.filter(b => b.status === "won").length;
     const lostBets = filteredBets.filter(b => b.status === "lost").length;
@@ -155,7 +157,7 @@ const AdminQuickTrade = () => {
       .sort((a, b) => b.profit - a.profit)
       .slice(0, 10);
 
-    return { totalRounds, resolvedRounds, totalBets, totalWagered, totalPayout, platformProfit, uniqueTraders, wonBets, lostBets, assetData, chartData, topTraders };
+    return { totalRounds, resolvedRounds, totalBets, totalWagered, totalPayout, totalRefunded, platformProfit, uniqueTraders, wonBets, lostBets, assetData, chartData, topTraders };
   }, [rounds, bets, range, profileMap]);
 
   const paginatedRounds = useMemo(() => {
@@ -172,13 +174,18 @@ const AdminQuickTrade = () => {
     return <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
   }
 
-  const cards = [
+  const countCards = [
     { label: "Total Rounds", value: stats.totalRounds, icon: Timer, color: "text-primary" },
-    { label: "Total Trades", value: stats.totalBets, icon: Zap, color: "text-blue-500" },
-    { label: "Unique Traders", value: stats.uniqueTraders, icon: Users, color: "text-emerald-500" },
-    { label: "Total Wagered", value: `$${stats.totalWagered.toFixed(2)}`, icon: DollarSign, color: "text-amber-500" },
-    { label: "Total Payouts", value: `$${stats.totalPayout.toFixed(2)}`, icon: TrendingUp, color: "text-purple-500" },
-    { label: "Platform Profit", value: `$${stats.platformProfit.toFixed(2)}`, icon: BarChart3, color: stats.platformProfit >= 0 ? "text-emerald-500" : "text-destructive" },
+    { label: "Total Trades", value: stats.totalBets, icon: Zap, color: "text-chart-2" },
+    { label: "Unique Traders", value: stats.uniqueTraders, icon: Users, color: "text-chart-3" },
+    { label: "Resolved Rounds", value: stats.resolvedRounds, icon: CheckCircle, color: "text-chart-4" },
+  ];
+
+  const finCards: { label: string; value: string; icon: any; color: string; tooltip?: string }[] = [
+    { label: "Total Wagered", value: `$${stats.totalWagered.toFixed(2)}`, icon: DollarSign, color: "text-chart-4" },
+    { label: "Total Payouts", value: `$${stats.totalPayout.toFixed(2)}`, icon: TrendingUp, color: "text-primary" },
+    { label: "Total Refunded", value: `$${stats.totalRefunded.toFixed(2)}`, icon: RotateCcw, color: "text-muted-foreground" },
+    { label: "Platform Profit", value: `$${stats.platformProfit.toFixed(2)}`, icon: BarChart3, color: stats.platformProfit >= 0 ? "text-chart-3" : "text-destructive", tooltip: "Fees retained from winning pools + full stakes from rounds with no winners" },
   ];
 
   return (
@@ -192,18 +199,41 @@ const AdminQuickTrade = () => {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
-        {cards.map(c => (
-          <div key={c.label} className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{c.label}</span>
-              <c.icon className={`w-4 h-4 ${c.color}`} />
+      {/* Stats - Row 1: Counts */}
+      <TooltipProvider>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {countCards.map(c => (
+            <div key={c.label} className="bg-card border border-border rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{c.label}</span>
+                <c.icon className={`w-4 h-4 ${c.color}`} />
+              </div>
+              <span className="text-lg font-bold">{c.value}</span>
             </div>
-            <span className="text-lg font-bold">{c.value}</span>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+
+        {/* Stats - Row 2: Financials */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {finCards.map(c => (
+            <div key={c.label} className="bg-card border border-border rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1">
+                  {c.label}
+                  {c.tooltip && (
+                    <Tooltip>
+                      <TooltipTrigger asChild><Info className="w-3 h-3 text-muted-foreground cursor-help" /></TooltipTrigger>
+                      <TooltipContent className="max-w-[200px] text-xs">{c.tooltip}</TooltipContent>
+                    </Tooltip>
+                  )}
+                </span>
+                <c.icon className={`w-4 h-4 ${c.color}`} />
+              </div>
+              <span className="text-lg font-bold">{c.value}</span>
+            </div>
+          ))}
+        </div>
+      </TooltipProvider>
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl bg-muted/50 w-fit">
@@ -229,7 +259,7 @@ const AdminQuickTrade = () => {
                     </defs>
                     <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
-                    <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
+                    <RechartsTooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
                     <Area type="monotone" dataKey="volume" name="Volume" stroke="hsl(var(--primary))" fill="url(#fillVol)" strokeWidth={2} />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -246,7 +276,7 @@ const AdminQuickTrade = () => {
                       <Pie data={stats.assetData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
                         {stats.assetData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                       </Pie>
-                      <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
+                      <RechartsTooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
                     </PieChart>
                   </ResponsiveContainer>
                 ) : <p className="text-sm text-muted-foreground">No data</p>}
@@ -268,7 +298,7 @@ const AdminQuickTrade = () => {
               <h3 className="text-sm font-semibold mb-4">Win / Loss Distribution</h3>
               <div className="flex items-center gap-6 justify-center py-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-emerald-500">{stats.wonBets}</div>
+                  <div className="text-2xl font-bold text-chart-3">{stats.wonBets}</div>
                   <div className="text-[10px] text-muted-foreground uppercase">Wins</div>
                 </div>
                 <div className="w-px h-10 bg-border" />
@@ -284,14 +314,14 @@ const AdminQuickTrade = () => {
               </div>
               {stats.totalBets > 0 && (
                 <div className="h-2 rounded-full overflow-hidden flex bg-muted mt-2">
-                  <div className="bg-emerald-500" style={{ width: `${(stats.wonBets / stats.totalBets) * 100}%` }} />
+                  <div className="bg-chart-3" style={{ width: `${(stats.wonBets / stats.totalBets) * 100}%` }} />
                   <div className="bg-destructive" style={{ width: `${(stats.lostBets / stats.totalBets) * 100}%` }} />
                 </div>
               )}
             </div>
 
             <div className="bg-card border border-border rounded-xl p-5">
-              <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Trophy className="w-4 h-4 text-amber-500" /> Top Traders by Profit</h3>
+              <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Trophy className="w-4 h-4 text-chart-4" /> Top Traders by Profit</h3>
               {stats.topTraders.length > 0 ? (
                 <div className="space-y-2.5">
                   {stats.topTraders.slice(0, 5).map((t, i) => (
@@ -300,7 +330,7 @@ const AdminQuickTrade = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-medium truncate">{t.name}</span>
-                          <span className={`text-xs font-semibold ${t.profit >= 0 ? "text-emerald-500" : "text-destructive"}`}>{t.profit >= 0 ? "+" : ""}${t.profit.toFixed(2)}</span>
+                          <span className={`text-xs font-semibold ${t.profit >= 0 ? "text-chart-3" : "text-destructive"}`}>{t.profit >= 0 ? "+" : ""}${t.profit.toFixed(2)}</span>
                         </div>
                         <span className="text-[10px] text-muted-foreground">{t.bets} trades · ${t.wagered.toFixed(0)} wagered</span>
                       </div>
@@ -331,11 +361,11 @@ const AdminQuickTrade = () => {
                     <td className="px-4 py-3 font-semibold">{r.asset}</td>
                     <td className="px-4 py-3 text-muted-foreground">{r.duration_seconds}s</td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${r.status === "resolved" ? "bg-emerald-500/10 text-emerald-500" : r.status === "open" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>{r.status}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${r.status === "resolved" ? "bg-chart-3/10 text-chart-3" : r.status === "open" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>{r.status}</span>
                     </td>
                     <td className="px-4 py-3">
                       {r.result ? (
-                        <span className={`flex items-center gap-1 text-xs font-semibold ${r.result === "up" ? "text-emerald-500" : "text-destructive"}`}>
+                        <span className={`flex items-center gap-1 text-xs font-semibold ${r.result === "up" ? "text-chart-3" : "text-destructive"}`}>
                           {r.result === "up" ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />} {r.result}
                         </span>
                       ) : <span className="text-muted-foreground text-xs">—</span>}
@@ -375,17 +405,17 @@ const AdminQuickTrade = () => {
                   <tr key={b.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
                     <td className="px-4 py-3 font-medium truncate max-w-[150px]">{profileMap.get(b.user_id) || b.user_id.slice(0, 8)}</td>
                     <td className="px-4 py-3">
-                      <span className={`flex items-center gap-1 text-xs font-semibold ${b.side === "up" ? "text-emerald-500" : "text-destructive"}`}>
+                      <span className={`flex items-center gap-1 text-xs font-semibold ${b.side === "up" ? "text-chart-3" : "text-destructive"}`}>
                         {b.side === "up" ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />} {b.side}
                       </span>
                     </td>
                     <td className="px-4 py-3 font-mono">${Number(b.amount).toFixed(2)}</td>
                     <td className="px-4 py-3 font-mono">{b.payout != null ? `$${Number(b.payout).toFixed(2)}` : "—"}</td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${b.status === "won" ? "bg-emerald-500/10 text-emerald-500" : b.status === "lost" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"}`}>{b.status}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${b.status === "won" ? "bg-chart-3/10 text-chart-3" : b.status === "lost" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"}`}>{b.status}</span>
                     </td>
                     <td className="px-4 py-3">
-                      {b.streak > 1 ? <span className="flex items-center gap-1 text-xs font-semibold text-amber-500"><Flame className="w-3 h-3" />{b.streak}×</span> : <span className="text-muted-foreground text-xs">—</span>}
+                      {b.streak > 1 ? <span className="flex items-center gap-1 text-xs font-semibold text-chart-4"><Flame className="w-3 h-3" />{b.streak}×</span> : <span className="text-muted-foreground text-xs">—</span>}
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(b.created_at).toLocaleDateString()}</td>
                   </tr>
