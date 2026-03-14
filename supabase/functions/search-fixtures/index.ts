@@ -57,15 +57,16 @@ Deno.serve(async (req) => {
     // For football: search teams, then get their upcoming fixtures
     if (sportKey === "football") {
       // Search teams
-      const teamResp = await fetch(
-        `https://${sportConfig.host}${sportConfig.teamPath}?search=${encodeURIComponent(team.trim())}`,
-        { headers }
-      );
+      const teamUrl = `https://${sportConfig.host}${sportConfig.teamPath}?search=${encodeURIComponent(team.trim())}`;
+      console.log("Football team search URL:", teamUrl);
+      const teamResp = await fetch(teamUrl, { headers });
       const teamData = await teamResp.json();
+      console.log("Football team search status:", teamResp.status, "results:", teamData?.response?.length ?? 0, "errors:", JSON.stringify(teamData?.errors || {}));
       const teams = teamData?.response?.slice(0, 5) || [];
 
       if (teams.length === 0) {
-        return new Response(JSON.stringify({ fixtures: [] }), {
+        console.log("No teams found, returning empty fixtures");
+        return new Response(JSON.stringify({ fixtures: [], debug: { teamSearchStatus: teamResp.status, errors: teamData?.errors } }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
