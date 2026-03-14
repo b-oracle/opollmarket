@@ -47,7 +47,7 @@ const AdminQuickTrade = () => {
   const [profileMap, setProfileMap] = useState<Map<string, string>>(new Map());
   const [roundPage, setRoundPage] = useState(1);
   const [betPage, setBetPage] = useState(1);
-  const [activeTab, setActiveTab] = useState<"overview" | "rounds" | "bets">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "rounds" | "trades">("overview");
 
   useEffect(() => {
     const fetch = async () => {
