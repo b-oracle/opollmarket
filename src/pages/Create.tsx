@@ -1002,6 +1002,55 @@ const Create = () => {
       }
     }
 
+    // Create boost record if selected (paid from balance, activate immediately)
+    if (creationBoost && data?.id) {
+      const boostEnds = new Date();
+      boostEnds.setHours(boostEnds.getHours() + BOOST_TIER_HOURS[creationBoostTier]);
+      await supabase.from("market_boosts").insert({
+        market_id: data.id,
+        tier: creationBoostTier,
+        amount: BOOST_TIER_PRICES[creationBoostTier],
+        payer_wallet: user.id,
+        ends_at: boostEnds.toISOString(),
+        status: "active",
+      });
+      await supabase.from("transactions").insert({
+        user_id: user.id,
+        type: "buy",
+        amount: BOOST_TIER_PRICES[creationBoostTier],
+        market_id: data.id,
+        status: "confirmed",
+        side: "boost_fee",
+      });
+    }
+
+    // Create broadcast record if selected (paid from balance, send immediately)
+    if (creationBroadcast && data?.id) {
+      const { data: broadcastRec } = await supabase.from("market_broadcasts").insert({
+        market_id: data.id,
+        user_id: user.id,
+        tier: "alert",
+        amount: BROADCAST_PRICE,
+        status: "pending",
+      }).select("id").single();
+
+      await supabase.from("transactions").insert({
+        user_id: user.id,
+        type: "buy",
+        amount: BROADCAST_PRICE,
+        market_id: data.id,
+        status: "confirmed",
+        side: "broadcast_fee",
+      });
+
+      // Trigger broadcast notification
+      if (broadcastRec?.id) {
+        supabase.functions.invoke("send-market-broadcast", {
+          body: { broadcast_id: broadcastRec.id, market_id: data.id },
+        }).catch((err) => console.error("Failed to trigger broadcast:", err));
+      }
+    }
+
     setCompletedSteps(prev => new Set([...prev, 4]));
     setNewMarketId(data?.id || "");
     setCreatedAsPending(needsReview);
