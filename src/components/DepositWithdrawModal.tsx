@@ -1192,10 +1192,19 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
                   >
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-destructive/10 border border-destructive/20 mb-4">
+                      <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
+                      <p className="text-xs text-foreground">
+                        {isDeposit
+                          ? "Are you sure you want to proceed with this deposit? Please review the details below before confirming."
+                          : "Are you sure you want to withdraw? This action cannot be reversed once processed."}
+                      </p>
+                    </div>
+
                     <div className="glass rounded-xl p-4 mb-4">
-                      <h3 className="text-sm font-semibold mb-3">
-                        {isDeposit ? "Confirm Deposit" : "Confirm Withdrawal"}
-                      </h3>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                        {isDeposit ? "Deposit Summary" : "Withdrawal Summary"}
+                      </p>
                       <div className="space-y-2.5">
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Amount</span>
@@ -1227,6 +1236,18 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">Account Name</span>
                               <span className="text-xs font-semibold truncate max-w-[180px]">{accountName}</span>
+                            </div>
+                          </>
+                        )}
+                        {((isDeposit && paymentMethod === "fiat") || (!isDeposit && withdrawMethod === "fiat")) && ngnRate && (
+                          <>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Exchange Rate</span>
+                              <span className="font-semibold">{`₦${ngnRate.toLocaleString()}/USD`}</span>
+                            </div>
+                            <div className="flex justify-between text-sm border-t border-border pt-2 mt-2">
+                              <span className="font-bold text-foreground">{isDeposit ? "You Pay" : "You Receive"}</span>
+                              <span className="font-bold text-foreground">{`₦${Math.floor(numAmount * ngnRate).toLocaleString()} NGN`}</span>
                             </div>
                           </>
                         )}
