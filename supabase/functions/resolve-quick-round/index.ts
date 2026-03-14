@@ -339,6 +339,7 @@ Deno.serve(async (req) => {
     const s3 = Number(settings?.qt_streak_3x ?? 1.10);
     const s4 = Number(settings?.qt_streak_4x ?? 1.15);
     const s5 = Number(settings?.qt_streak_5x ?? 1.25);
+    const qtOneSidedBonus = settings?.qt_one_sided_bonus !== false;
 
     let resolvedCount = 0;
 
