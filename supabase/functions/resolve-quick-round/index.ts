@@ -270,26 +270,16 @@ Deno.serve(async (req) => {
     if (req.method === "POST") {
       const body = await req.json().catch(() => ({}));
       if (body.action === "deduct" && body.userId && body.amount) {
-        const { data: bal } = await supabase
-          .from("balances")
-          .select("amount")
-          .eq("user_id", body.userId)
-          .eq("currency", "USDT")
-          .single();
-        if (!bal || Number(bal.amount) < Number(body.amount)) {
-          return new Response(JSON.stringify({ error: "Insufficient balance" }), {
+        const { data: debitResult } = await supabase.rpc("debit_balance_atomic", {
+          _user_id: body.userId,
+          _main_deduct: Number(body.amount),
+        });
+        if (!debitResult?.success) {
+          return new Response(JSON.stringify({ error: debitResult?.error || "Insufficient balance" }), {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        await supabase
-          .from("balances")
-          .update({
-            amount: Number(bal.amount) - Number(body.amount),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("user_id", body.userId)
-          .eq("currency", "USDT");
         return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
