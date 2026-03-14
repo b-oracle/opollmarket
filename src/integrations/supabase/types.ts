@@ -1615,6 +1615,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      adjust_balance: {
+        Args: { _bonus_delta?: number; _delta: number; _user_id: string }
+        Returns: undefined
+      }
+      debit_balance_atomic: {
+        Args: { _bonus_deduct?: number; _main_deduct: number; _user_id: string }
+        Returns: Json
+      }
       deduct_market_liquidity: {
         Args: {
           _bonus_for_fee?: number
