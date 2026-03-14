@@ -46,7 +46,7 @@ const AdminPredictions = () => {
   const [profileMap, setProfileMap] = useState<Map<string, string>>(new Map());
   const [marketPage, setMarketPage] = useState(1);
   const [betPage, setBetPage] = useState(1);
-  const [activeTab, setActiveTab] = useState<"overview" | "markets" | "bets">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "markets" | "predictions">("overview");
 
   useEffect(() => {
     const fetchAll = async () => {
