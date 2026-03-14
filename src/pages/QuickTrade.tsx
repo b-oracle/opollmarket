@@ -534,9 +534,8 @@ export default function QuickTrade() {
         consecutiveFailsRef.current = 0;
         applyDisplayPrice(p);
         applyStreamingPrice(p);
-        if (selectedAsset.assetClass !== "crypto") {
-          feedRealPrice(streamAssetSymbol, p);
-        }
+        // Seed the smooth interpolation system so fallback has data immediately
+        feedRealPrice(streamAssetSymbol, p);
       }
     })();
 
@@ -603,6 +602,37 @@ export default function QuickTrade() {
 
     // For crypto: use Binance WebSocket for real-time streaming
     const unsubWs = subscribeToPriceStream(streamAssetSymbol, handleWsTick);
+
+    // Also subscribe to smoothed interpolation for crypto fallback
+    // When WS is active, real WS ticks dominate via the lerp loop above.
+    // When WS is stale/blocked, feedRealPrice from HTTP polls drives this
+    // interpolation system to provide Brownian drift = vibrant chart.
+    let unsubCryptoSmooth: (() => void) | null = null;
+    if (selectedAsset.assetClass === "crypto") {
+      let lastSmoothChartAppend = 0;
+      let lastSmoothDisplayUpdate = 0;
+      const SMOOTH_DISPLAY_THROTTLE = 500;
+
+      unsubCryptoSmooth = subscribeToSmoothedPriceStream(streamAssetSymbol, (price) => {
+        if (!isCurrentRun()) return;
+        // Only use smooth interpolation when WS is NOT active
+        const now = Date.now();
+        const wsStale = lastWsTickAtRef.current === 0 || (now - lastWsTickAtRef.current) > 5000;
+        if (!wsStale) return; // WS is delivering data, skip interpolated prices
+
+        // Update the lerp target so the main crypto loop picks it up
+        targetWsPrice = price;
+        displayedPrice = price;
+
+        applyStreamingPrice(price);
+        appendCryptoChartPoint(price);
+
+        if (now - lastSmoothDisplayUpdate >= SMOOTH_DISPLAY_THROTTLE) {
+          lastSmoothDisplayUpdate = now;
+          applyDisplayPrice(price);
+        }
+      });
+    }
 
     // For non-crypto assets: use smooth interpolation + polling
     let unsubPoller: (() => void) | null = null;
@@ -687,8 +717,9 @@ export default function QuickTrade() {
       pollIv = setInterval(pollNonCrypto, 10_000);
 
     } else {
-      // Crypto: HTTP fallback when WS is unavailable OR stale
-      const WS_STALE_MS = 8_000;
+      // Crypto: HTTP fallback feeds into the smooth interpolation system
+      // instead of directly appending jittered points
+      const WS_STALE_MS = 5_000;
       const fallbackTimer = setTimeout(() => {
         if (!isCurrentRun()) return;
 
@@ -703,37 +734,29 @@ export default function QuickTrade() {
           const p = await fetchPriceForAsset(selectedAsset);
           if (p != null && isCurrentRun()) {
             consecutiveFailsRef.current = 0;
-            if (displayedPrice === 0) displayedPrice = p;
-            targetWsPrice = p;
-            applyDisplayPrice(p);
-            applyStreamingPrice(p);
+            // Feed into the smooth interpolation system for Brownian drift
+            feedRealPrice(streamAssetSymbol, p);
 
+            // Also update raw cache for timeframe filtering
             const maxCutoff = now - 4 * 60 * 60 * 1000;
-            const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
             const rawCached = rawDataRef.current.get(streamAssetSymbol) || [];
             rawDataRef.current.set(
               streamAssetSymbol,
               [...rawCached, [now, p] as [number, number]].filter(([ts]) => ts >= maxCutoff).slice(-500),
             );
-
-            setPriceHistory((prev) => {
-              const jitter = p * (Math.random() - 0.5) * 0.0001;
-              const updated = [...prev, { time: timeLabel, price: p + jitter, ts: now }];
-              const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
-              return filtered.length > 500 ? filtered.slice(-500) : filtered;
-            });
           }
         };
 
         poll();
         pollIv = setInterval(poll, 5000);
-      }, 3000);
+      }, 2000); // Reduced from 3s to 2s for faster fallback
 
       return () => {
         mounted = false;
         wsActiveRef.current = false;
         lastWsTickAtRef.current = 0;
         unsubWs();
+        unsubCryptoSmooth?.();
         if (cryptoInterpId) clearInterval(cryptoInterpId);
         if (pendingRaf) cancelAnimationFrame(pendingRaf);
         clearTimeout(fallbackTimer);
@@ -745,6 +768,7 @@ export default function QuickTrade() {
       mounted = false;
       wsActiveRef.current = false;
       unsubWs();
+      unsubCryptoSmooth?.();
       unsubPoller?.();
       unsubSmooth?.();
       if (cryptoInterpId) clearInterval(cryptoInterpId);
