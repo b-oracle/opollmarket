@@ -684,18 +684,24 @@ export default function QuickTrade() {
       pollIv = setInterval(pollNonCrypto, 10_000);
 
     } else {
-      // Crypto: fallback HTTP polling if WS doesn't fire within 3s
+      // Crypto: fallback HTTP polling if WS doesn't fire within 1.5s
       const fallbackTimer = setTimeout(() => {
         if (!wsActiveRef.current && isCurrentRun()) {
+          let lastRealPrice = 0;
+          let prevRealPrice = 0;
+
+          // Real price fetch every 1s
           const poll = async () => {
             const now = Date.now();
-            const shouldFetch = now - lastFetchTimeRef.current >= 1500;
+            const shouldFetch = now - lastFetchTimeRef.current >= 1000;
 
             if (shouldFetch) {
               lastFetchTimeRef.current = now;
               const p = await fetchPriceForAsset(selectedAsset);
               if (p != null && isCurrentRun() && !wsActiveRef.current) {
                 consecutiveFailsRef.current = 0;
+                prevRealPrice = lastRealPrice || p;
+                lastRealPrice = p;
                 applyDisplayPrice(p);
                 applyStreamingPrice(p);
                 const maxCutoff = now - 4 * 60 * 60 * 1000;
@@ -707,28 +713,49 @@ export default function QuickTrade() {
                   return updated.filter((pt) => pt.ts >= maxCutoff);
                 });
               }
-            } else if (isCurrentRun() && !wsActiveRef.current) {
-              // Jitter tick for alive feel
-              setCurrentPrice((cur) => {
-                if (cur == null) return cur;
-                const jitter = cur * (Math.random() - 0.5) * 0.00035;
-                const tickPrice = cur + jitter;
-                applyStreamingPrice(tickPrice);
-                const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
-                setPriceHistory((prev) => {
-                  const maxCutoff = now - 4 * 60 * 60 * 1000;
-                  const updated = [...prev, { time: timeLabel, price: tickPrice, ts: now }];
-                  const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
-                  return filtered.length > 2000 ? filtered.slice(-2000) : filtered;
-                });
-                return cur;
-              });
             }
           };
           poll();
           pollIv = setInterval(poll, 1000);
+
+          // Micro-tick interpolation loop (~12fps) for chart vibrancy between polls
+          const microTickIv = setInterval(() => {
+            if (!isCurrentRun() || wsActiveRef.current) return;
+            const now = Date.now();
+            setCurrentPrice((cur) => {
+              if (cur == null) return cur;
+              const base = lastRealPrice || cur;
+              // Brownian drift + momentum from last two real prices
+              const momentum = lastRealPrice && prevRealPrice ? (lastRealPrice - prevRealPrice) * (Math.random() * 0.3) : 0;
+              const jitter = base * (Math.random() - 0.5) * 0.002;
+              const tickPrice = base + jitter + momentum;
+              applyStreamingPrice(tickPrice);
+              const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true });
+              setPriceHistory((prev) => {
+                const maxCutoff = now - 4 * 60 * 60 * 1000;
+                const updated = [...prev, { time: timeLabel, price: tickPrice, ts: now }];
+                const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
+                return filtered.length > 2000 ? filtered.slice(-2000) : filtered;
+              });
+              return cur;
+            });
+          }, 80);
+
+          // Extend cleanup to clear micro-tick interval
+          const origPollIv = pollIv;
+          return () => {
+            mounted = false;
+            wsActiveRef.current = false;
+            unsubWs();
+            if (cryptoInterpId) clearInterval(cryptoInterpId);
+            if (pendingRaf) cancelAnimationFrame(pendingRaf);
+            clearTimeout(fallbackTimer);
+            if (origPollIv) clearInterval(origPollIv);
+            if (pollIv) clearInterval(pollIv);
+            clearInterval(microTickIv);
+          };
         }
-      }, 3000);
+      }, 1500);
 
       return () => {
         mounted = false;
