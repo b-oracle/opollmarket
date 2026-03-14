@@ -76,7 +76,7 @@ const AdminQuickTrade = () => {
       const [roundData, betData, bonusTxData] = await Promise.all([
         fetchAllData("quick_rounds"),
         fetchAllData("quick_bets"),
-        supabase.from("transactions").select("amount, created_at").eq("type", "qt_one_sided_bonus").eq("status", "confirmed").then(r => r.data || []),
+        supabase.from("transactions").select("user_id, amount, created_at").eq("type", "qt_one_sided_bonus").eq("status", "confirmed").then(r => r.data || []),
       ]);
       setRounds(roundData || []);
       setBets(betData || []);
