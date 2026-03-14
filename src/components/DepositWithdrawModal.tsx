@@ -1239,6 +1239,18 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                             </div>
                           </>
                         )}
+                        {((isDeposit && paymentMethod === "fiat") || (!isDeposit && withdrawMethod === "fiat")) && ngnRate && (
+                          <>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Exchange Rate</span>
+                              <span className="font-semibold">{`₦${ngnRate.toLocaleString()}/USD`}</span>
+                            </div>
+                            <div className="flex justify-between text-sm border-t border-border pt-2 mt-2">
+                              <span className="font-bold text-foreground">{isDeposit ? "You Pay" : "You Receive"}</span>
+                              <span className="font-bold text-foreground">{`₦${Math.floor(numAmount * ngnRate).toLocaleString()} NGN`}</span>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
 
