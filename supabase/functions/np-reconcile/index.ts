@@ -173,6 +173,7 @@ Deno.serve(async (req) => {
         .select("id, user_id, amount, nowpayments_payment_id, created_at")
         .eq("type", "deposit")
         .eq("status", "expired")
+        .neq("payment_provider", "payaza")
         .not("nowpayments_payment_id", "is", null)
         .order("created_at");
 
@@ -311,7 +312,7 @@ Deno.serve(async (req) => {
     // Step 3: Fetch all deposit transactions from DB
     const { data: dbDeposits } = await adminClient
       .from("transactions")
-      .select("id, user_id, amount, status, nowpayments_payment_id, created_at")
+      .select("id, user_id, amount, status, nowpayments_payment_id, payment_provider, created_at")
       .eq("type", "deposit")
       .order("created_at");
 
@@ -375,9 +376,10 @@ Deno.serve(async (req) => {
       created_at: string;
     }> = [];
 
-    // Check each DB deposit
+    // Check each DB deposit (skip Payaza — handled by payaza-reconcile)
     for (const db of dbDeposits) {
       if (db.status === "pending" || db.status === "expired") continue;
+      if ((db as any).payment_provider === "payaza") continue;
 
       if (db.nowpayments_payment_id) {
         const np = npByPaymentId.get(db.nowpayments_payment_id);
