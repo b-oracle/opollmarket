@@ -265,6 +265,81 @@ async function handleBoost(supabase: ReturnType<typeof createClient>, payload: R
   console.log(`Activated ${tier} boost for market ${marketId}`);
 }
 
+async function handleBroadcast(supabase: ReturnType<typeof createClient>, payload: Record<string, unknown>, orderId: string) {
+  const { payment_id } = payload;
+  const paymentIdStr = String(payment_id);
+
+  // Parse: broadcast_{marketId}_alert_{userId}_{timestamp}
+  const parts = orderId.split("_");
+  if (parts.length < 5 || parts[0] !== "broadcast") {
+    console.error("Invalid broadcast order_id format:", orderId);
+    return;
+  }
+  const marketId = parts[1];
+  const userId = parts[3];
+
+  // Idempotency
+  const { data: existing } = await supabase
+    .from("market_broadcasts")
+    .select("id, status")
+    .eq("nowpayments_payment_id", paymentIdStr)
+    .maybeSingle();
+
+  if (existing?.status === "sent") {
+    console.log("Broadcast already sent:", paymentIdStr);
+    return;
+  }
+
+  // Find the broadcast record
+  const broadcastRecord = existing || (await (async () => {
+    const { data } = await supabase
+      .from("market_broadcasts")
+      .select("id")
+      .eq("market_id", marketId)
+      .eq("user_id", userId)
+      .in("status", ["pending", "expired"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return data;
+  })());
+
+  if (!broadcastRecord) {
+    console.error("No broadcast record found for:", orderId);
+    return;
+  }
+
+  // Update payment ID if needed
+  if (!existing) {
+    await supabase
+      .from("market_broadcasts")
+      .update({ nowpayments_payment_id: paymentIdStr })
+      .eq("id", broadcastRecord.id);
+  }
+
+  // Trigger the send-market-broadcast function
+  try {
+    const broadcastUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-market-broadcast`;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    
+    await fetch(broadcastUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify({
+        broadcast_id: broadcastRecord.id,
+        market_id: marketId,
+      }),
+    });
+  } catch (err) {
+    console.error("Failed to trigger broadcast:", err);
+  }
+
+  console.log(`Broadcast payment confirmed for market ${marketId}`);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
