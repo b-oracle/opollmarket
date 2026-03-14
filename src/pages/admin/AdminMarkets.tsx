@@ -93,24 +93,7 @@ const AdminMarkets = () => {
   const [pendingCount, setPendingCount] = useState(0);
 
   // Global stats (fetched once, independent of filter)
-  interface MarketStats {
-    total: number;
-    active: number;
-    binary: number;
-    multi: number;
-    draft: number;
-    pending: number;
-    ended: number;
-    resolved: number;
-    cancelled: number;
-    totalVolume: number;
-    totalParticipants: number;
-    totalLiquidity: number;
-    trending: number;
-    avgVolume: number;
-    polymarket: number;
-  }
-  const [globalStats, setGlobalStats] = useState<MarketStats | null>(null);
+  const [globalStats, setGlobalStats] = useState<MarketStatsData | null>(null);
 
   const fetchGlobalStats = async () => {
     const { data } = await supabase
