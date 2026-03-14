@@ -78,7 +78,7 @@ async function fetchFromBinanceSpot(sym: string): Promise<number | null> {
 
 // ── Cache & backoff state ──
 const cache = new Map<string, { price: number; fetchedAt: number; provider: string }>();
-const CACHE_TTL = 1_500;
+const CACHE_TTL = 5_000;
 let failCount = 0;
 
 export async function fetchCryptoPrice(
