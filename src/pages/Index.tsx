@@ -63,8 +63,8 @@ const Index = () => {
   const [filter, setFilter] = useState<"trending" | "boosted" | "new" | "all" | "live">("all");
   const [boostModalMarket, setBoostModalMarket] = useState<{ id: string; title: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [visibleCount, setVisibleCount] = useState(20);
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
   const { track } = useAnalytics();
 
   useEffect(() => { track("page_view", { page: "home" }); }, []);
