@@ -51,6 +51,7 @@ const AdminSettings = () => {
   const [creatorFeeBlue, setCreatorFeeBlue] = useState("");
   const [creatorFeeGold, setCreatorFeeGold] = useState("");
   const [referrerCommission, setReferrerCommission] = useState("");
+  const [referralReward, setReferralReward] = useState("");
   const [minTokenBalance, setMinTokenBalance] = useState("");
   const [minGoldTokenBalance, setMinGoldTokenBalance] = useState("");
   const [minNftBalance, setMinNftBalance] = useState("");
