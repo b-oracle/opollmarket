@@ -202,6 +202,7 @@ const AdminDashboard = () => {
         expiredDepositCount: expiredDepositCount.count ?? 0,
         partialDepositsAmount,
         partialDepositCount: partialDepositCount.count ?? 0,
+        providerBreakdown,
       });
 
       // Category breakdown
