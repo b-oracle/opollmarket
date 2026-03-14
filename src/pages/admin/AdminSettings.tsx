@@ -279,8 +279,9 @@ const AdminSettings = () => {
            gold_trending_multiplier: goldTrendingMultNum,
            blue_max_free_markets: blueMaxFreeMarketsNum,
             gold_max_free_markets: goldMaxFreeMarketsNum,
-             ai_generation_cost: aiGenerationCostNum,
-             payaza_mode: payazaMode,
+              ai_generation_cost: aiGenerationCostNum,
+              payaza_mode: payazaMode,
+              qt_one_sided_bonus: qtOneSidedBonus,
         },
       });
 
