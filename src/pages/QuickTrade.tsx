@@ -473,7 +473,6 @@ export default function QuickTrade() {
     setActiveRound(null);
     setUserBet(null);
     wsActiveRef.current = false;
-    lastWsTickAtRef.current = 0;
     consecutiveFailsRef.current = 0;
     lastFetchTimeRef.current = 0;
 
