@@ -31,6 +31,7 @@ interface Stats {
   expiredDepositCount: number;
   partialDepositsAmount: number;
   partialDepositCount: number;
+  providerBreakdown: { provider: string; amount: number; count: number }[];
 }
 
 interface MarketRow {
