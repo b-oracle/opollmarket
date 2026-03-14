@@ -1,8 +1,9 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Zap, TrendingUp, TrendingDown, Users, DollarSign, Timer, BarChart3, Trophy, Flame } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { Loader2, Zap, TrendingUp, TrendingDown, Users, DollarSign, Timer, BarChart3, Trophy, Flame, CheckCircle, RotateCcw, Info } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import AdminPagination from "@/components/admin/AdminPagination";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type RangeKey = "7d" | "30d" | "all";
 const RANGES: { key: RangeKey; label: string; days: number | null }[] = [
