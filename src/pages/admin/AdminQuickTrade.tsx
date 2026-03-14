@@ -250,7 +250,7 @@ const AdminQuickTrade = () => {
                 </span>
                 <c.icon className={`w-4 h-4 ${c.color}`} />
               </div>
-              <span className="text-lg font-bold">{c.value}</span>
+              <span className={`text-lg font-bold ${c.label === "Platform Profit" ? c.color : ""}`}>{c.value}</span>
             </div>
           ))}
         </div>
