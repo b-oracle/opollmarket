@@ -183,6 +183,22 @@ const AdminDashboard = () => {
       };
       const providerBreakdown = await fetchProviderBreakdown();
 
+      // Fetch ALL deposit transactions with dates for time-range filtering
+      const fetchAllDepositTxns = async (): Promise<DepositTxn[]> => {
+        const rows: DepositTxn[] = [];
+        let from = 0;
+        const batchSize = 1000;
+        while (true) {
+          const { data, error } = await supabase.from("transactions").select("amount, status, payment_provider, created_at").eq("type", "deposit").range(from, from + batchSize - 1);
+          if (error || !data || data.length === 0) break;
+          rows.push(...(data as DepositTxn[]));
+          if (data.length < batchSize) break;
+          from += batchSize;
+        }
+        return rows;
+      };
+      setAllDepositTxns(await fetchAllDepositTxns());
+
       const totalVolume = marketRows?.reduce((sum, m) => sum + Number(m.volume), 0) ?? 0;
       const totalRewardsPaid = rewardRows.reduce((sum, r) => sum + Number(r.amount), 0);
       const quickTradeVolume = qtBetRows.reduce((sum, b) => sum + Number(b.amount), 0);
