@@ -263,18 +263,26 @@ Deno.serve(async (req) => {
     // Update market volume, participants & AMM prices
     const { data: mkt } = await supabase
       .from("markets")
-      .select("volume, participants, yes_price, no_price, market_type, initial_liquidity")
+      .select("volume, liquidity, participants, yes_price, no_price, market_type, initial_liquidity")
       .eq("id", marketId)
       .single();
 
     if (mkt) {
       const isMulti = mkt.market_type === "multi" || mkt.market_type === "range";
       const newVolume = Number(mkt.volume) + amount;
-      const newLiquidity = Number(mkt.liquidity) + poolAmount;
+      const newLiquidity = Number(mkt.liquidity || 0) + poolAmount;
+
+      // Count distinct participants instead of blindly incrementing
+      const { count: distinctParticipants } = await supabase
+        .from("positions")
+        .select("user_id", { count: "exact", head: true })
+        .eq("market_id", marketId)
+        .gt("shares", 0);
+
       const updateFields: Record<string, any> = {
         volume: newVolume,
         liquidity: newLiquidity,
-        participants: mkt.participants + 1,
+        participants: distinctParticipants ?? (mkt.participants + 1),
       };
 
       if (!isMulti) {
