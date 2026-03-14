@@ -115,9 +115,10 @@ const AdminMarkets = () => {
   const [globalStats, setGlobalStats] = useState<MarketStatsData | null>(null);
 
   const fetchGlobalStats = async () => {
-    const { data } = await supabase
-      .from("markets")
-      .select("status, market_type, volume, participants, liquidity, trending, polymarket_id");
+    const [{ data }, { data: boosts }] = await Promise.all([
+      supabase.from("markets").select("status, market_type, volume, participants, liquidity, trending, polymarket_id"),
+      supabase.from("market_boosts").select("status"),
+    ]);
     if (!data) return;
     const stats: MarketStatsData = {
       total: data.length,
@@ -135,6 +136,8 @@ const AdminMarkets = () => {
       trending: data.filter(m => m.trending).length,
       avgVolume: 0,
       polymarket: data.filter(m => m.polymarket_id).length,
+      boostedActive: boosts?.filter(b => b.status === "active").length ?? 0,
+      boostedTotal: boosts?.length ?? 0,
     };
     const activeWithVolume = data.filter(m => m.status === "active" && Number(m.volume) > 0);
     stats.avgVolume = activeWithVolume.length > 0 ? stats.totalVolume / activeWithVolume.length : 0;
