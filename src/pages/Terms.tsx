@@ -119,7 +119,7 @@ const Terms = () => {
             <li>You predict whether the asset price will go <strong>UP</strong> or <strong>DOWN</strong> during the round.</li>
             <li>Winning payouts are calculated based on the total pool minus the Platform fee, distributed proportionally to winners.</li>
             <li>A <strong>streak multiplier</strong> system rewards consecutive winning trades with bonus multipliers on payouts.</li>
-            <li>Minimum and maximum bet amounts are configurable by the System-Mod Engine and displayed within the Platform.</li>
+            <li>Minimum and maximum trade amounts are configurable by the System-Mod Engine and displayed within the Platform.</li>
             <li>Available assets and timeframes may be enabled or disabled at any time by the System-Mod Engine.</li>
             <li>Quick Trade results are determined by real-time market prices from external data sources. The Platform is not responsible for data feed delays or inaccuracies.</li>
           </ul>

@@ -185,8 +185,8 @@ const slides = [
         <div className="space-y-5">
           {[
             { step: "1", title: "Sign Up Free", desc: "Create your account with just an email. No credit card, no KYC hassle.", color: "from-[hsl(193,98%,50%)] to-[hsl(193,80%,35%)]" },
-            { step: "2", title: "Deposit Crypto", desc: "Fund your account with BTC, ETH, BNB, USDT or 50+ other cryptocurrencies.", color: "from-[hsl(145,80%,42%)] to-[hsl(145,60%,30%)]" },
-            { step: "3", title: "Start Predicting", desc: "Browse markets, place your bets, and start earning. It's that simple.", color: "from-[hsl(280,80%,55%)] to-[hsl(280,60%,40%)]" },
+            { step: "2", title: "Deposit Stablecoins", desc: "Fund your account with USDT, USDC, or DAI across multiple networks.", color: "from-[hsl(145,80%,42%)] to-[hsl(145,60%,30%)]" },
+            { step: "3", title: "Start Predicting", desc: "Browse markets, place your predictions, and start earning. It's that simple.", color: "from-[hsl(280,80%,55%)] to-[hsl(280,60%,40%)]" },
             { step: "4", title: "Withdraw Profits", desc: "Cash out your winnings directly to your crypto wallet anytime.", color: "from-[hsl(30,90%,50%)] to-[hsl(30,70%,35%)]" },
           ].map((item, i) => (
             <div key={i} className="flex items-center gap-5">
