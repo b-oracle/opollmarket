@@ -397,6 +397,20 @@ const AdminSettings = () => {
               <p className="text-[10px] text-muted-foreground">Deducted from losing pool before distributing to winners</p>
             </div>
 
+            {/* One-Sided Bonus Toggle */}
+            <div className="flex items-center justify-between rounded-lg border border-border p-3">
+              <div className="space-y-0.5">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <Gift className="w-4 h-4 text-primary" /> One-Sided Bonus
+                </Label>
+                <p className="text-[10px] text-muted-foreground">No fee + 0.5% bonus when all bets are on the winning side</p>
+              </div>
+              <Switch
+                checked={qtOneSidedBonus}
+                onCheckedChange={setQtOneSidedBonus}
+              />
+            </div>
+
             {/* Min/Max Bet */}
             <Card className="border-dashed">
               <CardHeader className="pb-3">
