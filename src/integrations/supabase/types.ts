@@ -658,6 +658,50 @@ export type Database = {
           },
         ]
       }
+      market_broadcasts: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          market_id: string
+          nowpayments_payment_id: string | null
+          status: string
+          tier: string
+          tx_hash: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          market_id: string
+          nowpayments_payment_id?: string | null
+          status?: string
+          tier?: string
+          tx_hash?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          market_id?: string
+          nowpayments_payment_id?: string | null
+          status?: string
+          tier?: string
+          tx_hash?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_broadcasts_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       market_likes: {
         Row: {
           created_at: string
