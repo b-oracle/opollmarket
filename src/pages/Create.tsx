@@ -812,7 +812,7 @@ const Create = () => {
     }
 
     // Referral bonus can only cover the creation fee portion, not liquidity
-    const feeAmount = feeBypass ? marketCreationFee : 0;
+    const feeAmount = (feeBypass ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0);
     const bonusForFee = Math.min(Number(bal.bonus_balance || 0), feeAmount);
 
     // Use secure server-side function to deduct balance (RLS blocks client-side updates)
