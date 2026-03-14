@@ -93,15 +93,20 @@ async function fetchFromOmkar(commodityName: string, apiKey: string): Promise<nu
   }
 }
 
-async function fetchMetalPrice(asset: string): Promise<number | null> {
+async function fetchMetalPrice(asset: string, apiKey?: string): Promise<number | null> {
   const metalName = METAL_MAP[asset];
   if (!metalName) return null;
+  const key = apiKey || "demo";
   try {
-    const resp = await fetch(`https://api.metals.dev/v1/latest?api_key=demo&currency=USD&unit=toz`);
-    if (!resp.ok) return null;
+    const resp = await fetch(`https://api.metals.dev/v1/latest?api_key=${key}&currency=USD&unit=toz`);
+    if (!resp.ok) {
+      console.error(`metals.dev error [${resp.status}]`);
+      return null;
+    }
     const data = await resp.json();
     return data?.metals?.[metalName] ?? null;
-  } catch {
+  } catch (e) {
+    console.error("metals.dev fetch error:", e);
     return null;
   }
 }
