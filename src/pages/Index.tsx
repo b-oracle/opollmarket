@@ -141,6 +141,30 @@ const Index = () => {
     });
   }, [markets, boostedMarketIds, filter, searchQuery, categoryFilter]);
 
+  // Reset visible count when filters change
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [filter, searchQuery, categoryFilter]);
+
+  const visibleMarkets = useMemo(() => filteredMarkets.slice(0, visibleCount), [filteredMarkets, visibleCount]);
+  const hasMore = visibleCount < filteredMarkets.length;
+
+  // IntersectionObserver for infinite scroll
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          setVisibleCount((c) => c + 20);
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore]);
+
   const { data: platformStats } = useQuery({
     queryKey: ["platform-stats"],
     queryFn: async () => {
