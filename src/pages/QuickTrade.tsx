@@ -854,7 +854,7 @@ export default function QuickTrade() {
     return () => clearInterval(iv);
   }, [activeRound]);
 
-  // ── Check user bet on this round ──
+  // ── Check user trade on this round ──
   useEffect(() => {
     if (!user || !activeRound) {
       setUserBet(null);
