@@ -1106,9 +1106,9 @@ export default function QuickTrade() {
                 <span className="text-[10px] font-bold uppercase tracking-wider text-destructive">Live</span>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted/50 border border-muted-foreground/20">
-                <Moon className="w-3 h-3 text-muted-foreground" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Closed</span>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-destructive/15 border border-destructive/30">
+                <Moon className="w-3 h-3 text-destructive" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-destructive">Closed</span>
               </div>
             )}
           </div>
