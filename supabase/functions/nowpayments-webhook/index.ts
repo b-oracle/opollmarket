@@ -94,16 +94,15 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
 
   const matchedTx = matchByPaymentId || matchByUserPending;
 
-  // CRITICAL: Use price_amount (the original USD value the user requested) as the
-  // authoritative credit amount. outcome_amount is NOWPayments' internal exchange
-  // conversion output and can be wildly different from the actual deposit value.
-  // Fall back to matched transaction amount, then pay_amount, then actually_paid.
-  const requestedAmount = Number(price_amount) || matchedTx?.amount || Number(pay_amount) || Number(actually_paid) || 0;
-
-  // For partial payment detection, compare actually_paid_at_fiat or price_amount
-  // against the requested amount. Credit the lesser of price_amount and requestedAmount.
-  const creditAmount = Math.min(requestedAmount, Number(price_amount) || requestedAmount);
-  const isPartial = Number(creditAmount) < Number(requestedAmount) * 0.98; // 2% tolerance
+  // Use outcome_amount (net received after NP fees) as the credit amount.
+  // price_amount is the gross requested amount — crediting it causes over-crediting
+  // by the NP fee amount on every deposit.
+  const requestedAmount = Number(price_amount) || matchedTx?.amount || 0;
+  const netReceived = Number(outcome_amount) || Number(actually_paid) || 0;
+  
+  // Credit the net amount actually received, not the gross requested
+  const creditAmount = netReceived > 0 ? netReceived : requestedAmount;
+  const isPartial = creditAmount < requestedAmount * 0.98; // 2% tolerance
   const finalStatus = isPartial ? "partial" : "confirmed";
 
   // 3. Credit the user's balance with whatever was actually received
