@@ -416,7 +416,7 @@ const AdminMarkets = () => {
 
       {/* Analytics Summary Cards */}
       {globalStats && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
           {[
             { label: "Active", value: globalStats.active, sub: `${globalStats.binary} binary · ${globalStats.multi} multi`, icon: CheckCircle, color: "text-emerald-500" },
             { label: "Pending / Draft", value: `${globalStats.pending} / ${globalStats.draft}`, icon: Clock, color: "text-yellow-500" },
