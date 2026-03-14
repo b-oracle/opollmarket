@@ -96,6 +96,9 @@ const AdminSettings = () => {
         const d = data as any;
         setAdminFee(String(d.admin_fee_percent));
         setCreatorFee(String(d.creator_fee_percent));
+        setCreatorFeeBlue(String(d.creator_fee_blue_percent ?? d.creator_fee_percent ?? 3));
+        setCreatorFeeGold(String(d.creator_fee_gold_percent ?? d.creator_fee_percent ?? 3));
+        setReferrerCommission(String(d.referrer_commission_percent ?? 0));
         setReferralReward(String(d.referral_reward_amount ?? 5));
         setMinTokenBalance(String(d.min_token_balance ?? 10000000));
         setMinGoldTokenBalance(String(d.min_gold_token_balance ?? 100000000));
