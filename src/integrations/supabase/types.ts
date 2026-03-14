@@ -1623,6 +1623,7 @@ export type Database = {
           title: string
         }[]
       }
+      get_admin_user_stats: { Args: never; Returns: Json }
       get_copy_trade_stats: {
         Args: { _trader_id: string }
         Returns: {
