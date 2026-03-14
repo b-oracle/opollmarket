@@ -174,7 +174,7 @@ const AdminQuickTrade = () => {
 
   const cards = [
     { label: "Total Rounds", value: stats.totalRounds, icon: Timer, color: "text-primary" },
-    { label: "Total Bets", value: stats.totalBets, icon: Zap, color: "text-blue-500" },
+    { label: "Total Trades", value: stats.totalBets, icon: Zap, color: "text-blue-500" },
     { label: "Unique Traders", value: stats.uniqueTraders, icon: Users, color: "text-emerald-500" },
     { label: "Total Wagered", value: `$${stats.totalWagered.toFixed(2)}`, icon: DollarSign, color: "text-amber-500" },
     { label: "Total Payouts", value: `$${stats.totalPayout.toFixed(2)}`, icon: TrendingUp, color: "text-purple-500" },
