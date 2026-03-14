@@ -495,6 +495,35 @@ export function resetInterpolationState(asset: string) {
 const rawCache = new Map<string, { prices: [number, number][]; fetchedAt: number }>();
 const RAW_CACHE_TTL = 30_000;
 
+// Binance symbol mapping for klines API (no API key needed)
+const BINANCE_SYMS: Record<string, string> = {
+  BTC: "BTCUSDT", ETH: "ETHUSDT", BNB: "BNBUSDT", SOL: "SOLUSDT",
+  XRP: "XRPUSDT", ADA: "ADAUSDT", DOGE: "DOGEUSDT", MATIC: "MATICUSDT",
+  AVAX: "AVAXUSDT", DOT: "DOTUSDT", LINK: "LINKUSDT", SHIB: "SHIBUSDT",
+};
+
+/**
+ * Fetch 1-minute klines from Binance REST API.
+ * Returns up to 1000 data points (≈16.7 hours of 1-min candles).
+ * This gives much higher resolution than CoinGecko's 5-min intervals.
+ */
+async function fetchHistoryFromBinance(sym: string): Promise<[number, number][] | null> {
+  const binanceSym = BINANCE_SYMS[sym];
+  if (!binanceSym) return null;
+  try {
+    const r = await fetch(
+      `https://api.binance.com/api/v3/klines?symbol=${binanceSym}&interval=1m&limit=1000`
+    );
+    if (!r.ok) return null;
+    const data: any[] = await r.json();
+    if (!data?.length) return null;
+    // Each kline: [openTime, open, high, low, close, volume, closeTime, ...]
+    return data.map((k) => [k[0] as number, parseFloat(k[4])] as [number, number]);
+  } catch {
+    return null;
+  }
+}
+
 async function fetchHistoryFromCoinGecko(geckoId: string): Promise<[number, number][] | null> {
   const r = await fetch(
     `https://api.coingecko.com/api/v3/coins/${geckoId}/market_chart?vs_currency=usd&days=1`
@@ -550,7 +579,9 @@ export async function fetchCryptoHistory(
   const ccId = COINCAP_IDS[sym];
   const ccSym = CRYPTOCOMPARE_SYMS[sym];
 
+  // Binance 1-min klines first (highest resolution, no API key needed)
   const providers: Array<() => Promise<[number, number][] | null>> = [];
+  if (BINANCE_SYMS[sym]) providers.push(() => fetchHistoryFromBinance(sym));
   if (gId) providers.push(() => fetchHistoryFromCoinGecko(gId));
   if (ccId) providers.push(() => fetchHistoryFromCoinCap(ccId));
   if (ccSym) providers.push(() => fetchHistoryFromCryptoCompare(ccSym));
