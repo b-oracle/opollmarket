@@ -201,8 +201,8 @@ const AdminAnalytics = () => {
       if (polyMarkets.length > 0) {
         const polyMarketIds = polyMarkets.map((m: any) => m.id);
         const titleMap = new Map(polyMarkets.map((m: any) => [m.id, m.title]));
-        const feeTxns = await fetchPaginated<any>("transactions", "market_id, type, amount, created_at, user_id", (q: any) =>
-          q.in("market_id", polyMarketIds).in("type", ["commission", "buy"]).eq("status", "confirmed").gte("created_at", sinceISO)
+        const feeTxns = await fetchPaginated((p) =>
+          supabase.from("transactions").select("market_id, type, amount, created_at, user_id").in("market_id", polyMarketIds).in("type", ["commission", "buy"]).eq("status", "confirmed").gte("created_at", sinceISO).range(p * 1000, (p + 1) * 1000 - 1)
         );
 
         let adminTotal = 0, creatorTotal = 0, volume = 0;
