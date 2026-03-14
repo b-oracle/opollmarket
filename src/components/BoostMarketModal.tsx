@@ -186,7 +186,63 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
           </>
         )}
 
-        {step === "pay" && paymentInfo && (
+        {step === "confirm" && (
+          <>
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20">
+              <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
+              <p className="text-sm text-foreground">
+                Are you sure you want to boost this market? This action will initiate a payment that cannot be reversed.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Boost Summary</p>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Market</span>
+                  <span className="font-medium text-foreground text-right max-w-[60%] truncate">{marketTitle}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Tier</span>
+                  <span className="font-medium text-foreground">{selectedTier.label}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Duration</span>
+                  <span className="font-medium text-foreground">{selectedTier.duration}</span>
+                </div>
+                <div className="flex justify-between border-t border-border pt-2 mt-2">
+                  <span className="font-bold text-foreground">Total</span>
+                  <span className="font-bold text-foreground">${selectedTier.price} USD</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setStep("select")}
+                className="flex-1 py-3 rounded-xl font-bold text-sm border border-border bg-muted/30 text-foreground transition-all active:scale-95 flex items-center justify-center gap-1.5"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Go Back
+              </button>
+              <button
+                onClick={handleCreatePayment}
+                disabled={loading}
+                className="flex-1 py-3 rounded-xl font-bold text-sm bg-primary text-primary-foreground transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Confirm & Pay"
+                )}
+              </button>
+            </div>
+          </>
+        )}
+
           <>
             <div className="text-center space-y-1">
               <p className="text-sm text-muted-foreground">
