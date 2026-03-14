@@ -1651,6 +1651,18 @@ export type Database = {
           verification_level: string
         }[]
       }
+      get_prediction_leaderboard: {
+        Args: { _cutoff?: string; _limit?: number; _sort?: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          pnl: number
+          trades: number
+          user_id: string
+          verification_level: string
+          volume: number
+        }[]
+      }
       get_quick_trade_leaderboard:
         | {
             Args: { _limit?: number }
