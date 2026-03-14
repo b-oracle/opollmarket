@@ -459,6 +459,7 @@ export default function QuickTrade() {
   const lastFetchTimeRef = useRef(0);
   const [streamingPrice, setStreamingPrice] = useState<number | null>(null);
   const wsActiveRef = useRef(false);
+  const lastWsTickAtRef = useRef(0);
   const streamRunIdRef = useRef(0);
   // Reset price state when asset changes
   useEffect(() => {
@@ -473,6 +474,7 @@ export default function QuickTrade() {
     setActiveRound(null);
     setUserBet(null);
     wsActiveRef.current = false;
+    lastWsTickAtRef.current = 0;
     consecutiveFailsRef.current = 0;
     lastFetchTimeRef.current = 0;
 
