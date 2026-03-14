@@ -209,8 +209,11 @@ const AdminPredictions = () => {
     const cancelledMarkets = filteredMarkets.filter(m => m.status === "cancelled").length;
     const activeMarkets = filteredMarkets.filter(m => m.status === "active").length;
 
+    const totalSells = filteredTx.filter(t => t.type === "sell").reduce((s, t) => s + Number(t.amount), 0);
+    const netLiquidity = totalLiquidity + totalWagered - totalPayouts - totalRefunds - totalSells;
+
     return {
-      totalMarkets, totalPredictions, uniqueTraders, totalWagered, totalLiquidity,
+      totalMarkets, totalPredictions, uniqueTraders, totalWagered, totalLiquidity, netLiquidity,
       totalCreationFees, totalAiFees, totalCommissions, totalPayouts, totalRefunds,
       totalForfeitures, totalBoosts, platformProfit,
       categoryData, chartData, topTraders, resolvedMarkets, cancelledMarkets, activeMarkets,
