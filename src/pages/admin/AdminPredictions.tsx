@@ -369,7 +369,7 @@ const AdminPredictions = () => {
         </div>
       )}
 
-      {activeTab === "bets" && (
+      {activeTab === "predictions" && (
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
