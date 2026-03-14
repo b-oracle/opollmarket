@@ -2301,8 +2301,7 @@ const Create = () => {
                 </div>
               </div>
 
-              {/* Fee breakdown */}
-              {feeBypass && initialLiquidity && (
+              {(feeBypass || (autoResolve && autoResolveFee > 0)) && initialLiquidity && (
                 <div className="glass rounded-xl p-4">
                   <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-primary" />
@@ -2313,13 +2312,21 @@ const Create = () => {
                       <span className="text-muted-foreground">Initial Liquidity</span>
                       <span className="font-medium">${initialLiquidity} USDT</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Creation Fee <span className="text-[10px]">(non-refundable)</span></span>
-                      <span className="font-medium">${marketCreationFee} USDT</span>
-                    </div>
+                    {feeBypass && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Creation Fee <span className="text-[10px]">(non-refundable)</span></span>
+                        <span className="font-medium">${marketCreationFee} USDT</span>
+                      </div>
+                    )}
+                    {autoResolve && autoResolveFee > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Auto-Resolve Fee <span className="text-[10px]">(platform)</span></span>
+                        <span className="font-medium">${autoResolveFee} USDT</span>
+                      </div>
+                    )}
                     <div className="border-t border-border pt-1.5 flex justify-between">
                       <span className="font-semibold">Total</span>
-                      <span className="font-bold text-primary">${(parseFloat(initialLiquidity) + marketCreationFee).toFixed(2)} USDT</span>
+                      <span className="font-bold text-primary">${(parseFloat(initialLiquidity) + (feeBypass ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0)).toFixed(2)} USDT</span>
                     </div>
                   </div>
                 </div>
