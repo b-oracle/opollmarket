@@ -459,7 +459,7 @@ const Index = () => {
           {!isLoading && filteredMarkets.length === 0 && (
             <div className="text-center py-8 text-muted-foreground text-sm">No markets found.</div>
           )}
-          {filteredMarkets.map((market, i) => {
+          {visibleMarkets.map((market, i) => {
             const yesPercent = Math.round(market.yesPrice * 100);
             const noPercent = 100 - yesPercent;
             const isMulti = market.marketType !== "binary";
