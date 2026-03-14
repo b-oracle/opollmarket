@@ -333,57 +333,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // --- Referral reward on first prediction ---
-    const { count: posCount } = await supabase
-      .from("positions")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId);
-
-    if (posCount === 1 && referralRewardAmount > 0) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("referred_by")
-        .eq("id", userId)
-        .single();
-
-      if (profile?.referred_by) {
-        // Check idempotency
-        const { count: existingReward } = await supabase
-          .from("referral_rewards")
-          .select("id", { count: "exact", head: true })
-          .eq("referrer_id", profile.referred_by)
-          .eq("referred_id", userId);
-
-        if (!existingReward || existingReward === 0) {
-          const { data: referrerBal } = await supabase
-            .from("balances")
-            .select("bonus_balance")
-            .eq("user_id", profile.referred_by)
-            .eq("currency", "USDT")
-            .single();
-
-          if (referrerBal) {
-            await supabase.from("balances").update({
-              bonus_balance: Number(referrerBal.bonus_balance) + referralRewardAmount,
-              updated_at: new Date().toISOString(),
-            }).eq("user_id", profile.referred_by).eq("currency", "USDT");
-          }
-
-          await supabase.from("referral_rewards").insert({
-            referrer_id: profile.referred_by,
-            referred_id: userId,
-            amount: referralRewardAmount,
-          });
-
-          await supabase.from("notifications").insert({
-            user_id: profile.referred_by,
-            title: "Referral Reward! 🎉",
-            message: `You earned $${referralRewardAmount} bonus for a successful referral!`,
-            type: "referral",
-          });
-        }
-      }
-    }
+    // Referral reward on first prediction is handled by the
+    // handle_referral_reward database trigger — no duplicate logic needed.
 
     // Trigger limit order matching
     try {

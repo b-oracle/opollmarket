@@ -505,6 +505,11 @@ Deno.serve(async (req) => {
         }
       } else {
         const distributable = totalLosePool * (1 - platformFee);
+        const availablePool = totalWinPool + distributable;
+
+        // Pre-calculate all payouts with streak multipliers
+        const payoutCalcs: { bet: any; payout: number; newStreak: number; multiplier: number; bestStreak: number }[] = [];
+        let totalCalcPayout = 0;
 
         for (const bet of winners) {
           const streak = await getOrCreateStreak(supabase, bet.user_id);
@@ -513,6 +518,18 @@ Deno.serve(async (req) => {
           const share = Number(bet.amount) / totalWinPool;
           const basePayout = Number(bet.amount) + distributable * share;
           const payout = basePayout * multiplier;
+          payoutCalcs.push({ bet, payout, newStreak, multiplier, bestStreak: streak.best_streak || 0 });
+          totalCalcPayout += payout;
+        }
+
+        // Cap total payouts at available pool to prevent money creation from streak multipliers
+        const scaleFactor = totalCalcPayout > availablePool ? availablePool / totalCalcPayout : 1;
+        if (scaleFactor < 1) {
+          console.log(`resolve-quick-round: Capping payouts, scale=${scaleFactor.toFixed(4)}, calc=${totalCalcPayout.toFixed(2)}, available=${availablePool.toFixed(2)}`);
+        }
+
+        for (const { bet, payout: rawPayout, newStreak, multiplier, bestStreak } of payoutCalcs) {
+          const payout = rawPayout * scaleFactor;
 
           await supabase
             .from("quick_bets")
@@ -525,7 +542,7 @@ Deno.serve(async (req) => {
             .upsert({
               user_id: bet.user_id,
               current_streak: newStreak,
-              best_streak: Math.max(newStreak, streak.best_streak || 0),
+              best_streak: Math.max(newStreak, bestStreak),
               updated_at: new Date().toISOString(),
             }, { onConflict: "user_id", ignoreDuplicates: false });
 
