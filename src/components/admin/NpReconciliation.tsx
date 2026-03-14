@@ -57,7 +57,7 @@ interface Summary {
   np_total_outcome: number;
   np_total_gross: number;
   total_excess: number;
-  np_fees_retained: number;
+  unmatched_gap: number;
   matched_count: number;
   affected_count: number;
   db_no_np_record: number;

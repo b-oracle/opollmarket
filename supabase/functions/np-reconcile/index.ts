@@ -462,7 +462,8 @@ Deno.serve(async (req) => {
       np_total_outcome: Math.round(totalNpOutcome * 100) / 100,
       np_total_gross: Math.round(totalNpGross * 100) / 100,
       total_excess: Math.round(totalExcess * 100) / 100,
-      np_fees_retained: Math.round((totalNpGross - totalNpOutcome) * 100) / 100,
+      // gross - credited shows how much was requested but not credited (fees + rounding + partial payments)
+      unmatched_gap: Math.round((totalNpGross - totalDbCredited) * 100) / 100,
       matched_count: matched.length,
       affected_count: affectedDeposits.length,
       db_no_np_record: dbConfirmedNoNpRecord.length,
