@@ -165,8 +165,50 @@ const AdminUsers = () => {
     }
   };
 
+  const [stats, setStats] = useState({ totalUsers: 0, totalBalance: 0, totalDeposits: 0, totalWithdrawals: 0, totalEarnings: 0 });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const [{ count: userCount }, { data: balData }, { data: depData }, { data: wdData }, { data: earnData }] = await Promise.all([
+        supabase.from("profiles").select("*", { count: "exact", head: true }),
+        supabase.from("balances").select("amount"),
+        supabase.from("transactions").select("amount").eq("type", "deposit").eq("status", "confirmed"),
+        supabase.from("transactions").select("amount").eq("type", "withdrawal").eq("status", "confirmed"),
+        supabase.from("transactions").select("amount").eq("type", "payout").eq("status", "confirmed"),
+      ]);
+      setStats({
+        totalUsers: userCount ?? 0,
+        totalBalance: balData?.reduce((s, b) => s + Number(b.amount), 0) ?? 0,
+        totalDeposits: depData?.reduce((s, d) => s + Number(d.amount), 0) ?? 0,
+        totalWithdrawals: wdData?.reduce((s, w) => s + Number(w.amount), 0) ?? 0,
+        totalEarnings: earnData?.reduce((s, e) => s + Number(e.amount), 0) ?? 0,
+      });
+    };
+    fetchStats();
+  }, []);
+
+  const statCards = [
+    { label: "Total Users", value: stats.totalUsers.toLocaleString(), icon: "👥" },
+    { label: "Total Balances", value: `$${stats.totalBalance.toFixed(2)}`, icon: "💰" },
+    { label: "Total Deposits", value: `$${stats.totalDeposits.toFixed(2)}`, icon: "📥" },
+    { label: "Total Earnings", value: `$${stats.totalEarnings.toFixed(2)}`, icon: "📈" },
+    { label: "Total Withdrawals", value: `$${stats.totalWithdrawals.toFixed(2)}`, icon: "📤" },
+  ];
+
   return (
     <div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+        {statCards.map((s) => (
+          <div key={s.label} className="bg-card border border-border rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-lg">{s.icon}</span>
+              <p className="text-[11px] text-muted-foreground font-medium">{s.label}</p>
+            </div>
+            <p className="text-lg font-bold">{s.value}</p>
+          </div>
+        ))}
+      </div>
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <h2 className="text-xl sm:text-2xl font-bold">Users ({totalCount})</h2>
         <div className="relative w-full sm:w-72">
