@@ -344,8 +344,21 @@ const AdminSettings = () => {
               <Input id="adminFee" type="number" min={0} max={100} step={0.1} value={adminFee} onChange={(e) => setAdminFee(e.target.value)} placeholder="2" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="creatorFee">Market Creator Fee (%)</Label>
+              <Label htmlFor="creatorFee">Creator Fee — No Tick (%)</Label>
               <Input id="creatorFee" type="number" min={0} max={100} step={0.1} value={creatorFee} onChange={(e) => setCreatorFee(e.target.value)} placeholder="3" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="creatorFeeBlue">Creator Fee — Blue Tick (%)</Label>
+              <Input id="creatorFeeBlue" type="number" min={0} max={100} step={0.1} value={creatorFeeBlue} onChange={(e) => setCreatorFeeBlue(e.target.value)} placeholder="4" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="creatorFeeGold">Creator Fee — Gold Tick (%)</Label>
+              <Input id="creatorFeeGold" type="number" min={0} max={100} step={0.1} value={creatorFeeGold} onChange={(e) => setCreatorFeeGold(e.target.value)} placeholder="5" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="referrerCommission">Referrer Commission (%)</Label>
+              <Input id="referrerCommission" type="number" min={0} max={100} step={0.1} value={referrerCommission} onChange={(e) => setReferrerCommission(e.target.value)} placeholder="1" />
+              <p className="text-[10px] text-muted-foreground">% of each trade paid to the trader's referrer</p>
             </div>
 
             <Card className="border-dashed">
