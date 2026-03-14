@@ -46,7 +46,7 @@ const AdminQuickTrade = () => {
   const [rounds, setRounds] = useState<RoundRow[]>([]);
   const [bets, setBets] = useState<BetRow[]>([]);
   const [profileMap, setProfileMap] = useState<Map<string, string>>(new Map());
-  const [bonusTxs, setBonusTxs] = useState<{ amount: number; created_at: string }[]>([]);
+  const [bonusTxs, setBonusTxs] = useState<{ user_id: string; amount: number; created_at: string }[]>([]);
   const [roundPage, setRoundPage] = useState(1);
   const [betPage, setBetPage] = useState(1);
   const [activeTab, setActiveTab] = useState<"overview" | "rounds" | "trades">("overview");
@@ -76,7 +76,7 @@ const AdminQuickTrade = () => {
       const [roundData, betData, bonusTxData] = await Promise.all([
         fetchAllData("quick_rounds"),
         fetchAllData("quick_bets"),
-        supabase.from("transactions").select("amount, created_at").eq("type", "qt_one_sided_bonus").eq("status", "confirmed").then(r => r.data || []),
+        supabase.from("transactions").select("user_id, amount, created_at").eq("type", "qt_one_sided_bonus").eq("status", "confirmed").then(r => r.data || []),
       ]);
       setRounds(roundData || []);
       setBets(betData || []);
@@ -151,19 +151,29 @@ const AdminQuickTrade = () => {
       };
     });
 
-    // Top traders by profit (settled bets only)
+    // Top traders by profit (settled bets only + bonus transactions)
     const settledBets = filteredBets.filter(b => b.status === "won" || b.status === "lost" || b.status === "refunded");
-    const traderMap = new Map<string, { wagered: number; won: number; refunded: number; bets: number }>();
+    const traderMap = new Map<string, { wagered: number; won: number; refunded: number; bonus: number; bets: number }>();
     settledBets.forEach(b => {
-      const e = traderMap.get(b.user_id) || { wagered: 0, won: 0, refunded: 0, bets: 0 };
+      const e = traderMap.get(b.user_id) || { wagered: 0, won: 0, refunded: 0, bonus: 0, bets: 0 };
       e.wagered += Number(b.amount);
       e.bets++;
       if (b.status === "won") e.won += Number(b.payout || 0);
       if (b.status === "refunded") e.refunded += Number(b.payout || 0);
       traderMap.set(b.user_id, e);
     });
+    // Add bonus transactions per user
+    const filteredBonusByUser = new Map<string, number>();
+    filteredBonusTxs.forEach((t: any) => {
+      const uid = t.user_id;
+      if (uid) filteredBonusByUser.set(uid, (filteredBonusByUser.get(uid) || 0) + Number(t.amount));
+    });
+    for (const [uid, bonus] of filteredBonusByUser.entries()) {
+      const e = traderMap.get(uid);
+      if (e) e.bonus = bonus;
+    }
     const topTraders = Array.from(traderMap.entries())
-      .map(([id, d]) => ({ id, name: profileMap.get(id) || id.slice(0, 8), profit: (d.won + d.refunded) - d.wagered, bets: d.bets, wagered: d.wagered }))
+      .map(([id, d]) => ({ id, name: profileMap.get(id) || id.slice(0, 8), profit: (d.won + d.refunded + d.bonus) - d.wagered, bets: d.bets, wagered: d.wagered }))
       .sort((a, b) => b.profit - a.profit)
       .slice(0, 10);
 
