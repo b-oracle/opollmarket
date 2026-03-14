@@ -250,6 +250,8 @@ const Feed = () => {
   const { bookmarkedIds } = useBookmarkedMarkets();
   const { user } = useAuth();
   const [feedTab, setFeedTab] = useState<"foryou" | "bookmarks">("foryou");
+  const [visibleCount, setVisibleCount] = useState(20);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {track("page_view", { page: "feed" });}, []);
 
