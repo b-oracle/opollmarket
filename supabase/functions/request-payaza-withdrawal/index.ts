@@ -365,9 +365,9 @@ async function tryPayazaPayout(params: PayazaPayoutParams): Promise<boolean> {
     const encodedSecret = encodePayazaKey(secretKey);
     const encodedMerchant = merchantKey ? encodePayazaKey(merchantKey) : null;
 
+    // Only use the secret key for auth (merchant key is an account reference, not an API key)
     const authVariants: string[] = [];
     authVariants.push(`Payaza ${encodedSecret}`);
-    if (encodedMerchant) authVariants.push(`Payaza ${encodedMerchant}`);
 
     for (const authValue of authVariants) {
       const authLabel = authValue.substring(0, 30) + "...";
