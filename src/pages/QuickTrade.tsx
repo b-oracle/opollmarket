@@ -741,11 +741,21 @@ export default function QuickTrade() {
             });
           }, 80);
 
-          // Store micro-tick interval for cleanup
-          const origCleanup = cleanupFn;
-          cleanupFn = () => { origCleanup?.(); clearInterval(microTickIv); };
+          // Extend cleanup to clear micro-tick interval
+          const origPollIv = pollIv;
+          return () => {
+            mounted = false;
+            wsActiveRef.current = false;
+            unsubWs();
+            if (cryptoInterpId) clearInterval(cryptoInterpId);
+            if (pendingRaf) cancelAnimationFrame(pendingRaf);
+            clearTimeout(fallbackTimer);
+            if (origPollIv) clearInterval(origPollIv);
+            if (pollIv) clearInterval(pollIv);
+            clearInterval(microTickIv);
+          };
         }
-      }, 3000);
+      }, 1500);
 
       return () => {
         mounted = false;
