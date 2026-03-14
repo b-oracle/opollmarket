@@ -474,8 +474,10 @@ Deno.serve(async (req) => {
           const streak = await getOrCreateStreak(supabase, bet.user_id);
           const newStreak = (streak.current_streak || 0) + 1;
           const multiplier = getStreakMultiplier(newStreak, s2, s3, s4, s5);
-          const baseRefund = Number(bet.amount) * (1 - platformFee);
-          const payout = baseRefund * multiplier;
+          const basePayout = qtOneSidedBonus
+            ? Number(bet.amount) * 1.005
+            : Number(bet.amount) * (1 - platformFee);
+          const payout = basePayout * multiplier;
 
           await supabase
             .from("quick_bets")
