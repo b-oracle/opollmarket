@@ -190,6 +190,7 @@ const AdminUsers = () => {
     { label: "Total Balances", value: `$${stats.totalBalance.toFixed(2)}`, icon: "💰" },
     { label: "Total Deposits", value: `$${stats.totalDeposits.toFixed(2)}`, icon: "📥" },
     { label: "Total Earnings", value: `$${stats.totalEarnings.toFixed(2)}`, icon: "📈" },
+    { label: "Total Losses", value: `$${stats.totalLosses.toFixed(2)}`, icon: "📉" },
     { label: "Total Withdrawals", value: `$${stats.totalWithdrawals.toFixed(2)}`, icon: "📤" },
   ];
 
