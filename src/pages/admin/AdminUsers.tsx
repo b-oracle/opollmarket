@@ -165,7 +165,7 @@ const AdminUsers = () => {
     }
   };
 
-  const [stats, setStats] = useState({ totalUsers: 0, totalBalance: 0, totalDeposits: 0, totalWithdrawals: 0, totalEarnings: 0 });
+  const [stats, setStats] = useState({ totalUsers: 0, totalBalance: 0, totalDeposits: 0, totalWithdrawals: 0, totalEarnings: 0, totalLosses: 0 });
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -178,6 +178,7 @@ const AdminUsers = () => {
           totalDeposits: Number(d.total_deposits) || 0,
           totalWithdrawals: Number(d.total_withdrawals) || 0,
           totalEarnings: Number(d.total_earnings) || 0,
+          totalLosses: Number(d.total_losses) || 0,
         });
       }
     };
@@ -189,12 +190,13 @@ const AdminUsers = () => {
     { label: "Total Balances", value: `$${stats.totalBalance.toFixed(2)}`, icon: "💰" },
     { label: "Total Deposits", value: `$${stats.totalDeposits.toFixed(2)}`, icon: "📥" },
     { label: "Total Earnings", value: `$${stats.totalEarnings.toFixed(2)}`, icon: "📈" },
+    { label: "Total Losses", value: `$${stats.totalLosses.toFixed(2)}`, icon: "📉" },
     { label: "Total Withdrawals", value: `$${stats.totalWithdrawals.toFixed(2)}`, icon: "📤" },
   ];
 
   return (
     <div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 mb-6">
         {statCards.map((s) => (
           <div key={s.label} className="bg-card border border-border rounded-xl p-4">
             <div className="flex items-center gap-2 mb-1">
