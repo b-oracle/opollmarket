@@ -3,45 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { TrendingUp, Users, MessageSquare, ShoppingBag, Loader2, DollarSign, Activity, Gift, UserPlus, Zap, UserCheck, Heart, ArrowDownLeft, ArrowUpRight, Wallet, Scale, Info } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
 
-  const depositRecon = useMemo(() => {
-    const rangeDef = DEPOSIT_RANGES.find(r => r.key === depositRange)!;
-    let cutoff = "";
-    if (rangeDef.days) {
-      const d = new Date();
-      d.setDate(d.getDate() - rangeDef.days);
-      cutoff = d.toISOString();
-    }
-    const filtered = rangeDef.days ? allDepositTxns.filter(t => t.created_at >= cutoff) : allDepositTxns;
-
-    const gross = filtered.reduce((s, t) => s + Number(t.amount), 0);
-    const grossCount = filtered.length;
-    const confirmed = filtered.filter(t => t.status === "confirmed");
-    const partial = filtered.filter(t => t.status === "partial");
-    const pending = filtered.filter(t => t.status === "pending");
-    const expired = filtered.filter(t => t.status === "expired");
-
-    const confirmedAmt = confirmed.reduce((s, t) => s + Number(t.amount), 0);
-    const partialAmt = partial.reduce((s, t) => s + Number(t.amount), 0);
-    const pendingAmt = pending.reduce((s, t) => s + Number(t.amount), 0);
-    const expiredAmt = expired.reduce((s, t) => s + Number(t.amount), 0);
-    const credited = confirmedAmt + partialAmt;
-
-    // Provider breakdown from credited deposits
-    const provMap = new Map<string, { amount: number; count: number }>();
-    [...confirmed, ...partial].forEach(t => {
-      const key = t.payment_provider === "payaza" ? "fiat" : "crypto";
-      const e = provMap.get(key) || { amount: 0, count: 0 };
-      e.amount += Number(t.amount);
-      e.count++;
-      provMap.set(key, e);
-    });
-    const providers = Array.from(provMap.entries()).map(([provider, d]) => ({ provider, ...d }));
-
-    return {
-      gross, grossCount, credited, confirmedCount: confirmed.length, partialCount: partial.length,
-      pendingAmt, pendingCount: pending.length, expiredAmt, expiredCount: expired.length, providers,
-    };
-  }, [allDepositTxns, depositRange]);
 
 interface Stats {
   totalMarkets: number;
