@@ -256,18 +256,7 @@ async function handleResolve(
     for (const pos of winningPositions) {
       const payout = pos.shares;
 
-      const { data: balance } = await adminClient
-        .from("balances")
-        .select("amount")
-        .eq("user_id", pos.user_id)
-        .single();
-
-      if (balance) {
-        await adminClient
-          .from("balances")
-          .update({ amount: balance.amount + payout, updated_at: new Date().toISOString() })
-          .eq("user_id", pos.user_id);
-      }
+      await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout });
 
       await adminClient.from("transactions").insert({
         user_id: pos.user_id,
