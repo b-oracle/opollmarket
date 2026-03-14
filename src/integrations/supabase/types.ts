@@ -750,6 +750,8 @@ export type Database = {
           polymarket_id: string | null
           resolution_source: string
           resolved_side: string | null
+          simulated_participants: number
+          simulated_volume: number
           sport_league: string | null
           sport_match_id: string | null
           sport_predicted_outcome: string | null
@@ -794,6 +796,8 @@ export type Database = {
           polymarket_id?: string | null
           resolution_source: string
           resolved_side?: string | null
+          simulated_participants?: number
+          simulated_volume?: number
           sport_league?: string | null
           sport_match_id?: string | null
           sport_predicted_outcome?: string | null
@@ -838,6 +842,8 @@ export type Database = {
           polymarket_id?: string | null
           resolution_source?: string
           resolved_side?: string | null
+          simulated_participants?: number
+          simulated_volume?: number
           sport_league?: string | null
           sport_match_id?: string | null
           sport_predicted_outcome?: string | null
