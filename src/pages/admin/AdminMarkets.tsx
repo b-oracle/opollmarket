@@ -66,6 +66,23 @@ interface EditState {
   resolution_source: string;
   trending: boolean;
 }
+interface MarketStatsData {
+  total: number;
+  active: number;
+  binary: number;
+  multi: number;
+  draft: number;
+  pending: number;
+  ended: number;
+  resolved: number;
+  cancelled: number;
+  totalVolume: number;
+  totalParticipants: number;
+  totalLiquidity: number;
+  trending: number;
+  avgVolume: number;
+  polymarket: number;
+}
 
 const AdminMarkets = () => {
   const { canEdit } = useAdminContext();
