@@ -468,7 +468,14 @@ const Portfolio = () => {
           </div>
 
           <div className="grid grid-cols-3 gap-3 pt-3 border-t border-border">
-            <div className="text-center">
+            <div className="col-span-3 flex justify-end mb-1">
+              <button
+                onClick={openPortfolioShare}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold hover:bg-primary/20 transition-all active:scale-95"
+              >
+                <Share2 className="w-3 h-3" /> Share
+              </button>
+            </div>
               <div className="flex items-center justify-center gap-1 text-muted-foreground mb-0.5">
                 <DollarSign className="w-3 h-3" />
                 <span className="text-[10px]">Invested</span>
