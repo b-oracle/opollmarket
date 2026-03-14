@@ -223,62 +223,42 @@ const useReferralLeaderboard = (period: TimePeriod) => {
   return { referrers, loading };
 };
 
-// ── Trading Leaderboard ───────────────────────────────────────────────
-const useTradingLeaderboard = (period: TimePeriod) => {
+// ── Trading Leaderboard (settled transactions) ───────────────────────
+const useTradingLeaderboard = (period: TimePeriod, sort: TraderSort = "pnl") => {
   const [traders, setTraders] = useState<Trader[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
     (async () => {
-      let query = supabase.from("positions").select("user_id, side, shares, avg_price, market_id, created_at");
       const cutoff = getCutoffDate(period);
-      if (cutoff) query = query.gte("created_at", cutoff);
+      const sortMap: Record<TraderSort, string> = { pnl: "pnl", volume: "volume", trades: "trades" };
+      const { data } = await supabase.rpc("get_prediction_leaderboard", {
+        _limit: 50,
+        _sort: sortMap[sort],
+        ...(cutoff ? { _cutoff: cutoff } : {}),
+      } as any);
 
-      const { data: positions } = await query;
-      const { data: markets } = await supabase.from("markets").select("id, yes_price, no_price");
-
-      if (!positions || positions.length === 0) {
+      if (!data || (data as any[]).length === 0) {
         setTraders([]);
         setLoading(false);
         return;
       }
 
-      const mMap = new Map((markets || []).map((m) => [m.id, m]));
-
-      const userMap = new Map<string, { pnl: number; trades: number; volume: number }>();
-      for (const pos of positions) {
-        const market = mMap.get(pos.market_id);
-        if (!market) continue;
-        const currentPrice = pos.side === "yes" ? market.yes_price : market.no_price;
-        const pnl = pos.shares * (currentPrice - pos.avg_price);
-        const volume = pos.shares * pos.avg_price;
-
-        const e = userMap.get(pos.user_id) || { pnl: 0, trades: 0, volume: 0 };
-        e.pnl += pnl;
-        e.trades += 1;
-        e.volume += volume;
-        userMap.set(pos.user_id, e);
-      }
-
-      const ids = Array.from(userMap.keys());
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, display_name, avatar_url, verification_level")
-        .in("id", ids);
-
-      const pMap = new Map((profiles || []).map((p) => [p.id, p]));
-
       setTraders(
-        ids.map((id) => {
-          const s = userMap.get(id)!;
-          const p = pMap.get(id);
-          return { userId: id, name: p?.display_name || "Anonymous", avatar: p?.avatar_url || null, verificationLevel: (p?.verification_level || "none") as VerificationLevel, ...s };
-        })
+        (data as any[]).map((d) => ({
+          userId: d.user_id,
+          name: d.display_name || "Anonymous",
+          avatar: d.avatar_url || null,
+          verificationLevel: (d.verification_level || "none") as VerificationLevel,
+          pnl: Number(d.pnl),
+          volume: Number(d.volume),
+          trades: Number(d.trades),
+        }))
       );
       setLoading(false);
     })();
-  }, [period]);
+  }, [period, sort]);
 
   return { traders, loading };
 };
