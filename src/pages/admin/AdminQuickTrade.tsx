@@ -143,17 +143,19 @@ const AdminQuickTrade = () => {
       };
     });
 
-    // Top traders by profit
-    const traderMap = new Map<string, { wagered: number; won: number; bets: number }>();
-    filteredBets.forEach(b => {
-      const e = traderMap.get(b.user_id) || { wagered: 0, won: 0, bets: 0 };
+    // Top traders by profit (settled bets only)
+    const settledBets = filteredBets.filter(b => b.status === "won" || b.status === "lost" || b.status === "refunded");
+    const traderMap = new Map<string, { wagered: number; won: number; refunded: number; bets: number }>();
+    settledBets.forEach(b => {
+      const e = traderMap.get(b.user_id) || { wagered: 0, won: 0, refunded: 0, bets: 0 };
       e.wagered += Number(b.amount);
       e.bets++;
       if (b.status === "won") e.won += Number(b.payout || 0);
+      if (b.status === "refunded") e.refunded += Number(b.payout || 0);
       traderMap.set(b.user_id, e);
     });
     const topTraders = Array.from(traderMap.entries())
-      .map(([id, d]) => ({ id, name: profileMap.get(id) || id.slice(0, 8), profit: d.won - d.wagered, bets: d.bets, wagered: d.wagered }))
+      .map(([id, d]) => ({ id, name: profileMap.get(id) || id.slice(0, 8), profit: (d.won + d.refunded) - d.wagered, bets: d.bets, wagered: d.wagered }))
       .sort((a, b) => b.profit - a.profit)
       .slice(0, 10);
 
