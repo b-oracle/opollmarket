@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin, ShieldAlert, ShieldCheck, Ban } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin, ShieldAlert, ShieldCheck, Ban, BarChart3, Users, DollarSign, Layers, Clock, Archive } from "lucide-react";
 import { toast } from "sonner";
 import { logAuditEvent } from "@/lib/auditLog";
 import { motion, AnimatePresence } from "framer-motion";
@@ -66,6 +66,23 @@ interface EditState {
   resolution_source: string;
   trending: boolean;
 }
+interface MarketStatsData {
+  total: number;
+  active: number;
+  binary: number;
+  multi: number;
+  draft: number;
+  pending: number;
+  ended: number;
+  resolved: number;
+  cancelled: number;
+  totalVolume: number;
+  totalParticipants: number;
+  totalLiquidity: number;
+  trending: number;
+  avgVolume: number;
+  polymarket: number;
+}
 
 const AdminMarkets = () => {
   const { canEdit } = useAdminContext();
@@ -91,6 +108,38 @@ const AdminMarkets = () => {
   const [moderatorNameMap, setModeratorNameMap] = useState<Map<string, string>>(new Map());
   const [endedCount, setEndedCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
+
+  // Global stats (fetched once, independent of filter)
+  const [globalStats, setGlobalStats] = useState<MarketStatsData | null>(null);
+
+  const fetchGlobalStats = async () => {
+    const { data } = await supabase
+      .from("markets")
+      .select("status, market_type, volume, participants, liquidity, trending, polymarket_id");
+    if (!data) return;
+    const stats: MarketStatsData = {
+      total: data.length,
+      active: data.filter(m => m.status === "active").length,
+      binary: data.filter(m => m.market_type === "binary").length,
+      multi: data.filter(m => m.market_type === "multi").length,
+      draft: data.filter(m => m.status === "draft").length,
+      pending: data.filter(m => m.status === "pending").length,
+      ended: data.filter(m => m.status === "ended").length,
+      resolved: data.filter(m => m.status === "resolved").length,
+      cancelled: data.filter(m => m.status === "cancelled").length,
+      totalVolume: data.reduce((s, m) => s + Number(m.volume || 0), 0),
+      totalParticipants: data.reduce((s, m) => s + Number(m.participants || 0), 0),
+      totalLiquidity: data.filter(m => m.status === "active").reduce((s, m) => s + Number(m.liquidity || 0), 0),
+      trending: data.filter(m => m.trending).length,
+      avgVolume: 0,
+      polymarket: data.filter(m => m.polymarket_id).length,
+    };
+    const activeWithVolume = data.filter(m => m.status === "active" && Number(m.volume) > 0);
+    stats.avgVolume = activeWithVolume.length > 0 ? stats.totalVolume / activeWithVolume.length : 0;
+    setGlobalStats(stats);
+  };
+
+  useEffect(() => { fetchGlobalStats(); }, []);
 
   const canFinalApprove = isSuperAdmin || isAdmin;
   const isModeratorOnly = isModerator && !isSuperAdmin && !isAdmin;
@@ -359,6 +408,29 @@ const AdminMarkets = () => {
           )}
         </div>
       </div>
+
+      {/* Analytics Summary Cards */}
+      {globalStats && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+          {[
+            { label: "Active", value: globalStats.active, sub: `${globalStats.binary} binary · ${globalStats.multi} multi`, icon: CheckCircle, color: "text-emerald-500" },
+            { label: "Pending / Draft", value: `${globalStats.pending} / ${globalStats.draft}`, icon: Clock, color: "text-yellow-500" },
+            { label: "Ended → Resolve", value: globalStats.ended, icon: Gavel, color: "text-orange-500" },
+            { label: "Resolved", value: globalStats.resolved, sub: `${globalStats.cancelled} cancelled`, icon: Archive, color: "text-blue-500" },
+            { label: "Total Volume", value: `$${globalStats.totalVolume >= 1_000_000 ? (globalStats.totalVolume / 1_000_000).toFixed(1) + "M" : globalStats.totalVolume >= 1_000 ? (globalStats.totalVolume / 1_000).toFixed(1) + "K" : globalStats.totalVolume.toFixed(0)}`, sub: `${globalStats.totalParticipants.toLocaleString()} participants`, icon: DollarSign, color: "text-primary" },
+            { label: "Trending", value: globalStats.trending, sub: `${globalStats.polymarket} polymarket`, icon: TrendingUp, color: "text-pink-500" },
+          ].map((card) => (
+            <div key={card.label} className="bg-card border border-border/50 rounded-xl p-3 space-y-1">
+              <div className="flex items-center gap-1.5">
+                <card.icon className={`w-3.5 h-3.5 ${card.color}`} />
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">{card.label}</span>
+              </div>
+              <p className="text-lg font-bold">{card.value}</p>
+              {card.sub && <p className="text-[10px] text-muted-foreground">{card.sub}</p>}
+            </div>
+          ))}
+        </div>
+      )}
       <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 overflow-x-auto scrollbar-hide">
         {(["all", "pending", "active", "ended", "resolved", "cancelled", "polymarket"] as const).map((f) => (
           <button
