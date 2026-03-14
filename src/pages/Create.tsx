@@ -1466,7 +1466,7 @@ const Create = () => {
           )}
         </motion.div>
 
-        {/* Draft resume banner */}
+        {/* Draft resume banner — blocks form until resolved */}
         {!draftLoading && draftBannerDraft && !draftId && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -1477,12 +1477,13 @@ const Create = () => {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold">Unfinished Draft</p>
               <p className="text-xs text-muted-foreground truncate">{draftBannerDraft.title}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">You must complete or discard your existing draft before creating a new market.</p>
               <div className="flex gap-2 mt-2">
                 <button
                   onClick={handleResumeDraft}
                   className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold transition-all active:scale-95"
                 >
-                  Resume
+                  Resume Draft
                 </button>
                 <button
                   onClick={handleDiscardDraft}
@@ -1494,6 +1495,10 @@ const Create = () => {
             </div>
           </motion.div>
         )}
+
+        {/* Block form when draft exists but not resumed */}
+        {draftBannerDraft && !draftId ? null : (<>
+
 
         <div className="flex items-center gap-2 mb-6">
           {[1, 2, 3].map((s) => (
