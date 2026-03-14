@@ -351,7 +351,7 @@ const AdminQuickTrade = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-medium truncate">{t.name}</span>
-                          <span className={`text-xs font-semibold ${t.profit >= 0 ? "text-chart-3" : "text-destructive"}`}>{t.profit >= 0 ? "+" : ""}${t.profit.toFixed(2)}</span>
+                          <span className={`text-xs font-semibold ${t.profit >= 0 ? "text-green-500" : "text-red-500"}`}>{t.profit >= 0 ? "+" : ""}${t.profit.toFixed(2)}</span>
                         </div>
                         <span className="text-[10px] text-muted-foreground">{t.bets} trades · ${t.wagered.toFixed(0)} wagered</span>
                       </div>
