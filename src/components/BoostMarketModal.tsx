@@ -243,6 +243,7 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
           </>
         )}
 
+        {step === "pay" && paymentInfo && (
           <>
             <div className="text-center space-y-1">
               <p className="text-sm text-muted-foreground">
