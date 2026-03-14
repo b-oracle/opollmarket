@@ -518,7 +518,32 @@ async function fetchHistoryFromBinance(sym: string): Promise<[number, number][] 
     const data: any[] = await r.json();
     if (!data?.length) return null;
     // Each kline: [openTime, open, high, low, close, volume, closeTime, ...]
-    return data.map((k) => [k[0] as number, parseFloat(k[4])] as [number, number]);
+    // Generate 4 points per candle (O → H → L → C) for richer chart data
+    // This gives ~4000 data points instead of 1000, making short timeframes vibrant
+    const points: [number, number][] = [];
+    for (const k of data) {
+      const openTime = k[0] as number;
+      const o = parseFloat(k[1]);
+      const h = parseFloat(k[2]);
+      const l = parseFloat(k[3]);
+      const c = parseFloat(k[4]);
+      const interval = 60_000; // 1-min candle
+      // Distribute O/H/L/C across the candle's time span
+      if (o <= c) {
+        // Bullish candle: open → low → high → close
+        points.push([openTime, o]);
+        points.push([openTime + interval * 0.25, l]);
+        points.push([openTime + interval * 0.65, h]);
+        points.push([openTime + interval * 0.95, c]);
+      } else {
+        // Bearish candle: open → high → low → close
+        points.push([openTime, o]);
+        points.push([openTime + interval * 0.25, h]);
+        points.push([openTime + interval * 0.65, l]);
+        points.push([openTime + interval * 0.95, c]);
+      }
+    }
+    return points;
   } catch {
     return null;
   }

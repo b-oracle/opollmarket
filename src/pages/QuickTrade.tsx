@@ -554,7 +554,7 @@ export default function QuickTrade() {
       const maxCutoff = now - 4 * 60 * 60 * 1000;
       setPriceHistory((prev) => {
         const updated = [...prev, { time: timeLabel, price, ts: now }];
-        const filtered = updated.filter((pt) => pt.ts >= maxCutoff);
+        const filtered = updated.filter((pt) => pt.ts >= maxCutoff).slice(-2000);
         return filtered.length > 600 ? filtered.slice(-600) : filtered;
       });
       const rawCached = rawDataRef.current.get(streamAssetSymbol) || [];
