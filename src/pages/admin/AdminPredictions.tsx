@@ -176,21 +176,31 @@ const AdminPredictions = () => {
       return { date: d.toLocaleDateString("en", { month: "short", day: "numeric" }), ...e };
     });
 
-    // Top traders by profit (predictions only)
-    const traderMap = new Map<string, { wagered: number; won: number; predictions: number }>();
-    predictions.forEach(b => {
-      const e = traderMap.get(b.user_id) || { wagered: 0, won: 0, predictions: 0 };
+    // Top traders by profit (predictions only — only count wagers on resolved/cancelled markets)
+    const resolvedMarketIds = new Set(filteredMarkets.filter(m => m.status === "resolved" || m.status === "cancelled").map(m => m.id));
+    const resolvedPredictions = predictions.filter(b => b.market_id && resolvedMarketIds.has(b.market_id));
+    const resolvedPayouts = payouts.filter(p => p.market_id && resolvedMarketIds.has(p.market_id));
+    const resolvedRefundIds = new Set(refunds.filter(r => r.market_id && resolvedMarketIds.has(r.market_id)).map(r => r.user_id + ":" + r.market_id));
+
+    const traderMap = new Map<string, { wagered: number; won: number; refunded: number; predictions: number }>();
+    resolvedPredictions.forEach(b => {
+      const e = traderMap.get(b.user_id) || { wagered: 0, won: 0, refunded: 0, predictions: 0 };
       e.wagered += Number(b.amount);
       e.predictions++;
       traderMap.set(b.user_id, e);
     });
-    payouts.forEach(p => {
-      const e = traderMap.get(p.user_id) || { wagered: 0, won: 0, predictions: 0 };
+    resolvedPayouts.forEach(p => {
+      const e = traderMap.get(p.user_id) || { wagered: 0, won: 0, refunded: 0, predictions: 0 };
       e.won += Number(p.amount);
       traderMap.set(p.user_id, e);
     });
+    // Subtract refunds from wagered (cancelled markets return funds)
+    refunds.filter(r => r.market_id && resolvedMarketIds.has(r.market_id)).forEach(r => {
+      const e = traderMap.get(r.user_id);
+      if (e) e.refunded += Number(r.amount);
+    });
     const topTraders = Array.from(traderMap.entries())
-      .map(([id, d]) => ({ id, name: profileMap.get(id) || id.slice(0, 8), profit: d.won - d.wagered, predictions: d.predictions, wagered: d.wagered }))
+      .map(([id, d]) => ({ id, name: profileMap.get(id) || id.slice(0, 8), profit: d.won + d.refunded - d.wagered, predictions: d.predictions, wagered: d.wagered }))
       .sort((a, b) => b.profit - a.profit)
       .slice(0, 10);
 
