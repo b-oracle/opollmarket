@@ -66,6 +66,16 @@ async function fetchFromCryptoCompare(sym: string): Promise<number | null> {
   return d?.USD ?? null;
 }
 
+async function fetchFromBinanceSpot(sym: string): Promise<number | null> {
+  const binanceSym = BINANCE_SYMS[sym];
+  if (!binanceSym) return null;
+  const r = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${binanceSym}`);
+  if (!r.ok) return null;
+  const d = await r.json();
+  const price = parseFloat(d?.price);
+  return Number.isFinite(price) ? price : null;
+}
+
 // ── Cache & backoff state ──
 const cache = new Map<string, { price: number; fetchedAt: number; provider: string }>();
 const CACHE_TTL = 1_500;
