@@ -62,6 +62,7 @@ Deno.serve(async (req) => {
         { headers }
       );
       const teamData = await teamResp.json();
+      console.log("Team search response status:", teamResp.status, "results:", teamData?.response?.length ?? 0, "errors:", JSON.stringify(teamData?.errors || {}));
 
       // Check for API errors (suspended account, rate limit, etc.)
       if (teamData?.errors && Object.keys(teamData.errors).length > 0) {
