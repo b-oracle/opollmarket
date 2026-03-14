@@ -565,7 +565,6 @@ export default function QuickTrade() {
     const handleWsTick = (price: number) => {
       if (!isCurrentRun()) return;
       wsActiveRef.current = true;
-      lastWsTickAtRef.current = Date.now();
       if (displayedPrice === 0) displayedPrice = price; // seed on first tick
       targetWsPrice = price;
     };
