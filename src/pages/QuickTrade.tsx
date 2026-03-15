@@ -475,6 +475,8 @@ export default function QuickTrade() {
   // ── Stream price via WebSocket (sub-second) with HTTP polling fallback ──
   const lastFetchTimeRef = useRef(0);
   const [streamingPrice, setStreamingPrice] = useState<number | null>(null);
+  const streamingPriceRef = useRef<number | null>(null);
+  const lastStreamingStateUpdateRef = useRef(0);
   const wsActiveRef = useRef(false);
   const lastWsTickAtRef = useRef(0);
   const streamRunIdRef = useRef(0);
@@ -486,6 +488,8 @@ export default function QuickTrade() {
     setCurrentPrice(null);
     setPrevPrice(null);
     setStreamingPrice(null);
+    streamingPriceRef.current = null;
+    lastStreamingStateUpdateRef.current = 0;
     setPriceHistory([]);
     setOhlcData([]);
     setActiveRound(null);
@@ -523,7 +527,14 @@ export default function QuickTrade() {
 
     const applyStreamingPrice = (price: number) => {
       if (!isCurrentRun()) return;
-      setStreamingPrice(price);
+      // Always update the ref (no re-render) for high-frequency consumers like TradingView
+      streamingPriceRef.current = price;
+      // Throttle React state updates to ~2x/sec to avoid excessive re-renders
+      const now = Date.now();
+      if (now - lastStreamingStateUpdateRef.current >= 500) {
+        lastStreamingStateUpdateRef.current = now;
+        setStreamingPrice(price);
+      }
     };
 
     let pollIv: ReturnType<typeof setInterval> | null = null;
@@ -1454,6 +1465,7 @@ export default function QuickTrade() {
                 priceHistory={priceHistory}
                 ohlcData={ohlcData}
                 streamingPrice={streamingPrice}
+                streamingPriceRef={streamingPriceRef}
                 historyLoading={historyLoading}
                 activeRound={activeRound}
                 userBet={userBet}

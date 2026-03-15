@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, forwardRef } from "react";
+import { useEffect, useRef, useState, useCallback, forwardRef, type MutableRefObject } from "react";
 import {
   createChart,
   type IChartApi,
@@ -30,6 +30,8 @@ interface TradingViewChartProps {
   timeframeLabel: string;
   /** Streaming: latest price tick to append in real-time */
   streamingPrice?: number | null;
+  /** High-frequency ref for streaming price (avoids re-renders) */
+  streamingPriceRef?: MutableRefObject<number | null>;
   /** Entry price to show as a horizontal marker line */
   entryPrice?: number | null;
   /** Bet side for coloring the entry line */
@@ -63,6 +65,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   chartMs,
   timeframeLabel,
   streamingPrice,
+  streamingPriceRef: externalPriceRef,
   entryPrice,
   entrySide,
   targetPrice,
@@ -82,7 +85,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   const lastCandleTimeRef = useRef<number>(0);
   const prevStreamingPriceRef = useRef<number | null>(null);
   const pulsingDotRef = useRef<HTMLDivElement>(null);
-  const [dotColor, setDotColor] = useState("#22c55e");
+  const dotColorRef = useRef("#22c55e");
   const [countdown, setCountdown] = useState<number | null>(null);
   const interpolationRef = useRef<number | null>(null);
   const interpolatedPriceRef = useRef<number | null>(null);
@@ -544,6 +547,12 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
                 pulsingDotRef.current.style.left = `${x}px`;
                 pulsingDotRef.current.style.top = `${y}px`;
                 pulsingDotRef.current.style.display = "block";
+                // Update dot color via DOM to avoid React re-renders
+                const color = dotColorRef.current;
+                const pingEl = pulsingDotRef.current.querySelector('.dot-ping') as HTMLElement | null;
+                const solidEl = pulsingDotRef.current.querySelector('.dot-solid') as HTMLElement | null;
+                if (pingEl) pingEl.style.backgroundColor = color;
+                if (solidEl) solidEl.style.backgroundColor = color;
               }
             } catch { /* noop */ }
           }
@@ -566,19 +575,39 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     };
   }, [chartStyle, timeframeLabel]);
 
-  // Update target price on each streaming tick (does NOT restart animation)
+  // Update target price from ref (no re-renders) or prop fallback
   useEffect(() => {
+    if (!externalPriceRef) return;
+    // When using ref-based input, poll the ref in the animation loop instead.
+    // This effect only runs once to set up the polling.
+    const iv = setInterval(() => {
+      const refPrice = externalPriceRef.current;
+      if (refPrice == null) return;
+      const base = interpolatedPriceRef.current ?? prevStreamingPriceRef.current ?? refPrice;
+      targetStreamingPriceRef.current = refPrice;
+      prevStreamingPriceRef.current = refPrice;
+      if (interpolatedPriceRef.current == null) {
+        interpolatedPriceRef.current = refPrice;
+      }
+      const isUpNow = refPrice >= base;
+      dotColorRef.current = isUpNow ? "#22c55e" : "#ef4444";
+    }, 40); // 25fps polling of the ref — zero re-renders
+    return () => clearInterval(iv);
+  }, [externalPriceRef]);
+
+  // Fallback: update from prop when no ref is provided
+  useEffect(() => {
+    if (externalPriceRef) return; // ref takes priority
     if (streamingPrice == null) return;
     const base = interpolatedPriceRef.current ?? prevStreamingPriceRef.current ?? streamingPrice;
     targetStreamingPriceRef.current = streamingPrice;
     prevStreamingPriceRef.current = streamingPrice;
-    // Initialize interpolated price if first tick
     if (interpolatedPriceRef.current == null) {
       interpolatedPriceRef.current = streamingPrice;
     }
     const isUpNow = streamingPrice >= base;
-    setDotColor(isUpNow ? "#22c55e" : "#ef4444");
-  }, [streamingPrice]);
+    dotColorRef.current = isUpNow ? "#22c55e" : "#ef4444";
+  }, [streamingPrice, externalPriceRef]);
 
   // Compute P&L when bet is active
   const pnl = entryPrice && streamingPrice
@@ -744,12 +773,12 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
         >
           <span className="relative flex h-3 w-3">
             <span
-              className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
-              style={{ backgroundColor: dotColor }}
+              className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60 dot-ping"
+              style={{ backgroundColor: dotColorRef.current }}
             />
             <span
-              className="relative inline-flex rounded-full h-3 w-3 border-2 border-background"
-              style={{ backgroundColor: dotColor }}
+              className="relative inline-flex rounded-full h-3 w-3 border-2 border-background dot-solid"
+              style={{ backgroundColor: dotColorRef.current }}
             />
           </span>
         </div>

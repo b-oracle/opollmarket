@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo, type MutableRefObject } from "react";
 import type { OHLCCandle } from "@/lib/cryptoPriceProvider";
 import type { Candle, LinePoint } from "@/lib/chartEngine";
 import { Loader2, Timer } from "lucide-react";
@@ -15,6 +15,7 @@ interface QuickTradeChartProps {
   priceHistory: { time: string; price: number; ts: number }[];
   ohlcData: OHLCCandle[];
   streamingPrice: number | null;
+  streamingPriceRef?: MutableRefObject<number | null>;
   historyLoading: boolean;
   activeRound: { open_price: number | null; created_at: string; duration_seconds: number } | null;
   userBet: { side: string } | null;
@@ -83,6 +84,7 @@ function BucketBadges({ bucketCountdown, bucketProgress }: { bucketCountdown?: n
 function QuickTradeChart(props: QuickTradeChartProps) {
   const {
     chartType, chartMs, priceHistory, ohlcData, streamingPrice,
+    streamingPriceRef,
     historyLoading, activeRound, userBet, resolveFlash, timeframeLabel, assetClass,
     bucketCountdown, bucketProgress,
   } = props;
@@ -103,6 +105,7 @@ function QuickTradeChart(props: QuickTradeChartProps) {
         chartMs={chartMs}
         timeframeLabel={timeframeLabel}
         streamingPrice={streamingPrice}
+        streamingPriceRef={streamingPriceRef}
         entryPrice={entryPrice}
         entrySide={userBet ? (userBet.side as "up" | "down") : null}
         roundEndTime={activeRound ? new Date(activeRound.created_at).getTime() + activeRound.duration_seconds * 1000 : null}
