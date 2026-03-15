@@ -5,6 +5,7 @@ import { Market } from "@/data/markets";
 import { ActiveBoost } from "@/hooks/useActiveBoosts";
 import BoostCountdown from "@/components/BoostCountdown";
 import { toast } from "sonner";
+import { getBoostTierConfig } from "@/lib/boostTiers";
 
 const GAP = 16;
 const AUTO_SCROLL_INTERVAL = 3500;
@@ -109,7 +110,13 @@ const BoostedCarousel = ({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               onClick={() => navigate(`/market/${market.id}`)}
-              className="snap-start shrink-0 w-full glass rounded-2xl overflow-hidden cursor-pointer hover:ring-1 hover:ring-primary/40 transition-all active:scale-[0.97] ring-1 ring-primary/20"
+              className="snap-start shrink-0 w-full glass rounded-2xl overflow-hidden cursor-pointer transition-all active:scale-[0.97]"
+              style={boost ? {
+                boxShadow: getBoostTierConfig(boost.tier).glowShadow,
+                border: `1px solid ${getBoostTierConfig(boost.tier).ringClass}`,
+              } : {
+                border: '1px solid hsl(var(--primary) / 0.2)',
+              }}
             >
               {/* Image */}
               <div className="relative h-28 bg-secondary overflow-hidden">
@@ -125,13 +132,16 @@ const BoostedCarousel = ({
                   </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-card/90 to-transparent" />
-                {boost && (
-                  <div className="absolute top-2 left-2 flex items-center gap-1 glass rounded-full px-2 py-0.5">
-                    <Zap className="w-3 h-3 text-primary" />
-                    <span className="text-[10px] font-bold text-primary">Boosted</span>
-                  </div>
-                )}
-                {!boost && (
+                {boost ? (() => {
+                  const tc = getBoostTierConfig(boost.tier);
+                  const TierIcon = tc.icon;
+                  return (
+                    <div className="absolute top-2 left-2 flex items-center gap-1 glass rounded-full px-2 py-0.5">
+                      <TierIcon className="w-3 h-3" style={{ color: tc.color }} />
+                      <span className="text-[10px] font-bold" style={{ color: tc.color }}>{tc.label}</span>
+                    </div>
+                  );
+                })() : (
                   <div className="absolute top-2 left-2 flex items-center gap-1 glass rounded-full px-2 py-0.5">
                     <Zap className="w-3 h-3 text-primary" />
                     <span className="text-[10px] font-bold text-primary">Trending</span>
@@ -142,11 +152,16 @@ const BoostedCarousel = ({
                     {displayPercent}% Chance
                   </span>
                 </div>
-                {boost && (
-                  <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-tl-lg rounded-br-2xl bg-primary/90 flex items-center justify-center animate-pulse shadow-[0_0_10px_hsl(var(--primary)/0.6)]">
-                    <Zap className="w-3.5 h-3.5 text-primary-foreground" fill="currentColor" />
-                  </div>
-                )}
+                {boost && (() => {
+                  const tc = getBoostTierConfig(boost.tier);
+                  const TierIcon = tc.icon;
+                  return (
+                    <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-tl-lg rounded-br-2xl flex items-center justify-center animate-pulse"
+                      style={{ backgroundColor: tc.color, boxShadow: `0 0 10px ${tc.ringClass}` }}>
+                      <TierIcon className="w-3.5 h-3.5 text-primary-foreground" fill="currentColor" />
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Content */}

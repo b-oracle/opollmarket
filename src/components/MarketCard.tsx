@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
-import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown, ExternalLink, Flame, Radio, CheckCircle2, XCircle } from "lucide-react";
+import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown, ExternalLink, Flame, Radio, CheckCircle2, XCircle, Crown } from "lucide-react";
+import { getBoostTierConfig } from "@/lib/boostTiers";
 import { motion, AnimatePresence } from "framer-motion";
 import { Market } from "@/data/markets";
 import CategoryIcon from "@/components/CategoryIcon";
@@ -242,7 +243,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
     <>
       <div
         ref={cardRef}
-        className={`snap-item relative w-full flex items-end px-3 sm:px-4 pb-2 overflow-hidden ${isBoosted ? 'ring-1 ring-primary/30' : ''}`}
+        className={`snap-item relative w-full flex items-end px-3 sm:px-4 pb-2 overflow-hidden`}
+        data-boost-ring="true"
         style={{ 
           height: 'var(--feed-card-height)',
           minHeight: 'var(--feed-card-height)',
@@ -297,7 +299,11 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           ) : null}
           {/* Strong bottom-heavy gradient for text readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-background from-10% via-background/80 via-40% to-background/30" />
-          <div className={`absolute inset-0 ${isBoosted ? 'bg-gradient-to-br from-primary/15 via-primary/5 to-transparent' : ''}`} />
+          {isBoosted && boostTier && (
+            <div className="absolute inset-0" style={{
+              background: `linear-gradient(to bottom right, ${getBoostTierConfig(boostTier).ringClass}, transparent 60%)`,
+            }} />
+          )}
           {isEnded && (
             <div className="absolute inset-0 bg-background/40 z-10" />
           )}
@@ -323,7 +329,11 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/20" />
             </div>
           )}
-          <div className={`absolute inset-0 ${isBoosted ? 'bg-gradient-to-br from-primary/15 via-primary/5 to-transparent' : ''}`} />
+          {isBoosted && boostTier && (
+            <div className="absolute inset-0" style={{
+              background: `linear-gradient(to bottom right, ${getBoostTierConfig(boostTier).ringClass}, transparent 60%)`,
+            }} />
+          )}
 
           {/* Probability ring or multi-option indicator */}
           <div className="absolute top-6 right-6 z-10">
@@ -397,14 +407,19 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         </div>
 
         <div className={`absolute ${actionRailBottomClass} right-2 sm:right-4 lg:right-24 z-30 flex w-14 sm:w-16 flex-col items-center gap-3 pointer-events-auto`}>
-          {isBoosted && (
-            <div className="flex flex-col items-center gap-0.5">
-              <div className={`${actionIconSizeClass} rounded-full glass bg-background/70 border border-border shadow-md flex items-center justify-center bg-orange-500/20 animate-pulse`}>
-                <Flame className="w-4.5 h-4.5 text-orange-400" />
+          {isBoosted && (() => {
+            const tc = getBoostTierConfig(boostTier);
+            const TierIcon = tc.icon;
+            return (
+              <div className="flex flex-col items-center gap-0.5">
+                <div className={`${actionIconSizeClass} rounded-full glass bg-background/70 border border-border shadow-md flex items-center justify-center animate-pulse`}
+                  style={{ backgroundColor: `${tc.color.replace(')', ' / 0.2)')}` }}>
+                  <TierIcon className="w-4.5 h-4.5" style={{ color: tc.color }} />
+                </div>
+                <span className="text-[9px] text-foreground/90 font-semibold leading-none">{tc.label.split(' ')[0]}</span>
               </div>
-              <span className="text-[9px] text-foreground/90 font-semibold leading-none">Hot</span>
-            </div>
-          )}
+            );
+          })()}
           <button onClick={handleLike} className="flex flex-col items-center gap-0.5 group">
             <div className={`${actionIconSizeClass} rounded-full glass bg-background/70 border border-border shadow-md flex items-center justify-center transition-colors ${liked ? 'bg-destructive/20' : 'group-hover:bg-destructive/20'}`}>
               <Heart className={`w-5 h-5 transition-colors ${liked ? 'text-destructive fill-destructive' : 'text-foreground group-hover:text-destructive'}`} />
@@ -466,15 +481,23 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                 <NftBadge level={creatorProfile.verification_level as VerificationLevel} size={14} />
               )}
             </div>
-            {showBoosted && (
-              <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-semibold flex items-center gap-0.5 shrink-0 ${
-                isBoosted 
-                  ? 'bg-primary/20 text-primary animate-pulse' 
-                  : 'bg-primary/10 text-primary'
-              }`}>
-                <Zap className="w-2.5 h-2.5" /> {isBoosted ? 'Boosted 🔥' : 'Trending'}
-              </span>
-            )}
+            {showBoosted && (() => {
+              if (isBoosted) {
+                const tc = getBoostTierConfig(boostTier);
+                const TierIcon = tc.icon;
+                return (
+                  <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold flex items-center gap-0.5 shrink-0 animate-pulse"
+                    style={{ backgroundColor: `${tc.color.replace(')', ' / 0.2)')}`, color: tc.color }}>
+                    <TierIcon className="w-2.5 h-2.5" /> {tc.label}
+                  </span>
+                );
+              }
+              return (
+                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold flex items-center gap-0.5 shrink-0 bg-primary/10 text-primary">
+                  <Zap className="w-2.5 h-2.5" /> Trending
+                </span>
+              );
+            })()}
           </div>
 
           {/* Live badges line — scrollable */}

@@ -6,7 +6,8 @@ import SEOHead from "@/components/SEOHead";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { useMarkets } from "@/hooks/useMarkets";
-import { TrendingUp, Users, Zap, MessageCircle, Search, X, Heart } from "lucide-react";
+import { TrendingUp, Users, Zap, MessageCircle, Search, X, Heart, Flame, Crown } from "lucide-react";
+import { getBoostTierConfig } from "@/lib/boostTiers";
 import CategoryIcon from "@/components/CategoryIcon";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -464,7 +465,12 @@ const Index = () => {
                 transition={{ delay: 0.6 + i * 0.08 }}
                 whileHover={{ y: -4, boxShadow: "0 8px 30px -8px hsl(var(--primary) / 0.15)" }}
                 onClick={() => navigate(`/market/${market.id}`)}
-                className={`relative glass rounded-xl p-3 cursor-pointer transition-all active:scale-[0.98] flex items-center gap-3 group md:p-4 md:rounded-2xl hover:border-primary/20 hover:bg-accent/20 ${isBoosted ? 'ring-1 ring-primary/30 bg-primary/5' : ''} ${market.status === 'ended' ? 'opacity-75' : ''}`}
+                className={`relative glass rounded-xl p-3 cursor-pointer transition-all active:scale-[0.98] flex items-center gap-3 group md:p-4 md:rounded-2xl hover:border-primary/20 hover:bg-accent/20 ${market.status === 'ended' ? 'opacity-75' : ''}`}
+                style={isBoosted && boost ? {
+                  boxShadow: getBoostTierConfig(boost.tier).glowShadow,
+                  border: `1px solid ${getBoostTierConfig(boost.tier).ringClass}`,
+                  background: getBoostTierConfig(boost.tier).bgTint,
+                } : undefined}
               >
                 {(market.status === 'ended' || market.status === 'resolved') && (
                   <div className="absolute inset-0 z-10 rounded-xl md:rounded-2xl bg-background/60 backdrop-blur-[2px] flex items-center justify-center">
@@ -486,11 +492,16 @@ const Index = () => {
                       <CategoryIcon category={market.category} className="w-6 h-6 md:w-7 md:h-7 text-muted-foreground transition-transform duration-300 group-hover:scale-110" />
                     </div>
                   )}
-                  {isBoosted && (
-                    <div className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-bl-lg rounded-tr-xl bg-primary/90 flex items-center justify-center animate-pulse shadow-[0_0_8px_hsl(var(--primary)/0.6)]">
-                      <Zap className="w-3 h-3 text-primary-foreground" fill="currentColor" />
-                    </div>
-                  )}
+                  {isBoosted && boost && (() => {
+                    const tc = getBoostTierConfig(boost.tier);
+                    const TierIcon = tc.icon;
+                    return (
+                      <div className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-bl-lg rounded-tr-xl flex items-center justify-center animate-pulse"
+                        style={{ backgroundColor: tc.color, boxShadow: `0 0 8px ${tc.ringClass}` }}>
+                        <TierIcon className="w-3 h-3 text-primary-foreground" fill="currentColor" />
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
