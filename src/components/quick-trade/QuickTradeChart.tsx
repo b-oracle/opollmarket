@@ -1,4 +1,4 @@
-import { memo, useState, useMemo, useRef, type MutableRefObject } from "react";
+import { memo, useState, useMemo, useRef, useEffect, type MutableRefObject } from "react";
 import type { OHLCCandle } from "@/lib/cryptoPriceProvider";
 import type { Candle, LinePoint } from "@/lib/chartEngine";
 import { Loader2, Timer, Maximize2, Minimize2 } from "lucide-react";
@@ -12,6 +12,7 @@ import ChartZoomWrapper from "@/components/quick-trade/ChartZoomWrapper";
 interface QuickTradeChartProps {
   chartType: "area" | "candle" | "tv";
   chartTimeframe: string;
+  chartAssetKey: string;
   chartMs: number;
   priceHistory: { time: string; price: number; ts: number }[];
   ohlcData: OHLCCandle[];
@@ -30,8 +31,6 @@ interface QuickTradeChartProps {
   bucketProgress?: number;
   engineReady?: boolean;
 }
-
-const ENTRY_COLOR = "#f59e0b";
 
 function ChartSkeleton({ text }: { text: string }) {
   return (
@@ -101,32 +100,54 @@ function engineLinesToHistory(points: LinePoint[]): { time: string; price: numbe
 
 function QuickTradeChart(props: QuickTradeChartProps) {
   const {
-    chartType, chartMs, priceHistory, ohlcData, streamingPrice,
+    chartType, chartTimeframe, chartAssetKey, chartMs, priceHistory, ohlcData, streamingPrice,
     streamingPriceRef,
     historyLoading, activeRound, userBet, resolveFlash, timeframeLabel, assetClass,
-    engineCandles, engineLinePoints, engineActiveCandle,
-    bucketCountdown, bucketProgress, engineReady,
+    engineCandles, engineLinePoints,
+    bucketCountdown, engineReady,
   } = props;
 
   const [isFullscreen, setIsFullscreen] = useState(false);
-
   const entryPrice = userBet && activeRound?.open_price ? Number(activeRound.open_price) : null;
 
-  // Once engine becomes ready, never fall back to raw data (prevents source bounce)
+  const MIN_STABLE_ENGINE_CANDLES = 12;
+  const MIN_STABLE_ENGINE_POINTS = 24;
+  const chartIdentity = `${chartAssetKey}:${chartTimeframe}`;
+
+  // Once engine is active for this asset/timeframe, keep rendering from engine-only data.
   const engineWasReadyRef = useRef(false);
+  const lastStableEngineOhlcRef = useRef<{ ohlc: OHLCCandle[]; mas: { ma7?: number; ma14?: number }[] } | null>(null);
+  const lastStableEngineLineRef = useRef<{ time: string; price: number; ts: number }[] | null>(null);
+
+  useEffect(() => {
+    engineWasReadyRef.current = false;
+    lastStableEngineOhlcRef.current = null;
+    lastStableEngineLineRef.current = null;
+  }, [chartIdentity]);
+
   if (engineReady) engineWasReadyRef.current = true;
   const useEngineData = engineWasReadyRef.current;
 
-  // Convert engine data to chart-ready formats
-  const engineOhlcData = useMemo(() => {
-    if (!useEngineData || !engineCandles || engineCandles.length < 1) return null;
+  const liveEngineOhlcData = useMemo(() => {
+    if (!useEngineData || !engineCandles || engineCandles.length < 2) return null;
     return engineCandlesToOHLC(engineCandles);
   }, [useEngineData, engineCandles]);
 
-  const enginePriceHistory = useMemo(() => {
+  const liveEnginePriceHistory = useMemo(() => {
     if (!useEngineData || !engineLinePoints || engineLinePoints.length < 2) return null;
     return engineLinesToHistory(engineLinePoints);
   }, [useEngineData, engineLinePoints]);
+
+  // Cache only sufficiently dense engine datasets to prevent sparse "scatter" jumps.
+  if (liveEngineOhlcData && liveEngineOhlcData.ohlc.length >= MIN_STABLE_ENGINE_CANDLES) {
+    lastStableEngineOhlcRef.current = liveEngineOhlcData;
+  }
+  if (liveEnginePriceHistory && liveEnginePriceHistory.length >= MIN_STABLE_ENGINE_POINTS) {
+    lastStableEngineLineRef.current = liveEnginePriceHistory;
+  }
+
+  const engineOhlcData = lastStableEngineOhlcRef.current;
+  const enginePriceHistory = lastStableEngineLineRef.current;
 
   // 1. Market closed
   if (chartType !== "tv" && !isMarketOpen(assetClass || "crypto")) {
@@ -166,8 +187,10 @@ function QuickTradeChart(props: QuickTradeChartProps) {
   let chartContent: React.ReactNode = null;
 
   if (chartType === "candle") {
-    // Prefer engine candles (properly timeframe-aggregated)
-    if (engineOhlcData && engineOhlcData.ohlc.length >= 2) {
+    if (useEngineData) {
+      if (!engineOhlcData || engineOhlcData.ohlc.length < 2) {
+        return <ChartSkeleton text="Building chart..." />;
+      }
       chartContent = (
         <SimpleCandleChart
           ohlcData={engineOhlcData.ohlc}
@@ -178,7 +201,6 @@ function QuickTradeChart(props: QuickTradeChartProps) {
         />
       );
     } else if (ohlcData.length >= 2) {
-      // Fallback: raw data while engine initializes
       chartContent = (
         <SimpleCandleChart
           ohlcData={ohlcData}
@@ -201,9 +223,8 @@ function QuickTradeChart(props: QuickTradeChartProps) {
       return <ChartSkeleton text="Building chart..." />;
     }
   } else {
-    // Area chart — prefer engine line points
-    const areaHistory = enginePriceHistory ?? priceHistory;
-    if (areaHistory.length < 2) {
+    const areaHistory = useEngineData ? enginePriceHistory : (liveEnginePriceHistory ?? priceHistory);
+    if (!areaHistory || areaHistory.length < 2) {
       return <ChartSkeleton text="Building chart..." />;
     }
     chartContent = (
