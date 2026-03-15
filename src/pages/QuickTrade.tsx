@@ -247,6 +247,7 @@ export default function QuickTrade() {
   const { toggles } = useFeatureToggles();
   const tvChartEnabled = toggles.find((t) => t.feature_key === "tradingview_chart")?.enabled ?? false;
   const lineChartEnabled = toggles.find((t) => t.feature_key === "line_chart")?.enabled ?? true;
+  const polyChartEnabled = toggles.find((t) => t.feature_key === "poly_chart")?.enabled ?? true;
   const queryClient = useQueryClient();
   const { data: commissionSettings } = useCommissionSettings();
   const { fireWinConfetti } = useConfetti();
