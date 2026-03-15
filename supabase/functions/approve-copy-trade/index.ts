@@ -192,6 +192,21 @@ Deno.serve(async (req) => {
       market_id: trade.market_id || null,
     });
 
+    // Notify the trader that their trade was copied
+    const { data: copierProfile } = await supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", user.id)
+      .single();
+
+    await supabase.from("notifications").insert({
+      user_id: trade.trader_user_id,
+      title: "Your Trade Was Copied! 🔄",
+      message: `${copierProfile?.display_name || "Someone"} copied your trade: $${trade.amount.toFixed(2)} on ${(trade.side || "").toUpperCase()}. You'll earn commission if they profit.`,
+      type: "info",
+      market_id: trade.market_id || null,
+    });
+
     return new Response(JSON.stringify({ success: true, status: "accepted" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
