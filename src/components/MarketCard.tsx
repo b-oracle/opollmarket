@@ -407,14 +407,19 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         </div>
 
         <div className={`absolute ${actionRailBottomClass} right-2 sm:right-4 lg:right-24 z-30 flex w-14 sm:w-16 flex-col items-center gap-3 pointer-events-auto`}>
-          {isBoosted && (
-            <div className="flex flex-col items-center gap-0.5">
-              <div className={`${actionIconSizeClass} rounded-full glass bg-background/70 border border-border shadow-md flex items-center justify-center bg-orange-500/20 animate-pulse`}>
-                <Flame className="w-4.5 h-4.5 text-orange-400" />
+          {isBoosted && (() => {
+            const tc = getBoostTierConfig(boostTier);
+            const TierIcon = tc.icon;
+            return (
+              <div className="flex flex-col items-center gap-0.5">
+                <div className={`${actionIconSizeClass} rounded-full glass bg-background/70 border border-border shadow-md flex items-center justify-center animate-pulse`}
+                  style={{ backgroundColor: `${tc.color.replace(')', ' / 0.2)')}` }}>
+                  <TierIcon className="w-4.5 h-4.5" style={{ color: tc.color }} />
+                </div>
+                <span className="text-[9px] text-foreground/90 font-semibold leading-none">{tc.label.split(' ')[0]}</span>
               </div>
-              <span className="text-[9px] text-foreground/90 font-semibold leading-none">Hot</span>
-            </div>
-          )}
+            );
+          })()}
           <button onClick={handleLike} className="flex flex-col items-center gap-0.5 group">
             <div className={`${actionIconSizeClass} rounded-full glass bg-background/70 border border-border shadow-md flex items-center justify-center transition-colors ${liked ? 'bg-destructive/20' : 'group-hover:bg-destructive/20'}`}>
               <Heart className={`w-5 h-5 transition-colors ${liked ? 'text-destructive fill-destructive' : 'text-foreground group-hover:text-destructive'}`} />
