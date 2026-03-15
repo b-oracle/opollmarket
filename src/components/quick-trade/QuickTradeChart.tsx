@@ -105,10 +105,17 @@ function BucketBadges({ bucketCountdown, bucketProgress }: { bucketCountdown?: n
   );
 }
 
-// ── Area chart (engine-powered) ──
+// ── Area chart (engine-powered or fallback) ──
 
 function EngineAreaChart({
-  linePoints, entryPrice, assetClass, userBet, activeRound, timeframeLabel, bucketCountdown, bucketProgress,
+  linePoints,
+  entryPrice,
+  assetClass,
+  userBet,
+  activeRound,
+  timeframeLabel,
+  bucketCountdown,
+  bucketProgress,
 }: {
   linePoints: LinePoint[];
   entryPrice: number | null;
@@ -152,17 +159,34 @@ function EngineAreaChart({
           </defs>
           <YAxis domain={[(d: number) => d - d * 0.001, (d: number) => d + d * 0.001]} hide />
           <XAxis dataKey="ts" hide />
-          <RechartsTooltip content={tooltipContent} cursor={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1, strokeDasharray: "3 3" }} />
+          <RechartsTooltip
+            content={tooltipContent}
+            cursor={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1, strokeDasharray: "3 3" }}
+          />
           {entryPrice && (
             <ReferenceLine
               y={entryPrice}
               stroke={ENTRY_COLOR}
               strokeDasharray="4 3"
               strokeOpacity={0.8}
-              label={{ value: `📍 ${formatTooltipPrice(entryPrice, assetClass)}`, position: "insideTopRight", fill: ENTRY_COLOR, fontSize: 9, fontWeight: 600 }}
+              label={{
+                value: `📍 ${formatTooltipPrice(entryPrice, assetClass)}`,
+                position: "insideTopRight",
+                fill: ENTRY_COLOR,
+                fontSize: 9,
+                fontWeight: 600,
+              }}
             />
           )}
-          <Area type="monotone" dataKey="price" stroke={color} strokeWidth={2} fill="url(#priceGradient)" dot={false} isAnimationActive={false} />
+          <Area
+            type="monotone"
+            dataKey="price"
+            stroke={color}
+            strokeWidth={2}
+            fill="url(#priceGradient)"
+            dot={false}
+            isAnimationActive={false}
+          />
         </AreaChart>
       </ResponsiveContainer>
       <BucketBadges bucketCountdown={bucketCountdown} bucketProgress={bucketProgress} />
@@ -174,13 +198,25 @@ function EngineAreaChart({
 // ── Main component ──
 
 function QuickTradeChart({
-  chartType, chartMs, priceHistory, ohlcData, streamingPrice,
-  historyLoading, activeRound, userBet, resolveFlash, timeframeLabel, assetClass,
-  engineCandles, engineLinePoints, engineActiveCandle, bucketCountdown, bucketProgress, engineReady,
+  chartType,
+  chartMs,
+  priceHistory,
+  ohlcData,
+  streamingPrice,
+  historyLoading,
+  activeRound,
+  userBet,
+  resolveFlash,
+  timeframeLabel,
+  assetClass,
+  engineCandles,
+  engineLinePoints,
+  engineActiveCandle,
+  bucketCountdown,
+  bucketProgress,
+  engineReady,
 }: QuickTradeChartProps) {
-
   const entryPrice = userBet && activeRound?.open_price ? Number(activeRound.open_price) : null;
-  const hasEngineData = engineCandles && engineCandles.length >= 2 && engineReady;
 
   // ── 1. Market closed (forex/commodity only, not TV) ──
   if (chartType !== "tv" && !isMarketOpen(assetClass || "crypto")) {
@@ -198,7 +234,11 @@ function QuickTradeChart({
         streamingPrice={streamingPrice}
         entryPrice={entryPrice}
         entrySide={userBet ? (userBet.side as "up" | "down") : null}
-        roundEndTime={activeRound ? new Date(activeRound.created_at).getTime() + activeRound.duration_seconds * 1000 : null}
+        roundEndTime={
+          activeRound
+            ? new Date(activeRound.created_at).getTime() + activeRound.duration_seconds * 1000
+            : null
+        }
         targetPrice={entryPrice}
         resolveFlash={resolveFlash}
       />
@@ -215,17 +255,16 @@ function QuickTradeChart({
     return <ChartSkeleton text="Connecting to live feed..." />;
   }
 
-  // ── 5. Engine not ready ──
-  if (!hasEngineData) {
-    return <ChartSkeleton text="Building chart..." />;
-  }
-
-  // ── 6. Candle chart ──
+  // ── 5. Candle chart (engine only for now) ──
   if (chartType === "candle") {
+    if (!engineCandles || engineCandles.length < 2 || !engineReady) {
+      return <ChartSkeleton text="Building chart..." />;
+    }
+
     return (
       <div className="relative">
         <SVGCandleChart
-          candles={engineCandles!}
+          candles={engineCandles}
           entryPrice={entryPrice}
           assetClass={assetClass}
           timeframeLabel={timeframeLabel}
@@ -236,24 +275,35 @@ function QuickTradeChart({
     );
   }
 
-  // ── 7. Area chart ──
-  if (engineLinePoints && engineLinePoints.length >= 2) {
-    return (
-      <EngineAreaChart
-        linePoints={engineLinePoints}
-        entryPrice={entryPrice}
-        assetClass={assetClass}
-        userBet={userBet}
-        activeRound={activeRound}
-        timeframeLabel={timeframeLabel}
-        bucketCountdown={bucketCountdown}
-        bucketProgress={bucketProgress}
-      />
-    );
+  // ── 6. Area chart with engine-first, legacy-fallback strategy ──
+  const hasEngineArea =
+    !!engineReady && Array.isArray(engineLinePoints) && engineLinePoints.length >= 2;
+
+  const fallbackLinePoints: LinePoint[] | null =
+    !hasEngineArea && Array.isArray(priceHistory) && priceHistory.length >= 2
+      ? priceHistory.map((p) => ({ ts: p.ts, price: p.price } as LinePoint))
+      : null;
+
+  const linePointsToUse = hasEngineArea
+    ? (engineLinePoints as LinePoint[])
+    : fallbackLinePoints;
+
+  if (!linePointsToUse) {
+    return <ChartSkeleton text="Building chart..." />;
   }
 
-  // ── Fallback (shouldn't reach here) ──
-  return <ChartSkeleton text="Preparing chart..." />;
+  return (
+    <EngineAreaChart
+      linePoints={linePointsToUse}
+      entryPrice={entryPrice}
+      assetClass={assetClass}
+      userBet={userBet}
+      activeRound={activeRound}
+      timeframeLabel={timeframeLabel}
+      bucketCountdown={bucketCountdown}
+      bucketProgress={bucketProgress}
+    />
+  );
 }
 
 export default memo(QuickTradeChart);
