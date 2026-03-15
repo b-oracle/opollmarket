@@ -231,8 +231,10 @@ function QuickTradeChart(props: QuickTradeChartProps) {
       return <ChartSkeleton text="Building chart..." />;
     }
 
+    const ChartComponent = chartType === "poly" ? PolylineChart : SimpleAreaChart;
+
     chartContent = (
-      <SimpleAreaChart
+      <ChartComponent
         priceHistory={areaHistory}
         entryPrice={entryPrice}
         assetClass={assetClass}
