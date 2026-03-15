@@ -260,7 +260,8 @@ function QuickTradeChart(props: QuickTradeChartProps) {
     } else {
       const areaHistory = useEngineData ? enginePriceHistory : (liveEnginePriceHistory ?? priceHistory);
       if (areaHistory && areaHistory.length >= 2) {
-        return <SimpleAreaChart priceHistory={areaHistory} entryPrice={entryPrice} assetClass={assetClass} userBet={userBet} activeRound={activeRound} fullscreen />;
+        const FSChart = chartType === "poly" ? PolylineChart : SimpleAreaChart;
+        return <FSChart priceHistory={areaHistory} entryPrice={entryPrice} assetClass={assetClass} userBet={userBet} activeRound={activeRound} fullscreen />;
       }
     }
     return chartContent;
