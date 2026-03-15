@@ -1,0 +1,1 @@
+UPDATE public.markets SET simulated_volume = 0, simulated_participants = 0 WHERE id = 'd7dd1212-6190-4497-94b3-446e6d1d8144';
