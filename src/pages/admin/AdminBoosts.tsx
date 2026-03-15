@@ -136,16 +136,8 @@ const AdminBoosts = () => {
     setLoading(false);
   };
 
-  const fetchBroadcasts = async () => {
-    const { data } = await supabase
-      .from("market_broadcasts")
-      .select("*")
-      .order("created_at", { ascending: false });
-    setBroadcasts(data || []);
-  };
-
   useEffect(() => {
-    Promise.all([fetchBoosts(), fetchBroadcasts()]);
+    fetchBoosts();
   }, []);
 
   // Analytics
