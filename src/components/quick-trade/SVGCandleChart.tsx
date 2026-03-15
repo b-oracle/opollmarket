@@ -1,4 +1,4 @@
-import { useMemo, memo } from "react";
+import { useMemo, useCallback, memo, forwardRef } from "react";
 import type { Candle } from "@/lib/chartEngine";
 
 // ── Colors ──
@@ -27,12 +27,14 @@ function fmtAxis(p: number, assetClass?: string): string {
   return p.toFixed(4);
 }
 
-/** Memoized single candle stick */
+/** Memoized single candle stick — uses domain params instead of function ref for stable memo */
 const CandleStick = memo(function CandleStick({
-  c, i, n, priceY, isActive,
+  c, i, n, domainMin, domainRange, priceH, paddingTop, paddingBottom, isActive,
 }: {
-  c: Candle; i: number; n: number; priceY: (p: number) => number; isActive: boolean;
+  c: Candle; i: number; n: number; domainMin: number; domainRange: number;
+  priceH: number; paddingTop: number; paddingBottom: number; isActive: boolean;
 }) {
+  const priceY = (p: number) => paddingTop + (priceH - paddingTop - paddingBottom) * (1 - (p - domainMin) / domainRange);
   const slotW = 100 / n;
   const centerX = i * slotW + slotW / 2;
   const bodyW = slotW * 0.55;
@@ -61,7 +63,7 @@ const CandleStick = memo(function CandleStick({
   );
 });
 
-function SVGCandleChart({ candles, entryPrice, assetClass, timeframeLabel }: SVGCandleChartProps) {
+const SVGCandleChart = forwardRef<HTMLDivElement, SVGCandleChartProps>(function SVGCandleChart({ candles, entryPrice, assetClass, timeframeLabel }, ref) {
   const CHART_HEIGHT = 220;
   const PRICE_AREA_RATIO = 0.75;
   const PRICE_H = Math.floor(CHART_HEIGHT * PRICE_AREA_RATIO);
@@ -94,7 +96,10 @@ function SVGCandleChart({ candles, entryPrice, assetClass, timeframeLabel }: SVG
     return levels;
   }, [domainMin, domainRange, n]);
 
-  const priceY = (p: number) => PADDING_TOP + (PRICE_H - PADDING_TOP - PADDING_BOTTOM) * (1 - (p - domainMin) / domainRange);
+  const priceY = useCallback(
+    (p: number) => PADDING_TOP + (PRICE_H - PADDING_TOP - PADDING_BOTTOM) * (1 - (p - domainMin) / domainRange),
+    [domainMin, domainRange]
+  );
 
   const activeCandleIndex = candles.length - 1;
   const isLastActive = n >= 2 && candles[activeCandleIndex] && !candles[activeCandleIndex].closed;
@@ -124,7 +129,7 @@ function SVGCandleChart({ candles, entryPrice, assetClass, timeframeLabel }: SVG
   if (n < 2) return null;
 
   return (
-    <div className="w-full select-none relative" style={{ height: CHART_HEIGHT }}>
+    <div ref={ref} className="w-full select-none relative" style={{ height: CHART_HEIGHT }}>
       <svg
         viewBox={`0 0 100 ${CHART_HEIGHT}`}
         preserveAspectRatio="none"
@@ -177,7 +182,8 @@ function SVGCandleChart({ candles, entryPrice, assetClass, timeframeLabel }: SVG
           <CandleStick
             key={`candle-${i}`}
             c={c} i={i} n={n}
-            priceY={priceY}
+            domainMin={domainMin} domainRange={domainRange}
+            priceH={PRICE_H} paddingTop={PADDING_TOP} paddingBottom={PADDING_BOTTOM}
             isActive={i === activeCandleIndex && !c.closed}
           />
         ))}
@@ -268,6 +274,6 @@ function SVGCandleChart({ candles, entryPrice, assetClass, timeframeLabel }: SVG
       </div>
     </div>
   );
-}
+});
 
 export default memo(SVGCandleChart);
