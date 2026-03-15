@@ -247,47 +247,70 @@ const AdminBoosts = () => {
     <div className="space-y-6">
       <h2 className="text-2xl font-bold flex items-center gap-2">
         <Zap className="w-6 h-6 text-primary" />
-        Boost Management
+        Promotions
       </h2>
 
-      {/* Analytics Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="rounded-xl border border-border bg-card p-3">
-          <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium block mb-0.5">Total Boosts</span>
-          <p className="text-xl font-bold">{analytics.total}</p>
-        </div>
-        <div className="rounded-xl border border-green-500/20 bg-green-500/5 p-3">
-          <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium block mb-0.5">Active Now</span>
-          <p className="text-xl font-bold text-green-500">{analytics.active}</p>
-        </div>
-        <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
-          <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium block mb-0.5">Revenue Earned</span>
-          <p className="text-xl font-bold text-primary">${analytics.totalRevenue.toFixed(2)}</p>
-          <p className="text-[9px] text-muted-foreground">{analytics.boostEnded + analytics.active} paid boosts</p>
-        </div>
-        <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-3">
-          <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium block mb-0.5">Lost Revenue</span>
-          <p className="text-xl font-bold text-orange-500">${analytics.lostRevenue.toFixed(2)}</p>
-          <p className="text-[9px] text-muted-foreground">{analytics.paymentExpired} unpaid</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-3">
-          <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium block mb-0.5">Conversion Rate</span>
-          <p className="text-xl font-bold">{analytics.conversionRate}%</p>
-          <p className="text-[9px] text-muted-foreground">initiated → paid</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-3">
-          <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium block mb-0.5">Tier Breakdown</span>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-[10px]">⚡{analytics.tierBreakdown.flash}</span>
-            <span className="text-[10px]">🔥{analytics.tierBreakdown.standard}</span>
-            <span className="text-[10px]">👑{analytics.tierBreakdown.whale}</span>
-          </div>
-          <p className="text-[9px] text-muted-foreground">paid only</p>
-        </div>
+      {/* Top-level Tabs */}
+      <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 w-fit">
+        <button
+          onClick={() => setActiveTab("boosts")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === "boosts" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Zap className="w-4 h-4" />
+          Boosts
+        </button>
+        <button
+          onClick={() => setActiveTab("broadcasts")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === "broadcasts" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Megaphone className="w-4 h-4" />
+          Broadcasts
+        </button>
       </div>
 
-      {/* Broadcast Section */}
-      <AdminBroadcasts />
+      {activeTab === "broadcasts" ? (
+        <AdminBroadcasts />
+      ) : (
+        <>
+          {/* Analytics Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="rounded-xl border border-border bg-card p-3">
+              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium block mb-0.5">Total Boosts</span>
+              <p className="text-xl font-bold">{analytics.total}</p>
+            </div>
+            <div className="rounded-xl border border-green-500/20 bg-green-500/5 p-3">
+              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium block mb-0.5">Active Now</span>
+              <p className="text-xl font-bold text-green-500">{analytics.active}</p>
+            </div>
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium block mb-0.5">Revenue Earned</span>
+              <p className="text-xl font-bold text-primary">${analytics.totalRevenue.toFixed(2)}</p>
+              <p className="text-[9px] text-muted-foreground">{analytics.boostEnded + analytics.active} paid boosts</p>
+            </div>
+            <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-3">
+              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium block mb-0.5">Lost Revenue</span>
+              <p className="text-xl font-bold text-orange-500">${analytics.lostRevenue.toFixed(2)}</p>
+              <p className="text-[9px] text-muted-foreground">{analytics.paymentExpired} unpaid</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-3">
+              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium block mb-0.5">Conversion Rate</span>
+              <p className="text-xl font-bold">{analytics.conversionRate}%</p>
+              <p className="text-[9px] text-muted-foreground">initiated → paid</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-3">
+              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium block mb-0.5">Tier Breakdown</span>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-[10px]">⚡{analytics.tierBreakdown.flash}</span>
+                <span className="text-[10px]">🔥{analytics.tierBreakdown.standard}</span>
+                <span className="text-[10px]">👑{analytics.tierBreakdown.whale}</span>
+              </div>
+              <p className="text-[9px] text-muted-foreground">paid only</p>
+            </div>
+          </div>
 
       {/* Filter Tabs */}
       <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 overflow-x-auto">
