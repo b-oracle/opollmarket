@@ -552,6 +552,9 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
         cancelAnimationFrame(interpolationRef.current);
         interpolationRef.current = null;
       }
+      if (commitIntervalId) {
+        clearInterval(commitIntervalId);
+      }
     };
   }, [chartStyle]);
 
