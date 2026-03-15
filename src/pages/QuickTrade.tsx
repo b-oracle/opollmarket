@@ -412,12 +412,12 @@ export default function QuickTrade() {
       setChartTimeframe(keys[0] as ChartTF);
     }
   }, [CHART_TIMEFRAMES, chartTimeframe, setChartTimeframe]);
-  const validChartTypes = ["area", "candle", "tv"] as const;
+  const validChartTypes = ["area", "candle", "tv", "poly"] as const;
   const savedCT = typeof window !== "undefined" ? localStorage.getItem("qt-chart-type") : null;
-  const rawInitialCT = (savedCT && (validChartTypes as readonly string[]).includes(savedCT) ? savedCT : "area") as "area" | "candle" | "tv";
-  const initialCT = rawInitialCT === "tv" && !tvChartEnabled ? "area" : rawInitialCT === "area" && !lineChartEnabled ? "candle" : rawInitialCT;
-  const [chartType, setChartTypeRaw] = useState<"area" | "candle" | "tv">(initialCT);
-  const setChartType = useCallback((ct: "area" | "candle" | "tv") => {
+  const rawInitialCT = (savedCT && (validChartTypes as readonly string[]).includes(savedCT) ? savedCT : "area") as "area" | "candle" | "tv" | "poly";
+  const initialCT = rawInitialCT === "tv" && !tvChartEnabled ? "area" : (rawInitialCT === "area" || rawInitialCT === "poly") && !lineChartEnabled ? "candle" : rawInitialCT;
+  const [chartType, setChartTypeRaw] = useState<"area" | "candle" | "tv" | "poly">(initialCT);
+  const setChartType = useCallback((ct: "area" | "candle" | "tv" | "poly") => {
     setChartTypeRaw(ct);
     try { localStorage.setItem("qt-chart-type", ct); } catch {}
   }, []);
