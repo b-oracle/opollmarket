@@ -32,14 +32,21 @@ export default function ChartZoomWrapper({ children, className = "", style, defa
   const panStartXRef = useRef(0);
   const panStartOffsetRef = useRef(0);
 
+  const lastSvgRef = useRef<SVGSVGElement | null>(null);
+
   const getSvg = (): SVGSVGElement | null =>
     containerRef.current?.querySelector("svg") ?? null;
 
-  /** Capture the natural viewBox once. Returns true if we have it. */
+  /** Capture the natural viewBox once per SVG element identity. */
   const captureOrigVB = useCallback((): boolean => {
-    if (origVBRef.current) return true;
     const svg = getSvg();
     if (!svg) return false;
+    // If the SVG element itself changed (React re-mount), invalidate cache
+    if (svg !== lastSvgRef.current) {
+      origVBRef.current = null;
+      lastSvgRef.current = svg;
+    }
+    if (origVBRef.current) return true;
     const vb = svg.getAttribute("viewBox");
     if (!vb) return false;
     const parts = vb.split(" ").map(Number);
@@ -56,7 +63,6 @@ export default function ChartZoomWrapper({ children, className = "", style, defa
     const zoom = zoomRef.current;
     const visibleW = orig.w / zoom;
     const maxOffset = orig.w - visibleW;
-    // panX 0 = rightmost (latest), 1 = leftmost (oldest)
     const offset = maxOffset - panXRef.current * maxOffset;
     const clamped = Math.max(0, Math.min(maxOffset, offset));
 
@@ -67,7 +73,6 @@ export default function ChartZoomWrapper({ children, className = "", style, defa
   // don't reset the viewBox to the default "0 0 W H".
   useEffect(() => {
     if (!captureOrigVB()) {
-      // SVG not yet in DOM — poll briefly
       const id = setInterval(() => {
         if (captureOrigVB()) {
           clearInterval(id);
@@ -76,7 +81,6 @@ export default function ChartZoomWrapper({ children, className = "", style, defa
       }, 80);
       return () => clearInterval(id);
     }
-    // Always re-stamp the viewBox after children re-render
     applyViewBox();
   });
 

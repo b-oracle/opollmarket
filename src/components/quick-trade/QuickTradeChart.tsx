@@ -1,4 +1,4 @@
-import { memo, useState, useMemo, type MutableRefObject } from "react";
+import { memo, useState, useMemo, useRef, type MutableRefObject } from "react";
 import type { OHLCCandle } from "@/lib/cryptoPriceProvider";
 import type { Candle, LinePoint } from "@/lib/chartEngine";
 import { Loader2, Timer, Maximize2, Minimize2 } from "lucide-react";
@@ -58,8 +58,8 @@ function ChartSkeleton({ text }: { text: string }) {
   );
 }
 
-function BucketBadges({ bucketCountdown, bucketProgress }: { bucketCountdown?: number; bucketProgress?: number }) {
-  if (!bucketCountdown && bucketProgress == null) return null;
+function BucketBadges({ bucketCountdown }: { bucketCountdown?: number }) {
+  if (!bucketCountdown) return null;
   const fmt = (ms: number) => {
     const totalSec = Math.floor(ms / 1000);
     const h = Math.floor(totalSec / 3600);
@@ -70,19 +70,10 @@ function BucketBadges({ bucketCountdown, bucketProgress }: { bucketCountdown?: n
     return `${s}s`;
   };
   return (
-    <>
-      {bucketCountdown != null && bucketCountdown > 0 && (
-        <div className="absolute top-1 right-1 flex items-center gap-1 px-2 py-0.5 rounded-md bg-card/90 border border-border backdrop-blur-sm z-10">
-          <Timer className="w-3 h-3 text-muted-foreground" />
-          <span className="text-[9px] font-bold tabular-nums text-foreground">{fmt(bucketCountdown)}</span>
-        </div>
-      )}
-      {bucketProgress != null && (
-        <div className="absolute bottom-6 left-0 right-0 h-[2px] bg-muted/30">
-          <div className="h-full bg-primary/50 transition-all duration-1000 ease-linear" style={{ width: `${bucketProgress * 100}%` }} />
-        </div>
-      )}
-    </>
+    <div className="absolute top-1 right-1 flex items-center gap-1 px-2 py-0.5 rounded-md bg-card/90 border border-border backdrop-blur-sm z-10">
+      <Timer className="w-3 h-3 text-muted-foreground" />
+      <span className="text-[9px] font-bold tabular-nums text-foreground">{fmt(bucketCountdown)}</span>
+    </div>
   );
 }
 
@@ -121,17 +112,21 @@ function QuickTradeChart(props: QuickTradeChartProps) {
 
   const entryPrice = userBet && activeRound?.open_price ? Number(activeRound.open_price) : null;
 
+  // Once engine becomes ready, never fall back to raw data (prevents source bounce)
+  const engineWasReadyRef = useRef(false);
+  if (engineReady) engineWasReadyRef.current = true;
+  const useEngineData = engineWasReadyRef.current;
+
   // Convert engine data to chart-ready formats
-  // Engine candles already include the active candle via getCandlesWithMAs()
   const engineOhlcData = useMemo(() => {
-    if (!engineReady || !engineCandles || engineCandles.length < 1) return null;
+    if (!useEngineData || !engineCandles || engineCandles.length < 1) return null;
     return engineCandlesToOHLC(engineCandles);
-  }, [engineReady, engineCandles]);
+  }, [useEngineData, engineCandles]);
 
   const enginePriceHistory = useMemo(() => {
-    if (!engineReady || !engineLinePoints || engineLinePoints.length < 2) return null;
+    if (!useEngineData || !engineLinePoints || engineLinePoints.length < 2) return null;
     return engineLinesToHistory(engineLinePoints);
-  }, [engineReady, engineLinePoints]);
+  }, [useEngineData, engineLinePoints]);
 
   // 1. Market closed
   if (chartType !== "tv" && !isMarketOpen(assetClass || "crypto")) {
@@ -239,7 +234,7 @@ function QuickTradeChart(props: QuickTradeChartProps) {
               {chartContent}
             </div>
           </ChartZoomWrapper>
-          <BucketBadges bucketCountdown={bucketCountdown} bucketProgress={bucketProgress} />
+          <BucketBadges bucketCountdown={bucketCountdown} />
         </div>
         <button
           onClick={() => setIsFullscreen(false)}
@@ -259,7 +254,7 @@ function QuickTradeChart(props: QuickTradeChartProps) {
       <ChartZoomWrapper defaultZoom={1}>
         {chartContent}
       </ChartZoomWrapper>
-      <BucketBadges bucketCountdown={bucketCountdown} bucketProgress={bucketProgress} />
+      <BucketBadges bucketCountdown={bucketCountdown} />
       <p className="text-[10px] text-muted-foreground text-center mt-1">Last {timeframeLabel}</p>
 
       {/* Expand button */}
