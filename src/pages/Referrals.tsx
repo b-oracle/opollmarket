@@ -77,6 +77,24 @@ const Referrals = () => {
     gcTime: 10 * 60 * 1000,
   });
 
+  // Fetch referral commissions from pending_commissions (released)
+  const { data: referralCommissions = [] } = useQuery({
+    queryKey: ["referral_commissions", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase
+        .from("pending_commissions")
+        .select("amount")
+        .eq("user_id", user.id)
+        .eq("type", "referral")
+        .eq("status", "released");
+      return data || [];
+    },
+    enabled: !!user,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+
   // Fetch bonus balance
   const { data: bonusBalance = 0 } = useQuery({
     queryKey: ["bonus_balance", user?.id],
