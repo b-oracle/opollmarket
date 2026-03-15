@@ -21,8 +21,11 @@ const Followers = () => {
   const { userId: paramUserId } = useParams<{ userId: string }>();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
   const targetUserId = paramUserId || user?.id;
-  const [tab, setTab] = useState<"followers" | "following">("followers");
+  const [tab, setTab] = useState<"followers" | "following">(
+    searchParams.get("tab") === "following" ? "following" : "followers"
+  );
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
