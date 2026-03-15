@@ -468,7 +468,7 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
             {/* Payment Method Selector */}
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Payment Method</p>
-              <div className={`grid gap-3 grid-cols-${[balancePayEnabled, true, ngnPayEnabled].filter(Boolean).length}`}>
+              <div className={`grid gap-3 ${balancePayEnabled && ngnPayEnabled ? "grid-cols-3" : balancePayEnabled || ngnPayEnabled ? "grid-cols-2" : "grid-cols-1"}`}>
                 {balancePayEnabled && (
                 <button
                   onClick={() => setPayMethod("balance")}
