@@ -213,13 +213,13 @@ const Referrals = () => {
                 className="glass rounded-xl p-4 text-center">
                 <DollarSign className="w-5 h-5 text-primary mx-auto mb-1" />
                 <p className="text-xl font-bold">${totalEarned.toFixed(2)}</p>
-                <p className="text-[10px] text-muted-foreground">Total Earned</p>
+                <p className="text-[10px] text-muted-foreground">Total Commissions (Earned)</p>
               </motion.div>
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
                 className="glass rounded-xl p-4 text-center">
                 <Gift className="w-5 h-5 text-primary mx-auto mb-1" />
-                <p className="text-xl font-bold">${bonusBalance.toFixed(2)}</p>
-                <p className="text-[10px] text-muted-foreground">Bonus Balance</p>
+                <p className="text-xl font-bold">${totalBonusEarned.toFixed(2)}</p>
+                <p className="text-[10px] text-muted-foreground">Total Bonus (Earned)</p>
               </motion.div>
             </>
           )}
