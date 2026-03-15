@@ -475,6 +475,8 @@ export default function QuickTrade() {
   // ── Stream price via WebSocket (sub-second) with HTTP polling fallback ──
   const lastFetchTimeRef = useRef(0);
   const [streamingPrice, setStreamingPrice] = useState<number | null>(null);
+  const streamingPriceRef = useRef<number | null>(null);
+  const lastStreamingStateUpdateRef = useRef(0);
   const wsActiveRef = useRef(false);
   const lastWsTickAtRef = useRef(0);
   const streamRunIdRef = useRef(0);
