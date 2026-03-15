@@ -493,6 +493,8 @@ const AdminBoosts = () => {
       )}
 
       <AdminPagination page={page} totalItems={filteredBoosts.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
+        </>
+      )}
     </div>
   );
 };
