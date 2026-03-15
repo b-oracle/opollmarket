@@ -45,7 +45,7 @@ const DesktopSidebar = () => {
           
         <img src={logo} alt="OPOLL" className="h-8 w-8 shrink-0 object-fill border-0 border-none rounded-none" />
         {!collapsed &&
-          <span className="font-bold tracking-tight text-primary leading-none px-[2px] text-3xl mx-0">Poll</span>
+          <span className="font-bold tracking-tight text-primary leading-none text-3xl mx-0 px-0 text-left">Poll</span>
           }
       </div>
 
