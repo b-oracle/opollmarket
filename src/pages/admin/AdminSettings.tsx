@@ -360,218 +360,254 @@ const AdminSettings = () => {
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Platform Settings</h1>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 className="text-2xl font-bold">Platform Settings</h1>
+        <Button onClick={handleSave} disabled={!isValid || saving || !canEdit} size="sm">
+          {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+          {canEdit ? "Save All Settings" : "View Only"}
+        </Button>
+      </div>
 
-      {/* ─── Feature Toggles (Super Admin only) ─── */}
+      {/* ─── Feature Toggles (always visible) ─── */}
       <FeatureTogglesCard />
 
-      {/* Fiat settings moved to dedicated Fiat Settings page */}
+      <Tabs defaultValue="fees" className="w-full">
+        <TabsList className="w-full flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
+          <TabsTrigger value="fees" className="flex-1 min-w-[100px] text-xs sm:text-sm gap-1.5">
+            <Percent className="w-3.5 h-3.5 hidden sm:inline" /> Fees
+          </TabsTrigger>
+          <TabsTrigger value="quicktrade" className="flex-1 min-w-[100px] text-xs sm:text-sm gap-1.5">
+            <Zap className="w-3.5 h-3.5 hidden sm:inline" /> Quick Trade
+          </TabsTrigger>
+          <TabsTrigger value="withdrawals" className="flex-1 min-w-[100px] text-xs sm:text-sm gap-1.5">
+            <ArrowUpFromLine className="w-3.5 h-3.5 hidden sm:inline" /> Withdrawals
+          </TabsTrigger>
+          <TabsTrigger value="creators" className="flex-1 min-w-[100px] text-xs sm:text-sm gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 hidden sm:inline" /> Creators
+          </TabsTrigger>
+          <TabsTrigger value="promotions" className="flex-1 min-w-[100px] text-xs sm:text-sm gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 hidden sm:inline" /> Promotions
+          </TabsTrigger>
+        </TabsList>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl">
-        {/* ─── Market Prediction Fees ─── */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Percent className="w-5 h-5" /> Market Prediction Fees
-            </CardTitle>
-            <CardDescription>
-              A single flat fee is charged on each prediction. The fee is then split internally among the pool reserve, creators, referrers, and BC400.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="predictionFee" className="text-base font-bold">Prediction Fee (%)</Label>
-              <Input id="predictionFee" type="number" min={0} max={100} step={0.5} value={predictionFee} onChange={(e) => setPredictionFee(e.target.value)} placeholder="10" />
-              <p className="text-[10px] text-muted-foreground">Flat fee deducted from each prediction wager (e.g. 10 = 10% of amount). All goes to admin pool reserve first.</p>
-            </div>
-
-            <div className="border-t border-border pt-3 space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground">Internal Fee Splits (must sum to ≤ 100% of the fee)</p>
-              <p className="text-[10px] text-muted-foreground">These splits are paid out from the Admin Pool Reserve after 48 hours. The platform keeps whatever % remains after all splits.</p>
-            </div>
-
-            <div className="border-t border-border pt-3 space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground">Creator Splits (paid to market creators from the fee)</p>
-              <div className="space-y-2">
-                <Label htmlFor="creatorFee">Unverified Creator Split (%)</Label>
-                <Input id="creatorFee" type="number" min={0} max={100} step={0.1} value={creatorFee} onChange={(e) => setCreatorFee(e.target.value)} placeholder="30" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="creatorFeeBlue">Blue Tick Creator Split (%)</Label>
-                <Input id="creatorFeeBlue" type="number" min={0} max={100} step={0.1} value={creatorFeeBlue} onChange={(e) => setCreatorFeeBlue(e.target.value)} placeholder="30" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="creatorFeeGold">Gold Tick Creator Split (%)</Label>
-                <Input id="creatorFeeGold" type="number" min={0} max={100} step={0.1} value={creatorFeeGold} onChange={(e) => setCreatorFeeGold(e.target.value)} placeholder="30" />
-              </div>
-            </div>
-
-            <div className="border-t border-border pt-3 space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor="referrerCommission">Referrer Split (%)</Label>
-                <Input id="referrerCommission" type="number" min={0} max={100} step={0.1} value={referrerCommission} onChange={(e) => setReferrerCommission(e.target.value)} placeholder="0" />
-                <p className="text-[10px] text-muted-foreground">% of prediction fee paid to the predictor's referrer</p>
-              </div>
-            </div>
-
-            <div className="border-t border-border pt-3 space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor="bc400PoolPercent">BC400 Reward Pool Split (%)</Label>
-                <Input id="bc400PoolPercent" type="number" min={0} max={100} step={0.1} value={bc400PoolPercent} onChange={(e) => setBc400PoolPercent(e.target.value)} placeholder="0" />
-              </div>
-            </div>
-
-            <Card className="border-dashed">
+        {/* ═══════ FEES TAB ═══════ */}
+        <TabsContent value="fees" className="space-y-6 mt-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {/* Prediction Fee */}
+            <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2"><LogOut className="w-4 h-4" /> Early Exit Fee</CardTitle>
-                <CardDescription className="text-xs">Fee charged when users sell positions early. Goes to Pool Reserve.</CardDescription>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Percent className="w-4 h-4 text-primary" /> Market Prediction Fee
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Flat fee charged on each prediction, then split internally.
+                </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="exitFee">Exit Fee (%)</Label>
-                  <Input id="exitFee" type="number" min={0} max={100} step={0.5} value={exitFee} onChange={(e) => setExitFee(e.target.value)} placeholder="5" />
-                  <p className="text-[10px] text-muted-foreground">Current: {exitFeeNum}%</p>
+                  <Label htmlFor="predictionFee" className="text-sm font-semibold">Prediction Fee (%)</Label>
+                  <Input id="predictionFee" type="number" min={0} max={100} step={0.5} value={predictionFee} onChange={(e) => setPredictionFee(e.target.value)} placeholder="10" />
+                  <p className="text-[10px] text-muted-foreground">Flat fee deducted from each prediction wager. All goes to admin pool reserve first.</p>
                 </div>
+
+                <div className="border-t border-border pt-3 space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground">Creator Splits (from the fee)</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="creatorFee" className="text-xs">Unverified (%)</Label>
+                      <Input id="creatorFee" type="number" min={0} max={100} step={0.1} value={creatorFee} onChange={(e) => setCreatorFee(e.target.value)} placeholder="30" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="creatorFeeBlue" className="text-xs">Blue Tick (%)</Label>
+                      <Input id="creatorFeeBlue" type="number" min={0} max={100} step={0.1} value={creatorFeeBlue} onChange={(e) => setCreatorFeeBlue(e.target.value)} placeholder="30" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="creatorFeeGold" className="text-xs">Gold Tick (%)</Label>
+                      <Input id="creatorFeeGold" type="number" min={0} max={100} step={0.1} value={creatorFeeGold} onChange={(e) => setCreatorFeeGold(e.target.value)} placeholder="30" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-border pt-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="referrerCommission" className="text-xs">Referrer Split (%)</Label>
+                    <Input id="referrerCommission" type="number" min={0} max={100} step={0.1} value={referrerCommission} onChange={(e) => setReferrerCommission(e.target.value)} placeholder="0" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="bc400PoolPercent" className="text-xs">BC400 Pool Split (%)</Label>
+                    <Input id="bc400PoolPercent" type="number" min={0} max={100} step={0.1} value={bc400PoolPercent} onChange={(e) => setBc400PoolPercent(e.target.value)} placeholder="0" />
+                  </div>
+                </div>
+
+                {splitTotalGold > 100 && <p className="text-xs text-destructive">Internal splits cannot exceed 100%.</p>}
               </CardContent>
             </Card>
 
-            <Card className="border-dashed">
+            {/* Fee Summary */}
+            <Card className="bg-muted/30">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2"><Copy className="w-4 h-4" /> Copy Trade Commission</CardTitle>
-                <CardDescription className="text-xs">% of profit deducted from copiers and credited to the original trader when their copied trade wins.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <Label htmlFor="copyTradeCommission">Commission (%)</Label>
-                  <Input id="copyTradeCommission" type="number" min={0} max={100} step={0.5} value={copyTradeCommission} onChange={(e) => setCopyTradeCommission(e.target.value)} placeholder="10" />
-                  <p className="text-[10px] text-muted-foreground">Current: {copyTradeCommissionNum}%</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="rounded-lg border border-border p-3 space-y-2 bg-muted/50">
-              <p className="text-xs font-semibold mb-2">Fee Summary (per $100 prediction)</p>
-
-              {/* STAGE 1 */}
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Stage 1 — At Trade Time</p>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Prediction Fee ({predictionFeeNum}%)</span>
-                  <span className="font-bold text-primary">${predictionFeeNum.toFixed(2)} → Admin Pool Reserve</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Market Liquidity Pool</span>
-                  <span className="font-bold text-primary">${(100 - predictionFeeNum).toFixed(2)} → shared to winners</span>
-                </div>
-              </div>
-
-              {/* STAGE 2 */}
-              <div className="border-t border-border pt-2 space-y-1">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Stage 2 — After 48 Hours (from ${predictionFeeNum.toFixed(2)} reserve)</p>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Creator (Gold {creatorGoldNum}%)</span>
-                  <span className="font-medium">${(predictionFeeNum * creatorGoldNum / 100).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Creator (Blue {creatorBlueNum}%)</span>
-                  <span className="font-medium">${(predictionFeeNum * creatorBlueNum / 100).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Creator (Unverified {creatorNum}%)</span>
-                  <span className="font-medium">${(predictionFeeNum * creatorNum / 100).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Referrer ({referrerCommissionNum}%)</span>
-                  <span className="font-medium">${(predictionFeeNum * referrerCommissionNum / 100).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">BC400 Pool ({bc400PoolPercentNum}%)</span>
-                  <span className="font-medium">${(predictionFeeNum * bc400PoolPercentNum / 100).toFixed(2)}</span>
-                </div>
-                <div className="border-t border-border pt-1 mt-1">
-                  <div className="flex justify-between text-sm font-bold">
-                    <span className="text-muted-foreground">Platform Keeps (remainder)</span>
-                    <span className="text-primary">{platformNetGold.toFixed(1)}% = ${(predictionFeeNum * platformNetGold / 100).toFixed(2)}</span>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">Gold scenario shown. Blue: {platformNetBlue.toFixed(1)}% | Unverified: {platformNetUnverified.toFixed(1)}%</p>
-                  <div className="flex justify-between text-xs font-semibold mt-1 pt-1 border-t border-dashed border-border">
-                    <span className="text-muted-foreground">Total</span>
-                    <span className="text-foreground">100%</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-t border-border pt-1.5">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Early Exit Fee</span>
-                  <span className="font-medium">{exitFeeNum}%</span>
-                </div>
-              </div>
-            </div>
-
-            {splitTotalGold > 100 && <p className="text-xs text-destructive">Internal splits cannot exceed 100%.</p>}
-          </CardContent>
-        </Card>
-
-        {/* ─── Quick Trade Settings ─── */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Zap className="w-5 h-5" /> Quick Trade Settings
-            </CardTitle>
-            <CardDescription>
-              Configure Quick Trade fees, trade limits, streak multipliers, and available assets.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Fee */}
-            <div className="space-y-2">
-              <Label htmlFor="quickTradeFee">Platform Fee (%)</Label>
-              <Input id="quickTradeFee" type="number" min={0} max={100} step={0.5} value={quickTradeFee} onChange={(e) => setQuickTradeFee(e.target.value)} placeholder="5" />
-              <p className="text-[10px] text-muted-foreground">Deducted from losing pool before distributing to winners</p>
-            </div>
-
-            {/* One-Sided Bonus Toggle */}
-            <div className="flex items-center justify-between rounded-lg border border-border p-3">
-              <div className="space-y-0.5">
-                <Label className="text-sm font-medium flex items-center gap-1.5">
-                  <Gift className="w-4 h-4 text-primary" /> One-Sided Bonus
-                </Label>
-                <p className="text-[10px] text-muted-foreground">No fee + 0.5% bonus when all bets are on the winning side</p>
-              </div>
-              <Switch
-                checked={qtOneSidedBonus}
-                onCheckedChange={setQtOneSidedBonus}
-              />
-            </div>
-
-            {/* Min/Max Bet */}
-            <Card className="border-dashed">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2"><DollarSign className="w-4 h-4" /> Trade Limits</CardTitle>
-                <CardDescription className="text-xs">Minimum and maximum trade amounts for Quick Trade rounds.</CardDescription>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-primary" /> Fee Summary
+                </CardTitle>
+                <CardDescription className="text-xs">Per $100 prediction breakdown</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="qtMinBet" className="text-xs">Min Trade ($)</Label>
-                    <Input id="qtMinBet" type="number" min={0} step={1} value={qtMinBet} onChange={(e) => setQtMinBet(e.target.value)} placeholder="1" />
+                <div className="space-y-1.5">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Stage 1 — At Trade Time</p>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Prediction Fee ({predictionFeeNum}%)</span>
+                    <span className="font-bold text-primary">${predictionFeeNum.toFixed(2)}</span>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="qtMaxBet" className="text-xs">Max Trade ($)</Label>
-                    <Input id="qtMaxBet" type="number" min={1} step={1} value={qtMaxBet} onChange={(e) => setQtMaxBet(e.target.value)} placeholder="500" />
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Market Liquidity Pool</span>
+                    <span className="font-bold text-primary">${(100 - predictionFeeNum).toFixed(2)}</span>
                   </div>
                 </div>
-                {qtMaxBetNum < qtMinBetNum && <p className="text-[10px] text-destructive">Max trade must be ≥ min trade.</p>}
+
+                <div className="border-t border-border pt-2 space-y-1.5">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Stage 2 — After 48h (from ${predictionFeeNum.toFixed(2)})</p>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Creator (Gold {creatorGoldNum}%)</span>
+                    <span className="font-medium">${(predictionFeeNum * creatorGoldNum / 100).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Creator (Blue {creatorBlueNum}%)</span>
+                    <span className="font-medium">${(predictionFeeNum * creatorBlueNum / 100).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Creator (Unverified {creatorNum}%)</span>
+                    <span className="font-medium">${(predictionFeeNum * creatorNum / 100).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Referrer ({referrerCommissionNum}%)</span>
+                    <span className="font-medium">${(predictionFeeNum * referrerCommissionNum / 100).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">BC400 Pool ({bc400PoolPercentNum}%)</span>
+                    <span className="font-medium">${(predictionFeeNum * bc400PoolPercentNum / 100).toFixed(2)}</span>
+                  </div>
+                  <div className="border-t border-border pt-1.5 mt-1.5">
+                    <div className="flex justify-between text-sm font-bold">
+                      <span className="text-muted-foreground">Platform Keeps</span>
+                      <span className="text-primary">{platformNetGold.toFixed(1)}% = ${(predictionFeeNum * platformNetGold / 100).toFixed(2)}</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">Gold shown. Blue: {platformNetBlue.toFixed(1)}% | Unverified: {platformNetUnverified.toFixed(1)}%</p>
+                    <div className="flex justify-between text-xs font-semibold mt-1 pt-1 border-t border-dashed border-border">
+                      <span className="text-muted-foreground">Total</span>
+                      <span className="text-foreground">100%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-border pt-2 space-y-1.5">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Early Exit Fee</span>
+                    <span className="font-medium">{exitFeeNum}%</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Copy Trade Commission</span>
+                    <span className="font-medium">{copyTradeCommissionNum}%</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Other fees in a row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2"><LogOut className="w-4 h-4" /> Early Exit Fee</CardTitle>
+                <CardDescription className="text-[10px]">Fee when users sell positions early.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-1.5">
+                  <Label htmlFor="exitFee" className="text-xs">Exit Fee (%)</Label>
+                  <Input id="exitFee" type="number" min={0} max={100} step={0.5} value={exitFee} onChange={(e) => setExitFee(e.target.value)} placeholder="5" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2"><Copy className="w-4 h-4" /> Copy Trade Commission</CardTitle>
+                <CardDescription className="text-[10px]">% of profit from copiers to original trader.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-1.5">
+                  <Label htmlFor="copyTradeCommission" className="text-xs">Commission (%)</Label>
+                  <Input id="copyTradeCommission" type="number" min={0} max={100} step={0.5} value={copyTradeCommission} onChange={(e) => setCopyTradeCommission(e.target.value)} placeholder="10" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2"><Zap className="w-4 h-4" /> Auto-Resolve Fee</CardTitle>
+                <CardDescription className="text-[10px]">Fee for creators using auto-resolve.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-1.5">
+                  <Label htmlFor="autoResolveFee" className="text-xs">Fee ($)</Label>
+                  <Input id="autoResolveFee" type="number" min={0} step={0.5} value={autoResolveFee} onChange={(e) => setAutoResolveFee(e.target.value)} placeholder="0" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* ═══════ QUICK TRADE TAB ═══════ */}
+        <TabsContent value="quicktrade" className="space-y-6 mt-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {/* Fee & Limits */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-primary" /> Fee & Limits
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="quickTradeFee" className="text-xs">Platform Fee (%)</Label>
+                  <Input id="quickTradeFee" type="number" min={0} max={100} step={0.5} value={quickTradeFee} onChange={(e) => setQuickTradeFee(e.target.value)} placeholder="5" />
+                  <p className="text-[10px] text-muted-foreground">Deducted from losing pool before distributing to winners</p>
+                </div>
+
+                <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-medium flex items-center gap-1.5">
+                      <Gift className="w-4 h-4 text-primary" /> One-Sided Bonus
+                    </Label>
+                    <p className="text-[10px] text-muted-foreground">No fee + 0.5% bonus when all bets are on the winning side</p>
+                  </div>
+                  <Switch checked={qtOneSidedBonus} onCheckedChange={setQtOneSidedBonus} />
+                </div>
+
+                <div className="border-t border-border pt-3">
+                  <p className="text-xs font-semibold text-muted-foreground mb-2">Trade Limits</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="qtMinBet" className="text-xs">Min Trade ($)</Label>
+                      <Input id="qtMinBet" type="number" min={0} step={1} value={qtMinBet} onChange={(e) => setQtMinBet(e.target.value)} placeholder="1" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="qtMaxBet" className="text-xs">Max Trade ($)</Label>
+                      <Input id="qtMaxBet" type="number" min={1} step={1} value={qtMaxBet} onChange={(e) => setQtMaxBet(e.target.value)} placeholder="500" />
+                    </div>
+                  </div>
+                  {qtMaxBetNum < qtMinBetNum && <p className="text-[10px] text-destructive mt-1">Max trade must be ≥ min trade.</p>}
+                </div>
               </CardContent>
             </Card>
 
             {/* Streak Multipliers */}
-            <Card className="border-dashed">
+            <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2"><Flame className="w-4 h-4" /> Streak Multipliers</CardTitle>
-                <CardDescription className="text-xs">Bonus multipliers applied to winnings based on consecutive win streaks.</CardDescription>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Flame className="w-4 h-4 text-primary" /> Streak Multipliers
+                </CardTitle>
+                <CardDescription className="text-xs">Bonus multipliers for consecutive win streaks.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
@@ -592,8 +628,8 @@ const AdminSettings = () => {
                     <Input type="number" min={1} max={5} step={0.01} value={qtStreak5} onChange={(e) => setQtStreak5(e.target.value)} placeholder="1.25" />
                   </div>
                 </div>
-                <div className="rounded-lg bg-muted/50 p-2 space-y-0.5">
-                  <p className="text-[10px] text-muted-foreground font-medium">Preview</p>
+                <div className="rounded-lg bg-muted/50 p-2">
+                  <p className="text-[10px] text-muted-foreground font-medium mb-1">Preview</p>
                   <div className="flex flex-wrap gap-2 text-[10px]">
                     <span className="px-1.5 py-0.5 rounded bg-background border border-border">2 wins → ×{qtStreak2Num.toFixed(2)}</span>
                     <span className="px-1.5 py-0.5 rounded bg-background border border-border">3 wins → ×{qtStreak3Num.toFixed(2)}</span>
@@ -603,39 +639,34 @@ const AdminSettings = () => {
                 </div>
               </CardContent>
             </Card>
+          </div>
 
-            {/* Enabled Assets */}
-            <Card className="border-dashed">
+          {/* Assets & Timeframes */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2"><Zap className="w-4 h-4" /> Available Assets</CardTitle>
-                <CardDescription className="text-xs">Toggle which assets are available in Quick Trade. At least one must be enabled.</CardDescription>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-primary" /> Available Assets
+                </CardTitle>
+                <CardDescription className="text-xs">Toggle which assets are available. At least one must be enabled.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
+                <div className="space-y-1 max-h-[400px] overflow-y-auto pr-1">
                   {ALL_ASSETS.map(asset => (
-                    <div key={asset.symbol} className="flex items-center justify-between py-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{asset.symbol} <span className="text-muted-foreground font-normal">· {asset.label}</span></span>
+                    <div key={asset.symbol} className="flex items-center justify-between py-1.5 border-b border-border/50 last:border-0">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-sm font-medium">{asset.symbol}</span>
+                        <span className="text-xs text-muted-foreground truncate">{asset.label}</span>
                         {qtDisabledAssets.has(asset.symbol) && (
-                          <Badge variant="destructive" className="text-[10px] px-1.5 py-0">⚠️ Unavailable</Badge>
+                          <Badge variant="destructive" className="text-[10px] px-1.5 py-0 shrink-0">⚠️</Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                         {qtDisabledAssets.has(asset.symbol) && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-6 text-[10px] px-2"
-                            onClick={() => {
-                              setQtDisabledAssets(prev => {
-                                const next = new Set(prev);
-                                next.delete(asset.symbol);
-                                return next;
-                              });
-                            }}
-                          >
-                            <RefreshCw className="w-3 h-3 mr-1" />
-                            Re-enable
+                          <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => {
+                            setQtDisabledAssets(prev => { const next = new Set(prev); next.delete(asset.symbol); return next; });
+                          }}>
+                            <RefreshCw className="w-3 h-3 mr-1" /> Re-enable
                           </Button>
                         )}
                         <Switch
@@ -649,22 +680,23 @@ const AdminSettings = () => {
                 </div>
                 {qtDisabledAssets.size > 0 && (
                   <div className="mt-3 p-2 rounded-md bg-destructive/10 border border-destructive/20">
-                    <p className="text-[11px] text-destructive font-medium">⚠️ {qtDisabledAssets.size} asset(s) auto-disabled due to API errors. Click "Re-enable" then Save to restore.</p>
+                    <p className="text-[11px] text-destructive font-medium">⚠️ {qtDisabledAssets.size} asset(s) auto-disabled due to API errors.</p>
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Enabled Timeframes */}
-            <Card className="border-dashed">
+            <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2"><Timer className="w-4 h-4" /> Round Durations</CardTitle>
-                <CardDescription className="text-xs">Toggle which round durations are available in Quick Trade. At least one must be enabled.</CardDescription>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Timer className="w-4 h-4 text-primary" /> Round Durations
+                </CardTitle>
+                <CardDescription className="text-xs">Toggle available round durations. At least one required.</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   {ALL_TIMEFRAMES.map(tf => (
-                    <div key={tf.seconds} className="flex items-center justify-between py-1">
+                    <div key={tf.seconds} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
                       <span className="text-sm font-medium">{tf.label}</span>
                       <Switch
                         checked={qtEnabledTimeframes.has(tf.seconds)}
@@ -676,261 +708,235 @@ const AdminSettings = () => {
                 </div>
               </CardContent>
             </Card>
-          </CardContent>
-        </Card>
+          </div>
+        </TabsContent>
 
-        {/* ─── Other Settings ─── */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Gift className="w-5 h-5" /> Referrals & Withdrawals
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Card className="border-dashed">
+        {/* ═══════ WITHDRAWALS TAB ═══════ */}
+        <TabsContent value="withdrawals" className="space-y-6 mt-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2"><Gift className="w-4 h-4" /> Referral Reward</CardTitle>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Gift className="w-4 h-4 text-primary" /> Referral Reward
+                </CardTitle>
                 <CardDescription className="text-xs">Fixed amount credited to referrer's bonus balance on first prediction by referral.</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <Label htmlFor="referralReward">Reward Amount ($)</Label>
+                  <Label htmlFor="referralReward" className="text-xs">Reward Amount ($)</Label>
                   <Input id="referralReward" type="number" min={0} step={0.5} value={referralReward} onChange={(e) => setReferralReward(e.target.value)} placeholder="5" />
+                  {referralNum < 0 && <p className="text-xs text-destructive">Cannot be negative.</p>}
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-dashed">
+            <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2"><ArrowUpFromLine className="w-4 h-4" /> Withdrawal Settings</CardTitle>
-                <CardDescription className="text-xs">Minimum amount users must withdraw. Set to 0 for any amount.</CardDescription>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <ArrowUpFromLine className="w-4 h-4 text-primary" /> Withdrawal Settings
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="space-y-2">
-                  <Label htmlFor="withdrawalFee">Withdrawal Fee (%)</Label>
-                  <Input id="withdrawalFee" type="number" min={0} max={100} step={0.5} value={withdrawalFee} onChange={(e) => setWithdrawalFee(e.target.value)} placeholder="0" />
-                  <p className="text-[10px] text-muted-foreground">Current: {withdrawalFeeNum}%. Deducted from withdrawal amount before sending. Set to 0 for no fee.</p>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="withdrawalFee" className="text-xs">Withdrawal Fee (%)</Label>
+                    <Input id="withdrawalFee" type="number" min={0} max={100} step={0.5} value={withdrawalFee} onChange={(e) => setWithdrawalFee(e.target.value)} placeholder="0" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="minWithdrawalAmount" className="text-xs">Minimum ($)</Label>
+                    <Input id="minWithdrawalAmount" type="number" min={0} step={1} value={minWithdrawalAmount} onChange={(e) => setMinWithdrawalAmount(e.target.value)} placeholder="5" />
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="minWithdrawalAmount">Minimum Withdrawal ($)</Label>
-                  <Input id="minWithdrawalAmount" type="number" min={0} step={1} value={minWithdrawalAmount} onChange={(e) => setMinWithdrawalAmount(e.target.value)} placeholder="5" />
-                  <p className="text-[10px] text-muted-foreground">Current: ${minWithdrawNum.toFixed(2)}</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="withdrawalCooldown">Cooldown Between Withdrawals (minutes)</Label>
+                  <Label htmlFor="withdrawalCooldown" className="text-xs">Cooldown (minutes)</Label>
                   <Input id="withdrawalCooldown" type="number" min={0} step={1} value={withdrawalCooldown} onChange={(e) => setWithdrawalCooldown(e.target.value)} placeholder="5" />
-                  <p className="text-[10px] text-muted-foreground">Current: {withdrawalCooldownNum} minute{withdrawalCooldownNum !== 1 ? "s" : ""}. Set to 0 to disable.</p>
+                  <p className="text-[10px] text-muted-foreground">Current: {withdrawalCooldownNum} min. Set 0 to disable.</p>
                 </div>
+
                 <div className="flex items-center justify-between py-2 border-t border-border pt-3">
                   <div>
                     <Label className="text-sm font-medium">Withdrawal Limit</Label>
-                    <p className="text-[10px] text-muted-foreground">When enabled, users can only withdraw up to {withdrawalMultiplierNum}× their deposits. When off, users can withdraw their full balance.</p>
+                    <p className="text-[10px] text-muted-foreground">Max {withdrawalMultiplierNum}× deposits when enabled.</p>
                   </div>
                   <Switch checked={withdrawalLimitEnabled} onCheckedChange={setWithdrawalLimitEnabled} />
                 </div>
                 {withdrawalLimitEnabled && (
-                <div className="space-y-2">
-                  <Label htmlFor="withdrawalMultiplier">Withdrawal Multiplier (×deposits)</Label>
-                  <Input id="withdrawalMultiplier" type="number" min={1} step={0.5} value={withdrawalMultiplier} onChange={(e) => setWithdrawalMultiplier(e.target.value)} placeholder="2" />
-                  <p className="text-[10px] text-muted-foreground">Current: {withdrawalMultiplierNum}×. Users can withdraw up to {withdrawalMultiplierNum}× their total deposits.</p>
-                  {withdrawalMultiplierNum < 1 && <p className="text-xs text-destructive">Multiplier must be at least 1×.</p>}
-                </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="withdrawalMultiplier" className="text-xs">Multiplier (×deposits)</Label>
+                    <Input id="withdrawalMultiplier" type="number" min={1} step={0.5} value={withdrawalMultiplier} onChange={(e) => setWithdrawalMultiplier(e.target.value)} placeholder="2" />
+                    {withdrawalMultiplierNum < 1 && <p className="text-xs text-destructive">Must be at least 1×.</p>}
+                  </div>
                 )}
               </CardContent>
             </Card>
-          </CardContent>
-        </Card>
+          </div>
+        </TabsContent>
 
-        {/* ─── Verified Member Benefits ─── */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5" /> Verified Member Benefits
-            </CardTitle>
-            <CardDescription>Configure trending multipliers and revenue sharing for verified creators.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <BulkVerificationRefresh />
-            <Card className="border-dashed">
+        {/* ═══════ CREATORS TAB ═══════ */}
+        <TabsContent value="creators" className="space-y-6 mt-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {/* Creator Gate Thresholds */}
+            <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2"><Flame className="w-4 h-4" /> Trending Multiplier</CardTitle>
-                <CardDescription className="text-xs">Verified creators' markets get a boosted trending score.</CardDescription>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Coins className="w-4 h-4 text-primary" /> Creator Gate Thresholds
+                </CardTitle>
+                <CardDescription className="text-xs">Min BC400 token and NFT holdings to create markets.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="minTokenBalance" className="text-xs">Min BC400 (Blue)</Label>
+                    <Input id="minTokenBalance" type="number" min={0} step={1} value={minTokenBalance} onChange={(e) => setMinTokenBalance(e.target.value)} placeholder="10000000" />
+                    <p className="text-[10px] text-muted-foreground">{Number(tokenNum).toLocaleString()}</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="minGoldTokenBalance" className="text-xs">Min BC400 (Gold)</Label>
+                    <Input id="minGoldTokenBalance" type="number" min={0} step={1} value={minGoldTokenBalance} onChange={(e) => setMinGoldTokenBalance(e.target.value)} placeholder="100000000" />
+                    <p className="text-[10px] text-muted-foreground">{Number(goldTokenNum).toLocaleString()}</p>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="minNftBalance" className="text-xs">Min NFT Count</Label>
+                  <Input id="minNftBalance" type="number" min={0} step={1} value={minNftBalance} onChange={(e) => setMinNftBalance(e.target.value)} placeholder="1" />
+                </div>
+                <div className="pt-3 border-t border-border">
+                  <p className="text-xs font-semibold mb-2">Free Market Limits</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="blueMaxFreeMarkets" className="text-xs">Blue Limit</Label>
+                      <Input id="blueMaxFreeMarkets" type="number" min={1} step={1} value={blueMaxFreeMarkets} onChange={(e) => setBlueMaxFreeMarkets(e.target.value)} placeholder="5" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="goldMaxFreeMarkets" className="text-xs">Gold Limit</Label>
+                      <Input id="goldMaxFreeMarkets" type="number" min={1} step={1} value={goldMaxFreeMarkets} onChange={(e) => setGoldMaxFreeMarkets(e.target.value)} placeholder="20" />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Verified Member Benefits */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-primary" /> Verified Benefits
+                </CardTitle>
+                <CardDescription className="text-xs">Trending multipliers and revenue sharing for verified creators.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <BulkVerificationRefresh />
+
+                <div className="border-t border-border pt-3">
+                  <p className="text-xs font-semibold text-muted-foreground mb-2">Trending Multiplier</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Blue (×)</Label>
+                      <Input type="number" min={1} max={5} step={0.1} value={blueTrendingMult} onChange={(e) => setBlueTrendingMult(e.target.value)} placeholder="1.2" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Gold (×)</Label>
+                      <Input type="number" min={1} max={5} step={0.1} value={goldTrendingMult} onChange={(e) => setGoldTrendingMult(e.target.value)} placeholder="1.5" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-border pt-3">
+                  <p className="text-xs font-semibold text-muted-foreground mb-2">Revenue Sharing</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Blue (%)</Label>
+                      <Input type="number" min={0} max={100} step={0.5} value={blueRevenueShare} onChange={(e) => setBlueRevenueShare(e.target.value)} placeholder="0" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Gold (%)</Label>
+                      <Input type="number" min={0} max={100} step={0.5} value={goldRevenueShare} onChange={(e) => setGoldRevenueShare(e.target.value)} placeholder="0" />
+                    </div>
+                  </div>
+                  <div className="rounded-lg bg-muted/50 p-2 mt-2">
+                    <div className="flex flex-wrap gap-2 text-[10px]">
+                      <span className="px-1.5 py-0.5 rounded bg-background border border-primary/30 text-primary">Blue: {blueRevenueShareNum}%</span>
+                      <span className="px-1.5 py-0.5 rounded bg-background border border-accent/50 text-accent-foreground">Gold: {goldRevenueShareNum}%</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1">Distributed every 24h from resolved markets.</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* ═══════ PROMOTIONS TAB ═══════ */}
+        <TabsContent value="promotions" className="space-y-6 mt-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {/* Promotion Pricing */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-primary" /> Promotion Pricing
+                </CardTitle>
+                <CardDescription className="text-xs">Boost tiers and Broadcast alert prices.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Blue Tier (×)</Label>
-                    <Input type="number" min={1} max={5} step={0.1} value={blueTrendingMult} onChange={(e) => setBlueTrendingMult(e.target.value)} placeholder="1.2" />
+                    <Label htmlFor="boostFlashPrice" className="text-xs">Flash Boost ($)</Label>
+                    <Input id="boostFlashPrice" type="number" min={0} step={1} value={boostFlashPrice} onChange={(e) => setBoostFlashPrice(e.target.value)} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Gold Tier (×)</Label>
-                    <Input type="number" min={1} max={5} step={0.1} value={goldTrendingMult} onChange={(e) => setGoldTrendingMult(e.target.value)} placeholder="1.5" />
+                    <Label htmlFor="boostStandardPrice" className="text-xs">Standard Boost ($)</Label>
+                    <Input id="boostStandardPrice" type="number" min={0} step={1} value={boostStandardPrice} onChange={(e) => setBoostStandardPrice(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="boostWhalePrice" className="text-xs">Whale Pin ($)</Label>
+                    <Input id="boostWhalePrice" type="number" min={0} step={1} value={boostWhalePrice} onChange={(e) => setBoostWhalePrice(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="broadcastPrice" className="text-xs">Broadcast Alert ($)</Label>
+                    <Input id="broadcastPrice" type="number" min={0} step={1} value={broadcastPrice} onChange={(e) => setBroadcastPrice(e.target.value)} />
                   </div>
                 </div>
-                <p className="text-[10px] text-muted-foreground">A verified creator's market trending score is multiplied by this factor.</p>
+                <p className="text-[10px] text-muted-foreground">Flash: ${boostFlashPriceNum} · Standard: ${boostStandardPriceNum} · Whale: ${boostWhalePriceNum} · Broadcast: ${broadcastPriceNum}</p>
               </CardContent>
             </Card>
 
-            <Card className="border-dashed">
+            {/* AI Generation */}
+            <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2"><DollarSign className="w-4 h-4" /> Revenue Sharing</CardTitle>
-                <CardDescription className="text-xs">Percentage of creator fees from own markets shared with verified creators as bonus balance.</CardDescription>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" /> AI Generation
+                </CardTitle>
+                <CardDescription className="text-xs">Cost per AI generation. Toggle features in Feature Toggles above.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Blue Tier (%)</Label>
-                    <Input type="number" min={0} max={100} step={0.5} value={blueRevenueShare} onChange={(e) => setBlueRevenueShare(e.target.value)} placeholder="0" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Gold Tier (%)</Label>
-                    <Input type="number" min={0} max={100} step={0.5} value={goldRevenueShare} onChange={(e) => setGoldRevenueShare(e.target.value)} placeholder="0" />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="aiGenerationCost" className="text-xs">Cost per Generation ($)</Label>
+                  <Input id="aiGenerationCost" type="number" min={0} step={0.1} value={aiGenerationCost} onChange={(e) => setAiGenerationCost(e.target.value)} placeholder="0.50" />
+                  <p className="text-[10px] text-muted-foreground">Current: ${aiGenerationCostNum.toFixed(2)}</p>
                 </div>
-                <div className="rounded-lg bg-muted/50 p-2 space-y-0.5">
-                  <p className="text-[10px] text-muted-foreground font-medium">Preview (based on {creatorNum}% creator fee)</p>
-                  <div className="flex flex-wrap gap-2 text-[10px]">
-                    <span className="px-1.5 py-0.5 rounded bg-background border border-primary/30 text-primary">Blue: {blueRevenueShareNum}% of creator fee</span>
-                    <span className="px-1.5 py-0.5 rounded bg-background border border-accent/50 text-accent-foreground">Gold: {goldRevenueShareNum}% of creator fee</span>
-                  </div>
+                <div className="rounded-lg bg-muted/50 p-2">
+                  <ul className="text-[10px] text-muted-foreground space-y-0.5 ml-3 list-disc">
+                    <li>AI Generate Description</li>
+                    <li>AI Generate Details</li>
+                    <li>AI Generate Image</li>
+                  </ul>
                 </div>
-                <p className="text-[10px] text-muted-foreground">Distributed automatically every 24h to verified creators' bonus balance from their own resolved markets.</p>
               </CardContent>
             </Card>
-          </CardContent>
-        </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
 
-        {/* ─── AI Generation Settings ─── */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Sparkles className="w-5 h-5" /> AI Generation
-            </CardTitle>
-            <CardDescription>Cost per AI generation (description, details, or image). Individual features can be toggled on/off via Feature Toggles above.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="space-y-2">
-              <Label htmlFor="aiGenerationCost">Cost per Generation ($)</Label>
-              <Input id="aiGenerationCost" type="number" min={0} step={0.1} value={aiGenerationCost} onChange={(e) => setAiGenerationCost(e.target.value)} placeholder="0.50" />
-              <p className="text-[10px] text-muted-foreground">Current: ${aiGenerationCostNum.toFixed(2)}. Charged per AI-generated description, details, or image.</p>
-            </div>
-            <div className="rounded-lg bg-muted/50 p-3 space-y-1">
-              <p className="text-[10px] font-medium text-foreground">Feature Toggles</p>
-              <p className="text-[10px] text-muted-foreground">Use the <strong>Feature Toggles</strong> section at the top of this page to individually enable/disable:</p>
-              <ul className="text-[10px] text-muted-foreground space-y-0.5 ml-3 list-disc">
-                <li><strong>AI Generate Description</strong> — auto-generate market descriptions</li>
-                <li><strong>AI Generate Details</strong> — auto-generate detailed market content</li>
-                <li><strong>AI Generate Image</strong> — auto-generate cover images</li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* ─── Auto-Resolve Fee ─── */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Zap className="w-5 h-5" /> Auto-Resolve Fee
-            </CardTitle>
-            <CardDescription>
-              Platform fee charged to creators who enable auto-resolve on their markets.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="space-y-2">
-              <Label htmlFor="autoResolveFee">Auto-Resolve Fee ($)</Label>
-              <Input id="autoResolveFee" type="number" min={0} step={0.5} value={autoResolveFee} onChange={(e) => setAutoResolveFee(e.target.value)} placeholder="0" />
-              <p className="text-[10px] text-muted-foreground">Current: ${autoResolveFeeNum.toFixed(2)}. Set to 0 to disable. Charged at market creation when auto-resolve is enabled.</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* ─── Promotion Pricing ─── */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Zap className="w-5 h-5" /> Promotion Pricing
-            </CardTitle>
-            <CardDescription>
-              Prices for Boost tiers and Broadcast alerts. Changes apply to new purchases.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="boostFlashPrice">Flash Boost ($)</Label>
-                <Input id="boostFlashPrice" type="number" min={0} step={1} value={boostFlashPrice} onChange={(e) => setBoostFlashPrice(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="boostStandardPrice">Standard Boost ($)</Label>
-                <Input id="boostStandardPrice" type="number" min={0} step={1} value={boostStandardPrice} onChange={(e) => setBoostStandardPrice(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="boostWhalePrice">Whale Pin ($)</Label>
-                <Input id="boostWhalePrice" type="number" min={0} step={1} value={boostWhalePrice} onChange={(e) => setBoostWhalePrice(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="broadcastPrice">Broadcast Alert ($)</Label>
-                <Input id="broadcastPrice" type="number" min={0} step={1} value={broadcastPrice} onChange={(e) => setBroadcastPrice(e.target.value)} />
-              </div>
-            </div>
-            <p className="text-[10px] text-muted-foreground">Flash: ${boostFlashPriceNum} · Standard: ${boostStandardPriceNum} · Whale: ${boostWhalePriceNum} · Broadcast: ${broadcastPriceNum}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Coins className="w-5 h-5" /> Creator Gate Thresholds
-            </CardTitle>
-            <CardDescription>Minimum BC400 token and NFT holdings required to create markets.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="space-y-2">
-              <Label htmlFor="minTokenBalance">Min BC400 for Blue Tick</Label>
-              <Input id="minTokenBalance" type="number" min={0} step={1} value={minTokenBalance} onChange={(e) => setMinTokenBalance(e.target.value)} placeholder="10000000" />
-              <p className="text-[10px] text-muted-foreground">Current: {Number(tokenNum).toLocaleString()} BC400</p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="minGoldTokenBalance">Min BC400 for Gold Tick</Label>
-              <Input id="minGoldTokenBalance" type="number" min={0} step={1} value={minGoldTokenBalance} onChange={(e) => setMinGoldTokenBalance(e.target.value)} placeholder="100000000" />
-              <p className="text-[10px] text-muted-foreground">Current: {Number(goldTokenNum).toLocaleString()} BC400</p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="minNftBalance">Min BC400 NFT Count</Label>
-              <Input id="minNftBalance" type="number" min={0} step={1} value={minNftBalance} onChange={(e) => setMinNftBalance(e.target.value)} placeholder="1" />
-            </div>
-            <div className="pt-3 border-t border-border">
-              <p className="text-xs font-semibold text-foreground mb-2">Free Market Limits (per verification tier)</p>
-              <p className="text-[10px] text-muted-foreground mb-3">Max active/pending markets before a creation fee is required.</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="blueMaxFreeMarkets">Blue Tick Limit</Label>
-                  <Input id="blueMaxFreeMarkets" type="number" min={1} step={1} value={blueMaxFreeMarkets} onChange={(e) => setBlueMaxFreeMarkets(e.target.value)} placeholder="5" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="goldMaxFreeMarkets">Gold Tick Limit</Label>
-                  <Input id="goldMaxFreeMarkets" type="number" min={1} step={1} value={goldMaxFreeMarkets} onChange={(e) => setGoldMaxFreeMarkets(e.target.value)} placeholder="20" />
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Save Button */}
-      <div className="max-w-4xl mt-6">
-        {referralNum < 0 && <p className="text-xs text-destructive mb-2">Referral reward amount cannot be negative.</p>}
-        <Button onClick={handleSave} disabled={!isValid || saving || !canEdit} className="w-full sm:w-auto">
+      {/* Save Button (sticky bottom on mobile) */}
+      <div className="sticky bottom-4 z-10 sm:static sm:z-auto pt-2">
+        <Button onClick={handleSave} disabled={!isValid || saving || !canEdit} className="w-full sm:w-auto shadow-lg sm:shadow-none">
           {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
           {canEdit ? "Save All Settings" : "View Only — Cannot Save"}
         </Button>
       </div>
 
       {/* Polymarket Import Presets */}
-      <div className="max-w-4xl mt-8">
-        <PolymarketPresetsSection canEdit={canEdit} />
-      </div>
+      <PolymarketPresetsSection canEdit={canEdit} />
     </div>
   );
 };
