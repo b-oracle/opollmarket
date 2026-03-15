@@ -187,17 +187,16 @@ function QuickTradeChart(props: QuickTradeChartProps) {
   let chartContent: React.ReactNode = null;
 
   if (chartType === "candle") {
-    if (useEngineData) {
-      if (!engineOhlcData || engineOhlcData.ohlc.length < 2) {
-        return <ChartSkeleton text="Building chart..." />;
-      }
+    const preferredEngineOhlc = liveEngineOhlcData ?? engineOhlcData;
+
+    if (useEngineData && preferredEngineOhlc && preferredEngineOhlc.ohlc.length >= 2) {
       chartContent = (
         <SimpleCandleChart
-          ohlcData={engineOhlcData.ohlc}
+          ohlcData={preferredEngineOhlc.ohlc}
           entryPrice={entryPrice}
           assetClass={assetClass}
           streamingPrice={null}
-          precomputedMAs={engineOhlcData.mas}
+          precomputedMAs={preferredEngineOhlc.mas}
         />
       );
     } else if (ohlcData.length >= 2) {
@@ -223,10 +222,14 @@ function QuickTradeChart(props: QuickTradeChartProps) {
       return <ChartSkeleton text="Building chart..." />;
     }
   } else {
-    const areaHistory = useEngineData ? enginePriceHistory : (liveEnginePriceHistory ?? priceHistory);
+    const areaHistory = useEngineData
+      ? (liveEnginePriceHistory ?? enginePriceHistory ?? priceHistory)
+      : (liveEnginePriceHistory ?? priceHistory);
+
     if (!areaHistory || areaHistory.length < 2) {
       return <ChartSkeleton text="Building chart..." />;
     }
+
     chartContent = (
       <SimpleAreaChart
         priceHistory={areaHistory}
