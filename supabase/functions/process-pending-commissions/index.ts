@@ -93,8 +93,8 @@ Deno.serve(async (req) => {
               .update({ bc400_pool_balance: Number((cs as any).bc400_pool_balance || 0) + pc.amount } as any)
               .eq("id", cs.id);
           }
-        } else {
-          // Creator or referral — transfer from admin to recipient
+        } else if (pc.amount >= 0.01) {
+          // Creator or referral — transfer from admin to recipient (skip sub-cent amounts)
           await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -pc.amount });
           await supabase.rpc("adjust_balance", { _user_id: pc.user_id, _delta: pc.amount });
 
