@@ -1,0 +1,2 @@
+ALTER TABLE public.commission_settings ADD COLUMN IF NOT EXISTS bc400_pool_percent numeric NOT NULL DEFAULT 0;
+ALTER TABLE public.commission_settings ADD COLUMN IF NOT EXISTS bc400_pool_balance numeric NOT NULL DEFAULT 0;

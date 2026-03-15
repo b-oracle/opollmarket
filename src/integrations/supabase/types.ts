@@ -235,6 +235,8 @@ export type Database = {
           admin_fee_percent: number
           ai_generation_cost: number
           auto_resolve_fee: number
+          bc400_pool_balance: number
+          bc400_pool_percent: number
           blue_max_free_markets: number
           blue_revenue_share_percent: number
           blue_trending_multiplier: number
@@ -290,6 +292,8 @@ export type Database = {
           admin_fee_percent?: number
           ai_generation_cost?: number
           auto_resolve_fee?: number
+          bc400_pool_balance?: number
+          bc400_pool_percent?: number
           blue_max_free_markets?: number
           blue_revenue_share_percent?: number
           blue_trending_multiplier?: number
@@ -345,6 +349,8 @@ export type Database = {
           admin_fee_percent?: number
           ai_generation_cost?: number
           auto_resolve_fee?: number
+          bc400_pool_balance?: number
+          bc400_pool_percent?: number
           blue_max_free_markets?: number
           blue_revenue_share_percent?: number
           blue_trending_multiplier?: number
