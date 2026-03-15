@@ -422,7 +422,8 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
             {/* Payment Method Selector */}
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Payment Method</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className={`grid gap-3 ${balancePayEnabled ? "grid-cols-2" : "grid-cols-1"}`}>
+                {balancePayEnabled && (
                 <button
                   onClick={() => setPayMethod("balance")}
                   className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
@@ -435,6 +436,7 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
                   <span className="text-sm font-bold">Balance</span>
                   <span className="text-xs text-muted-foreground">${totalBalance.toFixed(2)} available</span>
                 </button>
+                )}
                 <button
                   onClick={() => setPayMethod("crypto")}
                   className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
