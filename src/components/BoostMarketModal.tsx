@@ -71,6 +71,14 @@ interface ActiveBoostInfo {
 }
 
 const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketModalProps) => {
+  const { data: commissionSettings } = useCommissionSettings();
+  const BOOST_TIERS = buildBoostTiers(
+    commissionSettings?.boost_flash_price ?? 20,
+    commissionSettings?.boost_standard_price ?? 50,
+    commissionSettings?.boost_whale_price ?? 150,
+  );
+  const BROADCAST_PRICE = commissionSettings?.broadcast_price ?? BROADCAST_PRICE_DEFAULT;
+
   const [selectedTier, setSelectedTier] = useState<BoostTier | null>(null);
   const [broadcastSelected, setBroadcastSelected] = useState(false);
   const [step, setStep] = useState<Step>("select");
@@ -87,11 +95,9 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
     pay_currency?: string;
     extending?: boolean;
     new_ends_at?: string;
-    // Balance payment result fields
     total_charged?: number;
     bonus_used?: number;
     main_used?: number;
-    // NGN/Payaza fields
     bank_name?: string;
     account_number?: string;
     account_name?: string;

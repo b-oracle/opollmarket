@@ -236,6 +236,12 @@ const Create = () => {
         setGoldMaxFreeMarkets(Number((data as any).gold_max_free_markets) || 20);
         setAiGenerationCost(Number((data as any).ai_generation_cost ?? 0.5));
         setAutoResolveFee(Number((data as any).auto_resolve_fee ?? 0));
+        setBoostTierPrices({
+          flash: Number((data as any).boost_flash_price ?? 20),
+          standard: Number((data as any).boost_standard_price ?? 50),
+          whale: Number((data as any).boost_whale_price ?? 150),
+        });
+        setBroadcastPriceVal(Number((data as any).broadcast_price ?? 5));
       }
       setSettingsLoaded(true);
     })();
