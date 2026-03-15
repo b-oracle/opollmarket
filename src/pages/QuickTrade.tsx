@@ -16,6 +16,7 @@ import {
   Share2,
   BarChart3,
   LineChart as LineChartIcon,
+  Activity,
   Info,
   Volume2,
   VolumeOff,
