@@ -395,9 +395,9 @@ Deno.serve(async (req) => {
           market_id: marketId,
           option_id: optionId || null,
           side,
-          amount,
+          amount: netAmount,
           price,
-          shares,
+          shares: actualShares,
           trade_type: "prediction",
         }),
       });
