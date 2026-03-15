@@ -430,6 +430,29 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     animationActiveRef.current = true;
     let lastDotUpdate = 0;
 
+    // For area mode: we keep a single "live tip" timestamp that only advances
+    // when we explicitly commit. This prevents x-axis snapping entirely.
+    let lastAreaUpdateMs = 0;
+    let commitIntervalId: ReturnType<typeof setInterval> | null = null;
+
+    if (chartStyle === "line" && areaSeriesRef.current) {
+      // Every 10s, commit the current live point as a historical point
+      // and advance the tip timestamp. This is the ONLY time x moves.
+      commitIntervalId = setInterval(() => {
+        if (!areaSeriesRef.current || !chartRef.current) return;
+        const nowSec = Math.floor(Date.now() / 1000) as UTCTimestamp;
+        const price = interpolatedPriceRef.current;
+        if (price == null) return;
+        // Commit current price at current time
+        areaSeriesRef.current.update({ time: nowSec, value: price });
+        areaCommittedTimeRef.current = nowSec;
+        // Gentle scroll — scrollToRealTime snaps, so use scrollToPosition instead
+        try {
+          chartRef.current.timeScale().scrollToPosition(5, true);
+        } catch { /* noop */ }
+      }, 10000);
+    }
+
     const animate = () => {
       if (!animationActiveRef.current) return;
 
@@ -442,9 +465,10 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
         const nextPrice = Math.abs(delta) < 0.0000001 ? target : current + delta * 0.08;
         interpolatedPriceRef.current = nextPrice;
 
-        const nowSec = Math.floor(Date.now() / 1000) as UTCTimestamp;
+        const nowMs = Date.now();
 
         if (chartStyle === "candle" && candleSeriesRef.current) {
+          const nowSec = Math.floor(nowMs / 1000) as UTCTimestamp;
           const bucketSec = candleBucketSecRef.current;
           const alignedBucketTime = (Math.floor(nowSec / bucketSec) * bucketSec) as UTCTimestamp;
 
@@ -473,13 +497,14 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
             open: c.open, high: c.high, low: c.low, close: c.close,
           });
         } else if (areaSeriesRef.current) {
-          // Bucket area timestamps to 3-second intervals to prevent x-axis snapping.
-          // Within each 3s window, the point slides smoothly up/down (same timestamp = replacement).
-          // Every 3s a new point appears, but with auto-scroll disabled it's barely visible.
-          const AREA_BUCKET_SEC = 3;
-          const areaBucketTime = (Math.floor(nowSec / AREA_BUCKET_SEC) * AREA_BUCKET_SEC) as UTCTimestamp;
+          // Throttle chart update() to ~12fps — lightweight-charts doesn't need 60fps
+          if (nowMs - lastAreaUpdateMs < 80) {
+            interpolationRef.current = requestAnimationFrame(animate);
+            return;
+          }
+          lastAreaUpdateMs = nowMs;
 
-          // Only update color when direction actually flips — avoids expensive repaints
+          // Only update color when direction actually flips
           const dir = target >= current ? "up" : "down";
           if (dir !== areaDirectionRef.current) {
             areaDirectionRef.current = dir;
@@ -488,14 +513,13 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
             const bottomColor = dir === "up" ? "rgba(34, 197, 94, 0.02)" : "rgba(239, 68, 68, 0.02)";
             areaSeriesRef.current.applyOptions({ lineColor, topColor, bottomColor });
           }
-          areaSeriesRef.current.update({ time: areaBucketTime, value: nextPrice });
 
-          // Smoothly scroll to keep the latest data visible — every 5 seconds
-          const now2 = Date.now();
-          if (now2 - lastScrollTimeRef.current > 5000 && chartRef.current) {
-            lastScrollTimeRef.current = now2;
-            chartRef.current.timeScale().scrollToRealTime();
-          }
+          // Use the committed timestamp + 1 as the "live tip" — this NEVER changes
+          // between commits, so the x-axis stays perfectly still = zero horizontal snapping
+          const tipTime = (areaCommittedTimeRef.current > 0
+            ? areaCommittedTimeRef.current + 1
+            : Math.floor(nowMs / 1000)) as UTCTimestamp;
+          areaSeriesRef.current.update({ time: tipTime, value: nextPrice });
         }
 
         // Throttle dot position updates to ~30fps to reduce layout thrashing
