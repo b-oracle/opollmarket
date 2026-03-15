@@ -236,7 +236,7 @@ const AdminBroadcasts = () => {
                       </div>
                       <div>
                         <span className="text-muted-foreground block mb-0.5 font-medium">TX Hash</span>
-                        <span className="font-mono text-foreground break-all text-[10px]">{bc.tx_hash || "None (unpaid)"}</span>
+                        <span className="font-mono text-foreground break-all text-[10px]">{bc.tx_hash || (isPaid(bc) ? "Paid via balance" : "None (unpaid)")}</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground block mb-0.5 font-medium">Status</span>
