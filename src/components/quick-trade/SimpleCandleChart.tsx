@@ -266,8 +266,7 @@ function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, str
       {/* Entry price badge */}
       {entryPrice != null && entryPrice >= domainMin && entryPrice <= domainMax && (
         <div
-          className="absolute right-0 px-1.5 py-0.5 rounded-sm text-[8px] font-bold tabular-nums"
-          style={{
+          className={`absolute right-0 px-1.5 py-0.5 rounded-sm font-bold tabular-nums ${fullscreen ? "text-xs" : "text-[8px]"}`}
             top: `${(priceToY(entryPrice, domainMin, domainRange) / CHART_H) * 100}%`,
             transform: "translateY(-50%)",
             backgroundColor: ENTRY_COLOR,
