@@ -180,7 +180,6 @@ function QuickTradeChart({
 }: QuickTradeChartProps) {
 
   const entryPrice = userBet && activeRound?.open_price ? Number(activeRound.open_price) : null;
-  const hasEngineData = engineCandles && engineCandles.length >= 2 && engineReady;
 
   // ── 1. Market closed (forex/commodity only, not TV) ──
   if (chartType !== "tv" && !isMarketOpen(assetClass || "crypto")) {
