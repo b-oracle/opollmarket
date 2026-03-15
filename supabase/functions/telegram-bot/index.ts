@@ -1272,15 +1272,13 @@ async function executeBetInline(
 ) {
   const { data: commData } = await supabase
     .from("commission_settings")
-    .select("admin_fee_percent, creator_fee_percent")
+    .select("admin_fee_percent")
     .limit(1)
     .single();
 
   const adminFeePercent = Number(commData?.admin_fee_percent ?? 2) / 100;
-  const creatorFeePercent = Number(commData?.creator_fee_percent ?? 3) / 100;
   const adminAmount = amount * adminFeePercent;
-  const creatorAmount = amount * creatorFeePercent;
-  const totalFees = adminAmount + creatorAmount;
+  const totalFees = adminAmount;
 
   const { data: bal } = await supabase
     .from("balances")
