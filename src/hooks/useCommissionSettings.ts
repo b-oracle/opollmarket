@@ -84,6 +84,7 @@ export const useCommissionSettings = () => {
         boost_standard_price: Number(d.boost_standard_price ?? 50),
         boost_whale_price: Number(d.boost_whale_price ?? 150),
         broadcast_price: Number(d.broadcast_price ?? 5),
+        bc400_pool_percent: Number(d.bc400_pool_percent ?? 0),
       };
     },
     staleTime: 60_000,

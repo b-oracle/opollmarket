@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     // Validate market is active and not expired
     const { data: marketCheck, error: marketCheckErr } = await supabase
       .from("markets")
-      .select("status, end_date")
+      .select("status, end_date, creator_wallet")
       .eq("id", marketId)
       .single();
 
@@ -81,12 +81,36 @@ Deno.serve(async (req) => {
     // Fetch commission settings
     const { data: commData } = await supabase
       .from("commission_settings")
-      .select("admin_fee_percent, referrer_commission_percent, referral_reward_amount")
+      .select("admin_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, referral_reward_amount, bc400_pool_percent")
       .limit(1)
       .single();
 
     const adminFeePercent = Number(commData?.admin_fee_percent ?? 2) / 100;
     const referrerCommissionPercent = Number(commData?.referrer_commission_percent ?? 0) / 100;
+    const bc400PoolPercent = Number((commData as any)?.bc400_pool_percent ?? 0) / 100;
+
+    // Determine creator fee based on verification level
+    let creatorFeePercent = 0;
+    let creatorId: string | null = null;
+    if (marketCheck.creator_wallet) {
+      const { data: creatorProfile } = await supabase
+        .from("profiles")
+        .select("id, verification_level")
+        .eq("id", marketCheck.creator_wallet)
+        .single();
+
+      if (creatorProfile) {
+        creatorId = creatorProfile.id;
+        const level = creatorProfile.verification_level || "none";
+        if (level === "gold") {
+          creatorFeePercent = Number(commData?.creator_fee_gold_percent ?? 3) / 100;
+        } else if (level === "blue") {
+          creatorFeePercent = Number(commData?.creator_fee_blue_percent ?? 3) / 100;
+        } else {
+          creatorFeePercent = Number(commData?.creator_fee_percent ?? 3) / 100;
+        }
+      }
+    }
 
     // Look up trader's referrer for per-trade commission
     let referrerId: string | null = null;
@@ -100,8 +124,10 @@ Deno.serve(async (req) => {
     }
 
     const adminAmount = amount * adminFeePercent;
+    const creatorAmount = amount * creatorFeePercent;
     const referrerAmount = referrerId ? amount * referrerCommissionPercent : 0;
-    const totalFees = adminAmount + referrerAmount;
+    const bc400Amount = amount * bc400PoolPercent;
+    const totalFees = adminAmount + creatorAmount + referrerAmount + bc400Amount;
     const totalCost = amount;
 
     // Check balance
@@ -141,7 +167,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- Credit admin (prediction fee) commission (atomic) ---
+    // --- Credit entire total fee to admin pool reserve ---
     const { data: adminRole } = await supabase
       .from("user_roles")
       .select("user_id")
@@ -149,13 +175,13 @@ Deno.serve(async (req) => {
       .limit(1)
       .single();
 
-    if (adminRole && adminAmount > 0) {
-      await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: adminAmount });
+    if (adminRole && totalFees > 0) {
+      await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: totalFees });
 
       await supabase.from("transactions").insert({
         user_id: adminRole.user_id,
         type: "commission",
-        amount: adminAmount,
+        amount: totalFees,
         market_id: marketId,
         option_id: optionId || null,
         side,
@@ -163,8 +189,28 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- Credit referrer commission per-trade (atomic) ---
-    if (referrerId && referrerAmount > 0) {
+    // --- Distribute commissions FROM admin pool reserve ---
+
+    // Creator commission
+    if (creatorId && creatorAmount > 0 && adminRole) {
+      // Deduct from admin, credit to creator
+      await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -creatorAmount });
+      await supabase.rpc("adjust_balance", { _user_id: creatorId, _delta: creatorAmount });
+
+      await supabase.from("transactions").insert({
+        user_id: creatorId,
+        type: "commission",
+        amount: creatorAmount,
+        market_id: marketId,
+        option_id: optionId || null,
+        side: "creator",
+        status: "confirmed",
+      });
+    }
+
+    // Referrer commission
+    if (referrerId && referrerAmount > 0 && adminRole) {
+      await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -referrerAmount });
       await supabase.rpc("adjust_balance", { _user_id: referrerId, _delta: referrerAmount });
 
       await supabase.from("transactions").insert({
@@ -186,7 +232,27 @@ Deno.serve(async (req) => {
       });
     }
 
-    const poolAmount = amount - adminAmount - referrerAmount;
+    // BC400 pool — stays in admin balance but tracked separately
+    if (bc400Amount > 0) {
+      await supabase
+        .from("commission_settings")
+        .update({ bc400_pool_balance: supabase.rpc ? undefined : 0 } as any)
+        .eq("id", commData ? (commData as any).id : "");
+      // Use raw SQL-style increment via RPC not available, so do read+write
+      const { data: currentSettings } = await supabase
+        .from("commission_settings")
+        .select("bc400_pool_balance, id")
+        .limit(1)
+        .single();
+      if (currentSettings) {
+        await supabase
+          .from("commission_settings")
+          .update({ bc400_pool_balance: Number((currentSettings as any).bc400_pool_balance || 0) + bc400Amount } as any)
+          .eq("id", currentSettings.id);
+      }
+    }
+
+    const poolAmount = amount - totalFees;
 
     // Insert position
     const { error: posError } = await supabase.from("positions").insert({

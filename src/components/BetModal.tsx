@@ -333,7 +333,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                         </div>
                         {orderType === "market" && (
                           <div className="flex justify-between text-xs">
-                            <span className="text-muted-foreground">Prediction Fee ({commission?.admin_fee_percent ?? 2}%)</span>
+                            <span className="text-muted-foreground">Prediction Fee (up to {totalFeePercent}%)</span>
                             <span className="font-semibold">${fee.toFixed(2)}</span>
                           </div>
                         )}
