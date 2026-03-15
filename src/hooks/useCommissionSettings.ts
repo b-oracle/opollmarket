@@ -19,6 +19,10 @@ export interface CommissionSettings {
   qt_enabled_timeframes: string;
   qt_disabled_assets: string;
   auto_resolve_fee: number;
+  boost_flash_price: number;
+  boost_standard_price: number;
+  boost_whale_price: number;
+  broadcast_price: number;
 }
 
 export const useCommissionSettings = () => {
