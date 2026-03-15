@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Zap, CheckCircle, XCircle, ChevronDown, ChevronUp, Timer, AlertTriangle, Megaphone } from "lucide-react";
+import { Loader2, Zap, CheckCircle, XCircle, ChevronDown, ChevronUp, Timer, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { logAuditEvent } from "@/lib/auditLog";
 import { format, formatDistanceToNow, isPast } from "date-fns";
