@@ -416,109 +416,116 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     animationActiveRef.current = false;
   }, [chartStyle]);
 
-  // Smooth streaming updates (single RAF loop, target-driven)
+  // Track area color direction to avoid expensive applyOptions every frame
+  const areaDirectionRef = useRef<"up" | "down">("up");
+
+  // Persistent smooth animation loop — never stops while chart is mounted
   useEffect(() => {
-    if (streamingPrice == null || !chartRef.current) return;
-
-    const basePrice = interpolatedPriceRef.current ?? prevStreamingPriceRef.current ?? streamingPrice;
-    targetStreamingPriceRef.current = streamingPrice;
-    prevStreamingPriceRef.current = streamingPrice;
-
-    const isUpNow = streamingPrice >= basePrice;
-    setDotColor(isUpNow ? "#22c55e" : "#ef4444");
-
-    if (animationActiveRef.current) return;
+    if (!chartRef.current) return;
     animationActiveRef.current = true;
+    let lastDotUpdate = 0;
 
     const animate = () => {
+      if (!animationActiveRef.current) return;
+
       const target = targetStreamingPriceRef.current;
-      if (target == null) {
-        animationActiveRef.current = false;
-        interpolationRef.current = null;
-        return;
-      }
+      const current = interpolatedPriceRef.current;
 
-      const current = interpolatedPriceRef.current ?? target;
-      const delta = target - current;
-      const nextPrice = Math.abs(delta) < 0.000001 ? target : current + delta * 0.22;
-      interpolatedPriceRef.current = nextPrice;
+      if (target != null && current != null) {
+        const delta = target - current;
+        // Gentle lerp (0.08) for buttery-smooth interpolation across frames
+        const nextPrice = Math.abs(delta) < 0.0000001 ? target : current + delta * 0.08;
+        interpolatedPriceRef.current = nextPrice;
 
-      const nowSec = Math.floor(Date.now() / 1000) as UTCTimestamp;
+        const nowSec = Math.floor(Date.now() / 1000) as UTCTimestamp;
 
-      if (chartStyle === "candle" && candleSeriesRef.current) {
-        const bucketSec = candleBucketSecRef.current;
-        const alignedBucketTime = (Math.floor(nowSec / bucketSec) * bucketSec) as UTCTimestamp;
+        if (chartStyle === "candle" && candleSeriesRef.current) {
+          const bucketSec = candleBucketSecRef.current;
+          const alignedBucketTime = (Math.floor(nowSec / bucketSec) * bucketSec) as UTCTimestamp;
 
-        const cur = currentCandleRef.current;
-        if (!cur) {
-          currentCandleRef.current = {
-            time: alignedBucketTime,
-            open: nextPrice,
-            high: nextPrice,
-            low: nextPrice,
-            close: nextPrice,
-          };
-          lastCandleTimeRef.current = alignedBucketTime;
-        } else if (alignedBucketTime > cur.time) {
-          currentCandleRef.current = {
-            time: alignedBucketTime,
-            open: cur.close,
-            high: nextPrice,
-            low: nextPrice,
-            close: nextPrice,
-          };
-          lastCandleTimeRef.current = alignedBucketTime;
-        } else {
-          cur.high = Math.max(cur.high, nextPrice);
-          cur.low = Math.min(cur.low, nextPrice);
-          cur.close = nextPrice;
+          const cur = currentCandleRef.current;
+          if (!cur) {
+            currentCandleRef.current = {
+              time: alignedBucketTime,
+              open: nextPrice, high: nextPrice, low: nextPrice, close: nextPrice,
+            };
+            lastCandleTimeRef.current = alignedBucketTime;
+          } else if (alignedBucketTime > cur.time) {
+            currentCandleRef.current = {
+              time: alignedBucketTime,
+              open: cur.close, high: nextPrice, low: nextPrice, close: nextPrice,
+            };
+            lastCandleTimeRef.current = alignedBucketTime;
+          } else {
+            cur.high = Math.max(cur.high, nextPrice);
+            cur.low = Math.min(cur.low, nextPrice);
+            cur.close = nextPrice;
+          }
+
+          const c = currentCandleRef.current!;
+          candleSeriesRef.current.update({
+            time: c.time as UTCTimestamp,
+            open: c.open, high: c.high, low: c.low, close: c.close,
+          });
+        } else if (areaSeriesRef.current) {
+          // Only update color when direction actually flips — avoids expensive repaints
+          const dir = target >= current ? "up" : "down";
+          if (dir !== areaDirectionRef.current) {
+            areaDirectionRef.current = dir;
+            const lineColor = dir === "up" ? "#22c55e" : "#ef4444";
+            const topColor = dir === "up" ? "rgba(34, 197, 94, 0.28)" : "rgba(239, 68, 68, 0.28)";
+            const bottomColor = dir === "up" ? "rgba(34, 197, 94, 0.02)" : "rgba(239, 68, 68, 0.02)";
+            areaSeriesRef.current.applyOptions({ lineColor, topColor, bottomColor });
+          }
+          areaSeriesRef.current.update({ time: nowSec, value: nextPrice });
         }
 
-        const c = currentCandleRef.current!;
-        candleSeriesRef.current.update({
-          time: c.time as UTCTimestamp,
-          open: c.open,
-          high: c.high,
-          low: c.low,
-          close: c.close,
-        });
-      } else if (areaSeriesRef.current) {
-        const isUp = target >= current;
-        const lineColor = isUp ? "#22c55e" : "#ef4444";
-        const topColor = isUp ? "rgba(34, 197, 94, 0.28)" : "rgba(239, 68, 68, 0.28)";
-        const bottomColor = isUp ? "rgba(34, 197, 94, 0.02)" : "rgba(239, 68, 68, 0.02)";
-        areaSeriesRef.current.applyOptions({ lineColor, topColor, bottomColor });
-        areaSeriesRef.current.update({ time: nowSec, value: nextPrice });
-      }
-
-      if (pulsingDotRef.current && chartRef.current) {
-        const series = chartStyle === "candle" ? candleSeriesRef.current : areaSeriesRef.current;
-        if (series) {
-          try {
-            const y = series.priceToCoordinate(nextPrice);
-            const x = chartRef.current.timeScale().timeToCoordinate(nowSec);
-            if (y !== null && x !== null) {
-              pulsingDotRef.current.style.left = `${x}px`;
-              pulsingDotRef.current.style.top = `${y}px`;
-              pulsingDotRef.current.style.display = "block";
-            }
-          } catch {
-            // noop
+        // Throttle dot position updates to ~30fps to reduce layout thrashing
+        const now = Date.now();
+        if (now - lastDotUpdate > 33 && pulsingDotRef.current && chartRef.current) {
+          lastDotUpdate = now;
+          const series = chartStyle === "candle" ? candleSeriesRef.current : areaSeriesRef.current;
+          if (series) {
+            try {
+              const y = series.priceToCoordinate(nextPrice);
+              const nowTs = Math.floor(now / 1000) as UTCTimestamp;
+              const x = chartRef.current.timeScale().timeToCoordinate(nowTs);
+              if (y !== null && x !== null) {
+                pulsingDotRef.current.style.left = `${x}px`;
+                pulsingDotRef.current.style.top = `${y}px`;
+                pulsingDotRef.current.style.display = "block";
+              }
+            } catch { /* noop */ }
           }
         }
       }
 
-      const stillMoving = Math.abs((targetStreamingPriceRef.current ?? nextPrice) - nextPrice) > 0.0005;
-      if (stillMoving) {
-        interpolationRef.current = requestAnimationFrame(animate);
-      } else {
-        interpolationRef.current = null;
-        animationActiveRef.current = false;
-      }
+      interpolationRef.current = requestAnimationFrame(animate);
     };
 
     interpolationRef.current = requestAnimationFrame(animate);
-  }, [streamingPrice, chartStyle]);
+    return () => {
+      animationActiveRef.current = false;
+      if (interpolationRef.current) {
+        cancelAnimationFrame(interpolationRef.current);
+        interpolationRef.current = null;
+      }
+    };
+  }, [chartStyle]);
+
+  // Update target price on each streaming tick (does NOT restart animation)
+  useEffect(() => {
+    if (streamingPrice == null) return;
+    const base = interpolatedPriceRef.current ?? prevStreamingPriceRef.current ?? streamingPrice;
+    targetStreamingPriceRef.current = streamingPrice;
+    prevStreamingPriceRef.current = streamingPrice;
+    // Initialize interpolated price if first tick
+    if (interpolatedPriceRef.current == null) {
+      interpolatedPriceRef.current = streamingPrice;
+    }
+    const isUpNow = streamingPrice >= base;
+    setDotColor(isUpNow ? "#22c55e" : "#ef4444");
+  }, [streamingPrice]);
 
   // Compute P&L when bet is active
   const pnl = entryPrice && streamingPrice
