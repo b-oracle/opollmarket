@@ -262,7 +262,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
       layout: { background: { type: ColorType.Solid, color: "transparent" }, textColor: isDark ? "#9ca3af" : "#6b7280", fontSize: 10 },
       grid: { vertLines: { color: isDark ? "#27272a" : "#f1f1f1" }, horzLines: { color: isDark ? "#27272a" : "#f1f1f1" } },
       crosshair: { mode: CrosshairMode.Normal },
-      rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.1, bottom: 0.2 } },
+      rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.1, bottom: 0.2 }, minimumWidth: 60 },
       timeScale: { 
         borderVisible: false, 
         timeVisible: true, 
