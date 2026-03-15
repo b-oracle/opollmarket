@@ -29,6 +29,8 @@ interface Props {
   chartMs?: number;
   /** Pre-computed MA values from chart engine, one per candle */
   precomputedMAs?: { ma7?: number; ma14?: number }[];
+  /** When true, chart fills its container instead of using fixed height */
+  fullscreen?: boolean;
 }
 
 function fmtAxis(p: number, ac?: string): string {

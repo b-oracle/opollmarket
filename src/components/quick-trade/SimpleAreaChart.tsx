@@ -14,6 +14,8 @@ interface Props {
   assetClass?: string;
   userBet: { side: string } | null;
   activeRound: { open_price: number | null } | null;
+  /** When true, chart fills its container instead of using fixed height */
+  fullscreen?: boolean;
 }
 
 function fmtPrice(p: number, ac?: string): string {
