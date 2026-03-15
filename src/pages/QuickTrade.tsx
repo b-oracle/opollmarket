@@ -1536,7 +1536,7 @@ export default function QuickTrade() {
                 activeRound={activeRound}
                 userBet={userBet}
                 resolveFlash={resolveFlash}
-                timeframeLabel={CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.label}
+                timeframeLabel={(CHART_TIMEFRAMES.find(t => t.key === chartTimeframe) ?? CHART_TIMEFRAMES[0])?.label ?? "5m"}
                 assetClass={selectedAsset.assetClass}
                 engineCandles={engineCandles}
                 engineLinePoints={engineLinePoints}
