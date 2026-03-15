@@ -95,22 +95,8 @@ const Referrals = () => {
     gcTime: 5 * 60 * 1000,
   });
 
-  // Fetch bonus balance
-  const { data: bonusBalance = 0 } = useQuery({
-    queryKey: ["bonus_balance", user?.id],
-    queryFn: async () => {
-      if (!user) return 0;
-      const { data } = await supabase
-        .from("balances")
-        .select("bonus_balance")
-        .eq("user_id", user.id)
-        .single();
-      return Number(data?.bonus_balance ?? 0);
-    },
-    enabled: !!user,
-    staleTime: 60 * 1000,
-    gcTime: 5 * 60 * 1000,
-  });
+  // Fetch total bonus earned (sum of all referral_rewards amounts)
+  const totalBonusEarned = rewards.reduce((sum: number, r: any) => sum + Number(r.amount), 0);
 
   // Fetch referral reward amount setting
   const { data: rewardAmount = 5 } = useQuery({
