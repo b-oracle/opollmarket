@@ -265,8 +265,10 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
         borderVisible: false, 
         timeVisible: true, 
         secondsVisible: true,
-        rightOffset: 5, // space on the right for streaming
-        shiftVisibleRangeOnNewBar: true, // auto-scroll on new data
+        rightOffset: chartStyle === "line" ? 8 : 5,
+        // Disable auto-scroll for area/line to prevent horizontal snapping;
+        // we manually manage scrolling for area mode at a smooth cadence
+        shiftVisibleRangeOnNewBar: chartStyle === "candle",
       },
       handleScroll: { vertTouchDrag: false },
     });
