@@ -101,6 +101,7 @@ const AdminSettings = () => {
         .single();
       if (data) {
         const d = data as any;
+        setPredictionFee(String(d.prediction_fee_percent ?? 10));
         setAdminFee(String(d.admin_fee_percent));
         setCreatorFee(String(d.creator_fee_percent));
         setCreatorFeeBlue(String(d.creator_fee_blue_percent ?? d.creator_fee_percent ?? 3));
