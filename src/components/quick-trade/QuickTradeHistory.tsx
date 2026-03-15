@@ -54,9 +54,11 @@ export default function QuickTradeHistory({
         </div>
       </div>
 
-      {userBets.length > 0 ? (
-        <div className="space-y-2">
-          {userBets.map((b) => {
+      {/* User's own bets — always show if present, separate from round history */}
+      {userBets.length > 0 && (
+        <div className="space-y-2 mb-3">
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Your Trades</p>
+          {userBets.slice(0, 5).map((b) => {
             const round = recentRounds.find((r) => r.id === b.round_id);
             const won = b.status === "won";
             const lost = b.status === "lost";
@@ -106,8 +108,14 @@ export default function QuickTradeHistory({
             );
           })}
         </div>
-      ) : recentRounds.length > 0 ? (
+      )}
+
+      {/* Paginated round history */}
+      {recentRounds.length > 0 ? (
         <div className="space-y-2">
+          {userBets.length > 0 && (
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">All Rounds</p>
+          )}
           {recentRounds.map((r) => {
             const priceDelta = r.open_price && r.close_price
               ? ((Number(r.close_price) - Number(r.open_price)) / Number(r.open_price) * 100)
