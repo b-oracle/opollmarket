@@ -122,7 +122,7 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
         )}
 
         {/* Current price dotted line */}
-        <line x1={90} y1={lastY} x2={100} y2={lastY} stroke={color} strokeWidth={0.2} strokeDasharray="0.4 0.3" strokeOpacity={0.6} />
+        <line x1={88} y1={lastY} x2={100} y2={lastY} stroke={color} strokeWidth={0.2} strokeDasharray="0.4 0.3" strokeOpacity={0.6} />
       </svg>
 
       {/* Price axis labels */}
