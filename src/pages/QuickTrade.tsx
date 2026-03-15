@@ -1395,6 +1395,12 @@ export default function QuickTrade() {
                 resolveFlash={resolveFlash}
                 timeframeLabel={CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.label}
                 assetClass={selectedAsset.assetClass}
+                engineCandles={engineCandles}
+                engineLinePoints={engineLinePoints}
+                engineActiveCandle={engineActiveCandle}
+                bucketCountdown={bucketCountdown}
+                bucketProgress={bucketProgress}
+                engineReady={engineReady}
               />
               </div>
             </div>
