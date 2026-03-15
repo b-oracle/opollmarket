@@ -251,15 +251,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    const poolAmount = amount - totalFees;
+    const poolAmount = netAmount;
 
-    // Insert position
+    // Insert position with server-calculated shares
     const { error: posError } = await supabase.from("positions").insert({
       user_id: userId,
       market_id: marketId,
       option_id: optionId || null,
       side,
-      shares,
+      shares: actualShares,
       avg_price: price / 100,
     });
     if (posError) {
