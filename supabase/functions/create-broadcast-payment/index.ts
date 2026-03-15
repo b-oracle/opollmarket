@@ -99,9 +99,7 @@ Deno.serve(async (req) => {
 
     const payment = await npResponse.json();
 
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    // adminClient already created above
     );
 
     const { data: broadcast, error: insertError } = await adminClient
