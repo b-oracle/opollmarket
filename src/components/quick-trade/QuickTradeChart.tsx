@@ -250,7 +250,7 @@ function QuickTradeChart(props: QuickTradeChartProps) {
       <ChartZoomWrapper defaultZoom={1}>
         {chartContent}
       </ChartZoomWrapper>
-      <BucketBadges bucketCountdown={bucketCountdown} bucketProgress={bucketProgress} />
+      <BucketBadges bucketCountdown={bucketCountdown} />
       <p className="text-[10px] text-muted-foreground text-center mt-1">Last {timeframeLabel}</p>
 
       {/* Expand button */}
