@@ -744,8 +744,9 @@ const Create = () => {
     }
 
     const liquidityAmount = parseFloat(initialLiquidity);
-    const boostCost = creationBoost ? BOOST_TIER_PRICES[creationBoostTier] : 0;
-    const broadcastCost = creationBroadcast ? BROADCAST_PRICE : 0;
+    const balancePromoEnabled = isFeatureEnabled("balance_promotions");
+    const boostCost = (creationBoost && balancePromoEnabled) ? BOOST_TIER_PRICES[creationBoostTier] : 0;
+    const broadcastCost = (creationBroadcast && balancePromoEnabled) ? BROADCAST_PRICE : 0;
     const totalDeduction = feeBypass ? liquidityAmount + marketCreationFee : liquidityAmount;
     setSimilarMarkets([]);
     setCreatedAsPending(false);
