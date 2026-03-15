@@ -406,22 +406,22 @@ function MarketClosedOverlay({ assetClass }: { assetClass: string }) {
   }, []);
 
   return (
-    <div className="relative h-[220px] overflow-hidden rounded-lg bg-muted/10 border border-destructive/20">
+    <div className="relative h-[220px] overflow-hidden rounded-lg bg-muted/10 border border-destructive/30">
       {/* Subtle grid background */}
       <div className="absolute inset-0 opacity-[0.03]" style={{
         backgroundImage: "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)",
         backgroundSize: "20px 20px",
       }} />
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-        <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-destructive/10 border border-destructive/25">
-          <Moon className="w-5 h-5 text-destructive" />
-          <span className="text-sm font-bold text-destructive uppercase tracking-wider">Market Closed</span>
+        <div className="flex items-center gap-2.5 px-5 py-2.5 rounded-xl bg-destructive/15 border border-destructive/30">
+          <Moon className="w-6 h-6 text-destructive" />
+          <span className="text-base font-extrabold text-destructive uppercase tracking-widest">Market Closed</span>
         </div>
-        <p className="text-xs text-muted-foreground">{nextOpen}</p>
+        <p className="text-xs text-muted-foreground font-medium">{nextOpen}</p>
         {countdown && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card/80 border border-border">
-            <span className="text-[10px] text-muted-foreground">Opens in</span>
-            <span className="text-sm font-bold tabular-nums text-foreground">{countdown}</span>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card/80 border border-border">
+            <span className="text-xs text-muted-foreground">Opens in</span>
+            <span className="text-base font-bold tabular-nums text-foreground">{countdown}</span>
           </div>
         )}
       </div>
@@ -480,8 +480,11 @@ function QuickTradeChart({
 
   if (filtered.length < 2) {
     const marketOpen = isMarketOpen(assetClass || "crypto");
-    if (!marketOpen) {
-      return <MarketClosedOverlay assetClass={assetClass || "crypto"} />;
+    if (!marketOpen || assetClass !== "crypto") {
+      // Show market closed overlay for non-crypto assets even if we just have no data yet
+      if (!marketOpen) {
+        return <MarketClosedOverlay assetClass={assetClass || "crypto"} />;
+      }
     }
     return (
       <div className="flex items-center justify-center h-[220px]">
