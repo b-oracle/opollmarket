@@ -221,6 +221,8 @@ async function handleBoost(supabase: ReturnType<typeof createClient>, payload: R
   const now = new Date();
   const endsAt = new Date(now.getTime() + durationHours * 60 * 60 * 1000);
 
+  const txHash = payload.payin_hash || payload.pay_address || paymentIdStr;
+
   if (existingBoost) {
     await supabase
       .from("market_boosts")
@@ -228,6 +230,7 @@ async function handleBoost(supabase: ReturnType<typeof createClient>, payload: R
         status: "active",
         starts_at: now.toISOString(),
         ends_at: endsAt.toISOString(),
+        tx_hash: String(txHash),
       })
       .eq("id", existingBoost.id);
   } else {
@@ -250,6 +253,7 @@ async function handleBoost(supabase: ReturnType<typeof createClient>, payload: R
           starts_at: now.toISOString(),
           ends_at: endsAt.toISOString(),
           nowpayments_payment_id: paymentIdStr,
+          tx_hash: String(txHash),
         })
         .eq("id", pendingBoost.id);
     }
