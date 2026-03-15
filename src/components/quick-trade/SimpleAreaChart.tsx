@@ -71,7 +71,7 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
     // SVG points (viewBox is 0 0 100 100)
     const H = 100;
     const pts = data.map((d, i) => {
-      const x = (i / (n - 1)) * 100;
+      const x = (i / (n - 1)) * 88;
       const y = H - ((d.price - targetMin) / dRange) * H;
       return `${x},${y}`;
     }).join(" ");
