@@ -131,7 +131,9 @@ const Referrals = () => {
   const rewardedUserIds = new Set(rewards.map((r: any) => r.referred_id));
   const rewardByUserId = new Map(rewards.map((r: any) => [r.referred_id, r]));
 
-  const totalEarned = rewards.reduce((sum: number, r: any) => sum + Number(r.amount), 0);
+  const signupBonusTotal = rewards.reduce((sum: number, r: any) => sum + Number(r.amount), 0);
+  const referralCommissionTotal = referralCommissions.reduce((sum: number, r: any) => sum + Number(r.amount), 0);
+  const totalEarned = signupBonusTotal + referralCommissionTotal;
   const totalSignups = referredSignups.length;
   const totalRewarded = rewards.length;
 
