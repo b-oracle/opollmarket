@@ -11,7 +11,7 @@ import SimpleCandleChart from "@/components/quick-trade/SimpleCandleChart";
 import ChartZoomWrapper from "@/components/quick-trade/ChartZoomWrapper";
 
 interface QuickTradeChartProps {
-  chartType: "area" | "candle" | "tv";
+  chartType: "area" | "candle" | "tv" | "poly";
   chartTimeframe: string;
   chartAssetKey: string;
   chartMs: number;

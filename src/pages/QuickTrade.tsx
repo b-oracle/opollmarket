@@ -1435,6 +1435,15 @@ export default function QuickTrade() {
                     >
                       <BarChart3 className="w-3.5 h-3.5" />
                     </button>
+                   )}
+                  {lineChartEnabled && (
+                    <button
+                      onClick={() => setChartType("poly")}
+                      className={`p-1.5 rounded transition-all ${chartType === "poly" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                      title="Polymarket-style chart"
+                    >
+                      <Activity className="w-3.5 h-3.5" />
+                    </button>
                   )}
                   {selectedAsset.assetClass === "crypto" && tvChartEnabled && (
                     <button
