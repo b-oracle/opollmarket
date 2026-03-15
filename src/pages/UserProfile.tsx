@@ -157,9 +157,9 @@ const UserProfile = () => {
     queryFn: async () => {
       if (!id) return 0;
       const { count } = await supabase
-        .from("referral_rewards")
+        .from("profiles")
         .select("id", { count: "exact", head: true })
-        .eq("referrer_id", id);
+        .eq("referred_by", id);
       return count || 0;
     },
     enabled: !!id,
