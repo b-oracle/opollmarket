@@ -6,11 +6,12 @@ import { isMarketOpen } from "@/lib/marketHours";
 import TradingViewChart from "@/components/TradingViewChart";
 import MarketClosedOverlay from "@/components/quick-trade/MarketClosedOverlay";
 import SimpleAreaChart from "@/components/quick-trade/SimpleAreaChart";
+import PolylineChart from "@/components/quick-trade/PolylineChart";
 import SimpleCandleChart from "@/components/quick-trade/SimpleCandleChart";
 import ChartZoomWrapper from "@/components/quick-trade/ChartZoomWrapper";
 
 interface QuickTradeChartProps {
-  chartType: "area" | "candle" | "tv";
+  chartType: "area" | "candle" | "tv" | "poly";
   chartTimeframe: string;
   chartAssetKey: string;
   chartMs: number;
@@ -230,8 +231,10 @@ function QuickTradeChart(props: QuickTradeChartProps) {
       return <ChartSkeleton text="Building chart..." />;
     }
 
+    const ChartComponent = chartType === "poly" ? PolylineChart : SimpleAreaChart;
+
     chartContent = (
-      <SimpleAreaChart
+      <ChartComponent
         priceHistory={areaHistory}
         entryPrice={entryPrice}
         assetClass={assetClass}
@@ -257,7 +260,8 @@ function QuickTradeChart(props: QuickTradeChartProps) {
     } else {
       const areaHistory = useEngineData ? enginePriceHistory : (liveEnginePriceHistory ?? priceHistory);
       if (areaHistory && areaHistory.length >= 2) {
-        return <SimpleAreaChart priceHistory={areaHistory} entryPrice={entryPrice} assetClass={assetClass} userBet={userBet} activeRound={activeRound} fullscreen />;
+        const FSChart = chartType === "poly" ? PolylineChart : SimpleAreaChart;
+        return <FSChart priceHistory={areaHistory} entryPrice={entryPrice} assetClass={assetClass} userBet={userBet} activeRound={activeRound} fullscreen />;
       }
     }
     return chartContent;

@@ -16,6 +16,7 @@ import {
   Share2,
   BarChart3,
   LineChart as LineChartIcon,
+  Activity,
   Info,
   Volume2,
   VolumeOff,
@@ -412,18 +413,18 @@ export default function QuickTrade() {
       setChartTimeframe(keys[0] as ChartTF);
     }
   }, [CHART_TIMEFRAMES, chartTimeframe, setChartTimeframe]);
-  const validChartTypes = ["area", "candle", "tv"] as const;
+  const validChartTypes = ["area", "candle", "tv", "poly"] as const;
   const savedCT = typeof window !== "undefined" ? localStorage.getItem("qt-chart-type") : null;
-  const rawInitialCT = (savedCT && (validChartTypes as readonly string[]).includes(savedCT) ? savedCT : "area") as "area" | "candle" | "tv";
-  const initialCT = rawInitialCT === "tv" && !tvChartEnabled ? "area" : rawInitialCT === "area" && !lineChartEnabled ? "candle" : rawInitialCT;
-  const [chartType, setChartTypeRaw] = useState<"area" | "candle" | "tv">(initialCT);
-  const setChartType = useCallback((ct: "area" | "candle" | "tv") => {
+  const rawInitialCT = (savedCT && (validChartTypes as readonly string[]).includes(savedCT) ? savedCT : "area") as "area" | "candle" | "tv" | "poly";
+  const initialCT = rawInitialCT === "tv" && !tvChartEnabled ? "area" : (rawInitialCT === "area" || rawInitialCT === "poly") && !lineChartEnabled ? "candle" : rawInitialCT;
+  const [chartType, setChartTypeRaw] = useState<"area" | "candle" | "tv" | "poly">(initialCT);
+  const setChartType = useCallback((ct: "area" | "candle" | "tv" | "poly") => {
     setChartTypeRaw(ct);
     try { localStorage.setItem("qt-chart-type", ct); } catch {}
   }, []);
   // Force away from disabled chart types
   useEffect(() => {
-    if (!lineChartEnabled && chartType === "area") {
+    if (!lineChartEnabled && (chartType === "area" || chartType === "poly")) {
       setChartType("candle");
     }
   }, [lineChartEnabled, chartType, setChartType]);
@@ -1433,6 +1434,15 @@ export default function QuickTrade() {
                       title="Candlestick chart"
                     >
                       <BarChart3 className="w-3.5 h-3.5" />
+                    </button>
+                   )}
+                  {lineChartEnabled && (
+                    <button
+                      onClick={() => setChartType("poly")}
+                      className={`p-1.5 rounded transition-all ${chartType === "poly" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                      title="Polymarket-style chart"
+                    >
+                      <Activity className="w-3.5 h-3.5" />
                     </button>
                   )}
                   {selectedAsset.assetClass === "crypto" && tvChartEnabled && (
