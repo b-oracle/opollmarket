@@ -48,7 +48,7 @@ import QuickTradeChart from "@/components/quick-trade/QuickTradeChart";
 import QuickTradeHistory from "@/components/quick-trade/QuickTradeHistory";
 import QuickTradeBetControls from "@/components/quick-trade/QuickTradeBetControls";
 import PriceToBeatHeader from "@/components/quick-trade/PriceToBeatHeader";
-import PastRoundsTimeline from "@/components/quick-trade/PastRoundsTimeline";
+
 import { useChartEngine } from "@/hooks/useChartEngine";
 import { getTimeframeMs } from "@/lib/chartEngine";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
@@ -1564,8 +1564,6 @@ export default function QuickTrade() {
             </div>
           </div>
 
-          {/* Past rounds timeline */}
-          <PastRoundsTimeline rounds={recentRounds} />
 
           {/* Pool info */}
           <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
