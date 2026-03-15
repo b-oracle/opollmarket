@@ -99,6 +99,7 @@ const AdminBoosts = () => {
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState<FilterKey>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"boosts" | "broadcasts">("boosts");
   const PAGE_SIZE = 15;
 
   const fetchBoosts = async () => {
