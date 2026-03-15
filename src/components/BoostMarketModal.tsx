@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Zap, Flame, Crown, Copy, Check, Loader2, AlertTriangle, ChevronLeft, Megaphone } from "lucide-react";
+import { X, Zap, Flame, Crown, Copy, Check, Loader2, AlertTriangle, ChevronLeft, Megaphone, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ interface BoostTier {
   duration: string;
   durationHours: number;
   price: number;
+  rank: number;
   icon: React.ReactNode;
   color: string;
 }
@@ -22,6 +23,7 @@ const BOOST_TIERS: BoostTier[] = [
     duration: "12h",
     durationHours: 12,
     price: 20,
+    rank: 1,
     icon: <Zap className="w-8 h-8" />,
     color: "hsl(var(--primary))",
   },
@@ -31,6 +33,7 @@ const BOOST_TIERS: BoostTier[] = [
     duration: "1 Day",
     durationHours: 24,
     price: 50,
+    rank: 2,
     icon: <Flame className="w-8 h-8" />,
     color: "hsl(280, 70%, 60%)",
   },
@@ -40,6 +43,7 @@ const BOOST_TIERS: BoostTier[] = [
     duration: "7 Days",
     durationHours: 168,
     price: 150,
+    rank: 3,
     icon: <Crown className="w-8 h-8" />,
     color: "hsl(45, 93%, 58%)",
   },
@@ -56,18 +60,27 @@ interface BoostMarketModalProps {
 
 type Step = "select" | "confirm" | "pay" | "success";
 
+interface ActiveBoostInfo {
+  tier: string;
+  ends_at: string;
+  rank: number;
+}
+
 const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketModalProps) => {
   const [selectedTier, setSelectedTier] = useState<BoostTier | null>(null);
   const [broadcastSelected, setBroadcastSelected] = useState(false);
   const [step, setStep] = useState<Step>("select");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [activeBoost, setActiveBoost] = useState<ActiveBoostInfo | null>(null);
   const [paymentInfo, setPaymentInfo] = useState<{
     boost_id?: string;
     broadcast_id?: string;
     pay_address: string;
     pay_amount: number;
     pay_currency: string;
+    extending?: boolean;
+    new_ends_at?: string;
   } | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -76,6 +89,39 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, []);
+
+  // Fetch existing active boost for this market
+  useEffect(() => {
+    if (!open || !marketId) {
+      setActiveBoost(null);
+      return;
+    }
+
+    const fetchActiveBoost = async () => {
+      const now = new Date().toISOString();
+      const { data } = await supabase
+        .from("market_boosts")
+        .select("tier, ends_at")
+        .eq("market_id", marketId)
+        .eq("status", "active")
+        .gte("ends_at", now)
+        .order("ends_at", { ascending: false })
+        .limit(1);
+
+      if (data && data.length > 0) {
+        const tierRanks: Record<string, number> = { flash: 1, standard: 2, whale: 3 };
+        setActiveBoost({
+          tier: data[0].tier,
+          ends_at: data[0].ends_at,
+          rank: tierRanks[data[0].tier] || 0,
+        });
+      } else {
+        setActiveBoost(null);
+      }
+    };
+
+    fetchActiveBoost();
+  }, [open, marketId]);
 
   useEffect(() => {
     if (!open) {
@@ -90,6 +136,21 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
 
   const totalPrice = (selectedTier?.price || 0) + (broadcastSelected ? BROADCAST_PRICE : 0);
   const hasSelection = selectedTier || broadcastSelected;
+
+  const isTierBlocked = (tier: BoostTier) => {
+    if (!activeBoost) return false;
+    return tier.rank < activeBoost.rank;
+  };
+
+  const formatTimeRemaining = (endsAt: string) => {
+    const diff = new Date(endsAt).getTime() - Date.now();
+    if (diff <= 0) return "expiring soon";
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    if (hours > 24) return `${Math.floor(hours / 24)}d ${hours % 24}h left`;
+    if (hours > 0) return `${hours}h ${mins}m left`;
+    return `${mins}m left`;
+  };
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -138,8 +199,6 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
         return;
       }
 
-      // For now, create the first applicable payment. If both selected, boost takes priority for payment address.
-      // NOWPayments supports single payment per invoice — we create the boost payment (higher amount includes broadcast if both selected).
       if (selectedTier) {
         const { data, error } = await supabase.functions.invoke("create-boost-payment", {
           body: { market_id: marketId, tier: selectedTier.id },
@@ -149,7 +208,6 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
 
         let broadcastId: string | undefined;
         if (broadcastSelected) {
-          // Create broadcast payment separately
           const { data: bData, error: bError } = await supabase.functions.invoke("create-broadcast-payment", {
             body: { market_id: marketId },
           });
@@ -164,6 +222,8 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
           pay_address: data.pay_address,
           pay_amount: data.pay_amount,
           pay_currency: data.pay_currency,
+          extending: data.extending,
+          new_ends_at: data.new_ends_at,
         });
         setStep("pay");
         startPolling(data.boost_id, broadcastId);
@@ -190,6 +250,8 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
     }
   };
 
+  const isExtending = activeBoost && selectedTier;
+
   return (
     <BottomSheet open={open} onClose={onClose} className="p-5">
       <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-4" />
@@ -210,28 +272,53 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
       <div className="space-y-5">
         {step === "select" && (
           <>
+            {/* Active Boost Banner */}
+            {activeBoost && (
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/10 border border-primary/20">
+                <Clock className="w-5 h-5 text-primary shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground">
+                    Active {activeBoost.tier.charAt(0).toUpperCase() + activeBoost.tier.slice(1)} boost
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatTimeRemaining(activeBoost.ends_at)} — select same or higher tier to extend
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Boost Section */}
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">⚡ Boost Market</p>
               <div className="grid grid-cols-3 gap-3">
-                {BOOST_TIERS.map((tier) => (
-                  <button
-                    key={tier.id}
-                    onClick={() => setSelectedTier(selectedTier?.id === tier.id ? null : tier)}
-                    className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
-                      selectedTier?.id === tier.id
-                        ? "border-primary/50 bg-primary/5 scale-105"
-                        : "border-border bg-muted/30 hover:border-muted-foreground/30"
-                    }`}
-                  >
-                    <div style={{ color: tier.color }}>{tier.icon}</div>
-                    <span className="text-sm font-bold">{tier.label}</span>
-                    <span className="text-xs text-muted-foreground">{tier.duration}</span>
-                    <span className="text-sm font-bold px-3 py-1 rounded-md bg-background border border-border">
-                      ${tier.price}
-                    </span>
-                  </button>
-                ))}
+                {BOOST_TIERS.map((tier) => {
+                  const blocked = isTierBlocked(tier);
+                  const isExtendingTier = activeBoost && tier.rank >= activeBoost.rank;
+                  return (
+                    <button
+                      key={tier.id}
+                      onClick={() => !blocked && setSelectedTier(selectedTier?.id === tier.id ? null : tier)}
+                      disabled={blocked}
+                      className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
+                        blocked
+                          ? "border-border bg-muted/20 opacity-40 cursor-not-allowed"
+                          : selectedTier?.id === tier.id
+                          ? "border-primary/50 bg-primary/5 scale-105"
+                          : "border-border bg-muted/30 hover:border-muted-foreground/30"
+                      }`}
+                    >
+                      <div style={{ color: blocked ? "hsl(var(--muted-foreground))" : tier.color }}>{tier.icon}</div>
+                      <span className="text-sm font-bold">{tier.label}</span>
+                      <span className="text-xs text-muted-foreground">{tier.duration}</span>
+                      <span className="text-sm font-bold px-3 py-1 rounded-md bg-background border border-border">
+                        ${tier.price}
+                      </span>
+                      {isExtendingTier && !blocked && (
+                        <span className="text-[10px] text-primary font-semibold">+{tier.duration}</span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -264,7 +351,11 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
               disabled={!hasSelection}
               className="w-full py-3.5 rounded-xl font-bold text-sm bg-primary text-primary-foreground transition-all active:scale-95 disabled:opacity-40 flex items-center justify-center gap-2"
             >
-              {hasSelection ? `Continue – $${totalPrice}` : "Select an option"}
+              {hasSelection
+                ? isExtending
+                  ? `Extend Boost – $${totalPrice}`
+                  : `Continue – $${totalPrice}`
+                : "Select an option"}
             </button>
           </>
         )}
@@ -289,7 +380,10 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
                   <>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Boost Tier</span>
-                      <span className="font-medium text-foreground">{selectedTier.label} ({selectedTier.duration})</span>
+                      <span className="font-medium text-foreground">
+                        {selectedTier.label} ({selectedTier.duration})
+                        {isExtending && <span className="text-primary ml-1">↗ extend</span>}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Boost Cost</span>
@@ -373,7 +467,9 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
             </div>
 
             <p className="text-xs text-center text-muted-foreground">
-              {selectedTier && broadcastSelected
+              {paymentInfo.extending
+                ? "The existing boost will be extended once payment is confirmed."
+                : selectedTier && broadcastSelected
                 ? "Both boost and broadcast will activate once all payments are confirmed."
                 : selectedTier
                 ? "The boost will activate automatically once payment is confirmed."
@@ -395,13 +491,17 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
             <div>
               <p className="font-bold text-lg">
                 {selectedTier && broadcastSelected
-                  ? "Boost & Broadcast Live!"
+                  ? paymentInfo?.extending ? "Boost Extended & Broadcast Sent!" : "Boost & Broadcast Live!"
                   : selectedTier
-                  ? "Boost is Live!"
+                  ? paymentInfo?.extending ? "Boost Extended!" : "Boost is Live!"
                   : "Broadcast Sent!"}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                {selectedTier && `Your ${selectedTier.label} boost (${selectedTier.duration}) is now active. `}
+                {selectedTier && paymentInfo?.extending && paymentInfo?.new_ends_at
+                  ? `Your boost has been extended until ${new Date(paymentInfo.new_ends_at).toLocaleString()}. `
+                  : selectedTier
+                  ? `Your ${selectedTier.label} boost (${selectedTier.duration}) is now active. `
+                  : ""}
                 {broadcastSelected && "A push notification has been sent to all users."}
               </p>
             </div>
