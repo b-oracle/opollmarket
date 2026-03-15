@@ -133,7 +133,10 @@ Deno.serve(async (req) => {
     const creatorAmount = totalFees * creatorSplit;
     const referrerAmount = referrerId ? totalFees * referrerSplit : 0;
     const bc400Amount = totalFees * bc400Split;
+    const netAmount = amount - totalFees;
     const totalCost = amount;
+    // Recalculate shares server-side based on net amount (amount minus fee)
+    const actualShares = netAmount / (price / 100);
 
     // Check balance
     const { data: balData } = await supabase
@@ -149,8 +152,7 @@ Deno.serve(async (req) => {
     // Bonus (referral) balance can ONLY be used to pay fees, not the bet itself
     const bonusForFees = Math.min(currentBonus, totalFees);
     const feesFromMain = totalFees - bonusForFees;
-    const betAmount = amount - totalFees; // net amount going to pool
-    const mainDeduct = betAmount + feesFromMain;
+    const mainDeduct = netAmount + feesFromMain;
     const totalAvailable = currentBalance + currentBonus;
 
     if (totalAvailable < totalCost) {
@@ -249,15 +251,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    const poolAmount = amount - totalFees;
+    const poolAmount = netAmount;
 
-    // Insert position
+    // Insert position with server-calculated shares
     const { error: posError } = await supabase.from("positions").insert({
       user_id: userId,
       market_id: marketId,
       option_id: optionId || null,
       side,
-      shares,
+      shares: actualShares,
       avg_price: price / 100,
     });
     if (posError) {
@@ -277,7 +279,7 @@ Deno.serve(async (req) => {
       market_id: marketId,
       option_id: optionId || null,
       side,
-      shares,
+      shares: actualShares,
       price: price / 100,
       status: "confirmed",
     });
@@ -393,9 +395,9 @@ Deno.serve(async (req) => {
           market_id: marketId,
           option_id: optionId || null,
           side,
-          amount,
+          amount: netAmount,
           price,
-          shares,
+          shares: actualShares,
           trade_type: "prediction",
         }),
       });
