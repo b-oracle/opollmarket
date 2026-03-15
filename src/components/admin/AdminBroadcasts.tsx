@@ -27,13 +27,17 @@ const statusColors: Record<string, string> = {
   payment_expired: "bg-orange-500/10 text-orange-500 border-orange-500/20",
 };
 
+function isPaid(b: BroadcastRow): boolean {
+  return b.status === "sent" || b.status === "active" || (b.status === "expired" && !!(b.tx_hash || b.nowpayments_payment_id));
+}
+
 function getResolvedStatus(b: BroadcastRow): { display: string; key: string } {
+  if (b.status === "sent" || b.status === "active") return { display: "Sent", key: "sent" };
   if (b.status === "expired") {
-    return b.tx_hash || b.nowpayments_payment_id
+    return isPaid(b)
       ? { display: "Sent", key: "sent" }
       : { display: "Payment Expired", key: "payment_expired" };
   }
-  if (b.status === "sent" || b.status === "active") return { display: "Sent", key: "sent" };
   if (b.status === "pending") return { display: "Pending Payment", key: "pending" };
   return { display: b.status, key: b.status };
 }
