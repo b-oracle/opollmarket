@@ -30,6 +30,8 @@ interface TradingViewChartProps {
   timeframeLabel: string;
   /** Streaming: latest price tick to append in real-time */
   streamingPrice?: number | null;
+  /** High-frequency ref for streaming price (avoids re-renders) */
+  streamingPriceRef?: MutableRefObject<number | null>;
   /** Entry price to show as a horizontal marker line */
   entryPrice?: number | null;
   /** Bet side for coloring the entry line */
