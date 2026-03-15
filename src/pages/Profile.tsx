@@ -1041,13 +1041,6 @@ const Profile = () => {
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Balance</p>
           <p className="text-3xl font-bold text-primary">${balance.toFixed(2)}</p>
           <p className="text-[10px] text-muted-foreground">USD</p>
-          {bonusBalance > 0 && (
-            <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/50 border border-border">
-              <Gift className="w-3 h-3 text-primary" />
-              <span className="text-[10px] font-semibold text-primary">${bonusBalance.toFixed(2)} bonus</span>
-              <span className="text-[10px] text-muted-foreground">(non-withdrawable)</span>
-            </div>
-          )}
         </div>
 
         <div className="grid grid-cols-3 gap-3 mb-3">
