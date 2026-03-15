@@ -87,6 +87,32 @@ function QuickTradeChart({
     );
   }
 
+  // Gate: show loading skeleton until live streaming is active (prevents stale frozen chart)
+  if (chartType !== "tv" && streamingPrice == null && engineReady !== undefined) {
+    return (
+      <div className="relative h-[220px] overflow-hidden rounded-lg bg-muted/30">
+        <div className="absolute inset-0 flex items-end gap-[2px] px-1 pb-2">
+          {Array.from({ length: 60 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex-1 rounded-sm bg-muted/50 animate-pulse"
+              style={{
+                height: `${15 + Math.sin(i * 0.3) * 12 + Math.random() * 8}%`,
+                animationDelay: `${i * 30}ms`,
+              }}
+            />
+          ))}
+        </div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-background/80 backdrop-blur-sm">
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
+            <span className="text-[10px] font-medium text-muted-foreground">Connecting to live feed...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (chartType === "tv") {
     return (
       <TradingViewChart
@@ -109,17 +135,30 @@ function QuickTradeChart({
   // Use engine candles if available, otherwise fall back to legacy
   const hasEngineData = engineCandles && engineCandles.length >= 2 && engineReady;
 
-  if (!hasEngineData) {
-    // Check market closed
-    const cutoff = Date.now() - chartMs;
-    const filtered = priceHistory.filter(pt => pt.ts >= cutoff);
-    if (filtered.length < 2) {
-      return (
-        <div className="flex items-center justify-center h-[220px]">
-          <p className="text-[10px] text-muted-foreground">Waiting for price data...</p>
+  // Gate: engine props provided but not enough candles yet — show building state
+  if (engineReady !== undefined && !hasEngineData) {
+    return (
+      <div className="relative h-[220px] overflow-hidden rounded-lg bg-muted/30">
+        <div className="absolute inset-0 flex items-end gap-[2px] px-1 pb-2">
+          {Array.from({ length: 60 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex-1 rounded-sm bg-muted/50 animate-pulse"
+              style={{
+                height: `${15 + Math.sin(i * 0.3) * 12 + Math.random() * 8}%`,
+                animationDelay: `${i * 30}ms`,
+              }}
+            />
+          ))}
         </div>
-      );
-    }
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-background/80 backdrop-blur-sm">
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
+            <span className="text-[10px] font-medium text-muted-foreground">Building chart...</span>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // ── Candle chart (engine-powered) ──
