@@ -133,7 +133,10 @@ Deno.serve(async (req) => {
     const creatorAmount = totalFees * creatorSplit;
     const referrerAmount = referrerId ? totalFees * referrerSplit : 0;
     const bc400Amount = totalFees * bc400Split;
+    const netAmount = amount - totalFees;
     const totalCost = amount;
+    // Recalculate shares server-side based on net amount (amount minus fee)
+    const actualShares = netAmount / (price / 100);
 
     // Check balance
     const { data: balData } = await supabase
