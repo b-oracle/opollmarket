@@ -142,7 +142,7 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
       setLoading(false);
       setSelectedTier(null);
       setBroadcastSelected(false);
-      setPayMethod("balance");
+      setPayMethod(balancePayEnabled ? "balance" : "crypto");
       if (pollRef.current) clearInterval(pollRef.current);
     }
   }, [open]);
