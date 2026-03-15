@@ -1564,8 +1564,6 @@ export default function QuickTrade() {
             </div>
           </div>
 
-          {/* Past rounds timeline */}
-          <PastRoundsTimeline rounds={recentRounds} />
 
           {/* Pool info */}
           <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
