@@ -136,25 +136,25 @@ function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, str
       <svg viewBox={`0 0 100 ${CHART_H}`} preserveAspectRatio="none" className="w-full h-full" style={{ overflow: "visible" }}>
         {/* Grid */}
         {gridLevels.map((level, i) => (
-          <line key={i} x1={0} y1={priceToY(level, domainMin, domainRange)} x2={87} y2={priceToY(level, domainMin, domainRange)} stroke={GRID} strokeWidth={0.15} strokeDasharray="0.5 0.5" />
+          <line key={i} x1={0} y1={priceToY(level, domainMin, domainRange)} x2={85} y2={priceToY(level, domainMin, domainRange)} stroke={GRID} strokeWidth={0.15} strokeDasharray="0.5 0.5" />
         ))}
 
         {/* Volume separator */}
-        <line x1={0} y1={PRICE_H} x2={100} y2={PRICE_H} stroke={GRID} strokeWidth={0.15} />
+        <line x1={0} y1={PRICE_H} x2={85} y2={PRICE_H} stroke={GRID} strokeWidth={0.15} />
 
-        {/* Volume bars */}
+        {/* Volume bars — constrained to 0–85 range */}
         {candles.map((c, i) => {
-          const barW = (100 / n) * 0.7;
-          const x = (i / n) * 100 + (100 / n) * 0.15;
+          const barW = (85 / n) * 0.7;
+          const x = (i / n) * 85 + (85 / n) * 0.15;
           const volH = (vols[i] / volMax) * (VOL_H - 4);
           return (
             <rect key={`v${i}`} x={x} y={PRICE_H + (VOL_H - volH - 2)} width={barW} height={Math.max(volH, 0.3)} fill={c.close >= c.open ? UP_DIM : DOWN_DIM} rx={0.2} />
           );
         })}
 
-        {/* Candle sticks */}
+        {/* Candle sticks — constrained to 0–85 range */}
         {candles.map((c, i) => {
-          const slotW = 100 / n;
+          const slotW = 85 / n;
           const cx = i * slotW + slotW / 2;
           const bodyW = slotW * 0.55;
           const bull = c.close >= c.open;
@@ -182,14 +182,14 @@ function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, str
 
         {/* Entry price line */}
         {entryPrice != null && entryPrice >= domainMin && entryPrice <= domainMax && (
-          <line x1={0} y1={priceToY(entryPrice, domainMin, domainRange)} x2={100} y2={priceToY(entryPrice, domainMin, domainRange)} stroke={ENTRY_COLOR} strokeWidth={0.25} strokeDasharray="0.8 0.4" strokeOpacity={0.9} />
+          <line x1={0} y1={priceToY(entryPrice, domainMin, domainRange)} x2={85} y2={priceToY(entryPrice, domainMin, domainRange)} stroke={ENTRY_COLOR} strokeWidth={0.25} strokeDasharray="0.8 0.4" strokeOpacity={0.9} />
         )}
 
         {/* Current price dotted line */}
         <line
-          x1={((n - 1) / n) * 100 + 100 / n / 2}
+          x1={((n - 1) / n) * 85 + 85 / n / 2}
           y1={priceToY(lastCandle.close, domainMin, domainRange)}
-          x2={100}
+          x2={85}
           y2={priceToY(lastCandle.close, domainMin, domainRange)}
           stroke={isLastBull ? UP : DOWN}
           strokeWidth={0.2} strokeDasharray="0.4 0.3" strokeOpacity={0.6}
