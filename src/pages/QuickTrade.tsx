@@ -556,12 +556,23 @@ export default function QuickTrade() {
       const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
       const maxCutoff = now - 4 * 60 * 60 * 1000;
       setPriceHistory((prev) => {
-        const updated = [...prev, { time: timeLabel, price, ts: now }];
-        const filtered = updated.filter((pt) => pt.ts >= maxCutoff).slice(-500);
-        return filtered.length > 500 ? filtered.slice(-500) : filtered;
+        // Efficient append: push new point, only trim when array grows too large
+        const newPoint = { time: timeLabel, price, ts: now };
+        if (prev.length < 500) return [...prev, newPoint];
+        // Find first index within cutoff to avoid filtering every time
+        let start = 0;
+        while (start < prev.length && prev[start].ts < maxCutoff) start++;
+        const trimmed = start > 0 ? prev.slice(start) : prev;
+        return [...trimmed.slice(-(499)), newPoint];
       });
+      // Update raw cache efficiently
       const rawCached = rawDataRef.current.get(streamAssetSymbol) || [];
-      rawDataRef.current.set(streamAssetSymbol, [...rawCached, [now, price] as [number, number]].filter(([ts]) => ts >= maxCutoff));
+      rawCached.push([now, price]);
+      // Only trim when >20% over limit
+      if (rawCached.length > 600) {
+        const cutIdx = rawCached.findIndex(([ts]) => ts >= maxCutoff);
+        rawDataRef.current.set(streamAssetSymbol, cutIdx > 0 ? rawCached.slice(cutIdx) : rawCached.slice(-500));
+      }
     };
 
     // WS tick handler: just update the target price (no direct state set)
