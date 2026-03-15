@@ -1550,6 +1550,9 @@ export default function QuickTrade() {
             </div>
           </div>
 
+          {/* Past rounds timeline */}
+          <PastRoundsTimeline rounds={recentRounds} />
+
           {/* Pool info */}
           <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
             <div className="rounded-xl border border-green-500/20 bg-green-500/5 p-2.5 sm:p-3 text-center">
