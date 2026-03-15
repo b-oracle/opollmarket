@@ -86,17 +86,16 @@ function BucketBadges({ bucketCountdown, bucketProgress }: { bucketCountdown?: n
   );
 }
 
-/** Convert engine Candle[] + activeCandle into OHLCCandle[] for SimpleCandleChart */
-function engineCandlesToOHLC(candles: Candle[], active: Candle | null): { ohlc: OHLCCandle[]; mas: { ma7?: number; ma14?: number }[] } {
-  const all = active ? [...candles, active] : [...candles];
-  const ohlc: OHLCCandle[] = all.map(c => ({
+/** Convert engine Candle[] (already includes active candle from getCandlesWithMAs) into OHLCCandle[] */
+function engineCandlesToOHLC(candles: Candle[]): { ohlc: OHLCCandle[]; mas: { ma7?: number; ma14?: number }[] } {
+  const ohlc: OHLCCandle[] = candles.map(c => ({
     time: c.ts / 1000,
     open: c.open,
     high: c.high,
     low: c.low,
     close: c.close,
   }));
-  const mas = all.map(c => ({ ma7: c.ma7, ma14: c.ma14 }));
+  const mas = candles.map(c => ({ ma7: c.ma7, ma14: c.ma14 }));
   return { ohlc, mas };
 }
 
@@ -123,10 +122,11 @@ function QuickTradeChart(props: QuickTradeChartProps) {
   const entryPrice = userBet && activeRound?.open_price ? Number(activeRound.open_price) : null;
 
   // Convert engine data to chart-ready formats
+  // Engine candles already include the active candle via getCandlesWithMAs()
   const engineOhlcData = useMemo(() => {
     if (!engineReady || !engineCandles || engineCandles.length < 1) return null;
-    return engineCandlesToOHLC(engineCandles, engineActiveCandle ?? null);
-  }, [engineReady, engineCandles, engineActiveCandle]);
+    return engineCandlesToOHLC(engineCandles);
+  }, [engineReady, engineCandles]);
 
   const enginePriceHistory = useMemo(() => {
     if (!engineReady || !engineLinePoints || engineLinePoints.length < 2) return null;
