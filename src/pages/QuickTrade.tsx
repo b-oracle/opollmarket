@@ -379,23 +379,36 @@ export default function QuickTrade() {
   }, [user, activeRound?.status]);
 
   // ── Price history for mini chart ──
-  const CHART_TIMEFRAMES = [
-    { key: "1m", label: "1m", ms: 1 * 60 * 1000 },
-    { key: "5m", label: "5m", ms: 5 * 60 * 1000 },
-    { key: "15m", label: "15m", ms: 15 * 60 * 1000 },
-    { key: "1h", label: "1H", ms: 60 * 60 * 1000 },
-    { key: "4h", label: "4H", ms: 4 * 60 * 60 * 1000 },
-    { key: "1d", label: "1D", ms: 24 * 60 * 60 * 1000 },
+  const ALL_CHART_TIMEFRAMES = [
+    { key: "1m", label: "1m", ms: 1 * 60 * 1000, seconds: 60 },
+    { key: "5m", label: "5m", ms: 5 * 60 * 1000, seconds: 300 },
+    { key: "15m", label: "15m", ms: 15 * 60 * 1000, seconds: 900 },
+    { key: "1h", label: "1H", ms: 60 * 60 * 1000, seconds: 3600 },
+    { key: "4h", label: "4H", ms: 4 * 60 * 60 * 1000, seconds: 14400 },
+    { key: "1d", label: "1D", ms: 24 * 60 * 60 * 1000, seconds: 86400 },
   ] as const;
-  type ChartTF = typeof CHART_TIMEFRAMES[number]["key"];
+  const CHART_TIMEFRAMES = useMemo(() => {
+    if (!commissionSettings?.qt_enabled_timeframes) return ALL_CHART_TIMEFRAMES;
+    const enabled = new Set(commissionSettings.qt_enabled_timeframes.split(",").filter(Boolean).map(Number));
+    const filtered = ALL_CHART_TIMEFRAMES.filter(t => enabled.has(t.seconds));
+    return filtered.length > 0 ? filtered : ALL_CHART_TIMEFRAMES;
+  }, [commissionSettings?.qt_enabled_timeframes]);
+  type ChartTF = typeof ALL_CHART_TIMEFRAMES[number]["key"];
   const validTFKeys = CHART_TIMEFRAMES.map(t => t.key) as readonly string[];
   const savedTF = typeof window !== "undefined" ? localStorage.getItem("qt-chart-tf") : null;
-  const initialTF = (savedTF && validTFKeys.includes(savedTF) ? savedTF : "15m") as ChartTF;
+  const initialTF = (savedTF && validTFKeys.includes(savedTF) ? savedTF : (CHART_TIMEFRAMES[0]?.key ?? "5m")) as ChartTF;
   const [chartTimeframe, setChartTimeframeRaw] = useState<ChartTF>(initialTF);
   const setChartTimeframe = useCallback((tf: ChartTF) => {
     setChartTimeframeRaw(tf);
     try { localStorage.setItem("qt-chart-tf", tf); } catch {}
   }, []);
+  // Reset chart timeframe if current selection is no longer in filtered list
+  useEffect(() => {
+    const keys = CHART_TIMEFRAMES.map(t => t.key);
+    if (!keys.includes(chartTimeframe) && keys.length > 0) {
+      setChartTimeframe(keys[0] as ChartTF);
+    }
+  }, [CHART_TIMEFRAMES, chartTimeframe, setChartTimeframe]);
   const validChartTypes = ["area", "candle", "tv"] as const;
   const savedCT = typeof window !== "undefined" ? localStorage.getItem("qt-chart-type") : null;
   const rawInitialCT = (savedCT && (validChartTypes as readonly string[]).includes(savedCT) ? savedCT : "area") as "area" | "candle" | "tv";
