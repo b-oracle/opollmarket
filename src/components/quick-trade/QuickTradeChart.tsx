@@ -15,6 +15,7 @@ interface QuickTradeChartProps {
   priceHistory: { time: string; price: number; ts: number }[];
   ohlcData: OHLCCandle[];
   streamingPrice: number | null;
+  streamingPriceRef?: MutableRefObject<number | null>;
   historyLoading: boolean;
   activeRound: { open_price: number | null; created_at: string; duration_seconds: number } | null;
   userBet: { side: string } | null;
