@@ -102,13 +102,8 @@ Deno.serve(async (req) => {
           }
 
           if (trade_type === "prediction" && market_id && side) {
-            const adminFeeRate = Number(commData?.admin_fee_percent ?? 2) / 100;
-            const referrerRate = Number(commData?.referrer_commission_percent ?? 0) / 100;
-            const bc400Rate = Number((commData as any)?.bc400_pool_percent ?? 0) / 100;
-            // Creator fee would need a lookup but for copy trades we use the base (unverified) rate
-            const creatorRate = Number(commData?.creator_fee_percent ?? 3) / 100;
-            const totalFeeRate = adminFeeRate + creatorRate + referrerRate + bc400Rate;
-            const totalFee = copyAmount * totalFeeRate;
+            const predictionFeePercent = Number(commData?.prediction_fee_percent ?? 10) / 100;
+            const totalFee = copyAmount * predictionFeePercent;
             const tradePrice = price || 50;
             const finalShares = copyShares || Math.max(0.01, Number(((copyAmount - totalFee) / (tradePrice / 100)).toFixed(2)));
 
