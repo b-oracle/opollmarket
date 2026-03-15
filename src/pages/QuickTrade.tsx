@@ -488,6 +488,8 @@ export default function QuickTrade() {
     setCurrentPrice(null);
     setPrevPrice(null);
     setStreamingPrice(null);
+    streamingPriceRef.current = null;
+    lastStreamingStateUpdateRef.current = 0;
     setPriceHistory([]);
     setOhlcData([]);
     setActiveRound(null);
