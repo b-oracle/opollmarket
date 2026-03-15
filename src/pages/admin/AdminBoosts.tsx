@@ -437,7 +437,7 @@ const AdminBoosts = () => {
                         ? "bg-green-500/5 border border-green-500/10"
                         : "bg-orange-500/5 border border-orange-500/10"
                     }`}>
-                      {boost.tx_hash ? (
+                      {(boost.tx_hash || (boost.nowpayments_payment_id && boost.status === "active")) ? (
                         <>
                           <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
                           <div>
