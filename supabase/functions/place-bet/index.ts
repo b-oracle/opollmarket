@@ -128,7 +128,7 @@ Deno.serve(async (req) => {
     }
 
     // Calculate actual amounts from fee splits
-    const adminAmount = totalFees * adminSplit;
+    // Admin keeps the remainder after splits — no separate adminAmount needed
     const creatorAmount = totalFees * creatorSplit;
     const referrerAmount = referrerId ? totalFees * referrerSplit : 0;
     const bc400Amount = totalFees * bc400Split;

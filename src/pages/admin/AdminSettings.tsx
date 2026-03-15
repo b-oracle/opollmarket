@@ -449,29 +449,36 @@ const AdminSettings = () => {
               </CardContent>
             </Card>
 
-            <div className="rounded-lg border border-border p-3 space-y-1.5 bg-muted/50">
+            <div className="rounded-lg border border-border p-3 space-y-2 bg-muted/50">
               <p className="text-xs font-semibold mb-2">Fee Summary (per $100 prediction)</p>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Flat Prediction Fee</span>
-                <span className="font-bold text-primary">{predictionFeeNum}% (${(predictionFeeNum).toFixed(2)})</span>
-              </div>
-              <div className="border-t border-border pt-1.5 space-y-1">
-                <p className="text-[10px] font-semibold text-muted-foreground mb-1">Internal Split of ${predictionFeeNum.toFixed(2)} fee:</p>
+
+              {/* STAGE 1 */}
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Stage 1 — At Trade Time</p>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Pool Reserve ({adminNum}%)</span>
-                  <span className="font-medium">${(predictionFeeNum * adminNum / 100).toFixed(2)}</span>
+                  <span className="text-muted-foreground">Prediction Fee ({predictionFeeNum}%)</span>
+                  <span className="font-bold text-primary">${predictionFeeNum.toFixed(2)} → Admin Pool Reserve</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Creator (Unverified {creatorNum}%)</span>
-                  <span className="font-medium">${(predictionFeeNum * creatorNum / 100).toFixed(2)}</span>
+                  <span className="text-muted-foreground">Market Liquidity Pool</span>
+                  <span className="font-bold text-primary">${(100 - predictionFeeNum).toFixed(2)} → shared to winners</span>
+                </div>
+              </div>
+
+              {/* STAGE 2 */}
+              <div className="border-t border-border pt-2 space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Stage 2 — After 48 Hours (from ${predictionFeeNum.toFixed(2)} reserve)</p>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Creator (Gold {creatorGoldNum}%)</span>
+                  <span className="font-medium">${(predictionFeeNum * creatorGoldNum / 100).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Creator (Blue {creatorBlueNum}%)</span>
                   <span className="font-medium">${(predictionFeeNum * creatorBlueNum / 100).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Creator (Gold {creatorGoldNum}%)</span>
-                  <span className="font-medium">${(predictionFeeNum * creatorGoldNum / 100).toFixed(2)}</span>
+                  <span className="text-muted-foreground">Creator (Unverified {creatorNum}%)</span>
+                  <span className="font-medium">${(predictionFeeNum * creatorNum / 100).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Referrer ({referrerCommissionNum}%)</span>
@@ -482,26 +489,19 @@ const AdminSettings = () => {
                   <span className="font-medium">${(predictionFeeNum * bc400PoolPercentNum / 100).toFixed(2)}</span>
                 </div>
                 <div className="border-t border-border pt-1 mt-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Split Total (Gold scenario)</span>
-                    <span className={`font-bold ${splitTotalGold > 100 ? "text-destructive" : splitTotalGold === 100 ? "text-primary" : "text-yellow-500"}`}>
-                      {splitTotalGold.toFixed(1)}%
-                    </span>
+                  <div className="flex justify-between text-sm font-bold">
+                    <span className="text-muted-foreground">Platform Keeps (remainder)</span>
+                    <span className="text-primary">{platformNetGold.toFixed(1)}% = ${(predictionFeeNum * platformNetGold / 100).toFixed(2)}</span>
                   </div>
-                  {splitTotalGold < 100 && (
-                    <p className="text-[10px] text-yellow-500">Remaining {(100 - splitTotalGold).toFixed(1)}% stays in pool reserve (unallocated).</p>
-                  )}
+                  <p className="text-[10px] text-muted-foreground">Gold scenario shown. Blue: {platformNetBlue.toFixed(1)}% | Unverified: {platformNetUnverified.toFixed(1)}%</p>
                 </div>
               </div>
+
               <div className="border-t border-border pt-1.5">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Pool (trade amount after fee)</span>
-                  <span className="font-bold text-primary">{(100 - predictionFeeNum).toFixed(1)}% (${(100 - predictionFeeNum).toFixed(2)})</span>
+                  <span className="text-muted-foreground">Early Exit Fee</span>
+                  <span className="font-medium">{exitFeeNum}%</span>
                 </div>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Early Exit Fee</span>
-                <span className="font-medium">{exitFeeNum}%</span>
               </div>
             </div>
 
