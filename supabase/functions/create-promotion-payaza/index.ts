@@ -11,12 +11,12 @@ function encodePayazaAuth(secretKey: string): string {
   return `Payaza ${encoded}`;
 }
 
-const BOOST_TIERS: Record<string, { durationHours: number; price: number; rank: number }> = {
+const DEFAULT_BOOST_TIERS: Record<string, { durationHours: number; price: number; rank: number }> = {
   flash: { durationHours: 12, price: 20, rank: 1 },
   standard: { durationHours: 24, price: 50, rank: 2 },
   whale: { durationHours: 168, price: 150, rank: 3 },
 };
-const BROADCAST_PRICE = 5;
+let DEFAULT_BROADCAST_PRICE = 5;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -57,14 +57,39 @@ Deno.serve(async (req) => {
       });
     }
 
-    const tierConfig = boost_tier ? BOOST_TIERS[boost_tier] : null;
-    if (boost_tier && !tierConfig) {
+    if (boost_tier && !DEFAULT_BOOST_TIERS[boost_tier]) {
       return new Response(JSON.stringify({ error: "Invalid boost tier" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Load dynamic pricing
+    const BOOST_TIERS = { ...DEFAULT_BOOST_TIERS };
+    BOOST_TIERS.flash = { ...BOOST_TIERS.flash };
+    BOOST_TIERS.standard = { ...BOOST_TIERS.standard };
+    BOOST_TIERS.whale = { ...BOOST_TIERS.whale };
+    let BROADCAST_PRICE = DEFAULT_BROADCAST_PRICE;
+    try {
+      const { data: cs } = await adminClient
+        .from("commission_settings")
+        .select("boost_flash_price, boost_standard_price, boost_whale_price, broadcast_price, fallback_naira_rate")
+        .limit(1)
+        .single();
+      if (cs) {
+        BOOST_TIERS.flash.price = Number(cs.boost_flash_price) || 20;
+        BOOST_TIERS.standard.price = Number(cs.boost_standard_price) || 50;
+        BOOST_TIERS.whale.price = Number(cs.boost_whale_price) || 150;
+        if (cs.broadcast_price != null) BROADCAST_PRICE = Number(cs.broadcast_price);
+      }
+    } catch { /* use defaults */ }
+
+    const tierConfig = boost_tier ? BOOST_TIERS[boost_tier] : null;
     const boostCost = tierConfig?.price || 0;
     const broadcastCost = include_broadcast ? BROADCAST_PRICE : 0;
     const totalUsd = boostCost + broadcastCost;
@@ -75,11 +100,6 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
 
     // Check existing active boost (block downgrades)
     if (tierConfig) {

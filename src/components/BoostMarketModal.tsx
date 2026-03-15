@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import BottomSheet from "@/components/BottomSheet";
 import { useUserBalance } from "@/hooks/useUserBalance";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
+import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 
 interface BoostTier {
   id: "flash" | "standard" | "whale";
@@ -18,13 +19,15 @@ interface BoostTier {
   color: string;
 }
 
-const BOOST_TIERS: BoostTier[] = [
+const BROADCAST_PRICE_DEFAULT = 5;
+
+const buildBoostTiers = (flashPrice: number, standardPrice: number, whalePrice: number): BoostTier[] => [
   {
     id: "flash",
     label: "Flash Boost",
     duration: "12h",
     durationHours: 12,
-    price: 20,
+    price: flashPrice,
     rank: 1,
     icon: <Zap className="w-8 h-8" />,
     color: "hsl(var(--primary))",
@@ -34,7 +37,7 @@ const BOOST_TIERS: BoostTier[] = [
     label: "Standard",
     duration: "1 Day",
     durationHours: 24,
-    price: 50,
+    price: standardPrice,
     rank: 2,
     icon: <Flame className="w-8 h-8" />,
     color: "hsl(280, 70%, 60%)",
@@ -44,14 +47,12 @@ const BOOST_TIERS: BoostTier[] = [
     label: "Whale Pin",
     duration: "7 Days",
     durationHours: 168,
-    price: 150,
+    price: whalePrice,
     rank: 3,
     icon: <Crown className="w-8 h-8" />,
     color: "hsl(45, 93%, 58%)",
   },
 ];
-
-const BROADCAST_PRICE = 5;
 
 interface BoostMarketModalProps {
   open: boolean;
@@ -70,6 +71,14 @@ interface ActiveBoostInfo {
 }
 
 const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketModalProps) => {
+  const { data: commissionSettings } = useCommissionSettings();
+  const BOOST_TIERS = buildBoostTiers(
+    commissionSettings?.boost_flash_price ?? 20,
+    commissionSettings?.boost_standard_price ?? 50,
+    commissionSettings?.boost_whale_price ?? 150,
+  );
+  const BROADCAST_PRICE = commissionSettings?.broadcast_price ?? BROADCAST_PRICE_DEFAULT;
+
   const [selectedTier, setSelectedTier] = useState<BoostTier | null>(null);
   const [broadcastSelected, setBroadcastSelected] = useState(false);
   const [step, setStep] = useState<Step>("select");
@@ -86,11 +95,9 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
     pay_currency?: string;
     extending?: boolean;
     new_ends_at?: string;
-    // Balance payment result fields
     total_charged?: number;
     bonus_used?: number;
     main_used?: number;
-    // NGN/Payaza fields
     bank_name?: string;
     account_number?: string;
     account_name?: string;

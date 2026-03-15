@@ -213,9 +213,9 @@ const Create = () => {
   const [creationBoost, setCreationBoost] = useState(false);
   const [creationBoostTier, setCreationBoostTier] = useState<"flash" | "standard" | "whale">("flash");
   const [creationBroadcast, setCreationBroadcast] = useState(false);
-  const BOOST_TIER_PRICES: Record<string, number> = { flash: 20, standard: 50, whale: 150 };
+  const [boostTierPrices, setBoostTierPrices] = useState<Record<string, number>>({ flash: 20, standard: 50, whale: 150 });
   const BOOST_TIER_HOURS: Record<string, number> = { flash: 12, standard: 24, whale: 168 };
-  const BROADCAST_PRICE = 5;
+  const [broadcastPriceVal, setBroadcastPriceVal] = useState(5);
 
   useEffect(() => {
     (async () => {
@@ -236,6 +236,12 @@ const Create = () => {
         setGoldMaxFreeMarkets(Number((data as any).gold_max_free_markets) || 20);
         setAiGenerationCost(Number((data as any).ai_generation_cost ?? 0.5));
         setAutoResolveFee(Number((data as any).auto_resolve_fee ?? 0));
+        setBoostTierPrices({
+          flash: Number((data as any).boost_flash_price ?? 20),
+          standard: Number((data as any).boost_standard_price ?? 50),
+          whale: Number((data as any).boost_whale_price ?? 150),
+        });
+        setBroadcastPriceVal(Number((data as any).broadcast_price ?? 5));
       }
       setSettingsLoaded(true);
     })();
@@ -745,8 +751,8 @@ const Create = () => {
 
     const liquidityAmount = parseFloat(initialLiquidity);
     const balancePromoEnabled = isFeatureEnabled("balance_promotions");
-    const boostCost = (creationBoost && balancePromoEnabled) ? BOOST_TIER_PRICES[creationBoostTier] : 0;
-    const broadcastCost = (creationBroadcast && balancePromoEnabled) ? BROADCAST_PRICE : 0;
+    const boostCost = (creationBoost && balancePromoEnabled) ? boostTierPrices[creationBoostTier] : 0;
+    const broadcastCost = (creationBroadcast && balancePromoEnabled) ? broadcastPriceVal : 0;
     const totalDeduction = feeBypass ? liquidityAmount + marketCreationFee : liquidityAmount;
     setSimilarMarkets([]);
     setCreatedAsPending(false);
@@ -1010,7 +1016,7 @@ const Create = () => {
       await supabase.from("market_boosts").insert({
         market_id: data.id,
         tier: creationBoostTier,
-        amount: BOOST_TIER_PRICES[creationBoostTier],
+        amount: boostTierPrices[creationBoostTier],
         payer_wallet: user.id,
         ends_at: boostEnds.toISOString(),
         status: "active",
@@ -1018,7 +1024,7 @@ const Create = () => {
       await supabase.from("transactions").insert({
         user_id: user.id,
         type: "buy",
-        amount: BOOST_TIER_PRICES[creationBoostTier],
+        amount: boostTierPrices[creationBoostTier],
         market_id: data.id,
         status: "confirmed",
         side: "boost_fee",
@@ -1031,14 +1037,14 @@ const Create = () => {
         market_id: data.id,
         user_id: user.id,
         tier: "alert",
-        amount: BROADCAST_PRICE,
+        amount: broadcastPriceVal,
         status: "pending",
       }).select("id").single();
 
       await supabase.from("transactions").insert({
         user_id: user.id,
         type: "buy",
-        amount: BROADCAST_PRICE,
+        amount: broadcastPriceVal,
         market_id: data.id,
         status: "confirmed",
         side: "broadcast_fee",
@@ -2293,8 +2299,8 @@ const Create = () => {
                   })}
                 </div>
                 {(() => {
-                    const boostCost = creationBoost ? BOOST_TIER_PRICES[creationBoostTier] : 0;
-                    const broadcastCost = creationBroadcast ? BROADCAST_PRICE : 0;
+                    const boostCost = creationBoost ? boostTierPrices[creationBoostTier] : 0;
+                    const broadcastCost = creationBroadcast ? broadcastPriceVal : 0;
                     const totalNeeded = parseFloat(initialLiquidity) + (feeBypass ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0) + boostCost + broadcastCost;
                     const shortfall = totalNeeded - balance;
                     return totalNeeded > balance && balance >= 0 ? (
@@ -2448,18 +2454,18 @@ const Create = () => {
                     {creationBoost && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Boost ({creationBoostTier})</span>
-                        <span className="font-medium">${BOOST_TIER_PRICES[creationBoostTier]} USDT</span>
+                        <span className="font-medium">${boostTierPrices[creationBoostTier]} USDT</span>
                       </div>
                     )}
                     {creationBroadcast && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Broadcast Alert</span>
-                        <span className="font-medium">${BROADCAST_PRICE} USDT</span>
+                        <span className="font-medium">${broadcastPriceVal} USDT</span>
                       </div>
                     )}
                     <div className="border-t border-border pt-1.5 flex justify-between">
                       <span className="font-semibold">Total</span>
-                      <span className="font-bold text-primary">${(parseFloat(initialLiquidity) + (feeBypass ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0) + (creationBoost ? BOOST_TIER_PRICES[creationBoostTier] : 0) + (creationBroadcast ? BROADCAST_PRICE : 0)).toFixed(2)} USDT</span>
+                      <span className="font-bold text-primary">${(parseFloat(initialLiquidity) + (feeBypass ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0) + (creationBoost ? boostTierPrices[creationBoostTier] : 0) + (creationBroadcast ? broadcastPriceVal : 0)).toFixed(2)} USDT</span>
                     </div>
                   </div>
                 </div>

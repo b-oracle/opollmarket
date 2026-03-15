@@ -81,6 +81,10 @@ const AdminSettings = () => {
   const [goldMaxFreeMarkets, setGoldMaxFreeMarkets] = useState("20");
   const [aiGenerationCost, setAiGenerationCost] = useState("0.50");
   const [autoResolveFee, setAutoResolveFee] = useState("0");
+  const [boostFlashPrice, setBoostFlashPrice] = useState("20");
+  const [boostStandardPrice, setBoostStandardPrice] = useState("50");
+  const [boostWhalePrice, setBoostWhalePrice] = useState("150");
+  const [broadcastPrice, setBroadcastPrice] = useState("5");
   const [payazaMode, setPayazaMode] = useState<"checkout_sdk" | "direct_api">("direct_api"); // kept for save compatibility
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -134,6 +138,10 @@ const AdminSettings = () => {
         setAutoResolveFee(String(d.auto_resolve_fee ?? 0));
         setPayazaMode(d.payaza_mode === "checkout_sdk" ? "checkout_sdk" : "direct_api");
         setQtOneSidedBonus(d.qt_one_sided_bonus !== false);
+        setBoostFlashPrice(String(d.boost_flash_price ?? 20));
+        setBoostStandardPrice(String(d.boost_standard_price ?? 50));
+        setBoostWhalePrice(String(d.boost_whale_price ?? 150));
+        setBroadcastPrice(String(d.broadcast_price ?? 5));
         setSettingsId(d.id);
       }
       if (error) console.error(error);
@@ -172,6 +180,10 @@ const AdminSettings = () => {
   const goldMaxFreeMarketsNum = parseInt(goldMaxFreeMarkets) || 20;
   const aiGenerationCostNum = parseFloat(aiGenerationCost) || 0;
   const autoResolveFeeNum = parseFloat(autoResolveFee) || 0;
+  const boostFlashPriceNum = parseFloat(boostFlashPrice) || 20;
+  const boostStandardPriceNum = parseFloat(boostStandardPrice) || 50;
+  const boostWhalePriceNum = parseFloat(boostWhalePrice) || 150;
+  const broadcastPriceNum = parseFloat(broadcastPrice) || 5;
   const maxTotalFee = Math.max(adminNum + creatorNum, adminNum + creatorBlueNum, adminNum + creatorGoldNum) + referrerCommissionNum;
   const totalFee = adminNum + creatorNum + referrerCommissionNum;
   const poolPercent = 100 - totalFee;
@@ -257,6 +269,10 @@ const AdminSettings = () => {
               auto_resolve_fee: autoResolveFeeNum,
                payaza_mode: payazaMode,
                qt_one_sided_bonus: qtOneSidedBonus,
+               boost_flash_price: boostFlashPriceNum,
+               boost_standard_price: boostStandardPriceNum,
+               boost_whale_price: boostWhalePriceNum,
+               broadcast_price: broadcastPriceNum,
            updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
@@ -760,7 +776,39 @@ const AdminSettings = () => {
           </CardContent>
         </Card>
 
-        {/* ─── Creator Gate ─── */}
+        {/* ─── Promotion Pricing ─── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Zap className="w-5 h-5" /> Promotion Pricing
+            </CardTitle>
+            <CardDescription>
+              Prices for Boost tiers and Broadcast alerts. Changes apply to new purchases.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="boostFlashPrice">Flash Boost ($)</Label>
+                <Input id="boostFlashPrice" type="number" min={0} step={1} value={boostFlashPrice} onChange={(e) => setBoostFlashPrice(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="boostStandardPrice">Standard Boost ($)</Label>
+                <Input id="boostStandardPrice" type="number" min={0} step={1} value={boostStandardPrice} onChange={(e) => setBoostStandardPrice(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="boostWhalePrice">Whale Pin ($)</Label>
+                <Input id="boostWhalePrice" type="number" min={0} step={1} value={boostWhalePrice} onChange={(e) => setBoostWhalePrice(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="broadcastPrice">Broadcast Alert ($)</Label>
+                <Input id="broadcastPrice" type="number" min={0} step={1} value={broadcastPrice} onChange={(e) => setBroadcastPrice(e.target.value)} />
+              </div>
+            </div>
+            <p className="text-[10px] text-muted-foreground">Flash: ${boostFlashPriceNum} · Standard: ${boostStandardPriceNum} · Whale: ${boostWhalePriceNum} · Broadcast: ${broadcastPriceNum}</p>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">

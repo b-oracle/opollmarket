@@ -19,6 +19,10 @@ export interface CommissionSettings {
   qt_enabled_timeframes: string;
   qt_disabled_assets: string;
   auto_resolve_fee: number;
+  boost_flash_price: number;
+  boost_standard_price: number;
+  boost_whale_price: number;
+  broadcast_price: number;
 }
 
 export const useCommissionSettings = () => {
@@ -27,7 +31,7 @@ export const useCommissionSettings = () => {
     queryFn: async (): Promise<CommissionSettings> => {
       const { data, error } = await supabase
         .from("commission_settings")
-        .select("admin_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, exit_fee_percent, quick_trade_fee_percent, qt_min_bet, qt_max_bet, qt_streak_2x, qt_streak_3x, qt_streak_4x, qt_streak_5x, qt_enabled_assets, qt_enabled_timeframes, qt_disabled_assets, auto_resolve_fee")
+        .select("admin_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, exit_fee_percent, quick_trade_fee_percent, qt_min_bet, qt_max_bet, qt_streak_2x, qt_streak_3x, qt_streak_4x, qt_streak_5x, qt_enabled_assets, qt_enabled_timeframes, qt_disabled_assets, auto_resolve_fee, boost_flash_price, boost_standard_price, boost_whale_price, broadcast_price")
         .limit(1)
         .maybeSingle();
       if (error || !data) {
@@ -49,6 +53,10 @@ export const useCommissionSettings = () => {
           qt_enabled_timeframes: "60,180,300,900",
           qt_disabled_assets: "",
           auto_resolve_fee: 0,
+          boost_flash_price: 20,
+          boost_standard_price: 50,
+          boost_whale_price: 150,
+          broadcast_price: 5,
         };
       }
       const d = data as any;
@@ -70,6 +78,10 @@ export const useCommissionSettings = () => {
         qt_enabled_timeframes: String(d.qt_enabled_timeframes ?? "60,180,300,900"),
         qt_disabled_assets: String(d.qt_disabled_assets ?? ""),
         auto_resolve_fee: Number(d.auto_resolve_fee ?? 0),
+        boost_flash_price: Number(d.boost_flash_price ?? 20),
+        boost_standard_price: Number(d.boost_standard_price ?? 50),
+        boost_whale_price: Number(d.boost_whale_price ?? 150),
+        broadcast_price: Number(d.broadcast_price ?? 5),
       };
     },
     staleTime: 60_000,

@@ -6,12 +6,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const BOOST_TIERS: Record<string, { durationHours: number; price: number; rank: number }> = {
+const DEFAULT_BOOST_TIERS: Record<string, { durationHours: number; price: number; rank: number }> = {
   flash: { durationHours: 12, price: 20, rank: 1 },
   standard: { durationHours: 24, price: 50, rank: 2 },
   whale: { durationHours: 168, price: 150, rank: 3 },
 };
-const BROADCAST_PRICE = 5;
+let DEFAULT_BROADCAST_PRICE = 5;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -56,6 +56,23 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Load dynamic pricing
+    const BOOST_TIERS = { ...DEFAULT_BOOST_TIERS };
+    let BROADCAST_PRICE = DEFAULT_BROADCAST_PRICE;
+    try {
+      const { data: cs } = await adminClient
+        .from("commission_settings")
+        .select("boost_flash_price, boost_standard_price, boost_whale_price, broadcast_price")
+        .limit(1)
+        .single();
+      if (cs) {
+        BOOST_TIERS.flash = { ...BOOST_TIERS.flash, price: Number(cs.boost_flash_price) || 20 };
+        BOOST_TIERS.standard = { ...BOOST_TIERS.standard, price: Number(cs.boost_standard_price) || 50 };
+        BOOST_TIERS.whale = { ...BOOST_TIERS.whale, price: Number(cs.boost_whale_price) || 150 };
+        if (cs.broadcast_price != null) BROADCAST_PRICE = Number(cs.broadcast_price);
+      }
+    } catch { /* use defaults */ }
 
     // Calculate total cost
     const tierConfig = boost_tier ? BOOST_TIERS[boost_tier] : null;

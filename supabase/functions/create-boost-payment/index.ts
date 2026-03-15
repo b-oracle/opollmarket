@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const TIER_CONFIG: Record<string, { durationHours: number; price: number; rank: number }> = {
+const DEFAULT_TIER_CONFIG: Record<string, { durationHours: number; price: number; rank: number }> = {
   flash: { durationHours: 12, price: 20, rank: 1 },
   standard: { durationHours: 24, price: 50, rank: 2 },
   whale: { durationHours: 168, price: 150, rank: 3 },
@@ -44,6 +44,26 @@ Deno.serve(async (req) => {
     const userId = claimsData.claims.sub as string;
     const { market_id, tier } = await req.json();
 
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Load dynamic pricing from commission_settings
+    const TIER_CONFIG = { ...DEFAULT_TIER_CONFIG };
+    try {
+      const { data: cs } = await adminClient
+        .from("commission_settings")
+        .select("boost_flash_price, boost_standard_price, boost_whale_price")
+        .limit(1)
+        .single();
+      if (cs) {
+        TIER_CONFIG.flash = { ...TIER_CONFIG.flash, price: Number(cs.boost_flash_price) || 20 };
+        TIER_CONFIG.standard = { ...TIER_CONFIG.standard, price: Number(cs.boost_standard_price) || 50 };
+        TIER_CONFIG.whale = { ...TIER_CONFIG.whale, price: Number(cs.boost_whale_price) || 150 };
+      }
+    } catch { /* use defaults */ }
+
     const tierConfig = TIER_CONFIG[tier];
     if (!tierConfig) {
       return new Response(JSON.stringify({ error: "Invalid tier" }), {
@@ -59,10 +79,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    // adminClient already created above
 
     // Check for existing active boost on this market
     const now = new Date();

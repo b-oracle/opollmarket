@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const BROADCAST_PRICE = 5;
+let BROADCAST_PRICE = 5;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -55,6 +55,21 @@ Deno.serve(async (req) => {
       });
     }
 
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Load dynamic pricing
+    try {
+      const { data: cs } = await adminClient
+        .from("commission_settings")
+        .select("broadcast_price")
+        .limit(1)
+        .single();
+      if (cs?.broadcast_price != null) BROADCAST_PRICE = Number(cs.broadcast_price);
+    } catch { /* use default */ }
+
     const orderId = `broadcast_${market_id}_alert_${userId}_${Date.now()}`;
 
     const npResponse = await fetch("https://api.nowpayments.io/v1/payment", {
@@ -84,9 +99,7 @@ Deno.serve(async (req) => {
 
     const payment = await npResponse.json();
 
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    // adminClient already created above
     );
 
     const { data: broadcast, error: insertError } = await adminClient
