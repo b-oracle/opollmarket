@@ -16,6 +16,7 @@ const allNavItems = [
 { icon: User, label: "Profile", path: "/profile", featureKey: "social_profiles" },
 { icon: Trophy, label: "Leaderboard", path: "/rankings", featureKey: "rankings" },
 { icon: Gift, label: "Referrals", path: "/referrals", featureKey: "referrals" },
+{ icon: DollarSign, label: "Commissions", path: "/commissions", featureKey: null, requiresAuth: true },
 { icon: HelpCircle, label: "FAQ", path: "/faq", featureKey: "faq" }];
 
 

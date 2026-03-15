@@ -262,6 +262,7 @@ const App = () => (
                         <Route path="/forgot-password" element={<ForgotPassword />} />
                         <Route path="/setup-security" element={<SetupSecurity />} />
                         <Route path="/referrals" element={<FeatureGate featureKey="referrals"><Referrals /></FeatureGate>} />
+                        <Route path="/commissions" element={<Commissions />} />
                         <Route path="/faq" element={<FeatureGate featureKey="faq"><FAQ /></FeatureGate>} />
                         <Route path="/disclaimer" element={<Disclaimer />} />
                         <Route path="/terms" element={<Terms />} />
