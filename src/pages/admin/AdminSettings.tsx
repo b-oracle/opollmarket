@@ -494,6 +494,10 @@ const AdminSettings = () => {
                     <span className="text-primary">{platformNetGold.toFixed(1)}% = ${(predictionFeeNum * platformNetGold / 100).toFixed(2)}</span>
                   </div>
                   <p className="text-[10px] text-muted-foreground">Gold scenario shown. Blue: {platformNetBlue.toFixed(1)}% | Unverified: {platformNetUnverified.toFixed(1)}%</p>
+                  <div className="flex justify-between text-xs font-semibold mt-1 pt-1 border-t border-dashed border-border">
+                    <span className="text-muted-foreground">Total</span>
+                    <span className="text-foreground">100%</span>
+                  </div>
                 </div>
               </div>
 
