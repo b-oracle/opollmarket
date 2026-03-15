@@ -55,7 +55,7 @@ export const useUserLimitOrders = () => {
   });
 };
 
-/** Place a limit order — escrows balance */
+/** Place a limit order via edge function — escrows balance server-side */
 export const usePlaceLimitOrder = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -78,48 +78,18 @@ export const usePlaceLimitOrder = () => {
     }) => {
       if (!user) throw new Error("Not authenticated");
 
-      // Check balance
-      const { data: balData } = await supabase
-        .from("balances")
-        .select("amount, bonus_balance")
-        .eq("user_id", user.id)
-        .eq("currency", "USDT")
-        .single();
-
-      const currentBalance = Number(balData?.amount || 0);
-      const currentBonus = Number(balData?.bonus_balance || 0);
-      const totalAvailable = currentBalance + currentBonus;
-
-      if (totalAvailable < amount) throw new Error("Insufficient balance");
-
-      // Deduct (escrow) — bonus first, then main
-      const bonusDeduct = Math.min(currentBonus, amount);
-      const mainDeduct = amount - bonusDeduct;
-
-      const { error: balError } = await supabase
-        .from("balances")
-        .update({
-          amount: currentBalance - mainDeduct,
-          bonus_balance: currentBonus - bonusDeduct,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", user.id)
-        .eq("currency", "USDT");
-      if (balError) throw balError;
-
-      // Insert limit order
-      const { error: orderError } = await supabase.from("limit_orders").insert({
-        user_id: user.id,
-        market_id: marketId,
-        option_id: optionId || null,
-        side,
-        order_type: "limit",
-        limit_price: limitPrice,
-        amount,
-        shares,
-        status: "pending",
+      const { data, error } = await supabase.functions.invoke("place-limit-order", {
+        body: { marketId, optionId, side, amount, limitPrice, shares },
       });
-      if (orderError) throw orderError;
+
+      if (error) {
+        const msg = typeof data === "object" && data?.error ? data.error : error.message || "Failed to place limit order";
+        throw new Error(msg);
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       return { success: true };
     },
@@ -132,7 +102,7 @@ export const usePlaceLimitOrder = () => {
   });
 };
 
-/** Cancel a pending limit order — refunds escrowed balance */
+/** Cancel a pending limit order via edge function — refunds server-side */
 export const useCancelLimitOrder = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -141,43 +111,18 @@ export const useCancelLimitOrder = () => {
     mutationFn: async (orderId: string) => {
       if (!user) throw new Error("Not authenticated");
 
-      // Get order details
-      const { data: order, error: fetchErr } = await supabase
-        .from("limit_orders")
-        .select("*")
-        .eq("id", orderId)
-        .eq("user_id", user.id)
-        .eq("status", "pending")
-        .single();
+      const { data, error } = await supabase.functions.invoke("cancel-limit-order", {
+        body: { orderId },
+      });
 
-      if (fetchErr || !order) throw new Error("Order not found or already filled");
+      if (error) {
+        const msg = typeof data === "object" && data?.error ? data.error : error.message || "Failed to cancel order";
+        throw new Error(msg);
+      }
 
-      // Cancel the order
-      const { error: updateErr } = await supabase
-        .from("limit_orders")
-        .update({ status: "cancelled", updated_at: new Date().toISOString() })
-        .eq("id", orderId)
-        .eq("user_id", user.id);
-      if (updateErr) throw updateErr;
-
-      // Refund balance
-      const { data: balData } = await supabase
-        .from("balances")
-        .select("amount")
-        .eq("user_id", user.id)
-        .eq("currency", "USDT")
-        .single();
-
-      const currentBalance = Number(balData?.amount || 0);
-      const { error: balErr } = await supabase
-        .from("balances")
-        .update({
-          amount: currentBalance + Number(order.amount),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", user.id)
-        .eq("currency", "USDT");
-      if (balErr) throw balErr;
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       return { success: true };
     },
