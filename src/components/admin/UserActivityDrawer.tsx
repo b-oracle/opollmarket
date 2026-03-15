@@ -518,6 +518,83 @@ const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDra
           </div>
         );
 
+      case "deposits":
+        return (
+          <div className="space-y-2">
+            {data.map((tx: any) => {
+              const statusCls = getStatusCls(tx.status);
+              return (
+                <div key={tx.id} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border/50">
+                  <div className="p-2 rounded-lg bg-muted text-primary"><ArrowDownToLine className="w-4 h-4" /></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold uppercase">Deposit</span>
+                      <span className={`text-[10px] font-semibold uppercase ${statusCls}`}>{tx.status}</span>
+                      {tx.payment_provider && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium">{tx.payment_provider}</span>
+                      )}
+                    </div>
+                    {tx.nowpayments_payment_id && <p className="text-[10px] text-muted-foreground truncate mt-0.5">NP: {tx.nowpayments_payment_id}</p>}
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{formatDate(tx.created_at)}</p>
+                  </div>
+                  <p className={`text-sm font-bold shrink-0 ${tx.status === "confirmed" ? "text-green-500" : ""}`}>
+                    {tx.status === "confirmed" ? "+" : ""}${Number(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        );
+
+      case "boosts":
+        return (
+          <div className="space-y-2">
+            {data.map((b: any) => {
+              const tierLabel: Record<string, string> = { flash: "⚡ Flash", standard: "🔥 Standard", whale: "👑 Whale" };
+              const statusMap: Record<string, string> = {
+                active: "text-green-500",
+                pending: "text-amber-500",
+                expired: "text-muted-foreground",
+                cancelled: "text-destructive",
+              };
+              return (
+                <div key={b.id} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border/50">
+                  <div className="p-2 rounded-lg bg-muted text-amber-500"><Flame className="w-4 h-4" /></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-bold">{tierLabel[b.tier] || b.tier}</span>
+                      <span className={`text-[10px] font-semibold uppercase ${statusMap[b.status] || "text-muted-foreground"}`}>{b.status}</span>
+                    </div>
+                    {b.markets?.title && <p className="text-xs text-muted-foreground truncate mt-0.5">{b.markets.title}</p>}
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{formatDate(b.created_at)}</p>
+                  </div>
+                  <p className="text-sm font-bold shrink-0">${Number(b.amount).toFixed(2)}</p>
+                </div>
+              );
+            })}
+          </div>
+        );
+
+      case "audit_log":
+        return (
+          <div className="space-y-1.5">
+            {data.map((e: any) => (
+              <div key={e.id} className="flex items-start gap-3 p-2.5 rounded-xl bg-muted/30 border border-border/50">
+                <ClipboardList className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold">{e.event_name?.replace(/_/g, " ")}</p>
+                  {e.properties && Object.keys(e.properties).length > 0 && (
+                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                      {Object.entries(e.properties).map(([k, v]) => `${k}: ${v}`).join(" · ")}
+                    </p>
+                  )}
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{formatDate(e.created_at)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+
       default:
         return null;
     }
