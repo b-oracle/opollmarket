@@ -118,7 +118,7 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
 
         {/* Entry price line */}
         {entryPrice != null && entryPrice >= domainMin && entryPrice <= domainMin + domainRange && (
-          <line x1={0} y1={priceY(entryPrice)} x2={100} y2={priceY(entryPrice)} stroke={ENTRY_COLOR} strokeWidth={0.25} strokeDasharray="0.8 0.4" strokeOpacity={0.9} />
+          <line x1={0} y1={priceY(entryPrice)} x2={88} y2={priceY(entryPrice)} stroke={ENTRY_COLOR} strokeWidth={0.25} strokeDasharray="0.8 0.4" strokeOpacity={0.9} />
         )}
 
         {/* Current price dotted line */}
