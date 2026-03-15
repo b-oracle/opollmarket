@@ -2314,11 +2314,12 @@ const Create = () => {
                   })()}
                 </div>
 
-                {/* Boost & Broadcast Add-ons */}
+                {/* Boost & Broadcast Add-ons — only when balance promotions enabled */}
+                {isFeatureEnabled("balance_promotions") && (
                 <div className="glass rounded-xl p-4 space-y-3">
                   <h3 className="text-sm font-semibold flex items-center gap-2">
                     <Zap className="w-4 h-4 text-primary" />
-                    Promote Your Market <span className="text-[10px] font-normal text-muted-foreground">(optional)</span>
+                    Promote Your Market <span className="text-[10px] font-normal text-muted-foreground">(optional, paid from balance)</span>
                   </h3>
 
                   {/* Boost Toggle */}
@@ -2370,6 +2371,7 @@ const Create = () => {
                     </div>
                   </div>
                 </div>
+                )}
 
                 {/* Review card */}
                 <div className="glass rounded-xl p-4">
