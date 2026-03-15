@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Zap, Flame, Crown, Copy, Check, Loader2, AlertTriangle, ChevronLeft, Megaphone, Clock } from "lucide-react";
+import { X, Zap, Flame, Crown, Copy, Check, Loader2, AlertTriangle, ChevronLeft, Megaphone, Clock, Wallet, CreditCard } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import BottomSheet from "@/components/BottomSheet";
+import { useUserBalance } from "@/hooks/useUserBalance";
 
 interface BoostTier {
   id: "flash" | "standard" | "whale";
@@ -59,6 +60,7 @@ interface BoostMarketModalProps {
 }
 
 type Step = "select" | "confirm" | "pay" | "success";
+type PayMethod = "balance" | "crypto";
 
 interface ActiveBoostInfo {
   tier: string;
@@ -73,16 +75,23 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [activeBoost, setActiveBoost] = useState<ActiveBoostInfo | null>(null);
+  const [payMethod, setPayMethod] = useState<PayMethod>("balance");
   const [paymentInfo, setPaymentInfo] = useState<{
     boost_id?: string;
     broadcast_id?: string;
-    pay_address: string;
-    pay_amount: number;
-    pay_currency: string;
+    pay_address?: string;
+    pay_amount?: number;
+    pay_currency?: string;
     extending?: boolean;
     new_ends_at?: string;
+    // Balance payment result fields
+    total_charged?: number;
+    bonus_used?: number;
+    main_used?: number;
   } | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const { balance, bonusBalance, totalBalance, isLoading: balLoading } = useUserBalance();
 
   useEffect(() => {
     return () => {
@@ -130,12 +139,18 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
       setLoading(false);
       setSelectedTier(null);
       setBroadcastSelected(false);
+      setPayMethod("balance");
       if (pollRef.current) clearInterval(pollRef.current);
     }
   }, [open]);
 
   const totalPrice = (selectedTier?.price || 0) + (broadcastSelected ? BROADCAST_PRICE : 0);
   const hasSelection = selectedTier || broadcastSelected;
+
+  // Balance breakdown calculation
+  const bonusDeduct = Math.min(bonusBalance, totalPrice);
+  const mainDeduct = totalPrice - bonusDeduct;
+  const canPayFromBalance = totalBalance >= totalPrice;
 
   const isTierBlocked = (tier: BoostTier) => {
     if (!activeBoost) return false;
@@ -189,7 +204,38 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
     }, 5000);
   };
 
-  const handleCreatePayment = async () => {
+  const handlePayWithBalance = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pay-promotion-balance", {
+        body: {
+          market_id: marketId,
+          boost_tier: selectedTier?.id || null,
+          include_broadcast: broadcastSelected,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setPaymentInfo({
+        boost_id: data.boost_id,
+        broadcast_id: data.broadcast_id,
+        extending: data.extending,
+        new_ends_at: data.new_ends_at,
+        total_charged: data.total_charged,
+        bonus_used: data.bonus_used,
+        main_used: data.main_used,
+      });
+      setStep("success");
+      toast.success("Payment successful!");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to process payment");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePayWithCrypto = async () => {
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -247,6 +293,14 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
       toast.error(err?.message || "Failed to create payment");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleConfirmPayment = () => {
+    if (payMethod === "balance") {
+      handlePayWithBalance();
+    } else {
+      handlePayWithCrypto();
     }
   };
 
@@ -362,13 +416,38 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
 
         {step === "confirm" && (
           <>
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20">
-              <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
-              <p className="text-sm text-foreground">
-                Are you sure? This will initiate a payment that cannot be reversed.
-              </p>
+            {/* Payment Method Selector */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Payment Method</p>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setPayMethod("balance")}
+                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
+                    payMethod === "balance"
+                      ? "border-primary/50 bg-primary/5"
+                      : "border-border bg-muted/30 hover:border-muted-foreground/30"
+                  }`}
+                >
+                  <Wallet className="w-6 h-6" />
+                  <span className="text-sm font-bold">Balance</span>
+                  <span className="text-xs text-muted-foreground">${totalBalance.toFixed(2)} available</span>
+                </button>
+                <button
+                  onClick={() => setPayMethod("crypto")}
+                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
+                    payMethod === "crypto"
+                      ? "border-primary/50 bg-primary/5"
+                      : "border-border bg-muted/30 hover:border-muted-foreground/30"
+                  }`}
+                >
+                  <CreditCard className="w-6 h-6" />
+                  <span className="text-sm font-bold">Crypto</span>
+                  <span className="text-xs text-muted-foreground">Pay with USDT</span>
+                </button>
+              </div>
             </div>
 
+            {/* Order Summary */}
             <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Order Summary</p>
               <div className="space-y-2 text-sm">
@@ -387,21 +466,55 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Boost Cost</span>
-                      <span className="font-medium text-foreground">${selectedTier.price}</span>
+                      <span className="font-medium text-foreground">${selectedTier.price.toFixed(2)}</span>
                     </div>
                   </>
                 )}
                 {broadcastSelected && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Broadcast Alert</span>
-                    <span className="font-medium text-foreground">${BROADCAST_PRICE}</span>
+                    <span className="font-medium text-foreground">${BROADCAST_PRICE.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between border-t border-border pt-2 mt-2">
                   <span className="font-bold text-foreground">Total</span>
-                  <span className="font-bold text-foreground">${totalPrice} USD</span>
+                  <span className="font-bold text-foreground">${totalPrice.toFixed(2)} USD</span>
                 </div>
               </div>
+
+              {/* Balance Payment Breakdown */}
+              {payMethod === "balance" && (
+                <div className="border-t border-border pt-3 mt-1 space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Payment Breakdown</p>
+                  {bonusDeduct > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">From Bonus Balance</span>
+                      <span className="font-medium text-primary">−${bonusDeduct.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {mainDeduct > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">From Main Balance</span>
+                      <span className="font-medium text-foreground">−${mainDeduct.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Remaining Balance</span>
+                    <span className="font-medium text-foreground">
+                      ${Math.max(0, totalBalance - totalPrice).toFixed(2)}
+                    </span>
+                  </div>
+
+                  {!canPayFromBalance && (
+                    <div className="flex items-center gap-2 p-2.5 rounded-lg bg-destructive/10 border border-destructive/20 mt-1">
+                      <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+                      <p className="text-xs text-destructive">
+                        Insufficient balance. You need ${(totalPrice - totalBalance).toFixed(2)} more. Deposit funds or pay with crypto.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3">
@@ -413,14 +526,19 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
                 Go Back
               </button>
               <button
-                onClick={handleCreatePayment}
-                disabled={loading}
+                onClick={handleConfirmPayment}
+                disabled={loading || (payMethod === "balance" && !canPayFromBalance)}
                 className="flex-1 py-3 rounded-xl font-bold text-sm bg-primary text-primary-foreground transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Processing...
+                  </>
+                ) : payMethod === "balance" ? (
+                  <>
+                    <Wallet className="w-4 h-4" />
+                    Pay from Balance
                   </>
                 ) : (
                   "Confirm & Pay"
@@ -430,11 +548,11 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
           </>
         )}
 
-        {step === "pay" && paymentInfo && (
+        {step === "pay" && paymentInfo && paymentInfo.pay_address && (
           <>
             <div className="text-center space-y-1">
               <p className="text-sm text-muted-foreground">
-                Send exactly <span className="font-bold text-foreground">{paymentInfo.pay_amount} {paymentInfo.pay_currency.toUpperCase()}</span> to:
+                Send exactly <span className="font-bold text-foreground">{paymentInfo.pay_amount} {paymentInfo.pay_currency?.toUpperCase()}</span> to:
               </p>
             </div>
 
@@ -453,7 +571,7 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
               <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
                 <code className="text-xs flex-1 break-all text-foreground/80">{paymentInfo.pay_address}</code>
                 <button
-                  onClick={() => handleCopy(paymentInfo.pay_address)}
+                  onClick={() => handleCopy(paymentInfo.pay_address!)}
                   className="shrink-0 w-8 h-8 rounded-md flex items-center justify-center hover:bg-muted transition-colors"
                 >
                   {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
@@ -504,6 +622,28 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
                   : ""}
                 {broadcastSelected && "A push notification has been sent to all users."}
               </p>
+              {/* Balance payment receipt */}
+              {paymentInfo?.total_charged != null && (
+                <div className="mt-3 rounded-lg border border-border bg-muted/30 p-3 text-left space-y-1.5">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Receipt</p>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Total Charged</span>
+                    <span className="font-bold text-foreground">${paymentInfo.total_charged.toFixed(2)}</span>
+                  </div>
+                  {(paymentInfo.bonus_used ?? 0) > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Bonus Used</span>
+                      <span className="font-medium text-primary">${paymentInfo.bonus_used!.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {(paymentInfo.main_used ?? 0) > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Main Balance Used</span>
+                      <span className="font-medium text-foreground">${paymentInfo.main_used!.toFixed(2)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <button
               onClick={onClose}
