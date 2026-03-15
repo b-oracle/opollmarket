@@ -71,3 +71,5 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.send-market-broadcast]
     verify_jwt = false
+  [functions.process-pending-commissions]
+    verify_jwt = false
