@@ -89,9 +89,22 @@ function ActiveCountdown({ endsAt }: { endsAt: string }) {
   );
 }
 
+interface BroadcastRow {
+  id: string;
+  market_id: string;
+  user_id: string;
+  amount: number;
+  status: string;
+  tier: string;
+  tx_hash: string | null;
+  nowpayments_payment_id: string | null;
+  created_at: string;
+}
+
 const AdminBoosts = () => {
   const { canEdit } = useAdminContext();
   const [boosts, setBoosts] = useState<BoostRow[]>([]);
+  const [broadcasts, setBroadcasts] = useState<BroadcastRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [page, setPage] = useState(1);
