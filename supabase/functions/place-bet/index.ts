@@ -152,8 +152,7 @@ Deno.serve(async (req) => {
     // Bonus (referral) balance can ONLY be used to pay fees, not the bet itself
     const bonusForFees = Math.min(currentBonus, totalFees);
     const feesFromMain = totalFees - bonusForFees;
-    const betAmount = amount - totalFees; // net amount going to pool
-    const mainDeduct = betAmount + feesFromMain;
+    const mainDeduct = netAmount + feesFromMain;
     const totalAvailable = currentBalance + currentBonus;
 
     if (totalAvailable < totalCost) {
