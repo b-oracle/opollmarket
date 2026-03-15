@@ -1229,23 +1229,30 @@ export default function QuickTrade() {
           {/* Timeframe selector */}
           <p className="text-[11px] font-semibold text-muted-foreground mb-1.5">Round Duration</p>
           <div className="flex gap-2 mb-4">
-            {TIMEFRAMES.map((tf) => (
-              <button
-                key={tf.label}
-                onClick={() => {
-                  setSelectedTimeframe(tf);
-                  setActiveRound(null);
-                  setUserBet(null);
-                }}
-                className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${
-                  selectedTimeframe.seconds === tf.seconds
-                    ? "bg-accent text-accent-foreground shadow-md"
-                    : "bg-muted/40 text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                {tf.label}
-              </button>
-            ))}
+            {TIMEFRAMES.map((tf) => {
+              const marketOpen = isMarketOpen(selectedAsset.assetClass);
+              return (
+                <button
+                  key={tf.label}
+                  disabled={!marketOpen}
+                  onClick={() => {
+                    if (!marketOpen) return;
+                    setSelectedTimeframe(tf);
+                    setActiveRound(null);
+                    setUserBet(null);
+                  }}
+                  className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${
+                    !marketOpen
+                      ? "bg-muted/20 text-muted-foreground/50 cursor-not-allowed"
+                      : selectedTimeframe.seconds === tf.seconds
+                        ? "bg-accent text-accent-foreground shadow-md"
+                        : "bg-muted/40 text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {tf.label}
+                </button>
+              );
+            })}
           </div>
 
           {/* Price display */}
