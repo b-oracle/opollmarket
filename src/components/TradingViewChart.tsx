@@ -569,19 +569,39 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     };
   }, [chartStyle, timeframeLabel]);
 
-  // Update target price on each streaming tick (does NOT restart animation)
+  // Update target price from ref (no re-renders) or prop fallback
   useEffect(() => {
+    if (!externalPriceRef) return;
+    // When using ref-based input, poll the ref in the animation loop instead.
+    // This effect only runs once to set up the polling.
+    const iv = setInterval(() => {
+      const refPrice = externalPriceRef.current;
+      if (refPrice == null) return;
+      const base = interpolatedPriceRef.current ?? prevStreamingPriceRef.current ?? refPrice;
+      targetStreamingPriceRef.current = refPrice;
+      prevStreamingPriceRef.current = refPrice;
+      if (interpolatedPriceRef.current == null) {
+        interpolatedPriceRef.current = refPrice;
+      }
+      const isUpNow = refPrice >= base;
+      dotColorRef.current = isUpNow ? "#22c55e" : "#ef4444";
+    }, 40); // 25fps polling of the ref — zero re-renders
+    return () => clearInterval(iv);
+  }, [externalPriceRef]);
+
+  // Fallback: update from prop when no ref is provided
+  useEffect(() => {
+    if (externalPriceRef) return; // ref takes priority
     if (streamingPrice == null) return;
     const base = interpolatedPriceRef.current ?? prevStreamingPriceRef.current ?? streamingPrice;
     targetStreamingPriceRef.current = streamingPrice;
     prevStreamingPriceRef.current = streamingPrice;
-    // Initialize interpolated price if first tick
     if (interpolatedPriceRef.current == null) {
       interpolatedPriceRef.current = streamingPrice;
     }
     const isUpNow = streamingPrice >= base;
-    setDotColor(isUpNow ? "#22c55e" : "#ef4444");
-  }, [streamingPrice]);
+    dotColorRef.current = isUpNow ? "#22c55e" : "#ef4444";
+  }, [streamingPrice, externalPriceRef]);
 
   // Compute P&L when bet is active
   const pnl = entryPrice && streamingPrice
