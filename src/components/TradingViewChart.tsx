@@ -564,7 +564,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
         clearInterval(commitIntervalId);
       }
     };
-  }, [chartStyle]);
+  }, [chartStyle, timeframeLabel]);
 
   // Update target price on each streaming tick (does NOT restart animation)
   useEffect(() => {
