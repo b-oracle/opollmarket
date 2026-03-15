@@ -28,16 +28,15 @@ export default function SVGCandleChart({ candles, entryPrice, assetClass, timefr
   const PADDING_BOTTOM = 2;
 
   const n = candles.length;
-  if (n < 2) return null;
 
-  const priceMin = Math.min(...candles.map(c => c.low));
-  const priceMax = Math.max(...candles.map(c => c.high));
+  const priceMin = n >= 2 ? Math.min(...candles.map(c => c.low)) : 0;
+  const priceMax = n >= 2 ? Math.max(...candles.map(c => c.high)) : 1;
   const pricePad = (priceMax - priceMin) * 0.08 || 0.5;
   const domainMin = priceMin - pricePad;
   const domainMax = priceMax + pricePad;
   const domainRange = domainMax - domainMin;
 
-  const maxVol = Math.max(...candles.map(c => c.volume), 1);
+  const maxVol = n >= 2 ? Math.max(...candles.map(c => c.volume), 1) : 1;
 
   const gridLevels = useMemo(() => {
     if (n < 2) return [];
