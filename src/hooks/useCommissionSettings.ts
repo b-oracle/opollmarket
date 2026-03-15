@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface CommissionSettings {
   prediction_fee_percent: number;
-  admin_fee_percent: number;
   creator_fee_percent: number;
   creator_fee_blue_percent: number;
   creator_fee_gold_percent: number;
@@ -33,13 +32,12 @@ export const useCommissionSettings = () => {
     queryFn: async (): Promise<CommissionSettings> => {
       const { data, error } = await supabase
         .from("commission_settings")
-        .select("prediction_fee_percent, admin_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, exit_fee_percent, quick_trade_fee_percent, qt_min_bet, qt_max_bet, qt_streak_2x, qt_streak_3x, qt_streak_4x, qt_streak_5x, qt_enabled_assets, qt_enabled_timeframes, qt_disabled_assets, auto_resolve_fee, boost_flash_price, boost_standard_price, boost_whale_price, broadcast_price, bc400_pool_percent")
+        .select("prediction_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, exit_fee_percent, quick_trade_fee_percent, qt_min_bet, qt_max_bet, qt_streak_2x, qt_streak_3x, qt_streak_4x, qt_streak_5x, qt_enabled_assets, qt_enabled_timeframes, qt_disabled_assets, auto_resolve_fee, boost_flash_price, boost_standard_price, boost_whale_price, broadcast_price, bc400_pool_percent")
         .limit(1)
         .maybeSingle();
       if (error || !data) {
         return {
           prediction_fee_percent: 10,
-          admin_fee_percent: 20,
           creator_fee_percent: 30,
           creator_fee_blue_percent: 30,
           creator_fee_gold_percent: 3,
@@ -66,7 +64,6 @@ export const useCommissionSettings = () => {
       const d = data as any;
       return {
         prediction_fee_percent: Number(d.prediction_fee_percent ?? 10),
-        admin_fee_percent: Number(d.admin_fee_percent),
         creator_fee_percent: Number(d.creator_fee_percent),
         creator_fee_blue_percent: Number(d.creator_fee_blue_percent ?? d.creator_fee_percent ?? 3),
         creator_fee_gold_percent: Number(d.creator_fee_gold_percent ?? d.creator_fee_percent ?? 3),

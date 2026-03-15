@@ -47,7 +47,7 @@ const ALL_TIMEFRAMES = [
 const AdminSettings = () => {
   const { canEdit } = useAdminContext();
   const [predictionFee, setPredictionFee] = useState("10");
-  const [adminFee, setAdminFee] = useState("");
+  // admin_fee_percent is no longer configurable — platform keeps the remainder
   const [creatorFee, setCreatorFee] = useState("");
   const [creatorFeeBlue, setCreatorFeeBlue] = useState("");
   const [creatorFeeGold, setCreatorFeeGold] = useState("");
@@ -102,7 +102,7 @@ const AdminSettings = () => {
       if (data) {
         const d = data as any;
         setPredictionFee(String(d.prediction_fee_percent ?? 10));
-        setAdminFee(String(d.admin_fee_percent));
+        // admin_fee_percent no longer used in UI
         setCreatorFee(String(d.creator_fee_percent));
         setCreatorFeeBlue(String(d.creator_fee_blue_percent ?? d.creator_fee_percent ?? 3));
         setCreatorFeeGold(String(d.creator_fee_gold_percent ?? d.creator_fee_percent ?? 3));
@@ -155,7 +155,7 @@ const AdminSettings = () => {
   }, []);
 
   const predictionFeeNum = parseFloat(predictionFee) || 0;
-  const adminNum = parseFloat(adminFee) || 0;
+  // Platform keeps remainder — no adminNum needed
   const creatorNum = parseFloat(creatorFee) || 0;
   const creatorBlueNum = parseFloat(creatorFeeBlue) || 0;
   const creatorGoldNum = parseFloat(creatorFeeGold) || 0;
@@ -191,14 +191,17 @@ const AdminSettings = () => {
   const broadcastPriceNum = parseFloat(broadcastPrice) || 5;
   const bc400PoolPercentNum = parseFloat(bc400PoolPercent) || 0;
 
-  // Splits must sum to 100 — use worst-case (gold) creator split
-  const splitTotalGold = adminNum + creatorGoldNum + referrerCommissionNum + bc400PoolPercentNum;
-  const splitTotalBlue = adminNum + creatorBlueNum + referrerCommissionNum + bc400PoolPercentNum;
-  const splitTotalUnverified = adminNum + creatorNum + referrerCommissionNum + bc400PoolPercentNum;
+  // Splits must sum to ≤ 100 — platform keeps the remainder
+  const splitTotalGold = creatorGoldNum + referrerCommissionNum + bc400PoolPercentNum;
+  const splitTotalBlue = creatorBlueNum + referrerCommissionNum + bc400PoolPercentNum;
+  const splitTotalUnverified = creatorNum + referrerCommissionNum + bc400PoolPercentNum;
+  const platformNetGold = 100 - splitTotalGold;
+  const platformNetBlue = 100 - splitTotalBlue;
+  const platformNetUnverified = 100 - splitTotalUnverified;
   const splitsValid = splitTotalGold <= 100 && splitTotalBlue <= 100 && splitTotalUnverified <= 100;
   const isValid =
     predictionFeeNum >= 0 && predictionFeeNum <= 100 &&
-    adminNum >= 0 && referrerCommissionNum >= 0 && bc400PoolPercentNum >= 0 &&
+    referrerCommissionNum >= 0 && bc400PoolPercentNum >= 0 &&
     creatorNum >= 0 && creatorBlueNum >= 0 && creatorGoldNum >= 0 &&
     splitsValid &&
     referralNum >= 0 && tokenNum >= 0 && nftNum >= 0 &&
@@ -246,7 +249,7 @@ const AdminSettings = () => {
         .from("commission_settings")
         .update({
           prediction_fee_percent: predictionFeeNum,
-          admin_fee_percent: adminNum,
+          // admin_fee_percent left unchanged in DB
           creator_fee_percent: creatorNum,
           creator_fee_blue_percent: creatorBlueNum,
           creator_fee_gold_percent: creatorGoldNum,
@@ -301,7 +304,7 @@ const AdminSettings = () => {
         targetType: "commission_settings",
         details: {
           prediction_fee_percent: predictionFeeNum,
-          admin_fee_percent: adminNum,
+          // admin_fee_percent: remainder (not configurable)
           creator_fee_percent: creatorNum,
           creator_fee_blue_percent: creatorBlueNum,
           creator_fee_gold_percent: creatorGoldNum,
@@ -384,13 +387,7 @@ const AdminSettings = () => {
 
             <div className="border-t border-border pt-3 space-y-3">
               <p className="text-xs font-semibold text-muted-foreground">Internal Fee Splits (must sum to ≤ 100% of the fee)</p>
-              <p className="text-[10px] text-muted-foreground">These splits divide the Prediction Fee among stakeholders. For example, on a $100 wager with a 10% fee ($10 total), a 20% Pool Reserve split means $2 stays in the platform reserve. The remaining splits go to creators, referrers, etc.</p>
-
-              <div className="space-y-2">
-                <Label htmlFor="adminFee">Pool Reserve Split (%)</Label>
-                <Input id="adminFee" type="number" min={0} max={100} step={0.1} value={adminFee} onChange={(e) => setAdminFee(e.target.value)} placeholder="20" />
-                <p className="text-[10px] text-muted-foreground">Platform's net take — stays in the admin pool reserve.</p>
-              </div>
+              <p className="text-[10px] text-muted-foreground">These splits are paid out from the Admin Pool Reserve after 48 hours. The platform keeps whatever % remains after all splits.</p>
             </div>
 
             <div className="border-t border-border pt-3 space-y-3">
@@ -452,29 +449,36 @@ const AdminSettings = () => {
               </CardContent>
             </Card>
 
-            <div className="rounded-lg border border-border p-3 space-y-1.5 bg-muted/50">
+            <div className="rounded-lg border border-border p-3 space-y-2 bg-muted/50">
               <p className="text-xs font-semibold mb-2">Fee Summary (per $100 prediction)</p>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Flat Prediction Fee</span>
-                <span className="font-bold text-primary">{predictionFeeNum}% (${(predictionFeeNum).toFixed(2)})</span>
-              </div>
-              <div className="border-t border-border pt-1.5 space-y-1">
-                <p className="text-[10px] font-semibold text-muted-foreground mb-1">Internal Split of ${predictionFeeNum.toFixed(2)} fee:</p>
+
+              {/* STAGE 1 */}
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Stage 1 — At Trade Time</p>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Pool Reserve ({adminNum}%)</span>
-                  <span className="font-medium">${(predictionFeeNum * adminNum / 100).toFixed(2)}</span>
+                  <span className="text-muted-foreground">Prediction Fee ({predictionFeeNum}%)</span>
+                  <span className="font-bold text-primary">${predictionFeeNum.toFixed(2)} → Admin Pool Reserve</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Creator (Unverified {creatorNum}%)</span>
-                  <span className="font-medium">${(predictionFeeNum * creatorNum / 100).toFixed(2)}</span>
+                  <span className="text-muted-foreground">Market Liquidity Pool</span>
+                  <span className="font-bold text-primary">${(100 - predictionFeeNum).toFixed(2)} → shared to winners</span>
+                </div>
+              </div>
+
+              {/* STAGE 2 */}
+              <div className="border-t border-border pt-2 space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Stage 2 — After 48 Hours (from ${predictionFeeNum.toFixed(2)} reserve)</p>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Creator (Gold {creatorGoldNum}%)</span>
+                  <span className="font-medium">${(predictionFeeNum * creatorGoldNum / 100).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Creator (Blue {creatorBlueNum}%)</span>
                   <span className="font-medium">${(predictionFeeNum * creatorBlueNum / 100).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Creator (Gold {creatorGoldNum}%)</span>
-                  <span className="font-medium">${(predictionFeeNum * creatorGoldNum / 100).toFixed(2)}</span>
+                  <span className="text-muted-foreground">Creator (Unverified {creatorNum}%)</span>
+                  <span className="font-medium">${(predictionFeeNum * creatorNum / 100).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Referrer ({referrerCommissionNum}%)</span>
@@ -485,26 +489,19 @@ const AdminSettings = () => {
                   <span className="font-medium">${(predictionFeeNum * bc400PoolPercentNum / 100).toFixed(2)}</span>
                 </div>
                 <div className="border-t border-border pt-1 mt-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Split Total (Gold scenario)</span>
-                    <span className={`font-bold ${splitTotalGold > 100 ? "text-destructive" : splitTotalGold === 100 ? "text-primary" : "text-yellow-500"}`}>
-                      {splitTotalGold.toFixed(1)}%
-                    </span>
+                  <div className="flex justify-between text-sm font-bold">
+                    <span className="text-muted-foreground">Platform Keeps (remainder)</span>
+                    <span className="text-primary">{platformNetGold.toFixed(1)}% = ${(predictionFeeNum * platformNetGold / 100).toFixed(2)}</span>
                   </div>
-                  {splitTotalGold < 100 && (
-                    <p className="text-[10px] text-yellow-500">Remaining {(100 - splitTotalGold).toFixed(1)}% stays in pool reserve (unallocated).</p>
-                  )}
+                  <p className="text-[10px] text-muted-foreground">Gold scenario shown. Blue: {platformNetBlue.toFixed(1)}% | Unverified: {platformNetUnverified.toFixed(1)}%</p>
                 </div>
               </div>
+
               <div className="border-t border-border pt-1.5">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Pool (trade amount after fee)</span>
-                  <span className="font-bold text-primary">{(100 - predictionFeeNum).toFixed(1)}% (${(100 - predictionFeeNum).toFixed(2)})</span>
+                  <span className="text-muted-foreground">Early Exit Fee</span>
+                  <span className="font-medium">{exitFeeNum}%</span>
                 </div>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Early Exit Fee</span>
-                <span className="font-medium">{exitFeeNum}%</span>
               </div>
             </div>
 
