@@ -96,6 +96,8 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   // Area chart: track committed timestamp for smooth streaming
   const areaCommittedTimeRef = useRef<number>(0);
   const lastScrollTimeRef = useRef<number>(0);
+  // Used to pin the live dot to the exact same X timestamp as the series update
+  const livePointTimeRef = useRef<UTCTimestamp | null>(null);
 
   useEffect(() => {
     candleBucketSecRef.current = getCandleBucketSeconds(timeframeLabel, chartMs);
