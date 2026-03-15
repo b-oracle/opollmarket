@@ -1387,19 +1387,16 @@ export default function QuickTrade() {
               </div>
             </div>
 
-            {/* Open price reference */}
-            {activeRound?.open_price && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>Open: <span className="font-semibold text-foreground">{getPricePrefix(selectedAsset)}{formatPrice(Number(activeRound.open_price), selectedAsset)}</span></span>
-                {currentPrice != null && (
-                  <span className={`font-semibold ${
-                    currentPrice > Number(activeRound.open_price) ? "text-green-500" : currentPrice < Number(activeRound.open_price) ? "text-destructive" : "text-muted-foreground"
-                  }`}>
-                    ({currentPrice > Number(activeRound.open_price) ? "+" : ""}{((currentPrice - Number(activeRound.open_price)) / Number(activeRound.open_price) * 100).toFixed(3)}%)
-                  </span>
-                )}
-              </div>
-            )}
+            {/* Price to Beat + Final Price header */}
+            <PriceToBeatHeader
+              openPrice={activeRound?.open_price ? Number(activeRound.open_price) : null}
+              currentPrice={currentPrice}
+              closePrice={activeRound?.close_price ? Number(activeRound.close_price) : null}
+              resolveFlash={resolveFlash}
+              formatPrice={(p: number) => formatPrice(p, selectedAsset)}
+              pricePrefix={getPricePrefix(selectedAsset)}
+              userBetSide={userBet?.side ?? null}
+            />
 
             {/* Chart timeframe selector + Mini price chart */}
             <div className="mt-3 -mx-2">
