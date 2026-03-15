@@ -144,31 +144,6 @@ const Commissions = () => {
 
   const filtered = activeTab === "all" ? allRecords : allRecords.filter((r) => r.category === activeTab);
 
-  // Monthly chart data
-  const monthlyData = useMemo(() => {
-    const map = new Map<string, { month: string; creator: number; referral: number; copy_trade: number; signup_bonus: number }>();
-    
-    // Only include released/earned records (not pending)
-    const earned = allRecords.filter((r) => r.status === "released" && r.category !== "pending");
-    
-    earned.forEach((r) => {
-      const d = new Date(r.date);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const label = d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
-      if (!map.has(key)) {
-        map.set(key, { month: label, creator: 0, referral: 0, copy_trade: 0, signup_bonus: 0 });
-      }
-      const entry = map.get(key)!;
-      if (r.category === "creator") entry.creator += r.amount;
-      else if (r.category === "referral") entry.referral += r.amount;
-      else if (r.category === "copy_trade") entry.copy_trade += r.amount;
-      else if (r.category === "signup_bonus") entry.signup_bonus += r.amount;
-    });
-
-    return Array.from(map.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([, v]) => v);
-  }, [allRecords]);
 
   const summaryCards = [
     { label: "Total Earned", value: totals.total, icon: DollarSign, color: "text-green-500 bg-green-500/10" },
