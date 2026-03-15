@@ -122,10 +122,11 @@ function QuickTradeChart(props: QuickTradeChartProps) {
   const entryPrice = userBet && activeRound?.open_price ? Number(activeRound.open_price) : null;
 
   // Convert engine data to chart-ready formats
+  // Engine candles already include the active candle via getCandlesWithMAs()
   const engineOhlcData = useMemo(() => {
     if (!engineReady || !engineCandles || engineCandles.length < 1) return null;
-    return engineCandlesToOHLC(engineCandles, engineActiveCandle ?? null);
-  }, [engineReady, engineCandles, engineActiveCandle]);
+    return engineCandlesToOHLC(engineCandles);
+  }, [engineReady, engineCandles]);
 
   const enginePriceHistory = useMemo(() => {
     if (!engineReady || !engineLinePoints || engineLinePoints.length < 2) return null;
