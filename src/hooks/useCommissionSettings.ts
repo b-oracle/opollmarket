@@ -23,6 +23,7 @@ export interface CommissionSettings {
   boost_standard_price: number;
   boost_whale_price: number;
   broadcast_price: number;
+  bc400_pool_percent: number;
 }
 
 export const useCommissionSettings = () => {
