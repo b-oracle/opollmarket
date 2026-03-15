@@ -94,7 +94,6 @@ function ActiveCountdown({ endsAt }: { endsAt: string }) {
 const AdminBoosts = () => {
   const { canEdit } = useAdminContext();
   const [boosts, setBoosts] = useState<BoostRow[]>([]);
-  const [broadcasts, setBroadcasts] = useState<BroadcastRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [page, setPage] = useState(1);
