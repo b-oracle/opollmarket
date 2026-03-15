@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, forwardRef } from "react";
+import { useEffect, useRef, useState, useCallback, forwardRef, type MutableRefObject } from "react";
 import {
   createChart,
   type IChartApi,
