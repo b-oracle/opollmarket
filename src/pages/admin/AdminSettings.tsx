@@ -277,8 +277,9 @@ const AdminSettings = () => {
                qt_one_sided_bonus: qtOneSidedBonus,
                boost_flash_price: boostFlashPriceNum,
                boost_standard_price: boostStandardPriceNum,
-               boost_whale_price: boostWhalePriceNum,
-               broadcast_price: broadcastPriceNum,
+                boost_whale_price: boostWhalePriceNum,
+                broadcast_price: broadcastPriceNum,
+                bc400_pool_percent: bc400PoolPercentNum,
            updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
