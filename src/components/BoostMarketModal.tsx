@@ -468,33 +468,47 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
             {/* Payment Method Selector */}
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Payment Method</p>
-              <div className={`grid gap-3 ${balancePayEnabled ? "grid-cols-2" : "grid-cols-1"}`}>
+              <div className={`grid gap-3 grid-cols-${[balancePayEnabled, true, ngnPayEnabled].filter(Boolean).length}`}>
                 {balancePayEnabled && (
                 <button
                   onClick={() => setPayMethod("balance")}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
+                  className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${
                     payMethod === "balance"
                       ? "border-primary/50 bg-primary/5"
                       : "border-border bg-muted/30 hover:border-muted-foreground/30"
                   }`}
                 >
-                  <Wallet className="w-6 h-6" />
-                  <span className="text-sm font-bold">Balance</span>
-                  <span className="text-xs text-muted-foreground">${totalBalance.toFixed(2)} available</span>
+                  <Wallet className="w-5 h-5" />
+                  <span className="text-xs font-bold">Balance</span>
+                  <span className="text-[10px] text-muted-foreground">${totalBalance.toFixed(2)}</span>
                 </button>
                 )}
                 <button
                   onClick={() => setPayMethod("crypto")}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
+                  className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${
                     payMethod === "crypto"
                       ? "border-primary/50 bg-primary/5"
                       : "border-border bg-muted/30 hover:border-muted-foreground/30"
                   }`}
                 >
-                  <CreditCard className="w-6 h-6" />
-                  <span className="text-sm font-bold">Crypto</span>
-                  <span className="text-xs text-muted-foreground">Pay with USDT</span>
+                  <CreditCard className="w-5 h-5" />
+                  <span className="text-xs font-bold">Crypto</span>
+                  <span className="text-[10px] text-muted-foreground">USDT</span>
                 </button>
+                {ngnPayEnabled && (
+                <button
+                  onClick={() => setPayMethod("ngn")}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${
+                    payMethod === "ngn"
+                      ? "border-primary/50 bg-primary/5"
+                      : "border-border bg-muted/30 hover:border-muted-foreground/30"
+                  }`}
+                >
+                  <Banknote className="w-5 h-5" />
+                  <span className="text-xs font-bold">NGN</span>
+                  <span className="text-[10px] text-muted-foreground">Bank Transfer</span>
+                </button>
+                )}
               </div>
             </div>
 
