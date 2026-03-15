@@ -92,9 +92,9 @@ const AdminBroadcasts = () => {
   }, []);
 
   const analytics = useMemo(() => {
-    const sent = broadcasts.filter((b) => b.status === "sent" || b.status === "active" || (b.status === "expired" && (b.tx_hash || b.nowpayments_payment_id)));
+    const sent = broadcasts.filter((b) => isPaid(b));
     const pending = broadcasts.filter((b) => b.status === "pending");
-    const expired = broadcasts.filter((b) => b.status === "expired" && !b.tx_hash && !b.nowpayments_payment_id);
+    const expired = broadcasts.filter((b) => b.status === "expired" && !isPaid(b));
     const totalRevenue = sent.reduce((s, b) => s + b.amount, 0);
     const lostRevenue = expired.reduce((s, b) => s + b.amount, 0);
     const convRate = broadcasts.length > 0 ? Math.round((sent.length / broadcasts.length) * 100) : 0;
