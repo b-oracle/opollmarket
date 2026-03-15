@@ -77,6 +77,24 @@ const Referrals = () => {
     gcTime: 10 * 60 * 1000,
   });
 
+  // Fetch referral commissions from pending_commissions (released)
+  const { data: referralCommissions = [] } = useQuery({
+    queryKey: ["referral_commissions", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase
+        .from("pending_commissions")
+        .select("amount")
+        .eq("user_id", user.id)
+        .eq("type", "referral")
+        .eq("status", "released");
+      return data || [];
+    },
+    enabled: !!user,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+
   // Fetch bonus balance
   const { data: bonusBalance = 0 } = useQuery({
     queryKey: ["bonus_balance", user?.id],
@@ -113,7 +131,9 @@ const Referrals = () => {
   const rewardedUserIds = new Set(rewards.map((r: any) => r.referred_id));
   const rewardByUserId = new Map(rewards.map((r: any) => [r.referred_id, r]));
 
-  const totalEarned = rewards.reduce((sum: number, r: any) => sum + Number(r.amount), 0);
+  const signupBonusTotal = rewards.reduce((sum: number, r: any) => sum + Number(r.amount), 0);
+  const referralCommissionTotal = referralCommissions.reduce((sum: number, r: any) => sum + Number(r.amount), 0);
+  const totalEarned = signupBonusTotal + referralCommissionTotal;
   const totalSignups = referredSignups.length;
   const totalRewarded = rewards.length;
 
@@ -207,7 +227,7 @@ const Referrals = () => {
                 className="glass rounded-xl p-4 text-center">
                 <DollarSign className="w-5 h-5 text-primary mx-auto mb-1" />
                 <p className="text-xl font-bold">${totalEarned.toFixed(2)}</p>
-                <p className="text-[10px] text-muted-foreground">Earned ({totalRewarded})</p>
+                <p className="text-[10px] text-muted-foreground">Total Earned</p>
               </motion.div>
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
                 className="glass rounded-xl p-4 text-center">
