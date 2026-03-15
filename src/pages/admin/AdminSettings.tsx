@@ -325,7 +325,8 @@ const AdminSettings = () => {
                ai_generation_cost: aiGenerationCostNum,
                auto_resolve_fee: autoResolveFeeNum,
                payaza_mode: payazaMode,
-               qt_one_sided_bonus: qtOneSidedBonus,
+                qt_one_sided_bonus: qtOneSidedBonus,
+                bc400_pool_percent: bc400PoolPercentNum,
         },
       });
 
