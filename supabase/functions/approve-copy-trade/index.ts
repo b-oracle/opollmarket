@@ -116,16 +116,12 @@ Deno.serve(async (req) => {
     if (trade.trade_type === "prediction" && trade.market_id && trade.side) {
       const { data: commData } = await supabase
         .from("commission_settings")
-        .select("admin_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, bc400_pool_percent, copy_trade_commission_percent")
+        .select("prediction_fee_percent, copy_trade_commission_percent")
         .limit(1)
         .single();
 
-      const adminFeeRate = Number(commData?.admin_fee_percent ?? 2) / 100;
-      const creatorRate = Number(commData?.creator_fee_percent ?? 3) / 100;
-      const referrerRate = Number(commData?.referrer_commission_percent ?? 0) / 100;
-      const bc400Rate = Number((commData as any)?.bc400_pool_percent ?? 0) / 100;
-      const totalFeeRate = adminFeeRate + creatorRate + referrerRate + bc400Rate;
-      const totalFee = trade.amount * totalFeeRate;
+      const predictionFeePercent = Number(commData?.prediction_fee_percent ?? 10) / 100;
+      const totalFee = trade.amount * predictionFeePercent;
       const copyTradeCommissionPercent = Number(commData?.copy_trade_commission_percent ?? 10);
       const totalDeduct = trade.amount;
       const tradePrice = trade.price || 50;

@@ -206,6 +206,17 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Notify trader once about all copies (both auto and manual)
+    if (copiedCount + queuedCount > 0) {
+      await supabase.from("notifications").insert({
+        user_id: trader_user_id,
+        title: `Trade Copied by ${copiedCount + queuedCount} user${copiedCount + queuedCount > 1 ? "s" : ""} 🔄`,
+        message: `${copiedCount} auto-copied, ${queuedCount} pending approval.`,
+        type: "info",
+        market_id: market_id || null,
+      });
+    }
+
     return new Response(JSON.stringify({ copied: copiedCount, queued: queuedCount }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
