@@ -279,7 +279,7 @@ Deno.serve(async (req) => {
       market_id: marketId,
       option_id: optionId || null,
       side,
-      shares,
+      shares: actualShares,
       price: price / 100,
       status: "confirmed",
     });
