@@ -310,9 +310,44 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
     }
   };
 
+  const handlePayWithNgn = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-promotion-payaza", {
+        body: {
+          market_id: marketId,
+          boost_tier: selectedTier?.id || null,
+          include_broadcast: broadcastSelected,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setPaymentInfo({
+        boost_id: data.boost_id,
+        broadcast_id: data.broadcast_id,
+        bank_name: data.bank_name,
+        account_number: data.account_number,
+        account_name: data.account_name,
+        amount_ngn: data.amount_ngn,
+        amount_usd: data.amount_usd,
+        exchange_rate: data.exchange_rate,
+        expires_at: data.expires_at,
+      });
+      setStep("pay");
+      startPolling(data.boost_id, data.broadcast_id);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to create NGN payment");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleConfirmPayment = () => {
     if (payMethod === "balance") {
       handlePayWithBalance();
+    } else if (payMethod === "ngn") {
+      handlePayWithNgn();
     } else {
       handlePayWithCrypto();
     }
