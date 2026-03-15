@@ -78,6 +78,10 @@ export const useCommissionSettings = () => {
         qt_enabled_timeframes: String(d.qt_enabled_timeframes ?? "60,180,300,900"),
         qt_disabled_assets: String(d.qt_disabled_assets ?? ""),
         auto_resolve_fee: Number(d.auto_resolve_fee ?? 0),
+        boost_flash_price: Number(d.boost_flash_price ?? 20),
+        boost_standard_price: Number(d.boost_standard_price ?? 50),
+        boost_whale_price: Number(d.boost_whale_price ?? 150),
+        broadcast_price: Number(d.broadcast_price ?? 5),
       };
     },
     staleTime: 60_000,
