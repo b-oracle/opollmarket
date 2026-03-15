@@ -239,6 +239,8 @@ export default function QuickTrade() {
   const { balance } = useUserBalance();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { isFeatureEnabled } = useFeatureToggles();
+  const tvChartEnabled = isFeatureEnabled("tradingview_chart");
   const queryClient = useQueryClient();
   const { data: commissionSettings } = useCommissionSettings();
   const { fireWinConfetti } = useConfetti();
