@@ -61,7 +61,7 @@ interface BoostMarketModalProps {
 }
 
 type Step = "select" | "confirm" | "pay" | "success";
-type PayMethod = "balance" | "crypto";
+type PayMethod = "balance" | "crypto" | "ngn";
 
 interface ActiveBoostInfo {
   tier: string;
