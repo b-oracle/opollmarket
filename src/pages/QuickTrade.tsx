@@ -48,6 +48,7 @@ import QuickTradeHistory from "@/components/quick-trade/QuickTradeHistory";
 import QuickTradeBetControls from "@/components/quick-trade/QuickTradeBetControls";
 import { useChartEngine } from "@/hooks/useChartEngine";
 import { getTimeframeMs } from "@/lib/chartEngine";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 // ── Asset config ──
 type AssetClass = "crypto" | "commodity" | "forex";
 interface QuickTradeAsset {
@@ -238,6 +239,8 @@ export default function QuickTrade() {
   const { balance } = useUserBalance();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { isFeatureEnabled } = useFeatureToggles();
+  const tvChartEnabled = isFeatureEnabled("tradingview_chart");
   const queryClient = useQueryClient();
   const { data: commissionSettings } = useCommissionSettings();
   const { fireWinConfetti } = useConfetti();
@@ -284,12 +287,15 @@ export default function QuickTrade() {
     }
   }, [ASSETS, selectedAsset.symbol, disabledAssets]);
 
-  // Auto-switch to area chart when selecting non-crypto assets (no OHLC/TV available)
+  // Auto-switch to area chart when selecting non-crypto assets or TV disabled
   useEffect(() => {
     if (selectedAsset.assetClass !== "crypto" && chartType !== "area") {
       setChartType("area");
     }
-  }, [selectedAsset.assetClass]);
+    if (chartType === "tv" && !tvChartEnabled) {
+      setChartType("area");
+    }
+  }, [selectedAsset.assetClass, tvChartEnabled]);
 
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [currentPriceAsset, setCurrentPriceAsset] = useState(ALL_ASSETS[0].symbol);
@@ -1384,7 +1390,7 @@ export default function QuickTrade() {
                       <BarChart3 className="w-3.5 h-3.5" />
                     </button>
                   )}
-                  {selectedAsset.assetClass === "crypto" && (
+                  {selectedAsset.assetClass === "crypto" && tvChartEnabled && (
                     <button
                       onClick={() => setChartType("tv")}
                       className={`px-1.5 py-1 rounded text-[9px] font-bold transition-all ${chartType === "tv" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
