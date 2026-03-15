@@ -314,15 +314,6 @@ const Referrals = () => {
           </p>
         </div>
 
-        {/* See Commissions Breakdown */}
-        <button
-          onClick={() => navigate("/commissions")}
-          className="w-full glass rounded-xl p-4 mb-6 flex items-center justify-center gap-2 text-sm font-semibold text-primary hover:bg-accent/50 transition-colors active:scale-[0.98]"
-        >
-          <DollarSign className="w-4 h-4" />
-          See Commissions Breakdown
-        </button>
-
         {/* How it works */}
         <div className="glass rounded-xl p-5 mb-6">
           <h3 className="text-sm font-semibold mb-3">How It Works</h3>
