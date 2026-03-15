@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Zap, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, DollarSign, Timer, AlertTriangle, TrendingUp, Crown, Flame } from "lucide-react";
+import { Loader2, Zap, CheckCircle, XCircle, ChevronDown, ChevronUp, Timer, AlertTriangle, Megaphone } from "lucide-react";
 import { toast } from "sonner";
 import { logAuditEvent } from "@/lib/auditLog";
 import { format, formatDistanceToNow, isPast } from "date-fns";
@@ -89,9 +89,22 @@ function ActiveCountdown({ endsAt }: { endsAt: string }) {
   );
 }
 
+interface BroadcastRow {
+  id: string;
+  market_id: string;
+  user_id: string;
+  amount: number;
+  status: string;
+  tier: string;
+  tx_hash: string | null;
+  nowpayments_payment_id: string | null;
+  created_at: string;
+}
+
 const AdminBoosts = () => {
   const { canEdit } = useAdminContext();
   const [boosts, setBoosts] = useState<BoostRow[]>([]);
+  const [broadcasts, setBroadcasts] = useState<BroadcastRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -134,8 +147,16 @@ const AdminBoosts = () => {
     setLoading(false);
   };
 
+  const fetchBroadcasts = async () => {
+    const { data } = await supabase
+      .from("market_broadcasts")
+      .select("*")
+      .order("created_at", { ascending: false });
+    setBroadcasts(data || []);
+  };
+
   useEffect(() => {
-    fetchBoosts();
+    Promise.all([fetchBoosts(), fetchBroadcasts()]);
   }, []);
 
   // Analytics
@@ -280,6 +301,49 @@ const AdminBoosts = () => {
             <span className="text-[10px]">👑{analytics.tierBreakdown.whale}</span>
           </div>
           <p className="text-[9px] text-muted-foreground">paid only</p>
+        </div>
+      </div>
+
+      {/* Broadcast Analytics */}
+      <div className="space-y-2">
+        <h3 className="text-lg font-bold flex items-center gap-2">
+          <Megaphone className="w-5 h-5 text-primary" />
+          Broadcast Alerts
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {(() => {
+            const sent = broadcasts.filter((b) => b.status === "sent" || b.status === "active");
+            const pending = broadcasts.filter((b) => b.status === "pending");
+            const paid = broadcasts.filter((b) => b.tx_hash || b.nowpayments_payment_id);
+            const expired = broadcasts.filter((b) => b.status === "expired" && !b.tx_hash);
+            const totalRevenue = paid.reduce((s, b) => s + b.amount, 0);
+            const lostRevenue = expired.reduce((s, b) => s + b.amount, 0);
+            const convRate = broadcasts.length > 0 ? Math.round((paid.length / broadcasts.length) * 100) : 0;
+            return (
+              <>
+                <div className="rounded-xl border border-border bg-card p-3">
+                  <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium block mb-0.5">Total Broadcasts</span>
+                  <p className="text-xl font-bold">{broadcasts.length}</p>
+                  <p className="text-[9px] text-muted-foreground">{sent.length} sent · {pending.length} pending</p>
+                </div>
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+                  <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium block mb-0.5">Broadcast Revenue</span>
+                  <p className="text-xl font-bold text-primary">${totalRevenue.toFixed(2)}</p>
+                  <p className="text-[9px] text-muted-foreground">{paid.length} paid alerts</p>
+                </div>
+                <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-3">
+                  <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium block mb-0.5">Lost Revenue</span>
+                  <p className="text-xl font-bold text-orange-500">${lostRevenue.toFixed(2)}</p>
+                  <p className="text-[9px] text-muted-foreground">{expired.length} unpaid</p>
+                </div>
+                <div className="rounded-xl border border-border bg-card p-3">
+                  <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium block mb-0.5">Conversion Rate</span>
+                  <p className="text-xl font-bold">{convRate}%</p>
+                  <p className="text-[9px] text-muted-foreground">initiated → paid</p>
+                </div>
+              </>
+            );
+          })()}
         </div>
       </div>
 
