@@ -71,7 +71,11 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
   const limitPriceNum = parseFloat(limitPriceInput) || 0;
   const effectivePrice = orderType === "limit" ? limitPriceNum : price;
 
-  const totalFeePercent = (commission?.admin_fee_percent ?? 2);
+  // Total prediction fee = admin + creator (worst-case/gold) + referrer + bc400
+  const totalFeePercent = (commission?.admin_fee_percent ?? 2)
+    + (commission?.creator_fee_gold_percent ?? 3)
+    + (commission?.referrer_commission_percent ?? 0)
+    + (commission?.bc400_pool_percent ?? 0);
   const fee = orderType === "market" ? numAmount * (totalFeePercent / 100) : 0; // no fee on limit orders until filled
   const poolAmount = numAmount - fee;
   const shares = poolAmount > 0 && effectivePrice > 0 ? poolAmount / (effectivePrice / 100) : 0;
@@ -329,7 +333,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                         </div>
                         {orderType === "market" && (
                           <div className="flex justify-between text-xs">
-                            <span className="text-muted-foreground">Prediction Fee ({commission?.admin_fee_percent ?? 2}%)</span>
+                            <span className="text-muted-foreground">Prediction Fee (up to {totalFeePercent}%)</span>
                             <span className="font-semibold">${fee.toFixed(2)}</span>
                           </div>
                         )}

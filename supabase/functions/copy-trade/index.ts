@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
     // Get commission settings for auto-copy execution
     const { data: commData } = await supabase
       .from("commission_settings")
-      .select("admin_fee_percent, copy_trade_commission_percent")
+      .select("admin_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, bc400_pool_percent, copy_trade_commission_percent")
       .limit(1)
       .single();
 
@@ -102,9 +102,15 @@ Deno.serve(async (req) => {
           }
 
           if (trade_type === "prediction" && market_id && side) {
-            const adminFee = copyAmount * (Number(commData?.admin_fee_percent ?? 2) / 100);
+            const adminFeeRate = Number(commData?.admin_fee_percent ?? 2) / 100;
+            const referrerRate = Number(commData?.referrer_commission_percent ?? 0) / 100;
+            const bc400Rate = Number((commData as any)?.bc400_pool_percent ?? 0) / 100;
+            // Creator fee would need a lookup but for copy trades we use the base (unverified) rate
+            const creatorRate = Number(commData?.creator_fee_percent ?? 3) / 100;
+            const totalFeeRate = adminFeeRate + creatorRate + referrerRate + bc400Rate;
+            const totalFee = copyAmount * totalFeeRate;
             const tradePrice = price || 50;
-            const finalShares = copyShares || Math.max(0.01, Number(((copyAmount - adminFee) / (tradePrice / 100)).toFixed(2)));
+            const finalShares = copyShares || Math.max(0.01, Number(((copyAmount - totalFee) / (tradePrice / 100)).toFixed(2)));
 
             // Deduct balance
             await supabase

@@ -1272,13 +1272,61 @@ async function executeBetInline(
 ) {
   const { data: commData } = await supabase
     .from("commission_settings")
-    .select("admin_fee_percent")
+    .select("admin_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, bc400_pool_percent")
     .limit(1)
     .single();
 
   const adminFeePercent = Number(commData?.admin_fee_percent ?? 2) / 100;
+  const referrerCommissionPercent = Number(commData?.referrer_commission_percent ?? 0) / 100;
+  const bc400PoolPercent = Number((commData as any)?.bc400_pool_percent ?? 0) / 100;
+
+  // Determine creator fee based on verification level
+  let creatorFeePercent = 0;
+  let creatorId: string | null = null;
+  {
+    const { data: market } = await supabase
+      .from("markets")
+      .select("creator_wallet")
+      .eq("id", marketId)
+      .single();
+
+    if (market?.creator_wallet) {
+      const { data: creatorProfile } = await supabase
+        .from("profiles")
+        .select("id, verification_level")
+        .eq("id", market.creator_wallet)
+        .single();
+
+      if (creatorProfile) {
+        creatorId = creatorProfile.id;
+        const level = creatorProfile.verification_level || "none";
+        if (level === "gold") {
+          creatorFeePercent = Number(commData?.creator_fee_gold_percent ?? 3) / 100;
+        } else if (level === "blue") {
+          creatorFeePercent = Number(commData?.creator_fee_blue_percent ?? 3) / 100;
+        } else {
+          creatorFeePercent = Number(commData?.creator_fee_percent ?? 3) / 100;
+        }
+      }
+    }
+  }
+
+  // Look up trader's referrer
+  let referrerId: string | null = null;
+  if (referrerCommissionPercent > 0) {
+    const { data: traderProfile } = await supabase
+      .from("profiles")
+      .select("referred_by")
+      .eq("id", userId)
+      .single();
+    referrerId = traderProfile?.referred_by || null;
+  }
+
   const adminAmount = amount * adminFeePercent;
-  const totalFees = adminAmount;
+  const creatorAmount = amount * creatorFeePercent;
+  const referrerAmount = referrerId ? amount * referrerCommissionPercent : 0;
+  const bc400Amount = amount * bc400PoolPercent;
+  const totalFees = adminAmount + creatorAmount + referrerAmount + bc400Amount;
 
   const { data: bal } = await supabase
     .from("balances")
@@ -1327,7 +1375,7 @@ async function executeBetInline(
     status: "confirmed",
   });
 
-  const poolAmount = amount - adminAmount;
+  const poolAmount = amount - totalFees;
   const { data: mkt } = await supabase
     .from("markets")
     .select("volume, participants, yes_price")
@@ -1354,6 +1402,7 @@ async function executeBetInline(
       .eq("id", marketId);
   }
 
+  // Credit entire total fee to admin pool reserve
   const { data: adminRole } = await supabase
     .from("user_roles")
     .select("user_id")
@@ -1361,70 +1410,61 @@ async function executeBetInline(
     .limit(1)
     .single();
 
-  if (adminRole && adminAmount > 0) {
-    const { data: adminBal } = await supabase
-      .from("balances")
-      .select("amount")
-      .eq("user_id", adminRole.user_id)
-      .eq("currency", "USDT")
-      .single();
-
-    if (adminBal) {
-      await supabase
-        .from("balances")
-        .update({
-          amount: Number(adminBal.amount) + adminAmount,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", adminRole.user_id)
-        .eq("currency", "USDT");
-    }
+  if (adminRole && totalFees > 0) {
+    await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: totalFees });
 
     await supabase.from("transactions").insert({
       user_id: adminRole.user_id,
       type: "commission",
-      amount: adminAmount,
+      amount: totalFees,
       market_id: marketId,
       side,
       status: "confirmed",
     });
   }
 
-  if (creatorAmount > 0) {
-    const { data: market } = await supabase
-      .from("markets")
-      .select("creator_wallet")
-      .eq("id", marketId)
-      .single();
+  // Distribute from admin pool
+  if (creatorId && creatorAmount > 0 && adminRole) {
+    await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -creatorAmount });
+    await supabase.rpc("adjust_balance", { _user_id: creatorId, _delta: creatorAmount });
 
-    if (market?.creator_wallet) {
-      const creatorId = market.creator_wallet;
-      const { data: creatorBal } = await supabase
-        .from("balances")
-        .select("amount")
-        .eq("user_id", creatorId)
-        .eq("currency", "USDT")
-        .single();
+    await supabase.from("transactions").insert({
+      user_id: creatorId,
+      type: "commission",
+      amount: creatorAmount,
+      market_id: marketId,
+      side: "creator",
+      status: "confirmed",
+    });
+  }
 
-      if (creatorBal) {
-        await supabase
-          .from("balances")
-          .update({
-            amount: Number(creatorBal.amount) + creatorAmount,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("user_id", creatorId)
-          .eq("currency", "USDT");
-      }
+  if (referrerId && referrerAmount > 0 && adminRole) {
+    await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -referrerAmount });
+    await supabase.rpc("adjust_balance", { _user_id: referrerId, _delta: referrerAmount });
 
-      await supabase.from("transactions").insert({
-        user_id: creatorId,
-        type: "commission",
-        amount: creatorAmount,
-        market_id: marketId,
-        side,
-        status: "confirmed",
-      });
+    await supabase.from("transactions").insert({
+      user_id: referrerId,
+      type: "commission",
+      amount: referrerAmount,
+      market_id: marketId,
+      side: "referral",
+      status: "confirmed",
+    });
+
+    await supabase.from("notifications").insert({
+      user_id: referrerId,
+      title: "Referral Commission 💰",
+      message: `You earned $${referrerAmount.toFixed(2)} commission from a referral's trade!`,
+      type: "referral",
+      market_id: marketId,
+    });
+  }
+
+  // Track BC400 pool
+  if (bc400Amount > 0) {
+    const { data: cs } = await supabase.from("commission_settings").select("bc400_pool_balance, id").limit(1).single();
+    if (cs) {
+      await supabase.from("commission_settings").update({ bc400_pool_balance: Number((cs as any).bc400_pool_balance || 0) + bc400Amount } as any).eq("id", cs.id);
     }
   }
 }
