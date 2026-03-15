@@ -1024,7 +1024,7 @@ const Create = () => {
       await supabase.from("transactions").insert({
         user_id: user.id,
         type: "buy",
-        amount: BOOST_TIER_PRICES[creationBoostTier],
+        amount: boostTierPrices[creationBoostTier],
         market_id: data.id,
         status: "confirmed",
         side: "boost_fee",
