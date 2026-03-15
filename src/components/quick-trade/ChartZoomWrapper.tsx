@@ -58,7 +58,7 @@ export default function ChartZoomWrapper({ children, className = "", style }: Ch
     tyRef.current = Math.max(-maxTy, Math.min(maxTy, tyRef.current));
   }, []);
 
-  const getDist = (t1: Touch, t2: Touch) =>
+  const getDist = (t1: React.Touch, t2: React.Touch) =>
     Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
