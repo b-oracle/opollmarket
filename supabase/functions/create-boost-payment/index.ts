@@ -44,6 +44,26 @@ Deno.serve(async (req) => {
     const userId = claimsData.claims.sub as string;
     const { market_id, tier } = await req.json();
 
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Load dynamic pricing from commission_settings
+    const TIER_CONFIG = { ...DEFAULT_TIER_CONFIG };
+    try {
+      const { data: cs } = await adminClient
+        .from("commission_settings")
+        .select("boost_flash_price, boost_standard_price, boost_whale_price")
+        .limit(1)
+        .single();
+      if (cs) {
+        TIER_CONFIG.flash = { ...TIER_CONFIG.flash, price: Number(cs.boost_flash_price) || 20 };
+        TIER_CONFIG.standard = { ...TIER_CONFIG.standard, price: Number(cs.boost_standard_price) || 50 };
+        TIER_CONFIG.whale = { ...TIER_CONFIG.whale, price: Number(cs.boost_whale_price) || 150 };
+      }
+    } catch { /* use defaults */ }
+
     const tierConfig = TIER_CONFIG[tier];
     if (!tierConfig) {
       return new Response(JSON.stringify({ error: "Invalid tier" }), {
