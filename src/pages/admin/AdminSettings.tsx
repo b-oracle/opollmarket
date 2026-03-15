@@ -138,6 +138,10 @@ const AdminSettings = () => {
         setAutoResolveFee(String(d.auto_resolve_fee ?? 0));
         setPayazaMode(d.payaza_mode === "checkout_sdk" ? "checkout_sdk" : "direct_api");
         setQtOneSidedBonus(d.qt_one_sided_bonus !== false);
+        setBoostFlashPrice(String(d.boost_flash_price ?? 20));
+        setBoostStandardPrice(String(d.boost_standard_price ?? 50));
+        setBoostWhalePrice(String(d.boost_whale_price ?? 150));
+        setBroadcastPrice(String(d.broadcast_price ?? 5));
         setSettingsId(d.id);
       }
       if (error) console.error(error);
