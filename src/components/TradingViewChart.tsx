@@ -502,6 +502,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
             time: c.time as UTCTimestamp,
             open: c.open, high: c.high, low: c.low, close: c.close,
           });
+          livePointTimeRef.current = c.time as UTCTimestamp;
         } else if (areaSeriesRef.current) {
           // Throttle chart update() to ~12fps — lightweight-charts doesn't need 60fps
           if (nowMs - lastAreaUpdateMs < 80) {
