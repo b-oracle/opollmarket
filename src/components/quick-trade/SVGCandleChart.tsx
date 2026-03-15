@@ -1,4 +1,4 @@
-import { useMemo, memo } from "react";
+import { useMemo, useCallback, memo, forwardRef } from "react";
 import type { Candle } from "@/lib/chartEngine";
 
 // ── Colors ──
