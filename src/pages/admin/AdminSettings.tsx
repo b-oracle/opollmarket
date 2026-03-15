@@ -154,6 +154,7 @@ const AdminSettings = () => {
     fetchSettings();
   }, []);
 
+  const predictionFeeNum = parseFloat(predictionFee) || 0;
   const adminNum = parseFloat(adminFee) || 0;
   const creatorNum = parseFloat(creatorFee) || 0;
   const creatorBlueNum = parseFloat(creatorFeeBlue) || 0;
@@ -189,9 +190,12 @@ const AdminSettings = () => {
   const boostWhalePriceNum = parseFloat(boostWhalePrice) || 150;
   const broadcastPriceNum = parseFloat(broadcastPrice) || 5;
   const bc400PoolPercentNum = parseFloat(bc400PoolPercent) || 0;
-  const totalFee = adminNum + creatorNum + referrerCommissionNum + bc400PoolPercentNum;
-  const totalFeeBlue = adminNum + creatorBlueNum + referrerCommissionNum + bc400PoolPercentNum;
-  const totalFeeGold = adminNum + creatorGoldNum + referrerCommissionNum + bc400PoolPercentNum;
+
+  // Splits must sum to 100 — use worst-case (gold) creator split
+  const splitTotalGold = adminNum + creatorGoldNum + referrerCommissionNum + bc400PoolPercentNum;
+  const splitTotalBlue = adminNum + creatorBlueNum + referrerCommissionNum + bc400PoolPercentNum;
+  const splitTotalUnverified = adminNum + creatorNum + referrerCommissionNum + bc400PoolPercentNum;
+  const splitsValid = splitTotalGold <= 100 && splitTotalBlue <= 100 && splitTotalUnverified <= 100;
   const poolPercent = 100 - totalFeeGold; // worst case (gold)
   const isValid =
     adminNum >= 0 && referrerCommissionNum >= 0 && bc400PoolPercentNum >= 0 &&
