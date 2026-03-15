@@ -2460,7 +2460,7 @@ const Create = () => {
                     {creationBroadcast && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Broadcast Alert</span>
-                        <span className="font-medium">${BROADCAST_PRICE} USDT</span>
+                        <span className="font-medium">${broadcastPriceVal} USDT</span>
                       </div>
                     )}
                     <div className="border-t border-border pt-1.5 flex justify-between">
