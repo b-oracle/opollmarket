@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
     // Get commission settings for auto-copy execution
     const { data: commData } = await supabase
       .from("commission_settings")
-      .select("admin_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, bc400_pool_percent, copy_trade_commission_percent")
+      .select("prediction_fee_percent, copy_trade_commission_percent")
       .limit(1)
       .single();
 
@@ -102,13 +102,8 @@ Deno.serve(async (req) => {
           }
 
           if (trade_type === "prediction" && market_id && side) {
-            const adminFeeRate = Number(commData?.admin_fee_percent ?? 2) / 100;
-            const referrerRate = Number(commData?.referrer_commission_percent ?? 0) / 100;
-            const bc400Rate = Number((commData as any)?.bc400_pool_percent ?? 0) / 100;
-            // Creator fee would need a lookup but for copy trades we use the base (unverified) rate
-            const creatorRate = Number(commData?.creator_fee_percent ?? 3) / 100;
-            const totalFeeRate = adminFeeRate + creatorRate + referrerRate + bc400Rate;
-            const totalFee = copyAmount * totalFeeRate;
+            const predictionFeePercent = Number(commData?.prediction_fee_percent ?? 10) / 100;
+            const totalFee = copyAmount * predictionFeePercent;
             const tradePrice = price || 50;
             const finalShares = copyShares || Math.max(0.01, Number(((copyAmount - totalFee) / (tradePrice / 100)).toFixed(2)));
 
@@ -155,7 +150,7 @@ Deno.serve(async (req) => {
             });
           }
 
-          // Notify (confirmation, not approval needed)
+          // Notify copier (confirmation)
           await supabase.from("notifications").insert({
             user_id: copier.user_id,
             title: "Trade Auto-Copied! 📋",
@@ -193,6 +188,17 @@ Deno.serve(async (req) => {
       } catch (err) {
         console.error(`Copy trade failed for user ${copier.user_id}:`, err);
       }
+    }
+
+    // Notify trader once about all copies (both auto and manual)
+    if (copiedCount + queuedCount > 0) {
+      await supabase.from("notifications").insert({
+        user_id: trader_user_id,
+        title: `Trade Copied by ${copiedCount + queuedCount} user${copiedCount + queuedCount > 1 ? "s" : ""} 🔄`,
+        message: `${copiedCount} auto-copied, ${queuedCount} pending approval.`,
+        type: "info",
+        market_id: market_id || null,
+      });
     }
 
     return new Response(JSON.stringify({ copied: copiedCount, queued: queuedCount }), {
