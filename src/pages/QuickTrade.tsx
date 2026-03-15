@@ -295,7 +295,7 @@ export default function QuickTrade() {
     if (chartType === "tv" && !tvChartEnabled) {
       setChartType("area");
     }
-  }, [selectedAsset.assetClass, tvChartEnabled]);
+  }, [selectedAsset.assetClass, chartType, tvChartEnabled]);
 
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [currentPriceAsset, setCurrentPriceAsset] = useState(ALL_ASSETS[0].symbol);
