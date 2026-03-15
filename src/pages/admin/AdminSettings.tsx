@@ -371,48 +371,55 @@ const AdminSettings = () => {
               <Percent className="w-5 h-5" /> Market Prediction Fees
             </CardTitle>
             <CardDescription>
-              Total fee deducted from each prediction. All fees go to the Pool Reserve first, then commissions are distributed.
+              A single flat fee is charged on each prediction. The fee is then split internally among the pool reserve, creators, referrers, and BC400.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="adminFee">Pool Reserve (%)</Label>
-              <Input id="adminFee" type="number" min={0} max={100} step={0.1} value={adminFee} onChange={(e) => setAdminFee(e.target.value)} placeholder="2" />
-              <p className="text-[10px] text-muted-foreground">Platform's net take — stays in the admin pool reserve.</p>
+              <Label htmlFor="predictionFee" className="text-base font-bold">Prediction Fee (%)</Label>
+              <Input id="predictionFee" type="number" min={0} max={100} step={0.5} value={predictionFee} onChange={(e) => setPredictionFee(e.target.value)} placeholder="10" />
+              <p className="text-[10px] text-muted-foreground">Flat fee deducted from each prediction wager (e.g. 10 = 10% of amount). All goes to admin pool reserve first.</p>
             </div>
 
             <div className="border-t border-border pt-3 space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground">Creator Fees (paid to market creators)</p>
+              <p className="text-xs font-semibold text-muted-foreground">Internal Fee Splits (must sum to ≤ 100% of the fee)</p>
+              <p className="text-[10px] text-muted-foreground">These percentages determine how the flat fee is divided. E.g. if Prediction Fee is 10% and Pool Reserve split is 20%, the platform keeps 2% of the wagered amount.</p>
+
               <div className="space-y-2">
-                <Label htmlFor="creatorFee">Unverified Creator Fee (%)</Label>
-                <Input id="creatorFee" type="number" min={0} max={100} step={0.1} value={creatorFee} onChange={(e) => setCreatorFee(e.target.value)} placeholder="3" />
-                <p className="text-[10px] text-muted-foreground">Paid to creators without any verification tick</p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="creatorFeeBlue">Blue Tick Creator Fee (%)</Label>
-                <Input id="creatorFeeBlue" type="number" min={0} max={100} step={0.1} value={creatorFeeBlue} onChange={(e) => setCreatorFeeBlue(e.target.value)} placeholder="3" />
-                <p className="text-[10px] text-muted-foreground">Paid to blue-verified market creators</p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="creatorFeeGold">Gold Tick Creator Fee (%)</Label>
-                <Input id="creatorFeeGold" type="number" min={0} max={100} step={0.1} value={creatorFeeGold} onChange={(e) => setCreatorFeeGold(e.target.value)} placeholder="3" />
-                <p className="text-[10px] text-muted-foreground">Paid to gold-verified market creators</p>
+                <Label htmlFor="adminFee">Pool Reserve Split (%)</Label>
+                <Input id="adminFee" type="number" min={0} max={100} step={0.1} value={adminFee} onChange={(e) => setAdminFee(e.target.value)} placeholder="20" />
+                <p className="text-[10px] text-muted-foreground">Platform's net take — stays in the admin pool reserve.</p>
               </div>
             </div>
 
             <div className="border-t border-border pt-3 space-y-3">
+              <p className="text-xs font-semibold text-muted-foreground">Creator Splits (paid to market creators from the fee)</p>
               <div className="space-y-2">
-                <Label htmlFor="referrerCommission">Referrer Commission (%)</Label>
-                <Input id="referrerCommission" type="number" min={0} max={100} step={0.1} value={referrerCommission} onChange={(e) => setReferrerCommission(e.target.value)} placeholder="1" />
-                <p className="text-[10px] text-muted-foreground">% of each trade paid to the predictor's referrer</p>
+                <Label htmlFor="creatorFee">Unverified Creator Split (%)</Label>
+                <Input id="creatorFee" type="number" min={0} max={100} step={0.1} value={creatorFee} onChange={(e) => setCreatorFee(e.target.value)} placeholder="30" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="creatorFeeBlue">Blue Tick Creator Split (%)</Label>
+                <Input id="creatorFeeBlue" type="number" min={0} max={100} step={0.1} value={creatorFeeBlue} onChange={(e) => setCreatorFeeBlue(e.target.value)} placeholder="30" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="creatorFeeGold">Gold Tick Creator Split (%)</Label>
+                <Input id="creatorFeeGold" type="number" min={0} max={100} step={0.1} value={creatorFeeGold} onChange={(e) => setCreatorFeeGold(e.target.value)} placeholder="30" />
               </div>
             </div>
 
             <div className="border-t border-border pt-3 space-y-3">
               <div className="space-y-2">
-                <Label htmlFor="bc400PoolPercent">BC400 Reward Pool (%)</Label>
+                <Label htmlFor="referrerCommission">Referrer Split (%)</Label>
+                <Input id="referrerCommission" type="number" min={0} max={100} step={0.1} value={referrerCommission} onChange={(e) => setReferrerCommission(e.target.value)} placeholder="0" />
+                <p className="text-[10px] text-muted-foreground">% of prediction fee paid to the predictor's referrer</p>
+              </div>
+            </div>
+
+            <div className="border-t border-border pt-3 space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="bc400PoolPercent">BC400 Reward Pool Split (%)</Label>
                 <Input id="bc400PoolPercent" type="number" min={0} max={100} step={0.1} value={bc400PoolPercent} onChange={(e) => setBc400PoolPercent(e.target.value)} placeholder="0" />
-                <p className="text-[10px] text-muted-foreground">Allocated to the BC400 reward pool from each prediction</p>
               </div>
             </div>
 
@@ -445,56 +452,62 @@ const AdminSettings = () => {
             </Card>
 
             <div className="rounded-lg border border-border p-3 space-y-1.5 bg-muted/50">
-              <p className="text-xs font-semibold mb-2">Fee Summary (per prediction)</p>
+              <p className="text-xs font-semibold mb-2">Fee Summary (per $100 prediction)</p>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Pool Reserve</span>
-                <span className="font-medium">{adminNum}%</span>
+                <span className="text-muted-foreground">Flat Prediction Fee</span>
+                <span className="font-bold text-primary">{predictionFeeNum}% (${(predictionFeeNum).toFixed(2)})</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Creator Fee (Unverified)</span>
-                <span className="font-medium">{creatorNum}%</span>
+              <div className="border-t border-border pt-1.5 space-y-1">
+                <p className="text-[10px] font-semibold text-muted-foreground mb-1">Internal Split of ${predictionFeeNum.toFixed(2)} fee:</p>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Pool Reserve ({adminNum}%)</span>
+                  <span className="font-medium">${(predictionFeeNum * adminNum / 100).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Creator (Unverified {creatorNum}%)</span>
+                  <span className="font-medium">${(predictionFeeNum * creatorNum / 100).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Creator (Blue {creatorBlueNum}%)</span>
+                  <span className="font-medium">${(predictionFeeNum * creatorBlueNum / 100).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Creator (Gold {creatorGoldNum}%)</span>
+                  <span className="font-medium">${(predictionFeeNum * creatorGoldNum / 100).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Referrer ({referrerCommissionNum}%)</span>
+                  <span className="font-medium">${(predictionFeeNum * referrerCommissionNum / 100).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">BC400 Pool ({bc400PoolPercentNum}%)</span>
+                  <span className="font-medium">${(predictionFeeNum * bc400PoolPercentNum / 100).toFixed(2)}</span>
+                </div>
+                <div className="border-t border-border pt-1 mt-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Split Total (Gold scenario)</span>
+                    <span className={`font-bold ${splitTotalGold > 100 ? "text-destructive" : splitTotalGold === 100 ? "text-primary" : "text-yellow-500"}`}>
+                      {splitTotalGold.toFixed(1)}%
+                    </span>
+                  </div>
+                  {splitTotalGold < 100 && (
+                    <p className="text-[10px] text-yellow-500">Remaining {(100 - splitTotalGold).toFixed(1)}% stays in pool reserve (unallocated).</p>
+                  )}
+                </div>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Creator Fee (Blue Tick)</span>
-                <span className="font-medium">{creatorBlueNum}%</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Creator Fee (Gold Tick)</span>
-                <span className="font-medium">{creatorGoldNum}%</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Referrer Commission</span>
-                <span className="font-medium">{referrerCommissionNum}%</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">BC400 Reward Pool</span>
-                <span className="font-medium">{bc400PoolPercentNum}%</span>
+              <div className="border-t border-border pt-1.5">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Pool (trade amount after fee)</span>
+                  <span className="font-bold text-primary">{(100 - predictionFeeNum).toFixed(1)}% (${(100 - predictionFeeNum).toFixed(2)})</span>
+                </div>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Early Exit Fee</span>
                 <span className="font-medium">{exitFeeNum}%</span>
               </div>
-              <div className="border-t border-border pt-1.5 space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total Fee (Unverified creator)</span>
-                  <span className="font-bold">{totalFee.toFixed(1)}%</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total Fee (Blue tick creator)</span>
-                  <span className="font-bold">{totalFeeBlue.toFixed(1)}%</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total Fee (Gold tick creator)</span>
-                  <span className="font-bold">{totalFeeGold.toFixed(1)}%</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Pool (trade amount, worst case)</span>
-                  <span className={`font-bold ${poolPercent < 0 ? "text-destructive" : "text-primary"}`}>{poolPercent.toFixed(1)}%</span>
-                </div>
-              </div>
             </div>
 
-            {totalFeeGold > 100 && <p className="text-xs text-destructive">Total fees cannot exceed 100%.</p>}
+            {splitTotalGold > 100 && <p className="text-xs text-destructive">Internal splits cannot exceed 100%.</p>}
           </CardContent>
         </Card>
 
