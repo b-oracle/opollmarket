@@ -12,12 +12,18 @@ export default function MarketClosedOverlay({ assetClass }: { assetClass: string
       const now = new Date();
       const etStr = now.toLocaleString("en-US", { timeZone: "America/New_York" });
       const et = new Date(etStr);
-      const day = et.getDay();
+      const day = et.getDay(); // 0=Sun..6=Sat
       const hour = et.getHours();
 
-      let daysUntil = (7 - day) % 7;
-      if (day === 0 && hour >= 17) daysUntil = 7;
-      if (daysUntil === 0) daysUntil = 7;
+      // Next open is Sunday 17:00 ET
+      let daysUntil: number;
+      if (day === 0) {
+        // Sunday: if before 17:00, opens today; if after, next Sunday
+        daysUntil = hour < 17 ? 0 : 7;
+      } else {
+        // Mon-Sat: next Sunday
+        daysUntil = 7 - day;
+      }
 
       const target = new Date(et);
       target.setDate(target.getDate() + daysUntil);
