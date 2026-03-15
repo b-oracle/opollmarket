@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface CommissionSettings {
+  prediction_fee_percent: number;
   admin_fee_percent: number;
   creator_fee_percent: number;
   creator_fee_blue_percent: number;
