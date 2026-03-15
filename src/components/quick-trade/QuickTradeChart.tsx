@@ -112,17 +112,21 @@ function QuickTradeChart(props: QuickTradeChartProps) {
 
   const entryPrice = userBet && activeRound?.open_price ? Number(activeRound.open_price) : null;
 
+  // Once engine becomes ready, never fall back to raw data (prevents source bounce)
+  const engineWasReadyRef = useRef(false);
+  if (engineReady) engineWasReadyRef.current = true;
+  const useEngineData = engineWasReadyRef.current;
+
   // Convert engine data to chart-ready formats
-  // Engine candles already include the active candle via getCandlesWithMAs()
   const engineOhlcData = useMemo(() => {
-    if (!engineReady || !engineCandles || engineCandles.length < 1) return null;
+    if (!useEngineData || !engineCandles || engineCandles.length < 1) return null;
     return engineCandlesToOHLC(engineCandles);
-  }, [engineReady, engineCandles]);
+  }, [useEngineData, engineCandles]);
 
   const enginePriceHistory = useMemo(() => {
-    if (!engineReady || !engineLinePoints || engineLinePoints.length < 2) return null;
+    if (!useEngineData || !engineLinePoints || engineLinePoints.length < 2) return null;
     return engineLinesToHistory(engineLinePoints);
-  }, [engineReady, engineLinePoints]);
+  }, [useEngineData, engineLinePoints]);
 
   // 1. Market closed
   if (chartType !== "tv" && !isMarketOpen(assetClass || "crypto")) {
