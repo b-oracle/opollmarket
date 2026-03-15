@@ -419,6 +419,12 @@ export default function QuickTrade() {
     setChartTypeRaw(ct);
     try { localStorage.setItem("qt-chart-type", ct); } catch {}
   }, []);
+  // Force away from disabled chart types
+  useEffect(() => {
+    if (!lineChartEnabled && chartType === "area") {
+      setChartType("candle");
+    }
+  }, [lineChartEnabled, chartType, setChartType]);
   const chartMs = CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.ms;
 
   const [priceHistory, setPriceHistory] = useState<{ time: string; price: number; ts: number }[]>([]);
