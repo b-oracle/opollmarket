@@ -150,11 +150,27 @@ Deno.serve(async (req) => {
             });
           }
 
-          // Notify (confirmation, not approval needed)
+          // Notify copier (confirmation)
           await supabase.from("notifications").insert({
             user_id: copier.user_id,
             title: "Trade Auto-Copied! 📋",
             message: `${traderName}'s trade was auto-copied: ${tradeDesc}`,
+            type: "info",
+            market_id: market_id || null,
+          });
+
+          // Notify trader that someone copied their trade
+          const { data: copierProfile } = await supabase
+            .from("profiles")
+            .select("display_name")
+            .eq("id", copier.user_id)
+            .single();
+          const copierName = copierProfile?.display_name || "Someone";
+
+          await supabase.from("notifications").insert({
+            user_id: trader_user_id,
+            title: "Your Trade Was Copied! 🔄",
+            message: `${copierName} auto-copied your trade: ${tradeDesc}. You'll earn commission if they profit.`,
             type: "info",
             market_id: market_id || null,
           });
