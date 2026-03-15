@@ -743,6 +743,12 @@ const Create = () => {
   const handleCreateMarket = useCallback(async () => {
     if (!user || !address) return;
 
+    // Stop auto-save to prevent duplicate option inserts during submission
+    if (autoSaveTimerRef.current) {
+      clearInterval(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+
     // Validate cover image (either file upload or AI-generated URL)
     if (!imageFile && !imagePreview) {
       toast.error("A cover image is required to create a market");
