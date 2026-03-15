@@ -105,6 +105,7 @@ function QuickTradeChart(props: QuickTradeChartProps) {
         chartMs={chartMs}
         timeframeLabel={timeframeLabel}
         streamingPrice={streamingPrice}
+        streamingPriceRef={streamingPriceRef}
         entryPrice={entryPrice}
         entrySide={userBet ? (userBet.side as "up" | "down") : null}
         roundEndTime={activeRound ? new Date(activeRound.created_at).getTime() + activeRound.duration_seconds * 1000 : null}
