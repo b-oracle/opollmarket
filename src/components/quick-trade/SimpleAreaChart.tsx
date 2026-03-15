@@ -71,7 +71,7 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
     // SVG points (viewBox is 0 0 100 100)
     const H = 100;
     const pts = data.map((d, i) => {
-      const x = (i / (n - 1)) * 100;
+      const x = (i / (n - 1)) * 88;
       const y = H - ((d.price - targetMin) / dRange) * H;
       return `${x},${y}`;
     }).join(" ");
@@ -93,7 +93,7 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
   const isBull = data[n - 1].price >= data[0].price;
 
   // Area polygon (line + bottom fill)
-  const areaPoints = `${points} 100,100 0,100`;
+  const areaPoints = `${points} 88,100 0,100`;
 
   return (
     <div className="w-full select-none relative" style={{ height: fullscreen ? "100%" : 200 }}>
@@ -118,11 +118,11 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
 
         {/* Entry price line */}
         {entryPrice != null && entryPrice >= domainMin && entryPrice <= domainMin + domainRange && (
-          <line x1={0} y1={priceY(entryPrice)} x2={100} y2={priceY(entryPrice)} stroke={ENTRY_COLOR} strokeWidth={0.25} strokeDasharray="0.8 0.4" strokeOpacity={0.9} />
+          <line x1={0} y1={priceY(entryPrice)} x2={88} y2={priceY(entryPrice)} stroke={ENTRY_COLOR} strokeWidth={0.25} strokeDasharray="0.8 0.4" strokeOpacity={0.9} />
         )}
 
         {/* Current price dotted line */}
-        <line x1={90} y1={lastY} x2={100} y2={lastY} stroke={color} strokeWidth={0.2} strokeDasharray="0.4 0.3" strokeOpacity={0.6} />
+        <line x1={88} y1={lastY} x2={100} y2={lastY} stroke={color} strokeWidth={0.2} strokeDasharray="0.4 0.3" strokeOpacity={0.6} />
       </svg>
 
       {/* Price axis labels */}
