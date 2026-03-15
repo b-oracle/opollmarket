@@ -525,7 +525,14 @@ export default function QuickTrade() {
 
     const applyStreamingPrice = (price: number) => {
       if (!isCurrentRun()) return;
-      setStreamingPrice(price);
+      // Always update the ref (no re-render) for high-frequency consumers like TradingView
+      streamingPriceRef.current = price;
+      // Throttle React state updates to ~2x/sec to avoid excessive re-renders
+      const now = Date.now();
+      if (now - lastStreamingStateUpdateRef.current >= 500) {
+        lastStreamingStateUpdateRef.current = now;
+        setStreamingPrice(price);
+      }
     };
 
     let pollIv: ReturnType<typeof setInterval> | null = null;
