@@ -776,7 +776,39 @@ const AdminSettings = () => {
           </CardContent>
         </Card>
 
-        {/* ─── Creator Gate ─── */}
+        {/* ─── Promotion Pricing ─── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Zap className="w-5 h-5" /> Promotion Pricing
+            </CardTitle>
+            <CardDescription>
+              Prices for Boost tiers and Broadcast alerts. Changes apply to new purchases.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="boostFlashPrice">Flash Boost ($)</Label>
+                <Input id="boostFlashPrice" type="number" min={0} step={1} value={boostFlashPrice} onChange={(e) => setBoostFlashPrice(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="boostStandardPrice">Standard Boost ($)</Label>
+                <Input id="boostStandardPrice" type="number" min={0} step={1} value={boostStandardPrice} onChange={(e) => setBoostStandardPrice(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="boostWhalePrice">Whale Pin ($)</Label>
+                <Input id="boostWhalePrice" type="number" min={0} step={1} value={boostWhalePrice} onChange={(e) => setBoostWhalePrice(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="broadcastPrice">Broadcast Alert ($)</Label>
+                <Input id="broadcastPrice" type="number" min={0} step={1} value={broadcastPrice} onChange={(e) => setBroadcastPrice(e.target.value)} />
+              </div>
+            </div>
+            <p className="text-[10px] text-muted-foreground">Flash: ${boostFlashPriceNum} · Standard: ${boostStandardPriceNum} · Whale: ${boostWhalePriceNum} · Broadcast: ${broadcastPriceNum}</p>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
