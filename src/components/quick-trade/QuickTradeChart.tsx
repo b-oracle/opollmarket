@@ -224,10 +224,6 @@ function QuickTradeChart({
   const filtered = priceHistory.filter(pt => pt.ts >= cutoff);
 
   if (filtered.length < 2) {
-    const marketOpen = isMarketOpen(assetClass || "crypto");
-    if (!marketOpen) {
-      return <MarketClosedOverlay assetClass={assetClass || "crypto"} />;
-    }
     return (
       <div className="flex items-center justify-center h-[220px]">
         <p className="text-[10px] text-muted-foreground">Waiting for price data...</p>
