@@ -53,13 +53,13 @@ const Followers = () => {
   }, [tab, user]);
 
   const { data: followers = [], isLoading: loadingFollowers } = useQuery({
-    queryKey: ["my-followers", user?.id],
+    queryKey: ["my-followers", targetUserId],
     queryFn: async () => {
-      if (!user) return [];
+      if (!targetUserId) return [];
       const { data } = await supabase
         .from("follows")
         .select("id, follower_id, created_at")
-        .eq("following_id", user.id)
+        .eq("following_id", targetUserId)
         .order("created_at", { ascending: false });
       if (!data || data.length === 0) return [];
       const ids = data.map((f: any) => f.follower_id);
@@ -70,7 +70,7 @@ const Followers = () => {
       const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
       return data.map((f: any) => ({ ...f, profile: profileMap.get(f.follower_id) || null }));
     },
-    enabled: !!user,
+    enabled: !!targetUserId,
   });
 
   const { data: following = [], isLoading: loadingFollowing } = useQuery({
