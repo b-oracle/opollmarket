@@ -46,6 +46,8 @@ import TradingViewChart from "@/components/TradingViewChart";
 import QuickTradeChart from "@/components/quick-trade/QuickTradeChart";
 import QuickTradeHistory from "@/components/quick-trade/QuickTradeHistory";
 import QuickTradeBetControls from "@/components/quick-trade/QuickTradeBetControls";
+import { useChartEngine } from "@/hooks/useChartEngine";
+import { getTimeframeMs } from "@/lib/chartEngine";
 // ── Asset config ──
 type AssetClass = "crypto" | "commodity" | "forex";
 interface QuickTradeAsset {
@@ -1106,6 +1108,25 @@ export default function QuickTrade() {
     ? currentPrice > prevPrice ? "up" : currentPrice < prevPrice ? "down" : "neutral"
     : "neutral";
 
+  // ── Chart engine integration ──
+  const engineHistoryPoints = useMemo(() => {
+    return priceHistory.map(p => ({ ts: p.ts, price: p.price }));
+  }, [priceHistory]);
+
+  const {
+    candles: engineCandles,
+    linePoints: engineLinePoints,
+    activeCandle: engineActiveCandle,
+    bucketCountdown,
+    bucketProgress,
+    ready: engineReady,
+  } = useChartEngine({
+    chartTimeframe,
+    priceHistory: engineHistoryPoints,
+    streamingPrice,
+    historyLoading,
+  });
+
   const formatTime = (s: number) =>
     `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
@@ -1374,6 +1395,12 @@ export default function QuickTrade() {
                 resolveFlash={resolveFlash}
                 timeframeLabel={CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.label}
                 assetClass={selectedAsset.assetClass}
+                engineCandles={engineCandles}
+                engineLinePoints={engineLinePoints}
+                engineActiveCandle={engineActiveCandle}
+                bucketCountdown={bucketCountdown}
+                bucketProgress={bucketProgress}
+                engineReady={engineReady}
               />
               </div>
             </div>
