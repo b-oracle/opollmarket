@@ -129,7 +129,7 @@ const SVGCandleChart = forwardRef<HTMLDivElement, SVGCandleChartProps>(function 
   if (n < 2) return null;
 
   return (
-    <div className="w-full select-none relative" style={{ height: CHART_HEIGHT }}>
+    <div ref={ref} className="w-full select-none relative" style={{ height: CHART_HEIGHT }}>
       <svg
         viewBox={`0 0 100 ${CHART_HEIGHT}`}
         preserveAspectRatio="none"
