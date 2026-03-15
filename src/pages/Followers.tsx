@@ -18,8 +18,10 @@ const ITEMS_PER_PAGE = 10;
 
 const Followers = () => {
   const navigate = useNavigate();
+  const { userId: paramUserId } = useParams<{ userId: string }>();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const targetUserId = paramUserId || user?.id;
   const [tab, setTab] = useState<"followers" | "following">("followers");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
