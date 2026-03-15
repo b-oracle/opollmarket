@@ -282,7 +282,7 @@ Deno.serve(async (req) => {
         success: true,
         users_refunded: usersRefunded,
         total_refunded: totalRefunded,
-        commissions_clawed_back: totalCommissionsClawed,
+        commissions_voided: totalCommissionsVoided,
         creation_fee_refunded: creationFeeRefunded,
         creation_fee_forfeited: creationFeeForfeited,
         liquidity_refunded: liquidityRefunded,
