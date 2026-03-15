@@ -93,7 +93,7 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
   const isBull = data[n - 1].price >= data[0].price;
 
   // Area polygon (line + bottom fill)
-  const areaPoints = `${points} 100,100 0,100`;
+  const areaPoints = `${points} 88,100 0,100`;
 
   return (
     <div className="w-full select-none relative" style={{ height: fullscreen ? "100%" : 200 }}>
