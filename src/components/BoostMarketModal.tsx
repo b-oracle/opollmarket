@@ -77,6 +77,7 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
   const [copied, setCopied] = useState(false);
   const [activeBoost, setActiveBoost] = useState<ActiveBoostInfo | null>(null);
   const [payMethod, setPayMethod] = useState<PayMethod>("balance");
+  const [ngnCopied, setNgnCopied] = useState<string | null>(null);
   const [paymentInfo, setPaymentInfo] = useState<{
     boost_id?: string;
     broadcast_id?: string;
