@@ -81,6 +81,32 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Load dynamic pricing
+    const BOOST_TIERS = { ...DEFAULT_BOOST_TIERS };
+    let BROADCAST_PRICE = DEFAULT_BROADCAST_PRICE;
+    try {
+      const { data: cs } = await adminClient
+        .from("commission_settings")
+        .select("boost_flash_price, boost_standard_price, boost_whale_price, broadcast_price")
+        .limit(1)
+        .single();
+      if (cs) {
+        BOOST_TIERS.flash = { ...BOOST_TIERS.flash, price: Number(cs.boost_flash_price) || 20 };
+        BOOST_TIERS.standard = { ...BOOST_TIERS.standard, price: Number(cs.boost_standard_price) || 50 };
+        BOOST_TIERS.whale = { ...BOOST_TIERS.whale, price: Number(cs.boost_whale_price) || 150 };
+        if (cs.broadcast_price != null) BROADCAST_PRICE = Number(cs.broadcast_price);
+      }
+    } catch { /* use defaults */ }
+
+    // Re-resolve with dynamic prices
+    const dynTierConfig = boost_tier ? BOOST_TIERS[boost_tier] : null;
+    if (boost_tier && !dynTierConfig) {
+      return new Response(JSON.stringify({ error: "Invalid boost tier" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Check existing active boost (block downgrades)
     if (tierConfig) {
       const now = new Date().toISOString();
