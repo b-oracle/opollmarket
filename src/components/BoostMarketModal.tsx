@@ -103,6 +103,7 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
   const { balance, bonusBalance, totalBalance, isLoading: balLoading } = useUserBalance();
   const { isFeatureEnabled } = useFeatureToggles();
   const balancePayEnabled = isFeatureEnabled("balance_promotions");
+  const ngnPayEnabled = isFeatureEnabled("ngn_promotions");
 
   useEffect(() => {
     return () => {
