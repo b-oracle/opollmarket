@@ -64,10 +64,11 @@ async function fetchTwelveDataBatch(symbols: string[], apiKey: string): Promise<
   return results;
 }
 
-async function fetchMetalPrices(): Promise<Record<string, number>> {
+async function fetchMetalPrices(apiKey?: string): Promise<Record<string, number>> {
   const results: Record<string, number> = {};
   try {
-    const resp = await fetch(`https://api.metals.dev/v1/latest?api_key=demo&currency=USD&unit=toz`);
+    const key = apiKey || "demo";
+    const resp = await fetch(`https://api.metals.dev/v1/latest?api_key=${key}&currency=USD&unit=toz`);
     if (!resp.ok) return results;
     const data = await resp.json();
     for (const [sym, metalName] of Object.entries(METAL_MAP)) {
