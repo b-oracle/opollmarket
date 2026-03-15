@@ -186,8 +186,11 @@ const AdminSettings = () => {
   const boostStandardPriceNum = parseFloat(boostStandardPrice) || 50;
   const boostWhalePriceNum = parseFloat(boostWhalePrice) || 150;
   const broadcastPriceNum = parseFloat(broadcastPrice) || 5;
-  const totalFee = adminNum + referrerCommissionNum;
-  const poolPercent = 100 - totalFee;
+  const bc400PoolPercentNum = parseFloat(bc400PoolPercent) || 0;
+  const totalFee = adminNum + creatorNum + referrerCommissionNum + bc400PoolPercentNum;
+  const totalFeeBlue = adminNum + creatorBlueNum + referrerCommissionNum + bc400PoolPercentNum;
+  const totalFeeGold = adminNum + creatorGoldNum + referrerCommissionNum + bc400PoolPercentNum;
+  const poolPercent = 100 - totalFeeGold; // worst case (gold)
   const isValid =
     adminNum >= 0 && referrerCommissionNum >= 0 && totalFee <= 100 &&
     referralNum >= 0 && tokenNum >= 0 && nftNum >= 0 &&
