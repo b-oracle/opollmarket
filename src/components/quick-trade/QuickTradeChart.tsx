@@ -57,6 +57,11 @@ function QuickTradeChart({
   historyLoading, activeRound, userBet, resolveFlash, timeframeLabel, assetClass,
   engineCandles, engineLinePoints, engineActiveCandle, bucketCountdown, bucketProgress, engineReady,
 }: QuickTradeChartProps) {
+  // ── Market-closed early exit (before any data checks) ──
+  if (chartType !== "tv" && !isMarketOpen(assetClass || "crypto")) {
+    return <MarketClosedOverlay assetClass={assetClass || "crypto"} />;
+  }
+
   if (historyLoading) {
     return (
       <div className="relative h-[220px] overflow-hidden rounded-lg bg-muted/30">
@@ -109,10 +114,6 @@ function QuickTradeChart({
     const cutoff = Date.now() - chartMs;
     const filtered = priceHistory.filter(pt => pt.ts >= cutoff);
     if (filtered.length < 2) {
-      const marketOpen = isMarketOpen(assetClass || "crypto");
-      if (!marketOpen) {
-        return <MarketClosedOverlay assetClass={assetClass || "crypto"} />;
-      }
       return (
         <div className="flex items-center justify-center h-[220px]">
           <p className="text-[10px] text-muted-foreground">Waiting for price data...</p>
@@ -223,10 +224,6 @@ function QuickTradeChart({
   const filtered = priceHistory.filter(pt => pt.ts >= cutoff);
 
   if (filtered.length < 2) {
-    const marketOpen = isMarketOpen(assetClass || "crypto");
-    if (!marketOpen) {
-      return <MarketClosedOverlay assetClass={assetClass || "crypto"} />;
-    }
     return (
       <div className="flex items-center justify-center h-[220px]">
         <p className="text-[10px] text-muted-foreground">Waiting for price data...</p>
