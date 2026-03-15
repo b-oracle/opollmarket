@@ -29,7 +29,7 @@ const DesktopSidebar = () => {
   const { isFeatureEnabled } = useFeatureToggles();
 
   const navItems = allNavItems.filter(
-    (item) => !item.featureKey || isFeatureEnabled(item.featureKey)
+    (item) => (!item.featureKey || isFeatureEnabled(item.featureKey)) && (!item.requiresAuth || !!user)
   );
 
   return (
