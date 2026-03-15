@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, DollarSign, Users, Gift, Copy, Clock, Sparkles, TrendingUp } from "lucide-react";
+import { ArrowLeft, DollarSign, Users, Gift, Copy, Clock, Sparkles, PieChart as PieChartIcon, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,8 @@ import BottomNav from "@/components/BottomNav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
+import { AnimatePresence, motion } from "framer-motion";
 
 type TabKey = "all" | "creator" | "referral" | "copy_trade" | "signup_bonus" | "pending";
 
@@ -32,6 +33,7 @@ const Commissions = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabKey>("all");
+  const [showChart, setShowChart] = useState(false);
 
   // Fetch pending_commissions (creator + referral, released + pending)
   const { data: pendingCommissions, isLoading: loadingPC } = useQuery({
@@ -142,31 +144,6 @@ const Commissions = () => {
 
   const filtered = activeTab === "all" ? allRecords : allRecords.filter((r) => r.category === activeTab);
 
-  // Monthly chart data
-  const monthlyData = useMemo(() => {
-    const map = new Map<string, { month: string; creator: number; referral: number; copy_trade: number; signup_bonus: number }>();
-    
-    // Only include released/earned records (not pending)
-    const earned = allRecords.filter((r) => r.status === "released" && r.category !== "pending");
-    
-    earned.forEach((r) => {
-      const d = new Date(r.date);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const label = d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
-      if (!map.has(key)) {
-        map.set(key, { month: label, creator: 0, referral: 0, copy_trade: 0, signup_bonus: 0 });
-      }
-      const entry = map.get(key)!;
-      if (r.category === "creator") entry.creator += r.amount;
-      else if (r.category === "referral") entry.referral += r.amount;
-      else if (r.category === "copy_trade") entry.copy_trade += r.amount;
-      else if (r.category === "signup_bonus") entry.signup_bonus += r.amount;
-    });
-
-    return Array.from(map.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([, v]) => v);
-  }, [allRecords]);
 
   const summaryCards = [
     { label: "Total Earned", value: totals.total, icon: DollarSign, color: "text-green-500 bg-green-500/10" },
@@ -206,8 +183,75 @@ const Commissions = () => {
           <button onClick={() => navigate(-1)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-lg font-bold">Commission Breakdown</h1>
+          <h1 className="text-lg font-bold flex-1">Commission Breakdown</h1>
+          {!isLoading && totals.total > 0 && (
+            <button
+              onClick={() => setShowChart(!showChart)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                showChart ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <PieChartIcon className="w-3.5 h-3.5" />
+              Chart
+              <ChevronDown className={`w-3 h-3 transition-transform ${showChart ? "rotate-180" : ""}`} />
+            </button>
+          )}
         </div>
+
+        {/* Pie Chart (collapsible) */}
+        <AnimatePresence>
+          {showChart && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+              className="overflow-hidden mb-5"
+            >
+              <Card className="border-border/50">
+                <CardContent className="p-4">
+                  <ResponsiveContainer width="100%" height={220}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: "Creator", value: totals.creator },
+                          { name: "Referral", value: totals.referral },
+                          { name: "Copy Trade", value: totals.copyTrade },
+                          { name: "Signup Bonus", value: totals.signup },
+                        ].filter((d) => d.value > 0)}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={55}
+                        outerRadius={85}
+                        paddingAngle={3}
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        <Cell fill="#f59e0b" />
+                        <Cell fill="#3b82f6" />
+                        <Cell fill="#a855f7" />
+                        <Cell fill="hsl(var(--primary))" />
+                      </Pie>
+                      <RechartsTooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          fontSize: "12px",
+                        }}
+                        formatter={(value: number) => [`$${value.toFixed(2)}`]}
+                      />
+                      <Legend iconSize={8} wrapperStyle={{ fontSize: "11px" }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <p className="text-center text-xs text-muted-foreground mt-1">
+                    Total: <span className="font-bold text-foreground">{formatAmount(totals.total)}</span>
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-3 gap-2 mb-5">
@@ -227,40 +271,6 @@ const Commissions = () => {
             </Card>
           ))}
         </div>
-
-        {/* Monthly Earnings Chart */}
-        {!isLoading && monthlyData.length > 0 && (
-          <Card className="border-border/50 mb-5">
-            <CardHeader className="pb-2 px-4 pt-4">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-primary" />
-                Monthly Earnings
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-2 pb-3">
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={monthlyData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-                  <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
-                  <RechartsTooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                    }}
-                    formatter={(value: number, name: string) => [`$${value.toFixed(2)}`, name.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())]}
-                  />
-                  <Legend iconSize={8} wrapperStyle={{ fontSize: "10px" }} formatter={(v) => v.replace("_", " ").replace(/\b\w/g, (c: string) => c.toUpperCase())} />
-                  <Bar dataKey="creator" stackId="a" fill="#f59e0b" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="referral" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="copy_trade" stackId="a" fill="#a855f7" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="signup_bonus" stackId="a" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Tabs */}
         <div className="flex gap-1.5 overflow-x-auto pb-2 mb-4 scrollbar-hide">
