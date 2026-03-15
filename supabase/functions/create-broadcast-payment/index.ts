@@ -55,6 +55,21 @@ Deno.serve(async (req) => {
       });
     }
 
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Load dynamic pricing
+    try {
+      const { data: cs } = await adminClient
+        .from("commission_settings")
+        .select("broadcast_price")
+        .limit(1)
+        .single();
+      if (cs?.broadcast_price != null) BROADCAST_PRICE = Number(cs.broadcast_price);
+    } catch { /* use default */ }
+
     const orderId = `broadcast_${market_id}_alert_${userId}_${Date.now()}`;
 
     const npResponse = await fetch("https://api.nowpayments.io/v1/payment", {
