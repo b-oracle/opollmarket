@@ -1173,9 +1173,20 @@ export default function QuickTrade() {
     : "neutral";
 
   // ── Chart engine integration ──
+  // Feed engine with enough history to produce ~60 candles for the selected timeframe
   const engineHistoryPoints = useMemo(() => {
-    return priceHistory.map(p => ({ ts: p.ts, price: p.price }));
-  }, [priceHistory]);
+    const raw = rawDataRef.current.get(selectedAsset.symbol);
+    if (!raw || raw.length === 0) {
+      return priceHistory.map(p => ({ ts: p.ts, price: p.price }));
+    }
+    // We want ~60 candles worth of data for the engine
+    const candleCount = 60;
+    const windowMs = chartMs * candleCount;
+    const cutoff = Date.now() - windowMs;
+    return raw
+      .filter(([ts]) => ts >= cutoff)
+      .map(([ts, price]) => ({ ts, price }));
+  }, [priceHistory, chartMs, selectedAsset.symbol]);
 
   const {
     candles: engineCandles,
