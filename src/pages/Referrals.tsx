@@ -323,7 +323,7 @@ const Referrals = () => {
               { step: "2", text: "Your friend signs up — they appear instantly in your referral list as 'Pending'" },
               { step: "3", text: `When they place their first prediction, you earn a $${rewardAmount} bonus credit` },
               { step: "4", text: "You also earn a commission on every prediction your referral makes" },
-              { step: "5", text: "Bonus credits are applied as fee credits on your future predictions" },
+              { step: "5", text: "Bonus credits are automatically used to cover platform fees on your predictions and trades" },
             ].map((item) => (
               <div key={item.step} className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
