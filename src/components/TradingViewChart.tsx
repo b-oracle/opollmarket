@@ -65,6 +65,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   chartMs,
   timeframeLabel,
   streamingPrice,
+  streamingPriceRef: externalPriceRef,
   entryPrice,
   entrySide,
   targetPrice,
