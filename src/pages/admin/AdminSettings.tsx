@@ -387,13 +387,7 @@ const AdminSettings = () => {
 
             <div className="border-t border-border pt-3 space-y-3">
               <p className="text-xs font-semibold text-muted-foreground">Internal Fee Splits (must sum to ≤ 100% of the fee)</p>
-              <p className="text-[10px] text-muted-foreground">These splits divide the Prediction Fee among stakeholders. For example, on a $100 wager with a 10% fee ($10 total), a 20% Pool Reserve split means $2 stays in the platform reserve. The remaining splits go to creators, referrers, etc.</p>
-
-              <div className="space-y-2">
-                <Label htmlFor="adminFee">Pool Reserve Split (%)</Label>
-                <Input id="adminFee" type="number" min={0} max={100} step={0.1} value={adminFee} onChange={(e) => setAdminFee(e.target.value)} placeholder="20" />
-                <p className="text-[10px] text-muted-foreground">Platform's net take — stays in the admin pool reserve.</p>
-              </div>
+              <p className="text-[10px] text-muted-foreground">These splits are paid out from the Admin Pool Reserve after 48 hours. The platform keeps whatever % remains after all splits.</p>
             </div>
 
             <div className="border-t border-border pt-3 space-y-3">
