@@ -39,14 +39,17 @@ export default function SVGCandleChart({ candles, entryPrice, assetClass, timefr
 
   const maxVol = Math.max(...candles.map(c => c.volume), 1);
 
-  const priceY = (p: number) => PADDING_TOP + (PRICE_H - PADDING_TOP - PADDING_BOTTOM) * (1 - (p - domainMin) / domainRange);
-
   const gridLevels = useMemo(() => {
+    if (n < 2) return [];
     const step = domainRange / 5;
     const levels: number[] = [];
     for (let i = 1; i <= 4; i++) levels.push(domainMin + step * i);
     return levels;
-  }, [domainMin, domainRange]);
+  }, [domainMin, domainRange, n]);
+
+  if (n < 2) return null;
+
+  const priceY = (p: number) => PADDING_TOP + (PRICE_H - PADDING_TOP - PADDING_BOTTOM) * (1 - (p - domainMin) / domainRange);
 
   const fmtAxis = (p: number) => {
     if (assetClass === "forex") return p.toFixed(4);
