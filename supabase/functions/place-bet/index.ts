@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- Credit admin commission (atomic) ---
+    // --- Credit admin (prediction fee) commission (atomic) ---
     const { data: adminRole } = await supabase
       .from("user_roles")
       .select("user_id")
@@ -156,22 +156,6 @@ Deno.serve(async (req) => {
         user_id: adminRole.user_id,
         type: "commission",
         amount: adminAmount,
-        market_id: marketId,
-        option_id: optionId || null,
-        side,
-        status: "confirmed",
-      });
-    }
-
-    // --- Credit creator commission (atomic) ---
-    if (creatorAmount > 0 && market?.creator_wallet) {
-      const creatorId = market.creator_wallet;
-      await supabase.rpc("adjust_balance", { _user_id: creatorId, _delta: creatorAmount });
-
-      await supabase.from("transactions").insert({
-        user_id: creatorId,
-        type: "commission",
-        amount: creatorAmount,
         market_id: marketId,
         option_id: optionId || null,
         side,
