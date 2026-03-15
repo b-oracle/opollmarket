@@ -1595,15 +1595,6 @@ export default function QuickTrade() {
             asset={selectedAsset.symbol}
           />
 
-          <QuickTradeHistory
-            recentRounds={recentRounds as any}
-            userBets={userBets as any}
-            selectedAssetSymbol={selectedAsset.symbol}
-            historyPage={historyPage}
-            historyTotal={historyTotal}
-            historyPerPage={HISTORY_PER_PAGE}
-            onPageChange={setHistoryPage}
-          />
 
         </div>
       </div>
