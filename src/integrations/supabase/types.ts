@@ -266,6 +266,7 @@ export type Database = {
           nft_contract_address: string | null
           payaza_mode: string
           payout_provider: string
+          prediction_fee_percent: number
           qt_disabled_assets: string
           qt_enabled_assets: string
           qt_enabled_timeframes: string
@@ -323,6 +324,7 @@ export type Database = {
           nft_contract_address?: string | null
           payaza_mode?: string
           payout_provider?: string
+          prediction_fee_percent?: number
           qt_disabled_assets?: string
           qt_enabled_assets?: string
           qt_enabled_timeframes?: string
@@ -380,6 +382,7 @@ export type Database = {
           nft_contract_address?: string | null
           payaza_mode?: string
           payout_provider?: string
+          prediction_fee_percent?: number
           qt_disabled_assets?: string
           qt_enabled_assets?: string
           qt_enabled_timeframes?: string
