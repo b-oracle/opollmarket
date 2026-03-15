@@ -93,6 +93,9 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   const candleBucketSecRef = useRef<number>(getCandleBucketSeconds(timeframeLabel, chartMs));
   // Track current streaming candle OHLC state
   const currentCandleRef = useRef<{ time: number; open: number; high: number; low: number; close: number } | null>(null);
+  // Area chart: track committed timestamp for smooth streaming
+  const areaCommittedTimeRef = useRef<number>(0);
+  const lastScrollTimeRef = useRef<number>(0);
 
   useEffect(() => {
     candleBucketSecRef.current = getCandleBucketSeconds(timeframeLabel, chartMs);
