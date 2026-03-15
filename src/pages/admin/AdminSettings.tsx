@@ -180,6 +180,10 @@ const AdminSettings = () => {
   const goldMaxFreeMarketsNum = parseInt(goldMaxFreeMarkets) || 20;
   const aiGenerationCostNum = parseFloat(aiGenerationCost) || 0;
   const autoResolveFeeNum = parseFloat(autoResolveFee) || 0;
+  const boostFlashPriceNum = parseFloat(boostFlashPrice) || 20;
+  const boostStandardPriceNum = parseFloat(boostStandardPrice) || 50;
+  const boostWhalePriceNum = parseFloat(boostWhalePrice) || 150;
+  const broadcastPriceNum = parseFloat(broadcastPrice) || 5;
   const maxTotalFee = Math.max(adminNum + creatorNum, adminNum + creatorBlueNum, adminNum + creatorGoldNum) + referrerCommissionNum;
   const totalFee = adminNum + creatorNum + referrerCommissionNum;
   const poolPercent = 100 - totalFee;
