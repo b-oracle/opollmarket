@@ -847,6 +847,9 @@ export default function QuickTrade() {
       return;
     }
 
+    // Don't create rounds when market is closed
+    if (!isMarketOpen(selectedAsset.assetClass)) return;
+
     // No active round — create one using a fresh price snapshot for the selected asset
     const freshPrice = await fetchPriceForAsset(selectedAsset);
     if (freshPrice == null || !isCurrentRoundRequest()) return;
@@ -1229,23 +1232,30 @@ export default function QuickTrade() {
           {/* Timeframe selector */}
           <p className="text-[11px] font-semibold text-muted-foreground mb-1.5">Round Duration</p>
           <div className="flex gap-2 mb-4">
-            {TIMEFRAMES.map((tf) => (
-              <button
-                key={tf.label}
-                onClick={() => {
-                  setSelectedTimeframe(tf);
-                  setActiveRound(null);
-                  setUserBet(null);
-                }}
-                className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${
-                  selectedTimeframe.seconds === tf.seconds
-                    ? "bg-accent text-accent-foreground shadow-md"
-                    : "bg-muted/40 text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                {tf.label}
-              </button>
-            ))}
+            {TIMEFRAMES.map((tf) => {
+              const marketOpen = isMarketOpen(selectedAsset.assetClass);
+              return (
+                <button
+                  key={tf.label}
+                  disabled={!marketOpen}
+                  onClick={() => {
+                    if (!marketOpen) return;
+                    setSelectedTimeframe(tf);
+                    setActiveRound(null);
+                    setUserBet(null);
+                  }}
+                  className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${
+                    !marketOpen
+                      ? "bg-muted/20 text-muted-foreground/50 cursor-not-allowed"
+                      : selectedTimeframe.seconds === tf.seconds
+                        ? "bg-accent text-accent-foreground shadow-md"
+                        : "bg-muted/40 text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {tf.label}
+                </button>
+              );
+            })}
           </div>
 
           {/* Price display */}
@@ -1271,17 +1281,31 @@ export default function QuickTrade() {
 
               {/* Countdown */}
               <div className="text-center">
-                <div className={`text-3xl font-mono font-bold tabular-nums transition-colors duration-300 ${
-                  timeLeft <= 10 ? "text-destructive animate-[scale-pulse_0.6s_ease-in-out_infinite]" : timeLeft <= 30 ? "text-amber-500" : "text-foreground"
-                }`}>
-                  {formatTime(timeLeft)}
-                </div>
-                <div className="flex items-center gap-1 justify-center mt-1">
-                  <Timer className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-[10px] text-muted-foreground uppercase">
-                    {isLocked ? "Locked" : timeLeft === 0 ? "Resolving..." : "Remaining"}
-                  </span>
-                </div>
+                {!isMarketOpen(selectedAsset.assetClass) ? (
+                  <>
+                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                      <Moon className="w-5 h-5" />
+                      <span className="text-lg font-bold">Closed</span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground/70 mt-1 block">
+                      {getNextOpenTime(selectedAsset.assetClass)}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <div className={`text-3xl font-mono font-bold tabular-nums transition-colors duration-300 ${
+                      timeLeft <= 10 ? "text-destructive animate-[scale-pulse_0.6s_ease-in-out_infinite]" : timeLeft <= 30 ? "text-amber-500" : "text-foreground"
+                    }`}>
+                      {formatTime(timeLeft)}
+                    </div>
+                    <div className="flex items-center gap-1 justify-center mt-1">
+                      <Timer className="w-3 h-3 text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground uppercase">
+                        {isLocked ? "Locked" : timeLeft === 0 ? "Resolving..." : "Remaining"}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
