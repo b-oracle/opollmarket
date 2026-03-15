@@ -400,20 +400,8 @@ const AdminSettings = () => {
 
             <div className="rounded-lg border border-border p-3 space-y-1.5 bg-muted/50">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Pool Reserve</span>
+                <span className="text-muted-foreground">Prediction Fee</span>
                 <span className="font-medium">{adminNum}%</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Creator (No Tick)</span>
-                <span className="font-medium">{creatorNum}%</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Creator (Blue Tick)</span>
-                <span className="font-medium">{creatorBlueNum}%</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Creator (Gold Tick)</span>
-                <span className="font-medium">{creatorGoldNum}%</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Referrer Commission</span>
@@ -429,7 +417,7 @@ const AdminSettings = () => {
               </div>
             </div>
 
-            {maxTotalFee > 100 && <p className="text-xs text-destructive">Total fees cannot exceed 100%.</p>}
+            {totalFee > 100 && <p className="text-xs text-destructive">Total fees cannot exceed 100%.</p>}
           </CardContent>
         </Card>
 

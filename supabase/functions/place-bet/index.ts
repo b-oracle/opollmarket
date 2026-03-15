@@ -186,7 +186,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const poolAmount = amount - adminAmount - creatorAmount - referrerAmount;
+    const poolAmount = amount - adminAmount - referrerAmount;
 
     // Insert position
     const { error: posError } = await supabase.from("positions").insert({

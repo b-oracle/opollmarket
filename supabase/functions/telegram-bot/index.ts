@@ -1327,7 +1327,7 @@ async function executeBetInline(
     status: "confirmed",
   });
 
-  const poolAmount = amount - adminAmount - creatorAmount;
+  const poolAmount = amount - adminAmount;
   const { data: mkt } = await supabase
     .from("markets")
     .select("volume, participants, yes_price")

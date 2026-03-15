@@ -122,11 +122,10 @@ Deno.serve(async (req) => {
         .single();
 
       const adminFee = trade.amount * (Number(commData?.admin_fee_percent ?? 2) / 100);
-      const creatorFee = trade.amount * (Number(commData?.creator_fee_percent ?? 3) / 100);
       const copyTradeCommissionPercent = Number(commData?.copy_trade_commission_percent ?? 10);
       const totalDeduct = trade.amount;
       const tradePrice = trade.price || 50;
-      const finalShares = trade.shares || Math.max(0.01, Number(((trade.amount - adminFee - creatorFee) / (tradePrice / 100)).toFixed(2)));
+      const finalShares = trade.shares || Math.max(0.01, Number(((trade.amount - adminFee) / (tradePrice / 100)).toFixed(2)));
 
       // Deduct balance
       await supabase
