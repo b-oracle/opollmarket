@@ -25,7 +25,7 @@ function fmtPrice(p: number, ac?: string): string {
   return p.toFixed(4);
 }
 
-function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, activeRound }: Props) {
+function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, activeRound, fullscreen }: Props) {
   const data = priceHistory;
   const n = data.length;
 
