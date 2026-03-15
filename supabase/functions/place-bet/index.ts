@@ -277,13 +277,13 @@ Deno.serve(async (req) => {
         await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -totalFees });
       }
 
-      // Delete pending commissions that were just inserted for this trade
-      await supabase
-        .from("pending_commissions")
-        .delete()
-        .eq("market_id", marketId)
-        .eq("status", "pending")
-        .gte("created_at", new Date(Date.now() - 10000).toISOString());
+      // Delete pending commissions that were just inserted for this trade (by ID)
+      if (insertedCommissionIds.length > 0) {
+        await supabase
+          .from("pending_commissions")
+          .delete()
+          .in("id", insertedCommissionIds);
+      }
 
       return new Response(JSON.stringify({ error: "Failed to create position" }), {
         status: 500, headers: corsHeaders,
