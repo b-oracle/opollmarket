@@ -178,7 +178,6 @@ function QuickTradeChart({
   historyLoading, activeRound, userBet, resolveFlash, timeframeLabel, assetClass,
   engineCandles, engineLinePoints, engineActiveCandle, bucketCountdown, bucketProgress, engineReady,
 }: QuickTradeChartProps) {
-
   const entryPrice = userBet && activeRound?.open_price ? Number(activeRound.open_price) : null;
 
   // ── 1. Market closed (forex/commodity only, not TV) ──
@@ -214,17 +213,16 @@ function QuickTradeChart({
     return <ChartSkeleton text="Connecting to live feed..." />;
   }
 
-  // ── 5. Engine not ready ──
-  if (!hasEngineData) {
-    return <ChartSkeleton text="Building chart..." />;
-  }
-
-  // ── 6. Candle chart ──
+  // ── 5. Candle chart ──
   if (chartType === "candle") {
+    if (!engineCandles || engineCandles.length < 2 || !engineReady) {
+      return <ChartSkeleton text="Building chart..." />;
+    }
+
     return (
       <div className="relative">
         <SVGCandleChart
-          candles={engineCandles!}
+          candles={engineCandles}
           entryPrice={entryPrice}
           assetClass={assetClass}
           timeframeLabel={timeframeLabel}
@@ -235,24 +233,23 @@ function QuickTradeChart({
     );
   }
 
-  // ── 7. Area chart ──
-  if (engineLinePoints && engineLinePoints.length >= 2) {
-    return (
-      <EngineAreaChart
-        linePoints={engineLinePoints}
-        entryPrice={entryPrice}
-        assetClass={assetClass}
-        userBet={userBet}
-        activeRound={activeRound}
-        timeframeLabel={timeframeLabel}
-        bucketCountdown={bucketCountdown}
-        bucketProgress={bucketProgress}
-      />
-    );
+  // ── 6. Area chart ──
+  if (!engineLinePoints || engineLinePoints.length < 2 || !engineReady) {
+    return <ChartSkeleton text="Building chart..." />;
   }
 
-  // ── Fallback (shouldn't reach here) ──
-  return <ChartSkeleton text="Preparing chart..." />;
+  return (
+    <EngineAreaChart
+      linePoints={engineLinePoints}
+      entryPrice={entryPrice}
+      assetClass={assetClass}
+      userBet={userBet}
+      activeRound={activeRound}
+      timeframeLabel={timeframeLabel}
+      bucketCountdown={bucketCountdown}
+      bucketProgress={bucketProgress}
+    />
+  );
 }
 
 export default memo(QuickTradeChart);
