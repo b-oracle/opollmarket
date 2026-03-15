@@ -71,11 +71,8 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
   const limitPriceNum = parseFloat(limitPriceInput) || 0;
   const effectivePrice = orderType === "limit" ? limitPriceNum : price;
 
-  // Total prediction fee = admin + creator (worst-case/gold) + referrer + bc400
-  const totalFeePercent = (commission?.admin_fee_percent ?? 2)
-    + (commission?.creator_fee_gold_percent ?? 3)
-    + (commission?.referrer_commission_percent ?? 0)
-    + (commission?.bc400_pool_percent ?? 0);
+  // Single flat prediction fee
+  const totalFeePercent = commission?.prediction_fee_percent ?? 10;
   const fee = orderType === "market" ? numAmount * (totalFeePercent / 100) : 0; // no fee on limit orders until filled
   const poolAmount = numAmount - fee;
   const shares = poolAmount > 0 && effectivePrice > 0 ? poolAmount / (effectivePrice / 100) : 0;

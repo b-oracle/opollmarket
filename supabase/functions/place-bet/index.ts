@@ -81,16 +81,21 @@ Deno.serve(async (req) => {
     // Fetch commission settings
     const { data: commData } = await supabase
       .from("commission_settings")
-      .select("admin_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, referral_reward_amount, bc400_pool_percent")
+      .select("prediction_fee_percent, admin_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, referral_reward_amount, bc400_pool_percent")
       .limit(1)
       .single();
 
-    const adminFeePercent = Number(commData?.admin_fee_percent ?? 2) / 100;
-    const referrerCommissionPercent = Number(commData?.referrer_commission_percent ?? 0) / 100;
-    const bc400PoolPercent = Number((commData as any)?.bc400_pool_percent ?? 0) / 100;
+    // Single flat prediction fee
+    const predictionFeePercent = Number(commData?.prediction_fee_percent ?? 10) / 100;
+    const totalFees = amount * predictionFeePercent;
 
-    // Determine creator fee based on verification level
-    let creatorFeePercent = 0;
+    // Internal splits (these are % of the fee amount, must sum to 100)
+    const adminSplit = Number(commData?.admin_fee_percent ?? 20) / 100;
+    const referrerSplit = Number(commData?.referrer_commission_percent ?? 0) / 100;
+    const bc400Split = Number((commData as any)?.bc400_pool_percent ?? 0) / 100;
+
+    // Determine creator split based on verification level
+    let creatorSplit = 0;
     let creatorId: string | null = null;
     if (marketCheck.creator_wallet) {
       const { data: creatorProfile } = await supabase
@@ -103,18 +108,18 @@ Deno.serve(async (req) => {
         creatorId = creatorProfile.id;
         const level = creatorProfile.verification_level || "none";
         if (level === "gold") {
-          creatorFeePercent = Number(commData?.creator_fee_gold_percent ?? 3) / 100;
+          creatorSplit = Number(commData?.creator_fee_gold_percent ?? 30) / 100;
         } else if (level === "blue") {
-          creatorFeePercent = Number(commData?.creator_fee_blue_percent ?? 3) / 100;
+          creatorSplit = Number(commData?.creator_fee_blue_percent ?? 30) / 100;
         } else {
-          creatorFeePercent = Number(commData?.creator_fee_percent ?? 3) / 100;
+          creatorSplit = Number(commData?.creator_fee_percent ?? 30) / 100;
         }
       }
     }
 
     // Look up trader's referrer for per-trade commission
     let referrerId: string | null = null;
-    if (referrerCommissionPercent > 0) {
+    if (referrerSplit > 0) {
       const { data: traderProfile } = await supabase
         .from("profiles")
         .select("referred_by")
@@ -123,11 +128,11 @@ Deno.serve(async (req) => {
       referrerId = traderProfile?.referred_by || null;
     }
 
-    const adminAmount = amount * adminFeePercent;
-    const creatorAmount = amount * creatorFeePercent;
-    const referrerAmount = referrerId ? amount * referrerCommissionPercent : 0;
-    const bc400Amount = amount * bc400PoolPercent;
-    const totalFees = adminAmount + creatorAmount + referrerAmount + bc400Amount;
+    // Calculate actual amounts from fee splits
+    const adminAmount = totalFees * adminSplit;
+    const creatorAmount = totalFees * creatorSplit;
+    const referrerAmount = referrerId ? totalFees * referrerSplit : 0;
+    const bc400Amount = totalFees * bc400Split;
     const totalCost = amount;
 
     // Check balance
