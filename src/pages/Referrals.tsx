@@ -225,6 +225,15 @@ const Referrals = () => {
           )}
         </div>
 
+        {/* See Commissions Breakdown */}
+        <button
+          onClick={() => navigate("/commissions")}
+          className="w-full glass rounded-xl p-4 mb-6 flex items-center justify-center gap-2 text-sm font-semibold text-primary hover:bg-accent/50 transition-colors active:scale-[0.98]"
+        >
+          <DollarSign className="w-4 h-4" />
+          See Commissions Breakdown
+        </button>
+
         {/* Username Warning - only show after loading */}
         {!isDataLoading && !profileName && (
           <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4 mb-4 flex items-start gap-3">
@@ -304,15 +313,6 @@ const Referrals = () => {
             Share this link. When someone signs up and makes their first prediction, you earn <span className="text-primary font-bold">${rewardAmount}</span> in bonus balance.
           </p>
         </div>
-
-        {/* See Commissions Breakdown */}
-        <button
-          onClick={() => navigate("/commissions")}
-          className="w-full glass rounded-xl p-4 mb-6 flex items-center justify-center gap-2 text-sm font-semibold text-primary hover:bg-accent/50 transition-colors active:scale-[0.98]"
-        >
-          <DollarSign className="w-4 h-4" />
-          See Commissions Breakdown
-        </button>
 
         {/* How it works */}
         <div className="glass rounded-xl p-5 mb-6">
