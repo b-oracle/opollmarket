@@ -538,9 +538,9 @@ export default function QuickTrade() {
       if (!isCurrentRun()) return;
       // Always update the ref (no re-render) for high-frequency consumers like TradingView
       streamingPriceRef.current = price;
-      // Throttle React state updates to ~2x/sec to avoid excessive re-renders
+      // Keep chart pipeline responsive; display text is throttled separately via applyDisplayPrice
       const now = Date.now();
-      if (now - lastStreamingStateUpdateRef.current >= 500) {
+      if (now - lastStreamingStateUpdateRef.current >= 120) {
         lastStreamingStateUpdateRef.current = now;
         setStreamingPrice(price);
       }
