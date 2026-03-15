@@ -300,6 +300,7 @@ const AdminSettings = () => {
         targetId: settingsId,
         targetType: "commission_settings",
         details: {
+          prediction_fee_percent: predictionFeeNum,
           admin_fee_percent: adminNum,
           creator_fee_percent: creatorNum,
           creator_fee_blue_percent: creatorBlueNum,
