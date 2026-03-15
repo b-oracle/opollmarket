@@ -1037,7 +1037,7 @@ const Create = () => {
         market_id: data.id,
         user_id: user.id,
         tier: "alert",
-        amount: BROADCAST_PRICE,
+        amount: broadcastPriceVal,
         status: "pending",
       }).select("id").single();
 
