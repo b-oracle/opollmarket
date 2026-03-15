@@ -128,10 +128,10 @@ const AdminUsers = () => {
     setCrediting(true);
     const newBalance = balanceModal.current + amount;
 
-    const { error } = await supabase
-      .from("balances")
-      .update({ amount: newBalance, updated_at: new Date().toISOString() })
-      .eq("user_id", balanceModal.userId);
+    const { error } = await supabase.rpc("adjust_balance", {
+      _user_id: balanceModal.userId,
+      _delta: amount,
+    });
 
     if (error) {
       toast.error("Failed to update balance");
