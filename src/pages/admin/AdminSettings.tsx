@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer, Globe, Plus, Trash2, RefreshCw, ToggleLeft, Copy, ShieldCheck, Sparkles, Banknote } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAdminContext } from "./AdminLayout";
 import { Badge } from "@/components/ui/badge";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
