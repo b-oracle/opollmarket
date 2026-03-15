@@ -199,9 +199,11 @@ clearAllChartCache();
 
 function filterPriceData(
   raw: [number, number][],
-  durationMs: number
+  durationMs: number,
+  /** Load extra history for panning (multiplier on durationMs) */
+  historyMultiplier = 3
 ): { time: string; price: number; ts: number }[] {
-  const cutoff = Date.now() - durationMs;
+  const cutoff = Date.now() - durationMs * historyMultiplier;
   return raw
     .filter(([ts]) => ts >= cutoff)
     .map(([ts, price]) => ({

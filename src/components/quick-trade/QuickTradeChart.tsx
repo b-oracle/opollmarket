@@ -204,7 +204,7 @@ function QuickTradeChart(props: QuickTradeChartProps) {
 
   return (
     <div className="relative">
-      <ChartZoomWrapper>
+      <ChartZoomWrapper defaultZoom={3}>
         {chartContent}
       </ChartZoomWrapper>
       <BucketBadges bucketCountdown={bucketCountdown} bucketProgress={bucketProgress} />
