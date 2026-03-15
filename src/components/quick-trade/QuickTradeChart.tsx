@@ -121,8 +121,8 @@ function QuickTradeChart(props: QuickTradeChartProps) {
 
   useEffect(() => {
     engineWasReadyRef.current = false;
-    lastStableEngineOhlcRef.current = null;
-    lastStableEngineLineRef.current = null;
+    // DON'T null the stable refs — keep showing previous data until new data arrives
+    // This prevents the "Building chart..." skeleton flash on timeframe switch
   }, [chartIdentity]);
 
   if (engineReady) engineWasReadyRef.current = true;
