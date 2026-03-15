@@ -85,6 +85,7 @@ const AdminSettings = () => {
   const [boostStandardPrice, setBoostStandardPrice] = useState("50");
   const [boostWhalePrice, setBoostWhalePrice] = useState("150");
   const [broadcastPrice, setBroadcastPrice] = useState("5");
+  const [bc400PoolPercent, setBc400PoolPercent] = useState("0");
   const [payazaMode, setPayazaMode] = useState<"checkout_sdk" | "direct_api">("direct_api"); // kept for save compatibility
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
