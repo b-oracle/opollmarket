@@ -439,21 +439,24 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     let commitIntervalId: ReturnType<typeof setInterval> | null = null;
 
     if (chartStyle === "line" && areaSeriesRef.current) {
-      // Every 10s, commit the current live point as a historical point
-      // and advance the tip timestamp. This is the ONLY time x moves.
+      const tf = timeframeLabel.trim().toLowerCase();
+      const isFastTf = tf === "1m" || tf === "5m" || tf === "15m";
+      // For fast timeframes, only advance X on *minute boundaries* to avoid micro-snaps.
+      const alignSec = isFastTf ? 60 : 10;
+      const intervalMs = isFastTf ? 60000 : 10000;
+
       commitIntervalId = setInterval(() => {
-        if (!areaSeriesRef.current || !chartRef.current) return;
-        const nowSec = Math.floor(Date.now() / 1000) as UTCTimestamp;
+        if (!areaSeriesRef.current) return;
+        const nowSec = Math.floor(Date.now() / 1000);
+        const aligned = Math.floor(nowSec / alignSec) * alignSec;
+        if (aligned <= areaCommittedTimeRef.current) return;
+
         const price = interpolatedPriceRef.current;
         if (price == null) return;
-        // Commit current price at current time
-        areaSeriesRef.current.update({ time: nowSec, value: price });
-        areaCommittedTimeRef.current = nowSec;
-        // Gentle scroll — scrollToRealTime snaps, so use scrollToPosition instead
-        try {
-          chartRef.current.timeScale().scrollToPosition(5, true);
-        } catch { /* noop */ }
-      }, 10000);
+
+        areaSeriesRef.current.update({ time: aligned as UTCTimestamp, value: price });
+        areaCommittedTimeRef.current = aligned;
+      }, intervalMs);
     }
 
     const animate = () => {
