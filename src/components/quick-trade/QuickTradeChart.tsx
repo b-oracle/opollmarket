@@ -57,6 +57,11 @@ function QuickTradeChart({
   historyLoading, activeRound, userBet, resolveFlash, timeframeLabel, assetClass,
   engineCandles, engineLinePoints, engineActiveCandle, bucketCountdown, bucketProgress, engineReady,
 }: QuickTradeChartProps) {
+  // ── Market-closed early exit (before any data checks) ──
+  if (chartType !== "tv" && !isMarketOpen(assetClass || "crypto")) {
+    return <MarketClosedOverlay assetClass={assetClass || "crypto"} />;
+  }
+
   if (historyLoading) {
     return (
       <div className="relative h-[220px] overflow-hidden rounded-lg bg-muted/30">

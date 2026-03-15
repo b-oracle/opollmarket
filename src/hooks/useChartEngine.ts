@@ -120,7 +120,7 @@ export function useChartEngine({
       activeCandle: state.activeCandle,
       bucketCountdown: countdown,
       bucketProgress: progress,
-      ready: candles.length >= 2,
+      ready: candles.length >= 1,
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [version, countdown, progress]);
