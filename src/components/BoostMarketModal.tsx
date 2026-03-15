@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Zap, Flame, Crown, Copy, Check, Loader2, AlertTriangle, ChevronLeft, Megaphone, Clock, Wallet, CreditCard } from "lucide-react";
+import { X, Zap, Flame, Crown, Copy, Check, Loader2, AlertTriangle, ChevronLeft, Megaphone, Clock, Wallet, CreditCard, Banknote } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -61,7 +61,7 @@ interface BoostMarketModalProps {
 }
 
 type Step = "select" | "confirm" | "pay" | "success";
-type PayMethod = "balance" | "crypto";
+type PayMethod = "balance" | "crypto" | "ngn";
 
 interface ActiveBoostInfo {
   tier: string;
@@ -77,6 +77,7 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
   const [copied, setCopied] = useState(false);
   const [activeBoost, setActiveBoost] = useState<ActiveBoostInfo | null>(null);
   const [payMethod, setPayMethod] = useState<PayMethod>("balance");
+  const [ngnCopied, setNgnCopied] = useState<string | null>(null);
   const [paymentInfo, setPaymentInfo] = useState<{
     boost_id?: string;
     broadcast_id?: string;
@@ -89,12 +90,21 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
     total_charged?: number;
     bonus_used?: number;
     main_used?: number;
+    // NGN/Payaza fields
+    bank_name?: string;
+    account_number?: string;
+    account_name?: string;
+    amount_ngn?: number;
+    amount_usd?: number;
+    exchange_rate?: number | null;
+    expires_at?: string | null;
   } | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { balance, bonusBalance, totalBalance, isLoading: balLoading } = useUserBalance();
   const { isFeatureEnabled } = useFeatureToggles();
   const balancePayEnabled = isFeatureEnabled("balance_promotions");
+  const ngnPayEnabled = isFeatureEnabled("ngn_promotions");
 
   useEffect(() => {
     return () => {
@@ -143,6 +153,7 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
       setSelectedTier(null);
       setBroadcastSelected(false);
       setPayMethod(balancePayEnabled ? "balance" : "crypto");
+      setNgnCopied(null);
       if (pollRef.current) clearInterval(pollRef.current);
     }
   }, [open]);
@@ -299,9 +310,44 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
     }
   };
 
+  const handlePayWithNgn = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-promotion-payaza", {
+        body: {
+          market_id: marketId,
+          boost_tier: selectedTier?.id || null,
+          include_broadcast: broadcastSelected,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setPaymentInfo({
+        boost_id: data.boost_id,
+        broadcast_id: data.broadcast_id,
+        bank_name: data.bank_name,
+        account_number: data.account_number,
+        account_name: data.account_name,
+        amount_ngn: data.amount_ngn,
+        amount_usd: data.amount_usd,
+        exchange_rate: data.exchange_rate,
+        expires_at: data.expires_at,
+      });
+      setStep("pay");
+      startPolling(data.boost_id, data.broadcast_id);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to create NGN payment");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleConfirmPayment = () => {
     if (payMethod === "balance") {
       handlePayWithBalance();
+    } else if (payMethod === "ngn") {
+      handlePayWithNgn();
     } else {
       handlePayWithCrypto();
     }
@@ -422,33 +468,47 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
             {/* Payment Method Selector */}
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Payment Method</p>
-              <div className={`grid gap-3 ${balancePayEnabled ? "grid-cols-2" : "grid-cols-1"}`}>
+              <div className={`grid gap-3 ${balancePayEnabled && ngnPayEnabled ? "grid-cols-3" : balancePayEnabled || ngnPayEnabled ? "grid-cols-2" : "grid-cols-1"}`}>
                 {balancePayEnabled && (
                 <button
                   onClick={() => setPayMethod("balance")}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
+                  className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${
                     payMethod === "balance"
                       ? "border-primary/50 bg-primary/5"
                       : "border-border bg-muted/30 hover:border-muted-foreground/30"
                   }`}
                 >
-                  <Wallet className="w-6 h-6" />
-                  <span className="text-sm font-bold">Balance</span>
-                  <span className="text-xs text-muted-foreground">${totalBalance.toFixed(2)} available</span>
+                  <Wallet className="w-5 h-5" />
+                  <span className="text-xs font-bold">Balance</span>
+                  <span className="text-[10px] text-muted-foreground">${totalBalance.toFixed(2)}</span>
                 </button>
                 )}
                 <button
                   onClick={() => setPayMethod("crypto")}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
+                  className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${
                     payMethod === "crypto"
                       ? "border-primary/50 bg-primary/5"
                       : "border-border bg-muted/30 hover:border-muted-foreground/30"
                   }`}
                 >
-                  <CreditCard className="w-6 h-6" />
-                  <span className="text-sm font-bold">Crypto</span>
-                  <span className="text-xs text-muted-foreground">Pay with USDT</span>
+                  <CreditCard className="w-5 h-5" />
+                  <span className="text-xs font-bold">Crypto</span>
+                  <span className="text-[10px] text-muted-foreground">USDT</span>
                 </button>
+                {ngnPayEnabled && (
+                <button
+                  onClick={() => setPayMethod("ngn")}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${
+                    payMethod === "ngn"
+                      ? "border-primary/50 bg-primary/5"
+                      : "border-border bg-muted/30 hover:border-muted-foreground/30"
+                  }`}
+                >
+                  <Banknote className="w-5 h-5" />
+                  <span className="text-xs font-bold">NGN</span>
+                  <span className="text-[10px] text-muted-foreground">Bank Transfer</span>
+                </button>
+                )}
               </div>
             </div>
 
@@ -545,6 +605,11 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
                     <Wallet className="w-4 h-4" />
                     Pay from Balance
                   </>
+                ) : payMethod === "ngn" ? (
+                  <>
+                    <Banknote className="w-4 h-4" />
+                    Pay with NGN
+                  </>
                 ) : (
                   "Confirm & Pay"
                 )}
@@ -598,6 +663,64 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
                 ? "The boost will activate automatically once payment is confirmed."
                 : "The broadcast will be sent once payment is confirmed."}
               {" "}This usually takes 1-5 minutes.
+            </p>
+          </>
+        )}
+
+        {/* NGN Bank Transfer Pay Step */}
+        {step === "pay" && paymentInfo && paymentInfo.account_number && !paymentInfo.pay_address && (
+          <>
+            <div className="text-center space-y-1">
+              <p className="text-sm text-muted-foreground">
+                Transfer exactly <span className="font-bold text-foreground">₦{paymentInfo.amount_ngn?.toLocaleString()}</span> to:
+              </p>
+            </div>
+
+            <div className="glass rounded-xl p-4 space-y-3">
+              {[
+                { label: "Bank", value: paymentInfo.bank_name || "" },
+                { label: "Account Number", value: paymentInfo.account_number || "" },
+                { label: "Account Name", value: paymentInfo.account_name || "" },
+                { label: "Amount", value: `₦${paymentInfo.amount_ngn?.toLocaleString()}` },
+              ].map((row) => (
+                <div key={row.label} className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">{row.label}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-bold text-foreground">{row.value}</span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(row.value.replace(/[₦,]/g, ""));
+                        setNgnCopied(row.label);
+                        setTimeout(() => setNgnCopied(null), 2000);
+                      }}
+                      className="w-6 h-6 rounded flex items-center justify-center hover:bg-muted transition-colors"
+                    >
+                      {ngnCopied === row.label ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3 text-muted-foreground" />}
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {paymentInfo.exchange_rate && (
+                <div className="text-[10px] text-muted-foreground text-center border-t border-border pt-2">
+                  Rate: $1 = ₦{paymentInfo.exchange_rate.toLocaleString()} · Total: ${paymentInfo.amount_usd}
+                </div>
+              )}
+
+              {paymentInfo.expires_at && (
+                <div className="text-[10px] text-center text-destructive">
+                  Expires: {new Date(paymentInfo.expires_at).toLocaleTimeString()}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Waiting for transfer confirmation...
+            </div>
+
+            <p className="text-xs text-center text-muted-foreground">
+              Transfer the exact amount shown. Your promotion will activate automatically once the payment is confirmed.
             </p>
           </>
         )}
