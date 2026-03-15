@@ -59,6 +59,7 @@ const InvestorDeck = lazy(() => import("./pages/admin/InvestorDeck"));
 const AdminFiatSettings = lazy(() => import("./pages/admin/AdminFiatSettings"));
 const AdminReferrals = lazy(() => import("./pages/admin/AdminReferrals"));
 const Referrals = lazy(() => import("./pages/Referrals"));
+const Commissions = lazy(() => import("./pages/Commissions"));
 const FAQ = lazy(() => import("./pages/FAQ"));
 const Disclaimer = lazy(() => import("./pages/Disclaimer"));
 const Terms = lazy(() => import("./pages/Terms"));
