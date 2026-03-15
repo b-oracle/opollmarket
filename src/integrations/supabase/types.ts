@@ -238,6 +238,10 @@ export type Database = {
           blue_max_free_markets: number
           blue_revenue_share_percent: number
           blue_trending_multiplier: number
+          boost_flash_price: number
+          boost_standard_price: number
+          boost_whale_price: number
+          broadcast_price: number
           copy_trade_commission_percent: number
           creator_fee_blue_percent: number
           creator_fee_gold_percent: number
@@ -289,6 +293,10 @@ export type Database = {
           blue_max_free_markets?: number
           blue_revenue_share_percent?: number
           blue_trending_multiplier?: number
+          boost_flash_price?: number
+          boost_standard_price?: number
+          boost_whale_price?: number
+          broadcast_price?: number
           copy_trade_commission_percent?: number
           creator_fee_blue_percent?: number
           creator_fee_gold_percent?: number
@@ -340,6 +348,10 @@ export type Database = {
           blue_max_free_markets?: number
           blue_revenue_share_percent?: number
           blue_trending_multiplier?: number
+          boost_flash_price?: number
+          boost_standard_price?: number
+          boost_whale_price?: number
+          broadcast_price?: number
           copy_trade_commission_percent?: number
           creator_fee_blue_percent?: number
           creator_fee_gold_percent?: number
