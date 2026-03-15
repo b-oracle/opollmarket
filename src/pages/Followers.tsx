@@ -111,7 +111,7 @@ const Followers = () => {
     return followers.filter((f: any) => new Date(f.created_at) > new Date(lastSeen)).length;
   }, [followers, lastSeen, tab]);
 
-  if (!user) {
+  if (!targetUserId) {
     navigate("/auth");
     return null;
   }
