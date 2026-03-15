@@ -363,25 +363,55 @@ const AdminSettings = () => {
               <Percent className="w-5 h-5" /> Market Prediction Fees
             </CardTitle>
             <CardDescription>
-              Commission deducted from each market prediction. The remainder goes to the pool.
+              Total fee deducted from each prediction. All fees go to the Pool Reserve first, then commissions are distributed.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="adminFee">Prediction Fee (%)</Label>
-              <Input id="adminFee" type="number" min={0} max={100} step={0.1} value={adminFee} onChange={(e) => setAdminFee(e.target.value)} placeholder="5" />
-              <p className="text-[10px] text-muted-foreground">Single fee deducted from each prediction. Entire fee goes to the platform.</p>
+              <Label htmlFor="adminFee">Pool Reserve (%)</Label>
+              <Input id="adminFee" type="number" min={0} max={100} step={0.1} value={adminFee} onChange={(e) => setAdminFee(e.target.value)} placeholder="2" />
+              <p className="text-[10px] text-muted-foreground">Platform's net take — stays in the admin pool reserve.</p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="referrerCommission">Referrer Commission (%)</Label>
-              <Input id="referrerCommission" type="number" min={0} max={100} step={0.1} value={referrerCommission} onChange={(e) => setReferrerCommission(e.target.value)} placeholder="1" />
-              <p className="text-[10px] text-muted-foreground">% of each trade paid to the trader's referrer</p>
+
+            <div className="border-t border-border pt-3 space-y-3">
+              <p className="text-xs font-semibold text-muted-foreground">Creator Fees (paid to market creators)</p>
+              <div className="space-y-2">
+                <Label htmlFor="creatorFee">Unverified Creator Fee (%)</Label>
+                <Input id="creatorFee" type="number" min={0} max={100} step={0.1} value={creatorFee} onChange={(e) => setCreatorFee(e.target.value)} placeholder="3" />
+                <p className="text-[10px] text-muted-foreground">Paid to creators without any verification tick</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="creatorFeeBlue">Blue Tick Creator Fee (%)</Label>
+                <Input id="creatorFeeBlue" type="number" min={0} max={100} step={0.1} value={creatorFeeBlue} onChange={(e) => setCreatorFeeBlue(e.target.value)} placeholder="3" />
+                <p className="text-[10px] text-muted-foreground">Paid to blue-verified market creators</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="creatorFeeGold">Gold Tick Creator Fee (%)</Label>
+                <Input id="creatorFeeGold" type="number" min={0} max={100} step={0.1} value={creatorFeeGold} onChange={(e) => setCreatorFeeGold(e.target.value)} placeholder="3" />
+                <p className="text-[10px] text-muted-foreground">Paid to gold-verified market creators</p>
+              </div>
+            </div>
+
+            <div className="border-t border-border pt-3 space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="referrerCommission">Referrer Commission (%)</Label>
+                <Input id="referrerCommission" type="number" min={0} max={100} step={0.1} value={referrerCommission} onChange={(e) => setReferrerCommission(e.target.value)} placeholder="1" />
+                <p className="text-[10px] text-muted-foreground">% of each trade paid to the predictor's referrer</p>
+              </div>
+            </div>
+
+            <div className="border-t border-border pt-3 space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="bc400PoolPercent">BC400 Reward Pool (%)</Label>
+                <Input id="bc400PoolPercent" type="number" min={0} max={100} step={0.1} value={bc400PoolPercent} onChange={(e) => setBc400PoolPercent(e.target.value)} placeholder="0" />
+                <p className="text-[10px] text-muted-foreground">Allocated to the BC400 reward pool from each prediction</p>
+              </div>
             </div>
 
             <Card className="border-dashed">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2"><LogOut className="w-4 h-4" /> Early Exit Fee</CardTitle>
-                <CardDescription className="text-xs">Fee charged when users sell positions early. Returned to market pool.</CardDescription>
+                <CardDescription className="text-xs">Fee charged when users sell positions early. Goes to Pool Reserve.</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -407,25 +437,56 @@ const AdminSettings = () => {
             </Card>
 
             <div className="rounded-lg border border-border p-3 space-y-1.5 bg-muted/50">
+              <p className="text-xs font-semibold mb-2">Fee Summary (per prediction)</p>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Prediction Fee</span>
+                <span className="text-muted-foreground">Pool Reserve</span>
                 <span className="font-medium">{adminNum}%</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Creator Fee (Unverified)</span>
+                <span className="font-medium">{creatorNum}%</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Creator Fee (Blue Tick)</span>
+                <span className="font-medium">{creatorBlueNum}%</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Creator Fee (Gold Tick)</span>
+                <span className="font-medium">{creatorGoldNum}%</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Referrer Commission</span>
                 <span className="font-medium">{referrerCommissionNum}%</span>
               </div>
               <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">BC400 Reward Pool</span>
+                <span className="font-medium">{bc400PoolPercentNum}%</span>
+              </div>
+              <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Early Exit Fee</span>
                 <span className="font-medium">{exitFeeNum}%</span>
               </div>
-              <div className="border-t border-border pt-1.5 flex justify-between text-sm">
-                <span className="text-muted-foreground">Pool (trade amount)</span>
-                <span className={`font-bold ${poolPercent < 0 ? "text-destructive" : "text-primary"}`}>{poolPercent.toFixed(1)}%</span>
+              <div className="border-t border-border pt-1.5 space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Total Fee (Unverified creator)</span>
+                  <span className="font-bold">{totalFee.toFixed(1)}%</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Total Fee (Blue tick creator)</span>
+                  <span className="font-bold">{totalFeeBlue.toFixed(1)}%</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Total Fee (Gold tick creator)</span>
+                  <span className="font-bold">{totalFeeGold.toFixed(1)}%</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Pool (trade amount, worst case)</span>
+                  <span className={`font-bold ${poolPercent < 0 ? "text-destructive" : "text-primary"}`}>{poolPercent.toFixed(1)}%</span>
+                </div>
               </div>
             </div>
 
-            {totalFee > 100 && <p className="text-xs text-destructive">Total fees cannot exceed 100%.</p>}
+            {totalFeeGold > 100 && <p className="text-xs text-destructive">Total fees cannot exceed 100%.</p>}
           </CardContent>
         </Card>
 
