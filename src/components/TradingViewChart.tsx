@@ -538,8 +538,8 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
           if (series) {
             try {
               const y = series.priceToCoordinate(nextPrice);
-              const nowTs = Math.floor(now / 1000) as UTCTimestamp;
-              const x = chartRef.current.timeScale().timeToCoordinate(nowTs);
+              const t = livePointTimeRef.current ?? (Math.floor(now / 1000) as UTCTimestamp);
+              const x = chartRef.current.timeScale().timeToCoordinate(t);
               if (y !== null && x !== null) {
                 pulsingDotRef.current.style.left = `${x}px`;
                 pulsingDotRef.current.style.top = `${y}px`;
