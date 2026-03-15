@@ -72,7 +72,7 @@ function priceToY(p: number, domainMin: number, domainRange: number): number {
   return PAD_TOP + (PRICE_H - PAD_TOP - PAD_BOT) * (1 - (p - domainMin) / domainRange);
 }
 
-function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, streamingPrice, chartMs, precomputedMAs }: Props) {
+function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, streamingPrice, chartMs, precomputedMAs, fullscreen }: Props) {
   // Y-axis hysteresis refs
   const prevDomainMinRef = useRef<number | null>(null);
   const prevDomainMaxRef = useRef<number | null>(null);
