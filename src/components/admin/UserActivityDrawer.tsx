@@ -300,6 +300,37 @@ const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDra
         result = wd || [];
         break;
       }
+      case "deposits": {
+        const { data: deps } = await supabase
+          .from("transactions")
+          .select("*, markets(title)")
+          .eq("user_id", userId)
+          .eq("type", "deposit")
+          .order("created_at", { ascending: false })
+          .limit(50);
+        result = deps || [];
+        break;
+      }
+      case "boosts": {
+        const { data: bsts } = await supabase
+          .from("market_boosts")
+          .select("*, markets(title)")
+          .eq("payer_wallet", userId)
+          .order("created_at", { ascending: false })
+          .limit(50);
+        result = bsts || [];
+        break;
+      }
+      case "audit_log": {
+        const { data: events } = await supabase
+          .from("analytics_events")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(100);
+        result = events || [];
+        break;
+      }
     }
 
     setData(result);
