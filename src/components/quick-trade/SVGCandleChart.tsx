@@ -63,7 +63,7 @@ const CandleStick = memo(function CandleStick({
   );
 });
 
-function SVGCandleChart({ candles, entryPrice, assetClass, timeframeLabel }: SVGCandleChartProps) {
+const SVGCandleChart = forwardRef<HTMLDivElement, SVGCandleChartProps>(function SVGCandleChart({ candles, entryPrice, assetClass, timeframeLabel }, ref) {
   const CHART_HEIGHT = 220;
   const PRICE_AREA_RATIO = 0.75;
   const PRICE_H = Math.floor(CHART_HEIGHT * PRICE_AREA_RATIO);
