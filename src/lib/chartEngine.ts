@@ -118,6 +118,9 @@ export function rollToNextCandle(previousCandle: Candle, nextBucketStart: number
 
 // ── Candle aggregation from ticks ──
 
+/** Maximum gap candles to fill to prevent runaway allocation */
+const MAX_GAP_FILL = 500;
+
 /**
  * Rebuild candles from a tick buffer for a given timeframe.
  * Used when switching timeframes or initializing from history.
@@ -142,17 +145,19 @@ export function rebuildCandlesFromTicks(ticks: Tick[], tfMs: number): { candles:
   // Sort by bucket time
   const allCandles = Array.from(candleMap.values()).sort((a, b) => a.ts - b.ts);
   
-  // Fill gaps between candles (carry forward close price)
+  // Fill gaps between candles (carry forward close price) — capped to prevent OOM
   const filledCandles: Candle[] = [];
   for (let i = 0; i < allCandles.length; i++) {
     if (i > 0) {
       const prevEnd = allCandles[i - 1].ts + tfMs;
       let gapStart = prevEnd;
-      while (gapStart < allCandles[i].ts) {
+      let gapCount = 0;
+      while (gapStart < allCandles[i].ts && gapCount < MAX_GAP_FILL) {
         const gapCandle = createCandle(allCandles[i - 1].close, gapStart);
         gapCandle.volume = 0;
         filledCandles.push(gapCandle);
         gapStart += tfMs;
+        gapCount++;
       }
     }
     filledCandles.push(allCandles[i]);
@@ -196,16 +201,24 @@ export function buildCandlesFromHistory(
 
 // ── Moving average computation ──
 
+/**
+ * Compute MAs without mutating the source candles.
+ * Returns new candle objects with ma7/ma14 set.
+ */
 export function computeMAs(candles: Candle[], active: Candle | null): (Candle & { ma7?: number; ma14?: number })[] {
-  const all = [...candles];
-  if (active) all.push(active);
+  const all: (Candle & { ma7?: number; ma14?: number })[] = candles.map(c => ({ ...c }));
+  if (active) all.push({ ...active });
 
   for (let i = 0; i < all.length; i++) {
     if (i >= 6) {
-      all[i].ma7 = all.slice(i - 6, i + 1).reduce((s, c) => s + c.close, 0) / 7;
+      let sum = 0;
+      for (let j = i - 6; j <= i; j++) sum += all[j].close;
+      all[i].ma7 = sum / 7;
     }
     if (i >= 13) {
-      all[i].ma14 = all.slice(i - 13, i + 1).reduce((s, c) => s + c.close, 0) / 14;
+      let sum = 0;
+      for (let j = i - 13; j <= i; j++) sum += all[j].close;
+      all[i].ma14 = sum / 14;
     }
   }
 
@@ -216,7 +229,7 @@ export function computeMAs(candles: Candle[], active: Candle | null): (Candle & 
 
 /**
  * Generate smooth line chart points from candles.
- * Each candle contributes its close price at the bucket midpoint.
+ * Each candle contributes its close price at the bucket end.
  * The active candle contributes the current close at "now".
  */
 export function candlesToLinePoints(candles: Candle[], activeCandle: Candle | null, tfMs: number): LinePoint[] {
@@ -288,9 +301,9 @@ export class ChartEngine {
   processTick(price: number, ts: number = Date.now()) {
     const tick: Tick = { ts, price };
     
-    // Add to tick buffer
+    // Add to tick buffer — use ring-buffer style trim to reduce GC
     this.state.tickBuffer.push(tick);
-    if (this.state.tickBuffer.length > this.maxTickBuffer) {
+    if (this.state.tickBuffer.length > this.maxTickBuffer * 1.2) {
       this.state.tickBuffer = this.state.tickBuffer.slice(-this.maxTickBuffer);
     }
     this.state.lastTick = tick;
@@ -308,14 +321,16 @@ export class ChartEngine {
         const finalizedActive = finalizeCandle(this.state.activeCandle);
         this.state.candles.push(finalizedActive);
 
-        // Fill any gap buckets between old active and current bucket
+        // Fill any gap buckets between old active and current bucket (capped)
         let gapStart = finalizedActive.ts + tfMs;
-        while (gapStart < currentBucketStart) {
+        let gapCount = 0;
+        while (gapStart < currentBucketStart && gapCount < MAX_GAP_FILL) {
           const lastClose = this.state.candles[this.state.candles.length - 1].close;
           const gapCandle = createCandle(lastClose, gapStart);
           gapCandle.volume = 0;
           this.state.candles.push(finalizeCandle(gapCandle));
           gapStart += tfMs;
+          gapCount++;
         }
 
         // Trim old candles
