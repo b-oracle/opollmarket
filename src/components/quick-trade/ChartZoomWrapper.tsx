@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState, type ReactNode } from "react";
+import { useRef, useCallback, type ReactNode } from "react";
 
 interface ChartZoomWrapperProps {
   children: ReactNode;
@@ -7,180 +7,171 @@ interface ChartZoomWrapperProps {
 }
 
 /**
- * Wraps an SVG chart to provide pinch-zoom and pan via touch/wheel gestures.
- * Uses CSS transform for smooth, GPU-accelerated zoom without re-rendering the chart.
+ * Wraps native SVG charts and provides pinch-zoom / pan by manipulating
+ * the child SVG's viewBox. This zooms into the *chart data* (fewer candles
+ * visible at larger size) rather than scaling the screen.
  */
 export default function ChartZoomWrapper({ children, className = "", style }: ChartZoomWrapperProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
 
-  // Transform state
-  const scaleRef = useRef(1);
-  const txRef = useRef(0);
-  const tyRef = useRef(0);
-  const [, forceRender] = useState(0);
+  // Zoom state stored in refs to avoid re-renders during gestures
+  const zoomRef = useRef(1);       // 1 = show all, 2 = show half, etc.
+  const panXRef = useRef(0);       // 0–1 normalized pan offset (0 = rightmost / latest data)
 
-  // Pinch state
+  // Pinch tracking
   const initialDistRef = useRef(0);
-  const initialScaleRef = useRef(1);
-  const initialMidRef = useRef({ x: 0, y: 0 });
-
-  // Pan state
-  const panStartRef = useRef({ x: 0, y: 0 });
-  const panTxRef = useRef(0);
-  const panTyRef = useRef(0);
+  const initialZoomRef = useRef(1);
+  const initialPanRef = useRef(0);
+  const initialMidXRef = useRef(0);
   const isPanningRef = useRef(false);
-  const touchCountRef = useRef(0);
+  const panStartXRef = useRef(0);
+  const panStartOffsetRef = useRef(0);
 
-  const applyTransform = useCallback(() => {
-    if (!innerRef.current) return;
-    const s = scaleRef.current;
-    const tx = txRef.current;
-    const ty = tyRef.current;
-    innerRef.current.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+  const getSvg = (): SVGSVGElement | null => {
+    return containerRef.current?.querySelector("svg") ?? null;
+  };
+
+  const applyViewBox = useCallback(() => {
+    const svg = getSvg();
+    if (!svg) return;
+
+    // Read the original full viewBox dimensions
+    const origVB = svg.getAttribute("data-orig-vb");
+    if (!origVB) return;
+    const [, , fullW, fullH] = origVB.split(" ").map(Number);
+
+    const zoom = zoomRef.current;
+    const visibleW = fullW / zoom;
+
+    // Pan: panX=0 means showing the rightmost (latest) data
+    // panX=1 means shifted fully left to show oldest data
+    const maxOffset = fullW - visibleW;
+    const offset = maxOffset - panXRef.current * maxOffset;
+    const clampedOffset = Math.max(0, Math.min(maxOffset, offset));
+
+    svg.setAttribute("viewBox", `${clampedOffset} 0 ${visibleW} ${fullH}`);
   }, []);
 
-  const clampTransform = useCallback(() => {
-    const s = scaleRef.current;
-    if (s <= 1) {
-      scaleRef.current = 1;
-      txRef.current = 0;
-      tyRef.current = 0;
-      return;
+  // Store original viewBox on first interaction
+  const ensureOrigVB = useCallback(() => {
+    const svg = getSvg();
+    if (!svg) return;
+    if (!svg.getAttribute("data-orig-vb")) {
+      svg.setAttribute("data-orig-vb", svg.getAttribute("viewBox") || "0 0 100 100");
     }
-    const container = containerRef.current;
-    if (!container) return;
-    const w = container.clientWidth;
-    const h = container.clientHeight;
-    const maxTx = (w * (s - 1)) / 2;
-    const maxTy = (h * (s - 1)) / 2;
-    txRef.current = Math.max(-maxTx, Math.min(maxTx, txRef.current));
-    tyRef.current = Math.max(-maxTy, Math.min(maxTy, tyRef.current));
   }, []);
 
   const getDist = (t1: React.Touch, t2: React.Touch) =>
     Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
-    touchCountRef.current = e.touches.length;
+    ensureOrigVB();
 
     if (e.touches.length === 2) {
       e.preventDefault();
-      const d = getDist(e.touches[0], e.touches[1]);
-      initialDistRef.current = d;
-      initialScaleRef.current = scaleRef.current;
-      initialMidRef.current = {
-        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-        y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
-      };
+      initialDistRef.current = getDist(e.touches[0], e.touches[1]);
+      initialZoomRef.current = zoomRef.current;
+      initialPanRef.current = panXRef.current;
+      initialMidXRef.current = (e.touches[0].clientX + e.touches[1].clientX) / 2;
       isPanningRef.current = false;
-    } else if (e.touches.length === 1 && scaleRef.current > 1) {
-      // Pan only when zoomed in
+    } else if (e.touches.length === 1 && zoomRef.current > 1.05) {
+      // Pan when zoomed in
       e.preventDefault();
       isPanningRef.current = true;
-      panStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      panTxRef.current = txRef.current;
-      panTyRef.current = tyRef.current;
+      panStartXRef.current = e.touches[0].clientX;
+      panStartOffsetRef.current = panXRef.current;
     }
-  }, []);
+  }, [ensureOrigVB]);
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 2) {
       e.preventDefault();
       const d = getDist(e.touches[0], e.touches[1]);
-      const newScale = Math.max(1, Math.min(5, initialScaleRef.current * (d / initialDistRef.current)));
-      scaleRef.current = newScale;
+      const ratio = d / initialDistRef.current;
+      zoomRef.current = Math.max(1, Math.min(8, initialZoomRef.current * ratio));
 
-      // Pan toward pinch midpoint
-      const mid = {
-        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-        y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
-      };
-      txRef.current += (mid.x - initialMidRef.current.x) * 0.5;
-      tyRef.current += (mid.y - initialMidRef.current.y) * 0.5;
-      initialMidRef.current = mid;
+      // Also pan based on midpoint shift
+      const container = containerRef.current;
+      if (container) {
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const dx = midX - initialMidXRef.current;
+        const containerW = container.clientWidth;
+        panXRef.current = Math.max(0, Math.min(1, initialPanRef.current + dx / containerW));
+      }
 
-      clampTransform();
-      applyTransform();
-    } else if (e.touches.length === 1 && isPanningRef.current && scaleRef.current > 1) {
+      applyViewBox();
+    } else if (e.touches.length === 1 && isPanningRef.current && zoomRef.current > 1.05) {
       e.preventDefault();
-      const dx = e.touches[0].clientX - panStartRef.current.x;
-      const dy = e.touches[0].clientY - panStartRef.current.y;
-      txRef.current = panTxRef.current + dx;
-      tyRef.current = panTyRef.current + dy;
-      clampTransform();
-      applyTransform();
+      const container = containerRef.current;
+      if (!container) return;
+      const dx = e.touches[0].clientX - panStartXRef.current;
+      const containerW = container.clientWidth;
+      // Dragging right = moving to older data = increasing panX
+      const sensitivity = zoomRef.current; // More sensitive when zoomed in more
+      panXRef.current = Math.max(0, Math.min(1, panStartOffsetRef.current + (dx / containerW) * sensitivity));
+      applyViewBox();
     }
-  }, [applyTransform, clampTransform]);
+  }, [applyViewBox]);
 
   const onTouchEnd = useCallback((e: React.TouchEvent) => {
-    touchCountRef.current = e.touches.length;
     if (e.touches.length === 0) {
       isPanningRef.current = false;
-      // Snap back if scale ~1
-      if (scaleRef.current < 1.05) {
-        scaleRef.current = 1;
-        txRef.current = 0;
-        tyRef.current = 0;
-        applyTransform();
+      if (zoomRef.current < 1.05) {
+        zoomRef.current = 1;
+        panXRef.current = 0;
+        applyViewBox();
       }
     }
-    if (e.touches.length === 1 && scaleRef.current > 1) {
-      // Switch to panning with remaining finger
+    if (e.touches.length === 1 && zoomRef.current > 1.05) {
       isPanningRef.current = true;
-      panStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      panTxRef.current = txRef.current;
-      panTyRef.current = tyRef.current;
+      panStartXRef.current = e.touches[0].clientX;
+      panStartOffsetRef.current = panXRef.current;
     }
-  }, [applyTransform]);
+  }, [applyViewBox]);
 
   // Mouse wheel zoom for desktop
   const onWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    scaleRef.current = Math.max(1, Math.min(5, scaleRef.current * delta));
-    if (scaleRef.current <= 1.05) {
-      scaleRef.current = 1;
-      txRef.current = 0;
-      tyRef.current = 0;
+    ensureOrigVB();
+    const factor = e.deltaY > 0 ? 0.9 : 1.1;
+    zoomRef.current = Math.max(1, Math.min(8, zoomRef.current * factor));
+    if (zoomRef.current < 1.05) {
+      zoomRef.current = 1;
+      panXRef.current = 0;
     }
-    clampTransform();
-    applyTransform();
-  }, [applyTransform, clampTransform]);
+    applyViewBox();
+  }, [applyViewBox, ensureOrigVB]);
 
-  // Double-tap to reset
+  // Double-tap to reset / toggle 2x
   const lastTapRef = useRef(0);
   const onDoubleTap = useCallback((e: React.TouchEvent) => {
     if (e.touches.length !== 1) return;
     const now = Date.now();
     if (now - lastTapRef.current < 300) {
-      scaleRef.current = scaleRef.current > 1 ? 1 : 2;
-      if (scaleRef.current === 1) {
-        txRef.current = 0;
-        tyRef.current = 0;
+      ensureOrigVB();
+      if (zoomRef.current > 1.1) {
+        zoomRef.current = 1;
+        panXRef.current = 0;
+      } else {
+        zoomRef.current = 2;
+        panXRef.current = 0; // zoom into latest data
       }
-      clampTransform();
-      applyTransform();
+      applyViewBox();
     }
     lastTapRef.current = now;
-  }, [applyTransform, clampTransform]);
+  }, [applyViewBox, ensureOrigVB]);
 
   return (
     <div
       ref={containerRef}
-      className={`overflow-hidden ${className}`}
+      className={className}
       style={{ touchAction: "none", ...style }}
       onTouchStart={(e) => { onDoubleTap(e); onTouchStart(e); }}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
       onWheel={onWheel}
     >
-      <div
-        ref={innerRef}
-        style={{ transformOrigin: "center center", willChange: "transform" }}
-      >
-        {children}
-      </div>
+      {children}
     </div>
   );
 }
