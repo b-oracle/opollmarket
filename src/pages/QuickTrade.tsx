@@ -247,6 +247,7 @@ export default function QuickTrade() {
   const { toggles } = useFeatureToggles();
   const tvChartEnabled = toggles.find((t) => t.feature_key === "tradingview_chart")?.enabled ?? false;
   const lineChartEnabled = toggles.find((t) => t.feature_key === "line_chart")?.enabled ?? true;
+  const polyChartEnabled = toggles.find((t) => t.feature_key === "poly_chart")?.enabled ?? true;
   const queryClient = useQueryClient();
   const { data: commissionSettings } = useCommissionSettings();
   const { fireWinConfetti } = useConfetti();
@@ -416,7 +417,7 @@ export default function QuickTrade() {
   const validChartTypes = ["area", "candle", "tv", "poly"] as const;
   const savedCT = typeof window !== "undefined" ? localStorage.getItem("qt-chart-type") : null;
   const rawInitialCT = (savedCT && (validChartTypes as readonly string[]).includes(savedCT) ? savedCT : "area") as "area" | "candle" | "tv" | "poly";
-  const initialCT = rawInitialCT === "tv" && !tvChartEnabled ? "area" : (rawInitialCT === "area" || rawInitialCT === "poly") && !lineChartEnabled ? "candle" : rawInitialCT;
+  const initialCT = rawInitialCT === "tv" && !tvChartEnabled ? "area" : rawInitialCT === "poly" && !polyChartEnabled ? "area" : (rawInitialCT === "area") && !lineChartEnabled ? "candle" : rawInitialCT;
   const [chartType, setChartTypeRaw] = useState<"area" | "candle" | "tv" | "poly">(initialCT);
   const setChartType = useCallback((ct: "area" | "candle" | "tv" | "poly") => {
     setChartTypeRaw(ct);
@@ -424,10 +425,13 @@ export default function QuickTrade() {
   }, []);
   // Force away from disabled chart types
   useEffect(() => {
-    if (!lineChartEnabled && (chartType === "area" || chartType === "poly")) {
+    if (!lineChartEnabled && chartType === "area") {
       setChartType("candle");
     }
-  }, [lineChartEnabled, chartType, setChartType]);
+    if (!polyChartEnabled && chartType === "poly") {
+      setChartType(lineChartEnabled ? "area" : "candle");
+    }
+  }, [lineChartEnabled, polyChartEnabled, chartType, setChartType]);
   const chartMs = CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.ms;
 
   const [priceHistory, setPriceHistory] = useState<{ time: string; price: number; ts: number }[]>([]);
@@ -1436,7 +1440,7 @@ export default function QuickTrade() {
                       <BarChart3 className="w-3.5 h-3.5" />
                     </button>
                    )}
-                  {lineChartEnabled && (
+                  {polyChartEnabled && (
                     <button
                       onClick={() => setChartType("poly")}
                       className={`p-1.5 rounded transition-all ${chartType === "poly" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
