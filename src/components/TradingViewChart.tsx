@@ -363,6 +363,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     interpolatedPriceRef.current = Number(last.close);
     targetStreamingPriceRef.current = Number(last.close);
     prevStreamingPriceRef.current = Number(last.close);
+    areaCommittedTimeRef.current = Number(last.time);
 
     seededDataKeyRef.current = dataKey;
     hasInitializedDataRef.current = true;
