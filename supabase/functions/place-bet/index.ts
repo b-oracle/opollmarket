@@ -189,67 +189,59 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- Distribute commissions FROM admin pool reserve ---
+    // --- Queue commissions for 48-hour deferred release ---
+    const releasesAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
 
-    // Creator commission
-    if (creatorId && creatorAmount > 0 && adminRole) {
-      // Deduct from admin, credit to creator
-      await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -creatorAmount });
-      await supabase.rpc("adjust_balance", { _user_id: creatorId, _delta: creatorAmount });
-
-      await supabase.from("transactions").insert({
+    // Creator commission (queued)
+    if (creatorId && creatorAmount > 0) {
+      await supabase.from("pending_commissions").insert({
         user_id: creatorId,
-        type: "commission",
-        amount: creatorAmount,
         market_id: marketId,
-        option_id: optionId || null,
-        side: "creator",
-        status: "confirmed",
+        amount: creatorAmount,
+        type: "creator",
+        status: "pending",
+        releases_at: releasesAt,
+      });
+
+      await supabase.from("notifications").insert({
+        user_id: creatorId,
+        title: "Creator Commission Earned! 🎉",
+        message: `You earned $${creatorAmount.toFixed(2)} creator commission — it will be credited in 48 hours.`,
+        type: "info",
+        market_id: marketId,
       });
     }
 
-    // Referrer commission
-    if (referrerId && referrerAmount > 0 && adminRole) {
-      await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -referrerAmount });
-      await supabase.rpc("adjust_balance", { _user_id: referrerId, _delta: referrerAmount });
-
-      await supabase.from("transactions").insert({
+    // Referrer commission (queued)
+    if (referrerId && referrerAmount > 0) {
+      await supabase.from("pending_commissions").insert({
         user_id: referrerId,
-        type: "commission",
-        amount: referrerAmount,
         market_id: marketId,
-        option_id: optionId || null,
-        side: "referral",
-        status: "confirmed",
+        amount: referrerAmount,
+        type: "referral",
+        status: "pending",
+        releases_at: releasesAt,
       });
 
       await supabase.from("notifications").insert({
         user_id: referrerId,
-        title: "Referral Commission 💰",
-        message: `You earned $${referrerAmount.toFixed(2)} commission from a referral's trade!`,
+        title: "Referral Commission Earned! 💰",
+        message: `You earned $${referrerAmount.toFixed(2)} referral commission — it will be credited in 48 hours.`,
         type: "referral",
         market_id: marketId,
       });
     }
 
-    // BC400 pool — stays in admin balance but tracked separately
+    // BC400 pool (queued)
     if (bc400Amount > 0) {
-      await supabase
-        .from("commission_settings")
-        .update({ bc400_pool_balance: supabase.rpc ? undefined : 0 } as any)
-        .eq("id", commData ? (commData as any).id : "");
-      // Use raw SQL-style increment via RPC not available, so do read+write
-      const { data: currentSettings } = await supabase
-        .from("commission_settings")
-        .select("bc400_pool_balance, id")
-        .limit(1)
-        .single();
-      if (currentSettings) {
-        await supabase
-          .from("commission_settings")
-          .update({ bc400_pool_balance: Number((currentSettings as any).bc400_pool_balance || 0) + bc400Amount } as any)
-          .eq("id", currentSettings.id);
-      }
+      await supabase.from("pending_commissions").insert({
+        user_id: adminRole?.user_id || "00000000-0000-0000-0000-000000000000",
+        market_id: marketId,
+        amount: bc400Amount,
+        type: "bc400",
+        status: "pending",
+        releases_at: releasesAt,
+      });
     }
 
     const poolAmount = amount - totalFees;

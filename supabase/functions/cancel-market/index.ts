@@ -139,31 +139,36 @@ Deno.serve(async (req) => {
       }
     }
 
-    // --- Claw back commissions (admin, creator, referrer) ---
-    const { data: commissionTxns } = await adminClient
-      .from("transactions")
-      .select("*")
+    // --- Void pending commissions (no clawback needed) ---
+    const { data: pendingComms } = await adminClient
+      .from("pending_commissions")
+      .select("id, user_id, amount, type")
       .eq("market_id", market_id)
-      .eq("type", "commission")
-      .eq("status", "confirmed");
+      .eq("status", "pending");
 
-    let totalCommissionsClawed = 0;
-    for (const commTx of commissionTxns || []) {
-      await adminClient.rpc("adjust_balance", { _user_id: commTx.user_id, _delta: -commTx.amount });
+    let totalCommissionsVoided = 0;
+    for (const pc of pendingComms || []) {
+      await adminClient
+        .from("pending_commissions")
+        .update({ status: "cancelled" })
+        .eq("id", pc.id);
 
-      await adminClient.from("transactions").insert({
-        user_id: commTx.user_id,
-        market_id: market_id,
-        type: "refund",
-        amount: commTx.amount,
-        side: "commission_clawback",
-        status: "confirmed",
-      });
-      totalCommissionsClawed += commTx.amount;
+      totalCommissionsVoided += pc.amount;
+
+      // Notify the user their pending commission is cancelled
+      if (pc.type !== "bc400") {
+        await adminClient.from("notifications").insert({
+          user_id: pc.user_id,
+          title: "Pending Commission Cancelled ❌",
+          message: `Your pending $${pc.amount.toFixed(2)} ${pc.type} commission for "${market.title}" will not be credited as the market was cancelled.`,
+          type: "info",
+          market_id: market_id,
+        });
+      }
     }
 
-    if (totalCommissionsClawed > 0) {
-      console.log("cancel-market: Clawed back commissions:", totalCommissionsClawed);
+    if (totalCommissionsVoided > 0) {
+      console.log("cancel-market: Voided pending commissions:", totalCommissionsVoided);
     }
 
     // --- Handle creation fee ---
@@ -277,7 +282,7 @@ Deno.serve(async (req) => {
         success: true,
         users_refunded: usersRefunded,
         total_refunded: totalRefunded,
-        commissions_clawed_back: totalCommissionsClawed,
+        commissions_voided: totalCommissionsVoided,
         creation_fee_refunded: creationFeeRefunded,
         creation_fee_forfeited: creationFeeForfeited,
         liquidity_refunded: liquidityRefunded,

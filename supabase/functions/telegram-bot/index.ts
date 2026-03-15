@@ -1423,49 +1423,39 @@ async function executeBetInline(
     });
   }
 
-  // Distribute from admin pool
-  if (creatorId && creatorAmount > 0 && adminRole) {
-    await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -creatorAmount });
-    await supabase.rpc("adjust_balance", { _user_id: creatorId, _delta: creatorAmount });
+  // Queue commissions for 48-hour deferred release
+  const releasesAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
 
-    await supabase.from("transactions").insert({
-      user_id: creatorId,
-      type: "commission",
-      amount: creatorAmount,
-      market_id: marketId,
-      side: "creator",
-      status: "confirmed",
+  if (creatorId && creatorAmount > 0) {
+    await supabase.from("pending_commissions").insert({
+      user_id: creatorId, market_id: marketId, amount: creatorAmount,
+      type: "creator", status: "pending", releases_at: releasesAt,
     });
-  }
-
-  if (referrerId && referrerAmount > 0 && adminRole) {
-    await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -referrerAmount });
-    await supabase.rpc("adjust_balance", { _user_id: referrerId, _delta: referrerAmount });
-
-    await supabase.from("transactions").insert({
-      user_id: referrerId,
-      type: "commission",
-      amount: referrerAmount,
-      market_id: marketId,
-      side: "referral",
-      status: "confirmed",
-    });
-
     await supabase.from("notifications").insert({
-      user_id: referrerId,
-      title: "Referral Commission 💰",
-      message: `You earned $${referrerAmount.toFixed(2)} commission from a referral's trade!`,
-      type: "referral",
-      market_id: marketId,
+      user_id: creatorId, title: "Creator Commission Earned! 🎉",
+      message: `You earned $${creatorAmount.toFixed(2)} creator commission — it will be credited in 48 hours.`,
+      type: "info", market_id: marketId,
     });
   }
 
-  // Track BC400 pool
+  if (referrerId && referrerAmount > 0) {
+    await supabase.from("pending_commissions").insert({
+      user_id: referrerId, market_id: marketId, amount: referrerAmount,
+      type: "referral", status: "pending", releases_at: releasesAt,
+    });
+    await supabase.from("notifications").insert({
+      user_id: referrerId, title: "Referral Commission Earned! 💰",
+      message: `You earned $${referrerAmount.toFixed(2)} referral commission — it will be credited in 48 hours.`,
+      type: "referral", market_id: marketId,
+    });
+  }
+
   if (bc400Amount > 0) {
-    const { data: cs } = await supabase.from("commission_settings").select("bc400_pool_balance, id").limit(1).single();
-    if (cs) {
-      await supabase.from("commission_settings").update({ bc400_pool_balance: Number((cs as any).bc400_pool_balance || 0) + bc400Amount } as any).eq("id", cs.id);
-    }
+    await supabase.from("pending_commissions").insert({
+      user_id: adminRole?.user_id || "00000000-0000-0000-0000-000000000000",
+      market_id: marketId, amount: bc400Amount,
+      type: "bc400", status: "pending", releases_at: releasesAt,
+    });
   }
 }
 
