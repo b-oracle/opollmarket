@@ -93,6 +93,8 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { balance, bonusBalance, totalBalance, isLoading: balLoading } = useUserBalance();
+  const { isFeatureEnabled } = useFeatureToggles();
+  const balancePayEnabled = isFeatureEnabled("balance_promotions");
 
   useEffect(() => {
     return () => {
