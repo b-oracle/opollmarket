@@ -96,6 +96,8 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
   // Area chart: track committed timestamp for smooth streaming
   const areaCommittedTimeRef = useRef<number>(0);
   const lastScrollTimeRef = useRef<number>(0);
+  // Used to pin the live dot to the exact same X timestamp as the series update
+  const livePointTimeRef = useRef<UTCTimestamp | null>(null);
 
   useEffect(() => {
     candleBucketSecRef.current = getCandleBucketSeconds(timeframeLabel, chartMs);
@@ -437,21 +439,24 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     let commitIntervalId: ReturnType<typeof setInterval> | null = null;
 
     if (chartStyle === "line" && areaSeriesRef.current) {
-      // Every 10s, commit the current live point as a historical point
-      // and advance the tip timestamp. This is the ONLY time x moves.
+      const tf = timeframeLabel.trim().toLowerCase();
+      const isFastTf = tf === "1m" || tf === "5m" || tf === "15m";
+      // For fast timeframes, only advance X on *minute boundaries* to avoid micro-snaps.
+      const alignSec = isFastTf ? 60 : 10;
+      const intervalMs = isFastTf ? 60000 : 10000;
+
       commitIntervalId = setInterval(() => {
-        if (!areaSeriesRef.current || !chartRef.current) return;
-        const nowSec = Math.floor(Date.now() / 1000) as UTCTimestamp;
+        if (!areaSeriesRef.current) return;
+        const nowSec = Math.floor(Date.now() / 1000);
+        const aligned = Math.floor(nowSec / alignSec) * alignSec;
+        if (aligned <= areaCommittedTimeRef.current) return;
+
         const price = interpolatedPriceRef.current;
         if (price == null) return;
-        // Commit current price at current time
-        areaSeriesRef.current.update({ time: nowSec, value: price });
-        areaCommittedTimeRef.current = nowSec;
-        // Gentle scroll — scrollToRealTime snaps, so use scrollToPosition instead
-        try {
-          chartRef.current.timeScale().scrollToPosition(5, true);
-        } catch { /* noop */ }
-      }, 10000);
+
+        areaSeriesRef.current.update({ time: aligned as UTCTimestamp, value: price });
+        areaCommittedTimeRef.current = aligned;
+      }, intervalMs);
     }
 
     const animate = () => {
@@ -497,6 +502,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
             time: c.time as UTCTimestamp,
             open: c.open, high: c.high, low: c.low, close: c.close,
           });
+          livePointTimeRef.current = c.time as UTCTimestamp;
         } else if (areaSeriesRef.current) {
           // Throttle chart update() to ~12fps — lightweight-charts doesn't need 60fps
           if (nowMs - lastAreaUpdateMs < 80) {
@@ -521,6 +527,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
             ? areaCommittedTimeRef.current + 1
             : Math.floor(nowMs / 1000)) as UTCTimestamp;
           areaSeriesRef.current.update({ time: tipTime, value: nextPrice });
+          livePointTimeRef.current = tipTime;
         }
 
         // Throttle dot position updates to ~30fps to reduce layout thrashing
@@ -531,8 +538,8 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
           if (series) {
             try {
               const y = series.priceToCoordinate(nextPrice);
-              const nowTs = Math.floor(now / 1000) as UTCTimestamp;
-              const x = chartRef.current.timeScale().timeToCoordinate(nowTs);
+              const t = livePointTimeRef.current ?? (Math.floor(now / 1000) as UTCTimestamp);
+              const x = chartRef.current.timeScale().timeToCoordinate(t);
               if (y !== null && x !== null) {
                 pulsingDotRef.current.style.left = `${x}px`;
                 pulsingDotRef.current.style.top = `${y}px`;
@@ -557,7 +564,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
         clearInterval(commitIntervalId);
       }
     };
-  }, [chartStyle]);
+  }, [chartStyle, timeframeLabel]);
 
   // Update target price on each streaming tick (does NOT restart animation)
   useEffect(() => {
