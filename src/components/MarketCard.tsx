@@ -329,7 +329,11 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/20" />
             </div>
           )}
-          <div className={`absolute inset-0 ${isBoosted ? 'bg-gradient-to-br from-primary/15 via-primary/5 to-transparent' : ''}`} />
+          {isBoosted && boostTier && (
+            <div className="absolute inset-0" style={{
+              background: `linear-gradient(to bottom right, ${getBoostTierConfig(boostTier).ringClass}, transparent 60%)`,
+            }} />
+          )}
 
           {/* Probability ring or multi-option indicator */}
           <div className="absolute top-6 right-6 z-10">
