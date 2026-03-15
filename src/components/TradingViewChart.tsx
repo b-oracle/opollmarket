@@ -767,12 +767,12 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
         >
           <span className="relative flex h-3 w-3">
             <span
-              className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
-              style={{ backgroundColor: dotColor }}
+              className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60 dot-ping"
+              style={{ backgroundColor: dotColorRef.current }}
             />
             <span
-              className="relative inline-flex rounded-full h-3 w-3 border-2 border-background"
-              style={{ backgroundColor: dotColor }}
+              className="relative inline-flex rounded-full h-3 w-3 border-2 border-background dot-solid"
+              style={{ backgroundColor: dotColorRef.current }}
             />
           </span>
         </div>
