@@ -27,13 +27,17 @@ const statusColors: Record<string, string> = {
   payment_expired: "bg-orange-500/10 text-orange-500 border-orange-500/20",
 };
 
+function isPaid(b: BroadcastRow): boolean {
+  return b.status === "sent" || b.status === "active" || (b.status === "expired" && !!(b.tx_hash || b.nowpayments_payment_id));
+}
+
 function getResolvedStatus(b: BroadcastRow): { display: string; key: string } {
+  if (b.status === "sent" || b.status === "active") return { display: "Sent", key: "sent" };
   if (b.status === "expired") {
-    return b.tx_hash || b.nowpayments_payment_id
+    return isPaid(b)
       ? { display: "Sent", key: "sent" }
       : { display: "Payment Expired", key: "payment_expired" };
   }
-  if (b.status === "sent" || b.status === "active") return { display: "Sent", key: "sent" };
   if (b.status === "pending") return { display: "Pending Payment", key: "pending" };
   return { display: b.status, key: b.status };
 }
@@ -88,9 +92,9 @@ const AdminBroadcasts = () => {
   }, []);
 
   const analytics = useMemo(() => {
-    const sent = broadcasts.filter((b) => b.status === "sent" || b.status === "active" || (b.status === "expired" && (b.tx_hash || b.nowpayments_payment_id)));
+    const sent = broadcasts.filter((b) => isPaid(b));
     const pending = broadcasts.filter((b) => b.status === "pending");
-    const expired = broadcasts.filter((b) => b.status === "expired" && !b.tx_hash && !b.nowpayments_payment_id);
+    const expired = broadcasts.filter((b) => b.status === "expired" && !isPaid(b));
     const totalRevenue = sent.reduce((s, b) => s + b.amount, 0);
     const lostRevenue = expired.reduce((s, b) => s + b.amount, 0);
     const convRate = broadcasts.length > 0 ? Math.round((sent.length / broadcasts.length) * 100) : 0;
@@ -232,7 +236,7 @@ const AdminBroadcasts = () => {
                       </div>
                       <div>
                         <span className="text-muted-foreground block mb-0.5 font-medium">TX Hash</span>
-                        <span className="font-mono text-foreground break-all text-[10px]">{bc.tx_hash || "None (unpaid)"}</span>
+                        <span className="font-mono text-foreground break-all text-[10px]">{bc.tx_hash || (isPaid(bc) ? "Paid via balance" : "None (unpaid)")}</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground block mb-0.5 font-medium">Status</span>
@@ -248,16 +252,18 @@ const AdminBroadcasts = () => {
 
                     {/* Payment verdict */}
                     <div className={`mt-3 rounded-lg p-2.5 text-xs flex items-start gap-2 ${
-                      bc.tx_hash || bc.nowpayments_payment_id
+                      isPaid(bc)
                         ? "bg-green-500/5 border border-green-500/10"
                         : "bg-orange-500/5 border border-orange-500/10"
                     }`}>
-                      {bc.tx_hash || bc.nowpayments_payment_id ? (
+                      {isPaid(bc) ? (
                         <>
                           <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
                           <div>
                             <p className="font-bold text-green-500">Payment Confirmed</p>
-                            <p className="text-muted-foreground">This broadcast was paid for and the push notification was sent to all platform users.</p>
+                            <p className="text-muted-foreground">
+                              This broadcast was paid for{bc.tx_hash ? " via crypto" : bc.nowpayments_payment_id ? " via crypto" : " via platform balance"} and the push notification was sent to all platform users.
+                            </p>
                           </div>
                         </>
                       ) : (
