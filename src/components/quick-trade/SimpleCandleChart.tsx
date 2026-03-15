@@ -109,7 +109,20 @@ function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, str
     const vols = candles.map(c => Math.abs(c.high - c.low) || 0.001);
     const vMax = Math.max(...vols, 0.001);
 
-    // MAs
+    // MAs — use precomputed from engine if available
+    const computeMAFromEngine = (key: "ma7" | "ma14"): string | null => {
+      if (!precomputedMAs || precomputedMAs.length !== n) return null;
+      const pts: string[] = [];
+      for (let i = 0; i < n; i++) {
+        const val = precomputedMAs[i]?.[key];
+        if (val == null) continue;
+        const x = (i / n) * 85 + 85 / n / 2;
+        const y = priceToY(val, dMin, dRange);
+        pts.push(`${x},${y}`);
+      }
+      return pts.length >= 2 ? pts.join(" ") : null;
+    };
+
     const computeMA = (period: number): string | null => {
       const pts: string[] = [];
       for (let i = 0; i < n; i++) {
@@ -124,8 +137,11 @@ function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, str
       return pts.length >= 2 ? pts.join(" ") : null;
     };
 
-    return { domainMin: dMin, domainMax: dMax, domainRange: dRange, gridLevels: gl, ma7Pts: computeMA(7), ma14Pts: computeMA(14), volMax: vMax };
-  }, [candles, n]);
+    const ma7Result = computeMAFromEngine("ma7") ?? computeMA(7);
+    const ma14Result = computeMAFromEngine("ma14") ?? computeMA(14);
+
+    return { domainMin: dMin, domainMax: dMax, domainRange: dRange, gridLevels: gl, ma7Pts: ma7Result, ma14Pts: ma14Result, volMax: vMax };
+  }, [candles, n, precomputedMAs]);
 
   if (n < 2) return null;
 
