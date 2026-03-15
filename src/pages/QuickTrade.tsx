@@ -287,12 +287,15 @@ export default function QuickTrade() {
     }
   }, [ASSETS, selectedAsset.symbol, disabledAssets]);
 
-  // Auto-switch to area chart when selecting non-crypto assets (no OHLC/TV available)
+  // Auto-switch to area chart when selecting non-crypto assets or TV disabled
   useEffect(() => {
     if (selectedAsset.assetClass !== "crypto" && chartType !== "area") {
       setChartType("area");
     }
-  }, [selectedAsset.assetClass]);
+    if (chartType === "tv" && !tvChartEnabled) {
+      setChartType("area");
+    }
+  }, [selectedAsset.assetClass, tvChartEnabled]);
 
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [currentPriceAsset, setCurrentPriceAsset] = useState(ALL_ASSETS[0].symbol);
