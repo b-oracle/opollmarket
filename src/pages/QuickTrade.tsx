@@ -432,7 +432,7 @@ export default function QuickTrade() {
       setChartType(lineChartEnabled ? "area" : "candle");
     }
   }, [lineChartEnabled, polyChartEnabled, chartType, setChartType]);
-  const chartMs = CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.ms;
+  const chartMs = (CHART_TIMEFRAMES.find(t => t.key === chartTimeframe) ?? CHART_TIMEFRAMES[0])?.ms ?? 300000;
 
   const [priceHistory, setPriceHistory] = useState<{ time: string; price: number; ts: number }[]>([]);
   const priceHistoryRef = useRef(priceHistory);
