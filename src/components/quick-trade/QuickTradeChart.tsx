@@ -1,4 +1,4 @@
-import { memo, useState, useMemo, type MutableRefObject } from "react";
+import { memo, useState, useMemo, useRef, type MutableRefObject } from "react";
 import type { OHLCCandle } from "@/lib/cryptoPriceProvider";
 import type { Candle, LinePoint } from "@/lib/chartEngine";
 import { Loader2, Timer, Maximize2, Minimize2 } from "lucide-react";
