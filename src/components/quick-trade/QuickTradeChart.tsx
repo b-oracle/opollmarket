@@ -84,6 +84,7 @@ function BucketBadges({ bucketCountdown, bucketProgress }: { bucketCountdown?: n
 function QuickTradeChart(props: QuickTradeChartProps) {
   const {
     chartType, chartMs, priceHistory, ohlcData, streamingPrice,
+    streamingPriceRef,
     historyLoading, activeRound, userBet, resolveFlash, timeframeLabel, assetClass,
     bucketCountdown, bucketProgress,
   } = props;
