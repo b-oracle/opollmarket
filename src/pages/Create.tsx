@@ -213,9 +213,9 @@ const Create = () => {
   const [creationBoost, setCreationBoost] = useState(false);
   const [creationBoostTier, setCreationBoostTier] = useState<"flash" | "standard" | "whale">("flash");
   const [creationBroadcast, setCreationBroadcast] = useState(false);
-  const BOOST_TIER_PRICES: Record<string, number> = { flash: 20, standard: 50, whale: 150 };
+  const [boostTierPrices, setBoostTierPrices] = useState<Record<string, number>>({ flash: 20, standard: 50, whale: 150 });
   const BOOST_TIER_HOURS: Record<string, number> = { flash: 12, standard: 24, whale: 168 };
-  const BROADCAST_PRICE = 5;
+  const [broadcastPriceVal, setBroadcastPriceVal] = useState(5);
 
   useEffect(() => {
     (async () => {
