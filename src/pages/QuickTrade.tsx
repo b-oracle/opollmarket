@@ -48,6 +48,7 @@ import QuickTradeHistory from "@/components/quick-trade/QuickTradeHistory";
 import QuickTradeBetControls from "@/components/quick-trade/QuickTradeBetControls";
 import { useChartEngine } from "@/hooks/useChartEngine";
 import { getTimeframeMs } from "@/lib/chartEngine";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 // ── Asset config ──
 type AssetClass = "crypto" | "commodity" | "forex";
 interface QuickTradeAsset {
