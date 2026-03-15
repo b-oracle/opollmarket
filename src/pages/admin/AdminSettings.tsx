@@ -155,7 +155,7 @@ const AdminSettings = () => {
   }, []);
 
   const predictionFeeNum = parseFloat(predictionFee) || 0;
-  const adminNum = parseFloat(adminFee) || 0;
+  // Platform keeps remainder — no adminNum needed
   const creatorNum = parseFloat(creatorFee) || 0;
   const creatorBlueNum = parseFloat(creatorFeeBlue) || 0;
   const creatorGoldNum = parseFloat(creatorFeeGold) || 0;
