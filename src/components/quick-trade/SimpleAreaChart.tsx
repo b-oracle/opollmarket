@@ -126,11 +126,11 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
       </svg>
 
       {/* Price axis labels */}
-      <div className="absolute right-0 top-0 bottom-0 pointer-events-none" style={{ width: 48 }}>
+      <div className="absolute right-0 top-0 bottom-0 pointer-events-none" style={{ width: fullscreen ? 64 : 48 }}>
         {gridLevels.map((level, i) => (
           <span
             key={i}
-            className="absolute text-[8px] tabular-nums text-muted-foreground text-right pr-1 leading-none"
+            className={`absolute tabular-nums text-muted-foreground text-right pr-1 leading-none ${fullscreen ? "text-[11px]" : "text-[8px]"}`}
             style={{ top: `${priceY(level)}%`, transform: "translateY(-50%)", right: 0 }}
           >
             {fmtPrice(level, assetClass)}
