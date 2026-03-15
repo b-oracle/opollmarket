@@ -1,14 +1,15 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, DollarSign, Users, Gift, Copy, Clock, Sparkles } from "lucide-react";
+import { ArrowLeft, DollarSign, Users, Gift, Copy, Clock, Sparkles, TrendingUp } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
 
 type TabKey = "all" | "creator" | "referral" | "copy_trade" | "signup_bonus" | "pending";
 
@@ -141,6 +142,32 @@ const Commissions = () => {
 
   const filtered = activeTab === "all" ? allRecords : allRecords.filter((r) => r.category === activeTab);
 
+  // Monthly chart data
+  const monthlyData = useMemo(() => {
+    const map = new Map<string, { month: string; creator: number; referral: number; copy_trade: number; signup_bonus: number }>();
+    
+    // Only include released/earned records (not pending)
+    const earned = allRecords.filter((r) => r.status === "released" && r.category !== "pending");
+    
+    earned.forEach((r) => {
+      const d = new Date(r.date);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const label = d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+      if (!map.has(key)) {
+        map.set(key, { month: label, creator: 0, referral: 0, copy_trade: 0, signup_bonus: 0 });
+      }
+      const entry = map.get(key)!;
+      if (r.category === "creator") entry.creator += r.amount;
+      else if (r.category === "referral") entry.referral += r.amount;
+      else if (r.category === "copy_trade") entry.copy_trade += r.amount;
+      else if (r.category === "signup_bonus") entry.signup_bonus += r.amount;
+    });
+
+    return Array.from(map.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([, v]) => v);
+  }, [allRecords]);
+
   const summaryCards = [
     { label: "Total Earned", value: totals.total, icon: DollarSign, color: "text-green-500 bg-green-500/10" },
     { label: "Creator", value: totals.creator, icon: Sparkles, color: "text-amber-500 bg-amber-500/10" },
@@ -200,6 +227,40 @@ const Commissions = () => {
             </Card>
           ))}
         </div>
+
+        {/* Monthly Earnings Chart */}
+        {!isLoading && monthlyData.length > 0 && (
+          <Card className="border-border/50 mb-5">
+            <CardHeader className="pb-2 px-4 pt-4">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-primary" />
+                Monthly Earnings
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-2 pb-3">
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={monthlyData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+                  <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
+                  <RechartsTooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                    }}
+                    formatter={(value: number, name: string) => [`$${value.toFixed(2)}`, name.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())]}
+                  />
+                  <Legend iconSize={8} wrapperStyle={{ fontSize: "10px" }} formatter={(v) => v.replace("_", " ").replace(/\b\w/g, (c: string) => c.toUpperCase())} />
+                  <Bar dataKey="creator" stackId="a" fill="#f59e0b" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="referral" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="copy_trade" stackId="a" fill="#a855f7" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="signup_bonus" stackId="a" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Tabs */}
         <div className="flex gap-1.5 overflow-x-auto pb-2 mb-4 scrollbar-hide">
