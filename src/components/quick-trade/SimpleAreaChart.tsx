@@ -97,7 +97,7 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
 
   return (
     <div className="w-full select-none relative" style={{ height: fullscreen ? "100%" : 200 }}>
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full" style={{ overflow: "visible" }}>
+      <svg viewBox="0 0 100 100" preserveAspectRatio={fullscreen ? "xMidYMid meet" : "none"} className="w-full h-full" style={{ overflow: "visible" }}>
         <defs>
           <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={color} stopOpacity={0.35} />
