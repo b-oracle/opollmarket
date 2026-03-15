@@ -96,7 +96,10 @@ function SVGCandleChart({ candles, entryPrice, assetClass, timeframeLabel }: SVG
     return levels;
   }, [domainMin, domainRange, n]);
 
-  const priceY = (p: number) => PADDING_TOP + (PRICE_H - PADDING_TOP - PADDING_BOTTOM) * (1 - (p - domainMin) / domainRange);
+  const priceY = useCallback(
+    (p: number) => PADDING_TOP + (PRICE_H - PADDING_TOP - PADDING_BOTTOM) * (1 - (p - domainMin) / domainRange),
+    [domainMin, domainRange]
+  );
 
   const activeCandleIndex = candles.length - 1;
   const isLastActive = n >= 2 && candles[activeCandleIndex] && !candles[activeCandleIndex].closed;
