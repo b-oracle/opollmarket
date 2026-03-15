@@ -24,6 +24,8 @@ interface Props {
   assetClass?: string;
   streamingPrice: number | null;
   chartMs?: number;
+  /** Pre-computed MA values from chart engine, one per candle */
+  precomputedMAs?: { ma7?: number; ma14?: number }[];
 }
 
 function fmtAxis(p: number, ac?: string): string {

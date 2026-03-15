@@ -1,4 +1,4 @@
-import { memo, useState, type MutableRefObject } from "react";
+import { memo, useState, useMemo, type MutableRefObject } from "react";
 import type { OHLCCandle } from "@/lib/cryptoPriceProvider";
 import type { Candle, LinePoint } from "@/lib/chartEngine";
 import { Loader2, Timer, Maximize2, Minimize2 } from "lucide-react";
@@ -61,9 +61,13 @@ function ChartSkeleton({ text }: { text: string }) {
 function BucketBadges({ bucketCountdown, bucketProgress }: { bucketCountdown?: number; bucketProgress?: number }) {
   if (!bucketCountdown && bucketProgress == null) return null;
   const fmt = (ms: number) => {
-    const s = Math.floor(ms / 1000);
-    const m = Math.floor(s / 60);
-    return m > 0 ? `${m}:${(s % 60).toString().padStart(2, "0")}` : `${s}s`;
+    const totalSec = Math.floor(ms / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    if (m > 0) return `${m}:${s.toString().padStart(2, "0")}`;
+    return `${s}s`;
   };
   return (
     <>
@@ -82,17 +86,52 @@ function BucketBadges({ bucketCountdown, bucketProgress }: { bucketCountdown?: n
   );
 }
 
+/** Convert engine Candle[] + activeCandle into OHLCCandle[] for SimpleCandleChart */
+function engineCandlesToOHLC(candles: Candle[], active: Candle | null): { ohlc: OHLCCandle[]; mas: { ma7?: number; ma14?: number }[] } {
+  const all = active ? [...candles, active] : [...candles];
+  const ohlc: OHLCCandle[] = all.map(c => ({
+    time: c.ts / 1000,
+    open: c.open,
+    high: c.high,
+    low: c.low,
+    close: c.close,
+  }));
+  const mas = all.map(c => ({ ma7: c.ma7, ma14: c.ma14 }));
+  return { ohlc, mas };
+}
+
+/** Convert engine LinePoint[] into priceHistory format for SimpleAreaChart */
+function engineLinesToHistory(points: LinePoint[]): { time: string; price: number; ts: number }[] {
+  return points.map(p => ({
+    time: new Date(p.ts).toISOString(),
+    price: p.price,
+    ts: p.ts,
+  }));
+}
+
 function QuickTradeChart(props: QuickTradeChartProps) {
   const {
     chartType, chartMs, priceHistory, ohlcData, streamingPrice,
     streamingPriceRef,
     historyLoading, activeRound, userBet, resolveFlash, timeframeLabel, assetClass,
-    bucketCountdown, bucketProgress,
+    engineCandles, engineLinePoints, engineActiveCandle,
+    bucketCountdown, bucketProgress, engineReady,
   } = props;
 
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const entryPrice = userBet && activeRound?.open_price ? Number(activeRound.open_price) : null;
+
+  // Convert engine data to chart-ready formats
+  const engineOhlcData = useMemo(() => {
+    if (!engineReady || !engineCandles || engineCandles.length < 1) return null;
+    return engineCandlesToOHLC(engineCandles, engineActiveCandle ?? null);
+  }, [engineReady, engineCandles, engineActiveCandle]);
+
+  const enginePriceHistory = useMemo(() => {
+    if (!engineReady || !engineLinePoints || engineLinePoints.length < 2) return null;
+    return engineLinesToHistory(engineLinePoints);
+  }, [engineReady, engineLinePoints]);
 
   // 1. Market closed
   if (chartType !== "tv" && !isMarketOpen(assetClass || "crypto")) {
@@ -124,7 +163,7 @@ function QuickTradeChart(props: QuickTradeChartProps) {
   }
 
   // 4. No data at all
-  if (priceHistory.length < 2 && streamingPrice == null) {
+  if (priceHistory.length < 2 && streamingPrice == null && !engineReady) {
     return <ChartSkeleton text="Connecting to live feed..." />;
   }
 
@@ -132,7 +171,19 @@ function QuickTradeChart(props: QuickTradeChartProps) {
   let chartContent: React.ReactNode = null;
 
   if (chartType === "candle") {
-    if (ohlcData.length >= 2) {
+    // Prefer engine candles (properly timeframe-aggregated)
+    if (engineOhlcData && engineOhlcData.ohlc.length >= 2) {
+      chartContent = (
+        <SimpleCandleChart
+          ohlcData={engineOhlcData.ohlc}
+          entryPrice={entryPrice}
+          assetClass={assetClass}
+          streamingPrice={null}
+          precomputedMAs={engineOhlcData.mas}
+        />
+      );
+    } else if (ohlcData.length >= 2) {
+      // Fallback: raw data while engine initializes
       chartContent = (
         <SimpleCandleChart
           ohlcData={ohlcData}
@@ -141,9 +192,7 @@ function QuickTradeChart(props: QuickTradeChartProps) {
           streamingPrice={streamingPrice}
         />
       );
-    } else if (priceHistory.length < 2) {
-      return <ChartSkeleton text="Building chart..." />;
-    } else {
+    } else if (priceHistory.length >= 2) {
       chartContent = (
         <SimpleCandleChart
           priceHistory={priceHistory}
@@ -153,15 +202,18 @@ function QuickTradeChart(props: QuickTradeChartProps) {
           chartMs={chartMs}
         />
       );
+    } else {
+      return <ChartSkeleton text="Building chart..." />;
     }
   } else {
-    // Area chart
-    if (priceHistory.length < 2) {
+    // Area chart — prefer engine line points
+    const areaHistory = enginePriceHistory ?? priceHistory;
+    if (areaHistory.length < 2) {
       return <ChartSkeleton text="Building chart..." />;
     }
     chartContent = (
       <SimpleAreaChart
-        priceHistory={priceHistory}
+        priceHistory={areaHistory}
         entryPrice={entryPrice}
         assetClass={assetClass}
         userBet={userBet}
@@ -210,7 +262,7 @@ function QuickTradeChart(props: QuickTradeChartProps) {
       <BucketBadges bucketCountdown={bucketCountdown} bucketProgress={bucketProgress} />
       <p className="text-[10px] text-muted-foreground text-center mt-1">Last {timeframeLabel}</p>
 
-      {/* Expand button — same style as TradingView chart */}
+      {/* Expand button */}
       <button
         onClick={() => setIsFullscreen(true)}
         className="absolute bottom-7 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-all shadow-md active:scale-95"
