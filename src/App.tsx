@@ -269,6 +269,7 @@ const App = () => (
                         <Route path="/quick-trade" element={<FeatureGate featureKey="quick_trade"><QuickTrade /></FeatureGate>} />
                         <Route path="/user/:id" element={<UserProfile />} />
                         <Route path="/followers" element={<Followers />} />
+                        <Route path="/followers/:userId" element={<Followers />} />
                         <Route path="/sales-deck" element={<FeatureGate featureKey="sales_deck"><SalesDeck /></FeatureGate>} />
                         <Route path="/admin" element={<AdminLayout />}>
                           <Route index element={<AdminDashboard />} />

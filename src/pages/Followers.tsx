@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import PullToRefreshIndicator from "@/components/PullToRefreshIndicator";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,8 +18,10 @@ const ITEMS_PER_PAGE = 10;
 
 const Followers = () => {
   const navigate = useNavigate();
+  const { userId: paramUserId } = useParams<{ userId: string }>();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const targetUserId = paramUserId || user?.id;
   const [tab, setTab] = useState<"followers" | "following">("followers");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -27,8 +29,8 @@ const Followers = () => {
 
   const { pulling, pullDistance, refreshing, pullProgress, spinControls, handlers: pullHandlers } = usePullToRefresh({
     onRefresh: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["my-followers", user?.id] });
-      await queryClient.invalidateQueries({ queryKey: ["my-following", user?.id] });
+      await queryClient.invalidateQueries({ queryKey: ["my-followers", targetUserId] });
+      await queryClient.invalidateQueries({ queryKey: ["my-following", targetUserId] });
     },
     scrollRef: containerRef,
   });
@@ -51,13 +53,13 @@ const Followers = () => {
   }, [tab, user]);
 
   const { data: followers = [], isLoading: loadingFollowers } = useQuery({
-    queryKey: ["my-followers", user?.id],
+    queryKey: ["my-followers", targetUserId],
     queryFn: async () => {
-      if (!user) return [];
+      if (!targetUserId) return [];
       const { data } = await supabase
         .from("follows")
         .select("id, follower_id, created_at")
-        .eq("following_id", user.id)
+        .eq("following_id", targetUserId)
         .order("created_at", { ascending: false });
       if (!data || data.length === 0) return [];
       const ids = data.map((f: any) => f.follower_id);
@@ -68,17 +70,17 @@ const Followers = () => {
       const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
       return data.map((f: any) => ({ ...f, profile: profileMap.get(f.follower_id) || null }));
     },
-    enabled: !!user,
+    enabled: !!targetUserId,
   });
 
   const { data: following = [], isLoading: loadingFollowing } = useQuery({
-    queryKey: ["my-following", user?.id],
+    queryKey: ["my-following", targetUserId],
     queryFn: async () => {
-      if (!user) return [];
+      if (!targetUserId) return [];
       const { data } = await supabase
         .from("follows")
         .select("id, following_id, created_at")
-        .eq("follower_id", user.id)
+        .eq("follower_id", targetUserId)
         .order("created_at", { ascending: false });
       if (!data || data.length === 0) return [];
       const ids = data.map((f: any) => f.following_id);
@@ -89,7 +91,7 @@ const Followers = () => {
       const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
       return data.map((f: any) => ({ ...f, profile: profileMap.get(f.following_id) || null }));
     },
-    enabled: !!user,
+    enabled: !!targetUserId,
   });
 
   const isLoading = tab === "followers" ? loadingFollowers : loadingFollowing;
@@ -109,7 +111,7 @@ const Followers = () => {
     return followers.filter((f: any) => new Date(f.created_at) > new Date(lastSeen)).length;
   }, [followers, lastSeen, tab]);
 
-  if (!user) {
+  if (!targetUserId) {
     navigate("/auth");
     return null;
   }
