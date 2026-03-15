@@ -181,6 +181,21 @@ function setSessionCache<T>(key: string, data: T) {
   } catch { /* quota exceeded — ignore */ }
 }
 
+function clearAllChartCache() {
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const k = sessionStorage.key(i);
+      if (k && k.startsWith(CHART_CACHE_PREFIX)) keys.push(k);
+    }
+    keys.forEach((k) => sessionStorage.removeItem(k));
+  } catch { /* ignore */ }
+}
+
+// Run on module load — clear stale chart cache from previous session
+clearAllChartCache();
+
+
 function filterPriceData(
   raw: [number, number][],
   durationMs: number
