@@ -274,6 +274,6 @@ const SVGCandleChart = forwardRef<HTMLDivElement, SVGCandleChartProps>(function 
       </div>
     </div>
   );
-}
+});
 
 export default memo(SVGCandleChart);
