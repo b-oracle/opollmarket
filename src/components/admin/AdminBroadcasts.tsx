@@ -252,16 +252,18 @@ const AdminBroadcasts = () => {
 
                     {/* Payment verdict */}
                     <div className={`mt-3 rounded-lg p-2.5 text-xs flex items-start gap-2 ${
-                      bc.tx_hash || bc.nowpayments_payment_id
+                      isPaid(bc)
                         ? "bg-green-500/5 border border-green-500/10"
                         : "bg-orange-500/5 border border-orange-500/10"
                     }`}>
-                      {bc.tx_hash || bc.nowpayments_payment_id ? (
+                      {isPaid(bc) ? (
                         <>
                           <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
                           <div>
                             <p className="font-bold text-green-500">Payment Confirmed</p>
-                            <p className="text-muted-foreground">This broadcast was paid for and the push notification was sent to all platform users.</p>
+                            <p className="text-muted-foreground">
+                              This broadcast was paid for{bc.tx_hash ? " via crypto" : bc.nowpayments_payment_id ? " via crypto" : " via platform balance"} and the push notification was sent to all platform users.
+                            </p>
                           </div>
                         </>
                       ) : (
