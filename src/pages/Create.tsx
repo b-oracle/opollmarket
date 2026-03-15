@@ -2454,7 +2454,7 @@ const Create = () => {
                     {creationBoost && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Boost ({creationBoostTier})</span>
-                        <span className="font-medium">${BOOST_TIER_PRICES[creationBoostTier]} USDT</span>
+                        <span className="font-medium">${boostTierPrices[creationBoostTier]} USDT</span>
                       </div>
                     )}
                     {creationBroadcast && (
