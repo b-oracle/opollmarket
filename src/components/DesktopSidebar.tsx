@@ -43,7 +43,7 @@ const DesktopSidebar = () => {
           className={`flex items-center h-16 cursor-pointer shrink-0 ${collapsed ? "justify-center px-2" : "gap-2 px-5"}`}
           onClick={() => navigate("/")}>
           
-        <img src={logo} alt="OPOLL" className="h-8 w-8 shrink-0" />
+        <img src={logo} alt="OPOLL" className="h-8 w-8 shrink-0 object-fill border-0 border-none rounded-none" />
         {!collapsed &&
           <span className="font-bold tracking-tight text-primary leading-none px-[2px] text-3xl mx-0">Poll</span>
           }
