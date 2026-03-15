@@ -29,8 +29,8 @@ const Followers = () => {
 
   const { pulling, pullDistance, refreshing, pullProgress, spinControls, handlers: pullHandlers } = usePullToRefresh({
     onRefresh: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["my-followers", user?.id] });
-      await queryClient.invalidateQueries({ queryKey: ["my-following", user?.id] });
+      await queryClient.invalidateQueries({ queryKey: ["my-followers", targetUserId] });
+      await queryClient.invalidateQueries({ queryKey: ["my-following", targetUserId] });
     },
     scrollRef: containerRef,
   });
