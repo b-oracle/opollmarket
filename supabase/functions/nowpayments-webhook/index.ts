@@ -105,32 +105,8 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
   const isPartial = creditAmount < requestedAmount * 0.98; // 2% tolerance
   const finalStatus = isPartial ? "partial" : "confirmed";
 
-  // 3. Credit the user's balance with whatever was actually received
-  const { data: balance } = await supabase
-    .from("balances")
-    .select("amount")
-    .eq("user_id", userId)
-    .eq("currency", "USDT")
-    .single();
-
-  if (balance) {
-    const { error: balanceError } = await supabase
-      .from("balances")
-      .update({
-        amount: Number(balance.amount) + Number(creditAmount),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", userId)
-      .eq("currency", "USDT");
-
-    if (balanceError) {
-      console.error("Failed to update balance:", balanceError);
-      return;
-    }
-  } else {
-    console.error("No balance record found for user:", userId);
-    return;
-  }
+  // 3. Credit the user's balance atomically (prevents race conditions)
+  await supabase.rpc("adjust_balance", { _user_id: userId, _delta: Number(creditAmount) });
 
   // 4. Update the transaction record
   if (matchedTx) {
