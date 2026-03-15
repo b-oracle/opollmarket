@@ -384,7 +384,7 @@ const AdminSettings = () => {
 
             <div className="border-t border-border pt-3 space-y-3">
               <p className="text-xs font-semibold text-muted-foreground">Internal Fee Splits (must sum to ≤ 100% of the fee)</p>
-              <p className="text-[10px] text-muted-foreground">These percentages determine how the flat fee is divided. E.g. if Prediction Fee is 10% and Pool Reserve split is 20%, the platform keeps 2% of the wagered amount.</p>
+              <p className="text-[10px] text-muted-foreground">These splits divide the Prediction Fee among stakeholders. For example, on a $100 wager with a 10% fee ($10 total), a 20% Pool Reserve split means $2 stays in the platform reserve. The remaining splits go to creators, referrers, etc.</p>
 
               <div className="space-y-2">
                 <Label htmlFor="adminFee">Pool Reserve Split (%)</Label>
