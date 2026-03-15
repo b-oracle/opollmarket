@@ -234,7 +234,7 @@ function QuickTradeChart(props: QuickTradeChartProps) {
         }}
       >
         <div className="relative flex-1">
-          <ChartZoomWrapper className="w-full h-full" style={{ height: "100%" }} defaultZoom={3}>
+          <ChartZoomWrapper className="w-full h-full" style={{ height: "100%" }} defaultZoom={1}>
             <div className="w-full h-full flex items-center justify-center">
               {chartContent}
             </div>
@@ -256,7 +256,7 @@ function QuickTradeChart(props: QuickTradeChartProps) {
 
   return (
     <div className="relative">
-      <ChartZoomWrapper defaultZoom={3}>
+      <ChartZoomWrapper defaultZoom={1}>
         {chartContent}
       </ChartZoomWrapper>
       <BucketBadges bucketCountdown={bucketCountdown} bucketProgress={bucketProgress} />
