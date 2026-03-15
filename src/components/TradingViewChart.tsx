@@ -473,6 +473,12 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
             open: c.open, high: c.high, low: c.low, close: c.close,
           });
         } else if (areaSeriesRef.current) {
+          // Bucket area timestamps to 3-second intervals to prevent x-axis snapping.
+          // Within each 3s window, the point slides smoothly up/down (same timestamp = replacement).
+          // Every 3s a new point appears, but with auto-scroll disabled it's barely visible.
+          const AREA_BUCKET_SEC = 3;
+          const areaBucketTime = (Math.floor(nowSec / AREA_BUCKET_SEC) * AREA_BUCKET_SEC) as UTCTimestamp;
+
           // Only update color when direction actually flips — avoids expensive repaints
           const dir = target >= current ? "up" : "down";
           if (dir !== areaDirectionRef.current) {
@@ -482,7 +488,14 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
             const bottomColor = dir === "up" ? "rgba(34, 197, 94, 0.02)" : "rgba(239, 68, 68, 0.02)";
             areaSeriesRef.current.applyOptions({ lineColor, topColor, bottomColor });
           }
-          areaSeriesRef.current.update({ time: nowSec, value: nextPrice });
+          areaSeriesRef.current.update({ time: areaBucketTime, value: nextPrice });
+
+          // Smoothly scroll to keep the latest data visible — every 5 seconds
+          const now2 = Date.now();
+          if (now2 - lastScrollTimeRef.current > 5000 && chartRef.current) {
+            lastScrollTimeRef.current = now2;
+            chartRef.current.timeScale().scrollToRealTime();
+          }
         }
 
         // Throttle dot position updates to ~30fps to reduce layout thrashing
