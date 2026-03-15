@@ -175,7 +175,7 @@ function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, str
 
   return (
     <div className="w-full select-none relative" style={{ height: fullscreen ? "100%" : CHART_H }}>
-      <svg viewBox={`0 0 100 ${CHART_H}`} preserveAspectRatio="none" className="w-full h-full" style={{ overflow: "visible" }}>
+      <svg viewBox={`0 0 100 ${CHART_H}`} preserveAspectRatio={fullscreen ? "xMidYMid meet" : "none"} className="w-full h-full" style={{ overflow: "visible" }}>
         {/* Grid */}
         {gridLevels.map((level, i) => (
           <line key={i} x1={0} y1={priceToY(level, domainMin, domainRange)} x2={85} y2={priceToY(level, domainMin, domainRange)} stroke={GRID} strokeWidth={0.15} strokeDasharray="0.5 0.5" />
