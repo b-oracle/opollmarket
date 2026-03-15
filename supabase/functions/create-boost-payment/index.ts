@@ -6,10 +6,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const TIER_CONFIG: Record<string, { durationHours: number; price: number }> = {
-  flash: { durationHours: 12, price: 20 },
-  standard: { durationHours: 24, price: 50 },
-  whale: { durationHours: 168, price: 150 },
+const TIER_CONFIG: Record<string, { durationHours: number; price: number; rank: number }> = {
+  flash: { durationHours: 12, price: 20, rank: 1 },
+  standard: { durationHours: 24, price: 50, rank: 2 },
+  whale: { durationHours: 168, price: 150, rank: 3 },
 };
 
 Deno.serve(async (req) => {
@@ -59,6 +59,39 @@ Deno.serve(async (req) => {
       });
     }
 
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Check for existing active boost on this market
+    const now = new Date();
+    const { data: existingBoosts } = await adminClient
+      .from("market_boosts")
+      .select("id, tier, ends_at")
+      .eq("market_id", market_id)
+      .eq("status", "active")
+      .gte("ends_at", now.toISOString())
+      .order("ends_at", { ascending: false })
+      .limit(1);
+
+    const existingBoost = existingBoosts?.[0];
+
+    if (existingBoost) {
+      const existingRank = TIER_CONFIG[existingBoost.tier]?.rank || 0;
+      const newRank = tierConfig.rank;
+
+      // Block lower-tier purchases on an already-boosted market
+      if (newRank < existingRank) {
+        return new Response(JSON.stringify({
+          error: `This market already has an active ${existingBoost.tier} boost. You can only extend with the same or a higher tier.`,
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const apiKey = Deno.env.get("NOWPAYMENTS_API_KEY");
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "Payment service not configured" }), {
@@ -80,7 +113,7 @@ Deno.serve(async (req) => {
         price_currency: "usd",
         pay_currency: "usdtbsc",
         order_id: orderId,
-        order_description: `Boost market ${market_id} - ${tier}`,
+        order_description: `Boost market ${market_id} - ${tier}${existingBoost ? " (extend)" : ""}`,
         ipn_callback_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/nowpayments-webhook`,
       }),
     });
@@ -96,14 +129,11 @@ Deno.serve(async (req) => {
 
     const payment = await npResponse.json();
 
-    // Insert pending boost using service role (bypasses RLS)
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    const endsAt = new Date();
-    endsAt.setHours(endsAt.getHours() + tierConfig.durationHours);
+    // Calculate ends_at: if extending, add duration to existing ends_at; otherwise from now
+    const baseTime = existingBoost
+      ? new Date(existingBoost.ends_at)
+      : new Date();
+    const endsAt = new Date(baseTime.getTime() + tierConfig.durationHours * 60 * 60 * 1000);
 
     const { data: boost, error: insertError } = await adminClient
       .from("market_boosts")
@@ -135,6 +165,10 @@ Deno.serve(async (req) => {
         pay_amount: payment.pay_amount,
         pay_currency: payment.pay_currency,
         expiration_estimate_date: payment.expiration_estimate_date,
+        extending: !!existingBoost,
+        existing_tier: existingBoost?.tier || null,
+        existing_ends_at: existingBoost?.ends_at || null,
+        new_ends_at: endsAt.toISOString(),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
