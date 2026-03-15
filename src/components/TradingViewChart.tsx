@@ -527,6 +527,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
             ? areaCommittedTimeRef.current + 1
             : Math.floor(nowMs / 1000)) as UTCTimestamp;
           areaSeriesRef.current.update({ time: tipTime, value: nextPrice });
+          livePointTimeRef.current = tipTime;
         }
 
         // Throttle dot position updates to ~30fps to reduce layout thrashing
