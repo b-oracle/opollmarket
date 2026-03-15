@@ -71,7 +71,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
   const limitPriceNum = parseFloat(limitPriceInput) || 0;
   const effectivePrice = orderType === "limit" ? limitPriceNum : price;
 
-  const totalFeePercent = (commission?.admin_fee_percent ?? 2) + (commission?.creator_fee_percent ?? 3);
+  const totalFeePercent = (commission?.admin_fee_percent ?? 2);
   const fee = orderType === "market" ? numAmount * (totalFeePercent / 100) : 0; // no fee on limit orders until filled
   const poolAmount = numAmount - fee;
   const shares = poolAmount > 0 && effectivePrice > 0 ? poolAmount / (effectivePrice / 100) : 0;
