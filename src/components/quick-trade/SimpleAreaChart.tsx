@@ -1,9 +1,12 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo, useRef } from "react";
 
 const UP = "hsl(142, 76%, 36%)";
 const DOWN = "hsl(0, 84%, 60%)";
 const ENTRY_COLOR = "#f59e0b";
 const GRID = "hsl(var(--border) / 0.25)";
+
+/** Hysteresis lerp factor — expand instantly, contract gradually */
+const LERP_CONTRACT = 0.12;
 
 interface Props {
   priceHistory: { time: string; price: number; ts: number }[];
@@ -24,8 +27,12 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
   const data = priceHistory;
   const n = data.length;
 
-  const { points, color, minP, maxP, domainMin, domainRange, gridLevels } = useMemo(() => {
-    if (n < 2) return { points: "", color: UP, minP: 0, maxP: 1, domainMin: 0, domainRange: 1, gridLevels: [] };
+  // Y-axis hysteresis refs
+  const prevDomainMinRef = useRef<number | null>(null);
+  const prevDomainMaxRef = useRef<number | null>(null);
+
+  const { points, color, domainMin, domainRange, gridLevels } = useMemo(() => {
+    if (n < 2) return { points: "", color: UP, domainMin: 0, domainRange: 1, gridLevels: [] };
 
     let lo = Infinity, hi = -Infinity;
     for (const d of data) {
@@ -33,9 +40,20 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
       if (d.price > hi) hi = d.price;
     }
     const pad = (hi - lo) * 0.08 || hi * 0.001 || 1;
-    const dMin = lo - pad;
-    const dMax = hi + pad;
-    const dRange = dMax - dMin;
+    let targetMin = lo - pad;
+    let targetMax = hi + pad;
+
+    // Hysteresis: expand immediately, contract gradually
+    const prev = prevDomainMinRef.current;
+    const prevMax = prevDomainMaxRef.current;
+    if (prev != null && prevMax != null) {
+      targetMin = targetMin < prev ? targetMin : prev + (targetMin - prev) * LERP_CONTRACT;
+      targetMax = targetMax > prevMax ? targetMax : prevMax + (targetMax - prevMax) * LERP_CONTRACT;
+    }
+    prevDomainMinRef.current = targetMin;
+    prevDomainMaxRef.current = targetMax;
+
+    const dRange = targetMax - targetMin;
 
     // Determine color
     let c = UP;
@@ -52,16 +70,17 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
     const H = 100;
     const pts = data.map((d, i) => {
       const x = (i / (n - 1)) * 100;
-      const y = H - ((d.price - dMin) / dRange) * H;
+      const y = H - ((d.price - targetMin) / dRange) * H;
       return `${x},${y}`;
     }).join(" ");
 
     // Grid levels (4 lines)
     const step = dRange / 5;
     const gl: number[] = [];
-    for (let i = 1; i <= 4; i++) gl.push(dMin + step * i);
+    for (let i = 1; i <= 4; i++) gl.push(targetMin + step * i);
 
-    return { points: pts, color: c, minP: lo, maxP: hi, domainMin: dMin, domainRange: dRange, gridLevels: gl };
+    return { points: pts, color: c, domainMin: targetMin, domainRange: dRange, gridLevels: gl };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, n, userBet, activeRound]);
 
   if (n < 2) return null;

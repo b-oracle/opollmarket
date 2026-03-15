@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo, useRef } from "react";
 import type { OHLCCandle } from "@/lib/cryptoPriceProvider";
 
 const UP = "hsl(142, 76%, 36%)";
@@ -16,6 +16,9 @@ const PRICE_H = Math.floor(CHART_H * PRICE_RATIO);
 const VOL_H = CHART_H - PRICE_H;
 const PAD_TOP = 6;
 const PAD_BOT = 2;
+
+/** Hysteresis lerp factor — expand instantly, contract gradually */
+const LERP_CONTRACT = 0.12;
 
 interface Props {
   ohlcData?: OHLCCandle[];
@@ -68,6 +71,10 @@ function priceToY(p: number, domainMin: number, domainRange: number): number {
 }
 
 function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, streamingPrice, chartMs, precomputedMAs }: Props) {
+  // Y-axis hysteresis refs
+  const prevDomainMinRef = useRef<number | null>(null);
+  const prevDomainMaxRef = useRef<number | null>(null);
+
   const candles = useMemo(() => {
     if (ohlcData && ohlcData.length >= 2) {
       const slice = ohlcData.slice(-60);
@@ -97,13 +104,27 @@ function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, str
       if (c.high > hi) hi = c.high;
     }
     const pad = (hi - lo) * 0.08 || 0.5;
-    const dMin = lo - pad;
-    const dMax = hi + pad;
-    const dRange = dMax - dMin;
+    let targetMin = lo - pad;
+    let targetMax = hi + pad;
+
+    // Hysteresis: expand immediately, contract gradually
+    const prev = prevDomainMinRef.current;
+    const prevMax = prevDomainMaxRef.current;
+    if (prev != null && prevMax != null) {
+      // Expand instantly
+      const newMin = targetMin < prev ? targetMin : prev + (targetMin - prev) * LERP_CONTRACT;
+      const newMax = targetMax > prevMax ? targetMax : prevMax + (targetMax - prevMax) * LERP_CONTRACT;
+      targetMin = newMin;
+      targetMax = newMax;
+    }
+    prevDomainMinRef.current = targetMin;
+    prevDomainMaxRef.current = targetMax;
+
+    const dRange = targetMax - targetMin;
 
     const step = dRange / 5;
     const gl: number[] = [];
-    for (let i = 1; i <= 4; i++) gl.push(dMin + step * i);
+    for (let i = 1; i <= 4; i++) gl.push(targetMin + step * i);
 
     // Volume proxy: candle range
     const vols = candles.map(c => Math.abs(c.high - c.low) || 0.001);
@@ -117,7 +138,7 @@ function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, str
         const val = precomputedMAs[i]?.[key];
         if (val == null) continue;
         const x = (i / n) * 85 + 85 / n / 2;
-        const y = priceToY(val, dMin, dRange);
+        const y = priceToY(val, targetMin, dRange);
         pts.push(`${x},${y}`);
       }
       return pts.length >= 2 ? pts.join(" ") : null;
@@ -131,7 +152,7 @@ function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, str
         for (let j = i - period + 1; j <= i; j++) sum += candles[j].close;
         const avg = sum / period;
         const x = (i / n) * 85 + 85 / n / 2;
-        const y = priceToY(avg, dMin, dRange);
+        const y = priceToY(avg, targetMin, dRange);
         pts.push(`${x},${y}`);
       }
       return pts.length >= 2 ? pts.join(" ") : null;
@@ -140,7 +161,8 @@ function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, str
     const ma7Result = computeMAFromEngine("ma7") ?? computeMA(7);
     const ma14Result = computeMAFromEngine("ma14") ?? computeMA(14);
 
-    return { domainMin: dMin, domainMax: dMax, domainRange: dRange, gridLevels: gl, ma7Pts: ma7Result, ma14Pts: ma14Result, volMax: vMax };
+    return { domainMin: targetMin, domainMax: targetMax, domainRange: dRange, gridLevels: gl, ma7Pts: ma7Result, ma14Pts: ma14Result, volMax: vMax };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [candles, n, precomputedMAs]);
 
   if (n < 2) return null;
