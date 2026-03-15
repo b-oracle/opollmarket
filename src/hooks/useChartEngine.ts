@@ -3,7 +3,7 @@
  * Produces candles and line points for the chart renderer.
  */
 
-import { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { ChartEngine, getTimeframeMs, type Candle, type LinePoint } from "@/lib/chartEngine";
 
 interface UseChartEngineOptions {
@@ -57,22 +57,32 @@ export function useChartEngine({
     const engine = engineRef.current;
     if (!engine || historyLoading || priceHistory.length < 2) return;
 
-    const histKey = `${chartTimeframe}:${priceHistory.length}:${priceHistory[0]?.ts}`;
+    // Use first+last ts for a more robust dedup key
+    const first = priceHistory[0];
+    const last = priceHistory[priceHistory.length - 1];
+    const histKey = `${chartTimeframe}:${priceHistory.length}:${first?.ts}:${last?.ts}`;
     if (historyInitializedRef.current === histKey) return;
     historyInitializedRef.current = histKey;
 
     engine.initFromHistory(priceHistory);
   }, [priceHistory, historyLoading, chartTimeframe]);
 
-  // Process streaming ticks
+  // Process streaming ticks — throttle to max 25fps to avoid over-rendering
   const lastProcessedPriceRef = useRef<number>(0);
+  const lastProcessedTimeRef = useRef<number>(0);
   useEffect(() => {
     const engine = engineRef.current;
     if (!engine || streamingPrice == null || streamingPrice === 0) return;
 
-    // Avoid processing exact same price (reduces unnecessary rerenders)
+    // Avoid processing exact same price
     if (streamingPrice === lastProcessedPriceRef.current) return;
+    
+    // Throttle: max one tick per 40ms (25fps)
+    const now = Date.now();
+    if (now - lastProcessedTimeRef.current < 40) return;
+    
     lastProcessedPriceRef.current = streamingPrice;
+    lastProcessedTimeRef.current = now;
 
     engine.processTick(streamingPrice);
   }, [streamingPrice]);
@@ -93,7 +103,7 @@ export function useChartEngine({
     return () => clearInterval(iv);
   }, [tfMs]);
 
-  // Derive render data from engine
+  // Derive render data from engine — only recomputes on version/countdown/progress changes
   const result = useMemo((): UseChartEngineResult => {
     const engine = engineRef.current;
     if (!engine) {
