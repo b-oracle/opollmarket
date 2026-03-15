@@ -174,7 +174,7 @@ function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, str
   const vols = candles.map(c => Math.abs(c.high - c.low) || 0.001);
 
   return (
-    <div className="w-full select-none relative" style={{ height: CHART_H }}>
+    <div className="w-full select-none relative" style={{ height: fullscreen ? "100%" : CHART_H }}>
       <svg viewBox={`0 0 100 ${CHART_H}`} preserveAspectRatio="none" className="w-full h-full" style={{ overflow: "visible" }}>
         {/* Grid */}
         {gridLevels.map((level, i) => (
