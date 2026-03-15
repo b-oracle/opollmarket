@@ -481,15 +481,23 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                 <NftBadge level={creatorProfile.verification_level as VerificationLevel} size={14} />
               )}
             </div>
-            {showBoosted && (
-              <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-semibold flex items-center gap-0.5 shrink-0 ${
-                isBoosted 
-                  ? 'bg-primary/20 text-primary animate-pulse' 
-                  : 'bg-primary/10 text-primary'
-              }`}>
-                <Zap className="w-2.5 h-2.5" /> {isBoosted ? 'Boosted 🔥' : 'Trending'}
-              </span>
-            )}
+            {showBoosted && (() => {
+              if (isBoosted) {
+                const tc = getBoostTierConfig(boostTier);
+                const TierIcon = tc.icon;
+                return (
+                  <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold flex items-center gap-0.5 shrink-0 animate-pulse"
+                    style={{ backgroundColor: `${tc.color.replace(')', ' / 0.2)')}`, color: tc.color }}>
+                    <TierIcon className="w-2.5 h-2.5" /> {tc.label}
+                  </span>
+                );
+              }
+              return (
+                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold flex items-center gap-0.5 shrink-0 bg-primary/10 text-primary">
+                  <Zap className="w-2.5 h-2.5" /> Trending
+                </span>
+              );
+            })()}
           </div>
 
           {/* Live badges line — scrollable */}

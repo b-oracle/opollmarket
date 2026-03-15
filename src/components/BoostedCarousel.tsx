@@ -152,11 +152,16 @@ const BoostedCarousel = ({
                     {displayPercent}% Chance
                   </span>
                 </div>
-                {boost && (
-                  <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-tl-lg rounded-br-2xl bg-primary/90 flex items-center justify-center animate-pulse shadow-[0_0_10px_hsl(var(--primary)/0.6)]">
-                    <Zap className="w-3.5 h-3.5 text-primary-foreground" fill="currentColor" />
-                  </div>
-                )}
+                {boost && (() => {
+                  const tc = getBoostTierConfig(boost.tier);
+                  const TierIcon = tc.icon;
+                  return (
+                    <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-tl-lg rounded-br-2xl flex items-center justify-center animate-pulse"
+                      style={{ backgroundColor: tc.color, boxShadow: `0 0 10px ${tc.ringClass}` }}>
+                      <TierIcon className="w-3.5 h-3.5 text-primary-foreground" fill="currentColor" />
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Content */}
