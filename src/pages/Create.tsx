@@ -2299,8 +2299,8 @@ const Create = () => {
                   })}
                 </div>
                 {(() => {
-                    const boostCost = creationBoost ? BOOST_TIER_PRICES[creationBoostTier] : 0;
-                    const broadcastCost = creationBroadcast ? BROADCAST_PRICE : 0;
+                    const boostCost = creationBoost ? boostTierPrices[creationBoostTier] : 0;
+                    const broadcastCost = creationBroadcast ? broadcastPriceVal : 0;
                     const totalNeeded = parseFloat(initialLiquidity) + (feeBypass ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0) + boostCost + broadcastCost;
                     const shortfall = totalNeeded - balance;
                     return totalNeeded > balance && balance >= 0 ? (
