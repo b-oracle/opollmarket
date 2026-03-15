@@ -81,36 +81,12 @@ Deno.serve(async (req) => {
     // Fetch commission settings
     const { data: commData } = await supabase
       .from("commission_settings")
-      .select("admin_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, referral_reward_amount")
+      .select("admin_fee_percent, referrer_commission_percent, referral_reward_amount")
       .limit(1)
       .single();
 
     const adminFeePercent = Number(commData?.admin_fee_percent ?? 2) / 100;
-    const creatorFeeNonePercent = Number(commData?.creator_fee_percent ?? 3) / 100;
-    const creatorFeeBluePercent = Number(commData?.creator_fee_blue_percent ?? 3) / 100;
-    const creatorFeeGoldPercent = Number(commData?.creator_fee_gold_percent ?? 3) / 100;
     const referrerCommissionPercent = Number(commData?.referrer_commission_percent ?? 0) / 100;
-    const referralRewardAmount = Number(commData?.referral_reward_amount ?? 5);
-
-    // Look up creator's verification level
-    const { data: market } = await supabase
-      .from("markets")
-      .select("creator_wallet")
-      .eq("id", marketId)
-      .single();
-
-    let creatorFeePercent = creatorFeeNonePercent;
-    if (market?.creator_wallet) {
-      const { data: creatorProfile } = await supabase
-        .from("profiles")
-        .select("verification_level")
-        .eq("id", market.creator_wallet)
-        .single();
-
-      const level = creatorProfile?.verification_level || "none";
-      if (level === "gold") creatorFeePercent = creatorFeeGoldPercent;
-      else if (level === "blue") creatorFeePercent = creatorFeeBluePercent;
-    }
 
     // Look up trader's referrer for per-trade commission
     let referrerId: string | null = null;
@@ -124,9 +100,8 @@ Deno.serve(async (req) => {
     }
 
     const adminAmount = amount * adminFeePercent;
-    const creatorAmount = amount * creatorFeePercent;
     const referrerAmount = referrerId ? amount * referrerCommissionPercent : 0;
-    const totalFees = adminAmount + creatorAmount + referrerAmount;
+    const totalFees = adminAmount + referrerAmount;
     const totalCost = amount;
 
     // Check balance
@@ -166,7 +141,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- Credit admin commission (atomic) ---
+    // --- Credit admin (prediction fee) commission (atomic) ---
     const { data: adminRole } = await supabase
       .from("user_roles")
       .select("user_id")
@@ -181,22 +156,6 @@ Deno.serve(async (req) => {
         user_id: adminRole.user_id,
         type: "commission",
         amount: adminAmount,
-        market_id: marketId,
-        option_id: optionId || null,
-        side,
-        status: "confirmed",
-      });
-    }
-
-    // --- Credit creator commission (atomic) ---
-    if (creatorAmount > 0 && market?.creator_wallet) {
-      const creatorId = market.creator_wallet;
-      await supabase.rpc("adjust_balance", { _user_id: creatorId, _delta: creatorAmount });
-
-      await supabase.from("transactions").insert({
-        user_id: creatorId,
-        type: "commission",
-        amount: creatorAmount,
         market_id: marketId,
         option_id: optionId || null,
         side,
@@ -227,7 +186,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const poolAmount = amount - adminAmount - creatorAmount - referrerAmount;
+    const poolAmount = amount - adminAmount - referrerAmount;
 
     // Insert position
     const { error: posError } = await supabase.from("positions").insert({

@@ -71,7 +71,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
   const limitPriceNum = parseFloat(limitPriceInput) || 0;
   const effectivePrice = orderType === "limit" ? limitPriceNum : price;
 
-  const totalFeePercent = (commission?.admin_fee_percent ?? 2) + (commission?.creator_fee_percent ?? 3);
+  const totalFeePercent = (commission?.admin_fee_percent ?? 2);
   const fee = orderType === "market" ? numAmount * (totalFeePercent / 100) : 0; // no fee on limit orders until filled
   const poolAmount = numAmount - fee;
   const shares = poolAmount > 0 && effectivePrice > 0 ? poolAmount / (effectivePrice / 100) : 0;
@@ -328,16 +328,10 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                           <span className="font-semibold">{shares.toFixed(2)}</span>
                         </div>
                         {orderType === "market" && (
-                          <>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">Admin Fee ({commission?.admin_fee_percent ?? 2}%)</span>
-                              <span className="font-semibold">${(numAmount * (commission?.admin_fee_percent ?? 2) / 100).toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">Creator Fee ({commission?.creator_fee_percent ?? 3}%)</span>
-                              <span className="font-semibold">${(numAmount * (commission?.creator_fee_percent ?? 3) / 100).toFixed(2)}</span>
-                            </div>
-                          </>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Prediction Fee ({commission?.admin_fee_percent ?? 2}%)</span>
+                            <span className="font-semibold">${fee.toFixed(2)}</span>
+                          </div>
                         )}
                         {orderType === "limit" && (
                           <div className="flex justify-between text-xs">

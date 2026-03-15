@@ -184,11 +184,10 @@ const AdminSettings = () => {
   const boostStandardPriceNum = parseFloat(boostStandardPrice) || 50;
   const boostWhalePriceNum = parseFloat(boostWhalePrice) || 150;
   const broadcastPriceNum = parseFloat(broadcastPrice) || 5;
-  const maxTotalFee = Math.max(adminNum + creatorNum, adminNum + creatorBlueNum, adminNum + creatorGoldNum) + referrerCommissionNum;
-  const totalFee = adminNum + creatorNum + referrerCommissionNum;
+  const totalFee = adminNum + referrerCommissionNum;
   const poolPercent = 100 - totalFee;
   const isValid =
-    adminNum >= 0 && creatorNum >= 0 && creatorBlueNum >= 0 && creatorGoldNum >= 0 && referrerCommissionNum >= 0 && maxTotalFee <= 100 &&
+    adminNum >= 0 && referrerCommissionNum >= 0 && totalFee <= 100 &&
     referralNum >= 0 && tokenNum >= 0 && nftNum >= 0 &&
     minWithdrawNum >= 0 && withdrawalCooldownNum >= 0 && withdrawalMultiplierNum >= 1 && exitFeeNum >= 0 && exitFeeNum <= 100 && withdrawalFeeNum >= 0 && withdrawalFeeNum <= 100 && copyTradeCommissionNum >= 0 && copyTradeCommissionNum <= 100 &&
     quickTradeFeeNum >= 0 && quickTradeFeeNum <= 100 &&
@@ -361,20 +360,9 @@ const AdminSettings = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="adminFee">Pool Reserve (%)</Label>
-              <Input id="adminFee" type="number" min={0} max={100} step={0.1} value={adminFee} onChange={(e) => setAdminFee(e.target.value)} placeholder="2" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="creatorFee">Creator Fee — No Tick (%)</Label>
-              <Input id="creatorFee" type="number" min={0} max={100} step={0.1} value={creatorFee} onChange={(e) => setCreatorFee(e.target.value)} placeholder="3" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="creatorFeeBlue">Creator Fee — Blue Tick (%)</Label>
-              <Input id="creatorFeeBlue" type="number" min={0} max={100} step={0.1} value={creatorFeeBlue} onChange={(e) => setCreatorFeeBlue(e.target.value)} placeholder="4" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="creatorFeeGold">Creator Fee — Gold Tick (%)</Label>
-              <Input id="creatorFeeGold" type="number" min={0} max={100} step={0.1} value={creatorFeeGold} onChange={(e) => setCreatorFeeGold(e.target.value)} placeholder="5" />
+              <Label htmlFor="adminFee">Prediction Fee (%)</Label>
+              <Input id="adminFee" type="number" min={0} max={100} step={0.1} value={adminFee} onChange={(e) => setAdminFee(e.target.value)} placeholder="5" />
+              <p className="text-[10px] text-muted-foreground">Single fee deducted from each prediction. Entire fee goes to the platform.</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="referrerCommission">Referrer Commission (%)</Label>
@@ -412,20 +400,8 @@ const AdminSettings = () => {
 
             <div className="rounded-lg border border-border p-3 space-y-1.5 bg-muted/50">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Pool Reserve</span>
+                <span className="text-muted-foreground">Prediction Fee</span>
                 <span className="font-medium">{adminNum}%</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Creator (No Tick)</span>
-                <span className="font-medium">{creatorNum}%</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Creator (Blue Tick)</span>
-                <span className="font-medium">{creatorBlueNum}%</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Creator (Gold Tick)</span>
-                <span className="font-medium">{creatorGoldNum}%</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Referrer Commission</span>
@@ -441,7 +417,7 @@ const AdminSettings = () => {
               </div>
             </div>
 
-            {maxTotalFee > 100 && <p className="text-xs text-destructive">Total fees cannot exceed 100%.</p>}
+            {totalFee > 100 && <p className="text-xs text-destructive">Total fees cannot exceed 100%.</p>}
           </CardContent>
         </Card>
 
