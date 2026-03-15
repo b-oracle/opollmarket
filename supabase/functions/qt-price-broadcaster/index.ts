@@ -64,10 +64,11 @@ async function fetchTwelveDataBatch(symbols: string[], apiKey: string): Promise<
   return results;
 }
 
-async function fetchMetalPrices(): Promise<Record<string, number>> {
+async function fetchMetalPrices(apiKey?: string): Promise<Record<string, number>> {
   const results: Record<string, number> = {};
   try {
-    const resp = await fetch(`https://api.metals.dev/v1/latest?api_key=demo&currency=USD&unit=toz`);
+    const key = apiKey || "demo";
+    const resp = await fetch(`https://api.metals.dev/v1/latest?api_key=${key}&currency=USD&unit=toz`);
     if (!resp.ok) return results;
     const data = await resp.json();
     for (const [sym, metalName] of Object.entries(METAL_MAP)) {
@@ -189,20 +190,22 @@ Deno.serve(async (req) => {
 
     // ── Fetch commodities ──
     if (activeCommodities.length > 0) {
-      // 1. Try Twelve Data batch (single API call for all commodities)
-      const twelveDataKey = Deno.env.get("TWELVE_DATA_API_KEY");
-      if (twelveDataKey) {
-        const tdPrices = await fetchTwelveDataBatch(activeCommodities, twelveDataKey);
-        Object.assign(prices, tdPrices);
-      }
-
-      // 2. Fill gaps with metals.dev for precious metals
-      const missingMetals = activeCommodities.filter(s => !prices[s] && METAL_MAP[s]);
-      if (missingMetals.length > 0) {
-        const metalPrices = await fetchMetalPrices();
-        for (const s of missingMetals) {
+      // 1. metals.dev is PRIMARY for gold (XAU) and other precious metals
+      const metalsDevKey = Deno.env.get("METALS_DEV_API_KEY");
+      const preciousMetals = activeCommodities.filter(s => METAL_MAP[s]);
+      if (preciousMetals.length > 0) {
+        const metalPrices = await fetchMetalPrices(metalsDevKey || undefined);
+        for (const s of preciousMetals) {
           if (metalPrices[s]) prices[s] = metalPrices[s];
         }
+      }
+
+      // 2. Try Twelve Data batch for remaining commodities (and as fallback for metals)
+      const twelveDataKey = Deno.env.get("TWELVE_DATA_API_KEY");
+      const missingAfterMetals = activeCommodities.filter(s => !prices[s]);
+      if (twelveDataKey && missingAfterMetals.length > 0) {
+        const tdPrices = await fetchTwelveDataBatch(missingAfterMetals, twelveDataKey);
+        Object.assign(prices, tdPrices);
       }
 
       // 3. Fill remaining gaps with Omkar

@@ -265,8 +265,26 @@ Deno.serve(async (req) => {
     let price: number | null = null;
     const metalsDevKey = Deno.env.get("METALS_DEV_API_KEY");
 
-    // 2. For precious metals (XAU, XAG, XPT, XPD): metals.dev is PRIMARY
-    if (METAL_MAP[normalizedAsset]) {
+    // 2. For XAU (Gold): metals.dev is ALWAYS primary
+    if (normalizedAsset === "XAU" && metalsDevKey) {
+      price = await fetchMetalPrice(normalizedAsset, metalsDevKey);
+      if (price !== null) {
+        cache.set(normalizedAsset, { price, fetchedAt: Date.now() });
+        try {
+          const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+          const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+          const supabase = createClient(supabaseUrl, serviceKey);
+          await setDbCachedPrice(supabase, normalizedAsset, price);
+        } catch {}
+        return new Response(JSON.stringify({ price, source: "metals_dev" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.log(`metals.dev failed for XAU, trying fallbacks`);
+    }
+
+    // 2b. For other precious metals (XAG, XPT, XPD): metals.dev is also preferred
+    if (normalizedAsset !== "XAU" && METAL_MAP[normalizedAsset]) {
       price = await fetchMetalPrice(normalizedAsset, metalsDevKey || undefined);
       if (price !== null) {
         cache.set(normalizedAsset, { price, fetchedAt: Date.now() });
