@@ -38,7 +38,6 @@ export const useCommissionSettings = () => {
       if (error || !data) {
         return {
           prediction_fee_percent: 10,
-          admin_fee_percent: 20,
           creator_fee_percent: 30,
           creator_fee_blue_percent: 30,
           creator_fee_gold_percent: 3,
