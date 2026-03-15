@@ -184,8 +184,7 @@ const AdminSettings = () => {
   const boostStandardPriceNum = parseFloat(boostStandardPrice) || 50;
   const boostWhalePriceNum = parseFloat(boostWhalePrice) || 150;
   const broadcastPriceNum = parseFloat(broadcastPrice) || 5;
-  const maxTotalFee = Math.max(adminNum + creatorNum, adminNum + creatorBlueNum, adminNum + creatorGoldNum) + referrerCommissionNum;
-  const totalFee = adminNum + creatorNum + referrerCommissionNum;
+  const totalFee = adminNum + referrerCommissionNum;
   const poolPercent = 100 - totalFee;
   const isValid =
     adminNum >= 0 && creatorNum >= 0 && creatorBlueNum >= 0 && creatorGoldNum >= 0 && referrerCommissionNum >= 0 && maxTotalFee <= 100 &&
