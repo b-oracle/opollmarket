@@ -6,6 +6,7 @@ import { isMarketOpen } from "@/lib/marketHours";
 import TradingViewChart from "@/components/TradingViewChart";
 import MarketClosedOverlay from "@/components/quick-trade/MarketClosedOverlay";
 import SimpleAreaChart from "@/components/quick-trade/SimpleAreaChart";
+import PolylineChart from "@/components/quick-trade/PolylineChart";
 import SimpleCandleChart from "@/components/quick-trade/SimpleCandleChart";
 import ChartZoomWrapper from "@/components/quick-trade/ChartZoomWrapper";
 
