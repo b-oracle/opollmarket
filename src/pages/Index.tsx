@@ -465,7 +465,12 @@ const Index = () => {
                 transition={{ delay: 0.6 + i * 0.08 }}
                 whileHover={{ y: -4, boxShadow: "0 8px 30px -8px hsl(var(--primary) / 0.15)" }}
                 onClick={() => navigate(`/market/${market.id}`)}
-                className={`relative glass rounded-xl p-3 cursor-pointer transition-all active:scale-[0.98] flex items-center gap-3 group md:p-4 md:rounded-2xl hover:border-primary/20 hover:bg-accent/20 ${isBoosted ? 'ring-1 ring-primary/30 bg-primary/5' : ''} ${market.status === 'ended' ? 'opacity-75' : ''}`}
+                className={`relative glass rounded-xl p-3 cursor-pointer transition-all active:scale-[0.98] flex items-center gap-3 group md:p-4 md:rounded-2xl hover:border-primary/20 hover:bg-accent/20 ${market.status === 'ended' ? 'opacity-75' : ''}`}
+                style={isBoosted && boost ? {
+                  boxShadow: getBoostTierConfig(boost.tier).glowShadow,
+                  border: `1px solid ${getBoostTierConfig(boost.tier).ringClass}`,
+                  background: getBoostTierConfig(boost.tier).bgTint,
+                } : undefined}
               >
                 {(market.status === 'ended' || market.status === 'resolved') && (
                   <div className="absolute inset-0 z-10 rounded-xl md:rounded-2xl bg-background/60 backdrop-blur-[2px] flex items-center justify-center">
