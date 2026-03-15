@@ -1194,9 +1194,8 @@ export default function QuickTrade() {
     return raw
       .filter(([ts]) => ts >= cutoff)
       .map(([ts, price]) => ({ ts, price }));
-  // Only recompute on version change (asset/timeframe switch), NOT on priceHistory updates
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [historyVersion, chartMs, selectedAsset.symbol]);
+  // Re-evaluate after initial history load lands; reseed is still guarded by historyVersion
+  }, [historyVersion, chartMs, selectedAsset.symbol, historyLoading, priceHistory.length]);
 
   const {
     candles: engineCandles,
@@ -1492,6 +1491,7 @@ export default function QuickTrade() {
               <QuickTradeChart
                 chartType={chartType}
                 chartTimeframe={chartTimeframe}
+                chartAssetKey={selectedAsset.symbol}
                 chartMs={chartMs}
                 priceHistory={priceHistory}
                 ohlcData={ohlcData}
