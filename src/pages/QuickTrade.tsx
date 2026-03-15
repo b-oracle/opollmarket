@@ -425,10 +425,13 @@ export default function QuickTrade() {
   }, []);
   // Force away from disabled chart types
   useEffect(() => {
-    if (!lineChartEnabled && (chartType === "area" || chartType === "poly")) {
+    if (!lineChartEnabled && chartType === "area") {
       setChartType("candle");
     }
-  }, [lineChartEnabled, chartType, setChartType]);
+    if (!polyChartEnabled && chartType === "poly") {
+      setChartType(lineChartEnabled ? "area" : "candle");
+    }
+  }, [lineChartEnabled, polyChartEnabled, chartType, setChartType]);
   const chartMs = CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.ms;
 
   const [priceHistory, setPriceHistory] = useState<{ time: string; price: number; ts: number }[]>([]);
