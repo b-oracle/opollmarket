@@ -228,6 +228,40 @@ const Commissions = () => {
           ))}
         </div>
 
+        {/* Monthly Earnings Chart */}
+        {!isLoading && monthlyData.length > 0 && (
+          <Card className="border-border/50 mb-5">
+            <CardHeader className="pb-2 px-4 pt-4">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-primary" />
+                Monthly Earnings
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-2 pb-3">
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={monthlyData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+                  <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
+                  <RechartsTooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                    }}
+                    formatter={(value: number, name: string) => [`$${value.toFixed(2)}`, name.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())]}
+                  />
+                  <Legend iconSize={8} wrapperStyle={{ fontSize: "10px" }} formatter={(v) => v.replace("_", " ").replace(/\b\w/g, (c: string) => c.toUpperCase())} />
+                  <Bar dataKey="creator" stackId="a" fill="#f59e0b" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="referral" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="copy_trade" stackId="a" fill="#a855f7" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="signup_bonus" stackId="a" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Tabs */}
         <div className="flex gap-1.5 overflow-x-auto pb-2 mb-4 scrollbar-hide">
           {tabs.map((tab) => (
