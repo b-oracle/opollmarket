@@ -64,7 +64,6 @@ export const useCommissionSettings = () => {
       const d = data as any;
       return {
         prediction_fee_percent: Number(d.prediction_fee_percent ?? 10),
-        admin_fee_percent: Number(d.admin_fee_percent),
         creator_fee_percent: Number(d.creator_fee_percent),
         creator_fee_blue_percent: Number(d.creator_fee_blue_percent ?? d.creator_fee_percent ?? 3),
         creator_fee_gold_percent: Number(d.creator_fee_gold_percent ?? d.creator_fee_percent ?? 3),
