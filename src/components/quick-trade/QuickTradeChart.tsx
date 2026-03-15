@@ -480,8 +480,11 @@ function QuickTradeChart({
 
   if (filtered.length < 2) {
     const marketOpen = isMarketOpen(assetClass || "crypto");
-    if (!marketOpen) {
-      return <MarketClosedOverlay assetClass={assetClass || "crypto"} />;
+    if (!marketOpen || assetClass !== "crypto") {
+      // Show market closed overlay for non-crypto assets even if we just have no data yet
+      if (!marketOpen) {
+        return <MarketClosedOverlay assetClass={assetClass || "crypto"} />;
+      }
     }
     return (
       <div className="flex items-center justify-center h-[220px]">

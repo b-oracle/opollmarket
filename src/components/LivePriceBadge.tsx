@@ -163,7 +163,7 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
           !marketOpen
             ? "bg-muted-foreground/40"
-            : proximityTier === "imminent" ? "bg-amber-500 animate-pulse" : proximityTier === "close" ? "bg-yellow-500 animate-pulse" : "bg-destructive animate-pulse"
+            : proximityTier === "imminent" ? "bg-amber-500 animate-pulse" : proximityTier === "close" ? "bg-yellow-500 animate-pulse" : "bg-green-500 animate-pulse"
         }`} />
         <span>{asset}</span>
         <span className={!marketOpen ? "text-muted-foreground" : dir === "up" ? "text-green-500" : dir === "down" ? "text-destructive" : ""}>
