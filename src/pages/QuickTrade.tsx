@@ -423,7 +423,7 @@ export default function QuickTrade() {
   }, []);
   // Force away from disabled chart types
   useEffect(() => {
-    if (!lineChartEnabled && chartType === "area") {
+    if (!lineChartEnabled && (chartType === "area" || chartType === "poly")) {
       setChartType("candle");
     }
   }, [lineChartEnabled, chartType, setChartType]);
