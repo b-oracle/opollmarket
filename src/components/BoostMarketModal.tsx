@@ -667,6 +667,64 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
           </>
         )}
 
+        {/* NGN Bank Transfer Pay Step */}
+        {step === "pay" && paymentInfo && paymentInfo.account_number && !paymentInfo.pay_address && (
+          <>
+            <div className="text-center space-y-1">
+              <p className="text-sm text-muted-foreground">
+                Transfer exactly <span className="font-bold text-foreground">₦{paymentInfo.amount_ngn?.toLocaleString()}</span> to:
+              </p>
+            </div>
+
+            <div className="glass rounded-xl p-4 space-y-3">
+              {[
+                { label: "Bank", value: paymentInfo.bank_name || "" },
+                { label: "Account Number", value: paymentInfo.account_number || "" },
+                { label: "Account Name", value: paymentInfo.account_name || "" },
+                { label: "Amount", value: `₦${paymentInfo.amount_ngn?.toLocaleString()}` },
+              ].map((row) => (
+                <div key={row.label} className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">{row.label}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-bold text-foreground">{row.value}</span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(row.value.replace(/[₦,]/g, ""));
+                        setNgnCopied(row.label);
+                        setTimeout(() => setNgnCopied(null), 2000);
+                      }}
+                      className="w-6 h-6 rounded flex items-center justify-center hover:bg-muted transition-colors"
+                    >
+                      {ngnCopied === row.label ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3 text-muted-foreground" />}
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {paymentInfo.exchange_rate && (
+                <div className="text-[10px] text-muted-foreground text-center border-t border-border pt-2">
+                  Rate: $1 = ₦{paymentInfo.exchange_rate.toLocaleString()} · Total: ${paymentInfo.amount_usd}
+                </div>
+              )}
+
+              {paymentInfo.expires_at && (
+                <div className="text-[10px] text-center text-destructive">
+                  Expires: {new Date(paymentInfo.expires_at).toLocaleTimeString()}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Waiting for transfer confirmation...
+            </div>
+
+            <p className="text-xs text-center text-muted-foreground">
+              Transfer the exact amount shown. Your promotion will activate automatically once the payment is confirmed.
+            </p>
+          </>
+        )}
+
         {step === "success" && (
           <div className="text-center space-y-4 py-4">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
