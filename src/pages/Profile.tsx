@@ -616,6 +616,9 @@ const Profile = () => {
       result = result.filter((t: any) => !(t.type === "deposit" && t.status === "expired"));
     }
 
+    // Hide zero-amount commission transactions
+    result = result.filter((t: any) => !(t.type === "commission" && Number(t.amount) === 0));
+
     if (statusFilter !== "all") {
       result = result.filter((t: any) =>
         statusFilter === "failed" ? (t.status === "failed" || t.status === "expired") : t.status === statusFilter
