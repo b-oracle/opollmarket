@@ -1491,6 +1491,7 @@ export default function QuickTrade() {
               <QuickTradeChart
                 chartType={chartType}
                 chartTimeframe={chartTimeframe}
+                chartAssetKey={selectedAsset.symbol}
                 chartMs={chartMs}
                 priceHistory={priceHistory}
                 ohlcData={ohlcData}
