@@ -58,6 +58,7 @@ export const useCommissionSettings = () => {
           boost_standard_price: 50,
           boost_whale_price: 150,
           broadcast_price: 5,
+          bc400_pool_percent: 0,
         };
       }
       const d = data as any;
