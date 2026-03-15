@@ -11,12 +11,12 @@ function encodePayazaAuth(secretKey: string): string {
   return `Payaza ${encoded}`;
 }
 
-const BOOST_TIERS: Record<string, { durationHours: number; price: number; rank: number }> = {
+const DEFAULT_BOOST_TIERS: Record<string, { durationHours: number; price: number; rank: number }> = {
   flash: { durationHours: 12, price: 20, rank: 1 },
   standard: { durationHours: 24, price: 50, rank: 2 },
   whale: { durationHours: 168, price: 150, rank: 3 },
 };
-const BROADCAST_PRICE = 5;
+let DEFAULT_BROADCAST_PRICE = 5;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
