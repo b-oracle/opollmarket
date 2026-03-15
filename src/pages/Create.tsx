@@ -2465,7 +2465,7 @@ const Create = () => {
                     )}
                     <div className="border-t border-border pt-1.5 flex justify-between">
                       <span className="font-semibold">Total</span>
-                      <span className="font-bold text-primary">${(parseFloat(initialLiquidity) + (feeBypass ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0) + (creationBoost ? BOOST_TIER_PRICES[creationBoostTier] : 0) + (creationBroadcast ? BROADCAST_PRICE : 0)).toFixed(2)} USDT</span>
+                      <span className="font-bold text-primary">${(parseFloat(initialLiquidity) + (feeBypass ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0) + (creationBoost ? boostTierPrices[creationBoostTier] : 0) + (creationBroadcast ? broadcastPriceVal : 0)).toFixed(2)} USDT</span>
                     </div>
                   </div>
                 </div>
