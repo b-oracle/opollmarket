@@ -847,6 +847,9 @@ export default function QuickTrade() {
       return;
     }
 
+    // Don't create rounds when market is closed
+    if (!isMarketOpen(selectedAsset.assetClass)) return;
+
     // No active round — create one using a fresh price snapshot for the selected asset
     const freshPrice = await fetchPriceForAsset(selectedAsset);
     if (freshPrice == null || !isCurrentRoundRequest()) return;
