@@ -230,7 +230,7 @@ function QuickTradeChart(props: QuickTradeChartProps) {
               {chartContent}
             </div>
           </ChartZoomWrapper>
-          <BucketBadges bucketCountdown={bucketCountdown} bucketProgress={bucketProgress} />
+          <BucketBadges bucketCountdown={bucketCountdown} />
         </div>
         <button
           onClick={() => setIsFullscreen(false)}
