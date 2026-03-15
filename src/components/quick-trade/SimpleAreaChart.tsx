@@ -154,7 +154,7 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
       {/* Entry price badge */}
       {entryPrice != null && entryPrice >= domainMin && entryPrice <= domainMin + domainRange && (
         <div
-          className="absolute right-0 px-1.5 py-0.5 rounded-sm text-[8px] font-bold tabular-nums"
+          className={`absolute right-0 px-1.5 py-0.5 rounded-sm font-bold tabular-nums ${fullscreen ? "text-xs" : "text-[8px]"}`}
           style={{
             top: `${priceY(entryPrice)}%`,
             transform: "translateY(-50%)",
