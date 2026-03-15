@@ -547,6 +547,12 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
                 pulsingDotRef.current.style.left = `${x}px`;
                 pulsingDotRef.current.style.top = `${y}px`;
                 pulsingDotRef.current.style.display = "block";
+                // Update dot color via DOM to avoid React re-renders
+                const color = dotColorRef.current;
+                const pingEl = pulsingDotRef.current.querySelector('.dot-ping') as HTMLElement | null;
+                const solidEl = pulsingDotRef.current.querySelector('.dot-solid') as HTMLElement | null;
+                if (pingEl) pingEl.style.backgroundColor = color;
+                if (solidEl) solidEl.style.backgroundColor = color;
               }
             } catch { /* noop */ }
           }
