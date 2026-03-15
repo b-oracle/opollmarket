@@ -53,6 +53,10 @@ export const useCommissionSettings = () => {
           qt_enabled_timeframes: "60,180,300,900",
           qt_disabled_assets: "",
           auto_resolve_fee: 0,
+          boost_flash_price: 20,
+          boost_standard_price: 50,
+          boost_whale_price: 150,
+          broadcast_price: 5,
         };
       }
       const d = data as any;
