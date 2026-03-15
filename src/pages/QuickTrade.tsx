@@ -1418,13 +1418,15 @@ export default function QuickTrade() {
                   ))}
                 </div>
                 <div className="flex items-center gap-0.5 bg-muted/40 rounded-md p-0.5">
-                  <button
-                    onClick={() => setChartType("area")}
-                    className={`p-1.5 rounded transition-all ${chartType === "area" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                    title="Area chart"
-                  >
-                    <LineChartIcon className="w-3.5 h-3.5" />
-                  </button>
+                  {lineChartEnabled && (
+                    <button
+                      onClick={() => setChartType("area")}
+                      className={`p-1.5 rounded transition-all ${chartType === "area" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                      title="Area chart"
+                    >
+                      <LineChartIcon className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   {selectedAsset.assetClass === "crypto" && (
                     <button
                       onClick={() => setChartType("candle")}
