@@ -94,15 +94,14 @@ function SVGCandleChart({ candles, entryPrice, assetClass, timeframeLabel }: SVG
     return levels;
   }, [domainMin, domainRange, n]);
 
-  if (n < 2) return null;
-
   const priceY = (p: number) => PADDING_TOP + (PRICE_H - PADDING_TOP - PADDING_BOTTOM) * (1 - (p - domainMin) / domainRange);
 
   const activeCandleIndex = candles.length - 1;
-  const isLastActive = candles[activeCandleIndex] && !candles[activeCandleIndex].closed;
+  const isLastActive = n >= 2 && candles[activeCandleIndex] && !candles[activeCandleIndex].closed;
 
   // Memoize MA polyline points
   const ma7Points = useMemo(() => {
+    if (n < 2) return null;
     const pts = candles
       .map((c, i) => c.ma7 != null ? `${(i / n) * 100 + 100 / n / 2},${priceY(c.ma7!)}` : null)
       .filter(Boolean);
@@ -110,16 +109,19 @@ function SVGCandleChart({ candles, entryPrice, assetClass, timeframeLabel }: SVG
   }, [candles, n, domainMin, domainRange]);
 
   const ma14Points = useMemo(() => {
+    if (n < 2) return null;
     const pts = candles
       .map((c, i) => c.ma14 != null ? `${(i / n) * 100 + 100 / n / 2},${priceY(c.ma14!)}` : null)
       .filter(Boolean);
     return pts.length >= 2 ? pts.join(" ") : null;
   }, [candles, n, domainMin, domainRange]);
 
-  const lastCandle = candles[candles.length - 1];
-  const lastY = priceY(lastCandle.close);
+  const lastCandle = n >= 2 ? candles[candles.length - 1] : null;
+  const lastY = lastCandle ? priceY(lastCandle.close) : 0;
   const lastPct = (lastY / CHART_HEIGHT) * 100;
-  const isLastBull = lastCandle.close >= lastCandle.open;
+  const isLastBull = lastCandle ? lastCandle.close >= lastCandle.open : true;
+
+  if (n < 2) return null;
 
   return (
     <div className="w-full select-none relative" style={{ height: CHART_HEIGHT }}>
