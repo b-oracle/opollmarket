@@ -5,6 +5,7 @@ import { Market } from "@/data/markets";
 import { ActiveBoost } from "@/hooks/useActiveBoosts";
 import BoostCountdown from "@/components/BoostCountdown";
 import { toast } from "sonner";
+import { getBoostTierConfig } from "@/lib/boostTiers";
 
 const GAP = 16;
 const AUTO_SCROLL_INTERVAL = 3500;
