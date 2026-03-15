@@ -115,7 +115,7 @@ function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, str
         let sum = 0;
         for (let j = i - period + 1; j <= i; j++) sum += candles[j].close;
         const avg = sum / period;
-        const x = (i / n) * 100 + 100 / n / 2;
+        const x = (i / n) * 85 + 85 / n / 2;
         const y = priceToY(avg, dMin, dRange);
         pts.push(`${x},${y}`);
       }
