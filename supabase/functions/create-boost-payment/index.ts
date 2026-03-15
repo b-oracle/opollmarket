@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const TIER_CONFIG: Record<string, { durationHours: number; price: number; rank: number }> = {
+const DEFAULT_TIER_CONFIG: Record<string, { durationHours: number; price: number; rank: number }> = {
   flash: { durationHours: 12, price: 20, rank: 1 },
   standard: { durationHours: 24, price: 50, rank: 2 },
   whale: { durationHours: 168, price: 150, rank: 3 },
