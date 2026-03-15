@@ -143,6 +143,7 @@ const AdminSettings = () => {
         setBoostStandardPrice(String(d.boost_standard_price ?? 50));
         setBoostWhalePrice(String(d.boost_whale_price ?? 150));
         setBroadcastPrice(String(d.broadcast_price ?? 5));
+        setBc400PoolPercent(String(d.bc400_pool_percent ?? 0));
         setSettingsId(d.id);
       }
       if (error) console.error(error);
