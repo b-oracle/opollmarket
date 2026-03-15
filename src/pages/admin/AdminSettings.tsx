@@ -360,20 +360,9 @@ const AdminSettings = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="adminFee">Pool Reserve (%)</Label>
-              <Input id="adminFee" type="number" min={0} max={100} step={0.1} value={adminFee} onChange={(e) => setAdminFee(e.target.value)} placeholder="2" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="creatorFee">Creator Fee — No Tick (%)</Label>
-              <Input id="creatorFee" type="number" min={0} max={100} step={0.1} value={creatorFee} onChange={(e) => setCreatorFee(e.target.value)} placeholder="3" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="creatorFeeBlue">Creator Fee — Blue Tick (%)</Label>
-              <Input id="creatorFeeBlue" type="number" min={0} max={100} step={0.1} value={creatorFeeBlue} onChange={(e) => setCreatorFeeBlue(e.target.value)} placeholder="4" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="creatorFeeGold">Creator Fee — Gold Tick (%)</Label>
-              <Input id="creatorFeeGold" type="number" min={0} max={100} step={0.1} value={creatorFeeGold} onChange={(e) => setCreatorFeeGold(e.target.value)} placeholder="5" />
+              <Label htmlFor="adminFee">Prediction Fee (%)</Label>
+              <Input id="adminFee" type="number" min={0} max={100} step={0.1} value={adminFee} onChange={(e) => setAdminFee(e.target.value)} placeholder="5" />
+              <p className="text-[10px] text-muted-foreground">Single fee deducted from each prediction. Entire fee goes to the platform.</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="referrerCommission">Referrer Commission (%)</Label>
