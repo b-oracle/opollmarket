@@ -208,7 +208,7 @@ async function handleBoost(supabase: ReturnType<typeof createClient>, payload: R
   // Idempotency: check if already activated
   const { data: existingBoost } = await supabase
     .from("market_boosts")
-    .select("id, status")
+    .select("id, status, ends_at")
     .eq("nowpayments_payment_id", paymentIdStr)
     .maybeSingle();
 
@@ -219,9 +219,30 @@ async function handleBoost(supabase: ReturnType<typeof createClient>, payload: R
 
   const durationHours = TIER_DURATION_HOURS[tier] || 24;
   const now = new Date();
-  const endsAt = new Date(now.getTime() + durationHours * 60 * 60 * 1000);
-
   const txHash = payload.payin_hash || payload.pay_address || paymentIdStr;
+
+  // Check if there's an existing active boost on the same market to extend
+  const { data: activeBoosts } = await supabase
+    .from("market_boosts")
+    .select("id, ends_at")
+    .eq("market_id", marketId)
+    .eq("status", "active")
+    .gte("ends_at", now.toISOString())
+    .order("ends_at", { ascending: false })
+    .limit(1);
+
+  const activeBoost = activeBoosts?.[0];
+
+  // If extending, new ends_at = existing ends_at + new duration
+  // The pending record already has the correct extended ends_at from create-boost-payment,
+  // but use it as stored in the record (which was pre-calculated at creation time).
+  // For the activating record, use the ends_at that was set during creation.
+  const pendingEndsAt = existingBoost?.ends_at;
+  const endsAt = pendingEndsAt
+    ? new Date(pendingEndsAt)
+    : activeBoost
+      ? new Date(new Date(activeBoost.ends_at).getTime() + durationHours * 60 * 60 * 1000)
+      : new Date(now.getTime() + durationHours * 60 * 60 * 1000);
 
   if (existingBoost) {
     await supabase
@@ -237,7 +258,7 @@ async function handleBoost(supabase: ReturnType<typeof createClient>, payload: R
     // Fallback: find by pending/expired + market_id
     const { data: pendingBoost } = await supabase
       .from("market_boosts")
-      .select("id")
+      .select("id, ends_at")
       .eq("market_id", marketId)
       .in("status", ["pending", "expired"])
       .eq("payer_wallet", userId)
@@ -246,12 +267,16 @@ async function handleBoost(supabase: ReturnType<typeof createClient>, payload: R
       .maybeSingle();
 
     if (pendingBoost) {
+      const fallbackEndsAt = pendingBoost.ends_at
+        ? new Date(pendingBoost.ends_at)
+        : endsAt;
+
       await supabase
         .from("market_boosts")
         .update({
           status: "active",
           starts_at: now.toISOString(),
-          ends_at: endsAt.toISOString(),
+          ends_at: fallbackEndsAt.toISOString(),
           nowpayments_payment_id: paymentIdStr,
           tx_hash: String(txHash),
         })
@@ -259,14 +284,25 @@ async function handleBoost(supabase: ReturnType<typeof createClient>, payload: R
     }
   }
 
+  // If extending an existing active boost, also update its ends_at
+  if (activeBoost) {
+    await supabase
+      .from("market_boosts")
+      .update({ ends_at: endsAt.toISOString() })
+      .eq("id", activeBoost.id);
+  }
+
+  const isExtension = !!activeBoost;
   await supabase.from("notifications").insert({
     user_id: userId,
-    title: "Boost Activated! 🚀",
-    message: `Your ${tier} boost is now live for ${durationHours}h.`,
+    title: isExtension ? "Boost Extended! 🚀" : "Boost Activated! 🚀",
+    message: isExtension
+      ? `Your ${tier} boost extended the market boost until ${endsAt.toLocaleString()}.`
+      : `Your ${tier} boost is now live for ${durationHours}h.`,
     type: "boost",
   });
 
-  console.log(`Activated ${tier} boost for market ${marketId}`);
+  console.log(`${isExtension ? "Extended" : "Activated"} ${tier} boost for market ${marketId}`);
 }
 
 async function handleBroadcast(supabase: ReturnType<typeof createClient>, payload: Record<string, unknown>, orderId: string) {
