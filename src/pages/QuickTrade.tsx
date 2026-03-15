@@ -1278,17 +1278,31 @@ export default function QuickTrade() {
 
               {/* Countdown */}
               <div className="text-center">
-                <div className={`text-3xl font-mono font-bold tabular-nums transition-colors duration-300 ${
-                  timeLeft <= 10 ? "text-destructive animate-[scale-pulse_0.6s_ease-in-out_infinite]" : timeLeft <= 30 ? "text-amber-500" : "text-foreground"
-                }`}>
-                  {formatTime(timeLeft)}
-                </div>
-                <div className="flex items-center gap-1 justify-center mt-1">
-                  <Timer className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-[10px] text-muted-foreground uppercase">
-                    {isLocked ? "Locked" : timeLeft === 0 ? "Resolving..." : "Remaining"}
-                  </span>
-                </div>
+                {!isMarketOpen(selectedAsset.assetClass) ? (
+                  <>
+                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                      <Moon className="w-5 h-5" />
+                      <span className="text-lg font-bold">Closed</span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground/70 mt-1 block">
+                      {getNextOpenTime(selectedAsset.assetClass)}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <div className={`text-3xl font-mono font-bold tabular-nums transition-colors duration-300 ${
+                      timeLeft <= 10 ? "text-destructive animate-[scale-pulse_0.6s_ease-in-out_infinite]" : timeLeft <= 30 ? "text-amber-500" : "text-foreground"
+                    }`}>
+                      {formatTime(timeLeft)}
+                    </div>
+                    <div className="flex items-center gap-1 justify-center mt-1">
+                      <Timer className="w-3 h-3 text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground uppercase">
+                        {isLocked ? "Locked" : timeLeft === 0 ? "Resolving..." : "Remaining"}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
