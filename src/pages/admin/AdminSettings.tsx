@@ -191,14 +191,17 @@ const AdminSettings = () => {
   const broadcastPriceNum = parseFloat(broadcastPrice) || 5;
   const bc400PoolPercentNum = parseFloat(bc400PoolPercent) || 0;
 
-  // Splits must sum to 100 — use worst-case (gold) creator split
-  const splitTotalGold = adminNum + creatorGoldNum + referrerCommissionNum + bc400PoolPercentNum;
-  const splitTotalBlue = adminNum + creatorBlueNum + referrerCommissionNum + bc400PoolPercentNum;
-  const splitTotalUnverified = adminNum + creatorNum + referrerCommissionNum + bc400PoolPercentNum;
+  // Splits must sum to ≤ 100 — platform keeps the remainder
+  const splitTotalGold = creatorGoldNum + referrerCommissionNum + bc400PoolPercentNum;
+  const splitTotalBlue = creatorBlueNum + referrerCommissionNum + bc400PoolPercentNum;
+  const splitTotalUnverified = creatorNum + referrerCommissionNum + bc400PoolPercentNum;
+  const platformNetGold = 100 - splitTotalGold;
+  const platformNetBlue = 100 - splitTotalBlue;
+  const platformNetUnverified = 100 - splitTotalUnverified;
   const splitsValid = splitTotalGold <= 100 && splitTotalBlue <= 100 && splitTotalUnverified <= 100;
   const isValid =
     predictionFeeNum >= 0 && predictionFeeNum <= 100 &&
-    adminNum >= 0 && referrerCommissionNum >= 0 && bc400PoolPercentNum >= 0 &&
+    referrerCommissionNum >= 0 && bc400PoolPercentNum >= 0 &&
     creatorNum >= 0 && creatorBlueNum >= 0 && creatorGoldNum >= 0 &&
     splitsValid &&
     referralNum >= 0 && tokenNum >= 0 && nftNum >= 0 &&
