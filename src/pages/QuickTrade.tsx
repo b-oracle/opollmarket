@@ -46,6 +46,8 @@ import TradingViewChart from "@/components/TradingViewChart";
 import QuickTradeChart from "@/components/quick-trade/QuickTradeChart";
 import QuickTradeHistory from "@/components/quick-trade/QuickTradeHistory";
 import QuickTradeBetControls from "@/components/quick-trade/QuickTradeBetControls";
+import PriceToBeatHeader from "@/components/quick-trade/PriceToBeatHeader";
+import PastRoundsTimeline from "@/components/quick-trade/PastRoundsTimeline";
 import { useChartEngine } from "@/hooks/useChartEngine";
 import { getTimeframeMs } from "@/lib/chartEngine";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
