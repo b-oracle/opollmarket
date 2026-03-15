@@ -4,27 +4,26 @@ interface ChartZoomWrapperProps {
   children: ReactNode;
   className?: string;
   style?: React.CSSProperties;
-  /** Initial zoom level – e.g. 3 means only 1/3 of data is visible (latest portion) */
   defaultZoom?: number;
 }
 
 /**
  * Wraps native SVG charts and provides pinch-zoom / pan by manipulating
- * the child SVG's viewBox. This zooms into the *chart data* (fewer candles
- * visible at larger size) rather than scaling the screen.
- * Supports single-finger horizontal panning at any zoom level.
+ * the child SVG's viewBox.
+ *
+ * Key fix: we store the *natural* viewBox dimensions once on first sight
+ * and never re-read from the DOM, so React re-renders (new candles) don't
+ * cause the wrapper to reset or fight the SVG.
  */
 export default function ChartZoomWrapper({ children, className = "", style, defaultZoom = 1 }: ChartZoomWrapperProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Zoom state stored in refs to avoid re-renders during gestures
   const zoomRef = useRef(defaultZoom);
   const panXRef = useRef(0); // 0 = rightmost / latest data
 
-  // Track whether we've initialized the viewBox
-  const initializedRef = useRef(false);
+  // Store the natural full viewBox dimensions (never changes for a given chart type)
+  const origVBRef = useRef<{ w: number; h: number } | null>(null);
 
-  // Pinch tracking
   const initialDistRef = useRef(0);
   const initialZoomRef = useRef(defaultZoom);
   const initialPanRef = useRef(0);
@@ -33,62 +32,59 @@ export default function ChartZoomWrapper({ children, className = "", style, defa
   const panStartXRef = useRef(0);
   const panStartOffsetRef = useRef(0);
 
-  const getSvg = (): SVGSVGElement | null => {
-    return containerRef.current?.querySelector("svg") ?? null;
-  };
+  const getSvg = (): SVGSVGElement | null =>
+    containerRef.current?.querySelector("svg") ?? null;
+
+  /** Capture the natural viewBox once. Returns true if we have it. */
+  const captureOrigVB = useCallback((): boolean => {
+    if (origVBRef.current) return true;
+    const svg = getSvg();
+    if (!svg) return false;
+    const vb = svg.getAttribute("viewBox");
+    if (!vb) return false;
+    const parts = vb.split(" ").map(Number);
+    if (parts.length < 4 || parts[2] === 0) return false;
+    origVBRef.current = { w: parts[2], h: parts[3] };
+    return true;
+  }, []);
 
   const applyViewBox = useCallback(() => {
     const svg = getSvg();
-    if (!svg) return;
-
-    const origVB = svg.getAttribute("data-orig-vb");
-    if (!origVB) return;
-    const [, , fullW, fullH] = origVB.split(" ").map(Number);
+    const orig = origVBRef.current;
+    if (!svg || !orig) return;
 
     const zoom = zoomRef.current;
-    const visibleW = fullW / zoom;
-
-    // Pan: panX=0 means showing the rightmost (latest) data
-    const maxOffset = fullW - visibleW;
+    const visibleW = orig.w / zoom;
+    const maxOffset = orig.w - visibleW;
+    // panX 0 = rightmost (latest), 1 = leftmost (oldest)
     const offset = maxOffset - panXRef.current * maxOffset;
-    const clampedOffset = Math.max(0, Math.min(maxOffset, offset));
+    const clamped = Math.max(0, Math.min(maxOffset, offset));
 
-    svg.setAttribute("viewBox", `${clampedOffset} 0 ${visibleW} ${fullH}`);
+    svg.setAttribute("viewBox", `${clamped} 0 ${visibleW} ${orig.h}`);
   }, []);
 
-  const ensureOrigVB = useCallback(() => {
-    const svg = getSvg();
-    if (!svg) return;
-    if (!svg.getAttribute("data-orig-vb")) {
-      svg.setAttribute("data-orig-vb", svg.getAttribute("viewBox") || "0 0 100 100");
-    }
-  }, []);
-
-  // Apply default zoom on mount / when SVG appears
+  // Re-apply the current zoom/pan after every React render so new candles
+  // don't reset the viewBox to the default "0 0 W H".
   useEffect(() => {
-    if (initializedRef.current) return;
-    const tryInit = () => {
-      const svg = getSvg();
-      if (!svg) return false;
-      ensureOrigVB();
-      zoomRef.current = defaultZoom;
-      panXRef.current = 0;
-      applyViewBox();
-      initializedRef.current = true;
-      return true;
-    };
-    if (tryInit()) return;
-    // Retry until SVG is rendered
-    const id = setInterval(() => { if (tryInit()) clearInterval(id); }, 100);
-    return () => clearInterval(id);
-  }, [defaultZoom, applyViewBox, ensureOrigVB]);
+    if (!captureOrigVB()) {
+      // SVG not yet in DOM — poll briefly
+      const id = setInterval(() => {
+        if (captureOrigVB()) {
+          clearInterval(id);
+          applyViewBox();
+        }
+      }, 80);
+      return () => clearInterval(id);
+    }
+    // Always re-stamp the viewBox after children re-render
+    applyViewBox();
+  });
 
   const getDist = (t1: React.Touch, t2: React.Touch) =>
     Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
-    ensureOrigVB();
-
+    captureOrigVB();
     if (e.touches.length === 2) {
       e.preventDefault();
       initialDistRef.current = getDist(e.touches[0], e.touches[1]);
@@ -97,12 +93,11 @@ export default function ChartZoomWrapper({ children, className = "", style, defa
       initialMidXRef.current = (e.touches[0].clientX + e.touches[1].clientX) / 2;
       isPanningRef.current = false;
     } else if (e.touches.length === 1 && zoomRef.current > 1.05) {
-      // Pan when zoomed in (including default zoom > 1)
       isPanningRef.current = true;
       panStartXRef.current = e.touches[0].clientX;
       panStartOffsetRef.current = panXRef.current;
     }
-  }, [ensureOrigVB]);
+  }, [captureOrigVB]);
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 2) {
@@ -110,7 +105,6 @@ export default function ChartZoomWrapper({ children, className = "", style, defa
       const d = getDist(e.touches[0], e.touches[1]);
       const ratio = d / initialDistRef.current;
       zoomRef.current = Math.max(1, Math.min(8, initialZoomRef.current * ratio));
-
       const container = containerRef.current;
       if (container) {
         const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
@@ -118,7 +112,6 @@ export default function ChartZoomWrapper({ children, className = "", style, defa
         const containerW = container.clientWidth;
         panXRef.current = Math.max(0, Math.min(1, initialPanRef.current + dx / containerW));
       }
-
       applyViewBox();
     } else if (e.touches.length === 1 && isPanningRef.current && zoomRef.current > 1.05) {
       e.preventDefault();
@@ -135,7 +128,6 @@ export default function ChartZoomWrapper({ children, className = "", style, defa
   const onTouchEnd = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 0) {
       isPanningRef.current = false;
-      // Snap back to defaultZoom minimum instead of 1
       if (zoomRef.current < defaultZoom * 0.95) {
         zoomRef.current = defaultZoom;
         panXRef.current = 0;
@@ -149,28 +141,26 @@ export default function ChartZoomWrapper({ children, className = "", style, defa
     }
   }, [applyViewBox, defaultZoom]);
 
-  // Mouse wheel zoom for desktop
   const onWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
-    ensureOrigVB();
+    captureOrigVB();
     const factor = e.deltaY > 0 ? 0.9 : 1.1;
     zoomRef.current = Math.max(defaultZoom, Math.min(8, zoomRef.current * factor));
     applyViewBox();
-  }, [applyViewBox, ensureOrigVB, defaultZoom]);
+  }, [applyViewBox, captureOrigVB, defaultZoom]);
 
-  // Mouse drag for desktop panning
   const isMouseDragging = useRef(false);
   const mouseStartX = useRef(0);
   const mousePanStart = useRef(0);
 
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     if (zoomRef.current <= 1.05) return;
-    ensureOrigVB();
+    captureOrigVB();
     isMouseDragging.current = true;
     mouseStartX.current = e.clientX;
     mousePanStart.current = panXRef.current;
     e.preventDefault();
-  }, [ensureOrigVB]);
+  }, [captureOrigVB]);
 
   const onMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isMouseDragging.current) return;
@@ -187,13 +177,12 @@ export default function ChartZoomWrapper({ children, className = "", style, defa
     isMouseDragging.current = false;
   }, []);
 
-  // Double-tap to reset / toggle 2x
   const lastTapRef = useRef(0);
   const onDoubleTap = useCallback((e: React.TouchEvent) => {
     if (e.touches.length !== 1) return;
     const now = Date.now();
     if (now - lastTapRef.current < 300) {
-      ensureOrigVB();
+      captureOrigVB();
       if (zoomRef.current > defaultZoom * 1.1) {
         zoomRef.current = defaultZoom;
         panXRef.current = 0;
@@ -204,7 +193,7 @@ export default function ChartZoomWrapper({ children, className = "", style, defa
       applyViewBox();
     }
     lastTapRef.current = now;
-  }, [applyViewBox, ensureOrigVB, defaultZoom]);
+  }, [applyViewBox, captureOrigVB, defaultZoom]);
 
   return (
     <div
