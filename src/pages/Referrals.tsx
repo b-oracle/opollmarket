@@ -95,22 +95,8 @@ const Referrals = () => {
     gcTime: 5 * 60 * 1000,
   });
 
-  // Fetch bonus balance
-  const { data: bonusBalance = 0 } = useQuery({
-    queryKey: ["bonus_balance", user?.id],
-    queryFn: async () => {
-      if (!user) return 0;
-      const { data } = await supabase
-        .from("balances")
-        .select("bonus_balance")
-        .eq("user_id", user.id)
-        .single();
-      return Number(data?.bonus_balance ?? 0);
-    },
-    enabled: !!user,
-    staleTime: 60 * 1000,
-    gcTime: 5 * 60 * 1000,
-  });
+  // Fetch total bonus earned (sum of all referral_rewards amounts)
+  const totalBonusEarned = rewards.reduce((sum: number, r: any) => sum + Number(r.amount), 0);
 
   // Fetch referral reward amount setting
   const { data: rewardAmount = 5 } = useQuery({
@@ -227,13 +213,13 @@ const Referrals = () => {
                 className="glass rounded-xl p-4 text-center">
                 <DollarSign className="w-5 h-5 text-primary mx-auto mb-1" />
                 <p className="text-xl font-bold">${totalEarned.toFixed(2)}</p>
-                <p className="text-[10px] text-muted-foreground">Total Earned</p>
+                <p className="text-[10px] text-muted-foreground">Total Commissions (Earned)</p>
               </motion.div>
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
                 className="glass rounded-xl p-4 text-center">
                 <Gift className="w-5 h-5 text-primary mx-auto mb-1" />
-                <p className="text-xl font-bold">${bonusBalance.toFixed(2)}</p>
-                <p className="text-[10px] text-muted-foreground">Bonus Balance</p>
+                <p className="text-xl font-bold">${totalBonusEarned.toFixed(2)}</p>
+                <p className="text-[10px] text-muted-foreground">Total Bonus (Earned)</p>
               </motion.div>
             </>
           )}
@@ -338,6 +324,15 @@ const Referrals = () => {
             ))}
           </div>
         </div>
+
+        {/* See Commissions Breakdown */}
+        <button
+          onClick={() => navigate("/commissions")}
+          className="w-full glass rounded-xl p-4 mb-6 flex items-center justify-center gap-2 text-sm font-semibold text-primary hover:bg-accent/50 transition-colors active:scale-[0.98]"
+        >
+          <DollarSign className="w-4 h-4" />
+          See Commissions Breakdown
+        </button>
 
         {/* Referral History */}
         <div className="mb-6">
