@@ -17,16 +17,19 @@ interface UserActivityDrawerProps {
   userName: string;
 }
 
-type Tab = "transactions" | "positions" | "quick_bets" | "comments" | "bookmarks" | "referrals" | "withdrawals";
+type Tab = "transactions" | "deposits" | "positions" | "quick_bets" | "comments" | "bookmarks" | "referrals" | "withdrawals" | "boosts" | "audit_log";
 
 const TABS: { key: Tab; label: string; icon: any }[] = [
   { key: "transactions", label: "Transactions", icon: Receipt },
+  { key: "deposits", label: "Deposits", icon: ArrowDownToLine },
   { key: "positions", label: "Positions", icon: BarChart3 },
   { key: "quick_bets", label: "Quick Trades", icon: Zap },
   { key: "withdrawals", label: "Withdrawals", icon: Banknote },
+  { key: "boosts", label: "Boosts", icon: Flame },
   { key: "comments", label: "Comments", icon: MessageSquare },
   { key: "bookmarks", label: "Bookmarks", icon: Bookmark },
   { key: "referrals", label: "Referrals", icon: Gift },
+  { key: "audit_log", label: "Activity Log", icon: ClipboardList },
 ];
 
 const SecuritySummary = ({ userId }: { userId: string }) => {
