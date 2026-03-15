@@ -129,9 +129,13 @@ Deno.serve(async (req) => {
 
     // Calculate actual amounts from fee splits
     // Admin keeps the remainder after splits — no separate adminAmount needed
-    const creatorAmount = totalFees * creatorSplit;
-    const referrerAmount = referrerId ? totalFees * referrerSplit : 0;
-    const bc400Amount = totalFees * bc400Split;
+    // Round to 2 decimals and enforce $0.01 minimum to avoid $0.00 spam
+    const creatorAmountRaw = totalFees * creatorSplit;
+    const creatorAmount = creatorAmountRaw >= 0.01 ? Math.round(creatorAmountRaw * 100) / 100 : 0;
+    const referrerAmountRaw = referrerId ? totalFees * referrerSplit : 0;
+    const referrerAmount = referrerAmountRaw >= 0.01 ? Math.round(referrerAmountRaw * 100) / 100 : 0;
+    const bc400AmountRaw = totalFees * bc400Split;
+    const bc400Amount = bc400AmountRaw >= 0.01 ? Math.round(bc400AmountRaw * 100) / 100 : 0;
     const netAmount = amount - totalFees;
     const totalCost = amount;
     // Recalculate shares server-side based on net amount (amount minus fee)
