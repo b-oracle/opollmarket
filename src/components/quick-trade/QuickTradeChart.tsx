@@ -58,8 +58,8 @@ function ChartSkeleton({ text }: { text: string }) {
   );
 }
 
-function BucketBadges({ bucketCountdown, bucketProgress }: { bucketCountdown?: number; bucketProgress?: number }) {
-  if (!bucketCountdown && bucketProgress == null) return null;
+function BucketBadges({ bucketCountdown }: { bucketCountdown?: number }) {
+  if (!bucketCountdown) return null;
   const fmt = (ms: number) => {
     const totalSec = Math.floor(ms / 1000);
     const h = Math.floor(totalSec / 3600);
@@ -70,19 +70,10 @@ function BucketBadges({ bucketCountdown, bucketProgress }: { bucketCountdown?: n
     return `${s}s`;
   };
   return (
-    <>
-      {bucketCountdown != null && bucketCountdown > 0 && (
-        <div className="absolute top-1 right-1 flex items-center gap-1 px-2 py-0.5 rounded-md bg-card/90 border border-border backdrop-blur-sm z-10">
-          <Timer className="w-3 h-3 text-muted-foreground" />
-          <span className="text-[9px] font-bold tabular-nums text-foreground">{fmt(bucketCountdown)}</span>
-        </div>
-      )}
-      {bucketProgress != null && (
-        <div className="absolute bottom-6 left-0 right-0 h-[2px] bg-muted/30">
-          <div className="h-full bg-primary/50 transition-all duration-1000 ease-linear" style={{ width: `${bucketProgress * 100}%` }} />
-        </div>
-      )}
-    </>
+    <div className="absolute top-1 right-1 flex items-center gap-1 px-2 py-0.5 rounded-md bg-card/90 border border-border backdrop-blur-sm z-10">
+      <Timer className="w-3 h-3 text-muted-foreground" />
+      <span className="text-[9px] font-bold tabular-nums text-foreground">{fmt(bucketCountdown)}</span>
+    </div>
   );
 }
 

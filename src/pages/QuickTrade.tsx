@@ -1173,20 +1173,30 @@ export default function QuickTrade() {
     : "neutral";
 
   // ── Chart engine integration ──
-  // Feed engine with enough history to produce ~60 candles for the selected timeframe
+  // Stable seed history: only rebuilt on asset/timeframe change, not on every streaming tick
+  const historyVersionRef = useRef(0);
+  const lastSeedKeyRef = useRef("");
+  const seedKey = `${selectedAsset.symbol}:${chartMs}`;
+  if (seedKey !== lastSeedKeyRef.current) {
+    lastSeedKeyRef.current = seedKey;
+    historyVersionRef.current += 1;
+  }
+  const historyVersion = historyVersionRef.current;
+
   const engineHistoryPoints = useMemo(() => {
     const raw = rawDataRef.current.get(selectedAsset.symbol);
     if (!raw || raw.length === 0) {
       return priceHistory.map(p => ({ ts: p.ts, price: p.price }));
     }
-    // We want ~60 candles worth of data for the engine
     const candleCount = 60;
     const windowMs = chartMs * candleCount;
     const cutoff = Date.now() - windowMs;
     return raw
       .filter(([ts]) => ts >= cutoff)
       .map(([ts, price]) => ({ ts, price }));
-  }, [priceHistory, chartMs, selectedAsset.symbol]);
+  // Only recompute on version change (asset/timeframe switch), NOT on priceHistory updates
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [historyVersion, chartMs, selectedAsset.symbol]);
 
   const {
     candles: engineCandles,
@@ -1200,6 +1210,7 @@ export default function QuickTrade() {
     priceHistory: engineHistoryPoints,
     streamingPrice,
     historyLoading,
+    historyVersion,
   });
 
   const formatTime = (s: number) =>

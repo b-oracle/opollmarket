@@ -1,6 +1,10 @@
 /**
  * React hook that wires the ChartEngine to live tick streams.
  * Produces candles and line points for the chart renderer.
+ * 
+ * KEY DESIGN: The engine is only re-initialized when asset/timeframe truly changes
+ * (via historyVersion). Streaming ticks are processed incrementally via processTick().
+ * This prevents the "scatter/refresh" effect caused by repeated initFromHistory calls.
  */
 
 import { useRef, useState, useEffect, useMemo } from "react";
@@ -9,12 +13,14 @@ import { ChartEngine, getTimeframeMs, type Candle, type LinePoint } from "@/lib/
 interface UseChartEngineOptions {
   /** Chart timeframe key: "1m", "5m", "15m", "1h", "4h", "1d" */
   chartTimeframe: string;
-  /** Historical price data points */
+  /** Historical price data points (seed data — should be stable between ticks) */
   priceHistory: { ts: number; price: number }[];
   /** Live streaming price (updates frequently) */
   streamingPrice: number | null;
   /** Whether history is still loading */
   historyLoading: boolean;
+  /** Explicit version counter — engine re-inits ONLY when this changes */
+  historyVersion?: number;
 }
 
 interface UseChartEngineResult {
@@ -37,35 +43,33 @@ export function useChartEngine({
   priceHistory,
   streamingPrice,
   historyLoading,
+  historyVersion = 0,
 }: UseChartEngineOptions): UseChartEngineResult {
   const tfMs = useMemo(() => getTimeframeMs(chartTimeframe), [chartTimeframe]);
   const engineRef = useRef<ChartEngine | null>(null);
   const [version, setVersion] = useState(0);
-  const historyInitializedRef = useRef<string>("");
+  const seededVersionRef = useRef(-1);
 
   // Create/recreate engine when timeframe changes
   useEffect(() => {
     const engine = new ChartEngine(tfMs, 200, 10000);
     engine.setOnChange(() => setVersion(v => v + 1));
     engineRef.current = engine;
-    historyInitializedRef.current = "";
+    seededVersionRef.current = -1;
     setVersion(0);
   }, [tfMs]);
 
-  // Initialize from history when it arrives
+  // Initialize from history ONLY when historyVersion changes (asset switch, timeframe switch, reconnect)
   useEffect(() => {
     const engine = engineRef.current;
     if (!engine || historyLoading || priceHistory.length < 2) return;
 
-    // Use first+last ts for a more robust dedup key
-    const first = priceHistory[0];
-    const last = priceHistory[priceHistory.length - 1];
-    const histKey = `${chartTimeframe}:${priceHistory.length}:${first?.ts}:${last?.ts}`;
-    if (historyInitializedRef.current === histKey) return;
-    historyInitializedRef.current = histKey;
+    // Only re-seed if historyVersion actually changed
+    if (seededVersionRef.current === historyVersion) return;
+    seededVersionRef.current = historyVersion;
 
     engine.initFromHistory(priceHistory);
-  }, [priceHistory, historyLoading, chartTimeframe]);
+  }, [priceHistory, historyLoading, historyVersion]);
 
   // Process streaming ticks — throttle to max 25fps to avoid over-rendering
   const lastProcessedPriceRef = useRef<number>(0);
@@ -103,7 +107,7 @@ export function useChartEngine({
     return () => clearInterval(iv);
   }, [tfMs]);
 
-  // Derive render data from engine — only recomputes on version/countdown/progress changes
+  // Derive render data from engine — only recomputes on version/countdown changes
   const result = useMemo((): UseChartEngineResult => {
     const engine = engineRef.current;
     if (!engine) {
