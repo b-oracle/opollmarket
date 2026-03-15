@@ -7,7 +7,7 @@ import { useSidebarState } from "@/hooks/useSidebarState";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import logo from "@/assets/logo.png";
 
-const allNavItems = [
+const allNavItems: { icon: typeof Home; label: string; path: string; featureKey: string | null; requiresAuth?: boolean }[] = [
 { icon: Home, label: "Home", path: "/", featureKey: null },
 { icon: Compass, label: "Feed", path: "/feed", featureKey: "feed" },
 { icon: Zap, label: "Quick Trade", path: "/quick-trade", featureKey: "quick_trade" },
