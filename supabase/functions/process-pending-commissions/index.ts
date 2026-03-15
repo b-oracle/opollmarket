@@ -79,7 +79,9 @@ Deno.serve(async (req) => {
 
         // Release: deduct from admin pool, credit to recipient
         if (pc.type === "bc400") {
-          // BC400 stays in admin pool but tracked separately
+          // BC400: deduct from admin balance and track in bc400_pool_balance
+          await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -pc.amount });
+
           const { data: cs } = await supabase
             .from("commission_settings")
             .select("bc400_pool_balance, id")

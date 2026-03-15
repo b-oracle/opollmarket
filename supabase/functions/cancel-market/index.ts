@@ -167,6 +167,45 @@ Deno.serve(async (req) => {
       }
     }
 
+    // --- Debit admin pool for fees already credited at trade time ---
+    // The admin was credited totalFees for each buy transaction.
+    // Pending commissions are voided (never disbursed), but the fee itself
+    // is still in the admin balance. We must debit it back.
+    const { data: adminRole } = await adminClient
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "admin")
+      .limit(1)
+      .single();
+
+    if (adminRole && totalRefunded > 0) {
+      // Sum all admin commission transactions for this market
+      const { data: adminCommTxns } = await adminClient
+        .from("transactions")
+        .select("amount")
+        .eq("market_id", market_id)
+        .eq("user_id", adminRole.user_id)
+        .eq("type", "commission")
+        .eq("status", "confirmed");
+
+      const totalAdminFees = (adminCommTxns || []).reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+
+      if (totalAdminFees > 0) {
+        await adminClient.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -totalAdminFees });
+
+        await adminClient.from("transactions").insert({
+          user_id: adminRole.user_id,
+          market_id: market_id,
+          type: "commission",
+          amount: totalAdminFees,
+          side: "fee_reversal",
+          status: "reversed",
+        });
+
+        console.log("cancel-market: Reversed admin fees:", totalAdminFees);
+      }
+    }
+
     if (totalCommissionsVoided > 0) {
       console.log("cancel-market: Voided pending commissions:", totalCommissionsVoided);
     }

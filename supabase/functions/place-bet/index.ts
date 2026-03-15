@@ -263,8 +263,22 @@ Deno.serve(async (req) => {
     });
     if (posError) {
       console.error("Position insert error:", posError);
-      // Refund balance atomically
+      // Refund user balance atomically
       await supabase.rpc("adjust_balance", { _user_id: userId, _delta: mainDeduct, _bonus_delta: bonusForFees });
+
+      // Reverse admin fee credit to prevent phantom revenue
+      if (adminRole && totalFees > 0) {
+        await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -totalFees });
+      }
+
+      // Delete pending commissions that were just inserted for this trade
+      await supabase
+        .from("pending_commissions")
+        .delete()
+        .eq("market_id", marketId)
+        .eq("status", "pending")
+        .gte("created_at", new Date(Date.now() - 10000).toISOString());
+
       return new Response(JSON.stringify({ error: "Failed to create position" }), {
         status: 500, headers: corsHeaders,
       });
