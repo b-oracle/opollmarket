@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Home, Compass, PlusCircle, BarChart3, User, Trophy, Gift, HelpCircle, LogIn, LogOut, ChevronsLeft, ChevronsRight, Zap } from "lucide-react";
+import { Home, Compass, PlusCircle, BarChart3, User, Trophy, Gift, HelpCircle, LogIn, LogOut, ChevronsLeft, ChevronsRight, Zap, DollarSign } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import SignOutConfirmDialog from "@/components/SignOutConfirmDialog";
@@ -7,7 +7,7 @@ import { useSidebarState } from "@/hooks/useSidebarState";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import logo from "@/assets/logo.png";
 
-const allNavItems = [
+const allNavItems: { icon: typeof Home; label: string; path: string; featureKey: string | null; requiresAuth?: boolean }[] = [
 { icon: Home, label: "Home", path: "/", featureKey: null },
 { icon: Compass, label: "Feed", path: "/feed", featureKey: "feed" },
 { icon: Zap, label: "Quick Trade", path: "/quick-trade", featureKey: "quick_trade" },
@@ -16,6 +16,7 @@ const allNavItems = [
 { icon: User, label: "Profile", path: "/profile", featureKey: "social_profiles" },
 { icon: Trophy, label: "Leaderboard", path: "/rankings", featureKey: "rankings" },
 { icon: Gift, label: "Referrals", path: "/referrals", featureKey: "referrals" },
+{ icon: DollarSign, label: "Commissions", path: "/commissions", featureKey: null, requiresAuth: true },
 { icon: HelpCircle, label: "FAQ", path: "/faq", featureKey: "faq" }];
 
 
@@ -28,7 +29,7 @@ const DesktopSidebar = () => {
   const { isFeatureEnabled } = useFeatureToggles();
 
   const navItems = allNavItems.filter(
-    (item) => !item.featureKey || isFeatureEnabled(item.featureKey)
+    (item) => (!item.featureKey || isFeatureEnabled(item.featureKey)) && (!item.requiresAuth || !!user)
   );
 
   return (

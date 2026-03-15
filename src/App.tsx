@@ -59,6 +59,7 @@ const InvestorDeck = lazy(() => import("./pages/admin/InvestorDeck"));
 const AdminFiatSettings = lazy(() => import("./pages/admin/AdminFiatSettings"));
 const AdminReferrals = lazy(() => import("./pages/admin/AdminReferrals"));
 const Referrals = lazy(() => import("./pages/Referrals"));
+const Commissions = lazy(() => import("./pages/Commissions"));
 const FAQ = lazy(() => import("./pages/FAQ"));
 const Disclaimer = lazy(() => import("./pages/Disclaimer"));
 const Terms = lazy(() => import("./pages/Terms"));
@@ -261,6 +262,7 @@ const App = () => (
                         <Route path="/forgot-password" element={<ForgotPassword />} />
                         <Route path="/setup-security" element={<SetupSecurity />} />
                         <Route path="/referrals" element={<FeatureGate featureKey="referrals"><Referrals /></FeatureGate>} />
+                        <Route path="/commissions" element={<Commissions />} />
                         <Route path="/faq" element={<FeatureGate featureKey="faq"><FAQ /></FeatureGate>} />
                         <Route path="/disclaimer" element={<Disclaimer />} />
                         <Route path="/terms" element={<Terms />} />
