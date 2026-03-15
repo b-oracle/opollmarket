@@ -1041,7 +1041,6 @@ const Profile = () => {
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Balance</p>
           <p className="text-3xl font-bold text-primary">${balance.toFixed(2)}</p>
           <p className="text-[10px] text-muted-foreground">USD</p>
-          )}
         </div>
 
         <div className="grid grid-cols-3 gap-3 mb-3">
