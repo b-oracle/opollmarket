@@ -67,7 +67,7 @@ function priceToY(p: number, domainMin: number, domainRange: number): number {
   return PAD_TOP + (PRICE_H - PAD_TOP - PAD_BOT) * (1 - (p - domainMin) / domainRange);
 }
 
-function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, streamingPrice, chartMs }: Props) {
+function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, streamingPrice, chartMs, precomputedMAs }: Props) {
   const candles = useMemo(() => {
     if (ohlcData && ohlcData.length >= 2) {
       const slice = ohlcData.slice(-60);
