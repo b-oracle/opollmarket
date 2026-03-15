@@ -132,13 +132,16 @@ const BoostedCarousel = ({
                   </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-card/90 to-transparent" />
-                {boost && (
-                  <div className="absolute top-2 left-2 flex items-center gap-1 glass rounded-full px-2 py-0.5">
-                    <Zap className="w-3 h-3 text-primary" />
-                    <span className="text-[10px] font-bold text-primary">Boosted</span>
-                  </div>
-                )}
-                {!boost && (
+                {boost ? (() => {
+                  const tc = getBoostTierConfig(boost.tier);
+                  const TierIcon = tc.icon;
+                  return (
+                    <div className="absolute top-2 left-2 flex items-center gap-1 glass rounded-full px-2 py-0.5">
+                      <TierIcon className="w-3 h-3" style={{ color: tc.color }} />
+                      <span className="text-[10px] font-bold" style={{ color: tc.color }}>{tc.label}</span>
+                    </div>
+                  );
+                })() : (
                   <div className="absolute top-2 left-2 flex items-center gap-1 glass rounded-full px-2 py-0.5">
                     <Zap className="w-3 h-3 text-primary" />
                     <span className="text-[10px] font-bold text-primary">Trending</span>
