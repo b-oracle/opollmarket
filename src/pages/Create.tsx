@@ -1016,7 +1016,7 @@ const Create = () => {
       await supabase.from("market_boosts").insert({
         market_id: data.id,
         tier: creationBoostTier,
-        amount: BOOST_TIER_PRICES[creationBoostTier],
+        amount: boostTierPrices[creationBoostTier],
         payer_wallet: user.id,
         ends_at: boostEnds.toISOString(),
         status: "active",
