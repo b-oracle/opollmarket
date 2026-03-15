@@ -99,8 +99,7 @@ Deno.serve(async (req) => {
 
     const payment = await npResponse.json();
 
-    // adminClient already created above
-    );
+    // Insert broadcast record
 
     const { data: broadcast, error: insertError } = await adminClient
       .from("market_broadcasts")
