@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
     // Get commission settings for auto-copy execution
     const { data: commData } = await supabase
       .from("commission_settings")
-      .select("admin_fee_percent, creator_fee_percent, copy_trade_commission_percent")
+      .select("admin_fee_percent, copy_trade_commission_percent")
       .limit(1)
       .single();
 
