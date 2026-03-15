@@ -396,7 +396,8 @@ export default function QuickTrade() {
   }, []);
   const validChartTypes = ["area", "candle", "tv"] as const;
   const savedCT = typeof window !== "undefined" ? localStorage.getItem("qt-chart-type") : null;
-  const initialCT = (savedCT && (validChartTypes as readonly string[]).includes(savedCT) ? savedCT : "area") as "area" | "candle" | "tv";
+  const rawInitialCT = (savedCT && (validChartTypes as readonly string[]).includes(savedCT) ? savedCT : "area") as "area" | "candle" | "tv";
+  const initialCT = rawInitialCT === "tv" && !tvChartEnabled ? "area" : rawInitialCT;
   const [chartType, setChartTypeRaw] = useState<"area" | "candle" | "tv">(initialCT);
   const setChartType = useCallback((ct: "area" | "candle" | "tv") => {
     setChartTypeRaw(ct);
