@@ -402,6 +402,13 @@ export default function QuickTrade() {
     setChartTimeframeRaw(tf);
     try { localStorage.setItem("qt-chart-tf", tf); } catch {}
   }, []);
+  // Reset chart timeframe if current selection is no longer in filtered list
+  useEffect(() => {
+    const keys = CHART_TIMEFRAMES.map(t => t.key);
+    if (!keys.includes(chartTimeframe) && keys.length > 0) {
+      setChartTimeframe(keys[0] as ChartTF);
+    }
+  }, [CHART_TIMEFRAMES, chartTimeframe, setChartTimeframe]);
   const validChartTypes = ["area", "candle", "tv"] as const;
   const savedCT = typeof window !== "undefined" ? localStorage.getItem("qt-chart-type") : null;
   const rawInitialCT = (savedCT && (validChartTypes as readonly string[]).includes(savedCT) ? savedCT : "area") as "area" | "candle" | "tv";
