@@ -245,6 +245,7 @@ const AdminSettings = () => {
       const { error } = await supabase
         .from("commission_settings")
         .update({
+          prediction_fee_percent: predictionFeeNum,
           admin_fee_percent: adminNum,
           creator_fee_percent: creatorNum,
           creator_fee_blue_percent: creatorBlueNum,
