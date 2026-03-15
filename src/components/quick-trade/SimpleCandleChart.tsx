@@ -1,24 +1,22 @@
-import { memo, useMemo, useRef } from "react";
+import { memo, useRef, useEffect, useState, useMemo } from "react";
 import type { OHLCCandle } from "@/lib/cryptoPriceProvider";
 
 const UP = "hsl(142, 76%, 36%)";
 const DOWN = "hsl(0, 84%, 60%)";
-const UP_DIM = "hsl(142, 76%, 36% / 0.25)";
-const DOWN_DIM = "hsl(0, 84%, 60% / 0.25)";
-const GRID = "hsl(var(--border) / 0.25)";
+const UP_DIM = "hsla(142, 76%, 36%, 0.25)";
+const DOWN_DIM = "hsla(0, 84%, 60%, 0.25)";
+const GRID_COLOR = "rgba(128, 128, 128, 0.18)";
 const ENTRY_COLOR = "#f59e0b";
 const MA7_COLOR = "hsl(45, 93%, 58%)";
 const MA14_COLOR = "hsl(280, 80%, 65%)";
 
-const CHART_H = 220;
-const PRICE_RATIO = 0.78;
-const PRICE_H = Math.floor(CHART_H * PRICE_RATIO);
-const VOL_H = CHART_H - PRICE_H;
-const PAD_TOP = 6;
-const PAD_BOT = 2;
-
-/** Hysteresis lerp factor — expand instantly, contract gradually */
 const LERP_CONTRACT = 0.12;
+const CHART_H_DEFAULT = 220;
+const MAX_CANDLES = 60;
+
+// Ring buffer: 5 fields per candle (ts, open, high, low, close)
+const FIELDS = 5;
+const BUFFER_CAP = MAX_CANDLES;
 
 interface Props {
   ohlcData?: OHLCCandle[];
@@ -27,13 +25,11 @@ interface Props {
   assetClass?: string;
   streamingPrice: number | null;
   chartMs?: number;
-  /** Pre-computed MA values from chart engine, one per candle */
   precomputedMAs?: { ma7?: number; ma14?: number }[];
-  /** When true, chart fills its container instead of using fixed height */
   fullscreen?: boolean;
 }
 
-function fmtAxis(p: number, ac?: string): string {
+function fmtPrice(p: number, ac?: string): string {
   if (ac === "forex") return p.toFixed(4);
   if (p >= 10000) return p.toLocaleString(undefined, { maximumFractionDigits: 0 });
   if (p >= 1) return p.toFixed(2);
@@ -43,13 +39,12 @@ function fmtAxis(p: number, ac?: string): string {
 function synthesizeCandles(
   priceHistory: { ts: number; price: number }[],
   chartMs: number,
-  maxCandles = 60
+  maxCandles = MAX_CANDLES
 ): OHLCCandle[] {
   if (priceHistory.length < 2) return [];
   const sorted = [...priceHistory].sort((a, b) => a.ts - b.ts);
   const bucketMs = Math.max(chartMs / maxCandles, 5000);
   const buckets = new Map<number, { o: number; h: number; l: number; c: number; t: number }>();
-
   for (const pt of sorted) {
     const bs = Math.floor(pt.ts / bucketMs) * bucketMs;
     const ex = buckets.get(bs);
@@ -61,25 +56,41 @@ function synthesizeCandles(
       buckets.set(bs, { o: pt.price, h: pt.price, l: pt.price, c: pt.price, t: bs });
     }
   }
-
   return [...buckets.values()]
     .sort((a, b) => a.t - b.t)
     .slice(-maxCandles)
     .map(b => ({ time: b.t / 1000, open: b.o, high: b.h, low: b.l, close: b.c }));
 }
 
-function priceToY(p: number, domainMin: number, domainRange: number): number {
-  return PAD_TOP + (PRICE_H - PAD_TOP - PAD_BOT) * (1 - (p - domainMin) / domainRange);
+interface OverlayState {
+  lastPrice: number;
+  lastY: number;
+  isBull: boolean;
+  entryY: number;
+  entryVisible: boolean;
+  gridLevels: { price: number; yPct: number }[];
 }
 
 function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, streamingPrice, chartMs, precomputedMAs, fullscreen }: Props) {
-  // Y-axis hysteresis refs
-  const prevDomainMinRef = useRef<number | null>(null);
-  const prevDomainMaxRef = useRef<number | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef(0);
+  const bufRef = useRef(new Float64Array(BUFFER_CAP * FIELDS));
+  const bufLenRef = useRef(0);
+  const domainMinRef = useRef<number | null>(null);
+  const domainMaxRef = useRef<number | null>(null);
+  const lastDataHashRef = useRef("");
 
+  const [overlay, setOverlay] = useState<OverlayState>({
+    lastPrice: 0, lastY: 50, isBull: true, entryY: 0, entryVisible: false, gridLevels: [],
+  });
+  const overlayRef = useRef(overlay);
+  const lastOverlayTsRef = useRef(0);
+
+  // Pre-process candle data into buffer
   const candles = useMemo(() => {
     if (ohlcData && ohlcData.length >= 2) {
-      const slice = ohlcData.slice(-60);
+      const slice = ohlcData.slice(-MAX_CANDLES);
       if (streamingPrice != null && slice.length > 0) {
         const last = { ...slice[slice.length - 1] };
         last.close = streamingPrice;
@@ -95,194 +106,320 @@ function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, str
     return [];
   }, [ohlcData, priceHistory, streamingPrice, chartMs]);
 
-  const n = candles.length;
+  // Sync candles into ring buffer
+  useEffect(() => {
+    const n = candles.length;
+    if (n < 2) { bufLenRef.current = 0; return; }
+    const hash = `${n}-${candles[n - 1].close}-${candles[n - 1].time}`;
+    if (hash === lastDataHashRef.current) return;
+    lastDataHashRef.current = hash;
 
-  const { domainMin, domainMax, domainRange, gridLevels, ma7Pts, ma14Pts, volMax } = useMemo(() => {
-    if (n < 2) return { domainMin: 0, domainMax: 1, domainRange: 1, gridLevels: [] as number[], ma7Pts: null as string | null, ma14Pts: null as string | null, volMax: 1 };
-
-    let lo = Infinity, hi = -Infinity;
-    for (const c of candles) {
-      if (c.low < lo) lo = c.low;
-      if (c.high > hi) hi = c.high;
+    const buf = bufRef.current;
+    const count = Math.min(n, BUFFER_CAP);
+    const startIdx = n - count;
+    for (let i = 0; i < count; i++) {
+      const c = candles[startIdx + i];
+      const off = i * FIELDS;
+      buf[off] = c.time;
+      buf[off + 1] = c.open;
+      buf[off + 2] = c.high;
+      buf[off + 3] = c.low;
+      buf[off + 4] = c.close;
     }
-    const pad = (hi - lo) * 0.08 || 0.5;
-    let targetMin = lo - pad;
-    let targetMax = hi + pad;
+    bufLenRef.current = count;
+  }, [candles]);
 
-    // Hysteresis: expand immediately, contract gradually
-    const prev = prevDomainMinRef.current;
-    const prevMax = prevDomainMaxRef.current;
-    if (prev != null && prevMax != null) {
-      // Expand instantly
-      const newMin = targetMin < prev ? targetMin : prev + (targetMin - prev) * LERP_CONTRACT;
-      const newMax = targetMax > prevMax ? targetMax : prevMax + (targetMax - prevMax) * LERP_CONTRACT;
-      targetMin = newMin;
-      targetMax = newMax;
-    }
-    prevDomainMinRef.current = targetMin;
-    prevDomainMaxRef.current = targetMax;
+  // Canvas RAF draw loop
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+    const ctx = canvas.getContext("2d", { alpha: true });
+    if (!ctx) return;
 
-    const dRange = targetMax - targetMin;
+    let running = true;
 
-    const step = dRange / 5;
-    const gl: number[] = [];
-    for (let i = 1; i <= 4; i++) gl.push(targetMin + step * i);
+    const draw = () => {
+      if (!running) return;
+      rafRef.current = requestAnimationFrame(draw);
 
-    // Volume proxy: candle range
-    const vols = candles.map(c => Math.abs(c.high - c.low) || 0.001);
-    const vMax = Math.max(...vols, 0.001);
+      const buf = bufRef.current;
+      const n = bufLenRef.current;
+      if (n < 2) return;
 
-    // MAs — use precomputed from engine if available
-    const computeMAFromEngine = (key: "ma7" | "ma14"): string | null => {
-      if (!precomputedMAs || precomputedMAs.length !== n) return null;
-      const pts: string[] = [];
-      for (let i = 0; i < n; i++) {
-        const val = precomputedMAs[i]?.[key];
-        if (val == null) continue;
-        const x = (i / n) * 85 + 85 / n / 2;
-        const y = priceToY(val, targetMin, dRange);
-        pts.push(`${x},${y}`);
+      // Resize
+      const rect = container.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = rect.width;
+      const h = rect.height;
+      const cw = Math.round(w * dpr);
+      const ch = Math.round(h * dpr);
+      if (canvas.width !== cw || canvas.height !== ch) {
+        canvas.width = cw;
+        canvas.height = ch;
+        canvas.style.width = `${w}px`;
+        canvas.style.height = `${h}px`;
       }
-      return pts.length >= 2 ? pts.join(" ") : null;
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+
+      const chartW = w * 0.85;
+      const priceH = h * 0.78;
+      const volH = h - priceH;
+      const padTop = 4;
+      const padBot = 2;
+
+      // Domain with hysteresis
+      let lo = Infinity, hi = -Infinity;
+      for (let i = 0; i < n; i++) {
+        const high = buf[i * FIELDS + 2];
+        const low = buf[i * FIELDS + 3];
+        if (low < lo) lo = low;
+        if (high > hi) hi = high;
+      }
+      const pad = (hi - lo) * 0.08 || 0.5;
+      let tMin = lo - pad;
+      let tMax = hi + pad;
+      const pMin = domainMinRef.current;
+      const pMax = domainMaxRef.current;
+      if (pMin != null && pMax != null) {
+        tMin = tMin < pMin ? tMin : pMin + (tMin - pMin) * LERP_CONTRACT;
+        tMax = tMax > pMax ? tMax : pMax + (tMax - pMax) * LERP_CONTRACT;
+      }
+      domainMinRef.current = tMin;
+      domainMaxRef.current = tMax;
+      const dRange = tMax - tMin;
+
+      const toY = (price: number) => padTop + (priceH - padTop - padBot) * (1 - (price - tMin) / dRange);
+
+      // Volume max
+      let volMax = 0.001;
+      for (let i = 0; i < n; i++) {
+        const v = Math.abs(buf[i * FIELDS + 2] - buf[i * FIELDS + 3]) || 0.001;
+        if (v > volMax) volMax = v;
+      }
+
+      // Grid lines
+      const step = dRange / 5;
+      const gridLevels: { price: number; yPct: number }[] = [];
+      ctx.strokeStyle = GRID_COLOR;
+      ctx.lineWidth = 0.5;
+      for (let i = 1; i <= 4; i++) {
+        const level = tMin + step * i;
+        const gy = toY(level);
+        gridLevels.push({ price: level, yPct: (gy / h) * 100 });
+        ctx.beginPath();
+        ctx.moveTo(0, gy);
+        ctx.lineTo(chartW, gy);
+        ctx.stroke();
+      }
+
+      // Volume separator
+      ctx.beginPath();
+      ctx.moveTo(0, priceH);
+      ctx.lineTo(chartW, priceH);
+      ctx.stroke();
+
+      const slotW = chartW / n;
+
+      // Volume bars
+      for (let i = 0; i < n; i++) {
+        const open = buf[i * FIELDS + 1];
+        const high = buf[i * FIELDS + 2];
+        const low = buf[i * FIELDS + 3];
+        const close = buf[i * FIELDS + 4];
+        const vol = Math.abs(high - low) || 0.001;
+        const barW = slotW * 0.7;
+        const x = i * slotW + slotW * 0.15;
+        const barH = (vol / volMax) * (volH - 4);
+        ctx.fillStyle = close >= open ? UP_DIM : DOWN_DIM;
+        ctx.fillRect(x, priceH + (volH - barH - 2), barW, Math.max(barH, 0.5));
+      }
+
+      // Candle sticks
+      for (let i = 0; i < n; i++) {
+        const open = buf[i * FIELDS + 1];
+        const high = buf[i * FIELDS + 2];
+        const low = buf[i * FIELDS + 3];
+        const close = buf[i * FIELDS + 4];
+        const bull = close >= open;
+        const color = bull ? UP : DOWN;
+        const cx = i * slotW + slotW / 2;
+        const bodyW = slotW * 0.55;
+
+        const wickTop = toY(high);
+        const wickBot = toY(low);
+        const bodyTop = toY(Math.max(open, close));
+        const bodyBot = toY(Math.min(open, close));
+        const bodyH = Math.max(bodyBot - bodyTop, 0.5);
+
+        // Wick
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.9;
+        ctx.beginPath();
+        ctx.moveTo(cx, wickTop);
+        ctx.lineTo(cx, wickBot);
+        ctx.stroke();
+
+        // Body
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = color;
+        ctx.fillRect(cx - bodyW / 2, bodyTop, bodyW, bodyH);
+      }
+
+      // MA lines
+      const drawMA = (key: "ma7" | "ma14", color: string) => {
+        if (precomputedMAs && precomputedMAs.length === n) {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.5;
+          ctx.globalAlpha = 0.8;
+          ctx.lineJoin = "round";
+          ctx.beginPath();
+          let started = false;
+          for (let i = 0; i < n; i++) {
+            const val = precomputedMAs[i]?.[key];
+            if (val == null) continue;
+            const x = i * slotW + slotW / 2;
+            const y = toY(val);
+            if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+          }
+          if (started) ctx.stroke();
+          ctx.globalAlpha = 1;
+          return;
+        }
+        // Fallback: compute from buffer
+        const period = key === "ma7" ? 7 : 14;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.globalAlpha = 0.8;
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        let started = false;
+        for (let i = period - 1; i < n; i++) {
+          let sum = 0;
+          for (let j = i - period + 1; j <= i; j++) sum += buf[j * FIELDS + 4];
+          const avg = sum / period;
+          const x = i * slotW + slotW / 2;
+          const y = toY(avg);
+          if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+        }
+        if (started) ctx.stroke();
+        ctx.globalAlpha = 1;
+      };
+
+      drawMA("ma7", MA7_COLOR);
+      drawMA("ma14", MA14_COLOR);
+
+      // Entry price line
+      let entryVisible = false;
+      let entryYPct = 0;
+      if (entryPrice != null && entryPrice >= tMin && entryPrice <= tMax) {
+        entryVisible = true;
+        const ey = toY(entryPrice);
+        entryYPct = (ey / h) * 100;
+        ctx.strokeStyle = ENTRY_COLOR;
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.9;
+        ctx.setLineDash([3, 2]);
+        ctx.beginPath();
+        ctx.moveTo(0, ey);
+        ctx.lineTo(chartW, ey);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+      }
+
+      // Current price dotted line
+      const lastClose = buf[(n - 1) * FIELDS + 4];
+      const lastOpen = buf[(n - 1) * FIELDS + 1];
+      const isBull = lastClose >= lastOpen;
+      const lastY = toY(lastClose);
+      const lastCandleX = (n - 1) * slotW + slotW / 2;
+
+      ctx.strokeStyle = isBull ? UP : DOWN;
+      ctx.lineWidth = 0.5;
+      ctx.globalAlpha = 0.5;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(lastCandleX, lastY);
+      ctx.lineTo(w, lastY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+
+      // MA legend
+      const fontSize = fullscreen ? 11 : 7;
+      ctx.font = `600 ${fontSize}px system-ui`;
+      ctx.globalAlpha = 0.7;
+      ctx.fillStyle = MA7_COLOR;
+      ctx.textAlign = "left";
+      ctx.fillText("MA7", 4, h - 4);
+      ctx.fillStyle = MA14_COLOR;
+      ctx.fillText("MA14", 4 + ctx.measureText("MA7").width + 8, h - 4);
+      ctx.globalAlpha = 1;
+
+      // Update overlay at ~10fps
+      const now = performance.now();
+      if (now - lastOverlayTsRef.current > 100) {
+        lastOverlayTsRef.current = now;
+        const lastYPct = (lastY / h) * 100;
+        const prev = overlayRef.current;
+        if (prev.lastPrice !== lastClose || Math.abs(prev.lastY - lastYPct) > 0.3 || prev.entryVisible !== entryVisible || prev.gridLevels.length !== gridLevels.length) {
+          const next: OverlayState = { lastPrice: lastClose, lastY: lastYPct, isBull, entryY: entryYPct, entryVisible, gridLevels };
+          overlayRef.current = next;
+          setOverlay(next);
+        }
+      }
     };
 
-    const computeMA = (period: number): string | null => {
-      const pts: string[] = [];
-      for (let i = 0; i < n; i++) {
-        if (i < period - 1) continue;
-        let sum = 0;
-        for (let j = i - period + 1; j <= i; j++) sum += candles[j].close;
-        const avg = sum / period;
-        const x = (i / n) * 85 + 85 / n / 2;
-        const y = priceToY(avg, targetMin, dRange);
-        pts.push(`${x},${y}`);
-      }
-      return pts.length >= 2 ? pts.join(" ") : null;
-    };
+    rafRef.current = requestAnimationFrame(draw);
+    return () => { running = false; cancelAnimationFrame(rafRef.current); };
+  }, [candles, entryPrice, assetClass, precomputedMAs, fullscreen]);
 
-    const ma7Result = computeMAFromEngine("ma7") ?? computeMA(7);
-    const ma14Result = computeMAFromEngine("ma14") ?? computeMA(14);
-
-    return { domainMin: targetMin, domainMax: targetMax, domainRange: dRange, gridLevels: gl, ma7Pts: ma7Result, ma14Pts: ma14Result, volMax: vMax };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [candles, n, precomputedMAs]);
-
-  if (n < 2) return null;
-
-  const lastCandle = candles[n - 1];
-  const isLastBull = lastCandle.close >= lastCandle.open;
-  const vols = candles.map(c => Math.abs(c.high - c.low) || 0.001);
+  if (candles.length < 2) return null;
 
   return (
-    <div className="w-full select-none relative" style={{ height: fullscreen ? "100%" : CHART_H }}>
-      <svg viewBox={`0 0 100 ${CHART_H}`} preserveAspectRatio={fullscreen ? "xMidYMid meet" : "none"} className="w-full h-full" style={{ overflow: "visible" }}>
-        {/* Grid */}
-        {gridLevels.map((level, i) => (
-          <line key={i} x1={0} y1={priceToY(level, domainMin, domainRange)} x2={85} y2={priceToY(level, domainMin, domainRange)} stroke={GRID} strokeWidth={0.15} strokeDasharray="0.5 0.5" />
-        ))}
-
-        {/* Volume separator */}
-        <line x1={0} y1={PRICE_H} x2={85} y2={PRICE_H} stroke={GRID} strokeWidth={0.15} />
-
-        {/* Volume bars — constrained to 0–85 range */}
-        {candles.map((c, i) => {
-          const barW = (85 / n) * 0.7;
-          const x = (i / n) * 85 + (85 / n) * 0.15;
-          const volH = (vols[i] / volMax) * (VOL_H - 4);
-          return (
-            <rect key={`v${i}`} x={x} y={PRICE_H + (VOL_H - volH - 2)} width={barW} height={Math.max(volH, 0.3)} fill={c.close >= c.open ? UP_DIM : DOWN_DIM} rx={0.2} />
-          );
-        })}
-
-        {/* Candle sticks — constrained to 0–85 range */}
-        {candles.map((c, i) => {
-          const slotW = 85 / n;
-          const cx = i * slotW + slotW / 2;
-          const bodyW = slotW * 0.55;
-          const bull = c.close >= c.open;
-          const fill = bull ? UP : DOWN;
-
-          const wickTop = priceToY(c.high, domainMin, domainRange);
-          const wickBot = priceToY(c.low, domainMin, domainRange);
-          const bodyTop = priceToY(Math.max(c.open, c.close), domainMin, domainRange);
-          const bodyBot = priceToY(Math.min(c.open, c.close), domainMin, domainRange);
-          const bodyH = Math.max(bodyBot - bodyTop, 0.4);
-
-          return (
-            <g key={`c${i}`}>
-              <line x1={cx} y1={wickTop} x2={cx} y2={wickBot} stroke={fill} strokeWidth={0.2} strokeOpacity={0.9} />
-              <rect x={cx - bodyW / 2} y={bodyTop} width={bodyW} height={bodyH} fill={fill} rx={0.15} />
-            </g>
-          );
-        })}
-
-        {/* MA7 */}
-        {ma7Pts && <polyline points={ma7Pts} fill="none" stroke={MA7_COLOR} strokeWidth={0.4} strokeLinejoin="round" />}
-
-        {/* MA14 */}
-        {ma14Pts && <polyline points={ma14Pts} fill="none" stroke={MA14_COLOR} strokeWidth={0.4} strokeLinejoin="round" />}
-
-        {/* Entry price line */}
-        {entryPrice != null && entryPrice >= domainMin && entryPrice <= domainMax && (
-          <line x1={0} y1={priceToY(entryPrice, domainMin, domainRange)} x2={85} y2={priceToY(entryPrice, domainMin, domainRange)} stroke={ENTRY_COLOR} strokeWidth={0.25} strokeDasharray="0.8 0.4" strokeOpacity={0.9} />
-        )}
-
-        {/* Current price dotted line */}
-        <line
-          x1={((n - 1) / n) * 85 + 85 / n / 2}
-          y1={priceToY(lastCandle.close, domainMin, domainRange)}
-          x2={85}
-          y2={priceToY(lastCandle.close, domainMin, domainRange)}
-          stroke={isLastBull ? UP : DOWN}
-          strokeWidth={0.2} strokeDasharray="0.4 0.3" strokeOpacity={0.6}
-        />
-      </svg>
+    <div ref={containerRef} className="w-full select-none relative" style={{ height: fullscreen ? "100%" : CHART_H_DEFAULT }}>
+      <canvas ref={canvasRef} className="w-full h-full block" />
 
       {/* Price axis labels */}
       <div className="absolute right-0 top-0 bottom-0 pointer-events-none" style={{ width: fullscreen ? 64 : 48 }}>
-        {gridLevels.map((level, i) => {
-          const yPct = (priceToY(level, domainMin, domainRange) / CHART_H) * 100;
-          return (
-            <span key={i} className={`absolute tabular-nums text-muted-foreground text-right pr-1 leading-none ${fullscreen ? "text-[11px]" : "text-[8px]"}`} style={{ top: `${yPct}%`, transform: "translateY(-50%)", right: 0 }}>
-              {fmtAxis(level, assetClass)}
-            </span>
-          );
-        })}
+        {overlay.gridLevels.map((level, i) => (
+          <span key={i} className={`absolute tabular-nums text-muted-foreground text-right pr-1 leading-none ${fullscreen ? "text-[11px]" : "text-[8px]"}`} style={{ top: `${level.yPct}%`, transform: "translateY(-50%)", right: 0 }}>
+            {fmtPrice(level.price, assetClass)}
+          </span>
+        ))}
       </div>
 
       {/* Current price badge */}
       <div
         className={`absolute right-0 px-1.5 py-0.5 rounded-sm font-bold tabular-nums transition-all duration-300 ease-out ${fullscreen ? "text-xs" : "text-[8px]"}`}
         style={{
-          top: `${(priceToY(lastCandle.close, domainMin, domainRange) / CHART_H) * 100}%`,
+          top: `${overlay.lastY}%`,
           transform: "translateY(-50%)",
-          backgroundColor: isLastBull ? UP : DOWN,
+          backgroundColor: overlay.isBull ? UP : DOWN,
           color: "white",
         }}
       >
-        {fmtAxis(lastCandle.close, assetClass)}
+        {fmtPrice(overlay.lastPrice, assetClass)}
       </div>
 
       {/* Entry price badge */}
-      {entryPrice != null && entryPrice >= domainMin && entryPrice <= domainMax && (
+      {overlay.entryVisible && entryPrice != null && (
         <div
           className={`absolute right-0 px-1.5 py-0.5 rounded-sm font-bold tabular-nums ${fullscreen ? "text-xs" : "text-[8px]"}`}
           style={{
-            top: `${(priceToY(entryPrice, domainMin, domainRange) / CHART_H) * 100}%`,
+            top: `${overlay.entryY}%`,
             transform: "translateY(-50%)",
             backgroundColor: ENTRY_COLOR,
             color: "white",
           }}
         >
-          {fmtAxis(entryPrice, assetClass)}
+          {fmtPrice(entryPrice, assetClass)}
         </div>
       )}
-
-      {/* MA legend */}
-      <div className="absolute bottom-1 left-1 flex items-center gap-2 pointer-events-none">
-        <span className="text-[7px] font-semibold opacity-70" style={{ color: MA7_COLOR }}>MA7</span>
-        <span className="text-[7px] font-semibold opacity-70" style={{ color: MA14_COLOR }}>MA14</span>
-      </div>
     </div>
   );
 }
