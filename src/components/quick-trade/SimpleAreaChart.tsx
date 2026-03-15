@@ -140,7 +140,7 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
 
       {/* Current price badge */}
       <div
-        className="absolute right-0 px-1.5 py-0.5 rounded-sm text-[8px] font-bold tabular-nums transition-all duration-300 ease-out"
+        className={`absolute right-0 px-1.5 py-0.5 rounded-sm font-bold tabular-nums transition-all duration-300 ease-out ${fullscreen ? "text-xs" : "text-[8px]"}`}
         style={{
           top: `${lastY}%`,
           transform: "translateY(-50%)",
