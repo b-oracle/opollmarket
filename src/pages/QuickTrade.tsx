@@ -243,6 +243,7 @@ export default function QuickTrade() {
   const navigate = useNavigate();
   const { toggles } = useFeatureToggles();
   const tvChartEnabled = toggles.find((t) => t.feature_key === "tradingview_chart")?.enabled ?? false;
+  const lineChartEnabled = toggles.find((t) => t.feature_key === "line_chart")?.enabled ?? true;
   const queryClient = useQueryClient();
   const { data: commissionSettings } = useCommissionSettings();
   const { fireWinConfetti } = useConfetti();
@@ -412,12 +413,18 @@ export default function QuickTrade() {
   const validChartTypes = ["area", "candle", "tv"] as const;
   const savedCT = typeof window !== "undefined" ? localStorage.getItem("qt-chart-type") : null;
   const rawInitialCT = (savedCT && (validChartTypes as readonly string[]).includes(savedCT) ? savedCT : "area") as "area" | "candle" | "tv";
-  const initialCT = rawInitialCT === "tv" && !tvChartEnabled ? "area" : rawInitialCT;
+  const initialCT = rawInitialCT === "tv" && !tvChartEnabled ? "area" : rawInitialCT === "area" && !lineChartEnabled ? "candle" : rawInitialCT;
   const [chartType, setChartTypeRaw] = useState<"area" | "candle" | "tv">(initialCT);
   const setChartType = useCallback((ct: "area" | "candle" | "tv") => {
     setChartTypeRaw(ct);
     try { localStorage.setItem("qt-chart-type", ct); } catch {}
   }, []);
+  // Force away from disabled chart types
+  useEffect(() => {
+    if (!lineChartEnabled && chartType === "area") {
+      setChartType("candle");
+    }
+  }, [lineChartEnabled, chartType, setChartType]);
   const chartMs = CHART_TIMEFRAMES.find(t => t.key === chartTimeframe)!.ms;
 
   const [priceHistory, setPriceHistory] = useState<{ time: string; price: number; ts: number }[]>([]);
@@ -1411,13 +1418,15 @@ export default function QuickTrade() {
                   ))}
                 </div>
                 <div className="flex items-center gap-0.5 bg-muted/40 rounded-md p-0.5">
-                  <button
-                    onClick={() => setChartType("area")}
-                    className={`p-1.5 rounded transition-all ${chartType === "area" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                    title="Area chart"
-                  >
-                    <LineChartIcon className="w-3.5 h-3.5" />
-                  </button>
+                  {lineChartEnabled && (
+                    <button
+                      onClick={() => setChartType("area")}
+                      className={`p-1.5 rounded transition-all ${chartType === "area" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                      title="Area chart"
+                    >
+                      <LineChartIcon className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   {selectedAsset.assetClass === "crypto" && (
                     <button
                       onClick={() => setChartType("candle")}
