@@ -110,7 +110,13 @@ const BoostedCarousel = ({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               onClick={() => navigate(`/market/${market.id}`)}
-              className="snap-start shrink-0 w-full glass rounded-2xl overflow-hidden cursor-pointer hover:ring-1 hover:ring-primary/40 transition-all active:scale-[0.97] ring-1 ring-primary/20"
+              className="snap-start shrink-0 w-full glass rounded-2xl overflow-hidden cursor-pointer transition-all active:scale-[0.97]"
+              style={boost ? {
+                boxShadow: getBoostTierConfig(boost.tier).glowShadow,
+                border: `1px solid ${getBoostTierConfig(boost.tier).ringClass}`,
+              } : {
+                border: '1px solid hsl(var(--primary) / 0.2)',
+              }}
             >
               {/* Image */}
               <div className="relative h-28 bg-secondary overflow-hidden">
