@@ -299,15 +299,6 @@ function QuickTradeChart(props: QuickTradeChartProps) {
       <BucketBadges bucketCountdown={bucketCountdown} />
       <p className="text-[10px] text-muted-foreground text-center mt-1">Last {timeframeLabel}</p>
 
-      {/* Expand button */}
-      <button
-        onClick={() => setIsFullscreen(true)}
-        className="absolute bottom-7 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-all shadow-md active:scale-95"
-        title="Expand chart"
-      >
-        <Maximize2 className="w-3.5 h-3.5" />
-        <span className="text-[10px] font-semibold">Expand</span>
-      </button>
     </div>
   );
 }
