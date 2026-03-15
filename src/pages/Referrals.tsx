@@ -305,6 +305,15 @@ const Referrals = () => {
           </p>
         </div>
 
+        {/* See Commissions Breakdown */}
+        <button
+          onClick={() => navigate("/commissions")}
+          className="w-full glass rounded-xl p-4 mb-6 flex items-center justify-center gap-2 text-sm font-semibold text-primary hover:bg-accent/50 transition-colors active:scale-[0.98]"
+        >
+          <DollarSign className="w-4 h-4" />
+          See Commissions Breakdown
+        </button>
+
         {/* How it works */}
         <div className="glass rounded-xl p-5 mb-6">
           <h3 className="text-sm font-semibold mb-3">How It Works</h3>
@@ -313,7 +322,8 @@ const Referrals = () => {
               { step: "1", text: "Share your referral link or username code with friends" },
               { step: "2", text: "Your friend signs up — they appear instantly in your referral list as 'Pending'" },
               { step: "3", text: `When they place their first prediction, you earn a $${rewardAmount} bonus credit` },
-              { step: "4", text: "Bonus credits are applied as fee credits on your future predictions" },
+              { step: "4", text: "You also earn a commission on every prediction your referral makes" },
+              { step: "5", text: "Bonus credits are applied as fee credits on your future predictions" },
             ].map((item) => (
               <div key={item.step} className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
@@ -324,15 +334,6 @@ const Referrals = () => {
             ))}
           </div>
         </div>
-
-        {/* See Commissions Breakdown */}
-        <button
-          onClick={() => navigate("/commissions")}
-          className="w-full glass rounded-xl p-4 mb-6 flex items-center justify-center gap-2 text-sm font-semibold text-primary hover:bg-accent/50 transition-colors active:scale-[0.98]"
-        >
-          <DollarSign className="w-4 h-4" />
-          See Commissions Breakdown
-        </button>
 
         {/* Referral History */}
         <div className="mb-6">
