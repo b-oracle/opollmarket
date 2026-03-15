@@ -1022,6 +1022,57 @@ export type Database = {
           },
         ]
       }
+      pending_commissions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          market_id: string | null
+          releases_at: string
+          status: string
+          trade_transaction_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          market_id?: string | null
+          releases_at?: string
+          status?: string
+          trade_transaction_id?: string | null
+          type?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          market_id?: string | null
+          releases_at?: string
+          status?: string
+          trade_transaction_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_commissions_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_commissions_trade_transaction_id_fkey"
+            columns: ["trade_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pending_copy_trades: {
         Row: {
           amount: number
