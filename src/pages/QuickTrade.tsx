@@ -1465,6 +1465,7 @@ export default function QuickTrade() {
                 priceHistory={priceHistory}
                 ohlcData={ohlcData}
                 streamingPrice={streamingPrice}
+                streamingPriceRef={streamingPriceRef}
                 historyLoading={historyLoading}
                 activeRound={activeRound}
                 userBet={userBet}
