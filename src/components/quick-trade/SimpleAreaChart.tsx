@@ -1,12 +1,17 @@
-import { memo, useMemo, useRef } from "react";
+import { memo, useRef, useEffect, useState, useMemo } from "react";
 
 const UP = "hsl(142, 76%, 36%)";
 const DOWN = "hsl(0, 84%, 60%)";
+const UP_FILL_TOP = "hsla(142, 76%, 36%, 0.35)";
+const UP_FILL_BOT = "hsla(142, 76%, 36%, 0.02)";
+const DOWN_FILL_TOP = "hsla(0, 84%, 60%, 0.35)";
+const DOWN_FILL_BOT = "hsla(0, 84%, 60%, 0.02)";
 const ENTRY_COLOR = "#f59e0b";
-const GRID = "hsl(var(--border) / 0.25)";
+const GRID_COLOR = "rgba(128, 128, 128, 0.18)";
 
-/** Hysteresis lerp factor — expand instantly, contract gradually */
 const LERP_CONTRACT = 0.12;
+const CHART_H_DEFAULT = 200;
+const BUFFER_CAP = 600;
 
 interface Props {
   priceHistory: { time: string; price: number; ts: number }[];
@@ -14,8 +19,16 @@ interface Props {
   assetClass?: string;
   userBet: { side: string } | null;
   activeRound: { open_price: number | null } | null;
-  /** When true, chart fills its container instead of using fixed height */
   fullscreen?: boolean;
+}
+
+interface OverlayState {
+  lastPrice: number;
+  lastY: number;
+  isBull: boolean;
+  entryY: number;
+  entryVisible: boolean;
+  gridLevels: { price: number; yPct: number }[];
 }
 
 function fmtPrice(p: number, ac?: string): string {
@@ -26,114 +39,226 @@ function fmtPrice(p: number, ac?: string): string {
 }
 
 function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, activeRound, fullscreen }: Props) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef(0);
+
+  // Ring buffer: 2 fields per point (ts, price)
+  const bufRef = useRef(new Float64Array(BUFFER_CAP * 2));
+  const bufLenRef = useRef(0);
+  const domainMinRef = useRef<number | null>(null);
+  const domainMaxRef = useRef<number | null>(null);
+  const lastHashRef = useRef("");
+
+  const [overlay, setOverlay] = useState<OverlayState>({
+    lastPrice: 0, lastY: 50, isBull: true, entryY: 0, entryVisible: false, gridLevels: [],
+  });
+  const overlayRef = useRef(overlay);
+  const lastOverlayTsRef = useRef(0);
+
+  // Sync price history into buffer
   const data = priceHistory;
   const n = data.length;
 
-  // Y-axis hysteresis refs
-  const prevDomainMinRef = useRef<number | null>(null);
-  const prevDomainMaxRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (n < 2) { bufLenRef.current = 0; return; }
+    const hash = `${n}-${data[n - 1].price}-${data[n - 1].ts}`;
+    if (hash === lastHashRef.current) return;
+    lastHashRef.current = hash;
 
-  const { points, color, domainMin, domainRange, gridLevels } = useMemo(() => {
-    if (n < 2) return { points: "", color: UP, domainMin: 0, domainRange: 1, gridLevels: [] };
-
-    let lo = Infinity, hi = -Infinity;
-    for (const d of data) {
-      if (d.price < lo) lo = d.price;
-      if (d.price > hi) hi = d.price;
+    const buf = bufRef.current;
+    const count = Math.min(n, BUFFER_CAP);
+    const startIdx = n - count;
+    for (let i = 0; i < count; i++) {
+      const d = data[startIdx + i];
+      buf[i * 2] = d.ts;
+      buf[i * 2 + 1] = d.price;
     }
-    const pad = (hi - lo) * 0.08 || hi * 0.001 || 1;
-    let targetMin = lo - pad;
-    let targetMax = hi + pad;
+    bufLenRef.current = count;
+  }, [data, n]);
 
-    // Hysteresis: expand immediately, contract gradually
-    const prev = prevDomainMinRef.current;
-    const prevMax = prevDomainMaxRef.current;
-    if (prev != null && prevMax != null) {
-      targetMin = targetMin < prev ? targetMin : prev + (targetMin - prev) * LERP_CONTRACT;
-      targetMax = targetMax > prevMax ? targetMax : prevMax + (targetMax - prevMax) * LERP_CONTRACT;
-    }
-    prevDomainMinRef.current = targetMin;
-    prevDomainMaxRef.current = targetMax;
-
-    const dRange = targetMax - targetMin;
-
-    // Determine color
-    let c = UP;
+  // Determine line color
+  const color = useMemo(() => {
+    if (n < 2) return UP;
     if (userBet && activeRound?.open_price) {
       const entry = Number(activeRound.open_price);
       const cur = data[n - 1].price;
       const inProfit = userBet.side === "down" ? cur < entry : cur > entry;
-      c = inProfit ? UP : DOWN;
-    } else {
-      c = data[n - 1].price >= data[0].price ? UP : DOWN;
+      return inProfit ? UP : DOWN;
     }
-
-    // SVG points (viewBox is 0 0 100 100)
-    const H = 100;
-    const pts = data.map((d, i) => {
-      const x = (i / (n - 1)) * 88;
-      const y = H - ((d.price - targetMin) / dRange) * H;
-      return `${x},${y}`;
-    }).join(" ");
-
-    // Grid levels (4 lines)
-    const step = dRange / 5;
-    const gl: number[] = [];
-    for (let i = 1; i <= 4; i++) gl.push(targetMin + step * i);
-
-    return { points: pts, color: c, domainMin: targetMin, domainRange: dRange, gridLevels: gl };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return data[n - 1].price >= data[0].price ? UP : DOWN;
   }, [data, n, userBet, activeRound]);
+
+  const isBullColor = color === UP;
+
+  // Canvas RAF draw loop
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+    const ctx = canvas.getContext("2d", { alpha: true });
+    if (!ctx) return;
+
+    let running = true;
+
+    const draw = () => {
+      if (!running) return;
+      rafRef.current = requestAnimationFrame(draw);
+
+      const buf = bufRef.current;
+      const pts = bufLenRef.current;
+      if (pts < 2) return;
+
+      // Resize
+      const rect = container.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = rect.width;
+      const h = rect.height;
+      const cw = Math.round(w * dpr);
+      const ch = Math.round(h * dpr);
+      if (canvas.width !== cw || canvas.height !== ch) {
+        canvas.width = cw;
+        canvas.height = ch;
+        canvas.style.width = `${w}px`;
+        canvas.style.height = `${h}px`;
+      }
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+
+      const chartW = w * 0.88;
+      const padTop = 4;
+      const padBot = 4;
+
+      // Domain with hysteresis
+      let lo = Infinity, hi = -Infinity;
+      for (let i = 0; i < pts; i++) {
+        const p = buf[i * 2 + 1];
+        if (p < lo) lo = p;
+        if (p > hi) hi = p;
+      }
+      const pad = (hi - lo) * 0.08 || hi * 0.001 || 1;
+      let tMin = lo - pad;
+      let tMax = hi + pad;
+      const pMin = domainMinRef.current;
+      const pMax = domainMaxRef.current;
+      if (pMin != null && pMax != null) {
+        tMin = tMin < pMin ? tMin : pMin + (tMin - pMin) * LERP_CONTRACT;
+        tMax = tMax > pMax ? tMax : pMax + (tMax - pMax) * LERP_CONTRACT;
+      }
+      domainMinRef.current = tMin;
+      domainMaxRef.current = tMax;
+      const dRange = tMax - tMin;
+
+      const toY = (price: number) => padTop + (h - padTop - padBot) * (1 - (price - tMin) / dRange);
+      const toX = (i: number) => (i / (pts - 1)) * chartW;
+
+      // Grid lines
+      const step = dRange / 5;
+      const gridLevels: { price: number; yPct: number }[] = [];
+      ctx.strokeStyle = GRID_COLOR;
+      ctx.lineWidth = 0.5;
+      ctx.setLineDash([2, 2]);
+      for (let i = 1; i <= 4; i++) {
+        const level = tMin + step * i;
+        const gy = toY(level);
+        gridLevels.push({ price: level, yPct: (gy / h) * 100 });
+        ctx.beginPath();
+        ctx.moveTo(0, gy);
+        ctx.lineTo(chartW, gy);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+
+      // Build line path
+      ctx.beginPath();
+      for (let i = 0; i < pts; i++) {
+        const x = toX(i);
+        const y = toY(buf[i * 2 + 1]);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+
+      // Stroke line
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.lineJoin = "round";
+      ctx.stroke();
+
+      // Area fill (gradient)
+      const lastX = toX(pts - 1);
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, isBullColor ? UP_FILL_TOP : DOWN_FILL_TOP);
+      grad.addColorStop(1, isBullColor ? UP_FILL_BOT : DOWN_FILL_BOT);
+      ctx.lineTo(lastX, h);
+      ctx.lineTo(0, h);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Entry price line
+      let entryVisible = false;
+      let entryYPct = 0;
+      if (entryPrice != null && entryPrice >= tMin && entryPrice <= tMax) {
+        entryVisible = true;
+        const ey = toY(entryPrice);
+        entryYPct = (ey / h) * 100;
+        ctx.strokeStyle = ENTRY_COLOR;
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.9;
+        ctx.setLineDash([3, 2]);
+        ctx.beginPath();
+        ctx.moveTo(0, ey);
+        ctx.lineTo(chartW, ey);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+      }
+
+      // Current price dotted line to right edge
+      const lastPrice = buf[(pts - 1) * 2 + 1];
+      const lastY = toY(lastPrice);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 0.5;
+      ctx.globalAlpha = 0.6;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(chartW, lastY);
+      ctx.lineTo(w, lastY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+
+      // Update overlay at ~10fps
+      const now = performance.now();
+      if (now - lastOverlayTsRef.current > 100) {
+        lastOverlayTsRef.current = now;
+        const lastYPct = (lastY / h) * 100;
+        const firstPrice = buf[1];
+        const isBull = lastPrice >= firstPrice;
+        const prev = overlayRef.current;
+        if (prev.lastPrice !== lastPrice || Math.abs(prev.lastY - lastYPct) > 0.3 || prev.entryVisible !== entryVisible || prev.gridLevels.length !== gridLevels.length) {
+          const next: OverlayState = { lastPrice, lastY: lastYPct, isBull, entryY: entryYPct, entryVisible, gridLevels };
+          overlayRef.current = next;
+          setOverlay(next);
+        }
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(draw);
+    return () => { running = false; cancelAnimationFrame(rafRef.current); };
+  }, [priceHistory, entryPrice, assetClass, color, isBullColor, fullscreen]);
 
   if (n < 2) return null;
 
-  const priceY = (p: number) => 100 - ((p - domainMin) / domainRange) * 100;
-  const lastPrice = data[n - 1].price;
-  const lastY = priceY(lastPrice);
-  const isBull = data[n - 1].price >= data[0].price;
-
-  // Area polygon (line + bottom fill)
-  const areaPoints = `${points} 88,100 0,100`;
-
   return (
-    <div className="w-full select-none relative" style={{ height: fullscreen ? "100%" : 200 }}>
-      <svg viewBox="0 0 100 100" preserveAspectRatio={fullscreen ? "xMidYMid meet" : "none"} className="w-full h-full" style={{ overflow: "visible" }}>
-        <defs>
-          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity={0.35} />
-            <stop offset="100%" stopColor={color} stopOpacity={0.02} />
-          </linearGradient>
-        </defs>
-
-        {/* Grid */}
-        {gridLevels.map((level, i) => (
-          <line key={i} x1={0} y1={priceY(level)} x2={88} y2={priceY(level)} stroke={GRID} strokeWidth={0.15} strokeDasharray="0.5 0.5" />
-        ))}
-
-        {/* Area fill */}
-        <polygon points={areaPoints} fill="url(#areaGrad)" />
-
-        {/* Line */}
-        <polyline points={points} fill="none" stroke={color} strokeWidth={0.4} strokeLinejoin="round" />
-
-        {/* Entry price line */}
-        {entryPrice != null && entryPrice >= domainMin && entryPrice <= domainMin + domainRange && (
-          <line x1={0} y1={priceY(entryPrice)} x2={88} y2={priceY(entryPrice)} stroke={ENTRY_COLOR} strokeWidth={0.25} strokeDasharray="0.8 0.4" strokeOpacity={0.9} />
-        )}
-
-        {/* Current price dotted line */}
-        <line x1={88} y1={lastY} x2={100} y2={lastY} stroke={color} strokeWidth={0.2} strokeDasharray="0.4 0.3" strokeOpacity={0.6} />
-      </svg>
+    <div ref={containerRef} className="w-full select-none relative" style={{ height: fullscreen ? "100%" : CHART_H_DEFAULT }}>
+      <canvas ref={canvasRef} className="w-full h-full block" />
 
       {/* Price axis labels */}
       <div className="absolute right-0 top-0 bottom-0 pointer-events-none" style={{ width: fullscreen ? 64 : 48 }}>
-        {gridLevels.map((level, i) => (
-          <span
-            key={i}
-            className={`absolute tabular-nums text-muted-foreground text-right pr-1 leading-none ${fullscreen ? "text-[11px]" : "text-[8px]"}`}
-            style={{ top: `${priceY(level)}%`, transform: "translateY(-50%)", right: 0 }}
-          >
-            {fmtPrice(level, assetClass)}
+        {overlay.gridLevels.map((level, i) => (
+          <span key={i} className={`absolute tabular-nums text-muted-foreground text-right pr-1 leading-none ${fullscreen ? "text-[11px]" : "text-[8px]"}`} style={{ top: `${level.yPct}%`, transform: "translateY(-50%)", right: 0 }}>
+            {fmtPrice(level.price, assetClass)}
           </span>
         ))}
       </div>
@@ -142,21 +267,21 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
       <div
         className={`absolute right-0 px-1.5 py-0.5 rounded-sm font-bold tabular-nums transition-all duration-300 ease-out ${fullscreen ? "text-xs" : "text-[8px]"}`}
         style={{
-          top: `${lastY}%`,
+          top: `${overlay.lastY}%`,
           transform: "translateY(-50%)",
-          backgroundColor: isBull ? UP : DOWN,
+          backgroundColor: overlay.isBull ? UP : DOWN,
           color: "white",
         }}
       >
-        {fmtPrice(lastPrice, assetClass)}
+        {fmtPrice(overlay.lastPrice, assetClass)}
       </div>
 
       {/* Entry price badge */}
-      {entryPrice != null && entryPrice >= domainMin && entryPrice <= domainMin + domainRange && (
+      {overlay.entryVisible && entryPrice != null && (
         <div
           className={`absolute right-0 px-1.5 py-0.5 rounded-sm font-bold tabular-nums ${fullscreen ? "text-xs" : "text-[8px]"}`}
           style={{
-            top: `${priceY(entryPrice)}%`,
+            top: `${overlay.entryY}%`,
             transform: "translateY(-50%)",
             backgroundColor: ENTRY_COLOR,
             color: "white",
