@@ -198,16 +198,20 @@ Deno.serve(async (req) => {
     // --- Queue commissions for 48-hour deferred release ---
     const releasesAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
 
+    // Track inserted commission IDs for rollback on position failure
+    const insertedCommissionIds: string[] = [];
+
     // Creator commission (queued)
     if (creatorId && creatorAmount > 0) {
-      await supabase.from("pending_commissions").insert({
+      const { data: creatorComm } = await supabase.from("pending_commissions").insert({
         user_id: creatorId,
         market_id: marketId,
         amount: creatorAmount,
         type: "creator",
         status: "pending",
         releases_at: releasesAt,
-      });
+      }).select("id").single();
+      if (creatorComm) insertedCommissionIds.push(creatorComm.id);
 
       await supabase.from("notifications").insert({
         user_id: creatorId,
@@ -220,14 +224,15 @@ Deno.serve(async (req) => {
 
     // Referrer commission (queued)
     if (referrerId && referrerAmount > 0) {
-      await supabase.from("pending_commissions").insert({
+      const { data: refComm } = await supabase.from("pending_commissions").insert({
         user_id: referrerId,
         market_id: marketId,
         amount: referrerAmount,
         type: "referral",
         status: "pending",
         releases_at: releasesAt,
-      });
+      }).select("id").single();
+      if (refComm) insertedCommissionIds.push(refComm.id);
 
       await supabase.from("notifications").insert({
         user_id: referrerId,
@@ -240,14 +245,15 @@ Deno.serve(async (req) => {
 
     // BC400 pool (queued)
     if (bc400Amount > 0) {
-      await supabase.from("pending_commissions").insert({
+      const { data: bc400Comm } = await supabase.from("pending_commissions").insert({
         user_id: adminRole?.user_id || "00000000-0000-0000-0000-000000000000",
         market_id: marketId,
         amount: bc400Amount,
         type: "bc400",
         status: "pending",
         releases_at: releasesAt,
-      });
+      }).select("id").single();
+      if (bc400Comm) insertedCommissionIds.push(bc400Comm.id);
     }
 
     const poolAmount = netAmount;
