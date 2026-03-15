@@ -114,18 +114,22 @@ Deno.serve(async (req) => {
     }
 
     if (trade.trade_type === "prediction" && trade.market_id && trade.side) {
-      // Get commission settings
       const { data: commData } = await supabase
         .from("commission_settings")
-        .select("admin_fee_percent, copy_trade_commission_percent")
+        .select("admin_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, bc400_pool_percent, copy_trade_commission_percent")
         .limit(1)
         .single();
 
-      const adminFee = trade.amount * (Number(commData?.admin_fee_percent ?? 2) / 100);
+      const adminFeeRate = Number(commData?.admin_fee_percent ?? 2) / 100;
+      const creatorRate = Number(commData?.creator_fee_percent ?? 3) / 100;
+      const referrerRate = Number(commData?.referrer_commission_percent ?? 0) / 100;
+      const bc400Rate = Number((commData as any)?.bc400_pool_percent ?? 0) / 100;
+      const totalFeeRate = adminFeeRate + creatorRate + referrerRate + bc400Rate;
+      const totalFee = trade.amount * totalFeeRate;
       const copyTradeCommissionPercent = Number(commData?.copy_trade_commission_percent ?? 10);
       const totalDeduct = trade.amount;
       const tradePrice = trade.price || 50;
-      const finalShares = trade.shares || Math.max(0.01, Number(((trade.amount - adminFee) / (tradePrice / 100)).toFixed(2)));
+      const finalShares = trade.shares || Math.max(0.01, Number(((trade.amount - totalFee) / (tradePrice / 100)).toFixed(2)));
 
       // Deduct balance
       await supabase
