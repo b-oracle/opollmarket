@@ -90,7 +90,6 @@ Deno.serve(async (req) => {
     const totalFees = amount * predictionFeePercent;
 
     // Internal splits (these are % of the fee amount, must sum to 100)
-    const adminSplit = Number(commData?.admin_fee_percent ?? 20) / 100;
     const referrerSplit = Number(commData?.referrer_commission_percent ?? 0) / 100;
     const bc400Split = Number((commData as any)?.bc400_pool_percent ?? 0) / 100;
 
