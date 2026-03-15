@@ -1,12 +1,13 @@
-import { memo, useMemo, type MutableRefObject } from "react";
+import { memo, useState, type MutableRefObject } from "react";
 import type { OHLCCandle } from "@/lib/cryptoPriceProvider";
 import type { Candle, LinePoint } from "@/lib/chartEngine";
-import { Loader2, Timer } from "lucide-react";
+import { Loader2, Timer, Maximize2, Minimize2 } from "lucide-react";
 import { isMarketOpen } from "@/lib/marketHours";
 import TradingViewChart from "@/components/TradingViewChart";
 import MarketClosedOverlay from "@/components/quick-trade/MarketClosedOverlay";
 import SimpleAreaChart from "@/components/quick-trade/SimpleAreaChart";
 import SimpleCandleChart from "@/components/quick-trade/SimpleCandleChart";
+import ChartZoomWrapper from "@/components/quick-trade/ChartZoomWrapper";
 
 interface QuickTradeChartProps {
   chartType: "area" | "candle" | "tv";
@@ -89,6 +90,8 @@ function QuickTradeChart(props: QuickTradeChartProps) {
     bucketCountdown, bucketProgress,
   } = props;
 
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   const entryPrice = userBet && activeRound?.open_price ? Number(activeRound.open_price) : null;
 
   // 1. Market closed
@@ -125,29 +128,23 @@ function QuickTradeChart(props: QuickTradeChartProps) {
     return <ChartSkeleton text="Connecting to live feed..." />;
   }
 
-  // 5. Candle chart — use ohlcData directly, or synthesize from priceHistory
+  // Render native chart content
+  let chartContent: React.ReactNode = null;
+
   if (chartType === "candle") {
     if (ohlcData.length >= 2) {
-      return (
-        <div className="relative">
-          <SimpleCandleChart
-            ohlcData={ohlcData}
-            entryPrice={entryPrice}
-            assetClass={assetClass}
-            streamingPrice={streamingPrice}
-          />
-          <BucketBadges bucketCountdown={bucketCountdown} bucketProgress={bucketProgress} />
-          <p className="text-[10px] text-muted-foreground text-center mt-1">Last {timeframeLabel}</p>
-        </div>
+      chartContent = (
+        <SimpleCandleChart
+          ohlcData={ohlcData}
+          entryPrice={entryPrice}
+          assetClass={assetClass}
+          streamingPrice={streamingPrice}
+        />
       );
-    }
-    // Not enough OHLC data — show skeleton briefly
-    if (priceHistory.length < 2) {
+    } else if (priceHistory.length < 2) {
       return <ChartSkeleton text="Building chart..." />;
-    }
-    // Fallback: synthesize candles from price history
-    return (
-      <div className="relative">
+    } else {
+      chartContent = (
         <SimpleCandleChart
           priceHistory={priceHistory}
           entryPrice={entryPrice}
@@ -155,19 +152,14 @@ function QuickTradeChart(props: QuickTradeChartProps) {
           streamingPrice={streamingPrice}
           chartMs={chartMs}
         />
-        <BucketBadges bucketCountdown={bucketCountdown} bucketProgress={bucketProgress} />
-        <p className="text-[10px] text-muted-foreground text-center mt-1">Last {timeframeLabel}</p>
-      </div>
-    );
-  }
-
-  // 6. Area chart — always renders from priceHistory (which gets streaming appends)
-  if (priceHistory.length < 2) {
-    return <ChartSkeleton text="Building chart..." />;
-  }
-
-  return (
-    <div className="relative">
+      );
+    }
+  } else {
+    // Area chart
+    if (priceHistory.length < 2) {
+      return <ChartSkeleton text="Building chart..." />;
+    }
+    chartContent = (
       <SimpleAreaChart
         priceHistory={priceHistory}
         entryPrice={entryPrice}
@@ -175,8 +167,58 @@ function QuickTradeChart(props: QuickTradeChartProps) {
         userBet={userBet}
         activeRound={activeRound}
       />
+    );
+  }
+
+  // Fullscreen wrapper
+  if (isFullscreen) {
+    return (
+      <div
+        className="fixed inset-0 z-50 bg-background flex flex-col"
+        style={{
+          paddingTop: "env(safe-area-inset-top, 0px)",
+          paddingLeft: "env(safe-area-inset-left, 0px)",
+          paddingRight: "env(safe-area-inset-right, 0px)",
+        }}
+      >
+        <div className="relative flex-1">
+          <ChartZoomWrapper className="w-full h-full" style={{ height: "100%" }}>
+            <div className="w-full h-full flex items-center justify-center">
+              {chartContent}
+            </div>
+          </ChartZoomWrapper>
+          <BucketBadges bucketCountdown={bucketCountdown} bucketProgress={bucketProgress} />
+        </div>
+        <button
+          onClick={() => setIsFullscreen(false)}
+          className="absolute left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm shadow-lg active:scale-95 transition-transform"
+          style={{ bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
+          title="Exit fullscreen"
+        >
+          <Minimize2 className="w-4 h-4" />
+          <span>Close Fullscreen</span>
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <ChartZoomWrapper>
+        {chartContent}
+      </ChartZoomWrapper>
       <BucketBadges bucketCountdown={bucketCountdown} bucketProgress={bucketProgress} />
       <p className="text-[10px] text-muted-foreground text-center mt-1">Last {timeframeLabel}</p>
+
+      {/* Expand button — same style as TradingView chart */}
+      <button
+        onClick={() => setIsFullscreen(true)}
+        className="absolute bottom-7 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-all shadow-md active:scale-95"
+        title="Expand chart"
+      >
+        <Maximize2 className="w-3.5 h-3.5" />
+        <span className="text-[10px] font-semibold">Expand</span>
+      </button>
     </div>
   );
 }
