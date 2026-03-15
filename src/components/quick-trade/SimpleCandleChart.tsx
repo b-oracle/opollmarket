@@ -29,6 +29,8 @@ interface Props {
   chartMs?: number;
   /** Pre-computed MA values from chart engine, one per candle */
   precomputedMAs?: { ma7?: number; ma14?: number }[];
+  /** When true, chart fills its container instead of using fixed height */
+  fullscreen?: boolean;
 }
 
 function fmtAxis(p: number, ac?: string): string {
@@ -70,7 +72,7 @@ function priceToY(p: number, domainMin: number, domainRange: number): number {
   return PAD_TOP + (PRICE_H - PAD_TOP - PAD_BOT) * (1 - (p - domainMin) / domainRange);
 }
 
-function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, streamingPrice, chartMs, precomputedMAs }: Props) {
+function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, streamingPrice, chartMs, precomputedMAs, fullscreen }: Props) {
   // Y-axis hysteresis refs
   const prevDomainMinRef = useRef<number | null>(null);
   const prevDomainMaxRef = useRef<number | null>(null);
@@ -172,7 +174,7 @@ function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, str
   const vols = candles.map(c => Math.abs(c.high - c.low) || 0.001);
 
   return (
-    <div className="w-full select-none relative" style={{ height: CHART_H }}>
+    <div className="w-full select-none relative" style={{ height: fullscreen ? "100%" : CHART_H }}>
       <svg viewBox={`0 0 100 ${CHART_H}`} preserveAspectRatio="none" className="w-full h-full" style={{ overflow: "visible" }}>
         {/* Grid */}
         {gridLevels.map((level, i) => (
@@ -237,11 +239,11 @@ function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, str
       </svg>
 
       {/* Price axis labels */}
-      <div className="absolute right-0 top-0 bottom-0 pointer-events-none" style={{ width: 48 }}>
+      <div className="absolute right-0 top-0 bottom-0 pointer-events-none" style={{ width: fullscreen ? 64 : 48 }}>
         {gridLevels.map((level, i) => {
           const yPct = (priceToY(level, domainMin, domainRange) / CHART_H) * 100;
           return (
-            <span key={i} className="absolute text-[8px] tabular-nums text-muted-foreground text-right pr-1 leading-none" style={{ top: `${yPct}%`, transform: "translateY(-50%)", right: 0 }}>
+            <span key={i} className={`absolute tabular-nums text-muted-foreground text-right pr-1 leading-none ${fullscreen ? "text-[11px]" : "text-[8px]"}`} style={{ top: `${yPct}%`, transform: "translateY(-50%)", right: 0 }}>
               {fmtAxis(level, assetClass)}
             </span>
           );
@@ -250,7 +252,7 @@ function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, str
 
       {/* Current price badge */}
       <div
-        className="absolute right-0 px-1.5 py-0.5 rounded-sm text-[8px] font-bold tabular-nums transition-all duration-300 ease-out"
+        className={`absolute right-0 px-1.5 py-0.5 rounded-sm font-bold tabular-nums transition-all duration-300 ease-out ${fullscreen ? "text-xs" : "text-[8px]"}`}
         style={{
           top: `${(priceToY(lastCandle.close, domainMin, domainRange) / CHART_H) * 100}%`,
           transform: "translateY(-50%)",
@@ -264,7 +266,7 @@ function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, str
       {/* Entry price badge */}
       {entryPrice != null && entryPrice >= domainMin && entryPrice <= domainMax && (
         <div
-          className="absolute right-0 px-1.5 py-0.5 rounded-sm text-[8px] font-bold tabular-nums"
+          className={`absolute right-0 px-1.5 py-0.5 rounded-sm font-bold tabular-nums ${fullscreen ? "text-xs" : "text-[8px]"}`}
           style={{
             top: `${(priceToY(entryPrice, domainMin, domainRange) / CHART_H) * 100}%`,
             transform: "translateY(-50%)",

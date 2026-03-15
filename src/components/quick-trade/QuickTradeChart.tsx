@@ -238,7 +238,28 @@ function QuickTradeChart(props: QuickTradeChartProps) {
     );
   }
 
-  // Fullscreen wrapper
+  // Clone chart content with fullscreen prop
+  const fullscreenChartContent = (() => {
+    if (chartType === "candle") {
+      const engineOhlc = lastStableEngineOhlcRef.current;
+      if (useEngineData && engineOhlc && engineOhlc.ohlc.length >= 2) {
+        return <SimpleCandleChart ohlcData={engineOhlc.ohlc} entryPrice={entryPrice} assetClass={assetClass} streamingPrice={null} precomputedMAs={engineOhlc.mas} fullscreen />;
+      }
+      if (ohlcData.length >= 2) {
+        return <SimpleCandleChart ohlcData={ohlcData} entryPrice={entryPrice} assetClass={assetClass} streamingPrice={streamingPrice} fullscreen />;
+      }
+      if (priceHistory.length >= 2) {
+        return <SimpleCandleChart priceHistory={priceHistory} entryPrice={entryPrice} assetClass={assetClass} streamingPrice={streamingPrice} chartMs={chartMs} fullscreen />;
+      }
+    } else {
+      const areaHistory = useEngineData ? enginePriceHistory : (liveEnginePriceHistory ?? priceHistory);
+      if (areaHistory && areaHistory.length >= 2) {
+        return <SimpleAreaChart priceHistory={areaHistory} entryPrice={entryPrice} assetClass={assetClass} userBet={userBet} activeRound={activeRound} fullscreen />;
+      }
+    }
+    return chartContent;
+  })();
+
   if (isFullscreen) {
     return (
       <div
@@ -249,10 +270,10 @@ function QuickTradeChart(props: QuickTradeChartProps) {
           paddingRight: "env(safe-area-inset-right, 0px)",
         }}
       >
-        <div className="relative flex-1">
+        <div className="relative flex-1 p-4">
           <ChartZoomWrapper className="w-full h-full" style={{ height: "100%" }} defaultZoom={1}>
-            <div className="w-full h-full flex items-center justify-center">
-              {chartContent}
+            <div className="w-full h-full">
+              {fullscreenChartContent}
             </div>
           </ChartZoomWrapper>
           <BucketBadges bucketCountdown={bucketCountdown} />

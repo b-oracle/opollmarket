@@ -14,6 +14,8 @@ interface Props {
   assetClass?: string;
   userBet: { side: string } | null;
   activeRound: { open_price: number | null } | null;
+  /** When true, chart fills its container instead of using fixed height */
+  fullscreen?: boolean;
 }
 
 function fmtPrice(p: number, ac?: string): string {
@@ -23,7 +25,7 @@ function fmtPrice(p: number, ac?: string): string {
   return p.toFixed(4);
 }
 
-function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, activeRound }: Props) {
+function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, activeRound, fullscreen }: Props) {
   const data = priceHistory;
   const n = data.length;
 
@@ -94,7 +96,7 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
   const areaPoints = `${points} 100,100 0,100`;
 
   return (
-    <div className="w-full select-none relative" style={{ height: 200 }}>
+    <div className="w-full select-none relative" style={{ height: fullscreen ? "100%" : 200 }}>
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full" style={{ overflow: "visible" }}>
         <defs>
           <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
@@ -124,11 +126,11 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
       </svg>
 
       {/* Price axis labels */}
-      <div className="absolute right-0 top-0 bottom-0 pointer-events-none" style={{ width: 48 }}>
+      <div className="absolute right-0 top-0 bottom-0 pointer-events-none" style={{ width: fullscreen ? 64 : 48 }}>
         {gridLevels.map((level, i) => (
           <span
             key={i}
-            className="absolute text-[8px] tabular-nums text-muted-foreground text-right pr-1 leading-none"
+            className={`absolute tabular-nums text-muted-foreground text-right pr-1 leading-none ${fullscreen ? "text-[11px]" : "text-[8px]"}`}
             style={{ top: `${priceY(level)}%`, transform: "translateY(-50%)", right: 0 }}
           >
             {fmtPrice(level, assetClass)}
@@ -138,7 +140,7 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
 
       {/* Current price badge */}
       <div
-        className="absolute right-0 px-1.5 py-0.5 rounded-sm text-[8px] font-bold tabular-nums transition-all duration-300 ease-out"
+        className={`absolute right-0 px-1.5 py-0.5 rounded-sm font-bold tabular-nums transition-all duration-300 ease-out ${fullscreen ? "text-xs" : "text-[8px]"}`}
         style={{
           top: `${lastY}%`,
           transform: "translateY(-50%)",
@@ -152,7 +154,7 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
       {/* Entry price badge */}
       {entryPrice != null && entryPrice >= domainMin && entryPrice <= domainMin + domainRange && (
         <div
-          className="absolute right-0 px-1.5 py-0.5 rounded-sm text-[8px] font-bold tabular-nums"
+          className={`absolute right-0 px-1.5 py-0.5 rounded-sm font-bold tabular-nums ${fullscreen ? "text-xs" : "text-[8px]"}`}
           style={{
             top: `${priceY(entryPrice)}%`,
             transform: "translateY(-50%)",
