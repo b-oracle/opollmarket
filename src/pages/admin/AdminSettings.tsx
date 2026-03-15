@@ -46,6 +46,7 @@ const ALL_TIMEFRAMES = [
 
 const AdminSettings = () => {
   const { canEdit } = useAdminContext();
+  const [predictionFee, setPredictionFee] = useState("10");
   const [adminFee, setAdminFee] = useState("");
   const [creatorFee, setCreatorFee] = useState("");
   const [creatorFeeBlue, setCreatorFeeBlue] = useState("");
