@@ -179,7 +179,8 @@ function SVGCandleChart({ candles, entryPrice, assetClass, timeframeLabel }: SVG
           <CandleStick
             key={`candle-${i}`}
             c={c} i={i} n={n}
-            priceY={priceY}
+            domainMin={domainMin} domainRange={domainRange}
+            priceH={PRICE_H} paddingTop={PADDING_TOP} paddingBottom={PADDING_BOTTOM}
             isActive={i === activeCandleIndex && !c.closed}
           />
         ))}
