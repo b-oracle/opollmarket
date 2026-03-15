@@ -605,6 +605,11 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
                     <Wallet className="w-4 h-4" />
                     Pay from Balance
                   </>
+                ) : payMethod === "ngn" ? (
+                  <>
+                    <Banknote className="w-4 h-4" />
+                    Pay with NGN
+                  </>
                 ) : (
                   "Confirm & Pay"
                 )}
