@@ -49,7 +49,7 @@ serve(async (req) => {
 
     if (!type || !title?.trim()) {
       return new Response(JSON.stringify({ error: "type and title are required" }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
