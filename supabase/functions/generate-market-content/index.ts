@@ -288,8 +288,8 @@ Use markdown formatting (headers, bullet points, bold). Keep it between 200-800 
           .eq("user_id", user.id)
           .eq("currency", "USDT");
 
-        return new Response(JSON.stringify({ error: "Failed to save generated image" }), {
-          status: 500,
+        return new Response(JSON.stringify({ error: "Failed to save generated image. You have been refunded." }), {
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
