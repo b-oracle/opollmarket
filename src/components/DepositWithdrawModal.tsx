@@ -1448,7 +1448,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                     <img src={bpayLogoWhite} alt="BoundlessPay" className="h-6 mb-3 hidden dark:block" />
                     <h3 className="text-lg font-bold mb-1">Complete Payment</h3>
                     <p className="text-sm text-muted-foreground text-center mb-2">
-                      A Payaza payment window has opened. Complete your payment there.
+                      A BoundlessPay payment window has opened. Complete your payment there.
                     </p>
                     <div className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-primary/5 border border-primary/20 mb-4">
                       <motion.div
