@@ -85,7 +85,7 @@ interface EnrichedPosition {
 }
 
 type FilterType = "all" | "profit" | "loss";
-type PortfolioTab = "positions" | "orders" | "copy" | "drafts";
+type PortfolioTab = "positions" | "orders" | "copy" | "drafts" | "insurance";
 
 const Sparkline = ({ avgPrice, currentPrice, seed }: { avgPrice: number; currentPrice: number; seed: string }) => {
   const count = 20;
@@ -175,6 +175,29 @@ const Portfolio = () => {
         .order("updated_at", { ascending: false });
       if (error) { console.error("Failed to fetch drafts:", error); return []; }
       return data || [];
+    },
+    enabled: !!user?.id,
+  });
+
+  // Fetch insurance claims history
+  const { data: insuranceClaims = [], isLoading: claimsLoading } = useQuery({
+    queryKey: ["insurance-claims", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("insurance_claims")
+        .select("id, tier, premium_paid, claim_amount, status, created_at, claimed_at, market_id")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      if (error) { console.error("Failed to fetch insurance claims:", error); return []; }
+      // Fetch market titles
+      const marketIds = [...new Set((data || []).map(c => c.market_id).filter(Boolean))];
+      let titleMap = new Map<string, string>();
+      if (marketIds.length > 0) {
+        const { data: markets } = await supabase.from("markets").select("id, title").in("id", marketIds);
+        if (markets) markets.forEach(m => titleMap.set(m.id, m.title));
+      }
+      return (data || []).map(c => ({ ...c, market_title: titleMap.get(c.market_id) || "Unknown Market" }));
     },
     enabled: !!user?.id,
   });
@@ -570,6 +593,22 @@ const Portfolio = () => {
               </span>
             )}
           </button>
+          <button
+            onClick={() => setActiveTab("insurance")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-xs font-semibold transition-all ${
+              activeTab === "insurance"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Shield className="w-3 h-3" />
+            oSURE
+            {insuranceClaims.length > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-500 text-[9px] font-bold">
+                {insuranceClaims.length}
+              </span>
+            )}
+          </button>
         </div>
 
         {activeTab === "positions" && (
@@ -903,6 +942,66 @@ const Portfolio = () => {
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* oSURE Insurance Tab */}
+        {activeTab === "insurance" && (
+          <div className="space-y-3">
+            {claimsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : insuranceClaims.length === 0 ? (
+              <div className="text-center py-12">
+                <Shield className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">No insurance claims yet</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">Insure your predictions with oSURE to protect against losses</p>
+              </div>
+            ) : (
+              insuranceClaims.map((claim: any) => (
+                <motion.div
+                  key={claim.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="glass rounded-xl p-4"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1 min-w-0 mr-3">
+                      <h4 className="text-sm font-semibold truncate">{claim.market_title}</h4>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {new Date(claim.created_at).toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })}
+                      </p>
+                    </div>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                      claim.status === "claimed"
+                        ? "bg-emerald-500/20 text-emerald-500"
+                        : claim.status === "forfeited"
+                        ? "bg-muted text-muted-foreground"
+                        : "bg-amber-500/20 text-amber-500"
+                    }`}>
+                      {claim.status}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 mt-3">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Coverage</p>
+                      <p className="text-sm font-bold">{Math.round(claim.tier * 100)}%</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Premium</p>
+                      <p className="text-sm font-bold text-destructive">-${Number(claim.premium_paid).toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Claim</p>
+                      <p className={`text-sm font-bold ${claim.status === "claimed" ? "text-emerald-500" : "text-muted-foreground"}`}>
+                        {claim.status === "claimed" ? `+$${Number(claim.claim_amount).toFixed(2)}` : claim.status === "forfeited" ? "Forfeited" : "Pending"}
+                      </p>
+                    </div>
                   </div>
                 </motion.div>
               ))
