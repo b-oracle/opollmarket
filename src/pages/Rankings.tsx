@@ -994,7 +994,11 @@ const Rankings = () => {
                                   </div>
                                   <div className="flex items-center gap-2 shrink-0">
                                     <p className="text-sm font-bold text-primary flex items-center gap-1">
-                                      <TrendingUp className="w-3.5 h-3.5" />+{ref.totalEarned.toFixed(0)}
+                                      {referralSort === "totalReferrals" ? (
+                                        <><Users className="w-3.5 h-3.5" />{ref.totalReferrals}</>
+                                      ) : (
+                                        <><TrendingUp className="w-3.5 h-3.5" />+{formatDollar(ref.totalEarned)}</>
+                                      )}
                                     </p>
                                     {isMe ? (
                                       <button onClick={(e) => { e.stopPropagation(); shareRank(rank, ref.name, ref.avatar, `+${formatDollar(ref.totalEarned)}`, true, `${ref.totalReferrals} referral${ref.totalReferrals !== 1 ? "s" : ""}`, "Referrals", sortedReferrers.length); }} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
