@@ -12,7 +12,10 @@ Deno.serve(async (req) => {
   try {
     const { bank_code, account_number } = await req.json();
 
-    if (!bank_code || !account_number || account_number.length < 10) {
+    const normalizedBankCode = String(bank_code ?? "").trim();
+    const normalizedAccountNumber = String(account_number ?? "").replace(/\D/g, "");
+
+    if (!normalizedBankCode || normalizedAccountNumber.length !== 10) {
       return new Response(
         JSON.stringify({ error: "Valid bank code and 10-digit account number required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -25,7 +28,7 @@ Deno.serve(async (req) => {
     const payazaMerchantKey = Deno.env.get("PAYAZA_MERCHANT_KEY");
 
     if (payazaSecretKey || payazaMerchantKey) {
-      accountName = await tryPayazaNameEnquiry(bank_code, account_number, payazaSecretKey ?? "", payazaMerchantKey ?? "");
+      accountName = await tryPayazaNameEnquiry(normalizedBankCode, normalizedAccountNumber, payazaSecretKey ?? "", payazaMerchantKey ?? "");
     }
 
     if (accountName) {
