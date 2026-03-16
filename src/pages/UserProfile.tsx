@@ -455,7 +455,7 @@ const UserProfile = () => {
 
         {/* Copy Trading Settings */}
         <AnimatePresence>
-          {showCopySettings && isFollowing && !isOwnProfile && (
+          {showCopySettings && isFollowing && !isOwnProfile && copyTradingEnabled && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
