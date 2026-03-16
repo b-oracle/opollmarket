@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
     }
 
     const userId = user.id;
-    const { marketId, optionId, side, amount, price, shares } = await req.json();
+    const { marketId, optionId, side, amount, price, shares, insuranceTier } = await req.json();
 
     // Validate inputs
     if (!marketId || !side || !amount || !price || !shares) {
