@@ -151,6 +151,10 @@ const AdminSettings = () => {
         setBoostWhalePrice(String(d.boost_whale_price ?? 150));
         setBroadcastPrice(String(d.broadcast_price ?? 5));
         setBc400PoolPercent(String(d.bc400_pool_percent ?? 0));
+        setOsureEnabled(d.osure_enabled !== false);
+        setOsure25Premium(String(d.osure_25_premium ?? 10));
+        setOsure50Premium(String(d.osure_50_premium ?? 20));
+        setOsure100Premium(String(d.osure_100_premium ?? 30));
         setSettingsId(d.id);
       }
       if (error) console.error(error);
