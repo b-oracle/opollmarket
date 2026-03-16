@@ -60,6 +60,7 @@ const AdminAnalytics = () => {
   const [popularMarkets, setPopularMarkets] = useState<{ id: string; title: string; count: number }[]>([]);
   const [qtStats, setQtStats] = useState<QtStats>({ totalBets: 0, totalWagered: 0, totalPayouts: 0, wins: 0, losses: 0, winRate: 0, dailyData: [], assetBreakdown: [] });
   const [revenueStats, setRevenueStats] = useState<RevenueStats>({ deposits: 0, withdrawals: 0, predictionVolume: 0, netRevenue: 0, dailyData: [] });
+  const [allTimePredictionVolume, setAllTimePredictionVolume] = useState(0);
   const [polyFees, setPolyFees] = useState<{ adminFees: number; creatorFees: number; totalVolume: number; marketCount: number; feesByMarket: { title: string; adminFee: number; creatorFee: number }[] }>({
     adminFees: 0, creatorFees: 0, totalVolume: 0, marketCount: 0, feesByMarket: [],
   });
@@ -96,8 +97,23 @@ const AdminAnalytics = () => {
         return all;
       };
 
+      // Fetch all-time prediction volume from markets table (no time filter)
+      const fetchAllTimeVolume = async () => {
+        let total = 0;
+        let from = 0;
+        const batchSize = 1000;
+        while (true) {
+          const { data, error } = await supabase.from("markets").select("volume").range(from, from + batchSize - 1);
+          if (error || !data || data.length === 0) break;
+          total += data.reduce((s, m) => s + Number(m.volume), 0);
+          if (data.length < batchSize) break;
+          from += batchSize;
+        }
+        return total;
+      };
+
       // Parallel fetches
-      const [eventsData, quickBetsData, txData, polyMarkets, { data: adminRoles }] = await Promise.all([
+      const [eventsData, quickBetsData, txData, polyMarkets, { data: adminRoles }, allTimeVol] = await Promise.all([
         fetchPaginated((p) =>
           supabase.from("analytics_events").select("event_name, user_id, created_at, properties").gte("created_at", sinceISO).order("created_at", { ascending: false }).range(p * 1000, (p + 1) * 1000 - 1)
         ),
@@ -109,7 +125,9 @@ const AdminAnalytics = () => {
         ),
         supabase.from("markets").select("id, title, polymarket_id").not("polymarket_id", "is", null).then(r => r.data || []),
         supabase.from("user_roles").select("user_id").eq("role", "admin"),
+        fetchAllTimeVolume(),
       ]);
+      setAllTimePredictionVolume(allTimeVol);
 
       setEvents(eventsData);
       const adminIds = new Set((adminRoles || []).map((r: any) => r.user_id));
@@ -327,7 +345,8 @@ const AdminAnalytics = () => {
     { label: "Predictions", value: totalPredictions.toLocaleString(), icon: Target, color: "text-purple-500" },
     { label: "Quick Trades", value: qtStats.totalBets.toLocaleString(), icon: Zap, color: "text-amber-500" },
     { label: "QT Win Rate", value: `${qtStats.winRate.toFixed(1)}%`, icon: Percent, color: "text-emerald-500" },
-    { label: "Prediction Vol", value: fmt(revenueStats.predictionVolume), icon: DollarSign, color: "text-cyan-500" },
+    { label: `Prediction Vol (${timeRange}d)`, value: fmt(revenueStats.predictionVolume), icon: DollarSign, color: "text-cyan-500" },
+    { label: "All-Time Pred Vol", value: fmt(allTimePredictionVolume), icon: ArrowUpDown, color: "text-green-500" },
     { label: "QT Volume", value: fmt(qtStats.totalWagered), icon: BarChart3, color: "text-orange-500" },
   ];
 
