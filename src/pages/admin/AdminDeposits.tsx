@@ -209,6 +209,11 @@ const AdminDeposits = () => {
                         </Badge>
                       </td>
                       <td className="px-4 py-3">
+                        <Badge variant="outline" className="text-[10px] font-mono">
+                          {(d as any).payment_provider === "flutterwave" ? "FLW" : (d as any).payment_provider === "payaza" ? "Payaza" : "Crypto"}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3">
                         <span className="font-mono text-xs text-muted-foreground">
                           {d.nowpayments_payment_id || "—"}
                         </span>

@@ -62,8 +62,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ─── Payaza deposits: return DB status directly (no external API to poll) ───
-    if (tx.payment_provider === "payaza") {
+    // ─── Payaza / Flutterwave deposits: return DB status directly (no external API to poll) ───
+    if (tx.payment_provider === "payaza" || tx.payment_provider === "flutterwave") {
       return new Response(
         JSON.stringify({
           payment_status: tx.status === "confirmed" ? "finished" : tx.status === "failed" ? "failed" : "waiting",
@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
           amount_usd: tx.amount,
           pay_currency: "NGN",
           created_at: tx.created_at,
-          provider: "payaza",
+          provider: tx.payment_provider,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
