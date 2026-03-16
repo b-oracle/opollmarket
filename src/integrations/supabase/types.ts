@@ -1774,6 +1774,51 @@ export type Database = {
           },
         ]
       }
+      whatsapp_sessions: {
+        Row: {
+          created_at: string
+          data: Json | null
+          phone: string
+          state: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          phone: string
+          state?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          phone?: string
+          state?: string
+        }
+        Relationships: []
+      }
+      whatsapp_users: {
+        Row: {
+          display_name: string | null
+          id: string
+          linked_at: string
+          user_id: string
+          whatsapp_phone: string
+        }
+        Insert: {
+          display_name?: string | null
+          id?: string
+          linked_at?: string
+          user_id: string
+          whatsapp_phone: string
+        }
+        Update: {
+          display_name?: string | null
+          id?: string
+          linked_at?: string
+          user_id?: string
+          whatsapp_phone?: string
+        }
+        Relationships: []
+      }
       withdrawal_requests: {
         Row: {
           admin_note: string | null
