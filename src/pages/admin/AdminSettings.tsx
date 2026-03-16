@@ -301,7 +301,11 @@ const AdminSettings = () => {
                boost_standard_price: boostStandardPriceNum,
                 boost_whale_price: boostWhalePriceNum,
                 broadcast_price: broadcastPriceNum,
-                bc400_pool_percent: bc400PoolPercentNum,
+                 bc400_pool_percent: bc400PoolPercentNum,
+                 osure_enabled: osureEnabled,
+                 osure_25_premium: osure25PremiumNum,
+                 osure_50_premium: osure50PremiumNum,
+                 osure_100_premium: osure100PremiumNum,
            updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
