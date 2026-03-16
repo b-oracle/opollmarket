@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
 
     const adminCreditTotal = totalFees + insurancePremium;
     if (adminRole && adminCreditTotal > 0) {
-      await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: adminCreditTotal });
+      await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: adminCreditTotal, _bonus_delta: 0, _insurance_delta: 0 });
 
       await supabase.from("transactions").insert({
         user_id: adminRole.user_id,
