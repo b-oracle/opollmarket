@@ -44,6 +44,7 @@ export const usePlaceBet = () => {
       amount,
       price,
       shares,
+      insuranceTier,
     }: {
       marketId: string;
       optionId?: string;
@@ -51,11 +52,12 @@ export const usePlaceBet = () => {
       amount: number;
       price: number;
       shares: number;
+      insuranceTier?: number;
     }) => {
       if (!user) throw new Error("Not authenticated");
 
       const { data, error } = await supabase.functions.invoke("place-bet", {
-        body: { marketId, optionId, side, amount, price, shares },
+        body: { marketId, optionId, side, amount, price, shares, insuranceTier },
       });
 
       if (error) {
