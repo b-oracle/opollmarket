@@ -651,7 +651,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setErrorMsg(err.message || "Something went wrong");
       setStep("error");
     }
-  }, [numAmount, walletAddress, selectedCrypto, queryClient, withdrawMethod, bankCode, accountNumber, accountName]);
+  }, [numAmount, walletAddress, selectedCrypto, queryClient, withdrawMethod, bankCode, accountNumber, accountName, payoutProvider]);
 
   const handleWithdraw = useCallback(async () => {
     // Check if user has security requirements
