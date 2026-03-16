@@ -1,5 +1,3 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -17,7 +15,7 @@ Deno.serve(async (req) => {
     if (!bank_code || !account_number || account_number.length < 10) {
       return new Response(
         JSON.stringify({ error: "Valid bank code and 10-digit account number required" }),
-        { status: 400, headers: corsHeaders }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -50,7 +48,7 @@ Deno.serve(async (req) => {
     console.error("verify-bank-account error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: corsHeaders }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
@@ -64,40 +62,69 @@ async function tryPayazaNameEnquiry(
 ): Promise<string> {
   const proxyUrl = Deno.env.get("QUOTAGUARD_URL");
 
-  // Official SDK endpoint for name enquiry (from payaza_lib source code)
-  const endpoints = [
-    "https://api.payaza.africa/live/payaza-account/api/v1/mainaccounts/merchant/provider/enquiry",
+  // Multiple payload formats — Payaza API has changed formats over time
+  const payloadVariants = [
+    // Format 1: receiver_ prefixed (newer SDK format)
+    {
+      label: "receiver-format",
+      body: {
+        receiver_account_number: accountNumber,
+        receiver_bank_code: bankCode,
+        currency: "NGN",
+      },
+    },
+    // Format 2: flat format (original)
+    {
+      label: "flat-format",
+      body: {
+        account_number: accountNumber,
+        bank_code: bankCode,
+        currency: "NGN",
+      },
+    },
+    // Format 3: service_payload wrapper (Payaza checkout SDK format)
+    {
+      label: "service-payload-format",
+      body: {
+        service_type: "Account_enquiry",
+        service_payload: {
+          request_application: "Payaza",
+          application_module: "USER_MODULE",
+          application_version: "1.0.0",
+          request_class: "MerchantNameEnquiry",
+          account_number: accountNumber,
+          bank_code: bankCode,
+          currency: "NGN",
+        },
+      },
+    },
   ];
 
-  const payload = {
-    account_number: accountNumber,
-    bank_code: bankCode,
-    currency: "NGN",
+  // Try multiple endpoints
+  const endpoints = [
+    "https://api.payaza.africa/live/payaza-account/api/v1/mainaccounts/merchant/provider/enquiry",
+    "https://router.payaza.africa/api/request/secure-merchant-resolve-account-details",
+  ];
+
+  // Auth header
+  if (!secretKey) return "";
+  const encodedSecret = btoa(secretKey);
+  const authHeaders: Record<string, string> = {
+    Authorization: `Payaza ${encodedSecret}`,
+    "X-TenantID": "live",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
   };
 
-  // Only use secret key for auth (merchant key is an account reference, not an API key)
-  const authVariants: Array<{ label: string; headers: Record<string, string> }> = [];
-
-  if (secretKey) {
-    const encodedSecret = btoa(secretKey);
-    authVariants.push({
-      label: "payaza-secret",
-      headers: { Authorization: `Payaza ${encodedSecret}`, "X-TenantID": "live" },
-    });
-  }
-
   for (const endpoint of endpoints) {
-    for (const auth of authVariants) {
+    for (const variant of payloadVariants) {
       const fetchOpts: RequestInit = {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          ...auth.headers,
-        },
-        body: JSON.stringify(payload),
+        headers: authHeaders,
+        body: JSON.stringify(variant.body),
       };
 
+      // Try proxy first if available, then direct
       const attempts: Array<{ label: string; opts: RequestInit & { client?: Deno.HttpClient } }> = [];
       if (proxyUrl) {
         const httpClient = Deno.createHttpClient({ proxy: { url: proxyUrl } });
@@ -109,39 +136,59 @@ async function tryPayazaNameEnquiry(
         try {
           const res = await fetch(endpoint, attempt.opts);
           const text = await res.text();
-          console.log(`Payaza ${attempt.label} ${auth.label} ${endpoint} → ${res.status}: ${text.substring(0, 300)}`);
+          console.log(`Payaza ${attempt.label} ${variant.label} ${endpoint.split("/").pop()} → ${res.status}: ${text.substring(0, 400)}`);
           if (attempt.opts.client) {
             try { attempt.opts.client.close(); } catch {}
           }
 
           if (text.includes("<html") || text.includes("<!DOCTYPE")) continue;
+          if (res.status >= 500) continue; // Server error, try next variant
 
           try {
             const data = JSON.parse(text);
-            const responseData = data?.response_content || data?.data || data?.service_response?.response_content || data;
-            const name =
-              responseData?.account_name ||
-              responseData?.accountName ||
-              responseData?.beneficiary_name ||
-              responseData?.beneficiaryName ||
-              responseData?.beneficiaryAccountName ||
-              responseData?.name ||
-              "";
+            const name = extractAccountName(data);
 
             if ((res.ok || res.status === 200 || res.status === 201) && typeof name === "string" && name.trim().length > 1) {
+              console.log(`Payaza name resolved: "${name.trim()}" via ${variant.label}`);
               return name.trim();
             }
           } catch {
             continue;
           }
         } catch (err) {
-          console.warn(`Payaza ${attempt.label} ${auth.label} ${endpoint} error:`, String(err));
+          console.warn(`Payaza ${attempt.label} ${variant.label} error:`, String(err));
           if (attempt.opts.client) {
             try { attempt.opts.client.close(); } catch {}
           }
         }
       }
     }
+  }
+
+  return "";
+}
+
+// Extract account name from various Payaza response shapes
+function extractAccountName(data: any): string {
+  if (!data) return "";
+
+  // Direct fields
+  if (data.account_name) return data.account_name;
+  if (data.accountName) return data.accountName;
+  if (data.beneficiary_name) return data.beneficiary_name;
+  if (data.beneficiaryName) return data.beneficiaryName;
+  if (data.name) return data.name;
+
+  // Nested in response_content
+  const rc = data.response_content || data.data || data.service_response?.response_content;
+  if (rc) {
+    return rc.account_name || rc.accountName || rc.beneficiary_name || rc.beneficiaryName || rc.beneficiaryAccountName || rc.name || "";
+  }
+
+  // Nested in service_response
+  const sr = data.service_response;
+  if (sr) {
+    return sr.account_name || sr.accountName || sr.beneficiary_name || sr.beneficiaryName || "";
   }
 
   return "";
