@@ -532,7 +532,9 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     setStep("executing");
     setErrorMsg("");
     try {
-      const { data, error } = await supabase.functions.invoke("create-payaza-deposit", {
+      // Route to correct provider based on admin settings
+      const depositFn = depositProvider === "flutterwave" ? "create-flutterwave-deposit" : "create-payaza-deposit";
+      const { data, error } = await supabase.functions.invoke(depositFn, {
         body: { amount: numAmount },
       });
       if (error || data?.error) {
