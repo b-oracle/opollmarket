@@ -235,7 +235,7 @@ async function handleResolve(
 
       if (payout <= 0) continue;
 
-      await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout });
+      await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout, _bonus_delta: 0, _insurance_delta: 0 });
 
       await adminClient.from("transactions").insert({
         user_id: pos.user_id,
