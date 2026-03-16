@@ -199,6 +199,9 @@ const AdminSettings = () => {
   const boostWhalePriceNum = parseFloat(boostWhalePrice) || 150;
   const broadcastPriceNum = parseFloat(broadcastPrice) || 5;
   const bc400PoolPercentNum = parseFloat(bc400PoolPercent) || 0;
+  const osure25PremiumNum = parseFloat(osure25Premium) || 10;
+  const osure50PremiumNum = parseFloat(osure50Premium) || 20;
+  const osure100PremiumNum = parseFloat(osure100Premium) || 30;
 
   // Splits must sum to ≤ 100 — platform keeps the remainder
   const splitTotalGold = creatorGoldNum + referrerCommissionNum + bc400PoolPercentNum;
