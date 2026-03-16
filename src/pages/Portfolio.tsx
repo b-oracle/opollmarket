@@ -948,6 +948,66 @@ const Portfolio = () => {
             )}
           </div>
         )}
+
+        {/* oSURE Insurance Tab */}
+        {activeTab === "insurance" && (
+          <div className="space-y-3">
+            {claimsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : insuranceClaims.length === 0 ? (
+              <div className="text-center py-12">
+                <Shield className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">No insurance claims yet</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">Insure your predictions with oSURE to protect against losses</p>
+              </div>
+            ) : (
+              insuranceClaims.map((claim: any) => (
+                <motion.div
+                  key={claim.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="glass rounded-xl p-4"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1 min-w-0 mr-3">
+                      <h4 className="text-sm font-semibold truncate">{claim.market_title}</h4>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {new Date(claim.created_at).toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })}
+                      </p>
+                    </div>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                      claim.status === "claimed"
+                        ? "bg-emerald-500/20 text-emerald-500"
+                        : claim.status === "forfeited"
+                        ? "bg-muted text-muted-foreground"
+                        : "bg-amber-500/20 text-amber-500"
+                    }`}>
+                      {claim.status}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 mt-3">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Coverage</p>
+                      <p className="text-sm font-bold">{Math.round(claim.tier * 100)}%</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Premium</p>
+                      <p className="text-sm font-bold text-destructive">-${Number(claim.premium_paid).toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Claim</p>
+                      <p className={`text-sm font-bold ${claim.status === "claimed" ? "text-emerald-500" : "text-muted-foreground"}`}>
+                        {claim.status === "claimed" ? `+$${Number(claim.claim_amount).toFixed(2)}` : claim.status === "forfeited" ? "Forfeited" : "Pending"}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       {/* Sell Confirmation Modal */}
