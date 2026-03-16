@@ -584,7 +584,9 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     try {
       // Determine which withdrawal path to take
       if (withdrawMethod === "fiat") {
-        const { data, error } = await supabase.functions.invoke("request-payaza-withdrawal", {
+        // Route to correct provider based on admin settings
+        const withdrawFn = payoutProvider === "flutterwave" ? "request-flutterwave-withdrawal" : "request-payaza-withdrawal";
+        const { data, error } = await supabase.functions.invoke(withdrawFn, {
           body: {
             amount: numAmount,
             bank_code: bankCode,
