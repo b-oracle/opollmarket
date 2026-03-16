@@ -75,7 +75,7 @@ serve(async (req) => {
 
     if (balErr || !bal) {
       return new Response(JSON.stringify({ error: "Could not fetch balance" }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -84,8 +84,8 @@ serve(async (req) => {
     const main = Number(bal.amount ?? 0);
 
     if (bonus + main < cost) {
-      return new Response(JSON.stringify({ error: "Insufficient balance for AI generation" }), {
-        status: 402,
+      return new Response(JSON.stringify({ error: `Insufficient balance for AI generation. You need $${cost} but have $${(bonus + main).toFixed(2)}.` }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
