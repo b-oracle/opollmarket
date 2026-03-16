@@ -274,6 +274,8 @@ const WhatsAppNotifPrefs = ({ userId }: { userId?: string }) => {
     </div>
   );
 };
+
+const WhatsAppSection = ({ userId }: { userId?: string }) => {
   const [unlinking, setUnlinking] = useState(false);
   const queryClient = useQueryClient();
 
