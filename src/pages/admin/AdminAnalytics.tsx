@@ -574,6 +574,100 @@ const AdminAnalytics = () => {
         )}
       </div>
 
+      {/* oSURE Insurance Analytics */}
+      <div className="bg-card border border-border rounded-xl p-5">
+        <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Shield className="w-4 h-4 text-emerald-500" /> oSURE Insurance Analytics</h3>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+          {[
+            { label: "Premiums Collected", value: fmt(osureStats.totalPremiums), color: "text-emerald-500", icon: DollarSign },
+            { label: "Claims Paid", value: fmt(osureStats.totalClaims), color: "text-red-500", icon: Shield },
+            { label: "Net Profit", value: fmt(osureStats.totalPremiums - osureStats.totalClaims), color: osureStats.totalPremiums - osureStats.totalClaims >= 0 ? "text-green-500" : "text-red-500", icon: TrendingUp },
+            { label: "Forfeiture Rate", value: `${osureStats.forfeitureRate.toFixed(1)}%`, color: "text-amber-500", icon: Percent },
+          ].map(card => (
+            <div key={card.label} className="bg-muted/30 border border-border rounded-lg p-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{card.label}</span>
+                <card.icon className={`w-3.5 h-3.5 ${card.color}`} />
+              </div>
+              <span className="text-lg font-bold">{card.value}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Daily premiums vs claims */}
+          <div>
+            <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Daily Premiums vs Claims</h4>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={osureStats.dailyData}>
+                  <defs>
+                    <linearGradient id="fillPremiums" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--chart-3))" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(var(--chart-3))" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="fillClaims" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--chart-5))" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(var(--chart-5))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [`$${value.toFixed(2)}`]} />
+                  <Area type="monotone" dataKey="premiums" stroke="hsl(var(--chart-3))" fill="url(#fillPremiums)" strokeWidth={2} name="Premiums" />
+                  <Area type="monotone" dataKey="claims" stroke="hsl(var(--chart-5))" fill="url(#fillClaims)" strokeWidth={2} name="Claims" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "hsl(var(--chart-3))" }} /><span className="text-[10px] text-muted-foreground">Premiums</span></div>
+              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "hsl(var(--chart-5))" }} /><span className="text-[10px] text-muted-foreground">Claims</span></div>
+            </div>
+          </div>
+
+          {/* Status breakdown */}
+          <div>
+            <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Claim Status Breakdown</h4>
+            {(osureStats.pendingCount + osureStats.claimedCount + osureStats.forfeitedCount) > 0 ? (
+              <div className="flex items-center justify-center h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: "Pending", value: osureStats.pendingCount, fill: "hsl(var(--chart-4))" },
+                        { name: "Claimed", value: osureStats.claimedCount, fill: "hsl(var(--chart-5))" },
+                        { name: "Forfeited", value: osureStats.forfeitedCount, fill: "hsl(var(--chart-3))" },
+                      ].filter(d => d.value > 0)}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={70}
+                      paddingAngle={3}
+                      dataKey="value"
+                    >
+                      {[
+                        { fill: "hsl(var(--chart-4))" },
+                        { fill: "hsl(var(--chart-5))" },
+                        { fill: "hsl(var(--chart-3))" },
+                      ].map((entry, i) => <Cell key={i} fill={entry.fill} />)}
+                    </Pie>
+                    <Tooltip contentStyle={tooltipStyle} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-10">No insurance claims yet</p>
+            )}
+            <div className="flex items-center justify-center gap-4 mt-2">
+              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "hsl(var(--chart-4))" }} /><span className="text-[10px] text-muted-foreground">Pending ({osureStats.pendingCount})</span></div>
+              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "hsl(var(--chart-5))" }} /><span className="text-[10px] text-muted-foreground">Claimed ({osureStats.claimedCount})</span></div>
+              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "hsl(var(--chart-3))" }} /><span className="text-[10px] text-muted-foreground">Forfeited ({osureStats.forfeitedCount})</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Polymarket Fee Earnings */}
       <div className="bg-card border border-border rounded-xl p-5">
         <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><span>🔮</span> Polymarket Fee Earnings</h3>
