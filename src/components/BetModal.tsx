@@ -78,7 +78,14 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
   const poolAmount = numAmount - fee;
   const shares = poolAmount > 0 && effectivePrice > 0 ? poolAmount / (effectivePrice / 100) : 0;
   const potentialPayout = shares;
-  const totalCost = numAmount;
+
+  // oSURE insurance
+  const osureEnabled = commission?.osure_enabled !== false;
+  const insurancePremiumPercent = insuranceTier === 25 ? (commission?.osure_25_premium ?? 10) : insuranceTier === 50 ? (commission?.osure_50_premium ?? 20) : insuranceTier === 100 ? (commission?.osure_100_premium ?? 30) : 0;
+  const insurancePremium = insuranceTier ? numAmount * (insurancePremiumPercent / 100) : 0;
+  const insuranceCoverage = insuranceTier ? poolAmount * (insuranceTier / 100) : 0;
+
+  const totalCost = numAmount + insurancePremium;
   const profit = potentialPayout - totalCost;
   const roi = numAmount > 0 ? (profit / totalCost) * 100 : 0;
 
