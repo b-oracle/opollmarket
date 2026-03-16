@@ -191,7 +191,7 @@ Deno.serve(async (req) => {
       const totalAdminFees = (adminCommTxns || []).reduce((sum: number, t: any) => sum + Number(t.amount), 0);
 
       if (totalAdminFees > 0) {
-        await adminClient.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -totalAdminFees });
+        await adminClient.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -totalAdminFees, _bonus_delta: 0, _insurance_delta: 0 });
 
         await adminClient.from("transactions").insert({
           user_id: adminRole.user_id,
