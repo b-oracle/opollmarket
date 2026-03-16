@@ -424,7 +424,7 @@ async function handleResolve(
 
         // Deduct commission from copier's balance
         // Deduct commission from copier (atomic)
-        await adminClient.rpc("adjust_balance", { _user_id: earning.copier_user_id, _delta: -commissionAmount });
+        await adminClient.rpc("adjust_balance", { _user_id: earning.copier_user_id, _delta: -commissionAmount, _bonus_delta: 0, _insurance_delta: 0 });
 
         // Credit commission to trader (atomic)
         await adminClient.rpc("adjust_balance", { _user_id: earning.trader_user_id, _delta: commissionAmount });
