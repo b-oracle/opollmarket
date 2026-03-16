@@ -168,7 +168,6 @@ async function tryPayazaNameEnquiry(
           }
         }
       }
-    }
   }
 
   return "";
