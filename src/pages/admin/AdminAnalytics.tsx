@@ -60,6 +60,7 @@ const AdminAnalytics = () => {
   const [popularMarkets, setPopularMarkets] = useState<{ id: string; title: string; count: number }[]>([]);
   const [qtStats, setQtStats] = useState<QtStats>({ totalBets: 0, totalWagered: 0, totalPayouts: 0, wins: 0, losses: 0, winRate: 0, dailyData: [], assetBreakdown: [] });
   const [revenueStats, setRevenueStats] = useState<RevenueStats>({ deposits: 0, withdrawals: 0, predictionVolume: 0, netRevenue: 0, dailyData: [] });
+  const [allTimePredictionVolume, setAllTimePredictionVolume] = useState(0);
   const [polyFees, setPolyFees] = useState<{ adminFees: number; creatorFees: number; totalVolume: number; marketCount: number; feesByMarket: { title: string; adminFee: number; creatorFee: number }[] }>({
     adminFees: 0, creatorFees: 0, totalVolume: 0, marketCount: 0, feesByMarket: [],
   });

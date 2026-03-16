@@ -348,7 +348,7 @@ const AdminDashboard = () => {
   const cards = [
     { label: "Total Markets", value: stats?.totalMarkets ?? 0, icon: ShoppingBag, color: "text-primary" },
     { label: "Total Users", value: stats?.totalUsers ?? 0, icon: Users, color: "text-blue-500" },
-    { label: "Total Volume", value: (stats?.totalVolume ?? 0) >= 1000 ? `$${((stats?.totalVolume ?? 0) / 1000).toFixed(1)}K` : `$${(stats?.totalVolume ?? 0).toFixed(2)}`, icon: TrendingUp, color: "text-green-500" },
+    { label: "All-Time Volume", value: (stats?.totalVolume ?? 0) >= 1000 ? `$${((stats?.totalVolume ?? 0) / 1000).toFixed(1)}K` : `$${(stats?.totalVolume ?? 0).toFixed(2)}`, icon: TrendingUp, color: "text-green-500" },
     { label: "Transactions", value: stats?.totalTransactions ?? 0, icon: DollarSign, color: "text-yellow-500" },
     { label: "Comments", value: stats?.totalComments ?? 0, icon: MessageSquare, color: "text-purple-500" },
     { label: "Active Boosts", value: stats?.activeBoosts ?? 0, icon: Activity, color: "text-pink-500" },
