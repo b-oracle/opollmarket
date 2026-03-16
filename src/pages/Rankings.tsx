@@ -934,7 +934,10 @@ const Rankings = () => {
                       items={sortedReferrers}
                       currentUserId={currentUserId}
                       onUserClick={(id) => navigate(`/user/${id}`)}
-                      valueLabel={(r) => ({
+                      valueLabel={(r) => referralSort === "totalReferrals" ? ({
+                        text: `${r.totalReferrals} referral${r.totalReferrals !== 1 ? "s" : ""}`,
+                        positive: true,
+                      }) : ({
                         text: `+${formatDollar(r.totalEarned)}`,
                         positive: true,
                       })}
