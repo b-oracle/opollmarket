@@ -156,7 +156,19 @@ const AdminDashboard = () => {
 
       const [rewardRows, qtBetRows, depositRows, withdrawalRows, depositCount, withdrawalCount, pendingDepositCount, pendingWithdrawalCount, grossDepositRows, grossDepositCount, pendingDepositRows, expiredDepositRows, expiredDepositCount, partialDepositRows, partialDepositCount] = await Promise.all([
         fetchAllAmounts("referral_rewards"),
-        fetchAllAmounts("quick_bets"),
+        (async () => {
+          const allRows: { amount: number }[] = [];
+          let from = 0;
+          const batchSize = 1000;
+          while (true) {
+            const { data, error } = await supabase.from("quick_bets").select("amount").in("status", ["won", "lost"]).range(from, from + batchSize - 1);
+            if (error || !data || data.length === 0) break;
+            allRows.push(...data);
+            if (data.length < batchSize) break;
+            from += batchSize;
+          }
+          return allRows;
+        })(),
         fetchTxAmounts("deposit", "confirmed"),
         fetchTxAmounts("withdrawal", "confirmed"),
         supabase.from("transactions").select("*", { count: "exact", head: true }).eq("type", "deposit").eq("status", "confirmed"),
