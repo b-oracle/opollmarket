@@ -74,98 +74,104 @@ async function tryPayazaNameEnquiry(
     "https://router.payaza.africa/api/request/secure-merchant-resolve-account-details",
   ];
 
-  // Auth header
+  // Auth header variants (some merchant configs accept secret key auth, others merchant key auth)
   if (!secretKey) return "";
-  const encodedSecret = btoa(secretKey);
-  const authHeaders: Record<string, string> = {
-    Authorization: `Payaza ${encodedSecret}`,
-    "X-TenantID": "live",
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-  };
+  const authVariants: Array<{ label: string; value: string }> = [
+    { label: "secret", value: `Payaza ${btoa(secretKey)}` },
+  ];
+  if (merchantKey) {
+    authVariants.push({ label: "merchant", value: `Payaza ${btoa(merchantKey)}` });
+  }
 
-  for (const normalizedBankCode of bankCodeCandidates) {
-    // Multiple payload formats — Payaza API has changed formats over time
-    const payloadVariants = [
-      // Format 1: receiver_ prefixed (newer SDK format)
-      {
-        label: "receiver-format",
-        body: {
-          receiver_account_number: accountNumber,
-          receiver_bank_code: normalizedBankCode,
-          currency: "NGN",
+  for (const authVariant of authVariants) {
+    for (const normalizedBankCode of bankCodeCandidates) {
+      // Multiple payload formats — Payaza API has changed formats over time
+      const payloadVariants = [
+        // Format 1: receiver_ prefixed (newer SDK format)
+        {
+          label: "receiver-format",
+          body: {
+            receiver_account_number: accountNumber,
+            receiver_bank_code: normalizedBankCode,
+            currency: "NGN",
+          },
         },
-      },
-      // Format 2: flat format (original)
-      {
-        label: "flat-format",
-        body: {
-          account_number: accountNumber,
-          bank_code: normalizedBankCode,
-          currency: "NGN",
-        },
-      },
-      // Format 3: service_payload wrapper (Payaza checkout SDK format)
-      {
-        label: "service-payload-format",
-        body: {
-          service_type: "Account_enquiry",
-          service_payload: {
-            request_application: "Payaza",
-            application_module: "USER_MODULE",
-            application_version: "1.0.0",
-            request_class: "MerchantNameEnquiry",
+        // Format 2: flat format (original)
+        {
+          label: "flat-format",
+          body: {
             account_number: accountNumber,
             bank_code: normalizedBankCode,
             currency: "NGN",
           },
         },
-      },
-    ];
+        // Format 3: service_payload wrapper (Payaza checkout SDK format)
+        {
+          label: "service-payload-format",
+          body: {
+            service_type: "Account_enquiry",
+            service_payload: {
+              request_application: "Payaza",
+              application_module: "USER_MODULE",
+              application_version: "1.0.0",
+              request_class: "MerchantNameEnquiry",
+              account_number: accountNumber,
+              bank_code: normalizedBankCode,
+              currency: "NGN",
+            },
+          },
+        },
+      ];
 
-    for (const endpoint of endpoints) {
-      for (const variant of payloadVariants) {
-        const fetchOpts: RequestInit = {
-          method: "POST",
-          headers: authHeaders,
-          body: JSON.stringify(variant.body),
-        };
+      for (const endpoint of endpoints) {
+        for (const variant of payloadVariants) {
+          const fetchOpts: RequestInit = {
+            method: "POST",
+            headers: {
+              Authorization: authVariant.value,
+              "X-TenantID": "live",
+              "Content-Type": "application/json",
+              "Accept": "application/json",
+            },
+            body: JSON.stringify(variant.body),
+          };
 
-        // Try proxy first if available, then direct
-        const attempts: Array<{ label: string; opts: RequestInit & { client?: Deno.HttpClient } }> = [];
-        if (proxyUrl) {
-          const httpClient = Deno.createHttpClient({ proxy: { url: proxyUrl } });
-          attempts.push({ label: "Proxy", opts: { ...fetchOpts, client: httpClient } });
-        }
-        attempts.push({ label: "Direct", opts: fetchOpts });
+          // Try proxy first if available, then direct
+          const attempts: Array<{ label: string; opts: RequestInit & { client?: Deno.HttpClient } }> = [];
+          if (proxyUrl) {
+            const httpClient = Deno.createHttpClient({ proxy: { url: proxyUrl } });
+            attempts.push({ label: "Proxy", opts: { ...fetchOpts, client: httpClient } });
+          }
+          attempts.push({ label: "Direct", opts: fetchOpts });
 
-        for (const attempt of attempts) {
-          try {
-            const res = await fetch(endpoint, attempt.opts);
-            const text = await res.text();
-            console.log(`Payaza ${attempt.label} ${variant.label} bank:${normalizedBankCode} ${endpoint.split("/").pop()} → ${res.status}: ${text.substring(0, 400)}`);
-            if (attempt.opts.client) {
-              try { attempt.opts.client.close(); } catch {}
-            }
-
-            if (text.includes("<html") || text.includes("<!DOCTYPE")) continue;
-            if (res.status >= 500) continue; // Server error, try next variant
-
+          for (const attempt of attempts) {
             try {
-              const data = JSON.parse(text);
-              const name = extractAccountName(data);
-
-              if ((res.ok || res.status === 200 || res.status === 201) && typeof name === "string" && name.trim().length > 1) {
-                console.log(`Payaza name resolved: "${name.trim()}" via ${variant.label} with bank code ${normalizedBankCode}`);
-                return name.trim();
+              const res = await fetch(endpoint, attempt.opts);
+              const text = await res.text();
+              console.log(`Payaza ${attempt.label} auth:${authVariant.label} ${variant.label} bank:${normalizedBankCode} ${endpoint.split("/").pop()} → ${res.status}: ${text.substring(0, 400)}`);
+              if (attempt.opts.client) {
+                try { attempt.opts.client.close(); } catch {}
               }
-            } catch {
-              continue;
-            }
-          } catch (err) {
-            console.warn(`Payaza ${attempt.label} ${variant.label} error:`, String(err));
-            if (attempt.opts.client) {
-              try { attempt.opts.client.close(); } catch {}
+
+              if (text.includes("<html") || text.includes("<!DOCTYPE")) continue;
+              if (res.status >= 500) continue; // Server error, try next variant
+
+              try {
+                const data = JSON.parse(text);
+                const name = extractAccountName(data);
+
+                if ((res.ok || res.status === 200 || res.status === 201) && typeof name === "string" && name.trim().length > 1) {
+                  console.log(`Payaza name resolved: "${name.trim()}" via ${variant.label} with bank code ${normalizedBankCode} (${authVariant.label} auth)`);
+                  return name.trim();
+                }
+              } catch {
+                continue;
+              }
+            } catch (err) {
+              console.warn(`Payaza ${attempt.label} ${variant.label} error:`, String(err));
+              if (attempt.opts.client) {
+                try { attempt.opts.client.close(); } catch {}
+              }
             }
           }
         }
