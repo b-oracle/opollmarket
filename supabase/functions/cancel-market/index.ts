@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
 
     for (const tx of transactions || []) {
       const refundAmount = tx.amount;
-      await adminClient.rpc("adjust_balance", { _user_id: tx.user_id, _delta: refundAmount });
+      await adminClient.rpc("adjust_balance", { _user_id: tx.user_id, _delta: refundAmount, _bonus_delta: 0, _insurance_delta: 0 });
 
       await adminClient.from("transactions").insert({
         user_id: tx.user_id,
