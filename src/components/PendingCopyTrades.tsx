@@ -1,4 +1,5 @@
 import { usePendingCopyTrades } from "@/hooks/usePendingCopyTrades";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { useEffect, useState } from "react";
 import { Check, X, Clock, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import BottomSheet from "@/components/BottomSheet";
 
 const PendingCopyTrades = () => {
   const { trades, loading, respondToTrade } = usePendingCopyTrades();
+  const { isFeatureEnabled } = useFeatureToggles();
   const [open, setOpen] = useState(false);
 
   // Auto-open when new pending trades arrive
@@ -14,7 +16,7 @@ const PendingCopyTrades = () => {
     if (trades.length > 0) setOpen(true);
   }, [trades.length]);
 
-  if (trades.length === 0) return null;
+  if (!isFeatureEnabled("copy_trading") || trades.length === 0) return null;
 
   return (
     <>
