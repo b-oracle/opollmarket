@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
 
     if (!market_id) {
       return new Response(JSON.stringify({ error: "market_id required" }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
     const tierConfig = boost_tier ? BOOST_TIERS[boost_tier] : null;
     if (boost_tier && !tierConfig) {
       return new Response(JSON.stringify({ error: "Invalid boost tier" }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
 
     if (totalCost <= 0) {
       return new Response(JSON.stringify({ error: "No items selected" }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
 
     if (!bal) {
       return new Response(JSON.stringify({ error: "No balance record found" }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -118,12 +118,12 @@ Deno.serve(async (req) => {
 
     if (mainDeduct > mainBalance) {
       return new Response(JSON.stringify({
-        error: "Insufficient balance",
+        error: `Insufficient balance. You need $${totalCost.toFixed(2)} but have $${(mainBalance + bonusBalance).toFixed(2)}.`,
         required: totalCost,
         available_main: mainBalance,
         available_bonus: bonusBalance,
       }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
           return new Response(JSON.stringify({
             error: `This market already has an active ${existingBoosts[0].tier} boost. Select same or higher tier to extend.`,
           }), {
-            status: 400,
+            status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
 
     if (!debitResult?.success) {
       return new Response(JSON.stringify({ error: debitResult?.error || "Failed to debit balance" }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

@@ -15,8 +15,8 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Not authenticated" }), {
-        status: 401,
+      return new Response(JSON.stringify({ error: "Please sign in to use AI generation" }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -26,8 +26,8 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
-      return new Response(JSON.stringify({ error: "AI not configured" }), {
-        status: 500,
+      return new Response(JSON.stringify({ error: "AI generation is not available at the moment" }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -39,8 +39,8 @@ serve(async (req) => {
     });
     const { data: { user }, error: authError } = await userClient.auth.getUser();
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Not authenticated" }), {
-        status: 401,
+      return new Response(JSON.stringify({ error: "Please sign in to use AI generation" }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -49,7 +49,7 @@ serve(async (req) => {
 
     if (!type || !title?.trim()) {
       return new Response(JSON.stringify({ error: "type and title are required" }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -75,7 +75,7 @@ serve(async (req) => {
 
     if (balErr || !bal) {
       return new Response(JSON.stringify({ error: "Could not fetch balance" }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -84,8 +84,8 @@ serve(async (req) => {
     const main = Number(bal.amount ?? 0);
 
     if (bonus + main < cost) {
-      return new Response(JSON.stringify({ error: "Insufficient balance for AI generation" }), {
-        status: 402,
+      return new Response(JSON.stringify({ error: `Insufficient balance for AI generation. You need $${cost} but have $${(bonus + main).toFixed(2)}.` }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -105,8 +105,8 @@ serve(async (req) => {
       .eq("currency", "USDT");
 
     if (updateErr) {
-      return new Response(JSON.stringify({ error: "Failed to deduct balance" }), {
-        status: 500,
+      return new Response(JSON.stringify({ error: "Failed to deduct balance. Please try again." }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -165,19 +165,19 @@ Use markdown formatting (headers, bullet points, bold). Keep it between 200-800 
 
         if (aiResponse.status === 429) {
           return new Response(JSON.stringify({ error: "AI rate limited, please try again shortly" }), {
-            status: 429,
+            status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
         if (aiResponse.status === 402) {
           return new Response(JSON.stringify({ error: "AI credits exhausted" }), {
-            status: 402,
+            status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
 
-        return new Response(JSON.stringify({ error: "AI generation failed" }), {
-          status: 500,
+        return new Response(JSON.stringify({ error: "AI generation failed. You have been refunded." }), {
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -224,19 +224,19 @@ Use markdown formatting (headers, bullet points, bold). Keep it between 200-800 
 
         if (aiResponse.status === 429) {
           return new Response(JSON.stringify({ error: "AI rate limited, please try again shortly" }), {
-            status: 429,
+            status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
         if (aiResponse.status === 402) {
           return new Response(JSON.stringify({ error: "AI credits exhausted" }), {
-            status: 402,
+            status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
 
-        return new Response(JSON.stringify({ error: "Image generation failed" }), {
-          status: 500,
+        return new Response(JSON.stringify({ error: "Image generation failed. You have been refunded." }), {
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -256,8 +256,8 @@ Use markdown formatting (headers, bullet points, bold). Keep it between 200-800 
           .eq("user_id", user.id)
           .eq("currency", "USDT");
 
-        return new Response(JSON.stringify({ error: "No image was generated" }), {
-          status: 500,
+        return new Response(JSON.stringify({ error: "No image was generated. You have been refunded." }), {
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -288,8 +288,8 @@ Use markdown formatting (headers, bullet points, bold). Keep it between 200-800 
           .eq("user_id", user.id)
           .eq("currency", "USDT");
 
-        return new Response(JSON.stringify({ error: "Failed to save generated image" }), {
-          status: 500,
+        return new Response(JSON.stringify({ error: "Failed to save generated image. You have been refunded." }), {
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -303,14 +303,14 @@ Use markdown formatting (headers, bullet points, bold). Keep it between 200-800 
     }
 
     return new Response(JSON.stringify({ error: "Invalid type. Use description, details, or image." }), {
-      status: 400,
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
     console.error("generate-market-content error:", err);
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
