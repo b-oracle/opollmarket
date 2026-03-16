@@ -1,5 +1,6 @@
 import NpReconciliation from "@/components/admin/NpReconciliation";
 import PayazaReconciliation from "@/components/admin/PayazaReconciliation";
+import FlutterwaveReconciliation from "@/components/admin/FlutterwaveReconciliation";
 import { Scale } from "lucide-react";
 
 const AdminReconciliation = () => {
@@ -11,12 +12,13 @@ const AdminReconciliation = () => {
           Reconciliation
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Boundlesspay full reconciliation — compare and audit deposit &amp; withdrawal records
+          Full reconciliation — compare and audit deposit &amp; withdrawal records across all providers
         </p>
       </div>
 
       <NpReconciliation />
       <PayazaReconciliation />
+      <FlutterwaveReconciliation />
     </div>
   );
 };
