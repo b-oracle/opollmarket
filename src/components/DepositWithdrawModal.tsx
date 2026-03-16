@@ -130,6 +130,17 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const [accountNameResolveFailed, setAccountNameResolveFailed] = useState(false);
   const [ngnPayoutRate, setNgnPayoutRate] = useState<number | null>(null);
 
+  // Fetch Nigerian banks from Flutterwave
+  const { data: bankList = [] } = useQuery({
+    queryKey: ["nigerian-banks"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("get-banks");
+      if (error || !data?.banks) return [];
+      return data.banks as { code: string; name: string }[];
+    },
+    staleTime: 24 * 60 * 60 * 1000, // cache for 24h
+  });
+
   // Fetch live NGN rate
   const fetchNgnRate = useCallback(async () => {
     setRateLoading(true);
@@ -161,7 +172,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setDepositCreatedAt(null);
       setTimeRemaining("");
       setNgnRate(null);
-      setBankCode("044");
+      setBankCode(bankList.length > 0 ? bankList[0].code : "044");
       setAccountNumber("");
       setAccountName("");
       setAccountNameLoading(false);
@@ -1023,33 +1034,33 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                             onChange={(e) => setBankCode(e.target.value)}
                             className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all appearance-none"
                           >
-                            <option value="044">Access Bank</option>
-                            <option value="023">Citibank</option>
-                            <option value="063">Diamond (Access)</option>
-                            <option value="050">Ecobank</option>
-                            <option value="084">Enterprise Bank</option>
-                            <option value="070">Fidelity Bank</option>
-                            <option value="011">First Bank</option>
-                            <option value="214">FCMB</option>
-                            <option value="058">GTBank</option>
-                            <option value="030">Heritage Bank</option>
-                            <option value="301">Jaiz Bank</option>
-                            <option value="082">Keystone Bank</option>
-                            <option value="526">Kuda Bank</option>
-                            <option value="100004">OPay</option>
-                            <option value="100002">Paga</option>
-                            <option value="999991">PalmPay</option>
-                            <option value="076">Polaris Bank</option>
-                            <option value="101">Providus Bank</option>
-                            <option value="221">Stanbic IBTC</option>
-                            <option value="068">Standard Chartered</option>
-                            <option value="232">Sterling Bank</option>
-                            <option value="100">SunTrust Bank</option>
-                            <option value="032">Union Bank</option>
-                            <option value="033">United Bank (UBA)</option>
-                            <option value="215">Unity Bank</option>
-                            <option value="035">Wema Bank</option>
-                            <option value="057">Zenith Bank</option>
+                            {bankList.length > 0 ? (
+                              bankList.map((bank) => (
+                                <option key={bank.code} value={bank.code}>{bank.name}</option>
+                              ))
+                            ) : (
+                              <>
+                                <option value="044">Access Bank</option>
+                                <option value="023">Citibank</option>
+                                <option value="050">Ecobank</option>
+                                <option value="070">Fidelity Bank</option>
+                                <option value="011">First Bank</option>
+                                <option value="214">FCMB</option>
+                                <option value="058">GTBank</option>
+                                <option value="082">Keystone Bank</option>
+                                <option value="526">Kuda Bank</option>
+                                <option value="100004">OPay</option>
+                                <option value="999991">PalmPay</option>
+                                <option value="076">Polaris Bank</option>
+                                <option value="221">Stanbic IBTC</option>
+                                <option value="232">Sterling Bank</option>
+                                <option value="032">Union Bank</option>
+                                <option value="033">United Bank (UBA)</option>
+                                <option value="215">Unity Bank</option>
+                                <option value="035">Wema Bank</option>
+                                <option value="057">Zenith Bank</option>
+                              </>
+                            )}
                           </select>
                         </div>
                         <div>
