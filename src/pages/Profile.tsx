@@ -241,6 +241,7 @@ const WhatsAppSection = ({ userId }: { userId?: string }) => {
             <p className="text-xs text-muted-foreground truncate">{maskedPhone}</p>
           </div>
         </div>
+        <WhatsAppNotifPrefs userId={userId} />
         <div className="flex gap-2">
           <button
             onClick={handleUnlink}
