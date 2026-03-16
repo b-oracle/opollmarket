@@ -51,7 +51,7 @@ const MAX_AMOUNT = 10000;
 
 const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId, optionLabel, optionColor }: BetModalProps) => {
   const { user, isEmailVerified } = useAuth();
-  const { balance, totalBalance } = useUserBalance();
+  const { balance, bonusBalance, totalBalance } = useUserBalance();
   const { data: commission } = useCommissionSettings();
   const placeBet = usePlaceBet();
   const placeLimitOrder = usePlaceLimitOrder();
