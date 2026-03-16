@@ -97,8 +97,23 @@ const AdminAnalytics = () => {
         return all;
       };
 
+      // Fetch all-time prediction volume from markets table (no time filter)
+      const fetchAllTimeVolume = async () => {
+        let total = 0;
+        let from = 0;
+        const batchSize = 1000;
+        while (true) {
+          const { data, error } = await supabase.from("markets").select("volume").range(from, from + batchSize - 1);
+          if (error || !data || data.length === 0) break;
+          total += data.reduce((s, m) => s + Number(m.volume), 0);
+          if (data.length < batchSize) break;
+          from += batchSize;
+        }
+        return total;
+      };
+
       // Parallel fetches
-      const [eventsData, quickBetsData, txData, polyMarkets, { data: adminRoles }] = await Promise.all([
+      const [eventsData, quickBetsData, txData, polyMarkets, { data: adminRoles }, allTimeVol] = await Promise.all([
         fetchPaginated((p) =>
           supabase.from("analytics_events").select("event_name, user_id, created_at, properties").gte("created_at", sinceISO).order("created_at", { ascending: false }).range(p * 1000, (p + 1) * 1000 - 1)
         ),
@@ -110,7 +125,9 @@ const AdminAnalytics = () => {
         ),
         supabase.from("markets").select("id, title, polymarket_id").not("polymarket_id", "is", null).then(r => r.data || []),
         supabase.from("user_roles").select("user_id").eq("role", "admin"),
+        fetchAllTimeVolume(),
       ]);
+      setAllTimePredictionVolume(allTimeVol);
 
       setEvents(eventsData);
       const adminIds = new Set((adminRoles || []).map((r: any) => r.user_id));
