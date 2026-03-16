@@ -172,7 +172,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setDepositCreatedAt(null);
       setTimeRemaining("");
       setNgnRate(null);
-      setBankCode("044");
+      setBankCode(bankList.length > 0 ? bankList[0].code : "044");
       setAccountNumber("");
       setAccountName("");
       setAccountNameLoading(false);
