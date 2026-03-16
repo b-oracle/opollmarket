@@ -943,6 +943,51 @@ const AdminSettings = () => {
             </Card>
           </div>
         </TabsContent>
+
+        {/* ═══════ oSURE TAB ═══════ */}
+        <TabsContent value="osure" className="space-y-6 mt-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Shield className="w-4 h-4 text-primary" /> oSURE Insurance Settings
+              </CardTitle>
+              <CardDescription className="text-xs">Configure prediction insurance tiers and premiums.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold">Enable oSURE</Label>
+                <Switch checked={osureEnabled} onCheckedChange={setOsureEnabled} disabled={!canEdit} />
+              </div>
+
+              <div className="border-t border-border pt-3 space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground">Premium Rates (% of wager)</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">25% Coverage Premium (%)</Label>
+                    <Input type="number" min={0} max={100} step={0.5} value={osure25Premium} onChange={(e) => setOsure25Premium(e.target.value)} disabled={!canEdit} />
+                    <p className="text-[10px] text-muted-foreground">User pays this % to insure 25% of their wager</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">50% Coverage Premium (%)</Label>
+                    <Input type="number" min={0} max={100} step={0.5} value={osure50Premium} onChange={(e) => setOsure50Premium(e.target.value)} disabled={!canEdit} />
+                    <p className="text-[10px] text-muted-foreground">User pays this % to insure 50% of their wager</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">100% Coverage Premium (%)</Label>
+                    <Input type="number" min={0} max={100} step={0.5} value={osure100Premium} onChange={(e) => setOsure100Premium(e.target.value)} disabled={!canEdit} />
+                    <p className="text-[10px] text-muted-foreground">User pays this % to insure 100% of their wager</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-3">
+                <p className="text-xs text-muted-foreground">
+                  <strong>How it works:</strong> Premium goes to admin pool. On loss, user receives claim into insurance balance. On win, premium is forfeited and insurance balance unlocks to main balance.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Save Button (sticky bottom on mobile) */}
