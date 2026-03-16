@@ -1774,6 +1774,48 @@ export type Database = {
           },
         ]
       }
+      whatsapp_notification_prefs: {
+        Row: {
+          copy_trade: boolean
+          general: boolean
+          market_cancelled: boolean
+          market_resolution: boolean
+          new_follower: boolean
+          payout: boolean
+          price_alert: boolean
+          referral: boolean
+          sports_score: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          copy_trade?: boolean
+          general?: boolean
+          market_cancelled?: boolean
+          market_resolution?: boolean
+          new_follower?: boolean
+          payout?: boolean
+          price_alert?: boolean
+          referral?: boolean
+          sports_score?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          copy_trade?: boolean
+          general?: boolean
+          market_cancelled?: boolean
+          market_resolution?: boolean
+          new_follower?: boolean
+          payout?: boolean
+          price_alert?: boolean
+          referral?: boolean
+          sports_score?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       whatsapp_sessions: {
         Row: {
           created_at: string
