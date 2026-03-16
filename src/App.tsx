@@ -297,6 +297,7 @@ const App = () => (
                           <Route path="social" element={<AdminSocial />} />
                           <Route path="fiat-settings" element={<AdminFiatSettings />} />
                           <Route path="referrals" element={<AdminReferrals />} />
+                          <Route path="whatsapp" element={<AdminWhatsApp />} />
                           <Route path="investor-deck" element={<InvestorDeck />} />
                         </Route>
                         <Route path="*" element={<NotFound />} />

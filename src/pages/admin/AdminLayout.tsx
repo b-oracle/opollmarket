@@ -38,6 +38,7 @@ const navItems: NavItem[] = [
   { to: "/admin/checklist", label: "Launch Checklist", icon: Rocket, roles: ["super_admin"] },
   { to: "/admin/audit-log", label: "Audit Log", icon: History, roles: ["super_admin"] },
   { to: "/admin/fiat-settings", label: "Fiat Settings", icon: Coins, roles: ["super_admin"] },
+  { to: "/admin/whatsapp", label: "WhatsApp", icon: Phone, roles: ["super_admin", "admin"] },
   { to: "/admin/investor-deck", label: "Investor Deck", icon: Presentation, roles: ["super_admin"] },
 ];
 
