@@ -358,7 +358,7 @@ async function handleResolve(
     const liquidityRefund = market.initial_liquidity - feeAmount;
 
     if (liquidityRefund > 0) {
-      await adminClient.rpc("adjust_balance", { _user_id: creatorUserId, _delta: liquidityRefund });
+      await adminClient.rpc("adjust_balance", { _user_id: creatorUserId, _delta: liquidityRefund, _bonus_delta: 0, _insurance_delta: 0 });
 
       await adminClient.from("transactions").insert({
         user_id: creatorUserId,
