@@ -185,8 +185,9 @@ const AdminDeposits = () => {
                 <tr className="border-b bg-muted/30">
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">User</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Amount</th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Payment ID</th>
+                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
+                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Provider</th>
+                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Payment ID</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Date</th>
                   {canEdit && <th className="text-right px-4 py-3 font-medium text-muted-foreground">Action</th>}
                 </tr>
