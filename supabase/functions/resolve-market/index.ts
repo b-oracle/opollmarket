@@ -256,7 +256,7 @@ async function handleResolve(
     for (const pos of winningPositions) {
       const payout = pos.shares;
 
-      await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout });
+      await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout, _bonus_delta: 0, _insurance_delta: 0 });
 
       await adminClient.from("transactions").insert({
         user_id: pos.user_id,
