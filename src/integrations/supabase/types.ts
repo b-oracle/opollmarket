@@ -118,6 +118,7 @@ export type Database = {
           bonus_balance: number
           currency: string
           id: string
+          insurance_balance: number
           updated_at: string
           user_id: string
         }
@@ -126,6 +127,7 @@ export type Database = {
           bonus_balance?: number
           currency?: string
           id?: string
+          insurance_balance?: number
           updated_at?: string
           user_id: string
         }
@@ -134,6 +136,7 @@ export type Database = {
           bonus_balance?: number
           currency?: string
           id?: string
+          insurance_balance?: number
           updated_at?: string
           user_id?: string
         }
@@ -264,6 +267,10 @@ export type Database = {
           naira_rate_markup: number
           nft_buy_url: string | null
           nft_contract_address: string | null
+          osure_100_premium: number
+          osure_25_premium: number
+          osure_50_premium: number
+          osure_enabled: boolean
           payaza_mode: string
           payout_provider: string
           prediction_fee_percent: number
@@ -322,6 +329,10 @@ export type Database = {
           naira_rate_markup?: number
           nft_buy_url?: string | null
           nft_contract_address?: string | null
+          osure_100_premium?: number
+          osure_25_premium?: number
+          osure_50_premium?: number
+          osure_enabled?: boolean
           payaza_mode?: string
           payout_provider?: string
           prediction_fee_percent?: number
@@ -380,6 +391,10 @@ export type Database = {
           naira_rate_markup?: number
           nft_buy_url?: string | null
           nft_contract_address?: string | null
+          osure_100_premium?: number
+          osure_25_premium?: number
+          osure_50_premium?: number
+          osure_enabled?: boolean
           payaza_mode?: string
           payout_provider?: string
           prediction_fee_percent?: number
@@ -568,6 +583,60 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      insurance_claims: {
+        Row: {
+          claim_amount: number
+          claimed_at: string | null
+          created_at: string
+          id: string
+          market_id: string
+          position_id: string
+          premium_paid: number
+          status: string
+          tier: number
+          user_id: string
+        }
+        Insert: {
+          claim_amount?: number
+          claimed_at?: string | null
+          created_at?: string
+          id?: string
+          market_id: string
+          position_id: string
+          premium_paid?: number
+          status?: string
+          tier: number
+          user_id: string
+        }
+        Update: {
+          claim_amount?: number
+          claimed_at?: string | null
+          created_at?: string
+          id?: string
+          market_id?: string
+          position_id?: string
+          premium_paid?: number
+          status?: string
+          tier?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_claims_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_claims_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "positions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       limit_orders: {
         Row: {
@@ -1183,6 +1252,9 @@ export type Database = {
           avg_price: number
           created_at: string
           id: string
+          insurance_claimed: boolean
+          insurance_premium: number
+          insurance_tier: number | null
           market_id: string
           option_id: string | null
           shares: number
@@ -1194,6 +1266,9 @@ export type Database = {
           avg_price?: number
           created_at?: string
           id?: string
+          insurance_claimed?: boolean
+          insurance_premium?: number
+          insurance_tier?: number | null
           market_id: string
           option_id?: string | null
           shares?: number
@@ -1205,6 +1280,9 @@ export type Database = {
           avg_price?: number
           created_at?: string
           id?: string
+          insurance_claimed?: boolean
+          insurance_premium?: number
+          insurance_tier?: number | null
           market_id?: string
           option_id?: string | null
           shares?: number
@@ -1740,10 +1818,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      adjust_balance: {
-        Args: { _bonus_delta?: number; _delta: number; _user_id: string }
-        Returns: undefined
-      }
+      adjust_balance:
+        | {
+            Args: { _bonus_delta?: number; _delta: number; _user_id: string }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              _bonus_delta?: number
+              _delta: number
+              _insurance_delta?: number
+              _user_id: string
+            }
+            Returns: undefined
+          }
       debit_balance_atomic: {
         Args: { _bonus_deduct?: number; _main_deduct: number; _user_id: string }
         Returns: Json
