@@ -1,0 +1,1 @@
+ALTER TABLE public.commission_settings ADD COLUMN IF NOT EXISTS deposit_provider text NOT NULL DEFAULT 'payaza';
