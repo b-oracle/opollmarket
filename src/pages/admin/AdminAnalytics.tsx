@@ -29,6 +29,17 @@ interface RevenueStats {
   dailyData: { date: string; deposits: number; withdrawals: number }[];
 }
 
+interface OsureStats {
+  totalPremiums: number;
+  totalClaims: number;
+  totalForfeited: number;
+  pendingCount: number;
+  claimedCount: number;
+  forfeitedCount: number;
+  forfeitureRate: number;
+  dailyData: { date: string; premiums: number; claims: number }[];
+}
+
 const CHART_COLORS = [
   "hsl(var(--primary))",
   "hsl(var(--chart-2))",
