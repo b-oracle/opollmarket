@@ -97,17 +97,19 @@ const AdminAnalytics = () => {
         return all;
       };
 
-      // Fetch all-time prediction volume from transactions (source of truth)
+      // Fetch all-time prediction volume from transactions (buys + sells)
       const fetchAllTimeVolume = async () => {
         let total = 0;
-        let from = 0;
-        const batchSize = 1000;
-        while (true) {
-          const { data, error } = await supabase.from("transactions").select("amount").eq("type", "buy").eq("status", "confirmed").range(from, from + batchSize - 1);
-          if (error || !data || data.length === 0) break;
-          total += data.reduce((s, r) => s + Number(r.amount), 0);
-          if (data.length < batchSize) break;
-          from += batchSize;
+        for (const txType of ["buy", "sell"]) {
+          let from = 0;
+          const batchSize = 1000;
+          while (true) {
+            const { data, error } = await supabase.from("transactions").select("amount").eq("type", txType).eq("status", "confirmed").range(from, from + batchSize - 1);
+            if (error || !data || data.length === 0) break;
+            total += data.reduce((s, r) => s + Number(r.amount), 0);
+            if (data.length < batchSize) break;
+            from += batchSize;
+          }
         }
         return total;
       };
@@ -121,7 +123,7 @@ const AdminAnalytics = () => {
           supabase.from("quick_bets").select("id, user_id, amount, payout, status, side, created_at, round_id").gte("created_at", sinceISO).in("status", ["won", "lost"]).range(p * 1000, (p + 1) * 1000 - 1)
         ),
         fetchPaginated((p) =>
-          supabase.from("transactions").select("id, user_id, type, amount, status, market_id, created_at").gte("created_at", sinceISO).eq("status", "confirmed").in("type", ["deposit", "withdrawal", "buy", "payout", "commission"]).range(p * 1000, (p + 1) * 1000 - 1)
+          supabase.from("transactions").select("id, user_id, type, amount, status, market_id, created_at").gte("created_at", sinceISO).eq("status", "confirmed").in("type", ["deposit", "withdrawal", "buy", "sell", "payout", "commission"]).range(p * 1000, (p + 1) * 1000 - 1)
         ),
         supabase.from("markets").select("id, title, polymarket_id").not("polymarket_id", "is", null).then(r => r.data || []),
         supabase.from("user_roles").select("user_id").eq("role", "admin"),
@@ -187,7 +189,7 @@ const AdminAnalytics = () => {
       // --- Revenue Stats ---
       const deposits = txData.filter((t: any) => t.type === "deposit").reduce((s: number, t: any) => s + Number(t.amount), 0);
       const withdrawals = txData.filter((t: any) => t.type === "withdrawal").reduce((s: number, t: any) => s + Number(t.amount), 0);
-      const predictionVolume = txData.filter((t: any) => t.type === "buy" && t.market_id).reduce((s: number, t: any) => s + Number(t.amount), 0);
+      const predictionVolume = txData.filter((t: any) => (t.type === "buy" || t.type === "sell") && t.market_id).reduce((s: number, t: any) => s + Number(t.amount), 0);
       const totalPlatformPayouts = txData.filter((t: any) => t.type === "payout").reduce((s: number, t: any) => s + Number(t.amount), 0);
 
       const revDailyMap = new Map<string, { deposits: number; withdrawals: number }>();
