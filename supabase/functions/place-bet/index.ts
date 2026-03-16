@@ -278,23 +278,29 @@ Deno.serve(async (req) => {
 
     const poolAmount = netAmount;
 
-    // Insert position with server-calculated shares
-    const { error: posError } = await supabase.from("positions").insert({
+    // Insert position with server-calculated shares (+ insurance data)
+    const positionInsert: Record<string, unknown> = {
       user_id: userId,
       market_id: marketId,
       option_id: optionId || null,
       side,
       shares: actualShares,
       avg_price: price / 100,
-    });
-    if (posError) {
+    };
+    if (normalizedTier !== null) {
+      positionInsert.insurance_tier = normalizedTier;
+      positionInsert.insurance_premium = insurancePremium;
+    }
+
+    const { data: insertedPos, error: posError } = await supabase.from("positions").insert(positionInsert).select("id").single();
+    if (posError || !insertedPos) {
       console.error("Position insert error:", posError);
       // Refund user balance atomically
       await supabase.rpc("adjust_balance", { _user_id: userId, _delta: mainDeduct, _bonus_delta: bonusForFees });
 
       // Reverse admin fee credit to prevent phantom revenue
-      if (adminRole && totalFees > 0) {
-        await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -totalFees });
+      if (adminRole && adminCreditTotal > 0) {
+        await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -adminCreditTotal });
       }
 
       // Delete pending commissions that were just inserted for this trade (by ID)
@@ -307,6 +313,20 @@ Deno.serve(async (req) => {
 
       return new Response(JSON.stringify({ error: "Failed to create position" }), {
         status: 500, headers: corsHeaders,
+      });
+    }
+
+    // Insert insurance_claims record if insured
+    if (normalizedTier !== null && insertedPos) {
+      const claimAmount = netAmount * normalizedTier;
+      await supabase.from("insurance_claims").insert({
+        user_id: userId,
+        position_id: insertedPos.id,
+        market_id: marketId,
+        tier: normalizedTier,
+        premium_paid: insurancePremium,
+        claim_amount: claimAmount,
+        status: "pending",
       });
     }
 
