@@ -88,6 +88,10 @@ const AdminSettings = () => {
   const [boostWhalePrice, setBoostWhalePrice] = useState("150");
   const [broadcastPrice, setBroadcastPrice] = useState("5");
   const [bc400PoolPercent, setBc400PoolPercent] = useState("0");
+  const [osureEnabled, setOsureEnabled] = useState(true);
+  const [osure25Premium, setOsure25Premium] = useState("10");
+  const [osure50Premium, setOsure50Premium] = useState("20");
+  const [osure100Premium, setOsure100Premium] = useState("30");
   const [payazaMode, setPayazaMode] = useState<"checkout_sdk" | "direct_api">("direct_api"); // kept for save compatibility
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
