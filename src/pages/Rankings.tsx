@@ -474,6 +474,7 @@ const Rankings = () => {
     if (!currentUserId) return -1;
     if (tab === "traders") return sortedTraders.findIndex((t) => t.userId === currentUserId);
     if (tab === "quick" && quickSubTab === "profit") return quickTraders.findIndex((t) => t.userId === currentUserId);
+    if (tab === "quick" && quickSubTab === "volume") return [...quickTraders].sort((a, b) => b.totalWagered - a.totalWagered).findIndex((t) => t.userId === currentUserId);
     if (tab === "quick" && quickSubTab === "streaks") return streakUsers.findIndex((t) => t.userId === currentUserId);
     if (tab === "referrers") return sortedReferrers.findIndex((r) => r.userId === currentUserId);
     return -1;
