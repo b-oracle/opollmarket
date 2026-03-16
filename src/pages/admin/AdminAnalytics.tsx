@@ -63,6 +63,7 @@ const AdminAnalytics = () => {
   const [polyFees, setPolyFees] = useState<{ adminFees: number; creatorFees: number; totalVolume: number; marketCount: number; feesByMarket: { title: string; adminFee: number; creatorFee: number }[] }>({
     adminFees: 0, creatorFees: 0, totalVolume: 0, marketCount: 0, feesByMarket: [],
   });
+  const [osureStats, setOsureStats] = useState<OsureStats>({ totalPremiums: 0, totalClaims: 0, totalForfeited: 0, pendingCount: 0, claimedCount: 0, forfeitedCount: 0, forfeitureRate: 0, dailyData: [] });
 
   useEffect(() => {
     const fetchAll = async () => {
