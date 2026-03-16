@@ -310,7 +310,7 @@ Use markdown formatting (headers, bullet points, bold). Keep it between 200-800 
     console.error("generate-market-content error:", err);
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
