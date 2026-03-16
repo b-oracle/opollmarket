@@ -321,9 +321,9 @@ const useQuickTradeLeaderboard = (period: TimePeriod) => {
     setQuickTraders([]);
     (async () => {
       const cutoff = getCutoffDate(period);
-      const { data } = await supabase.rpc("get_quick_trade_leaderboard", {
-        _limit: 20,
-        ...(cutoff ? { _cutoff: cutoff } : {}),
+      const { data, error } = await supabase.rpc("get_quick_trade_leaderboard", {
+        _limit: 50,
+        _cutoff: cutoff,
       } as any);
       if (data && (data as any[]).length > 0) {
         const userIds = (data as any[]).map((d) => d.user_id);
