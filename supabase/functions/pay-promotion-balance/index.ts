@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
 
     if (!debitResult?.success) {
       return new Response(JSON.stringify({ error: debitResult?.error || "Failed to debit balance" }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
