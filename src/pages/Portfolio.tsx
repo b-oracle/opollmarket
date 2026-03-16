@@ -30,6 +30,7 @@ import {
   Trash2,
   Edit,
   Share2,
+  Shield,
 } from "lucide-react";
 import ShareModal from "@/components/ShareModal";
 import { PortfolioSummaryShareCard, PositionShareCard } from "@/components/PortfolioShareCards";
