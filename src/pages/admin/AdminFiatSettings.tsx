@@ -4,15 +4,21 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Banknote, RefreshCw, DollarSign, Percent } from "lucide-react";
+import { Loader2, Save, Banknote, RefreshCw, DollarSign, Percent, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { useAdminContext } from "./AdminLayout";
 import { logAuditEvent } from "@/lib/auditLog";
 
+const PROVIDERS = [
+  { value: "payaza", label: "Payaza", desc: "Virtual account via Payaza API. Requires IP whitelisting." },
+  { value: "flutterwave", label: "Flutterwave", desc: "Bank transfer via Flutterwave charge API. More comprehensive bank coverage." },
+] as const;
+
 const AdminFiatSettings = () => {
   const { canEdit } = useAdminContext();
-  const [payazaMode, setPayazaMode] = useState<"checkout_sdk" | "direct_api">("direct_api");
+  const [depositProvider, setDepositProvider] = useState<string>("payaza");
+  const [payoutProvider, setPayoutProvider] = useState<string>("payaza");
   const [nairaRateMarkup, setNairaRateMarkup] = useState("");
   const [fallbackNairaRate, setFallbackNairaRate] = useState("");
   const [nairaPayoutMarkdown, setNairaPayoutMarkdown] = useState("");
@@ -27,12 +33,13 @@ const AdminFiatSettings = () => {
     const fetchSettings = async () => {
       const { data, error } = await supabase
         .from("commission_settings")
-        .select("id, payaza_mode, naira_rate_markup, fallback_naira_rate, naira_payout_markdown, fallback_payout_naira_rate")
+        .select("id, payaza_mode, payout_provider, naira_rate_markup, fallback_naira_rate, naira_payout_markdown, fallback_payout_naira_rate")
         .limit(1)
         .single();
       if (data) {
         const d = data as any;
-        setPayazaMode(d.payaza_mode === "checkout_sdk" ? "checkout_sdk" : "direct_api");
+        setDepositProvider(d.deposit_provider || "payaza");
+        setPayoutProvider(d.payout_provider || "payaza");
         setNairaRateMarkup(String(d.naira_rate_markup ?? 0));
         setFallbackNairaRate(String(d.fallback_naira_rate ?? 1500));
         setNairaPayoutMarkdown(String(d.naira_payout_markdown ?? 0));
@@ -75,8 +82,10 @@ const AdminFiatSettings = () => {
       const { error } = await supabase
         .from("commission_settings")
         .update({
-          payaza_mode: payazaMode,
-          payout_provider: "payaza",
+          deposit_provider: depositProvider,
+          payout_provider: payoutProvider,
+          // Keep payaza_mode for backward compat
+          payaza_mode: "direct_api",
           naira_rate_markup: markupNum,
           fallback_naira_rate: fallbackNum,
           naira_payout_markdown: payoutMarkdownNum,
@@ -91,7 +100,7 @@ const AdminFiatSettings = () => {
         action: "settings_updated",
         targetId: settingsId,
         targetType: "commission_settings",
-        details: { payaza_mode: payazaMode, payout_provider: "payaza", naira_rate_markup: markupNum, fallback_naira_rate: fallbackNum, naira_payout_markdown: payoutMarkdownNum, fallback_payout_naira_rate: fallbackPayoutNum },
+        details: { deposit_provider: depositProvider, payout_provider: payoutProvider, naira_rate_markup: markupNum, fallback_naira_rate: fallbackNum, naira_payout_markdown: payoutMarkdownNum, fallback_payout_naira_rate: fallbackPayoutNum },
       });
 
       toast.success("Fiat settings saved successfully");
@@ -111,67 +120,71 @@ const AdminFiatSettings = () => {
     );
   }
 
+  const renderProviderToggle = (
+    label: string,
+    icon: React.ReactNode,
+    description: string,
+    value: string,
+    onChange: (v: string) => void
+  ) => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          {icon} {label}
+        </CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex gap-3">
+          {PROVIDERS.map((p) => (
+            <button
+              key={p.value}
+              onClick={() => canEdit && onChange(p.value)}
+              className={`flex-1 rounded-xl border-2 p-4 text-left transition-all ${
+                value === p.value
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-muted-foreground/30"
+              } ${!canEdit ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                  value === p.value ? "border-primary" : "border-muted-foreground/40"
+                }`}>
+                  {value === p.value && <div className="w-2 h-2 rounded-full bg-primary" />}
+                </div>
+                <span className="text-sm font-bold">{p.label}</span>
+                {p.value === "flutterwave" && <Badge variant="secondary" className="text-[10px]">New</Badge>}
+              </div>
+              <p className="text-[11px] text-muted-foreground ml-6">{p.desc}</p>
+            </button>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Fiat Settings</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl">
-        {/* ─── Fiat Payment Mode ─── */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Banknote className="w-5 h-5" /> Fiat Payment Mode (Payaza)
-            </CardTitle>
-            <CardDescription>
-              Choose how fiat (NGN) deposits are processed. Direct API shows bank transfer details in-app; Checkout SDK opens a popup window.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-3">
-              <button
-                onClick={() => canEdit && setPayazaMode("direct_api")}
-                className={`flex-1 rounded-xl border-2 p-4 text-left transition-all ${
-                  payazaMode === "direct_api"
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-muted-foreground/30"
-                } ${!canEdit ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
-              >
-                <div className="flex items-center gap-2 mb-1.5">
-                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                    payazaMode === "direct_api" ? "border-primary" : "border-muted-foreground/40"
-                  }`}>
-                    {payazaMode === "direct_api" && <div className="w-2 h-2 rounded-full bg-primary" />}
-                  </div>
-                  <span className="text-sm font-bold">Direct API</span>
-                  <Badge variant="default" className="text-[10px]">Recommended</Badge>
-                </div>
-                <p className="text-[11px] text-muted-foreground ml-6">
-                  Bank transfer details shown in-app. Works even when checkout domain is down.
-                </p>
-              </button>
-              <button
-                onClick={() => canEdit && setPayazaMode("checkout_sdk")}
-                className={`flex-1 rounded-xl border-2 p-4 text-left transition-all ${
-                  payazaMode === "checkout_sdk"
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-muted-foreground/30"
-                } ${!canEdit ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
-              >
-                <div className="flex items-center gap-2 mb-1.5">
-                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                    payazaMode === "checkout_sdk" ? "border-primary" : "border-muted-foreground/40"
-                  }`}>
-                    {payazaMode === "checkout_sdk" && <div className="w-2 h-2 rounded-full bg-primary" />}
-                  </div>
-                  <span className="text-sm font-bold">Checkout SDK</span>
-                </div>
-                <p className="text-[11px] text-muted-foreground ml-6">
-                  Opens Payaza popup window. Requires checkout.payaza.africa to be online.
-                </p>
-              </button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* ─── Deposit Provider ─── */}
+        {renderProviderToggle(
+          "NGN Deposit Provider",
+          <ArrowDownToLine className="w-5 h-5" />,
+          "Choose which payment provider handles NGN deposits. Users will see bank transfer details from the selected provider.",
+          depositProvider,
+          setDepositProvider
+        )}
+
+        {/* ─── Withdrawal Provider ─── */}
+        {renderProviderToggle(
+          "NGN Withdrawal Provider",
+          <ArrowUpFromLine className="w-5 h-5" />,
+          "Choose which provider processes NGN withdrawal payouts to user bank accounts.",
+          payoutProvider,
+          setPayoutProvider
+        )}
 
         {/* ─── Naira Exchange Rate ─── */}
         <Card>
