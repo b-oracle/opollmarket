@@ -115,11 +115,25 @@ const AdminMarkets = () => {
   const [globalStats, setGlobalStats] = useState<MarketStatsData | null>(null);
 
   const fetchGlobalStats = async () => {
-    const [{ data }, { data: boosts }] = await Promise.all([
-      supabase.from("markets").select("status, market_type, volume, participants, liquidity, trending, polymarket_id"),
+    // Batch-fetch ALL market rows to avoid 1000-row cap
+    const fetchAllMarketRows = async () => {
+      const allRows: { status: string; market_type: string; volume: number; participants: number; liquidity: number; trending: boolean; polymarket_id: string | null }[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      while (true) {
+        const { data: batch, error } = await supabase.from("markets").select("status, market_type, volume, participants, liquidity, trending, polymarket_id").range(from, from + batchSize - 1);
+        if (error || !batch || batch.length === 0) break;
+        allRows.push(...batch);
+        if (batch.length < batchSize) break;
+        from += batchSize;
+      }
+      return allRows;
+    };
+    const [data, { data: boosts }] = await Promise.all([
+      fetchAllMarketRows(),
       supabase.from("market_boosts").select("status"),
     ]);
-    if (!data) return;
+    if (!data || data.length === 0) return;
     const stats: MarketStatsData = {
       total: data.length,
       active: data.filter(m => m.status === "active").length,
