@@ -759,6 +759,22 @@ const AdminMarkets = () => {
                                   <Check className="w-4 h-4" />
                                 </button>
                               )}
+                              {/* End Now button for active markets past end date */}
+                              {m.status === "active" && new Date(m.end_date) <= new Date(new Date().toISOString().split("T")[0]) && (
+                                <button
+                                  onClick={async () => {
+                                    const { error } = await supabase.from("markets").update({ status: "ended", updated_at: new Date().toISOString() }).eq("id", m.id).eq("status", "active");
+                                    if (error) { toast.error("Failed to end market"); return; }
+                                    toast.success("Market ended — ready for resolution");
+                                    logAuditEvent({ action: "market_ended_manually", targetId: m.id, targetType: "market", details: { title: m.title } });
+                                    fetchMarkets();
+                                  }}
+                                  className="p-1.5 rounded-lg hover:bg-orange-500/10 text-orange-500 transition-colors"
+                                  title="End Market Now"
+                                >
+                                  <Clock className="w-4 h-4" />
+                                </button>
+                              )}
                               {(m.status === "active" || m.status === "ended" || m.status === "pending") && (
                                 <>
                                   {(m.status === "active" || m.status === "ended") && (

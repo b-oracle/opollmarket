@@ -12,6 +12,7 @@ type AuditAction =
   | "market_edited"
   | "market_deleted"
   | "market_reactivated"
+  | "market_ended_manually"
   | "comment_deleted"
   | "boost_activated"
   | "boost_cancelled"
