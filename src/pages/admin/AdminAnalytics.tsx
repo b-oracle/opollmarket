@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, BarChart3, Users, TrendingUp, MousePointerClick, DollarSign, Zap, Target, ArrowUpDown, Percent } from "lucide-react";
+import { Loader2, BarChart3, Users, TrendingUp, MousePointerClick, DollarSign, Zap, Target, ArrowUpDown, Percent, Shield } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, Cell, PieChart, Pie } from "recharts";
 
 interface EventRow {
@@ -29,6 +29,17 @@ interface RevenueStats {
   dailyData: { date: string; deposits: number; withdrawals: number }[];
 }
 
+interface OsureStats {
+  totalPremiums: number;
+  totalClaims: number;
+  totalForfeited: number;
+  pendingCount: number;
+  claimedCount: number;
+  forfeitedCount: number;
+  forfeitureRate: number;
+  dailyData: { date: string; premiums: number; claims: number }[];
+}
+
 const CHART_COLORS = [
   "hsl(var(--primary))",
   "hsl(var(--chart-2))",
@@ -52,6 +63,7 @@ const AdminAnalytics = () => {
   const [polyFees, setPolyFees] = useState<{ adminFees: number; creatorFees: number; totalVolume: number; marketCount: number; feesByMarket: { title: string; adminFee: number; creatorFee: number }[] }>({
     adminFees: 0, creatorFees: 0, totalVolume: 0, marketCount: 0, feesByMarket: [],
   });
+  const [osureStats, setOsureStats] = useState<OsureStats>({ totalPremiums: 0, totalClaims: 0, totalForfeited: 0, pendingCount: 0, claimedCount: 0, forfeitedCount: 0, forfeitureRate: 0, dailyData: [] });
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -226,6 +238,42 @@ const AdminAnalytics = () => {
       } else {
         setPolyFees({ adminFees: 0, creatorFees: 0, totalVolume: 0, marketCount: 0, feesByMarket: [] });
       }
+
+      // --- oSURE Insurance Analytics ---
+      const osureData = await fetchPaginated((p) =>
+        supabase.from("insurance_claims").select("id, user_id, tier, premium_paid, claim_amount, status, created_at").gte("created_at", sinceISO).range(p * 1000, (p + 1) * 1000 - 1)
+      );
+
+      const totalPremiums = osureData.reduce((s: number, c: any) => s + Number(c.premium_paid || 0), 0);
+      const claimedRows = osureData.filter((c: any) => c.status === "claimed");
+      const forfeitedRows = osureData.filter((c: any) => c.status === "forfeited");
+      const pendingRows = osureData.filter((c: any) => c.status === "pending");
+      const totalClaims = claimedRows.reduce((s: number, c: any) => s + Number(c.claim_amount || 0), 0);
+      const totalForfeited = forfeitedRows.reduce((s: number, c: any) => s + Number(c.premium_paid || 0), 0);
+      const resolvedCount = claimedRows.length + forfeitedRows.length;
+      const forfeitureRate = resolvedCount > 0 ? (forfeitedRows.length / resolvedCount) * 100 : 0;
+
+      const osureDailyMap = new Map<string, { premiums: number; claims: number }>();
+      days.forEach(d => osureDailyMap.set(d, { premiums: 0, claims: 0 }));
+      osureData.forEach((c: any) => {
+        const day = c.created_at.slice(0, 10);
+        const entry = osureDailyMap.get(day);
+        if (entry) {
+          entry.premiums += Number(c.premium_paid || 0);
+          if (c.status === "claimed") entry.claims += Number(c.claim_amount || 0);
+        }
+      });
+
+      setOsureStats({
+        totalPremiums,
+        totalClaims,
+        totalForfeited,
+        pendingCount: pendingRows.length,
+        claimedCount: claimedRows.length,
+        forfeitedCount: forfeitedRows.length,
+        forfeitureRate,
+        dailyData: days.map(d => ({ date: new Date(d).toLocaleDateString("en", { month: "short", day: "numeric" }), ...(osureDailyMap.get(d) || { premiums: 0, claims: 0 }) })),
+      });
 
       setLoading(false);
     };
@@ -524,6 +572,100 @@ const AdminAnalytics = () => {
         ) : (
           <p className="text-sm text-muted-foreground text-center py-4">No prediction events recorded yet</p>
         )}
+      </div>
+
+      {/* oSURE Insurance Analytics */}
+      <div className="bg-card border border-border rounded-xl p-5">
+        <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Shield className="w-4 h-4 text-emerald-500" /> oSURE Insurance Analytics</h3>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+          {[
+            { label: "Premiums Collected", value: fmt(osureStats.totalPremiums), color: "text-emerald-500", icon: DollarSign },
+            { label: "Claims Paid", value: fmt(osureStats.totalClaims), color: "text-red-500", icon: Shield },
+            { label: "Net Profit", value: fmt(osureStats.totalPremiums - osureStats.totalClaims), color: osureStats.totalPremiums - osureStats.totalClaims >= 0 ? "text-green-500" : "text-red-500", icon: TrendingUp },
+            { label: "Forfeiture Rate", value: `${osureStats.forfeitureRate.toFixed(1)}%`, color: "text-amber-500", icon: Percent },
+          ].map(card => (
+            <div key={card.label} className="bg-muted/30 border border-border rounded-lg p-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{card.label}</span>
+                <card.icon className={`w-3.5 h-3.5 ${card.color}`} />
+              </div>
+              <span className="text-lg font-bold">{card.value}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Daily premiums vs claims */}
+          <div>
+            <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Daily Premiums vs Claims</h4>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={osureStats.dailyData}>
+                  <defs>
+                    <linearGradient id="fillPremiums" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--chart-3))" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(var(--chart-3))" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="fillClaims" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--chart-5))" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(var(--chart-5))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [`$${value.toFixed(2)}`]} />
+                  <Area type="monotone" dataKey="premiums" stroke="hsl(var(--chart-3))" fill="url(#fillPremiums)" strokeWidth={2} name="Premiums" />
+                  <Area type="monotone" dataKey="claims" stroke="hsl(var(--chart-5))" fill="url(#fillClaims)" strokeWidth={2} name="Claims" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "hsl(var(--chart-3))" }} /><span className="text-[10px] text-muted-foreground">Premiums</span></div>
+              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "hsl(var(--chart-5))" }} /><span className="text-[10px] text-muted-foreground">Claims</span></div>
+            </div>
+          </div>
+
+          {/* Status breakdown */}
+          <div>
+            <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Claim Status Breakdown</h4>
+            {(osureStats.pendingCount + osureStats.claimedCount + osureStats.forfeitedCount) > 0 ? (
+              <div className="flex items-center justify-center h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: "Pending", value: osureStats.pendingCount, fill: "hsl(var(--chart-4))" },
+                        { name: "Claimed", value: osureStats.claimedCount, fill: "hsl(var(--chart-5))" },
+                        { name: "Forfeited", value: osureStats.forfeitedCount, fill: "hsl(var(--chart-3))" },
+                      ].filter(d => d.value > 0)}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={70}
+                      paddingAngle={3}
+                      dataKey="value"
+                    >
+                      {[
+                        { fill: "hsl(var(--chart-4))" },
+                        { fill: "hsl(var(--chart-5))" },
+                        { fill: "hsl(var(--chart-3))" },
+                      ].map((entry, i) => <Cell key={i} fill={entry.fill} />)}
+                    </Pie>
+                    <Tooltip contentStyle={tooltipStyle} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-10">No insurance claims yet</p>
+            )}
+            <div className="flex items-center justify-center gap-4 mt-2">
+              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "hsl(var(--chart-4))" }} /><span className="text-[10px] text-muted-foreground">Pending ({osureStats.pendingCount})</span></div>
+              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "hsl(var(--chart-5))" }} /><span className="text-[10px] text-muted-foreground">Claimed ({osureStats.claimedCount})</span></div>
+              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "hsl(var(--chart-3))" }} /><span className="text-[10px] text-muted-foreground">Forfeited ({osureStats.forfeitedCount})</span></div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Polymarket Fee Earnings */}
