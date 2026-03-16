@@ -581,26 +581,29 @@ const Rankings = () => {
                       items={sortedTraders}
                       currentUserId={currentUserId}
                       onUserClick={(id) => navigate(`/user/${id}`)}
-                      valueLabel={(t) => ({
-                        text: `${t.pnl >= 0 ? "+" : "-"}${formatDollar(t.pnl)}`,
-                        positive: t.pnl >= 0,
-                      })}
+                      valueLabel={(t) => {
+                        if (traderSort === "volume") return { text: formatDollar(t.volume), positive: true };
+                        if (traderSort === "trades") return { text: `${t.trades} trades`, positive: true };
+                        return { text: `${t.pnl >= 0 ? "+" : "-"}${formatDollar(t.pnl)}`, positive: t.pnl >= 0 };
+                      }}
                     />
                     {(() => {
                       if (!currentUserId) return null;
                       const idx = sortedTraders.findIndex((t) => t.userId === currentUserId);
                       if (idx === -1 || idx < VISIBLE_COUNT) return null;
                       const me = sortedTraders[idx];
+                      const mainValue = traderSort === "volume" ? formatDollar(me.volume) : traderSort === "trades" ? `${me.trades} trades` : `${me.pnl >= 0 ? "+" : "-"}${formatDollar(me.pnl)}`;
+                      const mainPositive = traderSort === "pnl" ? me.pnl >= 0 : true;
                       return (
                         <YourRankCard
                           rank={idx + 1}
                           name={me.name}
                           avatar={me.avatar}
                           statLine={`${me.trades} prediction${me.trades !== 1 ? "s" : ""} · ${formatDollar(me.volume)} vol`}
-                          valueLine={`${me.pnl >= 0 ? "+" : "-"}${formatDollar(me.pnl)}`}
-                          valuePositive={me.pnl >= 0}
+                          valueLine={mainValue}
+                          valuePositive={mainPositive}
                           totalCount={sortedTraders.length}
-                          onShare={() => shareRank(idx + 1, me.name, me.avatar, `${me.pnl >= 0 ? "+" : "-"}${formatDollar(me.pnl)}`, me.pnl >= 0, `${me.trades} prediction${me.trades !== 1 ? "s" : ""} · ${formatDollar(me.volume)} vol`, "Predictions", sortedTraders.length)}
+                          onShare={() => shareRank(idx + 1, me.name, me.avatar, mainValue, mainPositive, `${me.trades} prediction${me.trades !== 1 ? "s" : ""} · ${formatDollar(me.volume)} vol`, "Predictions", sortedTraders.length)}
                         />
                       );
                     })()}
