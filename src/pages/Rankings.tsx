@@ -181,24 +181,52 @@ const useReferralLeaderboard = (period: TimePeriod) => {
   useEffect(() => {
     setLoading(true);
     (async () => {
-      let query = supabase.from("referral_rewards").select("referrer_id, amount, created_at");
       const cutoff = getCutoffDate(period);
-      if (cutoff) query = query.gte("created_at", cutoff);
 
-      const { data: rewards } = await query;
+      // 1. Fetch referral_rewards (signup bonuses)
+      let rewardsQuery = supabase.from("referral_rewards").select("referrer_id, amount, created_at");
+      if (cutoff) rewardsQuery = rewardsQuery.gte("created_at", cutoff);
 
-      if (!rewards || rewards.length === 0) {
+      // 2. Fetch referral commissions from pending_commissions (type=referral, status=released)
+      let commissionsQuery = supabase.from("pending_commissions").select("user_id, amount, created_at").eq("type", "referral").eq("status", "released");
+      if (cutoff) commissionsQuery = commissionsQuery.gte("created_at", cutoff);
+
+      // 3. Fetch actual referral signup counts from profiles.referred_by
+      const referralCountsQuery = supabase.from("profiles").select("referred_by").not("referred_by", "is", null);
+
+      const [{ data: rewards }, { data: commissions }, { data: referralProfiles }] = await Promise.all([
+        rewardsQuery,
+        commissionsQuery,
+        referralCountsQuery,
+      ]);
+
+      // Build a map: userId -> { earned, referralCount }
+      const map = new Map<string, { earned: number; referralCount: number }>();
+
+      const ensureEntry = (id: string) => {
+        if (!map.has(id)) map.set(id, { earned: 0, referralCount: 0 });
+        return map.get(id)!;
+      };
+
+      // Sum signup bonuses
+      for (const r of rewards || []) {
+        ensureEntry(r.referrer_id).earned += Number(r.amount);
+      }
+
+      // Sum referral commissions
+      for (const c of commissions || []) {
+        ensureEntry(c.user_id).earned += Number(c.amount);
+      }
+
+      // Count actual signups from profiles.referred_by
+      for (const p of referralProfiles || []) {
+        if (p.referred_by) ensureEntry(p.referred_by).referralCount += 1;
+      }
+
+      if (map.size === 0) {
         setReferrers([]);
         setLoading(false);
         return;
-      }
-
-      const map = new Map<string, { total: number; count: number }>();
-      for (const r of rewards) {
-        const e = map.get(r.referrer_id) || { total: 0, count: 0 };
-        e.total += Number(r.amount);
-        e.count += 1;
-        map.set(r.referrer_id, e);
       }
 
       const ids = Array.from(map.keys());
@@ -210,11 +238,20 @@ const useReferralLeaderboard = (period: TimePeriod) => {
       const pMap = new Map((profiles || []).map((p) => [p.id, p]));
 
       setReferrers(
-        ids.map((id) => {
-          const s = map.get(id)!;
-          const p = pMap.get(id);
-          return { userId: id, name: p?.display_name || "Anonymous", avatar: p?.avatar_url || null, verificationLevel: (p?.verification_level || "none") as VerificationLevel, totalReferrals: s.count, totalEarned: s.total };
-        })
+        ids
+          .map((id) => {
+            const s = map.get(id)!;
+            const p = pMap.get(id);
+            return {
+              userId: id,
+              name: p?.display_name || "Anonymous",
+              avatar: p?.avatar_url || null,
+              verificationLevel: (p?.verification_level || "none") as VerificationLevel,
+              totalReferrals: s.referralCount,
+              totalEarned: s.earned,
+            };
+          })
+          .filter((r) => r.totalReferrals > 0 || r.totalEarned > 0)
       );
       setLoading(false);
     })();
