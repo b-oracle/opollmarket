@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
   try {
     const { bank_code, account_number } = await req.json();
 
-    const normalizedBankCode = String(bank_code ?? "").trim();
+    const normalizedBankCode = String(bank_code ?? "").replace(/\D/g, "").trim();
     const normalizedAccountNumber = String(account_number ?? "").replace(/\D/g, "");
 
     if (!normalizedBankCode || normalizedAccountNumber.length !== 10) {
@@ -22,22 +22,41 @@ Deno.serve(async (req) => {
       );
     }
 
-    let accountName = "";
+    const flutterwaveKey = Deno.env.get("FLUTTERWAVE_SECRET_KEY");
 
-    const payazaSecretKey = Deno.env.get("PAYAZA_SECRET_KEY");
-
-    if (payazaSecretKey) {
-      accountName = await tryPayazaNameEnquiry(normalizedBankCode, normalizedAccountNumber, payazaSecretKey);
-    }
-
-    if (accountName) {
+    if (!flutterwaveKey) {
+      console.error("FLUTTERWAVE_SECRET_KEY not configured");
       return new Response(
-        JSON.stringify({ account_name: accountName }),
+        JSON.stringify({ account_name: "", manual_confirm: true, message: "Account verification service not configured." }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.warn("Name enquiry failed. Falling back to manual confirmation.");
+    // Call Flutterwave v3 resolve account endpoint
+    const res = await fetch("https://api.flutterwave.com/v3/accounts/resolve", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${flutterwaveKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        account_number: normalizedAccountNumber,
+        account_bank: normalizedBankCode,
+      }),
+    });
+
+    const data = await res.json();
+    console.log(`Flutterwave resolve → ${res.status}:`, JSON.stringify(data).substring(0, 500));
+
+    if (data.status === "success" && data.data?.account_name) {
+      return new Response(
+        JSON.stringify({ account_name: data.data.account_name }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Flutterwave returned an error or no name
+    console.warn("Flutterwave resolve failed:", data.message || "Unknown error");
     return new Response(
       JSON.stringify({
         account_name: "",
@@ -54,161 +73,3 @@ Deno.serve(async (req) => {
     );
   }
 });
-
-// ─── Payaza name enquiry ───
-async function tryPayazaNameEnquiry(
-  bankCode: string,
-  accountNumber: string,
-  secretKey: string,
-): Promise<string> {
-  const proxyUrl = Deno.env.get("QUOTAGUARD_URL");
-
-  // Try both raw and normalized bank-code variants because Payaza often expects 6-digit bank codes
-  const bankCodeCandidates = getBankCodeCandidates(bankCode);
-
-  // Try multiple endpoints
-  const endpoints = [
-    "https://api.payaza.africa/live/payaza-account/api/v1/mainaccounts/merchant/provider/enquiry",
-    "https://router.payaza.africa/api/request/secure-merchant-resolve-account-details",
-  ];
-
-  // Auth header
-  if (!secretKey) return "";
-  const authVariant = { label: "secret", value: `Payaza ${btoa(secretKey)}` };
-
-  for (const normalizedBankCode of bankCodeCandidates) {
-    // Multiple payload formats — Payaza API has changed formats over time
-      const payloadVariants = [
-        // Format 1: receiver_ prefixed (newer SDK format)
-        {
-          label: "receiver-format",
-          body: {
-            receiver_account_number: accountNumber,
-            receiver_bank_code: normalizedBankCode,
-            currency: "NGN",
-          },
-        },
-        // Format 2: flat format (original)
-        {
-          label: "flat-format",
-          body: {
-            account_number: accountNumber,
-            bank_code: normalizedBankCode,
-            currency: "NGN",
-          },
-        },
-        // Format 3: service_payload wrapper (Payaza checkout SDK format)
-        {
-          label: "service-payload-format",
-          body: {
-            service_type: "Account_enquiry",
-            service_payload: {
-              request_application: "Payaza",
-              application_module: "USER_MODULE",
-              application_version: "1.0.0",
-              request_class: "MerchantNameEnquiry",
-              account_number: accountNumber,
-              bank_code: normalizedBankCode,
-              currency: "NGN",
-            },
-          },
-        },
-      ];
-
-      for (const endpoint of endpoints) {
-        for (const variant of payloadVariants) {
-          const fetchOpts: RequestInit = {
-            method: "POST",
-            headers: {
-              Authorization: authVariant.value,
-              "X-TenantID": "live",
-              "Content-Type": "application/json",
-              "Accept": "application/json",
-            },
-            body: JSON.stringify(variant.body),
-          };
-
-          // Try proxy first if available, then direct
-          const attempts: Array<{ label: string; opts: RequestInit & { client?: Deno.HttpClient } }> = [];
-          if (proxyUrl) {
-            const httpClient = Deno.createHttpClient({ proxy: { url: proxyUrl } });
-            attempts.push({ label: "Proxy", opts: { ...fetchOpts, client: httpClient } });
-          }
-          attempts.push({ label: "Direct", opts: fetchOpts });
-
-          for (const attempt of attempts) {
-            try {
-              const res = await fetch(endpoint, attempt.opts);
-              const text = await res.text();
-              console.log(`Payaza ${attempt.label} auth:${authVariant.label} ${variant.label} bank:${normalizedBankCode} ${endpoint.split("/").pop()} → ${res.status}: ${text.substring(0, 400)}`);
-              if (attempt.opts.client) {
-                try { attempt.opts.client.close(); } catch {}
-              }
-
-              if (text.includes("<html") || text.includes("<!DOCTYPE")) continue;
-              if (res.status >= 500) continue; // Server error, try next variant
-
-              try {
-                const data = JSON.parse(text);
-                const name = extractAccountName(data);
-
-                if ((res.ok || res.status === 200 || res.status === 201) && typeof name === "string" && name.trim().length > 1) {
-                  console.log(`Payaza name resolved: "${name.trim()}" via ${variant.label} with bank code ${normalizedBankCode} (${authVariant.label} auth)`);
-                  return name.trim();
-                }
-              } catch {
-                continue;
-              }
-            } catch (err) {
-              console.warn(`Payaza ${attempt.label} ${variant.label} error:`, String(err));
-              if (attempt.opts.client) {
-                try { attempt.opts.client.close(); } catch {}
-              }
-            }
-          }
-        }
-      }
-  }
-
-  return "";
-}
-
-function getBankCodeCandidates(bankCode: string): string[] {
-  const digits = String(bankCode ?? "").replace(/\D/g, "");
-  if (!digits) return [];
-
-  const candidates = new Set<string>();
-  candidates.add(digits);
-
-  // Legacy 3-digit CBN codes often need 6-digit format for gateway name enquiry
-  if (digits.length < 6) candidates.add(digits.padStart(6, "0"));
-  if (digits.length > 6) candidates.add(digits.slice(-6));
-
-  return [...candidates];
-}
-
-// Extract account name from various Payaza response shapes
-function extractAccountName(data: any): string {
-  if (!data) return "";
-
-  // Direct fields
-  if (data.account_name) return data.account_name;
-  if (data.accountName) return data.accountName;
-  if (data.beneficiary_name) return data.beneficiary_name;
-  if (data.beneficiaryName) return data.beneficiaryName;
-  if (data.name) return data.name;
-
-  // Nested in response_content
-  const rc = data.response_content || data.data || data.service_response?.response_content;
-  if (rc) {
-    return rc.account_name || rc.accountName || rc.beneficiary_name || rc.beneficiaryName || rc.beneficiaryAccountName || rc.name || "";
-  }
-
-  // Nested in service_response
-  const sr = data.service_response;
-  if (sr) {
-    return sr.account_name || sr.accountName || sr.beneficiary_name || sr.beneficiaryName || "";
-  }
-
-  return "";
-}
