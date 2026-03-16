@@ -670,6 +670,7 @@ const Rankings = () => {
                 <div className="flex gap-2 mb-4">
                   {([
                     { key: "profit" as QuickSubTab, label: "Profit", icon: TrendingUp },
+                    { key: "volume" as QuickSubTab, label: "Volume", icon: Zap },
                     { key: "streaks" as QuickSubTab, label: "Win Streaks", icon: Flame },
                   ]).map(({ key, label, icon: Icon }) => (
                     <button
