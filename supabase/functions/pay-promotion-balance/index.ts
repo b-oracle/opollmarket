@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
 
     if (totalCost <= 0) {
       return new Response(JSON.stringify({ error: "No items selected" }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
