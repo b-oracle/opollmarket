@@ -299,6 +299,7 @@ const App = () => (
                           <Route path="fiat-settings" element={<AdminFiatSettings />} />
                           <Route path="referrals" element={<AdminReferrals />} />
                           <Route path="whatsapp" element={<AdminWhatsApp />} />
+                          <Route path="telegram" element={<AdminTelegram />} />
                           <Route path="investor-deck" element={<InvestorDeck />} />
                         </Route>
                         <Route path="*" element={<NotFound />} />
