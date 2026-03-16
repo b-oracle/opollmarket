@@ -59,6 +59,7 @@ const InvestorDeck = lazy(() => import("./pages/admin/InvestorDeck"));
 const AdminFiatSettings = lazy(() => import("./pages/admin/AdminFiatSettings"));
 const AdminReferrals = lazy(() => import("./pages/admin/AdminReferrals"));
 const AdminWhatsApp = lazy(() => import("./pages/admin/AdminWhatsApp"));
+const AdminTelegram = lazy(() => import("./pages/admin/AdminTelegram"));
 const Referrals = lazy(() => import("./pages/Referrals"));
 const Commissions = lazy(() => import("./pages/Commissions"));
 const FAQ = lazy(() => import("./pages/FAQ"));
@@ -298,6 +299,7 @@ const App = () => (
                           <Route path="fiat-settings" element={<AdminFiatSettings />} />
                           <Route path="referrals" element={<AdminReferrals />} />
                           <Route path="whatsapp" element={<AdminWhatsApp />} />
+                          <Route path="telegram" element={<AdminTelegram />} />
                           <Route path="investor-deck" element={<InvestorDeck />} />
                         </Route>
                         <Route path="*" element={<NotFound />} />
