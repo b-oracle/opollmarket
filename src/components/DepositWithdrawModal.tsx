@@ -130,6 +130,17 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const [accountNameResolveFailed, setAccountNameResolveFailed] = useState(false);
   const [ngnPayoutRate, setNgnPayoutRate] = useState<number | null>(null);
 
+  // Fetch Nigerian banks from Flutterwave
+  const { data: bankList = [] } = useQuery({
+    queryKey: ["nigerian-banks"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("get-banks");
+      if (error || !data?.banks) return [];
+      return data.banks as { code: string; name: string }[];
+    },
+    staleTime: 24 * 60 * 60 * 1000, // cache for 24h
+  });
+
   // Fetch live NGN rate
   const fetchNgnRate = useCallback(async () => {
     setRateLoading(true);
