@@ -654,7 +654,6 @@ const Rankings = () => {
                                         </p>
                                       );
                                     })()}
-                                    </p>
                                     {isMe ? (
                                       <button onClick={(e) => { e.stopPropagation(); shareRank(rank, trader.name, trader.avatar, `${trader.pnl >= 0 ? "+" : "-"}${formatDollar(trader.pnl)}`, trader.pnl >= 0, `${trader.trades} prediction${trader.trades !== 1 ? "s" : ""} · ${formatDollar(trader.volume)} vol`, "Predictions", sortedTraders.length); }} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
                                         <Share2 className="w-3.5 h-3.5 text-primary" />
