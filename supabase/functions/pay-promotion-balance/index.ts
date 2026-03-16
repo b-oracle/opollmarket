@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
 
     if (!bal) {
       return new Response(JSON.stringify({ error: "No balance record found" }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
