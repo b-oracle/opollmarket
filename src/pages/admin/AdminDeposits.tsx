@@ -54,7 +54,7 @@ const AdminDeposits = () => {
 
       let query = supabase
         .from("transactions")
-        .select("id, user_id, amount, status, nowpayments_payment_id, created_at", { count: "exact" })
+        .select("id, user_id, amount, status, nowpayments_payment_id, payment_provider, created_at", { count: "exact" })
         .eq("type", "deposit");
 
       if (statusFilter !== "all") {
@@ -185,8 +185,9 @@ const AdminDeposits = () => {
                 <tr className="border-b bg-muted/30">
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">User</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Amount</th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Payment ID</th>
+                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
+                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Provider</th>
+                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Payment ID</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Date</th>
                   {canEdit && <th className="text-right px-4 py-3 font-medium text-muted-foreground">Action</th>}
                 </tr>
@@ -206,6 +207,11 @@ const AdminDeposits = () => {
                         <Badge variant={sc.variant} className="gap-1">
                           <StatusIcon className="w-3 h-3" />
                           {sc.label}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant="outline" className="text-[10px] font-mono">
+                          {(d as any).payment_provider === "flutterwave" ? "FLW" : (d as any).payment_provider === "payaza" ? "Payaza" : "Crypto"}
                         </Badge>
                       </td>
                       <td className="px-4 py-3">

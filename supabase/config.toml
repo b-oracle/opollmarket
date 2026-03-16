@@ -77,3 +77,9 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.cancel-limit-order]
     verify_jwt = false
+  [functions.create-flutterwave-deposit]
+    verify_jwt = false
+  [functions.request-flutterwave-withdrawal]
+    verify_jwt = false
+  [functions.flutterwave-webhook]
+    verify_jwt = false

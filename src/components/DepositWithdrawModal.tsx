@@ -279,8 +279,8 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setStep("executing");
       setErrorMsg("");
       try {
-        // For Payaza (fiat) deposits, fetch the transaction from DB and show fiat transfer UI
-        if (resumeProvider === "payaza") {
+        // For Payaza / Flutterwave (fiat) deposits, fetch the transaction from DB and show fiat transfer UI
+        if (resumeProvider === "payaza" || resumeProvider === "flutterwave") {
           const { data, error } = await supabase.functions.invoke("get-deposit-status", {
             body: { payment_id: resumePaymentId },
           });
