@@ -123,7 +123,7 @@ const AdminAnalytics = () => {
           supabase.from("quick_bets").select("id, user_id, amount, payout, status, side, created_at, round_id").gte("created_at", sinceISO).in("status", ["won", "lost"]).range(p * 1000, (p + 1) * 1000 - 1)
         ),
         fetchPaginated((p) =>
-          supabase.from("transactions").select("id, user_id, type, amount, status, market_id, created_at").gte("created_at", sinceISO).eq("status", "confirmed").in("type", ["deposit", "withdrawal", "buy", "payout", "commission"]).range(p * 1000, (p + 1) * 1000 - 1)
+          supabase.from("transactions").select("id, user_id, type, amount, status, market_id, created_at").gte("created_at", sinceISO).eq("status", "confirmed").in("type", ["deposit", "withdrawal", "buy", "sell", "payout", "commission"]).range(p * 1000, (p + 1) * 1000 - 1)
         ),
         supabase.from("markets").select("id, title, polymarket_id").not("polymarket_id", "is", null).then(r => r.data || []),
         supabase.from("user_roles").select("user_id").eq("role", "admin"),
