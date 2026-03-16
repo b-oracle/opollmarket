@@ -97,17 +97,19 @@ const AdminAnalytics = () => {
         return all;
       };
 
-      // Fetch all-time prediction volume from transactions (source of truth)
+      // Fetch all-time prediction volume from transactions (buys + sells)
       const fetchAllTimeVolume = async () => {
         let total = 0;
-        let from = 0;
-        const batchSize = 1000;
-        while (true) {
-          const { data, error } = await supabase.from("transactions").select("amount").eq("type", "buy").eq("status", "confirmed").range(from, from + batchSize - 1);
-          if (error || !data || data.length === 0) break;
-          total += data.reduce((s, r) => s + Number(r.amount), 0);
-          if (data.length < batchSize) break;
-          from += batchSize;
+        for (const txType of ["buy", "sell"]) {
+          let from = 0;
+          const batchSize = 1000;
+          while (true) {
+            const { data, error } = await supabase.from("transactions").select("amount").eq("type", txType).eq("status", "confirmed").range(from, from + batchSize - 1);
+            if (error || !data || data.length === 0) break;
+            total += data.reduce((s, r) => s + Number(r.amount), 0);
+            if (data.length < batchSize) break;
+            from += batchSize;
+          }
         }
         return total;
       };
