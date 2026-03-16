@@ -89,8 +89,13 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
   const profit = potentialPayout - totalCost;
   const roi = numAmount > 0 ? (profit / totalCost) * 100 : 0;
 
+  // Bonus can only cover fees, not the bet itself (matches edge function logic)
+  const bonusForFees = Math.min(bonusBalance, fee);
+  const mainNeeded = totalCost - bonusForFees;
+  const canAfford = mainNeeded <= balance;
+
   const isLimitValid = orderType === "limit" ? limitPriceNum >= 1 && limitPriceNum <= 99 : true;
-  const isValid = numAmount >= MIN_AMOUNT && numAmount <= MAX_AMOUNT && totalCost <= totalBalance && isLimitValid;
+  const isValid = numAmount >= MIN_AMOUNT && numAmount <= MAX_AMOUNT && canAfford && isLimitValid;
 
   const handleAmountChange = (val: string) => {
     const cleaned = val.replace(/[^0-9.]/g, "");
