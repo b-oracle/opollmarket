@@ -157,6 +157,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
     setErrorMsg("");
     setOrderType("market");
     setLimitPriceInput("");
+    setInsuranceTier(null);
     onClose();
   };
 
