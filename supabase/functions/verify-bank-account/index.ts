@@ -60,7 +60,6 @@ async function tryPayazaNameEnquiry(
   bankCode: string,
   accountNumber: string,
   secretKey: string,
-  merchantKey = "",
 ): Promise<string> {
   const proxyUrl = Deno.env.get("QUOTAGUARD_URL");
 
