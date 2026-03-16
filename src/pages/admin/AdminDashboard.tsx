@@ -92,7 +92,21 @@ const AdminDashboard = () => {
         supabase.from("market_likes").select("*", { count: "exact", head: true }),
       ]);
 
-      const { data: marketRows } = await supabase.from("markets").select("category, volume, status, created_at");
+      // Batch-fetch ALL market rows to avoid 1000-row cap
+      const fetchAllMarketRows = async () => {
+        const allRows: { category: string; volume: number; status: string; created_at: string }[] = [];
+        let from = 0;
+        const batchSize = 1000;
+        while (true) {
+          const { data, error } = await supabase.from("markets").select("category, volume, status, created_at").range(from, from + batchSize - 1);
+          if (error || !data || data.length === 0) break;
+          allRows.push(...data);
+          if (data.length < batchSize) break;
+          from += batchSize;
+        }
+        return allRows;
+      };
+      const marketRows = await fetchAllMarketRows();
       const { data: txnRows } = await supabase.from("transactions").select("created_at, amount");
 
       // For monetary totals, we need ALL rows — fetch in batches to avoid 1000-row cap
