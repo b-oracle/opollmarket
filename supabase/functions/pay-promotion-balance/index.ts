@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
 
     if (!market_id) {
       return new Response(JSON.stringify({ error: "market_id required" }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
