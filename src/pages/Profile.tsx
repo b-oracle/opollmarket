@@ -177,6 +177,110 @@ const TelegramSection = ({ userId }: { userId?: string }) => {
   );
 };
 
+const WhatsAppSection = ({ userId }: { userId?: string }) => {
+  const [unlinking, setUnlinking] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data: whatsappLink, isLoading } = useQuery({
+    queryKey: ["whatsapp-link", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data } = await supabase
+        .from("whatsapp_users")
+        .select("whatsapp_phone, linked_at")
+        .eq("user_id", userId)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!userId,
+  });
+
+  const handleUnlink = async () => {
+    if (!userId) return;
+    setUnlinking(true);
+    try {
+      const { error } = await supabase
+        .from("whatsapp_users")
+        .delete()
+        .eq("user_id", userId);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["whatsapp-link", userId] });
+      toast.success("WhatsApp account unlinked");
+    } catch {
+      toast.error("Failed to unlink WhatsApp");
+    } finally {
+      setUnlinking(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="glass rounded-xl p-4 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0 text-green-500">
+          <MessageCircle className="w-5 h-5" />
+        </div>
+        <span className="text-sm font-medium flex-1">WhatsApp</span>
+        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (whatsappLink) {
+    const maskedPhone = whatsappLink.whatsapp_phone.replace(/(\+\d{1,3})\d+(\d{4})/, "$1****$2");
+    return (
+      <div className="glass rounded-xl p-4 space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center shrink-0 text-green-500">
+            <MessageCircle className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              WhatsApp Linked
+            </p>
+            <p className="text-xs text-muted-foreground truncate">{maskedPhone}</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={handleUnlink}
+            disabled={unlinking}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-destructive/10 border border-destructive/20 text-xs font-semibold text-destructive hover:bg-destructive/20 transition-colors disabled:opacity-50"
+          >
+            {unlinking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Unlink className="w-3.5 h-3.5" />}
+            Unlink
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="glass rounded-xl p-4 space-y-3">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0 text-green-500">
+          <MessageCircle className="w-5 h-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold">Predict via WhatsApp</p>
+          <p className="text-xs text-muted-foreground">Link your account to trade from WhatsApp</p>
+        </div>
+      </div>
+      <div className="bg-muted/30 rounded-lg p-3">
+        <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+          1. Save our WhatsApp number and send <code className="px-1.5 py-0.5 rounded bg-muted text-foreground text-[11px] font-mono">start</code>
+        </p>
+        <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+          2. Type <code className="px-1.5 py-0.5 rounded bg-muted text-foreground text-[11px] font-mono">link</code> and follow the secure prompts
+        </p>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          3. Start browsing markets and placing predictions! 🎯
+        </p>
+      </div>
+    </div>
+  );
+};
+
 const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
   const queryClient = useQueryClient();
   const { data: secSettings, isLoading } = useQuery({
