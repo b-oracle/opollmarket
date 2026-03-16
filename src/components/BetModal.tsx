@@ -321,8 +321,8 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                       </div>
                     </div>
 
-                    {totalCost > totalBalance && numAmount > 0 && user && (
-                      <p className="text-xs text-destructive mb-2">Insufficient balance. You need ${(totalCost - totalBalance).toFixed(2)} more.</p>
+                    {!canAfford && numAmount > 0 && user && (
+                      <p className="text-xs text-destructive mb-2">Insufficient balance. You need ${(mainNeeded - balance).toFixed(2)} more.</p>
                     )}
 
                     <div className="flex gap-2 mb-4">
