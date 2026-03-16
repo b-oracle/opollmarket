@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFollow, useFollowCounts } from "@/hooks/useFollow";
 import { useCopySettings } from "@/hooks/useCopySettings";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
@@ -55,6 +56,8 @@ const UserProfile = () => {
   const { isFollowing, loading: followLoading, toggleFollow } = useFollow(id);
   const followCounts = useFollowCounts(id);
   const { settings: copySettings, updateSettings } = useCopySettings(id);
+  const { isFeatureEnabled } = useFeatureToggles();
+  const copyTradingEnabled = isFeatureEnabled("copy_trading");
   const [showCopySettings, setShowCopySettings] = useState(false);
   const [activeTab, setActiveTab] = useState<"markets" | "predictions" | "rank">("markets");
   const [shareOpen, setShareOpen] = useState(false);
@@ -426,7 +429,7 @@ const UserProfile = () => {
                 )}
                 {isFollowing ? "Following" : "Follow"}
               </button>
-              {isFollowing && (
+              {isFollowing && copyTradingEnabled && (
                 <button
                   onClick={() => setShowCopySettings(!showCopySettings)}
                   className="px-4 py-2.5 rounded-xl glass font-semibold text-sm flex items-center gap-2 hover:bg-accent/50 transition-colors"
@@ -452,7 +455,7 @@ const UserProfile = () => {
 
         {/* Copy Trading Settings */}
         <AnimatePresence>
-          {showCopySettings && isFollowing && !isOwnProfile && (
+          {showCopySettings && isFollowing && !isOwnProfile && copyTradingEnabled && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}

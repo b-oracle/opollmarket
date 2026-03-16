@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { Users, DollarSign } from "lucide-react";
 
 interface CopyTradeStatsProps {
@@ -7,6 +8,7 @@ interface CopyTradeStatsProps {
 }
 
 const CopyTradeStats = ({ userId }: CopyTradeStatsProps) => {
+  const { isFeatureEnabled } = useFeatureToggles();
   const { data } = useQuery({
     queryKey: ["copy-trade-stats", userId],
     queryFn: async () => {
@@ -20,7 +22,7 @@ const CopyTradeStats = ({ userId }: CopyTradeStatsProps) => {
     enabled: !!userId,
   });
 
-  if (!data || (data.total_copiers === 0 && data.total_revenue === 0)) return null;
+  if (!isFeatureEnabled("copy_trading") || !data || (data.total_copiers === 0 && data.total_revenue === 0)) return null;
 
   return (
     <div className="glass rounded-xl p-4 mb-6">
