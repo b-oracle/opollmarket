@@ -177,7 +177,103 @@ const TelegramSection = ({ userId }: { userId?: string }) => {
   );
 };
 
-const WhatsAppSection = ({ userId }: { userId?: string }) => {
+const NOTIF_PREFS_KEYS = [
+  { key: "market_resolution", label: "Market Resolutions", desc: "When markets you bet on resolve" },
+  { key: "market_cancelled", label: "Market Cancelled", desc: "When markets are cancelled & refunded" },
+  { key: "payout", label: "Payouts & Wins", desc: "Winning notifications and payouts" },
+  { key: "new_follower", label: "New Followers", desc: "When someone follows you" },
+  { key: "copy_trade", label: "Copy Trades", desc: "Copy trade alerts and commissions" },
+  { key: "referral", label: "Referrals", desc: "Referral reward notifications" },
+  { key: "price_alert", label: "Price Alerts", desc: "Auto-resolve price proximity alerts" },
+  { key: "sports_score", label: "Sports Scores", desc: "Live score and kickoff updates" },
+  { key: "general", label: "General", desc: "All other notifications" },
+] as const;
+
+type PrefKey = typeof NOTIF_PREFS_KEYS[number]["key"];
+type PrefsRecord = Record<PrefKey, boolean>;
+
+const DEFAULT_PREFS: PrefsRecord = Object.fromEntries(NOTIF_PREFS_KEYS.map(k => [k.key, true])) as PrefsRecord;
+
+const WhatsAppNotifPrefs = ({ userId }: { userId?: string }) => {
+  const [expanded, setExpanded] = useState(false);
+  const [prefs, setPrefs] = useState<PrefsRecord>(DEFAULT_PREFS);
+  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!userId) return;
+    supabase
+      .from("whatsapp_notification_prefs")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          const p = { ...DEFAULT_PREFS };
+          for (const k of NOTIF_PREFS_KEYS) {
+            if (k.key in data) p[k.key] = (data as any)[k.key] ?? true;
+          }
+          setPrefs(p);
+        }
+        setLoaded(true);
+      });
+  }, [userId]);
+
+  const togglePref = async (key: PrefKey) => {
+    if (!userId || saving) return;
+    const newVal = !prefs[key];
+    setPrefs(prev => ({ ...prev, [key]: newVal }));
+    setSaving(true);
+    try {
+      const updates = { ...prefs, [key]: newVal, user_id: userId, updated_at: new Date().toISOString() };
+      const { error } = await supabase
+        .from("whatsapp_notification_prefs")
+        .upsert(updates, { onConflict: "user_id" });
+      if (error) throw error;
+    } catch {
+      setPrefs(prev => ({ ...prev, [key]: !newVal }));
+      toast.error("Failed to update preference");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!loaded) return null;
+
+  return (
+    <div className="space-y-2">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors w-full"
+      >
+        <Bell className="w-3.5 h-3.5" />
+        Notification Preferences
+        <ChevronDown className={`w-3.5 h-3.5 ml-auto transition-transform ${expanded ? "rotate-180" : ""}`} />
+      </button>
+      {expanded && (
+        <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+          {NOTIF_PREFS_KEYS.map(({ key, label, desc }) => (
+            <label key={key} className="flex items-center gap-3 cursor-pointer py-1">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={prefs[key]}
+                onClick={() => togglePref(key)}
+                className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${prefs[key] ? "bg-green-500" : "bg-muted-foreground/30"}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${prefs[key] ? "translate-x-4" : ""}`} />
+              </button>
+              <div className="min-w-0">
+                <span className="text-xs font-medium block">{label}</span>
+                <span className="text-[10px] text-muted-foreground">{desc}</span>
+              </div>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
   const [unlinking, setUnlinking] = useState(false);
   const queryClient = useQueryClient();
 
