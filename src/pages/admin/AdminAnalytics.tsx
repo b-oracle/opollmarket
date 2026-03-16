@@ -189,7 +189,7 @@ const AdminAnalytics = () => {
       // --- Revenue Stats ---
       const deposits = txData.filter((t: any) => t.type === "deposit").reduce((s: number, t: any) => s + Number(t.amount), 0);
       const withdrawals = txData.filter((t: any) => t.type === "withdrawal").reduce((s: number, t: any) => s + Number(t.amount), 0);
-      const predictionVolume = txData.filter((t: any) => t.type === "buy" && t.market_id).reduce((s: number, t: any) => s + Number(t.amount), 0);
+      const predictionVolume = txData.filter((t: any) => (t.type === "buy" || t.type === "sell") && t.market_id).reduce((s: number, t: any) => s + Number(t.amount), 0);
       const totalPlatformPayouts = txData.filter((t: any) => t.type === "payout").reduce((s: number, t: any) => s + Number(t.amount), 0);
 
       const revDailyMap = new Map<string, { deposits: number; withdrawals: number }>();
