@@ -105,8 +105,8 @@ serve(async (req) => {
       .eq("currency", "USDT");
 
     if (updateErr) {
-      return new Response(JSON.stringify({ error: "Failed to deduct balance" }), {
-        status: 500,
+      return new Response(JSON.stringify({ error: "Failed to deduct balance. Please try again." }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
