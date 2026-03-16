@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
     }
 
     const userId = user.id;
-    const { marketId, optionId, side, amount, price, shares } = await req.json();
+    const { marketId, optionId, side, amount, price, shares, insuranceTier } = await req.json();
 
     // Validate inputs
     if (!marketId || !side || !amount || !price || !shares) {
@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
     // Fetch commission settings
     const { data: commData } = await supabase
       .from("commission_settings")
-      .select("prediction_fee_percent, admin_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, referral_reward_amount, bc400_pool_percent")
+      .select("prediction_fee_percent, admin_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, referral_reward_amount, bc400_pool_percent, osure_enabled, osure_25_premium, osure_50_premium, osure_100_premium")
       .limit(1)
       .single();
 
@@ -141,24 +141,39 @@ Deno.serve(async (req) => {
     // Recalculate shares server-side based on net amount (amount minus fee)
     const actualShares = netAmount / (price / 100);
 
+    // ── oSURE Insurance ──
+    let insurancePremium = 0;
+    let normalizedTier: number | null = null;
+    const osureEnabled = (commData as any)?.osure_enabled !== false;
+
+    if (insuranceTier && osureEnabled && [25, 50, 100].includes(insuranceTier)) {
+      normalizedTier = insuranceTier / 100; // 0.25, 0.50, 1.00
+      let premiumPercent = 0;
+      if (insuranceTier === 25) premiumPercent = Number((commData as any)?.osure_25_premium ?? 10);
+      else if (insuranceTier === 50) premiumPercent = Number((commData as any)?.osure_50_premium ?? 20);
+      else if (insuranceTier === 100) premiumPercent = Number((commData as any)?.osure_100_premium ?? 30);
+      insurancePremium = Math.round(amount * (premiumPercent / 100) * 100) / 100;
+    }
+
     // Check balance
     const { data: balData } = await supabase
       .from("balances")
-      .select("amount, bonus_balance")
+      .select("amount, bonus_balance, insurance_balance")
       .eq("user_id", userId)
       .eq("currency", "USDT")
       .single();
 
     const currentBalance = Number(balData?.amount || 0);
     const currentBonus = Number(balData?.bonus_balance || 0);
+    const currentInsurance = Number(balData?.insurance_balance || 0);
 
     // Bonus (referral) balance can ONLY be used to pay fees, not the bet itself
     const bonusForFees = Math.min(currentBonus, totalFees);
     const feesFromMain = totalFees - bonusForFees;
-    const mainDeduct = netAmount + feesFromMain;
+    const mainDeduct = netAmount + feesFromMain + insurancePremium;
     const totalAvailable = currentBalance + currentBonus;
 
-    if (totalAvailable < totalCost) {
+    if (totalAvailable < totalCost + insurancePremium) {
       return new Response(JSON.stringify({ error: "Insufficient balance" }), {
         status: 400, headers: corsHeaders,
       });
@@ -185,13 +200,14 @@ Deno.serve(async (req) => {
       .limit(1)
       .single();
 
-    if (adminRole && totalFees > 0) {
-      await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: totalFees });
+    const adminCreditTotal = totalFees + insurancePremium;
+    if (adminRole && adminCreditTotal > 0) {
+      await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: adminCreditTotal });
 
       await supabase.from("transactions").insert({
         user_id: adminRole.user_id,
         type: "commission",
-        amount: totalFees,
+        amount: adminCreditTotal,
         market_id: marketId,
         option_id: optionId || null,
         side,
@@ -262,23 +278,29 @@ Deno.serve(async (req) => {
 
     const poolAmount = netAmount;
 
-    // Insert position with server-calculated shares
-    const { error: posError } = await supabase.from("positions").insert({
+    // Insert position with server-calculated shares (+ insurance data)
+    const positionInsert: Record<string, unknown> = {
       user_id: userId,
       market_id: marketId,
       option_id: optionId || null,
       side,
       shares: actualShares,
       avg_price: price / 100,
-    });
-    if (posError) {
+    };
+    if (normalizedTier !== null) {
+      positionInsert.insurance_tier = normalizedTier;
+      positionInsert.insurance_premium = insurancePremium;
+    }
+
+    const { data: insertedPos, error: posError } = await supabase.from("positions").insert(positionInsert).select("id").single();
+    if (posError || !insertedPos) {
       console.error("Position insert error:", posError);
       // Refund user balance atomically
       await supabase.rpc("adjust_balance", { _user_id: userId, _delta: mainDeduct, _bonus_delta: bonusForFees });
 
       // Reverse admin fee credit to prevent phantom revenue
-      if (adminRole && totalFees > 0) {
-        await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -totalFees });
+      if (adminRole && adminCreditTotal > 0) {
+        await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -adminCreditTotal });
       }
 
       // Delete pending commissions that were just inserted for this trade (by ID)
@@ -291,6 +313,20 @@ Deno.serve(async (req) => {
 
       return new Response(JSON.stringify({ error: "Failed to create position" }), {
         status: 500, headers: corsHeaders,
+      });
+    }
+
+    // Insert insurance_claims record if insured
+    if (normalizedTier !== null && insertedPos) {
+      const claimAmount = netAmount * normalizedTier;
+      await supabase.from("insurance_claims").insert({
+        user_id: userId,
+        position_id: insertedPos.id,
+        market_id: marketId,
+        tier: normalizedTier,
+        premium_paid: insurancePremium,
+        claim_amount: claimAmount,
+        status: "pending",
       });
     }
 

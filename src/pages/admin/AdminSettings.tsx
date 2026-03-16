@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer, Globe, Plus, Trash2, RefreshCw, ToggleLeft, Copy, ShieldCheck, Sparkles, Banknote } from "lucide-react";
+import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer, Globe, Plus, Trash2, RefreshCw, ToggleLeft, Copy, ShieldCheck, Sparkles, Banknote, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -88,6 +88,10 @@ const AdminSettings = () => {
   const [boostWhalePrice, setBoostWhalePrice] = useState("150");
   const [broadcastPrice, setBroadcastPrice] = useState("5");
   const [bc400PoolPercent, setBc400PoolPercent] = useState("0");
+  const [osureEnabled, setOsureEnabled] = useState(true);
+  const [osure25Premium, setOsure25Premium] = useState("10");
+  const [osure50Premium, setOsure50Premium] = useState("20");
+  const [osure100Premium, setOsure100Premium] = useState("30");
   const [payazaMode, setPayazaMode] = useState<"checkout_sdk" | "direct_api">("direct_api"); // kept for save compatibility
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -147,6 +151,10 @@ const AdminSettings = () => {
         setBoostWhalePrice(String(d.boost_whale_price ?? 150));
         setBroadcastPrice(String(d.broadcast_price ?? 5));
         setBc400PoolPercent(String(d.bc400_pool_percent ?? 0));
+        setOsureEnabled(d.osure_enabled !== false);
+        setOsure25Premium(String(d.osure_25_premium ?? 10));
+        setOsure50Premium(String(d.osure_50_premium ?? 20));
+        setOsure100Premium(String(d.osure_100_premium ?? 30));
         setSettingsId(d.id);
       }
       if (error) console.error(error);
@@ -191,6 +199,9 @@ const AdminSettings = () => {
   const boostWhalePriceNum = parseFloat(boostWhalePrice) || 150;
   const broadcastPriceNum = parseFloat(broadcastPrice) || 5;
   const bc400PoolPercentNum = parseFloat(bc400PoolPercent) || 0;
+  const osure25PremiumNum = parseFloat(osure25Premium) || 10;
+  const osure50PremiumNum = parseFloat(osure50Premium) || 20;
+  const osure100PremiumNum = parseFloat(osure100Premium) || 30;
 
   // Splits must sum to ≤ 100 — platform keeps the remainder
   const splitTotalGold = creatorGoldNum + referrerCommissionNum + bc400PoolPercentNum;
@@ -290,7 +301,11 @@ const AdminSettings = () => {
                boost_standard_price: boostStandardPriceNum,
                 boost_whale_price: boostWhalePriceNum,
                 broadcast_price: broadcastPriceNum,
-                bc400_pool_percent: bc400PoolPercentNum,
+                 bc400_pool_percent: bc400PoolPercentNum,
+                 osure_enabled: osureEnabled,
+                 osure_25_premium: osure25PremiumNum,
+                 osure_50_premium: osure50PremiumNum,
+                 osure_100_premium: osure100PremiumNum,
            updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
@@ -388,6 +403,9 @@ const AdminSettings = () => {
           </TabsTrigger>
           <TabsTrigger value="promotions" className="flex-1 min-w-[100px] text-xs sm:text-sm gap-1.5">
             <Sparkles className="w-3.5 h-3.5 hidden sm:inline" /> Promotions
+          </TabsTrigger>
+          <TabsTrigger value="osure" className="flex-1 min-w-[100px] text-xs sm:text-sm gap-1.5">
+            <Shield className="w-3.5 h-3.5 hidden sm:inline" /> oSURE
           </TabsTrigger>
         </TabsList>
 
@@ -924,6 +942,51 @@ const AdminSettings = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* ═══════ oSURE TAB ═══════ */}
+        <TabsContent value="osure" className="space-y-6 mt-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Shield className="w-4 h-4 text-primary" /> oSURE Insurance Settings
+              </CardTitle>
+              <CardDescription className="text-xs">Configure prediction insurance tiers and premiums.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold">Enable oSURE</Label>
+                <Switch checked={osureEnabled} onCheckedChange={setOsureEnabled} disabled={!canEdit} />
+              </div>
+
+              <div className="border-t border-border pt-3 space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground">Premium Rates (% of wager)</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">25% Coverage Premium (%)</Label>
+                    <Input type="number" min={0} max={100} step={0.5} value={osure25Premium} onChange={(e) => setOsure25Premium(e.target.value)} disabled={!canEdit} />
+                    <p className="text-[10px] text-muted-foreground">User pays this % to insure 25% of their wager</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">50% Coverage Premium (%)</Label>
+                    <Input type="number" min={0} max={100} step={0.5} value={osure50Premium} onChange={(e) => setOsure50Premium(e.target.value)} disabled={!canEdit} />
+                    <p className="text-[10px] text-muted-foreground">User pays this % to insure 50% of their wager</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">100% Coverage Premium (%)</Label>
+                    <Input type="number" min={0} max={100} step={0.5} value={osure100Premium} onChange={(e) => setOsure100Premium(e.target.value)} disabled={!canEdit} />
+                    <p className="text-[10px] text-muted-foreground">User pays this % to insure 100% of their wager</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-3">
+                <p className="text-xs text-muted-foreground">
+                  <strong>How it works:</strong> Premium goes to admin pool. On loss, user receives claim into insurance balance. On win, premium is forfeited and insurance balance unlocks to main balance.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 

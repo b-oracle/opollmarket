@@ -5,18 +5,18 @@ import { useAuth } from "./useAuth";
 export const useUserBalance = () => {
   const { user } = useAuth();
 
-  const { data: balanceData = { amount: 0, bonus: 0 }, isLoading } = useQuery({
+  const { data: balanceData = { amount: 0, bonus: 0, insurance: 0 }, isLoading } = useQuery({
     queryKey: ["balance", user?.id],
     queryFn: async () => {
-      if (!user) return { amount: 0, bonus: 0 };
+      if (!user) return { amount: 0, bonus: 0, insurance: 0 };
       const { data, error } = await supabase
         .from("balances")
-        .select("amount, bonus_balance")
+        .select("amount, bonus_balance, insurance_balance")
         .eq("user_id", user.id)
         .eq("currency", "USDT")
         .maybeSingle();
-      if (error || !data) return { amount: 0, bonus: 0 };
-      return { amount: Number(data.amount), bonus: Number(data.bonus_balance ?? 0) };
+      if (error || !data) return { amount: 0, bonus: 0, insurance: 0 };
+      return { amount: Number(data.amount), bonus: Number(data.bonus_balance ?? 0), insurance: Number((data as any).insurance_balance ?? 0) };
     },
     enabled: !!user,
   });
@@ -24,7 +24,9 @@ export const useUserBalance = () => {
   return {
     balance: balanceData.amount,
     bonusBalance: balanceData.bonus,
+    insuranceBalance: balanceData.insurance,
     totalBalance: balanceData.amount + balanceData.bonus,
+    totalWithInsurance: balanceData.amount + balanceData.bonus + balanceData.insurance,
     isLoading,
     userId: user?.id,
   };
@@ -42,6 +44,7 @@ export const usePlaceBet = () => {
       amount,
       price,
       shares,
+      insuranceTier,
     }: {
       marketId: string;
       optionId?: string;
@@ -49,11 +52,12 @@ export const usePlaceBet = () => {
       amount: number;
       price: number;
       shares: number;
+      insuranceTier?: number;
     }) => {
       if (!user) throw new Error("Not authenticated");
 
       const { data, error } = await supabase.functions.invoke("place-bet", {
-        body: { marketId, optionId, side, amount, price, shares },
+        body: { marketId, optionId, side, amount, price, shares, insuranceTier },
       });
 
       if (error) {

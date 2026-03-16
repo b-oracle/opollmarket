@@ -30,6 +30,7 @@ import {
   Trash2,
   Edit,
   Share2,
+  Shield,
 } from "lucide-react";
 import ShareModal from "@/components/ShareModal";
 import { PortfolioSummaryShareCard, PositionShareCard } from "@/components/PortfolioShareCards";
@@ -150,7 +151,7 @@ const Portfolio = () => {
   const cancelLimitOrder = useCancelLimitOrder();
   const { data: commission } = useCommissionSettings();
   const exitFeePercent = commission?.exit_fee_percent ?? 5;
-  const { bonusBalance } = useUserBalance();
+  const { bonusBalance, insuranceBalance } = useUserBalance();
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareTitle, setShareTitle] = useState("");
   const [shareUrl, setShareUrl] = useState("");
@@ -500,6 +501,17 @@ const Portfolio = () => {
               <p className="text-sm font-bold">${totalMaxPayout.toFixed(0)}</p>
             </div>
           </div>
+
+          {/* Insurance Balance */}
+          {insuranceBalance > 0 && (
+            <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Shield className="w-3.5 h-3.5 text-primary" />
+                <span className="text-xs text-muted-foreground">oSURE Insurance Balance</span>
+              </div>
+              <span className="text-sm font-bold text-primary">${insuranceBalance.toFixed(2)}</span>
+            </div>
+          )}
         </motion.div>
 
         {/* Portfolio Tabs: Positions / Open Orders */}

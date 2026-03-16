@@ -24,6 +24,10 @@ export interface CommissionSettings {
   boost_whale_price: number;
   broadcast_price: number;
   bc400_pool_percent: number;
+  osure_enabled: boolean;
+  osure_25_premium: number;
+  osure_50_premium: number;
+  osure_100_premium: number;
 }
 
 export const useCommissionSettings = () => {
@@ -32,7 +36,7 @@ export const useCommissionSettings = () => {
     queryFn: async (): Promise<CommissionSettings> => {
       const { data, error } = await supabase
         .from("commission_settings")
-        .select("prediction_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, exit_fee_percent, quick_trade_fee_percent, qt_min_bet, qt_max_bet, qt_streak_2x, qt_streak_3x, qt_streak_4x, qt_streak_5x, qt_enabled_assets, qt_enabled_timeframes, qt_disabled_assets, auto_resolve_fee, boost_flash_price, boost_standard_price, boost_whale_price, broadcast_price, bc400_pool_percent")
+        .select("prediction_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, exit_fee_percent, quick_trade_fee_percent, qt_min_bet, qt_max_bet, qt_streak_2x, qt_streak_3x, qt_streak_4x, qt_streak_5x, qt_enabled_assets, qt_enabled_timeframes, qt_disabled_assets, auto_resolve_fee, boost_flash_price, boost_standard_price, boost_whale_price, broadcast_price, bc400_pool_percent, osure_enabled, osure_25_premium, osure_50_premium, osure_100_premium")
         .limit(1)
         .maybeSingle();
       if (error || !data) {
@@ -59,6 +63,10 @@ export const useCommissionSettings = () => {
           boost_whale_price: 150,
           broadcast_price: 5,
           bc400_pool_percent: 0,
+          osure_enabled: true,
+          osure_25_premium: 10,
+          osure_50_premium: 20,
+          osure_100_premium: 30,
         };
       }
       const d = data as any;
@@ -85,6 +93,10 @@ export const useCommissionSettings = () => {
         boost_whale_price: Number(d.boost_whale_price ?? 150),
         broadcast_price: Number(d.broadcast_price ?? 5),
         bc400_pool_percent: Number(d.bc400_pool_percent ?? 0),
+        osure_enabled: d.osure_enabled !== false,
+        osure_25_premium: Number(d.osure_25_premium ?? 10),
+        osure_50_premium: Number(d.osure_50_premium ?? 20),
+        osure_100_premium: Number(d.osure_100_premium ?? 30),
       };
     },
     staleTime: 60_000,

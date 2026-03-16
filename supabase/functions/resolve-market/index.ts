@@ -166,7 +166,7 @@ async function handleResolve(
   if (market.market_type === "binary" && winning_side) {
     const { data } = await adminClient
       .from("positions")
-      .select("*")
+      .select("*, insurance_tier, insurance_premium, insurance_claimed")
       .eq("market_id", market_id)
       .eq("side", winning_side)
       .gt("shares", 0);
@@ -174,7 +174,7 @@ async function handleResolve(
   } else if (market.market_type === "multi" && winning_option_id) {
     const { data } = await adminClient
       .from("positions")
-      .select("*")
+      .select("*, insurance_tier, insurance_premium, insurance_claimed")
       .eq("market_id", market_id)
       .eq("option_id", winning_option_id)
       .gt("shares", 0);
@@ -189,7 +189,7 @@ async function handleResolve(
     const losingSide = winning_side === "yes" ? "no" : "yes";
     const { data } = await adminClient
       .from("positions")
-      .select("*")
+      .select("*, insurance_tier, insurance_premium, insurance_claimed")
       .eq("market_id", market_id)
       .eq("side", losingSide)
       .gt("shares", 0);
@@ -197,7 +197,7 @@ async function handleResolve(
   } else if (market.market_type === "multi" && winning_option_id) {
     const { data } = await adminClient
       .from("positions")
-      .select("*")
+      .select("*, insurance_tier, insurance_premium, insurance_claimed")
       .eq("market_id", market_id)
       .neq("option_id", winning_option_id)
       .gt("shares", 0);
@@ -271,6 +271,71 @@ async function handleResolve(
       });
 
       totalPaidOut += payout;
+    }
+  }
+
+  // ── oSURE: Process insurance claims ──
+  // For LOSERS: credit insurance_balance if insured
+  for (const pos of losingPositions) {
+    if (pos.insurance_tier && !pos.insurance_claimed) {
+      const netWager = pos.shares * pos.avg_price;
+      const claimAmount = Math.round(netWager * pos.insurance_tier * 100) / 100;
+
+      if (claimAmount > 0) {
+        await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: 0, _bonus_delta: 0, _insurance_delta: claimAmount });
+
+        // Update position as claimed
+        await adminClient.from("positions").update({ insurance_claimed: true }).eq("id", pos.id);
+
+        // Update insurance_claims record
+        await adminClient.from("insurance_claims")
+          .update({ status: "claimed", claim_amount: claimAmount, claimed_at: new Date().toISOString() })
+          .eq("position_id", pos.id)
+          .eq("user_id", pos.user_id);
+
+        // Notify user
+        await adminClient.from("notifications").insert({
+          user_id: pos.user_id,
+          title: "oSURE Claim Paid! 🛡️",
+          message: `Your ${Math.round(pos.insurance_tier * 100)}% insurance claim of $${claimAmount.toFixed(2)} for "${market.title}" has been credited to your insurance balance.`,
+          type: "info",
+          market_id: market_id,
+        });
+      }
+    }
+  }
+
+  // For WINNERS: forfeit insurance premium, unlock insurance_balance → main balance
+  for (const pos of winningPositions) {
+    if (pos.insurance_tier && !pos.insurance_claimed) {
+      // Forfeit: mark claim as forfeited
+      await adminClient.from("insurance_claims")
+        .update({ status: "forfeited" })
+        .eq("position_id", pos.id)
+        .eq("user_id", pos.user_id);
+
+      await adminClient.from("positions").update({ insurance_claimed: true }).eq("id", pos.id);
+    }
+
+    // Unlock insurance balance → main balance for ANY winner (even without insurance)
+    const { data: winnerBal } = await adminClient
+      .from("balances")
+      .select("insurance_balance")
+      .eq("user_id", pos.user_id)
+      .eq("currency", "USDT")
+      .single();
+
+    const insBalance = Number(winnerBal?.insurance_balance || 0);
+    if (insBalance > 0) {
+      await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: insBalance, _insurance_delta: -insBalance });
+
+      await adminClient.from("notifications").insert({
+        user_id: pos.user_id,
+        title: "Insurance Balance Unlocked! 🎉",
+        message: `Your insurance balance of $${insBalance.toFixed(2)} has been unlocked to your main balance after winning "${market.title}".`,
+        type: "payout",
+        market_id: market_id,
+      });
     }
   }
 
