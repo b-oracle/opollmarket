@@ -74,16 +74,11 @@ async function tryPayazaNameEnquiry(
     "https://router.payaza.africa/api/request/secure-merchant-resolve-account-details",
   ];
 
-  // Auth header variants (some merchant configs accept secret key auth, others merchant key auth)
+  // Auth header
   if (!secretKey) return "";
-  const authVariants: Array<{ label: string; value: string }> = [
-    { label: "secret", value: `Payaza ${btoa(secretKey)}` },
-  ];
-  if (merchantKey) {
-    authVariants.push({ label: "merchant", value: `Payaza ${btoa(merchantKey)}` });
-  }
+  const authVariant = { label: "secret", value: `Payaza ${btoa(secretKey)}` };
 
-  for (const authVariant of authVariants) {
+  for (const normalizedBankCode of bankCodeCandidates) {
     for (const normalizedBankCode of bankCodeCandidates) {
       // Multiple payload formats — Payaza API has changed formats over time
       const payloadVariants = [
