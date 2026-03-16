@@ -593,6 +593,22 @@ const Portfolio = () => {
               </span>
             )}
           </button>
+          <button
+            onClick={() => setActiveTab("insurance")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-xs font-semibold transition-all ${
+              activeTab === "insurance"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Shield className="w-3 h-3" />
+            oSURE
+            {insuranceClaims.length > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-500 text-[9px] font-bold">
+                {insuranceClaims.length}
+              </span>
+            )}
+          </button>
         </div>
 
         {activeTab === "positions" && (
