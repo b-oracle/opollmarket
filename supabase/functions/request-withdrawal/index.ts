@@ -249,7 +249,7 @@ Deno.serve(async (req) => {
         .single();
 
       if (adminRole) {
-        await adminClient.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: feeAmount });
+        await adminClient.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: feeAmount, _bonus_delta: 0, _insurance_delta: 0 });
 
         await adminClient.from("transactions").insert({
           user_id: adminRole.user_id,

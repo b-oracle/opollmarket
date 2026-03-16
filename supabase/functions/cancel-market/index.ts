@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
 
     for (const tx of transactions || []) {
       const refundAmount = tx.amount;
-      await adminClient.rpc("adjust_balance", { _user_id: tx.user_id, _delta: refundAmount });
+      await adminClient.rpc("adjust_balance", { _user_id: tx.user_id, _delta: refundAmount, _bonus_delta: 0, _insurance_delta: 0 });
 
       await adminClient.from("transactions").insert({
         user_id: tx.user_id,
@@ -191,7 +191,7 @@ Deno.serve(async (req) => {
       const totalAdminFees = (adminCommTxns || []).reduce((sum: number, t: any) => sum + Number(t.amount), 0);
 
       if (totalAdminFees > 0) {
-        await adminClient.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -totalAdminFees });
+        await adminClient.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -totalAdminFees, _bonus_delta: 0, _insurance_delta: 0 });
 
         await adminClient.from("transactions").insert({
           user_id: adminRole.user_id,
@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
       }
     } else {
       for (const feeTx of feeTxns || []) {
-        await adminClient.rpc("adjust_balance", { _user_id: feeTx.user_id, _delta: feeTx.amount });
+        await adminClient.rpc("adjust_balance", { _user_id: feeTx.user_id, _delta: feeTx.amount, _bonus_delta: 0, _insurance_delta: 0 });
 
         await adminClient.from("transactions").insert({
           user_id: feeTx.user_id,
@@ -257,7 +257,7 @@ Deno.serve(async (req) => {
     let liquidityRefunded = 0;
     if (market.initial_liquidity > 0 && market.liquidity_verified) {
       const creatorUserId = market.creator_wallet;
-      await adminClient.rpc("adjust_balance", { _user_id: creatorUserId, _delta: market.initial_liquidity });
+      await adminClient.rpc("adjust_balance", { _user_id: creatorUserId, _delta: market.initial_liquidity, _bonus_delta: 0, _insurance_delta: 0 });
 
       await adminClient.from("transactions").insert({
         user_id: creatorUserId,

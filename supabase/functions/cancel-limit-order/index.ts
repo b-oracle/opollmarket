@@ -83,6 +83,8 @@ Deno.serve(async (req) => {
     await admin.rpc("adjust_balance", {
       _user_id: userId,
       _delta: Number(order.amount),
+      _bonus_delta: 0,
+      _insurance_delta: 0,
     });
 
     return new Response(JSON.stringify({ success: true }), {

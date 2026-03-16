@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
         // Release: deduct from admin pool, credit to recipient
         if (pc.type === "bc400") {
           // BC400: deduct from admin balance and track in bc400_pool_balance
-          await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -pc.amount });
+          await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -pc.amount, _bonus_delta: 0, _insurance_delta: 0 });
 
           const { data: cs } = await supabase
             .from("commission_settings")
@@ -95,8 +95,8 @@ Deno.serve(async (req) => {
           }
         } else if (pc.amount >= 0.01) {
           // Creator or referral — transfer from admin to recipient (skip sub-cent amounts)
-          await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -pc.amount });
-          await supabase.rpc("adjust_balance", { _user_id: pc.user_id, _delta: pc.amount });
+          await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -pc.amount, _bonus_delta: 0, _insurance_delta: 0 });
+          await supabase.rpc("adjust_balance", { _user_id: pc.user_id, _delta: pc.amount, _bonus_delta: 0, _insurance_delta: 0 });
 
           // Insert commission transaction
           await supabase.from("transactions").insert({

@@ -235,7 +235,7 @@ async function handleResolve(
 
       if (payout <= 0) continue;
 
-      await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout });
+      await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout, _bonus_delta: 0, _insurance_delta: 0 });
 
       await adminClient.from("transactions").insert({
         user_id: pos.user_id,
@@ -256,7 +256,7 @@ async function handleResolve(
     for (const pos of winningPositions) {
       const payout = pos.shares;
 
-      await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout });
+      await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout, _bonus_delta: 0, _insurance_delta: 0 });
 
       await adminClient.from("transactions").insert({
         user_id: pos.user_id,
@@ -358,7 +358,7 @@ async function handleResolve(
     const liquidityRefund = market.initial_liquidity - feeAmount;
 
     if (liquidityRefund > 0) {
-      await adminClient.rpc("adjust_balance", { _user_id: creatorUserId, _delta: liquidityRefund });
+      await adminClient.rpc("adjust_balance", { _user_id: creatorUserId, _delta: liquidityRefund, _bonus_delta: 0, _insurance_delta: 0 });
 
       await adminClient.from("transactions").insert({
         user_id: creatorUserId,
@@ -424,10 +424,10 @@ async function handleResolve(
 
         // Deduct commission from copier's balance
         // Deduct commission from copier (atomic)
-        await adminClient.rpc("adjust_balance", { _user_id: earning.copier_user_id, _delta: -commissionAmount });
+        await adminClient.rpc("adjust_balance", { _user_id: earning.copier_user_id, _delta: -commissionAmount, _bonus_delta: 0, _insurance_delta: 0 });
 
         // Credit commission to trader (atomic)
-        await adminClient.rpc("adjust_balance", { _user_id: earning.trader_user_id, _delta: commissionAmount });
+        await adminClient.rpc("adjust_balance", { _user_id: earning.trader_user_id, _delta: commissionAmount, _bonus_delta: 0, _insurance_delta: 0 });
 
         // Get copier's display name for the commission transaction
         const { data: copierProfile } = await adminClient
