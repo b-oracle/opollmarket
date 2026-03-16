@@ -570,7 +570,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setErrorMsg(err.message || "Something went wrong");
       setStep("error");
     }
-  }, [numAmount, startPolling]);
+  }, [numAmount, startPolling, depositProvider]);
 
   const copyFiatDetail = useCallback((text: string, label: string) => {
     navigator.clipboard.writeText(text);
