@@ -166,7 +166,7 @@ async function handleResolve(
   if (market.market_type === "binary" && winning_side) {
     const { data } = await adminClient
       .from("positions")
-      .select("*")
+      .select("*, insurance_tier, insurance_premium, insurance_claimed")
       .eq("market_id", market_id)
       .eq("side", winning_side)
       .gt("shares", 0);
@@ -174,7 +174,7 @@ async function handleResolve(
   } else if (market.market_type === "multi" && winning_option_id) {
     const { data } = await adminClient
       .from("positions")
-      .select("*")
+      .select("*, insurance_tier, insurance_premium, insurance_claimed")
       .eq("market_id", market_id)
       .eq("option_id", winning_option_id)
       .gt("shares", 0);
@@ -189,7 +189,7 @@ async function handleResolve(
     const losingSide = winning_side === "yes" ? "no" : "yes";
     const { data } = await adminClient
       .from("positions")
-      .select("*")
+      .select("*, insurance_tier, insurance_premium, insurance_claimed")
       .eq("market_id", market_id)
       .eq("side", losingSide)
       .gt("shares", 0);
@@ -197,7 +197,7 @@ async function handleResolve(
   } else if (market.market_type === "multi" && winning_option_id) {
     const { data } = await adminClient
       .from("positions")
-      .select("*")
+      .select("*, insurance_tier, insurance_premium, insurance_claimed")
       .eq("market_id", market_id)
       .neq("option_id", winning_option_id)
       .gt("shares", 0);
