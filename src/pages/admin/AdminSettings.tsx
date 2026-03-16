@@ -404,6 +404,9 @@ const AdminSettings = () => {
           <TabsTrigger value="promotions" className="flex-1 min-w-[100px] text-xs sm:text-sm gap-1.5">
             <Sparkles className="w-3.5 h-3.5 hidden sm:inline" /> Promotions
           </TabsTrigger>
+          <TabsTrigger value="osure" className="flex-1 min-w-[100px] text-xs sm:text-sm gap-1.5">
+            <Shield className="w-3.5 h-3.5 hidden sm:inline" /> oSURE
+          </TabsTrigger>
         </TabsList>
 
         {/* ═══════ FEES TAB ═══════ */}
