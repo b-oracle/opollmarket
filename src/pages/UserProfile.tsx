@@ -56,6 +56,8 @@ const UserProfile = () => {
   const { isFollowing, loading: followLoading, toggleFollow } = useFollow(id);
   const followCounts = useFollowCounts(id);
   const { settings: copySettings, updateSettings } = useCopySettings(id);
+  const { isFeatureEnabled } = useFeatureToggles();
+  const copyTradingEnabled = isFeatureEnabled("copy_trading");
   const [showCopySettings, setShowCopySettings] = useState(false);
   const [activeTab, setActiveTab] = useState<"markets" | "predictions" | "rank">("markets");
   const [shareOpen, setShareOpen] = useState(false);
