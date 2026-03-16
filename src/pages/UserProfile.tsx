@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFollow, useFollowCounts } from "@/hooks/useFollow";
 import { useCopySettings } from "@/hooks/useCopySettings";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
