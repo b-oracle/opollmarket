@@ -977,7 +977,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                         <Banknote className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                         <div>
                           <p className="text-[10px] text-muted-foreground">
-                            Pay with bank transfer via Payaza. Amount is converted from USD to NGN at the live rate and credited as USD to your balance.
+                            Pay with bank transfer via BoundlessPay. Amount is converted from USD to NGN at the live rate and credited as USD to your balance.
                           </p>
                           {ngnRate && numAmount > 0 && (
                             <div className="flex items-center gap-1.5 mt-1">
