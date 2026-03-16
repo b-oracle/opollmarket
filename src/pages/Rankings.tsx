@@ -642,9 +642,18 @@ const Rankings = () => {
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2 shrink-0">
-                                    <p className={`text-sm font-bold flex items-center gap-1 ${trader.pnl >= 0 ? "text-primary" : "text-destructive"}`}>
-                                      {trader.pnl >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                                      {trader.pnl >= 0 ? "+" : "-"}{formatDollar(trader.pnl)}
+                                    {(() => {
+                                      const isVol = traderSort === "volume";
+                                      const isTrades = traderSort === "trades";
+                                      const displayText = isVol ? formatDollar(trader.volume) : isTrades ? `${trader.trades}` : `${trader.pnl >= 0 ? "+" : "-"}${formatDollar(trader.pnl)}`;
+                                      const positive = isVol || isTrades ? true : trader.pnl >= 0;
+                                      return (
+                                        <p className={`text-sm font-bold flex items-center gap-1 ${positive ? "text-primary" : "text-destructive"}`}>
+                                          {positive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                                          {displayText}
+                                        </p>
+                                      );
+                                    })()}
                                     </p>
                                     {isMe ? (
                                       <button onClick={(e) => { e.stopPropagation(); shareRank(rank, trader.name, trader.avatar, `${trader.pnl >= 0 ? "+" : "-"}${formatDollar(trader.pnl)}`, trader.pnl >= 0, `${trader.trades} prediction${trader.trades !== 1 ? "s" : ""} · ${formatDollar(trader.volume)} vol`, "Predictions", sortedTraders.length); }} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
