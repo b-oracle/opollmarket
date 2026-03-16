@@ -151,7 +151,7 @@ const Portfolio = () => {
   const cancelLimitOrder = useCancelLimitOrder();
   const { data: commission } = useCommissionSettings();
   const exitFeePercent = commission?.exit_fee_percent ?? 5;
-  const { bonusBalance } = useUserBalance();
+  const { bonusBalance, insuranceBalance } = useUserBalance();
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareTitle, setShareTitle] = useState("");
   const [shareUrl, setShareUrl] = useState("");
