@@ -345,7 +345,8 @@ const AdminAnalytics = () => {
     { label: "Predictions", value: totalPredictions.toLocaleString(), icon: Target, color: "text-purple-500" },
     { label: "Quick Trades", value: qtStats.totalBets.toLocaleString(), icon: Zap, color: "text-amber-500" },
     { label: "QT Win Rate", value: `${qtStats.winRate.toFixed(1)}%`, icon: Percent, color: "text-emerald-500" },
-    { label: "Prediction Vol", value: fmt(revenueStats.predictionVolume), icon: DollarSign, color: "text-cyan-500" },
+    { label: `Prediction Vol (${timeRange}d)`, value: fmt(revenueStats.predictionVolume), icon: DollarSign, color: "text-cyan-500" },
+    { label: "All-Time Pred Vol", value: fmt(allTimePredictionVolume), icon: ArrowUpDown, color: "text-green-500" },
     { label: "QT Volume", value: fmt(qtStats.totalWagered), icon: BarChart3, color: "text-orange-500" },
   ];
 
