@@ -83,3 +83,7 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.flutterwave-webhook]
     verify_jwt = false
+  [functions.whatsapp-webhook]
+    verify_jwt = false
+  [functions.whatsapp-send]
+    verify_jwt = false
