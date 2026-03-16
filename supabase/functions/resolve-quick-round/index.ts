@@ -253,7 +253,7 @@ async function getOrCreateStreak(supabase: any, userId: string) {
 }
 
 async function creditBalance(supabase: any, userId: string, amount: number) {
-  await supabase.rpc("adjust_balance", { _user_id: userId, _delta: amount });
+  await supabase.rpc("adjust_balance", { _user_id: userId, _delta: amount, _bonus_delta: 0, _insurance_delta: 0 });
 }
 
 Deno.serve(async (req) => {

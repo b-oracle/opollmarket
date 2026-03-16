@@ -257,7 +257,7 @@ Deno.serve(async (req) => {
     let liquidityRefunded = 0;
     if (market.initial_liquidity > 0 && market.liquidity_verified) {
       const creatorUserId = market.creator_wallet;
-      await adminClient.rpc("adjust_balance", { _user_id: creatorUserId, _delta: market.initial_liquidity });
+      await adminClient.rpc("adjust_balance", { _user_id: creatorUserId, _delta: market.initial_liquidity, _bonus_delta: 0, _insurance_delta: 0 });
 
       await adminClient.from("transactions").insert({
         user_id: creatorUserId,
