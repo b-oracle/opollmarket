@@ -303,7 +303,7 @@ Use markdown formatting (headers, bullet points, bold). Keep it between 200-800 
     }
 
     return new Response(JSON.stringify({ error: "Invalid type. Use description, details, or image." }), {
-      status: 400,
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
