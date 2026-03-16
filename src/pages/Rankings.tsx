@@ -281,6 +281,7 @@ const useQuickTradeLeaderboard = (period: TimePeriod) => {
 
   useEffect(() => {
     setLoading(true);
+    setQuickTraders([]);
     (async () => {
       const cutoff = getCutoffDate(period);
       const { data } = await supabase.rpc("get_quick_trade_leaderboard", {
