@@ -239,6 +239,42 @@ const AdminAnalytics = () => {
         setPolyFees({ adminFees: 0, creatorFees: 0, totalVolume: 0, marketCount: 0, feesByMarket: [] });
       }
 
+      // --- oSURE Insurance Analytics ---
+      const osureData = await fetchPaginated((p) =>
+        supabase.from("insurance_claims").select("id, user_id, tier, premium_paid, claim_amount, status, created_at").gte("created_at", sinceISO).range(p * 1000, (p + 1) * 1000 - 1)
+      );
+
+      const totalPremiums = osureData.reduce((s: number, c: any) => s + Number(c.premium_paid || 0), 0);
+      const claimedRows = osureData.filter((c: any) => c.status === "claimed");
+      const forfeitedRows = osureData.filter((c: any) => c.status === "forfeited");
+      const pendingRows = osureData.filter((c: any) => c.status === "pending");
+      const totalClaims = claimedRows.reduce((s: number, c: any) => s + Number(c.claim_amount || 0), 0);
+      const totalForfeited = forfeitedRows.reduce((s: number, c: any) => s + Number(c.premium_paid || 0), 0);
+      const resolvedCount = claimedRows.length + forfeitedRows.length;
+      const forfeitureRate = resolvedCount > 0 ? (forfeitedRows.length / resolvedCount) * 100 : 0;
+
+      const osureDailyMap = new Map<string, { premiums: number; claims: number }>();
+      days.forEach(d => osureDailyMap.set(d, { premiums: 0, claims: 0 }));
+      osureData.forEach((c: any) => {
+        const day = c.created_at.slice(0, 10);
+        const entry = osureDailyMap.get(day);
+        if (entry) {
+          entry.premiums += Number(c.premium_paid || 0);
+          if (c.status === "claimed") entry.claims += Number(c.claim_amount || 0);
+        }
+      });
+
+      setOsureStats({
+        totalPremiums,
+        totalClaims,
+        totalForfeited,
+        pendingCount: pendingRows.length,
+        claimedCount: claimedRows.length,
+        forfeitedCount: forfeitedRows.length,
+        forfeitureRate,
+        dailyData: days.map(d => ({ date: new Date(d).toLocaleDateString("en", { month: "short", day: "numeric" }), ...(osureDailyMap.get(d) || { premiums: 0, claims: 0 }) })),
+      });
+
       setLoading(false);
     };
     fetchAll();
