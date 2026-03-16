@@ -101,6 +101,26 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const fiatEnabled = isFeatureEnabled("fiat_deposit_payaza");
   const fiatWithdrawalEnabled = isFeatureEnabled("fiat_withdrawal");
 
+  // Fetch provider settings (deposit_provider & payout_provider)
+  const { data: providerSettings } = useQuery({
+    queryKey: ["fiat-provider-settings"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("commission_settings")
+        .select("payout_provider")
+        .limit(1)
+        .single();
+      const d = data as any;
+      return {
+        depositProvider: d?.deposit_provider || "payaza",
+        payoutProvider: d?.payout_provider || "payaza",
+      };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+  const depositProvider = providerSettings?.depositProvider || "payaza";
+  const payoutProvider = providerSettings?.payoutProvider || "payaza";
+
   const [tab, setTab] = useState<Tab>(initialTab);
   const [amount, setAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("crypto");
