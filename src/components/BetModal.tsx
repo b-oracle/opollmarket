@@ -66,6 +66,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
   const [showTerms, setShowTerms] = useState(false);
   const [orderType, setOrderType] = useState<OrderType>("market");
   const [limitPriceInput, setLimitPriceInput] = useState("");
+  const [insuranceTier, setInsuranceTier] = useState<number | null>(null);
 
   const numAmount = parseFloat(amount) || 0;
   const limitPriceNum = parseFloat(limitPriceInput) || 0;
