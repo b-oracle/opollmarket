@@ -106,7 +106,16 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
   const finalStatus = isPartial ? "partial" : "confirmed";
 
   // 3. Credit the user's balance atomically (prevents race conditions)
-  await supabase.rpc("adjust_balance", { _user_id: userId, _delta: Number(creditAmount) });
+  const { error: balanceError } = await supabase.rpc("adjust_balance", { 
+    _user_id: userId, 
+    _delta: Number(creditAmount),
+    _bonus_delta: 0,
+    _insurance_delta: 0,
+  });
+  if (balanceError) {
+    console.error("Failed to adjust balance:", balanceError);
+    throw new Error(`Balance adjustment failed: ${balanceError.message}`);
+  }
 
   // 4. Update the transaction record
   if (matchedTx) {
