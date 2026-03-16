@@ -531,7 +531,23 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                             <span className="font-semibold">${fee.toFixed(2)}</span>
                           </div>
                         )}
+                        {insuranceTier && (
+                          <>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground flex items-center gap-1"><Shield className="w-3 h-3 text-primary" /> oSURE ({insuranceTier}%)</span>
+                              <span className="font-semibold text-primary">${insurancePremium.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Insurance Coverage</span>
+                              <span className="font-semibold">${insuranceCoverage.toFixed(2)}</span>
+                            </div>
+                          </>
+                        )}
                         <div className="border-t border-border pt-2 flex justify-between text-sm">
+                          <span className="text-muted-foreground font-semibold">Total Cost</span>
+                          <span className="font-bold">${totalCost.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Potential Payout</span>
                           <span className={`font-bold text-lg ${optionColor ? "" : sideTextClass}`} style={optionColor ? { color: optionColor } : undefined}>${potentialPayout.toFixed(2)}</span>
                         </div>
@@ -546,8 +562,8 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                       </p>
                     </div>
                     <div className="space-y-3">
-                      <button onClick={() => setStep("input")} className="w-full glass py-3 rounded-xl font-semibold text-sm transition-all active:scale-95">
-                        ← Back to Edit
+                      <button onClick={() => setStep(osureEnabled && orderType === "market" ? "insurance" : "input")} className="w-full glass py-3 rounded-xl font-semibold text-sm transition-all active:scale-95">
+                        ← Back
                       </button>
                       <button onClick={handleConfirm} disabled={placeBet.isPending || placeLimitOrder.isPending} className={`w-full ${sideBtnClass} py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2`}>
                         {(placeBet.isPending || placeLimitOrder.isPending) ? <><Loader2 className="w-4 h-4 animate-spin" /> Placing...</> : orderType === "limit" ? "Place Limit Order" : "Confirm Prediction"}
