@@ -118,12 +118,12 @@ Deno.serve(async (req) => {
 
     if (mainDeduct > mainBalance) {
       return new Response(JSON.stringify({
-        error: "Insufficient balance",
+        error: `Insufficient balance. You need $${totalCost.toFixed(2)} but have $${(mainBalance + bonusBalance).toFixed(2)}.`,
         required: totalCost,
         available_main: mainBalance,
         available_bonus: bonusBalance,
       }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
