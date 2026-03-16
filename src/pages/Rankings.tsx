@@ -581,26 +581,29 @@ const Rankings = () => {
                       items={sortedTraders}
                       currentUserId={currentUserId}
                       onUserClick={(id) => navigate(`/user/${id}`)}
-                      valueLabel={(t) => ({
-                        text: `${t.pnl >= 0 ? "+" : "-"}${formatDollar(t.pnl)}`,
-                        positive: t.pnl >= 0,
-                      })}
+                      valueLabel={(t) => {
+                        if (traderSort === "volume") return { text: formatDollar(t.volume), positive: true };
+                        if (traderSort === "trades") return { text: `${t.trades} trades`, positive: true };
+                        return { text: `${t.pnl >= 0 ? "+" : "-"}${formatDollar(t.pnl)}`, positive: t.pnl >= 0 };
+                      }}
                     />
                     {(() => {
                       if (!currentUserId) return null;
                       const idx = sortedTraders.findIndex((t) => t.userId === currentUserId);
                       if (idx === -1 || idx < VISIBLE_COUNT) return null;
                       const me = sortedTraders[idx];
+                      const mainValue = traderSort === "volume" ? formatDollar(me.volume) : traderSort === "trades" ? `${me.trades} trades` : `${me.pnl >= 0 ? "+" : "-"}${formatDollar(me.pnl)}`;
+                      const mainPositive = traderSort === "pnl" ? me.pnl >= 0 : true;
                       return (
                         <YourRankCard
                           rank={idx + 1}
                           name={me.name}
                           avatar={me.avatar}
                           statLine={`${me.trades} prediction${me.trades !== 1 ? "s" : ""} · ${formatDollar(me.volume)} vol`}
-                          valueLine={`${me.pnl >= 0 ? "+" : "-"}${formatDollar(me.pnl)}`}
-                          valuePositive={me.pnl >= 0}
+                          valueLine={mainValue}
+                          valuePositive={mainPositive}
                           totalCount={sortedTraders.length}
-                          onShare={() => shareRank(idx + 1, me.name, me.avatar, `${me.pnl >= 0 ? "+" : "-"}${formatDollar(me.pnl)}`, me.pnl >= 0, `${me.trades} prediction${me.trades !== 1 ? "s" : ""} · ${formatDollar(me.volume)} vol`, "Predictions", sortedTraders.length)}
+                          onShare={() => shareRank(idx + 1, me.name, me.avatar, mainValue, mainPositive, `${me.trades} prediction${me.trades !== 1 ? "s" : ""} · ${formatDollar(me.volume)} vol`, "Predictions", sortedTraders.length)}
                         />
                       );
                     })()}
@@ -639,10 +642,18 @@ const Rankings = () => {
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2 shrink-0">
-                                    <p className={`text-sm font-bold flex items-center gap-1 ${trader.pnl >= 0 ? "text-primary" : "text-destructive"}`}>
-                                      {trader.pnl >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                                      {trader.pnl >= 0 ? "+" : "-"}{formatDollar(trader.pnl)}
-                                    </p>
+                                    {(() => {
+                                      const isVol = traderSort === "volume";
+                                      const isTrades = traderSort === "trades";
+                                      const displayText = isVol ? formatDollar(trader.volume) : isTrades ? `${trader.trades}` : `${trader.pnl >= 0 ? "+" : "-"}${formatDollar(trader.pnl)}`;
+                                      const positive = isVol || isTrades ? true : trader.pnl >= 0;
+                                      return (
+                                        <p className={`text-sm font-bold flex items-center gap-1 ${positive ? "text-primary" : "text-destructive"}`}>
+                                          {positive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                                          {displayText}
+                                        </p>
+                                      );
+                                    })()}
                                     {isMe ? (
                                       <button onClick={(e) => { e.stopPropagation(); shareRank(rank, trader.name, trader.avatar, `${trader.pnl >= 0 ? "+" : "-"}${formatDollar(trader.pnl)}`, trader.pnl >= 0, `${trader.trades} prediction${trader.trades !== 1 ? "s" : ""} · ${formatDollar(trader.volume)} vol`, "Predictions", sortedTraders.length); }} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
                                         <Share2 className="w-3.5 h-3.5 text-primary" />
