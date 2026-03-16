@@ -224,19 +224,19 @@ Use markdown formatting (headers, bullet points, bold). Keep it between 200-800 
 
         if (aiResponse.status === 429) {
           return new Response(JSON.stringify({ error: "AI rate limited, please try again shortly" }), {
-            status: 429,
+            status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
         if (aiResponse.status === 402) {
           return new Response(JSON.stringify({ error: "AI credits exhausted" }), {
-            status: 402,
+            status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
 
-        return new Response(JSON.stringify({ error: "Image generation failed" }), {
-          status: 500,
+        return new Response(JSON.stringify({ error: "Image generation failed. You have been refunded." }), {
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
