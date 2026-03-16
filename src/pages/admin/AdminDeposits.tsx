@@ -54,7 +54,7 @@ const AdminDeposits = () => {
 
       let query = supabase
         .from("transactions")
-        .select("id, user_id, amount, status, nowpayments_payment_id, created_at", { count: "exact" })
+        .select("id, user_id, amount, status, nowpayments_payment_id, payment_provider, created_at", { count: "exact" })
         .eq("type", "deposit");
 
       if (statusFilter !== "all") {
