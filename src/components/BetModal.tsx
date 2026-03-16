@@ -224,19 +224,22 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                     )}
 
                     {user && (
-                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/50 border border-border mb-3">
-                      <div className="flex flex-col gap-0.5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground">Main Balance</span>
-                            <span className="text-sm font-bold">${balance.toFixed(2)}</span>
-                          </div>
-                          {bonusBalance > 0 && (
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-muted-foreground">Bonus (fees only)</span>
-                              <span className="text-xs text-muted-foreground">${bonusBalance.toFixed(2)}</span>
-                            </div>
-                          )}
+                      <div className="p-2.5 rounded-xl bg-muted/50 border border-border mb-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Main Balance</span>
+                          <span className="text-sm font-bold">${balance.toFixed(2)}</span>
                         </div>
+                        {bonusBalance > 0 && (
+                          <div className="flex items-center justify-between mt-0.5">
+                            <span className="text-xs text-muted-foreground">Bonus (fees only)</span>
+                            <span className="text-xs text-muted-foreground">${bonusBalance.toFixed(2)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Order Type Toggle */}
+                    <div className="flex gap-1 p-0.5 rounded-lg bg-muted/50 mb-3 w-full">
                       <button
                         onClick={() => setOrderType("market")}
                         className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-xs font-semibold transition-all ${
