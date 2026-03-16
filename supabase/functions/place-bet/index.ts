@@ -171,9 +171,9 @@ Deno.serve(async (req) => {
     const bonusForFees = Math.min(currentBonus, totalFees);
     const feesFromMain = totalFees - bonusForFees;
     const mainDeduct = netAmount + feesFromMain + insurancePremium;
-    const totalAvailable = currentBalance + currentBonus;
 
-    if (totalAvailable < totalCost + insurancePremium) {
+    // Pre-check: main balance must cover bet + remaining fees + insurance
+    if (mainDeduct > currentBalance) {
       return new Response(JSON.stringify({ error: "Insufficient balance" }), {
         status: 400, headers: corsHeaders,
       });

@@ -51,7 +51,7 @@ const MAX_AMOUNT = 10000;
 
 const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId, optionLabel, optionColor }: BetModalProps) => {
   const { user, isEmailVerified } = useAuth();
-  const { balance, totalBalance } = useUserBalance();
+  const { balance, bonusBalance, totalBalance } = useUserBalance();
   const { data: commission } = useCommissionSettings();
   const placeBet = usePlaceBet();
   const placeLimitOrder = usePlaceLimitOrder();
@@ -89,8 +89,13 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
   const profit = potentialPayout - totalCost;
   const roi = numAmount > 0 ? (profit / totalCost) * 100 : 0;
 
+  // Bonus can only cover fees, not the bet itself (matches edge function logic)
+  const bonusForFees = Math.min(bonusBalance, fee);
+  const mainNeeded = totalCost - bonusForFees;
+  const canAfford = mainNeeded <= balance;
+
   const isLimitValid = orderType === "limit" ? limitPriceNum >= 1 && limitPriceNum <= 99 : true;
-  const isValid = numAmount >= MIN_AMOUNT && numAmount <= MAX_AMOUNT && totalCost <= totalBalance && isLimitValid;
+  const isValid = numAmount >= MIN_AMOUNT && numAmount <= MAX_AMOUNT && canAfford && isLimitValid;
 
   const handleAmountChange = (val: string) => {
     const cleaned = val.replace(/[^0-9.]/g, "");
@@ -219,9 +224,17 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                     )}
 
                     {user && (
-                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/50 border border-border mb-3">
-                      <span className="text-xs text-muted-foreground">Your Balance</span>
-                        <span className="text-sm font-bold">${totalBalance.toFixed(2)}</span>
+                      <div className="p-2.5 rounded-xl bg-muted/50 border border-border mb-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Main Balance</span>
+                          <span className="text-sm font-bold">${balance.toFixed(2)}</span>
+                        </div>
+                        {bonusBalance > 0 && (
+                          <div className="flex items-center justify-between mt-0.5">
+                            <span className="text-xs text-muted-foreground">Bonus (fees only)</span>
+                            <span className="text-xs text-muted-foreground">${bonusBalance.toFixed(2)}</span>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -308,8 +321,8 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                       </div>
                     </div>
 
-                    {totalCost > totalBalance && numAmount > 0 && user && (
-                      <p className="text-xs text-destructive mb-2">Insufficient balance. You need ${(totalCost - totalBalance).toFixed(2)} more.</p>
+                    {!canAfford && numAmount > 0 && user && (
+                      <p className="text-xs text-destructive mb-2">Insufficient balance. You need ${(mainNeeded - balance).toFixed(2)} more.</p>
                     )}
 
                     <div className="flex gap-2 mb-4">
