@@ -8,6 +8,22 @@ const corsHeaders = {
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
 
+// Map notification types from the notifications table to preference keys
+const TYPE_TO_PREF: Record<string, string> = {
+  resolution: "market_resolution",
+  payout: "payout",
+  refund: "market_cancelled",
+  info: "general",
+  referral: "referral",
+  pending_review: "general",
+  first_prediction_required: "general",
+  copy_trade: "copy_trade",
+  copy_commission: "copy_trade",
+  price_alert: "price_alert",
+  sports_score: "sports_score",
+  sports_kickoff: "sports_score",
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -38,7 +54,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { user_id, title, message, market_id } = await req.json();
+    const { user_id, title, message, market_id, type } = await req.json();
 
     if (!user_id || !message) {
       return new Response(JSON.stringify({ error: "Missing user_id or message" }), {
@@ -63,6 +79,23 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ skipped: true, reason: "No WhatsApp link" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Check notification preferences
+    if (type) {
+      const prefKey = TYPE_TO_PREF[type] || "general";
+      const { data: prefs } = await supabase
+        .from("whatsapp_notification_prefs")
+        .select(prefKey)
+        .eq("user_id", user_id)
+        .maybeSingle();
+
+      // If user has prefs and this category is disabled, skip
+      if (prefs && (prefs as Record<string, boolean>)[prefKey] === false) {
+        return new Response(JSON.stringify({ skipped: true, reason: `Preference '${prefKey}' disabled` }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     let text = "";
