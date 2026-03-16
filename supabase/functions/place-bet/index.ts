@@ -141,24 +141,39 @@ Deno.serve(async (req) => {
     // Recalculate shares server-side based on net amount (amount minus fee)
     const actualShares = netAmount / (price / 100);
 
+    // ── oSURE Insurance ──
+    let insurancePremium = 0;
+    let normalizedTier: number | null = null;
+    const osureEnabled = (commData as any)?.osure_enabled !== false;
+
+    if (insuranceTier && osureEnabled && [25, 50, 100].includes(insuranceTier)) {
+      normalizedTier = insuranceTier / 100; // 0.25, 0.50, 1.00
+      let premiumPercent = 0;
+      if (insuranceTier === 25) premiumPercent = Number((commData as any)?.osure_25_premium ?? 10);
+      else if (insuranceTier === 50) premiumPercent = Number((commData as any)?.osure_50_premium ?? 20);
+      else if (insuranceTier === 100) premiumPercent = Number((commData as any)?.osure_100_premium ?? 30);
+      insurancePremium = Math.round(amount * (premiumPercent / 100) * 100) / 100;
+    }
+
     // Check balance
     const { data: balData } = await supabase
       .from("balances")
-      .select("amount, bonus_balance")
+      .select("amount, bonus_balance, insurance_balance")
       .eq("user_id", userId)
       .eq("currency", "USDT")
       .single();
 
     const currentBalance = Number(balData?.amount || 0);
     const currentBonus = Number(balData?.bonus_balance || 0);
+    const currentInsurance = Number(balData?.insurance_balance || 0);
 
     // Bonus (referral) balance can ONLY be used to pay fees, not the bet itself
     const bonusForFees = Math.min(currentBonus, totalFees);
     const feesFromMain = totalFees - bonusForFees;
-    const mainDeduct = netAmount + feesFromMain;
+    const mainDeduct = netAmount + feesFromMain + insurancePremium;
     const totalAvailable = currentBalance + currentBonus;
 
-    if (totalAvailable < totalCost) {
+    if (totalAvailable < totalCost + insurancePremium) {
       return new Response(JSON.stringify({ error: "Insufficient balance" }), {
         status: 400, headers: corsHeaders,
       });
