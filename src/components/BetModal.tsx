@@ -30,7 +30,7 @@ import {
 
 
 type BetSide = "yes" | "no";
-type ModalStep = "input" | "confirm" | "executing" | "success" | "error";
+type ModalStep = "input" | "insurance" | "confirm" | "executing" | "success" | "error";
 type OrderType = "market" | "limit";
 
 interface BetModalProps {
