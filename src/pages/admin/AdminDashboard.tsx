@@ -213,7 +213,9 @@ const AdminDashboard = () => {
       };
       setAllDepositTxns(await fetchAllDepositTxns());
 
-      const totalVolume = marketRows.reduce((sum, m) => sum + Number(m.volume), 0);
+      // Use transactions as source of truth for prediction volume (markets.volume can drift)
+      const predictionBuyRows = await fetchTxAmounts("buy", "confirmed");
+      const totalVolume = predictionBuyRows.reduce((sum, r) => sum + Number(r.amount), 0);
       const totalRewardsPaid = rewardRows.reduce((sum, r) => sum + Number(r.amount), 0);
       const quickTradeVolume = qtBetRows.reduce((sum, b) => sum + Number(b.amount), 0);
       const totalDeposits = depositRows.reduce((sum, r) => sum + Number(r.amount), 0);

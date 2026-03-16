@@ -97,15 +97,15 @@ const AdminAnalytics = () => {
         return all;
       };
 
-      // Fetch all-time prediction volume from markets table (no time filter)
+      // Fetch all-time prediction volume from transactions (source of truth)
       const fetchAllTimeVolume = async () => {
         let total = 0;
         let from = 0;
         const batchSize = 1000;
         while (true) {
-          const { data, error } = await supabase.from("markets").select("volume").range(from, from + batchSize - 1);
+          const { data, error } = await supabase.from("transactions").select("amount").eq("type", "buy").eq("status", "confirmed").range(from, from + batchSize - 1);
           if (error || !data || data.length === 0) break;
-          total += data.reduce((s, m) => s + Number(m.volume), 0);
+          total += data.reduce((s, r) => s + Number(r.amount), 0);
           if (data.length < batchSize) break;
           from += batchSize;
         }
