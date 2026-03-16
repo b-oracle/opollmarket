@@ -101,6 +101,26 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const fiatEnabled = isFeatureEnabled("fiat_deposit_payaza");
   const fiatWithdrawalEnabled = isFeatureEnabled("fiat_withdrawal");
 
+  // Fetch provider settings (deposit_provider & payout_provider)
+  const { data: providerSettings } = useQuery({
+    queryKey: ["fiat-provider-settings"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("commission_settings")
+        .select("payout_provider")
+        .limit(1)
+        .single();
+      const d = data as any;
+      return {
+        depositProvider: d?.deposit_provider || "payaza",
+        payoutProvider: d?.payout_provider || "payaza",
+      };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+  const depositProvider = providerSettings?.depositProvider || "payaza";
+  const payoutProvider = providerSettings?.payoutProvider || "payaza";
+
   const [tab, setTab] = useState<Tab>(initialTab);
   const [amount, setAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("crypto");
@@ -512,7 +532,9 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     setStep("executing");
     setErrorMsg("");
     try {
-      const { data, error } = await supabase.functions.invoke("create-payaza-deposit", {
+      // Route to correct provider based on admin settings
+      const depositFn = depositProvider === "flutterwave" ? "create-flutterwave-deposit" : "create-payaza-deposit";
+      const { data, error } = await supabase.functions.invoke(depositFn, {
         body: { amount: numAmount },
       });
       if (error || data?.error) {
@@ -548,7 +570,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setErrorMsg(err.message || "Something went wrong");
       setStep("error");
     }
-  }, [numAmount, startPolling]);
+  }, [numAmount, startPolling, depositProvider]);
 
   const copyFiatDetail = useCallback((text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -562,7 +584,9 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     try {
       // Determine which withdrawal path to take
       if (withdrawMethod === "fiat") {
-        const { data, error } = await supabase.functions.invoke("request-payaza-withdrawal", {
+        // Route to correct provider based on admin settings
+        const withdrawFn = payoutProvider === "flutterwave" ? "request-flutterwave-withdrawal" : "request-payaza-withdrawal";
+        const { data, error } = await supabase.functions.invoke(withdrawFn, {
           body: {
             amount: numAmount,
             bank_code: bankCode,
@@ -627,7 +651,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setErrorMsg(err.message || "Something went wrong");
       setStep("error");
     }
-  }, [numAmount, walletAddress, selectedCrypto, queryClient, withdrawMethod, bankCode, accountNumber, accountName]);
+  }, [numAmount, walletAddress, selectedCrypto, queryClient, withdrawMethod, bankCode, accountNumber, accountName, payoutProvider]);
 
   const handleWithdraw = useCallback(async () => {
     // Check if user has security requirements
