@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
     const tierConfig = boost_tier ? BOOST_TIERS[boost_tier] : null;
     if (boost_tier && !tierConfig) {
       return new Response(JSON.stringify({ error: "Invalid boost tier" }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
