@@ -79,8 +79,7 @@ async function tryPayazaNameEnquiry(
   const authVariant = { label: "secret", value: `Payaza ${btoa(secretKey)}` };
 
   for (const normalizedBankCode of bankCodeCandidates) {
-    for (const normalizedBankCode of bankCodeCandidates) {
-      // Multiple payload formats — Payaza API has changed formats over time
+    // Multiple payload formats — Payaza API has changed formats over time
       const payloadVariants = [
         // Format 1: receiver_ prefixed (newer SDK format)
         {
