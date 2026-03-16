@@ -889,7 +889,13 @@ const Rankings = () => {
                                           <Flame className="w-4 h-4 text-amber-500" />
                                           <span className="text-sm font-bold text-amber-500">{su.currentStreak}</span>
                                         </div>
-                                        {!isMe && <FollowButton userId={su.userId} />}
+                                        {isMe ? (
+                                          <button onClick={(e) => { e.stopPropagation(); shareRank(rank, su.name, su.avatar, `🔥 ${su.currentStreak} streak`, true, `Best: ${su.bestStreak} · ${streakMultiplier} bonus`, "Win Streaks", streakUsers.length); }} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+                                            <Share2 className="w-3.5 h-3.5 text-primary" />
+                                          </button>
+                                        ) : (
+                                          <FollowButton userId={su.userId} />
+                                        )}
                                       </div>
                                     </motion.div>
                                   );
