@@ -140,15 +140,16 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
           amount: numAmount,
           price,
           shares,
+          insuranceTier: insuranceTier || undefined,
         });
-        track("prediction_confirmed", { marketId, side, amount: numAmount });
+        track("prediction_confirmed", { marketId, side, amount: numAmount, insuranceTier: insuranceTier || 0 });
       }
       setStep("success");
     } catch (err: any) {
       setErrorMsg(err?.message || "Transaction failed");
       setStep("error");
     }
-  }, [marketId, optionId, side, numAmount, price, shares, placeBet, placeLimitOrder, orderType, limitPriceNum]);
+  }, [marketId, optionId, side, numAmount, price, shares, placeBet, placeLimitOrder, orderType, limitPriceNum, insuranceTier]);
 
   const handleClose = () => {
     setAmount("");
