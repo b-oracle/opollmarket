@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
           return new Response(JSON.stringify({
             error: `This market already has an active ${existingBoosts[0].tier} boost. Select same or higher tier to extend.`,
           }), {
-            status: 400,
+            status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
