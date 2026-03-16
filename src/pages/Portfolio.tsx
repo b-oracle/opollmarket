@@ -179,6 +179,29 @@ const Portfolio = () => {
     enabled: !!user?.id,
   });
 
+  // Fetch insurance claims history
+  const { data: insuranceClaims = [], isLoading: claimsLoading } = useQuery({
+    queryKey: ["insurance-claims", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("insurance_claims")
+        .select("id, tier, premium_paid, claim_amount, status, created_at, claimed_at, market_id")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      if (error) { console.error("Failed to fetch insurance claims:", error); return []; }
+      // Fetch market titles
+      const marketIds = [...new Set((data || []).map(c => c.market_id).filter(Boolean))];
+      let titleMap = new Map<string, string>();
+      if (marketIds.length > 0) {
+        const { data: markets } = await supabase.from("markets").select("id, title").in("id", marketIds);
+        if (markets) markets.forEach(m => titleMap.set(m.id, m.title));
+      }
+      return (data || []).map(c => ({ ...c, market_title: titleMap.get(c.market_id) || "Unknown Market" }));
+    },
+    enabled: !!user?.id,
+  });
+
   const deleteDraft = useCallback(async (draftId: string) => {
     // Delete options first, then market
     await supabase.from("market_options").delete().eq("market_id", draftId);
