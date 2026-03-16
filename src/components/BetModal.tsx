@@ -376,7 +376,12 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                           return;
                         }
                         track(orderType === "limit" ? "limit_order_started" : "prediction_placed", { marketId, side, amount: numAmount });
-                        setStep("confirm");
+                        // For market orders with oSURE enabled, show insurance step
+                        if (orderType === "market" && osureEnabled) {
+                          setStep("insurance");
+                        } else {
+                          setStep("confirm");
+                        }
                       }}
                       disabled={!isValid || !user || !isEmailVerified}
                       className={`w-full ${sideBtnClass} py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-40 disabled:active:scale-100 flex items-center justify-center gap-2`}
@@ -390,10 +395,99 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                         setShowTerms(false);
                         track("terms_accepted", {});
                         track(orderType === "limit" ? "limit_order_started" : "prediction_placed", { marketId, side, amount: numAmount });
-                        setStep("confirm");
+                        if (orderType === "market" && osureEnabled) {
+                          setStep("insurance");
+                        } else {
+                          setStep("confirm");
+                        }
                       }}
                       onClose={() => setShowTerms(false)}
                     />
+                  </motion.div>
+                )}
+
+                {/* ── oSURE Insurance Selection Step ── */}
+                {step === "insurance" && (
+                  <motion.div key="insurance" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                        <Shield className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold">oSURE Insurance</h3>
+                        <p className="text-[10px] text-muted-foreground">Protect your prediction against losses</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 mb-4">
+                      {([25, 50, 100] as const).map((tier) => {
+                        const premPercent = tier === 25 ? (commission?.osure_25_premium ?? 10) : tier === 50 ? (commission?.osure_50_premium ?? 20) : (commission?.osure_100_premium ?? 30);
+                        const prem = numAmount * (premPercent / 100);
+                        const coverage = poolAmount * (tier / 100);
+                        const isSelected = insuranceTier === tier;
+                        return (
+                          <button
+                            key={tier}
+                            onClick={() => setInsuranceTier(isSelected ? null : tier)}
+                            className={`w-full p-3 rounded-xl border transition-all text-left ${
+                              isSelected
+                                ? "bg-primary/10 border-primary/40 ring-1 ring-primary/30"
+                                : "glass border-border hover:border-primary/20"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-sm font-bold">{tier}% Coverage</span>
+                              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${isSelected ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+                                ${prem.toFixed(2)} premium
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                              <span>Get back ${coverage.toFixed(2)} if you lose</span>
+                              <span>{premPercent}% of wager</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {insuranceTier && (
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="glass rounded-xl p-2.5 mb-3 space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Wager</span>
+                          <span className="font-semibold">${numAmount.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Insurance Premium</span>
+                          <span className="font-semibold text-primary">${insurancePremium.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs border-t border-border pt-1.5">
+                          <span className="text-muted-foreground font-semibold">Total Cost</span>
+                          <span className="font-bold">${totalCost.toFixed(2)}</span>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => {
+                          setInsuranceTier(null);
+                          setStep("confirm");
+                        }}
+                        className="w-full glass py-2.5 rounded-xl text-sm font-medium text-muted-foreground transition-all active:scale-95"
+                      >
+                        Skip Insurance
+                      </button>
+                      <button
+                        onClick={() => setStep("confirm")}
+                        disabled={!insuranceTier}
+                        className={`w-full ${sideBtnClass} py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-40 flex items-center justify-center gap-2`}
+                      >
+                        <Shield className="w-4 h-4" /> Continue with {insuranceTier}% oSURE
+                      </button>
+                      <button onClick={() => { setInsuranceTier(null); setStep("input"); }} className="w-full text-xs text-muted-foreground py-1.5 transition-all">
+                        ← Back to Edit
+                      </button>
+                    </div>
                   </motion.div>
                 )}
 
