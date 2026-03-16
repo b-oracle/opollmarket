@@ -429,7 +429,7 @@ const UserProfile = () => {
                 )}
                 {isFollowing ? "Following" : "Follow"}
               </button>
-              {isFollowing && (
+              {isFollowing && copyTradingEnabled && (
                 <button
                   onClick={() => setShowCopySettings(!showCopySettings)}
                   className="px-4 py-2.5 rounded-xl glass font-semibold text-sm flex items-center gap-2 hover:bg-accent/50 transition-colors"
