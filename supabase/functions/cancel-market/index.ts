@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
       }
     } else {
       for (const feeTx of feeTxns || []) {
-        await adminClient.rpc("adjust_balance", { _user_id: feeTx.user_id, _delta: feeTx.amount });
+        await adminClient.rpc("adjust_balance", { _user_id: feeTx.user_id, _delta: feeTx.amount, _bonus_delta: 0, _insurance_delta: 0 });
 
         await adminClient.from("transactions").insert({
           user_id: feeTx.user_id,
