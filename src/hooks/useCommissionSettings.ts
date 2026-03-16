@@ -24,6 +24,10 @@ export interface CommissionSettings {
   boost_whale_price: number;
   broadcast_price: number;
   bc400_pool_percent: number;
+  osure_enabled: boolean;
+  osure_25_premium: number;
+  osure_50_premium: number;
+  osure_100_premium: number;
 }
 
 export const useCommissionSettings = () => {
