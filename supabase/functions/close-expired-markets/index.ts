@@ -17,14 +17,14 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Find all active markets whose end_date has passed
+    // Find all active markets whose end_date has passed (including today)
     const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
 
     const { data: expiredMarkets, error: fetchError } = await supabase
       .from("markets")
       .select("id, title, creator_wallet")
       .eq("status", "active")
-      .lt("end_date", today);
+      .lte("end_date", today);
 
     if (fetchError) {
       console.error("Fetch error:", fetchError);
