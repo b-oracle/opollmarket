@@ -686,26 +686,37 @@ const Rankings = () => {
                   ))}
                 </div>
 
-                {quickSubTab === "profit" && (
-                  <>
-                    {quickTraders.length === 0 ? (
-                      <EmptyState message="No quick trade winners yet" sub="Be the first to win a quick trade round!" />
+                {(quickSubTab === "profit" || quickSubTab === "volume") && (
+                  (() => {
+                    const isVolume = quickSubTab === "volume";
+                    const sorted = [...quickTraders].sort((a, b) =>
+                      isVolume ? b.totalWagered - a.totalWagered : b.profit - a.profit
+                    );
+                    const getValue = (t: QuickTrader) => isVolume ? t.totalWagered : t.profit;
+                    const formatValue = (t: QuickTrader) => {
+                      const v = getValue(t);
+                      return isVolume ? formatDollar(v) : `${v >= 0 ? "+" : "-"}${formatDollar(v)}`;
+                    };
+                    const isPositive = (t: QuickTrader) => isVolume ? true : t.profit >= 0;
+
+                    return sorted.length === 0 ? (
+                      <EmptyState message={isVolume ? "No quick trade volume yet" : "No quick trade winners yet"} sub="Be the first to win a quick trade round!" />
                     ) : (
                       <>
                         <Podium
-                          items={quickTraders}
+                          items={sorted}
                           currentUserId={currentUserId}
                           onUserClick={(id) => navigate(`/user/${id}`)}
                           valueLabel={(t) => ({
-                            text: `${t.profit >= 0 ? "+" : "-"}${formatDollar(t.profit)}`,
-                            positive: t.profit >= 0,
+                            text: formatValue(t as QuickTrader),
+                            positive: isPositive(t as QuickTrader),
                           })}
                         />
                         {(() => {
                           if (!currentUserId) return null;
-                          const idx = quickTraders.findIndex((t) => t.userId === currentUserId);
+                          const idx = sorted.findIndex((t) => t.userId === currentUserId);
                           if (idx === -1 || idx < VISIBLE_COUNT) return null;
-                          const me = quickTraders[idx];
+                          const me = sorted[idx];
                           const winRate = me.totalBets > 0 ? Math.round((me.wins / me.totalBets) * 100) : 0;
                           return (
                             <YourRankCard
@@ -713,17 +724,17 @@ const Rankings = () => {
                               name={me.name}
                               avatar={me.avatar}
                               statLine={`${me.wins}W/${me.totalBets - me.wins}L · ${winRate}% WR`}
-                              valueLine={`${me.profit >= 0 ? "+" : "-"}${formatDollar(me.profit)}`}
-                              valuePositive={me.profit >= 0}
-                              totalCount={quickTraders.length}
-                              onShare={() => shareRank(idx + 1, me.name, me.avatar, `${me.profit >= 0 ? "+" : "-"}${formatDollar(me.profit)}`, me.profit >= 0, `${me.wins}W/${me.totalBets - me.wins}L · ${winRate}% WR`, "Quick Trade", quickTraders.length)}
+                              valueLine={formatValue(me)}
+                              valuePositive={isPositive(me)}
+                              totalCount={sorted.length}
+                              onShare={() => shareRank(idx + 1, me.name, me.avatar, formatValue(me), isPositive(me), `${me.wins}W/${me.totalBets - me.wins}L · ${winRate}% WR`, isVolume ? "QT Volume" : "Quick Trade", sorted.length)}
                             />
                           );
                         })()}
                         {(() => {
-                          const totalPages = Math.ceil(quickTraders.length / ITEMS_PER_PAGE);
+                          const totalPages = Math.ceil(sorted.length / ITEMS_PER_PAGE);
                           const start = (page - 1) * ITEMS_PER_PAGE;
-                          const pageItems = quickTraders.slice(start, start + ITEMS_PER_PAGE);
+                          const pageItems = sorted.slice(start, start + ITEMS_PER_PAGE);
                           return (
                             <>
                               <div className="space-y-2">
@@ -758,12 +769,12 @@ const Rankings = () => {
                                         </div>
                                       </div>
                                       <div className="flex items-center gap-2 shrink-0">
-                                        <p className={`text-sm font-bold flex items-center gap-1 ${qt.profit >= 0 ? "text-primary" : "text-destructive"}`}>
-                                          {qt.profit >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                                          {qt.profit >= 0 ? "+" : "-"}{formatDollar(qt.profit)}
+                                        <p className={`text-sm font-bold flex items-center gap-1 ${isPositive(qt) ? "text-primary" : "text-destructive"}`}>
+                                          {isPositive(qt) ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                                          {formatValue(qt)}
                                         </p>
                                         {isMe ? (
-                                          <button onClick={(e) => { e.stopPropagation(); shareRank(rank, qt.name, qt.avatar, `${qt.profit >= 0 ? "+" : "-"}${formatDollar(qt.profit)}`, qt.profit >= 0, `${qt.wins}W/${qt.totalBets - qt.wins}L · ${winRate}% WR`, "Quick Trade", quickTraders.length); }} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+                                          <button onClick={(e) => { e.stopPropagation(); shareRank(rank, qt.name, qt.avatar, formatValue(qt), isPositive(qt), `${qt.wins}W/${qt.totalBets - qt.wins}L · ${winRate}% WR`, isVolume ? "QT Volume" : "Quick Trade", sorted.length); }} className="w-7 h-7 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
                                             <Share2 className="w-3.5 h-3.5 text-primary" />
                                           </button>
                                         ) : (
@@ -779,8 +790,8 @@ const Rankings = () => {
                           );
                         })()}
                       </>
-                    )}
-                  </>
+                    );
+                  })()
                 )}
 
                 {quickSubTab === "streaks" && (
