@@ -55,6 +55,10 @@ function getResolvedStatus(boost: BoostRow): { display: string; key: string } {
       : { display: "Payment Expired", key: "payment_expired" };
   }
   if (boost.status === "active") {
+    // If ends_at has passed, treat as ended even though DB still says "active"
+    if (isPast(new Date(boost.ends_at))) {
+      return { display: "Boost Ended", key: "boost_ended" };
+    }
     return { display: "Active", key: "active" };
   }
   if (boost.status === "pending") {
@@ -143,9 +147,13 @@ const AdminBoosts = () => {
 
   // Analytics
   const analytics = useMemo(() => {
-    const active = boosts.filter((b) => b.status === "active");
+    const nowDate = new Date();
+    const active = boosts.filter((b) => b.status === "active" && !isPast(new Date(b.ends_at)));
     const pending = boosts.filter((b) => b.status === "pending");
-    const boostEnded = boosts.filter((b) => b.status === "expired" && b.tx_hash);
+    const boostEnded = boosts.filter((b) =>
+      (b.status === "expired" && b.tx_hash) ||
+      (b.status === "active" && isPast(new Date(b.ends_at)))
+    );
     const paymentExpired = boosts.filter((b) => b.status === "expired" && !b.tx_hash);
     const cancelled = boosts.filter((b) => b.status === "cancelled");
     const paid = [...active, ...boostEnded];
@@ -382,7 +390,7 @@ const AdminBoosts = () => {
                         Approve
                       </span>
                     )}
-                    {canEdit && (boost.status === "pending" || boost.status === "active") && (
+                    {canEdit && (boost.status === "pending" || (boost.status === "active" && !isPast(new Date(boost.ends_at)))) && (
                       <span
                         role="button"
                         onClick={(e) => { e.stopPropagation(); handleCancel(boost.id); }}
