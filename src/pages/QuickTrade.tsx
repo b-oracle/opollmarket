@@ -1452,15 +1452,13 @@ export default function QuickTrade() {
                       <LineChartIcon className="w-3.5 h-3.5" />
                     </button>
                   )}
-                  {selectedAsset.assetClass === "crypto" && (
-                    <button
-                      onClick={() => setChartType("candle")}
-                      className={`p-1.5 rounded transition-all ${chartType === "candle" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                      title="Candlestick chart"
-                    >
-                      <BarChart3 className="w-3.5 h-3.5" />
-                    </button>
-                   )}
+                  <button
+                    onClick={() => setChartType("candle")}
+                    className={`p-1.5 rounded transition-all ${chartType === "candle" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    title="Candlestick chart"
+                  >
+                    <BarChart3 className="w-3.5 h-3.5" />
+                  </button>
                   {polyChartEnabled && (
                     <button
                       onClick={() => setChartType("poly")}
