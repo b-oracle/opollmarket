@@ -2,16 +2,13 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
 const DISMISSED_KEY = "opoll_pwa_update_dismissed";
-const APPLIED_SW_KEY = "opoll_pwa_applied_sw";
+const UPDATED_AT_KEY = "opoll_pwa_updated_at";
+const UPDATE_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes after clicking Update
 
 export const usePWAUpdate = () => {
   const [showUpdate, setShowUpdate] = useState(false);
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
   const intervalRef = useRef<number | null>(null);
-
-  const getWaitingScriptUrl = useCallback(() => {
-    return registrationRef.current?.waiting?.scriptURL ?? null;
-  }, []);
 
   const {
     needRefresh: [needRefresh],
@@ -61,24 +58,23 @@ export const usePWAUpdate = () => {
   useEffect(() => {
     if (!needRefresh) return;
 
+    // Don't show if dismissed this session
     const dismissed = sessionStorage.getItem(DISMISSED_KEY);
-    const appliedScriptUrl = localStorage.getItem(APPLIED_SW_KEY);
-    const waitingScriptUrl = getWaitingScriptUrl();
-    const alreadyAppliedVersion = waitingScriptUrl && appliedScriptUrl === waitingScriptUrl;
+    if (dismissed) return;
 
-    if (!dismissed && !alreadyAppliedVersion) {
-      setShowUpdate(true);
+    // Don't show if user recently clicked "Update" (within cooldown)
+    const updatedAt = localStorage.getItem(UPDATED_AT_KEY);
+    if (updatedAt) {
+      const elapsed = Date.now() - parseInt(updatedAt, 10);
+      if (elapsed < UPDATE_COOLDOWN_MS) return;
     }
-  }, [needRefresh, getWaitingScriptUrl]);
+
+    setShowUpdate(true);
+  }, [needRefresh]);
 
   const update = () => {
-    const waitingScriptUrl = getWaitingScriptUrl();
-
-    if (waitingScriptUrl) {
-      localStorage.setItem(APPLIED_SW_KEY, waitingScriptUrl);
-    }
-
-    // prevent re-prompt loops in current session if activation/reload is delayed
+    // Record the time the user clicked Update — suppress prompt for cooldown period
+    localStorage.setItem(UPDATED_AT_KEY, Date.now().toString());
     sessionStorage.setItem(DISMISSED_KEY, "1");
     setShowUpdate(false);
     updateServiceWorker(true);
@@ -86,7 +82,6 @@ export const usePWAUpdate = () => {
 
   const dismiss = () => {
     setShowUpdate(false);
-    // Don't re-show for this entire session
     sessionStorage.setItem(DISMISSED_KEY, "1");
   };
 
