@@ -21,7 +21,7 @@ const slides = [
         </div>
         <h1 className="text-3xl sm:text-6xl font-black text-white mb-2 tracking-tight leading-none">OPoll Market</h1>
         <p className="text-lg sm:text-2xl text-[hsl(193,98%,50%)] font-semibold mb-3">Turn Your Predictions Into Profits</p>
-        <p className="text-sm sm:text-lg text-white/50 max-w-lg">The smartest way to bet on real-world events — crypto, sports, politics, entertainment & more.</p>
+        <p className="text-sm sm:text-lg text-white/50 max-w-lg">The smartest way to bet on real-world events — crypto, sports, politics, entertainment &amp; more.</p>
         <div className="mt-8 px-6 py-2.5 rounded-full bg-[hsl(193,98%,50%)] text-[hsl(220,20%,6%)] font-bold text-sm sm:text-base">
           Join Free Today →
         </div>
