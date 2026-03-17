@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
-const REMIND_AFTER_MS = 2 * 60 * 1000; // Re-show after 2 minutes if dismissed
+const DISMISSED_KEY = "opoll_pwa_update_dismissed";
 
 export const usePWAUpdate = () => {
   const [showUpdate, setShowUpdate] = useState(false);
-  const dismissTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
 
   const {
@@ -14,17 +13,17 @@ export const usePWAUpdate = () => {
   } = useRegisterSW({
     onRegisteredSW(_swUrl, registration) {
       registrationRef.current = registration ?? null;
-      
-      // Check for updates every 30 seconds
+
+      // Check for updates every 10 minutes (not 30s)
       if (registration) {
         setInterval(() => {
           registration.update();
-        }, 30 * 1000);
+        }, 10 * 60 * 1000);
       }
     },
   });
 
-  // Check for updates when page becomes visible (user returns to app)
+  // Check on visibility change
   const checkForUpdates = useCallback(() => {
     registrationRef.current?.update();
   }, []);
@@ -35,40 +34,30 @@ export const usePWAUpdate = () => {
         checkForUpdates();
       }
     };
-    
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [checkForUpdates]);
 
   useEffect(() => {
     if (needRefresh) {
-      setShowUpdate(true);
-      // Clear any pending reminder since we're showing now
-      if (dismissTimeoutRef.current) clearTimeout(dismissTimeoutRef.current);
+      // Only show if not recently dismissed
+      const dismissed = sessionStorage.getItem(DISMISSED_KEY);
+      if (!dismissed) {
+        setShowUpdate(true);
+      }
     }
   }, [needRefresh]);
 
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (dismissTimeoutRef.current) clearTimeout(dismissTimeoutRef.current);
-    };
-  }, []);
-
   const update = () => {
-    if (dismissTimeoutRef.current) clearTimeout(dismissTimeoutRef.current);
+    sessionStorage.removeItem(DISMISSED_KEY);
     updateServiceWorker(true);
     setShowUpdate(false);
   };
 
   const dismiss = () => {
     setShowUpdate(false);
-    // Re-show after delay if still needs refresh
-    if (needRefresh) {
-      dismissTimeoutRef.current = setTimeout(() => {
-        setShowUpdate(true);
-      }, REMIND_AFTER_MS);
-    }
+    // Don't re-show for this entire session
+    sessionStorage.setItem(DISMISSED_KEY, "1");
   };
 
   return { showUpdate, update, dismiss };
