@@ -87,3 +87,5 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.whatsapp-send]
     verify_jwt = false
+  [functions.balance-reconciliation]
+    verify_jwt = false
