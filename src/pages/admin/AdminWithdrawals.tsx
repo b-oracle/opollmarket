@@ -258,6 +258,33 @@ const AdminWithdrawals = () => {
                             <ExternalLink className="w-3 h-3 text-primary" />
                           </a>
                         </div>
+                      ) : w.nowpayments_id && w.status === "completed" ? (
+                        <button
+                          onClick={async () => {
+                            setProcessingId(w.id);
+                            try {
+                              const { data, error } = await supabase.functions.invoke("verify-np-payout", {
+                                body: { batch_id: w.nowpayments_id, action: "update_hash" },
+                              });
+                              if (error) throw error;
+                              if (data?.updated > 0) {
+                                toast.success("TX hash updated!");
+                                queryClient.invalidateQueries({ queryKey: ["admin_withdrawals"] });
+                              } else {
+                                toast.info("Hash not yet available from payment provider");
+                              }
+                            } catch (e: any) {
+                              toast.error(e.message || "Failed to fetch hash");
+                            }
+                            setProcessingId(null);
+                          }}
+                          disabled={processingId === w.id}
+                          className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500/20 transition-colors"
+                          title="Fetch TX hash from payment provider"
+                        >
+                          {processingId === w.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                          Fetch Hash
+                        </button>
                       ) : (
                         <span className="text-xs text-muted-foreground">—</span>
                       )}
