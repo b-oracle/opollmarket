@@ -101,9 +101,9 @@ const AdminBroadcasts = () => {
   }, []);
 
   const analytics = useMemo(() => {
-    const sent = broadcasts.filter((b) => isPaid(b));
-    const pending = broadcasts.filter((b) => b.status === "pending");
-    const expired = broadcasts.filter((b) => b.status === "expired" && !isPaid(b));
+    const sent = broadcasts.filter((b) => getResolvedStatus(b).key === "sent");
+    const pending = broadcasts.filter((b) => getResolvedStatus(b).key === "pending");
+    const expired = broadcasts.filter((b) => getResolvedStatus(b).key === "payment_expired");
     const totalRevenue = sent.reduce((s, b) => s + b.amount, 0);
     const lostRevenue = expired.reduce((s, b) => s + b.amount, 0);
     const convRate = broadcasts.length > 0 ? Math.round((sent.length / broadcasts.length) * 100) : 0;
