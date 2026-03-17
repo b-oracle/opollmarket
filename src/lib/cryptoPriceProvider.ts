@@ -395,8 +395,8 @@ export function seedNonCryptoHistory(asset: string, price: number): void {
   const spanMs = 60 * 60 * 1000; // 1 hour
   for (let i = 0; i < count; i++) {
     const ts = now - spanMs + (i * spanMs) / count;
-    // Tiny random variation (±0.02%) for visual realism
-    const jitter = price * (Math.random() - 0.5) * 0.0004;
+    // Random walk variation (±0.15%) for visible candle bodies
+    const jitter = price * (Math.random() - 0.5) * 0.003;
     points.push([ts, price + jitter]);
   }
   // Append actual current price as last point
