@@ -1666,7 +1666,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                       <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20">
                         <AlertTriangle className="w-4 h-4 text-destructive/60 shrink-0 mt-0.5" />
                         <p className="text-[10px] text-destructive/70">
-                          Transfer the <strong className="text-foreground">exact amount</strong> shown above. Incorrect amounts may delay confirmation.
+                          Transfer the <strong className="text-destructive">exact amount</strong> shown above. Sending less may not be credited, and any excess sent will not be refunded.
                         </p>
                       </div>
                       <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border">
