@@ -40,7 +40,7 @@ const txConfig: Record<TxType, { icon: typeof ArrowUpRight; label: string; color
   payout: { icon: Gift, label: "Payout", colorClass: "text-green-500 bg-green-500/10" },
   refund: { icon: Repeat, label: "Refund", colorClass: "text-blue-500 bg-blue-500/10" },
   initial_liquidity: { icon: Sparkles, label: "Market Liquidity", colorClass: "text-amber-500 bg-amber-500/10" },
-  qt_one_sided_bonus: { icon: Zap, label: "Quick Trade Win", colorClass: "text-green-500 bg-green-500/10" },
+  qt_one_sided_bonus: { icon: Zap, label: "Quick Trade Bonus", colorClass: "text-green-500 bg-green-500/10" },
 };
 
 const formatTimeAgo = (date: string) => {
