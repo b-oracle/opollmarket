@@ -204,6 +204,10 @@ const Create = () => {
   const [activeMarketCount, setActiveMarketCount] = useState(0);
   const [exceededFreeLimit, setExceededFreeLimit] = useState(false);
   const [aiGenerationCost, setAiGenerationCost] = useState(0.5);
+  const [creatorFeePercent, setCreatorFeePercent] = useState(3);
+  const [creatorFeeBluePercent, setCreatorFeeBluePercent] = useState(3);
+  const [creatorFeeGoldPercent, setCreatorFeeGoldPercent] = useState(3);
+  const [predictionFeePercent, setPredictionFeePercent] = useState(10);
   const [autoResolveFee, setAutoResolveFee] = useState(0);
   const [generatingDesc, setGeneratingDesc] = useState(false);
   const [generatingDetails, setGeneratingDetails] = useState(false);
