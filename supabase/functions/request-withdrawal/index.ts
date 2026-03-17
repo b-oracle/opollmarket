@@ -355,8 +355,8 @@ Deno.serve(async (req) => {
 
                 console.log("Payout verified successfully for batch:", batchId);
 
-                // Step 5: Poll for tx hash (up to 30s)
-                for (let poll = 0; poll < 6; poll++) {
+                // Step 5: Poll for tx hash (up to 60s)
+                for (let poll = 0; poll < 12; poll++) {
                   await new Promise((r) => setTimeout(r, 5000));
                   try {
                     const pollRes = await fetch(`https://api.nowpayments.io/v1/payout/${batchId}`, {
@@ -480,6 +480,23 @@ Deno.serve(async (req) => {
       nowpayments_payment_id: payoutId ? String(payoutId) : null,
       tx_hash: payoutTxHash,
     });
+
+    // If tx hash wasn't available yet, schedule a background fetch
+    if (!payoutTxHash && payoutId) {
+      // Fire-and-forget: call verify-np-payout after a delay to backfill the hash
+      (async () => {
+        try {
+          // Wait 60s for NOWPayments to finalize the transaction
+          await new Promise((r) => setTimeout(r, 60_000));
+          await adminClient.functions.invoke("verify-np-payout", {
+            body: { batch_id: String(payoutId), action: "update_hash" },
+          });
+          console.log("Background hash update triggered for payout:", payoutId);
+        } catch (e) {
+          console.warn("Background hash update failed:", e);
+        }
+      })();
+    }
 
     // Notify user
     const feeNote = feeAmount > 0 ? ` (Fee: $${feeAmount.toFixed(2)}, Net: $${netAmount.toFixed(2)})` : "";
