@@ -10,10 +10,10 @@ const slides = [
     bg: "from-[hsl(220,20%,8%)] via-[hsl(220,25%,12%)] to-[hsl(193,60%,12%)]",
     content: (
       <div className="flex flex-col items-center justify-center h-full text-center px-6 py-8 sm:px-12">
-        <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-br from-[hsl(193,98%,50%)] to-[hsl(193,80%,35%)] flex items-center justify-center mb-6 shadow-2xl shadow-[hsl(193,98%,50%)/0.3]">
-          <span className="text-3xl sm:text-5xl font-black text-white tracking-tighter">oP</span>
-        </div>
-        <h1 className="text-3xl sm:text-6xl font-black text-white mb-3 tracking-tight leading-none">oPoll Market</h1>
+         <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-br from-[hsl(193,98%,50%)] to-[hsl(193,80%,35%)] flex items-center justify-center mb-6 shadow-2xl shadow-[hsl(193,98%,50%)/0.3] p-3">
+           <img src={opollLogo} alt="OPoll" className="w-full h-full object-contain" />
+         </div>
+         <h1 className="text-3xl sm:text-6xl font-black text-white mb-3 tracking-tight leading-none">OPoll Market</h1>
         <p className="text-lg sm:text-2xl text-[hsl(193,98%,50%)] font-semibold mb-4">Predict. Trade. Win.</p>
         <p className="text-sm sm:text-lg text-white/60 max-w-xl">The next-generation prediction market platform powering decentralized forecasting for crypto, sports, politics, and more.</p>
         <div className="mt-8 sm:mt-12 flex items-center gap-3 text-xs sm:text-sm text-white/40">
