@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Printer, ArrowLeft, Share2, Copy, Check } from "lucide-react";
+import opollLogo from "@/assets/logo.png";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
