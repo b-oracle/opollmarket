@@ -17,11 +17,11 @@ const slides = [
     content: (
       <div className="flex flex-col items-center justify-center h-full text-center px-6 py-8 sm:px-16">
         <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-[hsl(193,98%,50%)] to-[hsl(193,80%,30%)] flex items-center justify-center mb-5 shadow-2xl shadow-[hsl(193,98%,50%)/0.3] p-3">
-          <img src={opollLogo} alt="oPoll" className="w-full h-full object-contain" />
+          <img src={opollLogo} alt="OPoll" className="w-full h-full object-contain" />
         </div>
-        <h1 className="text-3xl sm:text-6xl font-black text-white mb-2 tracking-tight leading-none">oPoll Market</h1>
+        <h1 className="text-3xl sm:text-6xl font-black text-white mb-2 tracking-tight leading-none">OPoll Market</h1>
         <p className="text-lg sm:text-2xl text-[hsl(193,98%,50%)] font-semibold mb-3">Turn Your Predictions Into Profits</p>
-        <p className="text-sm sm:text-lg text-white/50 max-w-lg">The smartest way to bet on real-world events — crypto, sports, politics, entertainment & more.</p>
+        <p className="text-sm sm:text-lg text-white/50 max-w-lg">The smartest way to bet on real-world events — crypto, sports, politics, entertainment &amp; more.</p>
         <div className="mt-8 px-6 py-2.5 rounded-full bg-[hsl(193,98%,50%)] text-[hsl(220,20%,6%)] font-bold text-sm sm:text-base">
           Join Free Today →
         </div>
@@ -33,7 +33,7 @@ const slides = [
     bg: "from-[hsl(220,20%,8%)] to-[hsl(220,20%,12%)]",
     content: (
       <div className="flex flex-col justify-center h-full px-6 py-8 sm:px-16">
-        <p className="text-xs font-bold text-[hsl(193,98%,50%)] uppercase tracking-widest mb-3">What Is oPoll Market?</p>
+        <p className="text-xs font-bold text-[hsl(193,98%,50%)] uppercase tracking-widest mb-3">What Is OPoll Market?</p>
         <h2 className="text-2xl sm:text-4xl font-black text-white mb-6 leading-tight">Predict outcomes.<br/>Buy shares. Win big.</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           {[
@@ -57,7 +57,7 @@ const slides = [
     bg: "from-[hsl(193,40%,6%)] via-[hsl(220,20%,10%)] to-[hsl(220,20%,8%)]",
     content: (
       <div className="flex flex-col justify-center h-full px-6 py-8 sm:px-16">
-        <p className="text-xs font-bold text-[hsl(145,80%,42%)] uppercase tracking-widest mb-3">Why oPoll Market?</p>
+        <p className="text-xs font-bold text-[hsl(145,80%,42%)] uppercase tracking-widest mb-3">Why OPoll Market?</p>
         <h2 className="text-2xl sm:text-4xl font-black text-white mb-6 leading-tight">Not just another<br/>betting app</h2>
         <div className="grid grid-cols-2 gap-3">
           {[
@@ -210,10 +210,10 @@ const slides = [
     content: (
       <div className="flex flex-col items-center justify-center h-full text-center px-6 py-8 sm:px-16">
         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-[hsl(193,98%,50%)] to-[hsl(193,80%,30%)] flex items-center justify-center mb-5 shadow-2xl shadow-[hsl(193,98%,50%)/0.4] p-2.5">
-          <img src={opollLogo} alt="oPoll" className="w-full h-full object-contain" />
+          <img src={opollLogo} alt="OPoll" className="w-full h-full object-contain" />
         </div>
         <h2 className="text-3xl sm:text-5xl font-black text-white mb-3 leading-tight">Ready to predict<br/>the future?</h2>
-        <p className="text-sm sm:text-xl text-white/50 max-w-xl mb-6">Join thousands of traders already earning on oPoll Market. Sign up takes 30 seconds.</p>
+        <p className="text-sm sm:text-xl text-white/50 max-w-xl mb-6">Join thousands of traders already earning on OPoll Market. Sign up takes 30 seconds.</p>
         <div className="px-8 py-3 rounded-full bg-[hsl(193,98%,50%)] text-[hsl(220,20%,6%)] font-bold text-sm sm:text-lg shadow-xl shadow-[hsl(193,98%,50%)/0.3]">
           🚀 Start Predicting Now
         </div>
@@ -247,12 +247,12 @@ const SalesDeck = () => {
   };
 
   const handleWhatsApp = () => {
-    const text = `🔥 Check out oPoll Market — predict real-world events and win! Join here: ${getShareUrl()}`;
+    const text = `🔥 Check out OPoll Market — predict real-world events and win! Join here: ${getShareUrl()}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   };
 
   const handleTelegram = () => {
-    const text = `🔥 Check out oPoll Market — predict real-world events and win!`;
+    const text = `🔥 Check out OPoll Market — predict real-world events and win!`;
     window.open(`https://t.me/share/url?url=${encodeURIComponent(getShareUrl())}&text=${encodeURIComponent(text)}`, "_blank");
   };
 
