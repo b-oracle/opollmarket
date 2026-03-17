@@ -279,7 +279,7 @@ const SalesDeck = () => {
 
       <div className="top-bar-wrapper"><TopBar /></div>
 
-      <div className="min-h-screen bg-background px-3 sm:px-4 pt-20 pb-24">
+      <div className="min-h-screen bg-background px-3 sm:px-4 pb-24" style={{ paddingTop: "calc(env(safe-area-inset-top) + 4.5rem)" }}>
         {/* Controls */}
         <div className="deck-controls max-w-4xl mx-auto flex items-center justify-between mb-4 gap-3">
           <div className="min-w-0">
