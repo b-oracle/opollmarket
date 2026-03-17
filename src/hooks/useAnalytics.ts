@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { aimtellTrackEvent } from "@/lib/aimtell";
 
 type EventName =
   | "page_view"
@@ -27,9 +28,24 @@ interface EventProperties {
   [key: string]: string | number | boolean | undefined;
 }
 
+/** Map analytics events to Aimtell segment tags */
+const AIMTELL_EVENT_MAP: Partial<Record<EventName, string>> = {
+  bet_placed: "quick-trade",
+  bet_confirmed: "quick-trade",
+  prediction_placed: "prediction",
+  prediction_confirmed: "prediction",
+  deposit_started: "depositor",
+  market_created: "creator",
+  login_completed: "logged-in",
+};
+
 const useAnalytics = () => {
   const track = useCallback(async (event: EventName, properties?: EventProperties) => {
     try {
+      // Forward to Aimtell for push segmentation
+      const aimtellTag = AIMTELL_EVENT_MAP[event];
+      if (aimtellTag) aimtellTrackEvent(aimtellTag);
+
       const { data: { user } } = await supabase.auth.getUser();
 
       await supabase.from("analytics_events").insert({
