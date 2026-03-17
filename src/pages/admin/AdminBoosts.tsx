@@ -151,15 +151,11 @@ const AdminBoosts = () => {
 
   // Analytics
   const analytics = useMemo(() => {
-    const nowDate = new Date();
-    const active = boosts.filter((b) => b.status === "active" && !isPast(new Date(b.ends_at)));
-    const pending = boosts.filter((b) => b.status === "pending");
-    const boostEnded = boosts.filter((b) =>
-      (b.status === "expired" && b.tx_hash) ||
-      (b.status === "active" && isPast(new Date(b.ends_at)))
-    );
-    const paymentExpired = boosts.filter((b) => b.status === "expired" && !b.tx_hash);
-    const cancelled = boosts.filter((b) => b.status === "cancelled");
+    const active = boosts.filter((b) => getResolvedStatus(b).key === "active");
+    const pending = boosts.filter((b) => getResolvedStatus(b).key === "pending");
+    const boostEnded = boosts.filter((b) => getResolvedStatus(b).key === "boost_ended");
+    const paymentExpired = boosts.filter((b) => getResolvedStatus(b).key === "payment_expired");
+    const cancelled = boosts.filter((b) => getResolvedStatus(b).key === "cancelled");
     const paid = [...active, ...boostEnded];
     const totalRevenue = paid.reduce((s, b) => s + b.amount, 0);
     const lostRevenue = paymentExpired.reduce((s, b) => s + b.amount, 0);
