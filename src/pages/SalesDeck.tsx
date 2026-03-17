@@ -209,8 +209,8 @@ const slides = [
     bg: "from-[hsl(220,20%,6%)] via-[hsl(193,60%,12%)] to-[hsl(220,20%,6%)]",
     content: (
       <div className="flex flex-col items-center justify-center h-full text-center px-6 py-8 sm:px-16">
-        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-[hsl(193,98%,50%)] to-[hsl(193,80%,30%)] flex items-center justify-center mb-5 shadow-2xl shadow-[hsl(193,98%,50%)/0.4]">
-          <span className="text-2xl sm:text-3xl font-black text-white">oP</span>
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-[hsl(193,98%,50%)] to-[hsl(193,80%,30%)] flex items-center justify-center mb-5 shadow-2xl shadow-[hsl(193,98%,50%)/0.4] p-2.5">
+          <img src={opollLogo} alt="oPoll" className="w-full h-full object-contain" />
         </div>
         <h2 className="text-3xl sm:text-5xl font-black text-white mb-3 leading-tight">Ready to predict<br/>the future?</h2>
         <p className="text-sm sm:text-xl text-white/50 max-w-xl mb-6">Join thousands of traders already earning on oPoll Market. Sign up takes 30 seconds.</p>
