@@ -57,7 +57,7 @@ const slides = [
     bg: "from-[hsl(193,40%,6%)] via-[hsl(220,20%,10%)] to-[hsl(220,20%,8%)]",
     content: (
       <div className="flex flex-col justify-center h-full px-6 py-8 sm:px-16">
-        <p className="text-xs font-bold text-[hsl(145,80%,42%)] uppercase tracking-widest mb-3">Why oPoll Market?</p>
+        <p className="text-xs font-bold text-[hsl(145,80%,42%)] uppercase tracking-widest mb-3">Why OPoll Market?</p>
         <h2 className="text-2xl sm:text-4xl font-black text-white mb-6 leading-tight">Not just another<br/>betting app</h2>
         <div className="grid grid-cols-2 gap-3">
           {[
