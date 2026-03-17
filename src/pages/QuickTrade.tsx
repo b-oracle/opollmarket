@@ -148,7 +148,7 @@ const haptic = (style: "light" | "medium" | "heavy" | "success" | "error" = "med
 };
 const AMOUNT_PRESETS = [5, 10, 25, 50, 100];
 
-import { fetchCryptoPrice, fetchCryptoHistory, fetchAssetPrice, fetchOHLCData, subscribeToPriceStream, startNonCryptoHistoryPoller, getNonCryptoHistory, subscribeToSmoothedPriceStream, feedRealPrice, resetInterpolationState, type OHLCCandle } from "@/lib/cryptoPriceProvider";
+import { fetchCryptoPrice, fetchCryptoHistory, fetchAssetPrice, fetchOHLCData, subscribeToPriceStream, startNonCryptoHistoryPoller, getNonCryptoHistory, seedNonCryptoHistory, subscribeToSmoothedPriceStream, feedRealPrice, resetInterpolationState, type OHLCCandle } from "@/lib/cryptoPriceProvider";
 
 // Wrapper that routes by asset class
 async function fetchPriceForAsset(asset: QuickTradeAsset): Promise<number | null> {
