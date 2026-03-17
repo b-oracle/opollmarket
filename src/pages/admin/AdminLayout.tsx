@@ -41,6 +41,7 @@ const navItems: NavItem[] = [
   { to: "/admin/whatsapp", label: "WhatsApp", icon: Phone, roles: ["super_admin", "admin"] },
   { to: "/admin/telegram", label: "Telegram", icon: Phone, roles: ["super_admin", "admin"] },
   { to: "/admin/investor-deck", label: "Investor Deck", icon: Presentation, roles: ["super_admin"] },
+  { to: "/admin/aimtell", label: "Aimtell Push", icon: Bell, roles: ["super_admin"] },
 ];
 
 const AdminLayout = () => {
