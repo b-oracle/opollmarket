@@ -247,7 +247,7 @@ const SalesDeck = () => {
   };
 
   const handleWhatsApp = () => {
-    const text = `🔥 Check out oPoll Market — predict real-world events and win! Join here: ${getShareUrl()}`;
+    const text = `🔥 Check out OPoll Market — predict real-world events and win! Join here: ${getShareUrl()}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   };
 
