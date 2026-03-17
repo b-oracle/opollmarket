@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Zap, CheckCircle, XCircle, ChevronDown, ChevronUp, Timer, AlertTriangle, Megaphone } from "lucide-react";
 import { toast } from "sonner";
 import { logAuditEvent } from "@/lib/auditLog";
-import { format, formatDistanceToNow, isPast } from "date-fns";
+import { format, formatDistanceToNow, isPast, differenceInHours } from "date-fns";
 import AdminPagination from "@/components/admin/AdminPagination";
 import AdminBroadcasts from "@/components/admin/AdminBroadcasts";
 import { useAdminContext } from "./AdminLayout";
