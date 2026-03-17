@@ -57,6 +57,7 @@ const AdminQuickTrade = lazy(() => import("./pages/admin/AdminQuickTrade"));
 const AdminPredictions = lazy(() => import("./pages/admin/AdminPredictions"));
 const AdminSocial = lazy(() => import("./pages/admin/AdminSocial"));
 const InvestorDeck = lazy(() => import("./pages/admin/InvestorDeck"));
+const AdminAimtell = lazy(() => import("./pages/admin/AdminAimtell"));
 const AdminFiatSettings = lazy(() => import("./pages/admin/AdminFiatSettings"));
 const AdminReferrals = lazy(() => import("./pages/admin/AdminReferrals"));
 const AdminWhatsApp = lazy(() => import("./pages/admin/AdminWhatsApp"));
