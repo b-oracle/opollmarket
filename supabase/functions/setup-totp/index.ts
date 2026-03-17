@@ -180,8 +180,8 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("setup-totp error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500, headers: corsHeaders,
+    return new Response(JSON.stringify({ error: "Something went wrong. Please try again." }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
