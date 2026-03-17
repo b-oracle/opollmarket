@@ -55,6 +55,10 @@ function getResolvedStatus(boost: BoostRow): { display: string; key: string } {
       : { display: "Payment Expired", key: "payment_expired" };
   }
   if (boost.status === "active") {
+    // If ends_at has passed, treat as ended even though DB still says "active"
+    if (isPast(new Date(boost.ends_at))) {
+      return { display: "Boost Ended", key: "boost_ended" };
+    }
     return { display: "Active", key: "active" };
   }
   if (boost.status === "pending") {
