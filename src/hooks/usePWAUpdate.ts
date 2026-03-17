@@ -14,11 +14,11 @@ export const usePWAUpdate = () => {
     onRegisteredSW(_swUrl, registration) {
       registrationRef.current = registration ?? null;
 
-      // Check for updates every 10 minutes (not 30s)
+      // Check for updates every 2 minutes
       if (registration) {
         setInterval(() => {
           registration.update();
-        }, 10 * 60 * 1000);
+        }, 2 * 60 * 1000);
       }
     },
   });
