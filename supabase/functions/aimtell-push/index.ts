@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
       throw new Error("AIMTELL_SITE_ID is not configured");
     }
 
-    const { title, body, url, segment_id } = await req.json();
+    const { title, body, url, segment_id, subscriber_uids, alias } = await req.json();
 
     if (!title) {
       return new Response(JSON.stringify({ error: "title is required" }), {
@@ -29,17 +29,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (!segment_id && !subscriber_uids && !alias) {
+      return new Response(JSON.stringify({ error: "One of segment_id, subscriber_uids, or alias is required. Create an 'All Subscribers' segment in Aimtell dashboard to broadcast to everyone." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const pushPayload: Record<string, unknown> = {
-      idSite: AIMTELL_SITE_ID,
+      idSite: Number(AIMTELL_SITE_ID),
       title,
       body: body || "",
       link: url || "https://opollmarket.lovable.app",
     };
 
-    // If a segment is specified, target that segment; otherwise send to all subscribers
-    if (segment_id) {
-      pushPayload.segmentId = segment_id;
-    }
+    if (segment_id) pushPayload.segmentId = segment_id;
+    if (subscriber_uids) pushPayload.subscriber_uids = subscriber_uids;
+    if (alias) pushPayload.alias = alias;
 
     const response = await fetch("https://api.aimtell.com/prod/push", {
       method: "POST",
