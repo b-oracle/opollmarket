@@ -355,8 +355,8 @@ Deno.serve(async (req) => {
 
                 console.log("Payout verified successfully for batch:", batchId);
 
-                // Step 5: Poll for tx hash (up to 30s)
-                for (let poll = 0; poll < 6; poll++) {
+                // Step 5: Poll for tx hash (up to 60s)
+                for (let poll = 0; poll < 12; poll++) {
                   await new Promise((r) => setTimeout(r, 5000));
                   try {
                     const pollRes = await fetch(`https://api.nowpayments.io/v1/payout/${batchId}`, {
