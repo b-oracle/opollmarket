@@ -87,13 +87,17 @@
     <script type="module" src="/src/main.tsx"></script>
 
     <!-- Aimtell Push Notification Tracking -->
-    <script>
-      var defined_aimtell_site_id = 34331;
+    <script type="text/javascript">
+      var _at = {};
+      window._at.track = window._at.track || function(){(window._at.track.q = window._at.track.q || []).push(arguments);};
+      _at.owner = 'cd91086560ae';
+      _at.idSite = '34331';
+      _at.attributes = {};
       (function() {
-        var u = '//s3.amazonaws.com/cdn.aimtell.com/trackpush/';
+        var u = '//cdn.aimtell.com/trackpush/';
         var d = document, g = d.createElement('script'), s = d.getElementsByTagName('script')[0];
-        g.type = 'text/javascript'; g.async = true;
-        g.src = u + 'sdk.min.js';
+        g.type = 'text/javascript'; g.async = true; g.defer = true;
+        g.src = u + 'trackpush.min.js';
         s.parentNode.insertBefore(g, s);
       })();
     </script>
