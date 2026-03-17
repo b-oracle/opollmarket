@@ -527,7 +527,7 @@ const Portfolio = () => {
 
         </motion.div>
 
-        {/* oSURE Insurance Card */}
+        {/* oSURE Protection Card */}
         {insuranceBalance > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -541,7 +541,7 @@ const Portfolio = () => {
                   <Shield className="w-4 h-4 text-primary" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold">oSURE Insurance</p>
+                  <p className="text-xs font-semibold">oSURE Protection</p>
                   <p className="text-[10px] text-muted-foreground">Win a prediction to unlock to main balance</p>
                 </div>
               </div>
@@ -978,7 +978,7 @@ const Portfolio = () => {
           </div>
         )}
 
-        {/* oSURE Insurance Tab */}
+        {/* oSURE Protection Tab */}
         {activeTab === "insurance" && (
           <div className="space-y-3">
             {claimsLoading ? (
@@ -988,8 +988,8 @@ const Portfolio = () => {
             ) : insuranceClaims.length === 0 ? (
               <div className="text-center py-12">
                 <Shield className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">No insurance claims yet</p>
-                <p className="text-xs text-muted-foreground/60 mt-1">Insure your predictions with oSURE to protect against losses</p>
+                <p className="text-sm text-muted-foreground">No protection claims yet</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">Protect your predictions with oSURE Protection against losses</p>
               </div>
             ) : (
               insuranceClaims.map((claim: any) => (
