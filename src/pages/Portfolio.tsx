@@ -541,7 +541,7 @@ const Portfolio = () => {
                   <Shield className="w-4 h-4 text-primary" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold">oSURE Insurance</p>
+                  <p className="text-xs font-semibold">oSURE Protection</p>
                   <p className="text-[10px] text-muted-foreground">Win a prediction to unlock to main balance</p>
                 </div>
               </div>
