@@ -486,7 +486,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                           setInsuranceTier(null);
                           setStep("confirm");
                         }}
-                        className="w-full glass py-2.5 rounded-xl text-sm font-medium text-muted-foreground transition-all active:scale-95"
+                        className="w-full border border-border py-2.5 rounded-xl text-sm font-semibold text-foreground/70 hover:text-foreground hover:border-foreground/30 transition-all active:scale-95"
                       >
                         Skip Insurance
                       </button>
