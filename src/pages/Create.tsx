@@ -240,6 +240,10 @@ const Create = () => {
         setGoldMaxFreeMarkets(Number((data as any).gold_max_free_markets) || 20);
         setAiGenerationCost(Number((data as any).ai_generation_cost ?? 0.5));
         setAutoResolveFee(Number((data as any).auto_resolve_fee ?? 0));
+        setCreatorFeePercent(Number((data as any).creator_fee_percent ?? 3));
+        setCreatorFeeBluePercent(Number((data as any).creator_fee_blue_percent ?? 3));
+        setCreatorFeeGoldPercent(Number((data as any).creator_fee_gold_percent ?? 3));
+        setPredictionFeePercent(Number((data as any).prediction_fee_percent ?? 10));
         setBoostTierPrices({
           flash: Number((data as any).boost_flash_price ?? 20),
           standard: Number((data as any).boost_standard_price ?? 50),
