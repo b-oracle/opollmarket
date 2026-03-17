@@ -60,7 +60,7 @@ const Index = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { data: markets = [], isLoading, isError, refetch } = useMarkets();
-  const { boostedMarketIds, boostDetails } = useActiveBoosts();
+  const { boostedMarketIds, boostDetails, loading: boostsLoading } = useActiveBoosts();
   const [filter, setFilter] = useState<"trending" | "boosted" | "new" | "all" | "live">("all");
   const [boostModalMarket, setBoostModalMarket] = useState<{ id: string; title: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -88,10 +88,11 @@ const Index = () => {
   }, [searchParams, navigate]);
 
   const boostedMarkets = useMemo(() => {
+    if (boostsLoading) return []; // wait for boosts to load before committing
     const boosted = markets.filter((m) => boostedMarketIds.has(m.id));
     if (boosted.length > 0) return boosted;
     return markets.filter((m) => m.trending).slice(0, 5);
-  }, [markets, boostedMarketIds]);
+  }, [markets, boostedMarketIds, boostsLoading]);
 
   const commodityMarkets = useMemo(() =>
     markets.filter((m) => m.category === "Commodities").slice(0, 8),
