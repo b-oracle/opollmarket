@@ -304,6 +304,7 @@ const App = () => (
                           <Route path="whatsapp" element={<AdminWhatsApp />} />
                           <Route path="telegram" element={<AdminTelegram />} />
                           <Route path="investor-deck" element={<InvestorDeck />} />
+                          <Route path="aimtell" element={<AdminAimtell />} />
                         </Route>
                         <Route path="*" element={<NotFound />} />
                       </Routes>
