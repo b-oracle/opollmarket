@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "prompt",
-      includeAssets: ["favicon.ico", "logo.png", "icon-512.png", "robots.txt"],
+      includeAssets: ["opoll-favicon.png", "logo.png", "icon-512.png", "robots.txt"],
       manifest: {
         name: "OPOLL — Social Prediction Market",
         short_name: "OPOLL",
@@ -30,12 +30,12 @@ export default defineConfig(({ mode }) => ({
         start_url: "/",
         icons: [
           {
-            src: "/pwa-icon.png",
+            src: "/opoll-favicon.png",
             sizes: "192x192",
             type: "image/png",
           },
           {
-            src: "/pwa-icon.png",
+            src: "/opoll-favicon.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "any maskable",
