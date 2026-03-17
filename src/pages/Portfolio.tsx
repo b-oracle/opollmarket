@@ -978,7 +978,7 @@ const Portfolio = () => {
           </div>
         )}
 
-        {/* oSURE Insurance Tab */}
+        {/* oSURE Protection Tab */}
         {activeTab === "insurance" && (
           <div className="space-y-3">
             {claimsLoading ? (
