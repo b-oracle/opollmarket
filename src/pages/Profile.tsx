@@ -1252,14 +1252,19 @@ const Profile = () => {
 
         <div className="grid grid-cols-3 gap-3 mb-3">
           {(() => {
-            const buyTxns = transactions.filter((t: any) => t.type === "buy" && t.status === "confirmed");
+            const predictionBuyTxns = transactions.filter(
+              (t: any) =>
+                t.type === "buy" &&
+                t.status === "confirmed" &&
+                (t.side === "yes" || t.side === "no")
+            );
             const sellTxns = transactions.filter((t: any) => t.type === "sell" && t.status === "confirmed");
-            const totalBought = buyTxns.reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
+            const totalBought = predictionBuyTxns.reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
             const totalSold = sellTxns.reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
             const payoutTxns = transactions.filter((t: any) => t.type === "payout" && t.status === "confirmed");
             const totalPayouts = payoutTxns.reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
             const pnl = totalPayouts + totalSold - totalBought;
-            const totalPredictions = buyTxns.length;
+            const totalPredictions = predictionBuyTxns.length;
             const refundTxns = transactions.filter((t: any) => t.type === "refund" && t.status === "confirmed");
             const resolvedCount = payoutTxns.length + Math.max(0, totalPredictions - payoutTxns.length - refundTxns.length);
             const wins = payoutTxns.length;
