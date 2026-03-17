@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
       idSite: Number(AIMTELL_SITE_ID),
       title,
       body: body || "",
-      link: url || "https://opollmarket.lovable.app",
+      link: url || "https://opoll.org",
     };
 
     if (segment_id) pushPayload.segmentId = segment_id;
