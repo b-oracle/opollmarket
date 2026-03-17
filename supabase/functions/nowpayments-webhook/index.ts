@@ -119,7 +119,7 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
 
   // 4. Update the transaction record
   if (matchedTx) {
-    await supabase
+    const { error: txUpdateError } = await supabase
       .from("transactions")
       .update({
         status: finalStatus,
@@ -127,8 +127,11 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
         amount: Number(creditAmount), // Update to actual credited amount
       })
       .eq("id", matchedTx.id);
+    if (txUpdateError) {
+      console.error("WARNING: Balance credited but tx update failed:", txUpdateError);
+    }
   } else {
-    await supabase
+    const { error: txInsertError } = await supabase
       .from("transactions")
       .insert({
         user_id: userId,
@@ -137,7 +140,18 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
         status: finalStatus,
         nowpayments_payment_id: paymentIdStr,
       });
+    if (txInsertError) {
+      console.error("WARNING: Balance credited but tx insert failed:", txInsertError);
+    }
   }
+
+  // 4b. Verify balance was actually updated (safety net)
+  const { data: verifyBalance } = await supabase
+    .from("balances")
+    .select("amount")
+    .eq("user_id", userId)
+    .single();
+  console.log(`Post-credit balance verification for ${userId}: $${verifyBalance?.amount}`);
 
   // 5. Notify user
   const shortfall = Number(requestedAmount) - Number(creditAmount);
