@@ -75,12 +75,22 @@ const ResetPassword = () => {
     }
   };
 
+  if (checking) {
+    return (
+      <div className="min-h-dvh bg-background flex items-center justify-center px-4">
+        <div className="text-center">
+          <p className="text-muted-foreground">Verifying reset link...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!isRecovery) {
     return (
       <div className="min-h-dvh bg-background flex items-center justify-center px-4">
         <div className="text-center">
           <p className="text-muted-foreground mb-4">Invalid or expired reset link.</p>
-          <button onClick={() => navigate("/auth")} className="text-primary font-semibold hover:underline">Back to Sign In</button>
+          <button onClick={() => navigate("/forgot-password")} className="text-primary font-semibold hover:underline">Request a new link</button>
         </div>
       </div>
     );
