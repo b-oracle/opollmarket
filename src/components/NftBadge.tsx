@@ -77,15 +77,20 @@ const VerifiedTick = ({ size = 16, color = "gold" }: { size?: number; color?: "g
         fill="#fff"
       />
       <defs>
-        <linearGradient id="gold-grad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#F7D86C" />
-          <stop offset="0.5" stopColor="#E8B730" />
-          <stop offset="1" stopColor="#C6951B" />
-        </linearGradient>
-        <linearGradient id="blue-grad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#60A5FA" />
-          <stop offset="0.5" stopColor="#3B82F6" />
-          <stop offset="1" stopColor="#2563EB" />
+        <linearGradient id={gradientId} x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+          {color === "gold" ? (
+            <>
+              <stop stopColor="#F7D86C" />
+              <stop offset="0.5" stopColor="#E8B730" />
+              <stop offset="1" stopColor="#C6951B" />
+            </>
+          ) : (
+            <>
+              <stop stopColor="#60A5FA" />
+              <stop offset="0.5" stopColor="#3B82F6" />
+              <stop offset="1" stopColor="#2563EB" />
+            </>
+          )}
         </linearGradient>
       </defs>
     </svg>
