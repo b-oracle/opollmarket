@@ -1263,7 +1263,16 @@ const Profile = () => {
             const totalSold = sellTxns.reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
             const payoutTxns = transactions.filter((t: any) => t.type === "payout" && t.status === "confirmed");
             const totalPayouts = payoutTxns.reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
-            const pnl = totalPayouts + totalSold - totalBought;
+            // Unrealized P&L from open positions
+            const unrealizedPnl = positions
+              .filter((p: any) => p.shares > 0 && p.markets && p.markets.status === "active")
+              .reduce((sum: number, p: any) => {
+                const currentPrice = p.side === "yes" ? p.markets.yes_price : p.markets.no_price;
+                const invested = p.shares * p.avg_price;
+                const currentValue = p.shares * currentPrice;
+                return sum + (currentValue - invested);
+              }, 0);
+            const pnl = totalPayouts + totalSold - totalBought + unrealizedPnl;
             const totalPredictions = predictionBuyTxns.length;
             const refundTxns = transactions.filter((t: any) => t.type === "refund" && t.status === "confirmed");
             const resolvedCount = payoutTxns.length + Math.max(0, totalPredictions - payoutTxns.length - refundTxns.length);
