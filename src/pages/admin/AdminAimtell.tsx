@@ -19,7 +19,7 @@ const AdminAimtell = () => {
   // Test push state
   const [pushTitle, setPushTitle] = useState("");
   const [pushBody, setPushBody] = useState("");
-  const [pushUrl, setPushUrl] = useState("https://opollmarket.lovable.app");
+  const [pushUrl, setPushUrl] = useState("https://opoll.org");
   const [pushSegment, setPushSegment] = useState("");
   const [sending, setSending] = useState(false);
 
