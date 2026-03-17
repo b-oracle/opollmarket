@@ -481,6 +481,23 @@ Deno.serve(async (req) => {
       tx_hash: payoutTxHash,
     });
 
+    // If tx hash wasn't available yet, schedule a background fetch
+    if (!payoutTxHash && payoutId) {
+      // Fire-and-forget: call verify-np-payout after a delay to backfill the hash
+      (async () => {
+        try {
+          // Wait 60s for NOWPayments to finalize the transaction
+          await new Promise((r) => setTimeout(r, 60_000));
+          await adminClient.functions.invoke("verify-np-payout", {
+            body: { batch_id: String(payoutId), action: "update_hash" },
+          });
+          console.log("Background hash update triggered for payout:", payoutId);
+        } catch (e) {
+          console.warn("Background hash update failed:", e);
+        }
+      })();
+    }
+
     // Notify user
     const feeNote = feeAmount > 0 ? ` (Fee: $${feeAmount.toFixed(2)}, Net: $${netAmount.toFixed(2)})` : "";
     await adminClient.from("notifications").insert({
