@@ -763,7 +763,7 @@ const Profile = () => {
       if (!user) return [];
       const { data } = await supabase
         .from("positions")
-        .select("*")
+        .select("*, markets(yes_price, no_price, status)")
         .eq("user_id", user.id);
       return data || [];
     },
