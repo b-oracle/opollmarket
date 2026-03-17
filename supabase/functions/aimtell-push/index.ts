@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
     const response = await fetch("https://api.aimtell.com/prod/push", {
       method: "POST",
       headers: {
-        "X-Authorization": AIMTELL_API_KEY,
+        "X-Authorization-Api-Key": AIMTELL_API_KEY,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(pushPayload),
