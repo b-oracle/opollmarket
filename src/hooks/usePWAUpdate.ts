@@ -2,10 +2,16 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
 const DISMISSED_KEY = "opoll_pwa_update_dismissed";
+const APPLIED_SW_KEY = "opoll_pwa_applied_sw";
 
 export const usePWAUpdate = () => {
   const [showUpdate, setShowUpdate] = useState(false);
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
+  const intervalRef = useRef<number | null>(null);
+
+  const getWaitingScriptUrl = useCallback(() => {
+    return registrationRef.current?.waiting?.scriptURL ?? null;
+  }, []);
 
   const {
     needRefresh: [needRefresh],
@@ -14,10 +20,17 @@ export const usePWAUpdate = () => {
     onRegisteredSW(_swUrl, registration) {
       registrationRef.current = registration ?? null;
 
+      if (intervalRef.current) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+
       // Check for updates every 2 minutes
       if (registration) {
-        setInterval(() => {
-          registration.update();
+        intervalRef.current = window.setInterval(() => {
+          if (document.visibilityState === "visible") {
+            registration.update();
+          }
         }, 2 * 60 * 1000);
       }
     },
@@ -34,24 +47,41 @@ export const usePWAUpdate = () => {
         checkForUpdates();
       }
     };
+
     document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      if (intervalRef.current) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
   }, [checkForUpdates]);
 
   useEffect(() => {
-    if (needRefresh) {
-      // Only show if not recently dismissed
-      const dismissed = sessionStorage.getItem(DISMISSED_KEY);
-      if (!dismissed) {
-        setShowUpdate(true);
-      }
+    if (!needRefresh) return;
+
+    const dismissed = sessionStorage.getItem(DISMISSED_KEY);
+    const appliedScriptUrl = localStorage.getItem(APPLIED_SW_KEY);
+    const waitingScriptUrl = getWaitingScriptUrl();
+    const alreadyAppliedVersion = waitingScriptUrl && appliedScriptUrl === waitingScriptUrl;
+
+    if (!dismissed && !alreadyAppliedVersion) {
+      setShowUpdate(true);
     }
-  }, [needRefresh]);
+  }, [needRefresh, getWaitingScriptUrl]);
 
   const update = () => {
-    sessionStorage.removeItem(DISMISSED_KEY);
-    updateServiceWorker(true);
+    const waitingScriptUrl = getWaitingScriptUrl();
+
+    if (waitingScriptUrl) {
+      localStorage.setItem(APPLIED_SW_KEY, waitingScriptUrl);
+    }
+
+    // prevent re-prompt loops in current session if activation/reload is delayed
+    sessionStorage.setItem(DISMISSED_KEY, "1");
     setShowUpdate(false);
+    updateServiceWorker(true);
   };
 
   const dismiss = () => {
