@@ -3,7 +3,7 @@
  * - "blue" = holds NFT OR min_token_balance BC400 tokens
  * - "gold" = holds BOTH NFT AND min_gold_token_balance BC400 tokens
  */
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext, useId, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
