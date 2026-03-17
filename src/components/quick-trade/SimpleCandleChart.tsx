@@ -252,7 +252,7 @@ function SimpleCandleChart({ ohlcData, priceHistory, entryPrice, assetClass, str
         const wickBot = toY(low);
         const bodyTop = toY(Math.max(open, close));
         const bodyBot = toY(Math.min(open, close));
-        const bodyH = Math.max(bodyBot - bodyTop, 2.5);
+        const bodyH = Math.max(bodyBot - bodyTop, 0.5);
 
         // Wick
         ctx.strokeStyle = color;
