@@ -390,7 +390,7 @@ const AdminBoosts = () => {
                         Approve
                       </span>
                     )}
-                    {canEdit && (boost.status === "pending" || boost.status === "active") && (
+                    {canEdit && (boost.status === "pending" || (boost.status === "active" && !isPast(new Date(boost.ends_at)))) && (
                       <span
                         role="button"
                         onClick={(e) => { e.stopPropagation(); handleCancel(boost.id); }}
