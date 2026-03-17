@@ -89,8 +89,32 @@ Deno.serve(async (req) => {
 
     if (upsertError) {
       console.error("Failed to save PIN:", upsertError);
-      return new Response(JSON.stringify({ error: "Failed to save PIN" }), {
-        status: 500, headers: corsHeaders,
+      // If FK violation (no profile), create profile first and retry
+      if (upsertError.code === "23503") {
+        const { error: profileErr } = await adminClient
+          .from("profiles")
+          .upsert({ id: user.id, email: user.email }, { onConflict: "id" });
+        if (!profileErr) {
+          const { error: retryErr } = await adminClient
+            .from("user_security_settings")
+            .upsert({
+              user_id: user.id,
+              pin_hash: pinHash,
+              pin_enabled: true,
+              require_pin_login: true,
+              require_pin_withdrawal: true,
+              security_setup_complete: true,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: "user_id" });
+          if (!retryErr) {
+            return new Response(JSON.stringify({ success: true }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+        }
+      }
+      return new Response(JSON.stringify({ error: "Failed to save PIN. Please try again." }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
