@@ -193,7 +193,7 @@ const AdminAimtell = () => {
                 id="push-url"
                 value={pushUrl}
                 onChange={(e) => setPushUrl(e.target.value)}
-                placeholder="https://opollmarket.lovable.app/market/..."
+                placeholder="https://opoll.org/market/..."
                 disabled={!canEdit}
               />
             </div>
