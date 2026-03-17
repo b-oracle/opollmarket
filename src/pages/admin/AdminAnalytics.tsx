@@ -594,9 +594,9 @@ const AdminAnalytics = () => {
         )}
       </div>
 
-      {/* oSURE Insurance Analytics */}
+      {/* oSURE Protection Analytics */}
       <div className="bg-card border border-border rounded-xl p-5">
-        <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Shield className="w-4 h-4 text-emerald-500" /> oSURE Insurance Analytics</h3>
+        <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Shield className="w-4 h-4 text-emerald-500" /> oSURE Protection Analytics</h3>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
           {[

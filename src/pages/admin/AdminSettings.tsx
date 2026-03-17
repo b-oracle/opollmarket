@@ -949,9 +949,9 @@ const AdminSettings = () => {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <Shield className="w-4 h-4 text-primary" /> oSURE Insurance Settings
+                <Shield className="w-4 h-4 text-primary" /> oSURE Protection Settings
               </CardTitle>
-              <CardDescription className="text-xs">Configure prediction insurance tiers and premiums.</CardDescription>
+              <CardDescription className="text-xs">Configure prediction protection tiers and premiums.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">

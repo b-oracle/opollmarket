@@ -988,8 +988,8 @@ const Portfolio = () => {
             ) : insuranceClaims.length === 0 ? (
               <div className="text-center py-12">
                 <Shield className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">No insurance claims yet</p>
-                <p className="text-xs text-muted-foreground/60 mt-1">Insure your predictions with oSURE to protect against losses</p>
+                <p className="text-sm text-muted-foreground">No protection claims yet</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">Protect your predictions with oSURE Protection against losses</p>
               </div>
             ) : (
               insuranceClaims.map((claim: any) => (
