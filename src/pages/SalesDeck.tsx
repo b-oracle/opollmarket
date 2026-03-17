@@ -252,7 +252,7 @@ const SalesDeck = () => {
   };
 
   const handleTelegram = () => {
-    const text = `🔥 Check out oPoll Market — predict real-world events and win!`;
+    const text = `🔥 Check out OPoll Market — predict real-world events and win!`;
     window.open(`https://t.me/share/url?url=${encodeURIComponent(getShareUrl())}&text=${encodeURIComponent(text)}`, "_blank");
   };
 
