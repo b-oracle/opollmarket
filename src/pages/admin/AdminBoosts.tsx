@@ -147,9 +147,13 @@ const AdminBoosts = () => {
 
   // Analytics
   const analytics = useMemo(() => {
-    const active = boosts.filter((b) => b.status === "active");
+    const nowDate = new Date();
+    const active = boosts.filter((b) => b.status === "active" && !isPast(new Date(b.ends_at)));
     const pending = boosts.filter((b) => b.status === "pending");
-    const boostEnded = boosts.filter((b) => b.status === "expired" && b.tx_hash);
+    const boostEnded = boosts.filter((b) =>
+      (b.status === "expired" && b.tx_hash) ||
+      (b.status === "active" && isPast(new Date(b.ends_at)))
+    );
     const paymentExpired = boosts.filter((b) => b.status === "expired" && !b.tx_hash);
     const cancelled = boosts.filter((b) => b.status === "cancelled");
     const paid = [...active, ...boostEnded];
