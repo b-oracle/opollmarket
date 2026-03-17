@@ -2486,14 +2486,18 @@ const Create = () => {
               )}
 
               {/* Fee info */}
-              <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border">
-                <AlertTriangle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                <p className="text-xs text-muted-foreground">
+              <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20">
+                <AlertTriangle className="w-4 h-4 text-destructive/60 shrink-0 mt-0.5" />
+                <p className="text-xs text-destructive/70">
                   {feeBypass
                     ? exceededFreeLimit
                       ? `A $${marketCreationFee} creation fee applies — you've reached your free market limit (${activeMarketCount}/${verificationLevel === "gold" ? goldMaxFreeMarkets : blueMaxFreeMarkets}). This fee is non-refundable (unless the market is cancelled). Your market will require approval before going live.`
                       : `A $${marketCreationFee} creation fee applies since you don't hold NFT/BC400. This fee is non-refundable (unless the market is cancelled). Your market will require approval before going live.`
-                    : "A 2% platform fee applies. Creators earn 1% of all trade volume. Initial liquidity will be locked until market resolution."}
+                    : (() => {
+                        const myFee = verificationLevel === "gold" ? creatorFeeGoldPercent : verificationLevel === "blue" ? creatorFeeBluePercent : creatorFeePercent;
+                        const tierLabel = verificationLevel === "gold" ? "Gold ✨" : verificationLevel === "blue" ? "Blue ✔️" : "";
+                        return `A ${predictionFeePercent}% platform fee applies on all trades. As a ${tierLabel ? tierLabel + " creator" : "creator"}, you earn ${myFee}% of all trade volume on this market. Initial liquidity will be locked until market resolution.`;
+                      })()}
                 </p>
               </div>
 

@@ -1121,7 +1121,7 @@ const Portfolio = () => {
 
                 <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 mb-5">
                   <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-[10px] text-destructive/70">
                     A {exitFeePercent}% exit fee is charged on early sells. This fee is returned to the market pool.{bonusBalance > 0 ? ` Your referral bonus ($${bonusBalance.toFixed(2)}) will be used first to offset the fee.` : ' Hold until resolution to avoid this fee.'}
                   </p>
                 </div>
