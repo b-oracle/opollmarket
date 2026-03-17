@@ -19,7 +19,7 @@ const slides = [
         <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-[hsl(193,98%,50%)] to-[hsl(193,80%,30%)] flex items-center justify-center mb-5 shadow-2xl shadow-[hsl(193,98%,50%)/0.3] p-3">
           <img src={opollLogo} alt="oPoll" className="w-full h-full object-contain" />
         </div>
-        <h1 className="text-3xl sm:text-6xl font-black text-white mb-2 tracking-tight leading-none">oPoll Market</h1>
+        <h1 className="text-3xl sm:text-6xl font-black text-white mb-2 tracking-tight leading-none">OPoll Market</h1>
         <p className="text-lg sm:text-2xl text-[hsl(193,98%,50%)] font-semibold mb-3">Turn Your Predictions Into Profits</p>
         <p className="text-sm sm:text-lg text-white/50 max-w-lg">The smartest way to bet on real-world events — crypto, sports, politics, entertainment & more.</p>
         <div className="mt-8 px-6 py-2.5 rounded-full bg-[hsl(193,98%,50%)] text-[hsl(220,20%,6%)] font-bold text-sm sm:text-base">
