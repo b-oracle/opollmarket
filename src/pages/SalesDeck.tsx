@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Printer, ArrowLeft, Share2, Copy, Check } from "lucide-react";
+import opollLogo from "@/assets/logo.png";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -15,8 +16,8 @@ const slides = [
     bg: "from-[hsl(220,20%,6%)] via-[hsl(193,50%,10%)] to-[hsl(220,20%,6%)]",
     content: (
       <div className="flex flex-col items-center justify-center h-full text-center px-6 py-8 sm:px-16">
-        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-[hsl(193,98%,50%)] to-[hsl(193,80%,30%)] flex items-center justify-center mb-5 shadow-2xl shadow-[hsl(193,98%,50%)/0.3]">
-          <span className="text-3xl sm:text-4xl font-black text-white tracking-tighter">oP</span>
+        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-[hsl(193,98%,50%)] to-[hsl(193,80%,30%)] flex items-center justify-center mb-5 shadow-2xl shadow-[hsl(193,98%,50%)/0.3] p-3">
+          <img src={opollLogo} alt="oPoll" className="w-full h-full object-contain" />
         </div>
         <h1 className="text-3xl sm:text-6xl font-black text-white mb-2 tracking-tight leading-none">oPoll Market</h1>
         <p className="text-lg sm:text-2xl text-[hsl(193,98%,50%)] font-semibold mb-3">Turn Your Predictions Into Profits</p>
@@ -208,8 +209,8 @@ const slides = [
     bg: "from-[hsl(220,20%,6%)] via-[hsl(193,60%,12%)] to-[hsl(220,20%,6%)]",
     content: (
       <div className="flex flex-col items-center justify-center h-full text-center px-6 py-8 sm:px-16">
-        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-[hsl(193,98%,50%)] to-[hsl(193,80%,30%)] flex items-center justify-center mb-5 shadow-2xl shadow-[hsl(193,98%,50%)/0.4]">
-          <span className="text-2xl sm:text-3xl font-black text-white">oP</span>
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-[hsl(193,98%,50%)] to-[hsl(193,80%,30%)] flex items-center justify-center mb-5 shadow-2xl shadow-[hsl(193,98%,50%)/0.4] p-2.5">
+          <img src={opollLogo} alt="oPoll" className="w-full h-full object-contain" />
         </div>
         <h2 className="text-3xl sm:text-5xl font-black text-white mb-3 leading-tight">Ready to predict<br/>the future?</h2>
         <p className="text-sm sm:text-xl text-white/50 max-w-xl mb-6">Join thousands of traders already earning on oPoll Market. Sign up takes 30 seconds.</p>
@@ -278,7 +279,7 @@ const SalesDeck = () => {
 
       <div className="top-bar-wrapper"><TopBar /></div>
 
-      <div className="min-h-screen bg-background px-3 sm:px-4 pt-20 pb-24">
+      <div className="min-h-screen bg-background px-3 sm:px-4 pb-24" style={{ paddingTop: "calc(env(safe-area-inset-top) + 4.5rem)" }}>
         {/* Controls */}
         <div className="deck-controls max-w-4xl mx-auto flex items-center justify-between mb-4 gap-3">
           <div className="min-w-0">
