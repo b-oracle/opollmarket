@@ -44,6 +44,13 @@ const BoostedCarousel = ({
     setActiveIndex(index);
   }, []);
 
+  // Reset index when market list changes
+  useEffect(() => {
+    setActiveIndex(0);
+    const container = scrollRef.current;
+    if (container) container.scrollLeft = 0;
+  }, [markets.length, markets[0]?.id]);
+
   // Auto-scroll
   useEffect(() => {
     if (markets.length <= 1 || isPaused) return;
