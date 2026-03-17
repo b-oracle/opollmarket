@@ -580,14 +580,23 @@ export default function QuickTrade() {
     if (!marketOpen) {
       // Still fetch one price snapshot so we show "last close" price
       (async () => {
-      const p = await fetchPriceForAsset(selectedAsset);
+        const p = await fetchPriceForAsset(selectedAsset);
         if (p != null && isCurrentRun()) {
           applyDisplayPrice(p);
           applyStreamingPrice(p);
-          // Seed priceHistory so chart has at least one point
-          const now = Date.now();
-          const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
-          setPriceHistory([{ time: timeLabel, price: p, ts: now }]);
+          // Seed synthetic history for non-crypto so chart renders at correct price level
+          if (selectedAsset.assetClass !== "crypto") {
+            seedNonCryptoHistory(streamAssetSymbol, p);
+            const seeded = getNonCryptoHistory(streamAssetSymbol);
+            if (seeded.length > 0) {
+              rawDataRef.current.set(streamAssetSymbol, seeded);
+              setPriceHistory(filterPriceData(seeded, chartMs));
+            }
+          } else {
+            const now = Date.now();
+            const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
+            setPriceHistory([{ time: timeLabel, price: p, ts: now }]);
+          }
         }
       })();
       return () => {
