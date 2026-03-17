@@ -380,6 +380,30 @@ export function getNonCryptoHistory(asset: string): [number, number][] {
   return nonCryptoHistory.get(asset) ?? [];
 }
 
+/**
+ * Seed synthetic history for a non-crypto asset so charts display immediately
+ * at the correct price level when switching assets. Generates 60 points
+ * spanning the last hour with tiny random micro-variations for visual realism.
+ * Only seeds if existing history has fewer than 5 points.
+ */
+export function seedNonCryptoHistory(asset: string, price: number): void {
+  const existing = nonCryptoHistory.get(asset);
+  if (existing && existing.length >= 5) return; // already has enough data
+  const now = Date.now();
+  const points: [number, number][] = [];
+  const count = 60;
+  const spanMs = 60 * 60 * 1000; // 1 hour
+  for (let i = 0; i < count; i++) {
+    const ts = now - spanMs + (i * spanMs) / count;
+    // Tiny random variation (±0.02%) for visual realism
+    const jitter = price * (Math.random() - 0.5) * 0.0004;
+    points.push([ts, price + jitter]);
+  }
+  // Append actual current price as last point
+  points.push([now, price]);
+  nonCryptoHistory.set(asset, points);
+}
+
 // ── Smooth price interpolation for non-crypto assets ──
 // Creates synthetic intermediate price points between polls for smooth chart streaming
 

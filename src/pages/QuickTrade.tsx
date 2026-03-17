@@ -148,7 +148,7 @@ const haptic = (style: "light" | "medium" | "heavy" | "success" | "error" = "med
 };
 const AMOUNT_PRESETS = [5, 10, 25, 50, 100];
 
-import { fetchCryptoPrice, fetchCryptoHistory, fetchAssetPrice, fetchOHLCData, subscribeToPriceStream, startNonCryptoHistoryPoller, getNonCryptoHistory, subscribeToSmoothedPriceStream, feedRealPrice, resetInterpolationState, type OHLCCandle } from "@/lib/cryptoPriceProvider";
+import { fetchCryptoPrice, fetchCryptoHistory, fetchAssetPrice, fetchOHLCData, subscribeToPriceStream, startNonCryptoHistoryPoller, getNonCryptoHistory, seedNonCryptoHistory, subscribeToSmoothedPriceStream, feedRealPrice, resetInterpolationState, type OHLCCandle } from "@/lib/cryptoPriceProvider";
 
 // Wrapper that routes by asset class
 async function fetchPriceForAsset(asset: QuickTradeAsset): Promise<number | null> {
@@ -580,14 +580,23 @@ export default function QuickTrade() {
     if (!marketOpen) {
       // Still fetch one price snapshot so we show "last close" price
       (async () => {
-      const p = await fetchPriceForAsset(selectedAsset);
+        const p = await fetchPriceForAsset(selectedAsset);
         if (p != null && isCurrentRun()) {
           applyDisplayPrice(p);
           applyStreamingPrice(p);
-          // Seed priceHistory so chart has at least one point
-          const now = Date.now();
-          const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
-          setPriceHistory([{ time: timeLabel, price: p, ts: now }]);
+          // Seed synthetic history for non-crypto so chart renders at correct price level
+          if (selectedAsset.assetClass !== "crypto") {
+            seedNonCryptoHistory(streamAssetSymbol, p);
+            const seeded = getNonCryptoHistory(streamAssetSymbol);
+            if (seeded.length > 0) {
+              rawDataRef.current.set(streamAssetSymbol, seeded);
+              setPriceHistory(filterPriceData(seeded, chartMs));
+            }
+          } else {
+            const now = Date.now();
+            const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
+            setPriceHistory([{ time: timeLabel, price: p, ts: now }]);
+          }
         }
       })();
       return () => {
@@ -604,10 +613,21 @@ export default function QuickTrade() {
         applyStreamingPrice(p);
         // Seed the smooth interpolation system so fallback has data immediately
         feedRealPrice(streamAssetSymbol, p);
-        // Seed priceHistory so chart renders immediately with first data point
-        const now = Date.now();
-        const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
-        setPriceHistory(prev => prev.length === 0 ? [{ time: timeLabel, price: p, ts: now }] : prev);
+
+        // For non-crypto assets, seed synthetic history so chart populates instantly
+        if (selectedAsset.assetClass !== "crypto") {
+          seedNonCryptoHistory(streamAssetSymbol, p);
+          const seeded = getNonCryptoHistory(streamAssetSymbol);
+          if (seeded.length > 0) {
+            rawDataRef.current.set(streamAssetSymbol, seeded);
+            setPriceHistory(filterPriceData(seeded, chartMs));
+          }
+        } else {
+          // Seed priceHistory so chart renders immediately with first data point
+          const now = Date.now();
+          const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
+          setPriceHistory(prev => prev.length === 0 ? [{ time: timeLabel, price: p, ts: now }] : prev);
+        }
       }
     })();
 
