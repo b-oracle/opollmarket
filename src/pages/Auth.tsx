@@ -35,6 +35,7 @@ const Auth = () => {
   const [referralFromLink, setReferralFromLink] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [sendingReset, setSendingReset] = useState(false);
   const [rememberedName, setRememberedName] = useState<string | null>(null);
   const [showLoginSecurity, setShowLoginSecurity] = useState(false);
   const [loginSecReqs, setLoginSecReqs] = useState<{ require_pin: boolean; require_totp: boolean }>({ require_pin: false, require_totp: false });
@@ -202,20 +203,29 @@ const Auth = () => {
             <div className="flex gap-2">
               <button
                 type="button"
+                disabled={sendingReset}
                 onClick={async () => {
-                  const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-                    redirectTo: `${getCanonicalOrigin()}/reset-password`,
-                  });
-                  if (!error) {
-                    toast.success("Password reset link sent to your email!");
-                    setShowResetPrompt(false);
-                  } else {
-                    toast.error("Failed to send reset email. Try again.");
+                  if (!resetEmail.trim() || sendingReset) return;
+
+                  setSendingReset(true);
+                  try {
+                    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
+                      redirectTo: `${getCanonicalOrigin()}/reset-password`,
+                    });
+
+                    if (!error) {
+                      toast.success("Password reset link sent. Use the newest email.");
+                      setShowResetPrompt(false);
+                    } else {
+                      toast.error(error.message || "Failed to send reset email. Try again.");
+                    }
+                  } finally {
+                    setSendingReset(false);
                   }
                 }}
-                className="flex-1 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
+                className="flex-1 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Yes, reset password
+                {sendingReset ? "Sending..." : "Yes, reset password"}
               </button>
               <button
                 type="button"
