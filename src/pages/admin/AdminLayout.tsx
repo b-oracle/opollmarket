@@ -3,7 +3,7 @@ import { useNavigate, Outlet, NavLink, useLocation, useOutletContext } from "rea
 import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard, ShoppingBag, MessageSquare, Users, LogOut, Loader2,
-  ArrowLeft, PlusCircle, Receipt, Settings, Coins, Menu, X, ArrowUpFromLine, Zap, BarChart3, Rocket, FileCode2, ShieldAlert, Eye, History, ArrowDownToLine, UserCheck, TrendingUp, Presentation, Scale, Gift, Phone,
+  ArrowLeft, PlusCircle, Receipt, Settings, Coins, Menu, X, ArrowUpFromLine, Zap, BarChart3, Rocket, FileCode2, ShieldAlert, Eye, History, ArrowDownToLine, UserCheck, TrendingUp, Presentation, Scale, Gift, Phone, Bell,
 } from "lucide-react";
 
 type NavItem = {
@@ -41,6 +41,7 @@ const navItems: NavItem[] = [
   { to: "/admin/whatsapp", label: "WhatsApp", icon: Phone, roles: ["super_admin", "admin"] },
   { to: "/admin/telegram", label: "Telegram", icon: Phone, roles: ["super_admin", "admin"] },
   { to: "/admin/investor-deck", label: "Investor Deck", icon: Presentation, roles: ["super_admin"] },
+  { to: "/admin/aimtell", label: "Aimtell Push", icon: Bell, roles: ["super_admin"] },
 ];
 
 const AdminLayout = () => {
