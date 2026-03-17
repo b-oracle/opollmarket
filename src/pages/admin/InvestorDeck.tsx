@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { ArrowLeft, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import opollLogo from "@/assets/logo.png";
 
 const slides = [
   // Slide 1 — Title
