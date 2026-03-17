@@ -245,6 +245,7 @@ const App = () => (
                 <PWAUpdatePrompt />
                 <BrowserRouter>
                 <SocialTutorialTrigger />
+                <AimtellProvider />
                 <PendingCopyTrades />
                 <ConditionalSidebar />
                 <ConditionalLayout>
