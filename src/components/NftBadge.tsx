@@ -3,7 +3,7 @@
  * - "blue" = holds NFT OR min_token_balance BC400 tokens
  * - "gold" = holds BOTH NFT AND min_gold_token_balance BC400 tokens
  */
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext, useId, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -57,7 +57,8 @@ export const VerificationThresholdProvider = ({ children }: { children: React.Re
 /* ── Verified tick SVG ── */
 
 const VerifiedTick = ({ size = 16, color = "gold" }: { size?: number; color?: "gold" | "blue" }) => {
-  const gradientId = color === "gold" ? "gold-grad" : "blue-grad";
+  const uid = useId();
+  const gradientId = `${color}-grad-${uid}`;
   return (
     <svg
       width={size}
@@ -76,15 +77,20 @@ const VerifiedTick = ({ size = 16, color = "gold" }: { size?: number; color?: "g
         fill="#fff"
       />
       <defs>
-        <linearGradient id="gold-grad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#F7D86C" />
-          <stop offset="0.5" stopColor="#E8B730" />
-          <stop offset="1" stopColor="#C6951B" />
-        </linearGradient>
-        <linearGradient id="blue-grad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#60A5FA" />
-          <stop offset="0.5" stopColor="#3B82F6" />
-          <stop offset="1" stopColor="#2563EB" />
+        <linearGradient id={gradientId} x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+          {color === "gold" ? (
+            <>
+              <stop stopColor="#F7D86C" />
+              <stop offset="0.5" stopColor="#E8B730" />
+              <stop offset="1" stopColor="#C6951B" />
+            </>
+          ) : (
+            <>
+              <stop stopColor="#60A5FA" />
+              <stop offset="0.5" stopColor="#3B82F6" />
+              <stop offset="1" stopColor="#2563EB" />
+            </>
+          )}
         </linearGradient>
       </defs>
     </svg>
