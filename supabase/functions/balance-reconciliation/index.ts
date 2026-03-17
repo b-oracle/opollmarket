@@ -136,9 +136,28 @@ Deno.serve(async (req) => {
     // Sort by absolute difference descending
     discrepancies.sort((a, b) => Math.abs(b.difference) - Math.abs(a.difference));
 
-    // If discrepancies found, notify admins
+    // Compare with last audit to avoid duplicate notifications
+    const { data: lastAudit } = await supabase
+      .from("audit_logs")
+      .select("details")
+      .eq("action", "balance_reconciliation_alert")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const lastUserIds = new Set(
+      ((lastAudit?.details as any)?.top_discrepancies || []).map((d: any) => d.user_id)
+    );
+    const lastCount = (lastAudit?.details as any)?.total_discrepancies || 0;
+
+    // Check if anything actually changed
+    const currentUserIds = new Set(discrepancies.slice(0, 5).map((d) => d.user_id));
+    const hasNewUsers = [...currentUserIds].some((id) => !lastUserIds.has(id));
+    const countChanged = discrepancies.length !== lastCount;
+    const shouldNotify = hasNewUsers || countChanged || !lastAudit;
+
     if (discrepancies.length > 0) {
-      // Get admin user IDs
+      // Always log to audit
       const { data: adminRoles } = await supabase
         .from("user_roles")
         .select("user_id")
@@ -147,22 +166,7 @@ Deno.serve(async (req) => {
       const adminIds = [...new Set((adminRoles || []).map((r: any) => r.user_id))];
 
       const topIssues = discrepancies.slice(0, 5);
-      const summaryLines = topIssues.map(
-        (d) => `• ${d.user_id.slice(0, 8)}… diff: $${d.difference > 0 ? "+" : ""}${d.difference}`
-      );
 
-      const message = `Balance reconciliation found ${discrepancies.length} discrepanc${discrepancies.length === 1 ? "y" : "ies"} (>$${THRESHOLD}):\n${summaryLines.join("\n")}${discrepancies.length > 5 ? `\n…and ${discrepancies.length - 5} more` : ""}`;
-
-      for (const adminId of adminIds) {
-        await supabase.from("notifications").insert({
-          user_id: adminId,
-          title: "⚠️ Balance Reconciliation Alert",
-          message,
-          type: "info",
-        });
-      }
-
-      // Log to audit
       await supabase.from("audit_logs").insert({
         actor_id: adminIds[0] || "00000000-0000-0000-0000-000000000000",
         action: "balance_reconciliation_alert",
@@ -175,7 +179,27 @@ Deno.serve(async (req) => {
         },
       });
 
-      console.log(`Reconciliation: ${discrepancies.length} discrepancies found`);
+      // Only send notifications if discrepancies changed
+      if (shouldNotify) {
+        const summaryLines = topIssues.map(
+          (d) => `• ${d.user_id.slice(0, 8)}… diff: $${d.difference > 0 ? "+" : ""}${d.difference}`
+        );
+
+        const message = `Balance reconciliation found ${discrepancies.length} discrepanc${discrepancies.length === 1 ? "y" : "ies"} (>$${THRESHOLD}):\n${summaryLines.join("\n")}${discrepancies.length > 5 ? `\n…and ${discrepancies.length - 5} more` : ""}`;
+
+        for (const adminId of adminIds) {
+          await supabase.from("notifications").insert({
+            user_id: adminId,
+            title: "⚠️ Balance Reconciliation Alert",
+            message,
+            type: "info",
+          });
+        }
+
+        console.log(`Reconciliation: ${discrepancies.length} discrepancies found (notified)`);
+      } else {
+        console.log(`Reconciliation: ${discrepancies.length} discrepancies unchanged, skipping notification`);
+      }
     } else {
       console.log("Reconciliation: no discrepancies found");
     }
