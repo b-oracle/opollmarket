@@ -9,22 +9,41 @@ const ResetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isRecovery, setIsRecovery] = useState(false);
+  const [isRecovery, setIsRecovery] = useState(() => {
+    // Check hash synchronously before Supabase client consumes it
+    return window.location.hash.includes("type=recovery");
+  });
+  const [checking, setChecking] = useState(!isRecovery);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Listen for recovery event
+    // If already detected from hash, we're good
+    if (isRecovery) {
+      setChecking(false);
+      return;
+    }
+
+    // Listen for recovery event (may have already fired before this component mounted)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
         setIsRecovery(true);
+        setChecking(false);
       }
     });
-    // Also check hash for type=recovery
-    if (window.location.hash.includes("type=recovery")) {
-      setIsRecovery(true);
-    }
+
+    // Also check if there's already an active session from a recovery flow
+    // (the AuthProvider may have processed it before we mounted)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        // We have a session on the /reset-password page — 
+        // the user likely got here via a recovery link that was already processed
+        setIsRecovery(true);
+      }
+      setChecking(false);
+    });
+
     return () => subscription.unsubscribe();
-  }, []);
+  }, [isRecovery]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
