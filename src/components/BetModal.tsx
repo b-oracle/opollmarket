@@ -566,9 +566,9 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border mb-5">
-                      <AlertTriangle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                      <p className="text-[10px] text-muted-foreground">
+                    <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 mb-5">
+                      <AlertTriangle className="w-4 h-4 text-destructive/60 shrink-0 mt-0.5" />
+                      <p className="text-[10px] text-destructive/70">
                         {orderType === "limit"
                           ? "Your funds will be escrowed until the order is filled or cancelled. You can cancel anytime from your portfolio."
                           : "By confirming, you authorize this prediction. Your balance will be deducted. Predictions are final. Shares resolve at $1.00 or $0.00."}
