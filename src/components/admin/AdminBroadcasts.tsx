@@ -32,6 +32,8 @@ function isPaid(b: BroadcastRow): boolean {
   return b.status === "sent" || b.status === "active" || (b.status === "expired" && !!(b.tx_hash || b.nowpayments_payment_id));
 }
 
+const PENDING_EXPIRY_HOURS = 2;
+
 function getResolvedStatus(b: BroadcastRow): { display: string; key: string } {
   if (b.status === "sent" || b.status === "active") return { display: "Sent", key: "sent" };
   if (b.status === "expired") {
@@ -39,7 +41,13 @@ function getResolvedStatus(b: BroadcastRow): { display: string; key: string } {
       ? { display: "Sent", key: "sent" }
       : { display: "Payment Expired", key: "payment_expired" };
   }
-  if (b.status === "pending") return { display: "Pending Payment", key: "pending" };
+  if (b.status === "pending") {
+    // Treat stale pending (>2h) as payment expired
+    if (differenceInHours(new Date(), new Date(b.created_at)) >= PENDING_EXPIRY_HOURS) {
+      return { display: "Payment Expired", key: "payment_expired" };
+    }
+    return { display: "Pending Payment", key: "pending" };
+  }
   return { display: b.status, key: b.status };
 }
 
