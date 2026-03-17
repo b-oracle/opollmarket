@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Zap, CheckCircle, XCircle, ChevronDown, ChevronUp, Timer, AlertTriangle, Megaphone } from "lucide-react";
 import { toast } from "sonner";
 import { logAuditEvent } from "@/lib/auditLog";
-import { format, formatDistanceToNow, isPast } from "date-fns";
+import { format, formatDistanceToNow, isPast, differenceInHours } from "date-fns";
 import AdminPagination from "@/components/admin/AdminPagination";
 import AdminBroadcasts from "@/components/admin/AdminBroadcasts";
 import { useAdminContext } from "./AdminLayout";
@@ -62,6 +62,10 @@ function getResolvedStatus(boost: BoostRow): { display: string; key: string } {
     return { display: "Active", key: "active" };
   }
   if (boost.status === "pending") {
+    // Treat stale pending (>2h) as payment expired
+    if (differenceInHours(new Date(), new Date(boost.created_at)) >= 2) {
+      return { display: "Payment Expired", key: "payment_expired" };
+    }
     return { display: "Pending Payment", key: "pending" };
   }
   if (boost.status === "cancelled") {
@@ -147,15 +151,11 @@ const AdminBoosts = () => {
 
   // Analytics
   const analytics = useMemo(() => {
-    const nowDate = new Date();
-    const active = boosts.filter((b) => b.status === "active" && !isPast(new Date(b.ends_at)));
-    const pending = boosts.filter((b) => b.status === "pending");
-    const boostEnded = boosts.filter((b) =>
-      (b.status === "expired" && b.tx_hash) ||
-      (b.status === "active" && isPast(new Date(b.ends_at)))
-    );
-    const paymentExpired = boosts.filter((b) => b.status === "expired" && !b.tx_hash);
-    const cancelled = boosts.filter((b) => b.status === "cancelled");
+    const active = boosts.filter((b) => getResolvedStatus(b).key === "active");
+    const pending = boosts.filter((b) => getResolvedStatus(b).key === "pending");
+    const boostEnded = boosts.filter((b) => getResolvedStatus(b).key === "boost_ended");
+    const paymentExpired = boosts.filter((b) => getResolvedStatus(b).key === "payment_expired");
+    const cancelled = boosts.filter((b) => getResolvedStatus(b).key === "cancelled");
     const paid = [...active, ...boostEnded];
     const totalRevenue = paid.reduce((s, b) => s + b.amount, 0);
     const lostRevenue = paymentExpired.reduce((s, b) => s + b.amount, 0);
