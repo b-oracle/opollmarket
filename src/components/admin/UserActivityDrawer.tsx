@@ -135,7 +135,7 @@ const UserSummaryCards = ({ userId }: { userId: string }) => {
       const [txRes, qbRes, balRes, refRes] = await Promise.all([
         supabase
           .from("transactions")
-          .select("type, status, amount")
+          .select("type, status, amount, side")
           .eq("user_id", userId)
           .eq("status", "confirmed"),
         supabase
