@@ -213,7 +213,7 @@ const slides = [
           <img src={opollLogo} alt="oPoll" className="w-full h-full object-contain" />
         </div>
         <h2 className="text-3xl sm:text-5xl font-black text-white mb-3 leading-tight">Ready to predict<br/>the future?</h2>
-        <p className="text-sm sm:text-xl text-white/50 max-w-xl mb-6">Join thousands of traders already earning on oPoll Market. Sign up takes 30 seconds.</p>
+        <p className="text-sm sm:text-xl text-white/50 max-w-xl mb-6">Join thousands of traders already earning on OPoll Market. Sign up takes 30 seconds.</p>
         <div className="px-8 py-3 rounded-full bg-[hsl(193,98%,50%)] text-[hsl(220,20%,6%)] font-bold text-sm sm:text-lg shadow-xl shadow-[hsl(193,98%,50%)/0.3]">
           🚀 Start Predicting Now
         </div>
