@@ -623,7 +623,7 @@ const Portfolio = () => {
           </button>
           <button
             onClick={() => setActiveTab("insurance")}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-xs font-semibold transition-all ${
+            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
               activeTab === "insurance"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
@@ -637,6 +637,7 @@ const Portfolio = () => {
               </span>
             )}
           </button>
+          </div>
         </div>
 
         {activeTab === "positions" && (
