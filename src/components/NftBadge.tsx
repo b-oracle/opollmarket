@@ -57,7 +57,8 @@ export const VerificationThresholdProvider = ({ children }: { children: React.Re
 /* ── Verified tick SVG ── */
 
 const VerifiedTick = ({ size = 16, color = "gold" }: { size?: number; color?: "gold" | "blue" }) => {
-  const gradientId = color === "gold" ? "gold-grad" : "blue-grad";
+  const uid = useId();
+  const gradientId = `${color}-grad-${uid}`;
   return (
     <svg
       width={size}
