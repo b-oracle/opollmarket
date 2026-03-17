@@ -982,7 +982,7 @@ const AdminSettings = () => {
 
               <div className="border-t border-border pt-3">
                 <p className="text-xs text-muted-foreground">
-                  <strong>How it works:</strong> Premium goes to admin pool. On loss, user receives claim into insurance balance. On win, premium is forfeited and insurance balance unlocks to main balance.
+                  <strong>How it works:</strong> Premium goes to admin pool. On loss, user receives claim into protection balance. On win, premium is forfeited and protection balance unlocks to main balance.
                 </p>
               </div>
             </CardContent>

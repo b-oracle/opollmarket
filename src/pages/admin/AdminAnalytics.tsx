@@ -677,7 +677,7 @@ const AdminAnalytics = () => {
                 </ResponsiveContainer>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-10">No insurance claims yet</p>
+              <p className="text-sm text-muted-foreground text-center py-10">No protection claims yet</p>
             )}
             <div className="flex items-center justify-center gap-4 mt-2">
               <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "hsl(var(--chart-4))" }} /><span className="text-[10px] text-muted-foreground">Pending ({osureStats.pendingCount})</span></div>
