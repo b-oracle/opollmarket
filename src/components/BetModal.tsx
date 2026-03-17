@@ -419,7 +419,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                   </motion.div>
                 )}
 
-                {/* ── oSURE Insurance Selection Step ── */}
+                {/* ── oSURE Protection Selection Step ── */}
                 {step === "insurance" && (
                   <motion.div key="insurance" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
                     <div className="flex items-center gap-2 mb-4">
