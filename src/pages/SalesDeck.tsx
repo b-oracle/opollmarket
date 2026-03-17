@@ -33,7 +33,7 @@ const slides = [
     bg: "from-[hsl(220,20%,8%)] to-[hsl(220,20%,12%)]",
     content: (
       <div className="flex flex-col justify-center h-full px-6 py-8 sm:px-16">
-        <p className="text-xs font-bold text-[hsl(193,98%,50%)] uppercase tracking-widest mb-3">What Is oPoll Market?</p>
+        <p className="text-xs font-bold text-[hsl(193,98%,50%)] uppercase tracking-widest mb-3">What Is OPoll Market?</p>
         <h2 className="text-2xl sm:text-4xl font-black text-white mb-6 leading-tight">Predict outcomes.<br/>Buy shares. Win big.</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           {[
