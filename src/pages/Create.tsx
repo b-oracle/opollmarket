@@ -204,6 +204,10 @@ const Create = () => {
   const [activeMarketCount, setActiveMarketCount] = useState(0);
   const [exceededFreeLimit, setExceededFreeLimit] = useState(false);
   const [aiGenerationCost, setAiGenerationCost] = useState(0.5);
+  const [creatorFeePercent, setCreatorFeePercent] = useState(3);
+  const [creatorFeeBluePercent, setCreatorFeeBluePercent] = useState(3);
+  const [creatorFeeGoldPercent, setCreatorFeeGoldPercent] = useState(3);
+  const [predictionFeePercent, setPredictionFeePercent] = useState(10);
   const [autoResolveFee, setAutoResolveFee] = useState(0);
   const [generatingDesc, setGeneratingDesc] = useState(false);
   const [generatingDetails, setGeneratingDetails] = useState(false);
@@ -236,6 +240,10 @@ const Create = () => {
         setGoldMaxFreeMarkets(Number((data as any).gold_max_free_markets) || 20);
         setAiGenerationCost(Number((data as any).ai_generation_cost ?? 0.5));
         setAutoResolveFee(Number((data as any).auto_resolve_fee ?? 0));
+        setCreatorFeePercent(Number((data as any).creator_fee_percent ?? 3));
+        setCreatorFeeBluePercent(Number((data as any).creator_fee_blue_percent ?? 3));
+        setCreatorFeeGoldPercent(Number((data as any).creator_fee_gold_percent ?? 3));
+        setPredictionFeePercent(Number((data as any).prediction_fee_percent ?? 10));
         setBoostTierPrices({
           flash: Number((data as any).boost_flash_price ?? 20),
           standard: Number((data as any).boost_standard_price ?? 50),
@@ -2478,14 +2486,18 @@ const Create = () => {
               )}
 
               {/* Fee info */}
-              <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border">
-                <AlertTriangle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                <p className="text-xs text-muted-foreground">
+              <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20">
+                <AlertTriangle className="w-4 h-4 text-destructive/60 shrink-0 mt-0.5" />
+                <p className="text-xs text-destructive/70">
                   {feeBypass
                     ? exceededFreeLimit
                       ? `A $${marketCreationFee} creation fee applies — you've reached your free market limit (${activeMarketCount}/${verificationLevel === "gold" ? goldMaxFreeMarkets : blueMaxFreeMarkets}). This fee is non-refundable (unless the market is cancelled). Your market will require approval before going live.`
                       : `A $${marketCreationFee} creation fee applies since you don't hold NFT/BC400. This fee is non-refundable (unless the market is cancelled). Your market will require approval before going live.`
-                    : "A 2% platform fee applies. Creators earn 1% of all trade volume. Initial liquidity will be locked until market resolution."}
+                    : (() => {
+                        const myFee = verificationLevel === "gold" ? creatorFeeGoldPercent : verificationLevel === "blue" ? creatorFeeBluePercent : creatorFeePercent;
+                        const tierLabel = verificationLevel === "gold" ? "Gold ✨" : verificationLevel === "blue" ? "Blue ✔️" : "";
+                        return `A ${predictionFeePercent}% platform fee applies on all trades. As a ${tierLabel ? tierLabel + " creator" : "creator"}, you earn ${myFee}% of all trade volume on this market. Initial liquidity will be locked until market resolution.`;
+                      })()}
                 </p>
               </div>
 
