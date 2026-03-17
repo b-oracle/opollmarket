@@ -604,10 +604,21 @@ export default function QuickTrade() {
         applyStreamingPrice(p);
         // Seed the smooth interpolation system so fallback has data immediately
         feedRealPrice(streamAssetSymbol, p);
-        // Seed priceHistory so chart renders immediately with first data point
-        const now = Date.now();
-        const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
-        setPriceHistory(prev => prev.length === 0 ? [{ time: timeLabel, price: p, ts: now }] : prev);
+
+        // For non-crypto assets, seed synthetic history so chart populates instantly
+        if (selectedAsset.assetClass !== "crypto") {
+          seedNonCryptoHistory(streamAssetSymbol, p);
+          const seeded = getNonCryptoHistory(streamAssetSymbol);
+          if (seeded.length > 0) {
+            rawDataRef.current.set(streamAssetSymbol, seeded);
+            setPriceHistory(filterPriceData(seeded, chartMs));
+          }
+        } else {
+          // Seed priceHistory so chart renders immediately with first data point
+          const now = Date.now();
+          const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
+          setPriceHistory(prev => prev.length === 0 ? [{ time: timeLabel, price: p, ts: now }] : prev);
+        }
       }
     })();
 
