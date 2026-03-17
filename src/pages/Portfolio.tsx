@@ -525,17 +525,44 @@ const Portfolio = () => {
             </div>
           </div>
 
-          {/* Insurance Balance */}
-          {insuranceBalance > 0 && (
-            <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Shield className="w-3.5 h-3.5 text-primary" />
-                <span className="text-xs text-muted-foreground">oSURE Insurance Balance</span>
-              </div>
-              <span className="text-sm font-bold text-primary">${insuranceBalance.toFixed(2)}</span>
-            </div>
-          )}
         </motion.div>
+
+        {/* oSURE Insurance Card */}
+        {insuranceBalance > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="glass rounded-2xl p-4 mb-4"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Shield className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold">oSURE Insurance</p>
+                  <p className="text-[10px] text-muted-foreground">Win a prediction to unlock to main balance</p>
+                </div>
+              </div>
+              <span className="text-lg font-bold text-primary">${insuranceBalance.toFixed(2)}</span>
+            </div>
+            <div className="grid grid-cols-3 gap-3 pt-3 border-t border-border text-center">
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Total Claims</p>
+                <p className="text-sm font-bold">{insuranceClaims.filter(c => c.status === "claimed").length}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Premiums Paid</p>
+                <p className="text-sm font-bold">${insuranceClaims.reduce((s, c) => s + Number(c.premium_paid), 0).toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Total Claimed</p>
+                <p className="text-sm font-bold neon-yes">${insuranceClaims.filter(c => c.status === "claimed").reduce((s, c) => s + Number(c.claim_amount), 0).toFixed(2)}</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Portfolio Tabs: Positions / Open Orders */}
         <div className="flex gap-1 p-0.5 rounded-lg bg-muted/50 mb-4 w-full">
