@@ -24,6 +24,7 @@ const TYPE_STYLES: Record<string, { label: string; class: string }> = {
   bet: { label: "Prediction", class: "bg-primary/10 text-primary" },
   payout: { label: "Payout", class: "bg-blue-500/10 text-blue-500" },
   commission: { label: "Commission", class: "bg-purple-500/10 text-purple-500" },
+  qt_one_sided_bonus: { label: "Quick Trade Win", class: "bg-green-500/10 text-green-500" },
 };
 
 const AdminTransactions = () => {
