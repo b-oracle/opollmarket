@@ -135,7 +135,7 @@ const UserSummaryCards = ({ userId }: { userId: string }) => {
       const [txRes, qbRes, balRes, refRes] = await Promise.all([
         supabase
           .from("transactions")
-          .select("type, status, amount")
+          .select("type, status, amount, side")
           .eq("user_id", userId)
           .eq("status", "confirmed"),
         supabase
@@ -169,7 +169,7 @@ const UserSummaryCards = ({ userId }: { userId: string }) => {
       const refRewards = refs.reduce((s, r) => s + Number(r.amount), 0);
       const totalWins = payouts + refunds + qtWins + refRewards;
 
-      const buys = txns.filter(t => t.type === "buy" && t.amount).reduce((s, t) => s + Number(t.amount), 0);
+      const buys = txns.filter(t => t.type === "buy" && t.amount && (t as any).side !== "initial_liquidity" && (t as any).side !== "broadcast_fee").reduce((s, t) => s + Number(t.amount), 0);
       const qtLosses = qbs.filter(q => q.status === "lost").reduce((s, q) => s + Number(q.amount), 0);
       const totalLosses = Math.max(0, buys - payouts - refunds) + qtLosses;
 
