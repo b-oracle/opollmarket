@@ -62,6 +62,10 @@ function getResolvedStatus(boost: BoostRow): { display: string; key: string } {
     return { display: "Active", key: "active" };
   }
   if (boost.status === "pending") {
+    // Treat stale pending (>2h) as payment expired
+    if (differenceInHours(new Date(), new Date(boost.created_at)) >= 2) {
+      return { display: "Payment Expired", key: "payment_expired" };
+    }
     return { display: "Pending Payment", key: "pending" };
   }
   if (boost.status === "cancelled") {
