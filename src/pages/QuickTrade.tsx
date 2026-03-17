@@ -1029,20 +1029,21 @@ export default function QuickTrade() {
     setHistoryPage(0);
   }, [selectedAsset.symbol]);
 
-  // ── User recent trades ──
+  // ── User recent trades (filtered by selected asset) ──
   useEffect(() => {
     if (!user) return;
     const load = async () => {
       const { data } = await supabase
         .from("quick_bets")
-        .select("*")
+        .select("*, quick_rounds!inner(asset)")
         .eq("user_id", user.id)
+        .eq("quick_rounds.asset", selectedAsset.symbol)
         .order("created_at", { ascending: false })
         .limit(20);
       if (data) setUserBets(data as unknown as Bet[]);
     };
     load();
-  }, [user, activeRound?.status]);
+  }, [user, activeRound?.status, selectedAsset.symbol]);
 
   // ── Realtime subscription ──
   useEffect(() => {
