@@ -565,10 +565,11 @@ const Portfolio = () => {
         )}
 
         {/* Portfolio Tabs: Positions / Open Orders */}
-        <div className="flex gap-1 p-0.5 rounded-lg bg-muted/50 mb-4 w-full">
+        <div className="overflow-x-auto scrollbar-hide -mx-3 px-3 mb-4">
+          <div className="flex gap-1 p-0.5 rounded-lg bg-muted/50 w-max min-w-full">
           <button
             onClick={() => setActiveTab("positions")}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-xs font-semibold transition-all ${
+            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
               activeTab === "positions"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
@@ -579,7 +580,7 @@ const Portfolio = () => {
           </button>
           <button
             onClick={() => setActiveTab("orders")}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-xs font-semibold transition-all ${
+            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
               activeTab === "orders"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
@@ -595,7 +596,7 @@ const Portfolio = () => {
           </button>
           <button
             onClick={() => setActiveTab("copy")}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-xs font-semibold transition-all ${
+            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
               activeTab === "copy"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
@@ -606,7 +607,7 @@ const Portfolio = () => {
           </button>
           <button
             onClick={() => setActiveTab("drafts")}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-xs font-semibold transition-all ${
+            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
               activeTab === "drafts"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
