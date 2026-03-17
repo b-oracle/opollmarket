@@ -35,6 +35,7 @@ const Auth = () => {
   const [referralFromLink, setReferralFromLink] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [sendingReset, setSendingReset] = useState(false);
   const [rememberedName, setRememberedName] = useState<string | null>(null);
   const [showLoginSecurity, setShowLoginSecurity] = useState(false);
   const [loginSecReqs, setLoginSecReqs] = useState<{ require_pin: boolean; require_totp: boolean }>({ require_pin: false, require_totp: false });
