@@ -28,7 +28,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import CopyTradeStats from "@/components/CopyTradeStats";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 
-type TxType = "buy" | "sell" | "deposit" | "withdraw" | "withdrawal" | "commission" | "payout" | "refund" | "initial_liquidity";
+type TxType = "buy" | "sell" | "deposit" | "withdraw" | "withdrawal" | "commission" | "payout" | "refund" | "initial_liquidity" | "qt_one_sided_bonus";
 
 const txConfig: Record<TxType, { icon: typeof ArrowUpRight; label: string; colorClass: string }> = {
   buy: { icon: ArrowDownLeft, label: "Prediction", colorClass: "text-primary bg-primary/10" },
@@ -40,6 +40,7 @@ const txConfig: Record<TxType, { icon: typeof ArrowUpRight; label: string; color
   payout: { icon: Gift, label: "Payout", colorClass: "text-green-500 bg-green-500/10" },
   refund: { icon: Repeat, label: "Refund", colorClass: "text-blue-500 bg-blue-500/10" },
   initial_liquidity: { icon: Sparkles, label: "Market Liquidity", colorClass: "text-amber-500 bg-amber-500/10" },
+  qt_one_sided_bonus: { icon: Zap, label: "Quick Trade Bonus", colorClass: "text-green-500 bg-green-500/10" },
 };
 
 const formatTimeAgo = (date: string) => {
@@ -1609,8 +1610,8 @@ const Profile = () => {
                           </span>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <span className={`text-sm font-bold ${["sell", "deposit", "payout", "refund", "commission"].includes(tx.type) ? "text-green-500" : "text-destructive"}`}>
-                            {["sell", "deposit", "payout", "refund", "commission"].includes(tx.type) ? "+" : "-"}${Number(tx.amount).toFixed(2)}
+                          <span className={`text-sm font-bold ${["sell", "deposit", "payout", "refund", "commission", "qt_one_sided_bonus"].includes(tx.type) ? "text-green-500" : "text-destructive"}`}>
+                            {["sell", "deposit", "payout", "refund", "commission", "qt_one_sided_bonus"].includes(tx.type) ? "+" : "-"}${Number(tx.amount).toFixed(2)}
                           </span>
                           {isPendingDeposit ? (
                             <ChevronRight className="w-3.5 h-3.5 text-primary" />
