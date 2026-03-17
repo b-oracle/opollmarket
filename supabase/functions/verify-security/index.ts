@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import bcrypt from "npm:bcryptjs@2.4.3";
+import bcrypt from "https://esm.sh/bcryptjs@2.4.3";
 import { TOTP } from "https://esm.sh/otpauth@9.3.6";
 
 const corsHeaders = {
