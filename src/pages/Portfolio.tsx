@@ -527,7 +527,7 @@ const Portfolio = () => {
 
         </motion.div>
 
-        {/* oSURE Insurance Card */}
+        {/* oSURE Protection Card */}
         {insuranceBalance > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
