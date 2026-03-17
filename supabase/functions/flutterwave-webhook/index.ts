@@ -15,8 +15,6 @@ Deno.serve(async (req) => {
     const body = await req.json();
     console.log("Flutterwave webhook received:", JSON.stringify(body).substring(0, 1000));
 
-    // Flutterwave sends: { event: "charge.completed", data: { ... } }
-    // or for transfers: { event: "transfer.completed", data: { ... } }
     const event = body.event;
     const data = body.data;
 
@@ -76,22 +74,53 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Confirm the deposit
-      await adminClient
-        .from("transactions")
-        .update({ status: "confirmed" })
-        .eq("id", txn.id);
-
-      // Credit user balance
-      await adminClient.rpc("adjust_balance", {
+      // ── STEP 1: Credit user balance FIRST (atomic RPC) ──
+      const { error: balanceError } = await adminClient.rpc("adjust_balance", {
         _user_id: txn.user_id,
         _delta: txn.amount,
         _bonus_delta: 0,
         _insurance_delta: 0,
       });
 
+      if (balanceError) {
+        console.error("CRITICAL: Failed to credit balance for Flutterwave deposit:", balanceError);
+        // Do NOT mark transaction as confirmed — leave pending for retry
+        return new Response(JSON.stringify({ status: "balance_credit_failed" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      console.log(`Credited $${txn.amount} to user ${txn.user_id} via adjust_balance RPC`);
+
+      // ── STEP 2: Mark transaction as confirmed ONLY after balance credit succeeds ──
+      const { error: txUpdateError } = await adminClient
+        .from("transactions")
+        .update({ status: "confirmed" })
+        .eq("id", txn.id);
+
+      if (txUpdateError) {
+        console.error("WARNING: Balance credited but tx update failed:", txUpdateError);
+      }
+
+      // ── STEP 3: Verify balance (safety net logging) ──
+      const { data: verifyBalance } = await adminClient
+        .from("balances")
+        .select("amount")
+        .eq("user_id", txn.user_id)
+        .single();
+
+      console.log(`Post-credit balance verification for ${txn.user_id}: $${verifyBalance?.amount}`);
+
       // Settle any debts
-      await adminClient.rpc("settle_user_debts", { _user_id: txn.user_id });
+      try {
+        const { data: debtResult } = await adminClient.rpc("settle_user_debts", { _user_id: txn.user_id });
+        if (debtResult && Number(debtResult.amount) > 0) {
+          console.log(`Settled $${debtResult.amount} in debts for user ${txn.user_id}`);
+        }
+      } catch (debtErr) {
+        console.error("Failed to settle debts:", debtErr);
+      }
 
       // Notify user
       await adminClient.from("notifications").insert({

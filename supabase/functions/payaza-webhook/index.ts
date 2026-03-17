@@ -88,38 +88,60 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Credit user balance
+    // ── STEP 1: Credit user balance ATOMICALLY (prevents race conditions) ──
     const depositAmount = Number(tx.amount);
+    const { error: balanceError } = await adminClient.rpc("adjust_balance", {
+      _user_id: tx.user_id,
+      _delta: depositAmount,
+      _bonus_delta: 0,
+      _insurance_delta: 0,
+    });
 
-    // Get current balance and add deposit
-    const { data: currentBal } = await adminClient
+    if (balanceError) {
+      console.error("CRITICAL: Failed to credit balance for Payaza deposit:", balanceError);
+      // Do NOT mark transaction as confirmed — leave it pending so it can be retried
+      return new Response(JSON.stringify({ error: "Balance credit failed" }), {
+        status: 500, headers: corsHeaders,
+      });
+    }
+
+    console.log(`Credited $${depositAmount} to user ${tx.user_id} via adjust_balance RPC`);
+
+    // ── STEP 2: Mark transaction as confirmed ONLY after balance is credited ──
+    const { error: txUpdateError } = await adminClient
+      .from("transactions")
+      .update({ status: "confirmed" })
+      .eq("id", tx.id);
+
+    if (txUpdateError) {
+      console.error("WARNING: Balance credited but tx update failed:", txUpdateError);
+      // Balance was already credited — log for manual reconciliation
+    }
+
+    // ── STEP 3: Verify balance was actually updated (safety net) ──
+    const { data: verifyBalance } = await adminClient
       .from("balances")
       .select("amount")
       .eq("user_id", tx.user_id)
       .single();
 
-    if (currentBal) {
-      await adminClient
-        .from("balances")
-        .update({
-          amount: Number(currentBal.amount) + depositAmount,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", tx.user_id);
-
-      console.log(`Credited $${depositAmount} to user ${tx.user_id}. New balance: ${Number(currentBal.amount) + depositAmount}`);
-    } else {
-      console.error("Balance record not found for user:", tx.user_id);
-    }
-
-    // Mark transaction as confirmed
-    await adminClient
-      .from("transactions")
-      .update({ status: "confirmed" })
-      .eq("id", tx.id);
+    console.log(`Post-credit balance verification for ${tx.user_id}: $${verifyBalance?.amount}`);
 
     // Settle any debts
-    await adminClient.rpc("settle_user_debts", { _user_id: tx.user_id });
+    try {
+      const { data: debtResult } = await adminClient.rpc("settle_user_debts", { _user_id: tx.user_id });
+      if (debtResult && Number(debtResult.amount) > 0) {
+        console.log(`Settled $${debtResult.amount} in debts for user ${tx.user_id}`);
+        await adminClient.from("notifications").insert({
+          user_id: tx.user_id,
+          title: "Outstanding Balance Settled 📋",
+          message: `$${Number(debtResult.amount).toFixed(2)} was deducted to cover outstanding fees.`,
+          type: "info",
+        });
+      }
+    } catch (debtErr) {
+      console.error("Failed to settle debts:", debtErr);
+    }
 
     // Notify user
     await adminClient.from("notifications").insert({
