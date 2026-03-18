@@ -317,6 +317,14 @@ const AdminDashboard = () => {
         }))
       );
 
+      // Fetch platform pool balance
+      const { data: poolData } = await supabase
+        .from("platform_pool")
+        .select("balance")
+        .limit(1)
+        .single();
+      setPlatformPoolBalance(Number(poolData?.balance || 0));
+
       setLoading(false);
     };
     fetchAll();
