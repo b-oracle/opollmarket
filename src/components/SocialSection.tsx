@@ -30,6 +30,28 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  const { data: followersCount = 0 } = useQuery({
+    queryKey: ["social-followers-count", userId],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("follows")
+        .select("id", { count: "exact", head: true })
+        .eq("following_id", userId);
+      return count || 0;
+    },
+  });
+
+  const { data: followingCount = 0 } = useQuery({
+    queryKey: ["social-following-count", userId],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("follows")
+        .select("id", { count: "exact", head: true })
+        .eq("follower_id", userId);
+      return count || 0;
+    },
+  });
+
   const { data: followers = [], isLoading: loadingFollowers } = useQuery({
     queryKey: ["social-followers", userId],
     queryFn: async () => {
@@ -37,8 +59,7 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
         .from("follows")
         .select("id, follower_id, created_at")
         .eq("following_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(50);
+        .order("created_at", { ascending: false });
       if (!data || data.length === 0) return [];
       const ids = data.map((f: any) => f.follower_id);
       const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url, bio, verification_level").in("id", ids);
@@ -55,8 +76,7 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
         .from("follows")
         .select("id, following_id, created_at")
         .eq("follower_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(50);
+        .order("created_at", { ascending: false });
       if (!data || data.length === 0) return [];
       const ids = data.map((f: any) => f.following_id);
       const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url, bio, verification_level").in("id", ids);
