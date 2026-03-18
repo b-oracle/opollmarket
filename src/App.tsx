@@ -77,11 +77,12 @@ const Followers = lazy(() => import("./pages/Followers"));
 const SetupSecurity = lazy(() => import("./pages/SetupSecurity"));
 const SalesDeck = lazy(() => import("./pages/SalesDeck"));
 const EmbedMarket = lazy(() => import("./pages/EmbedMarket"));
+const EmbedTicker = lazy(() => import("./pages/EmbedTicker"));
 
 const queryClient = new QueryClient();
 
 const isAdminRoute = (pathname: string) => pathname.startsWith("/admin");
-const isEmbedRoute = (pathname: string) => pathname.startsWith("/embed/");
+const isEmbedRoute = (pathname: string) => pathname.startsWith("/embed/") || pathname === "/embed";
 
 const noFooterRoutes = ["/feed", "/quick-trade"];
 
@@ -315,6 +316,7 @@ const App = () => (
                           <Route path="api-keys" element={<AdminApiKeys />} />
                         </Route>
                         <Route path="/embed/market/:id" element={<EmbedMarket />} />
+                        <Route path="/embed/ticker" element={<EmbedTicker />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
                       </SecuritySetupGuard>

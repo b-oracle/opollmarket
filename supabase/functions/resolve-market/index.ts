@@ -470,6 +470,31 @@ async function handleResolve(
     console.log("resolve-market: Processed", copyEarnings.length, "copy trade earnings");
   }
 
+  // --- Dispatch webhooks to API partners ---
+  try {
+    await fetch(`${supabaseUrl}/functions/v1/webhook-dispatch`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
+      body: JSON.stringify({
+        event_type: "market.resolved",
+        market_id: marketId,
+        payload: {
+          market_id: marketId,
+          title: market.title,
+          resolved_side: winningSide,
+          winning_option_id: winningOptionId || null,
+          total_paid_out: totalPaidOut,
+          winners: winningPositions.length,
+        },
+      }),
+    });
+  } catch (webhookErr) {
+    console.warn("resolve-market: webhook dispatch failed (non-critical)", webhookErr);
+  }
+
   return new Response(
     JSON.stringify({
       success: true,

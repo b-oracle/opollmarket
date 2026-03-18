@@ -223,10 +223,45 @@ Deno.serve(async (req) => {
           Authorization: req.headers.get("authorization") || "",
           apikey: anonKey,
         },
-        body: JSON.stringify({ marketId, side, amount, optionId }),
+        body: JSON.stringify({ marketId, side, amount, optionId, apiKeyId: apiKeyRecord?.id }),
       });
 
       const result = await resp.json();
+
+      // Track affiliate earnings if bet was successful
+      if (resp.ok && result.success && apiKeyRecord) {
+        try {
+          const commPercent = apiKeyRecord.affiliate_commission_percent || 5;
+          // Get prediction fee percent from settings
+          const { data: settings } = await admin
+            .from("commission_settings")
+            .select("prediction_fee_percent")
+            .limit(1)
+            .single();
+          const feePercent = settings?.prediction_fee_percent || 10;
+          const feeAmount = amount * (feePercent / 100);
+          const commissionAmount = feeAmount * (commPercent / 100);
+
+          if (result.transaction_id) {
+            // Tag transaction with api_key_id
+            await admin.from("transactions").update({ api_key_id: apiKeyRecord.id }).eq("id", result.transaction_id);
+
+            // Record affiliate earning
+            await admin.from("affiliate_earnings").insert({
+              api_key_id: apiKeyRecord.id,
+              transaction_id: result.transaction_id,
+              bet_amount: amount,
+              fee_amount: feeAmount,
+              commission_percent: commPercent,
+              commission_amount: commissionAmount,
+              status: "pending",
+            });
+          }
+        } catch (affErr) {
+          console.warn("Affiliate tracking failed (non-critical):", affErr);
+        }
+      }
+
       return json(result, resp.status);
     }
 

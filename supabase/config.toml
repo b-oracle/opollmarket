@@ -93,3 +93,7 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.sdk-js]
     verify_jwt = false
+  [functions.webhook-dispatch]
+    verify_jwt = false
+  [functions.wp-plugin]
+    verify_jwt = false
