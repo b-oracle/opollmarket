@@ -192,27 +192,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- Credit entire total fee to admin pool reserve ---
-    const { data: adminRole } = await supabase
-      .from("user_roles")
-      .select("user_id")
-      .eq("role", "admin")
-      .limit(1)
-      .single();
-
+    // --- Credit entire total fee to platform pool ---
     const adminCreditTotal = totalFees + insurancePremium;
-    if (adminRole && adminCreditTotal > 0) {
-      await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: adminCreditTotal, _bonus_delta: 0, _insurance_delta: 0 });
-
-      await supabase.from("transactions").insert({
-        user_id: adminRole.user_id,
-        type: "commission",
-        amount: adminCreditTotal,
-        market_id: marketId,
-        option_id: optionId || null,
-        side,
-        status: "confirmed",
-      });
+    if (adminCreditTotal > 0) {
+      await supabase.rpc("adjust_platform_pool", { _delta: adminCreditTotal });
     }
 
     // --- Queue commissions for 48-hour deferred release ---
