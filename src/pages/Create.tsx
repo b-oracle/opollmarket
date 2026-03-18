@@ -1006,6 +1006,10 @@ const Create = () => {
         status: "confirmed",
         side: "market_creation_fee",
       });
+      // If no escrow was used (exceeded free limit path), credit platform pool now
+      if (!escrowId) {
+        await supabase.rpc("adjust_platform_pool" as any, { _delta: marketCreationFee });
+      }
     }
 
     // Record auto-resolve fee transaction
