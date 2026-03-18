@@ -15,6 +15,7 @@ interface ApiKey {
   permissions: string[];
   rate_limit_per_min: number;
   webhook_url: string | null;
+  webhook_secret: string | null;
   affiliate_commission_percent: number;
   brand_name: string | null;
   brand_logo_url: string | null;
