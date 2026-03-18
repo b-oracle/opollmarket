@@ -80,9 +80,12 @@ const queryClient = new QueryClient();
 
 const isAdminRoute = (pathname: string) => pathname.startsWith("/admin");
 
+const noFooterRoutes = ["/feed", "/quick-trade"];
+
 const ConditionalFooter = () => {
   const location = useLocation();
   if (isAdminRoute(location.pathname)) return null;
+  if (noFooterRoutes.includes(location.pathname)) return null;
   return <DesktopFooter />;
 };
 
