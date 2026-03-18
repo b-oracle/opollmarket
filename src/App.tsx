@@ -87,7 +87,7 @@ const noFooterRoutes = ["/feed", "/quick-trade"];
 
 const ConditionalFooter = () => {
   const location = useLocation();
-  if (isAdminRoute(location.pathname)) return null;
+  if (isAdminRoute(location.pathname) || isEmbedRoute(location.pathname)) return null;
   if (noFooterRoutes.includes(location.pathname)) return null;
   return <DesktopFooter />;
 };
