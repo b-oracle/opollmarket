@@ -43,6 +43,7 @@ const Commissions = () => {
         .from("pending_commissions")
         .select("id, amount, type, status, created_at, releases_at, market_id")
         .eq("user_id", user!.id)
+        .neq("type", "bc400")
         .order("created_at", { ascending: false });
       return data ?? [];
     },
