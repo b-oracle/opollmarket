@@ -104,6 +104,7 @@ export type Database = {
           permissions: Json
           rate_limit_per_min: number
           updated_at: string
+          webhook_secret: string | null
           webhook_url: string | null
         }
         Insert: {
@@ -120,6 +121,7 @@ export type Database = {
           permissions?: Json
           rate_limit_per_min?: number
           updated_at?: string
+          webhook_secret?: string | null
           webhook_url?: string | null
         }
         Update: {
@@ -136,6 +138,7 @@ export type Database = {
           permissions?: Json
           rate_limit_per_min?: number
           updated_at?: string
+          webhook_secret?: string | null
           webhook_url?: string | null
         }
         Relationships: []
