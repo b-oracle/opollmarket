@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { X, Download, Copy, Share2, Loader2, Twitter, Facebook, MessageCircle, Send } from "lucide-react";
+import { X, Download, Copy, Share2, Loader2, Twitter, Facebook, MessageCircle, Send, Code } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import html2canvas from "html2canvas";
