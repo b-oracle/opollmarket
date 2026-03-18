@@ -91,6 +91,20 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Block withdrawal if user has a held creation fee escrow
+    const { count: heldEscrowCount } = await adminClient
+      .from("creation_fee_escrows")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("status", "held");
+
+    if (heldEscrowCount && heldEscrowCount > 0) {
+      return new Response(
+        JSON.stringify({ error: "You have a pending market creation fee in escrow. Complete your market first before withdrawing." }),
+        { status: 403, headers: corsHeaders }
+      );
+    }
+
     // Server-side security verification check
     const { data: secSettings } = await adminClient
       .from("user_security_settings")
