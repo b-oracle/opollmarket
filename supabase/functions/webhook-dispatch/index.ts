@@ -6,6 +6,22 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function hmacSign(secret: string, payload: string): Promise<string> {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(payload));
+  const hex = Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return "sha256=" + hex;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -26,7 +42,7 @@ Deno.serve(async (req) => {
     // Get all active API keys with webhook URLs
     const { data: apiKeys } = await admin
       .from("api_keys")
-      .select("id, webhook_url, partner_name")
+      .select("id, webhook_url, webhook_secret, partner_name")
       .eq("is_active", true)
       .not("webhook_url", "is", null);
 
@@ -42,6 +58,8 @@ Deno.serve(async (req) => {
       data: payload || {},
       ...(market_id && { market_id }),
     };
+
+    const bodyStr = JSON.stringify(webhookPayload);
 
     let dispatched = 0;
 
@@ -60,6 +78,16 @@ Deno.serve(async (req) => {
         .select("id")
         .single();
 
+      // Compute HMAC signature if webhook_secret exists
+      let signature = "v1_unsigned";
+      if ((key as any).webhook_secret) {
+        try {
+          signature = await hmacSign((key as any).webhook_secret, bodyStr);
+        } catch {
+          signature = "v1_sign_error";
+        }
+      }
+
       // Fire webhook
       try {
         const resp = await Promise.race([
@@ -68,9 +96,9 @@ Deno.serve(async (req) => {
             headers: {
               "Content-Type": "application/json",
               "X-OPOLL-Event": event_type,
-              "X-OPOLL-Signature": "v1", // Future: HMAC signature
+              "X-OPOLL-Signature": signature,
             },
-            body: JSON.stringify(webhookPayload),
+            body: bodyStr,
           }),
           new Promise<Response>((_, rej) => setTimeout(() => rej(new Error("timeout")), 10000)),
         ]);

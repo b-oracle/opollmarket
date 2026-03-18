@@ -1,0 +1,1 @@
+ALTER TABLE public.api_keys ADD COLUMN IF NOT EXISTS webhook_secret text DEFAULT NULL;

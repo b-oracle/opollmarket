@@ -15,6 +15,7 @@ interface ApiKey {
   permissions: string[];
   rate_limit_per_min: number;
   webhook_url: string | null;
+  webhook_secret: string | null;
   affiliate_commission_percent: number;
   brand_name: string | null;
   brand_logo_url: string | null;
@@ -278,6 +279,30 @@ const AdminApiKeys = () => {
                         className="h-8 text-xs"
                         onBlur={(e) => updateField(k.id, "webhook_url", e.target.value || null)}
                       />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground">Webhook Secret (HMAC)</label>
+                      <div className="flex gap-2">
+                        <Input
+                          defaultValue={k.webhook_secret || ""}
+                          placeholder="Auto-generated or custom"
+                          className="h-8 text-xs flex-1"
+                          onBlur={(e) => updateField(k.id, "webhook_secret", e.target.value || null)}
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-[10px] px-2"
+                          onClick={() => {
+                            const secret = "whsec_" + Array.from(crypto.getRandomValues(new Uint8Array(24)), b => b.toString(16).padStart(2, "0")).join("");
+                            updateField(k.id, "webhook_secret", secret);
+                            navigator.clipboard.writeText(secret);
+                            toast.success("Secret generated & copied");
+                          }}
+                        >
+                          Generate
+                        </Button>
+                      </div>
                     </div>
                     <div>
                       <label className="text-[10px] text-muted-foreground">Affiliate Commission %</label>
