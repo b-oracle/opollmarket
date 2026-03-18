@@ -2004,6 +2004,13 @@ export type Database = {
           verification_level: string
         }[]
       }
+      get_platform_volume: {
+        Args: never
+        Returns: {
+          prediction_volume: number
+          qt_volume: number
+        }[]
+      }
       get_prediction_leaderboard: {
         Args: { _cutoff?: string; _limit?: number; _sort?: string }
         Returns: {
