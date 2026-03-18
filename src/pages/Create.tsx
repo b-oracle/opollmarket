@@ -1,5 +1,15 @@
 import LogoLoader from "@/components/LogoLoader";
 import { useUserBalance } from "@/hooks/useUserBalance";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAccount } from "wagmi";
 import { useAppKit } from "@reown/appkit/react";
@@ -278,6 +288,10 @@ const Create = () => {
   const [showConnectors, setShowConnectors] = useState(false);
   const [feeBypass, setFeeBypass] = useState(false);
   const [depositModalOpen, setDepositModalOpen] = useState(false);
+
+  // Escrow state
+  const [escrowId, setEscrowId] = useState<string | null>(null);
+  const [showFeeConfirm, setShowFeeConfirm] = useState(false);
 
   // Draft state
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -843,7 +857,9 @@ const Create = () => {
     }
 
     // Referral bonus can only cover the creation fee portion, not liquidity
-    const feeAmount = (feeBypass ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0) + boostCost + broadcastCost;
+    // If escrow is held, the creation fee is already deducted — skip it from fee calculation
+    const creationFeeForDeduction = (feeBypass && !escrowId) ? marketCreationFee : 0;
+    const feeAmount = creationFeeForDeduction + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0) + boostCost + broadcastCost;
     const bonusForFee = Math.min(Number(bal.bonus_balance || 0), feeAmount);
 
     // Use secure server-side function to deduct balance (RLS blocks client-side updates)
@@ -990,6 +1006,10 @@ const Create = () => {
         status: "confirmed",
         side: "market_creation_fee",
       });
+      // If no escrow was used (exceeded free limit path), credit platform pool now
+      if (!escrowId) {
+        await supabase.rpc("adjust_platform_pool" as any, { _delta: marketCreationFee });
+      }
     }
 
     // Record auto-resolve fee transaction
@@ -1081,6 +1101,15 @@ const Create = () => {
     setDraftId(null);
     setDraftBannerDraft(null);
 
+    // Release escrow as 'used' if we had one
+    if (escrowId) {
+      await supabase.rpc("release_creation_fee_escrow" as any, {
+        _escrow_id: escrowId,
+        _action: "used",
+      });
+      setEscrowId(null);
+    }
+
     if (needsReview) {
       // Pending markets go straight to success (no first prediction needed)
       setSubmitStep("success");
@@ -1096,7 +1125,7 @@ const Create = () => {
       setSubmitStep("first_prediction");
       toast.success("Market created! Now place your first prediction to make it official.");
     }
-  }, [user, address, title, description, category, endDate, resolutionSource, initialLiquidity, marketType, options, feeBypass, marketCreationFee, videoUrl, draftId, creationBoost, creationBoostTier, creationBroadcast]);
+  }, [user, address, title, description, category, endDate, resolutionSource, initialLiquidity, marketType, options, feeBypass, marketCreationFee, videoUrl, draftId, creationBoost, creationBoostTier, creationBroadcast, escrowId]);
 
   // Token-gate verification using wallet NFTs
   const runGateCheck = async () => {
@@ -1221,11 +1250,56 @@ const Create = () => {
     }
   }, [isConnected, settingsLoaded]);
 
-  // Fee bypass — skip gate and proceed to form, fee added at checkout
-  const handleFeeBypass = () => {
-    setFeeBypass(true);
-    setGatePassed(true);
+  // Fee bypass — check balance, show confirmation, then escrow
+  const handleFeeBypass = async () => {
+    if (!user) { toast.error("Sign in first"); return; }
+    if (balance < marketCreationFee) {
+      toast.error(`Insufficient balance. You need at least $${marketCreationFee} to proceed.`);
+      setDepositModalOpen(true);
+      return;
+    }
+    setShowFeeConfirm(true);
   };
+
+  const confirmFeeEscrow = async () => {
+    setShowFeeConfirm(false);
+    try {
+      const { data, error } = await supabase.rpc("hold_creation_fee_escrow" as any, {
+        _user_id: user!.id,
+        _amount: marketCreationFee,
+      });
+      const result = typeof data === "string" ? JSON.parse(data) : data;
+      if (error || !result?.success) {
+        toast.error(result?.error || "Failed to hold escrow. Please try again.");
+        return;
+      }
+      setEscrowId(result.escrow_id);
+      setFeeBypass(true);
+      setGatePassed(true);
+      toast.success("Access Granted! 🎉 Your $" + marketCreationFee + " fee is held in escrow.");
+    } catch (err: any) {
+      toast.error(err.message || "Escrow failed");
+    }
+  };
+
+  // Resume held escrow on mount
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from("creation_fee_escrows")
+        .select("id, amount")
+        .eq("user_id", user.id)
+        .eq("status", "held")
+        .limit(1)
+        .maybeSingle();
+      if (data) {
+        setEscrowId(data.id);
+        setFeeBypass(true);
+        setGatePassed(true);
+      }
+    })();
+  }, [user]);
 
   const pancakeSwapUrl = tokenContractAddress
     ? `https://pancakeswap.finance/swap?outputCurrency=${tokenContractAddress}&chain=bsc`
@@ -2924,6 +2998,29 @@ const Create = () => {
       
       <BottomNav />
       <DepositWithdrawModal open={depositModalOpen} onClose={() => setDepositModalOpen(false)} initialTab="deposit" />
+
+      {/* Fee bypass confirmation dialog */}
+      <AlertDialog open={showFeeConfirm} onOpenChange={setShowFeeConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-yellow-500" />
+              Market Creation Fee
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>You will be charged <strong className="text-foreground">${marketCreationFee}</strong> for market creation. This fee will be held in escrow immediately.</p>
+              <p>The fee is <strong className="text-foreground">non-refundable</strong> and your funds will be locked until you complete your market creation.</p>
+              <p>Do you still want to proceed?</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmFeeEscrow}>
+              Proceed — Charge ${marketCreationFee}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
