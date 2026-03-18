@@ -306,6 +306,8 @@ const AdminSocial = () => {
           ) : <p className="text-sm text-muted-foreground text-center py-4">No data yet</p>}
         </div>
       )}
+
+      {activeTab === "links" && <AdminSocialLinks />}
     </div>
   );
 };
