@@ -533,6 +533,33 @@ export type Database = {
           },
         ]
       }
+      creation_fee_escrows: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          released_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          released_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          released_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       feature_toggles: {
         Row: {
           enabled: boolean
@@ -2106,6 +2133,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      hold_creation_fee_escrow: {
+        Args: { _amount: number; _user_id: string }
+        Returns: Json
+      }
       is_valid_referral_code:
         | {
             Args: { _code: string }
@@ -2119,6 +2150,10 @@ export type Database = {
               error: true
             } & "Could not choose the best candidate function between: public.is_valid_referral_code(_code => text), public.is_valid_referral_code(_code => uuid). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
           }
+      release_creation_fee_escrow: {
+        Args: { _action: string; _escrow_id: string }
+        Returns: Json
+      }
       settle_user_debts: { Args: { _user_id: string }; Returns: Json }
       update_trending_markets: { Args: never; Returns: undefined }
     }
