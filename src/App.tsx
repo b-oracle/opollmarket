@@ -81,6 +81,7 @@ const EmbedMarket = lazy(() => import("./pages/EmbedMarket"));
 const queryClient = new QueryClient();
 
 const isAdminRoute = (pathname: string) => pathname.startsWith("/admin");
+const isEmbedRoute = (pathname: string) => pathname.startsWith("/embed/");
 
 const noFooterRoutes = ["/feed", "/quick-trade"];
 
