@@ -28,6 +28,17 @@ Deno.serve(async (req) => {
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
   const admin = createClient(supabaseUrl, serviceKey);
 
+  // Check if public API is enabled via feature toggle
+  const { data: apiToggle } = await admin
+    .from("feature_toggles")
+    .select("enabled")
+    .eq("feature_key", "public_api")
+    .maybeSingle();
+
+  if (apiToggle && !apiToggle.enabled) {
+    return err("Public API is currently disabled", 503);
+  }
+
   // --- Validate API key (except embed-data which is public) ---
   let apiKeyRecord: any = null;
 
