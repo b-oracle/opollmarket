@@ -1511,7 +1511,7 @@ const Create = () => {
                     className="flex items-center gap-2 text-xs font-semibold text-primary hover:text-primary/80 transition-colors active:scale-95 underline underline-offset-2"
                   >
                     <DollarSign className="w-3 h-3" />
-                    No NFT or BC400? No Problem! (${marketCreationFee} fee)
+                    No NFT, BC400 or Wallet? No Problem! (${marketCreationFee} fee)
                   </button>
                 </li>
               </ul>
