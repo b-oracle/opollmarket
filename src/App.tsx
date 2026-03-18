@@ -310,6 +310,7 @@ const App = () => (
                           <Route path="investor-deck" element={<InvestorDeck />} />
                           <Route path="aimtell" element={<AdminAimtell />} />
                         </Route>
+                        <Route path="/embed/market/:id" element={<EmbedMarket />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
                       </SecuritySetupGuard>
