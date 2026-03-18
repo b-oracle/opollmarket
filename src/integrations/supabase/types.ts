@@ -1548,6 +1548,39 @@ export type Database = {
           },
         ]
       }
+      social_links: {
+        Row: {
+          enabled: boolean
+          icon_key: string
+          id: string
+          label: string
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+          url: string
+        }
+        Insert: {
+          enabled?: boolean
+          icon_key: string
+          id: string
+          label: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+          url?: string
+        }
+        Update: {
+          enabled?: boolean
+          icon_key?: string
+          id?: string
+          label?: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+          url?: string
+        }
+        Relationships: []
+      }
       sport_score_cache: {
         Row: {
           away_score: number | null
