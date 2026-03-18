@@ -31,7 +31,7 @@ const AdminSocial = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [activeTab, setActiveTab] = useState<"overview" | "profiles" | "top">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "profiles" | "top" | "links">("overview");
 
   useEffect(() => {
     const timer = setTimeout(() => { setDebouncedSearch(search); setPage(1); }, 300);
