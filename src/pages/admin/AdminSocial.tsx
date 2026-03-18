@@ -162,9 +162,9 @@ const AdminSocial = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 rounded-xl bg-muted/50 w-fit">
-        {(["overview", "profiles", "top"] as const).map(t => (
-          <button key={t} onClick={() => setActiveTab(t)} className={`px-4 py-2 rounded-lg text-xs font-semibold capitalize transition-all ${activeTab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{t === "top" ? "Top Users" : t}</button>
+      <div className="flex gap-1 p-1 rounded-xl bg-muted/50 w-fit flex-wrap">
+        {(["overview", "profiles", "top", "links"] as const).map(t => (
+          <button key={t} onClick={() => setActiveTab(t)} className={`px-4 py-2 rounded-lg text-xs font-semibold capitalize transition-all ${activeTab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{t === "top" ? "Top Users" : t === "links" ? "Social Links" : t}</button>
         ))}
       </div>
 
