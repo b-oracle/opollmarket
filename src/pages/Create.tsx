@@ -1235,11 +1235,56 @@ const Create = () => {
     }
   }, [isConnected, settingsLoaded]);
 
-  // Fee bypass — skip gate and proceed to form, fee added at checkout
-  const handleFeeBypass = () => {
-    setFeeBypass(true);
-    setGatePassed(true);
+  // Fee bypass — check balance, show confirmation, then escrow
+  const handleFeeBypass = async () => {
+    if (!user) { toast.error("Sign in first"); return; }
+    if (balance < marketCreationFee) {
+      toast.error(`Insufficient balance. You need at least $${marketCreationFee} to proceed.`);
+      setDepositModalOpen(true);
+      return;
+    }
+    setShowFeeConfirm(true);
   };
+
+  const confirmFeeEscrow = async () => {
+    setShowFeeConfirm(false);
+    try {
+      const { data, error } = await supabase.rpc("hold_creation_fee_escrow" as any, {
+        _user_id: user!.id,
+        _amount: marketCreationFee,
+      });
+      const result = typeof data === "string" ? JSON.parse(data) : data;
+      if (error || !result?.success) {
+        toast.error(result?.error || "Failed to hold escrow. Please try again.");
+        return;
+      }
+      setEscrowId(result.escrow_id);
+      setFeeBypass(true);
+      setGatePassed(true);
+      toast.success("Access Granted! 🎉 Your $" + marketCreationFee + " fee is held in escrow.");
+    } catch (err: any) {
+      toast.error(err.message || "Escrow failed");
+    }
+  };
+
+  // Resume held escrow on mount
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from("creation_fee_escrows")
+        .select("id, amount")
+        .eq("user_id", user.id)
+        .eq("status", "held")
+        .limit(1)
+        .maybeSingle();
+      if (data) {
+        setEscrowId(data.id);
+        setFeeBypass(true);
+        setGatePassed(true);
+      }
+    })();
+  }, [user]);
 
   const pancakeSwapUrl = tokenContractAddress
     ? `https://pancakeswap.finance/swap?outputCurrency=${tokenContractAddress}&chain=bsc`
