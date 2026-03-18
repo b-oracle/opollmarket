@@ -1,9 +1,10 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Users, UserCheck, Heart, MessageCircle, Search, Eye, EyeOff, Shield, TrendingUp } from "lucide-react";
+import { Loader2, Users, UserCheck, Heart, MessageCircle, Search, Eye, EyeOff, Shield, TrendingUp, Share2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import AdminSocialLinks from "@/components/admin/AdminSocialLinks";
 
 const PAGE_SIZE = 20;
 
