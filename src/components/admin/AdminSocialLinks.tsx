@@ -13,7 +13,7 @@ const AdminSocialLinks = () => {
 
   const getEdited = (link: SocialLink) => ({ ...link, ...edits[link.id] });
 
-  const handleChange = (id: string, field: keyof SocialLink, value: string | boolean) => {
+  const handleChange = (id: string, field: keyof SocialLink, value: string | boolean | number) => {
     setEdits(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
   };
 
