@@ -331,7 +331,7 @@ const FAQ = () => {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask anything about OPollMarket…"
-              className="w-full pl-10 pr-20 py-3 rounded-xl glass border border-border/50 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
+              className="w-full pl-10 pr-32 py-3 rounded-xl glass border border-border/50 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
             />
             <button
               onClick={handleAskAI}
