@@ -94,7 +94,7 @@ const ConditionalFooter = () => {
 
 const ConditionalSidebar = () => {
   const location = useLocation();
-  if (isAdminRoute(location.pathname)) return null;
+  if (isAdminRoute(location.pathname) || isEmbedRoute(location.pathname)) return null;
   return <DesktopSidebar />;
 };
 
