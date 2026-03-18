@@ -201,6 +201,14 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
     window.open(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(`🔥 "${title}" - Make your prediction now!`)}`, "_blank");
   };
 
+  const handleCopyEmbed = () => {
+    const marketId = marketUrl.split("/market/")[1]?.split("?")[0];
+    if (!marketId) { toast.error("Could not generate embed code"); return; }
+    const embedCode = `<iframe src="https://opoll.org/embed/market/${marketId}" width="400" height="320" frameborder="0" style="border-radius:12px" loading="lazy"></iframe>`;
+    navigator.clipboard.writeText(embedCode);
+    toast.success("Embed code copied!");
+  };
+
   if (!open) return null;
 
   return (
