@@ -249,7 +249,7 @@ Deno.serve(async (req) => {
     // BC400 pool (queued)
     if (bc400Amount > 0) {
       const { data: bc400Comm } = await supabase.from("pending_commissions").insert({
-        user_id: adminRole?.user_id || "00000000-0000-0000-0000-000000000000",
+        user_id: "00000000-0000-0000-0000-000000000000",
         market_id: marketId,
         amount: bc400Amount,
         type: "bc400",
