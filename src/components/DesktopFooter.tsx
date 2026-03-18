@@ -87,7 +87,7 @@ const DesktopFooter = () => {
                 { label: "via Telegram", href: "https://t.me/OPoll_market_bot", external: true },
                 { label: "via WhatsApp", href: "#", comingSoon: true },
                 { label: "Create Market", href: "/create" },
-                { label: "Developers", href: "/admin/api-keys" },
+                { label: "Developers", href: "/developers" },
                 { label: "Referral Program", href: "/referrals" },
               ].map((link) => (
                 <li key={link.label}>

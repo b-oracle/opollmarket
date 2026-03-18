@@ -316,6 +316,7 @@ const App = () => (
                           <Route path="aimtell" element={<AdminAimtell />} />
                           <Route path="api-keys" element={<AdminApiKeys />} />
                         </Route>
+                        <Route path="/developers" element={<Developers />} />
                         <Route path="/embed/market/:id" element={<EmbedMarket />} />
                         <Route path="/embed/ticker" element={<EmbedTicker />} />
                         <Route path="*" element={<NotFound />} />
