@@ -101,8 +101,9 @@ const ConditionalSidebar = () => {
 const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const isAdmin = isAdminRoute(location.pathname);
+  const isEmbed = isEmbedRoute(location.pathname);
   const { collapsed } = useSidebarState();
-  const ml = isAdmin ? "" : collapsed ? "lg:ml-[4.5rem]" : "lg:ml-60";
+  const ml = (isAdmin || isEmbed) ? "" : collapsed ? "lg:ml-[4.5rem]" : "lg:ml-60";
   return <div className={`${ml} min-h-screen flex flex-col transition-all duration-300`}>{children}</div>;
 };
 
