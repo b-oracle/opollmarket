@@ -82,7 +82,7 @@ const EmbedTicker = lazy(() => import("./pages/EmbedTicker"));
 const queryClient = new QueryClient();
 
 const isAdminRoute = (pathname: string) => pathname.startsWith("/admin");
-const isEmbedRoute = (pathname: string) => pathname.startsWith("/embed/");
+const isEmbedRoute = (pathname: string) => pathname.startsWith("/embed/") || pathname === "/embed";
 
 const noFooterRoutes = ["/feed", "/quick-trade"];
 
