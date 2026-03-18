@@ -239,26 +239,9 @@ Deno.serve(async (req) => {
     const feeAmount = withdrawalFeePercent > 0 ? (amount * withdrawalFeePercent) / 100 : 0;
     const netAmount = amount - feeAmount;
 
-    // Credit withdrawal fee to admin as tracked revenue
+    // Credit withdrawal fee to platform pool as tracked revenue
     if (feeAmount > 0) {
-      const { data: adminRole } = await adminClient
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "admin")
-        .limit(1)
-        .single();
-
-      if (adminRole) {
-        await adminClient.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: feeAmount, _bonus_delta: 0, _insurance_delta: 0 });
-
-        await adminClient.from("transactions").insert({
-          user_id: adminRole.user_id,
-          type: "commission",
-          amount: feeAmount,
-          side: "withdrawal_fee",
-          status: "confirmed",
-        });
-      }
+      await adminClient.rpc("adjust_platform_pool", { _delta: feeAmount });
     }
 
     // JWT-based payout flow
