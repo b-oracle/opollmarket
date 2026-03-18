@@ -281,9 +281,9 @@ Deno.serve(async (req) => {
       // Refund user balance atomically
       await supabase.rpc("adjust_balance", { _user_id: userId, _delta: mainDeduct, _bonus_delta: bonusForFees });
 
-      // Reverse admin fee credit to prevent phantom revenue
-      if (adminRole && adminCreditTotal > 0) {
-        await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -adminCreditTotal, _bonus_delta: 0, _insurance_delta: 0 });
+      // Reverse platform pool credit to prevent phantom revenue
+      if (adminCreditTotal > 0) {
+        await supabase.rpc("adjust_platform_pool", { _delta: -adminCreditTotal });
       }
 
       // Delete pending commissions that were just inserted for this trade (by ID)
