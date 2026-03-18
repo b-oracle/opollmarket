@@ -192,27 +192,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- Credit entire total fee to admin pool reserve ---
-    const { data: adminRole } = await supabase
-      .from("user_roles")
-      .select("user_id")
-      .eq("role", "admin")
-      .limit(1)
-      .single();
-
+    // --- Credit entire total fee to platform pool ---
     const adminCreditTotal = totalFees + insurancePremium;
-    if (adminRole && adminCreditTotal > 0) {
-      await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: adminCreditTotal, _bonus_delta: 0, _insurance_delta: 0 });
-
-      await supabase.from("transactions").insert({
-        user_id: adminRole.user_id,
-        type: "commission",
-        amount: adminCreditTotal,
-        market_id: marketId,
-        option_id: optionId || null,
-        side,
-        status: "confirmed",
-      });
+    if (adminCreditTotal > 0) {
+      await supabase.rpc("adjust_platform_pool", { _delta: adminCreditTotal });
     }
 
     // --- Queue commissions for 48-hour deferred release ---
@@ -266,7 +249,7 @@ Deno.serve(async (req) => {
     // BC400 pool (queued)
     if (bc400Amount > 0) {
       const { data: bc400Comm } = await supabase.from("pending_commissions").insert({
-        user_id: adminRole?.user_id || "00000000-0000-0000-0000-000000000000",
+        user_id: "00000000-0000-0000-0000-000000000000",
         market_id: marketId,
         amount: bc400Amount,
         type: "bc400",
@@ -298,9 +281,9 @@ Deno.serve(async (req) => {
       // Refund user balance atomically
       await supabase.rpc("adjust_balance", { _user_id: userId, _delta: mainDeduct, _bonus_delta: bonusForFees });
 
-      // Reverse admin fee credit to prevent phantom revenue
-      if (adminRole && adminCreditTotal > 0) {
-        await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -adminCreditTotal, _bonus_delta: 0, _insurance_delta: 0 });
+      // Reverse platform pool credit to prevent phantom revenue
+      if (adminCreditTotal > 0) {
+        await supabase.rpc("adjust_platform_pool", { _delta: -adminCreditTotal });
       }
 
       // Delete pending commissions that were just inserted for this trade (by ID)

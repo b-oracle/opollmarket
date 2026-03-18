@@ -167,42 +167,29 @@ Deno.serve(async (req) => {
       }
     }
 
-    // --- Debit admin pool for fees already credited at trade time ---
-    // The admin was credited totalFees for each buy transaction.
+    // --- Debit platform pool for fees already credited at trade time ---
+    // The platform pool was credited totalFees for each buy transaction.
     // Pending commissions are voided (never disbursed), but the fee itself
-    // is still in the admin balance. We must debit it back.
-    const { data: adminRole } = await adminClient
-      .from("user_roles")
-      .select("user_id")
-      .eq("role", "admin")
-      .limit(1)
-      .single();
+    // is still in the platform pool. We must debit it back.
+    if (totalRefunded > 0) {
+      // Sum all platform commission amounts for this market by looking at buy transactions
+      // and calculating the fee that was charged
+      const { data: commSettings } = await adminClient
+        .from("commission_settings")
+        .select("prediction_fee_percent")
+        .limit(1)
+        .single();
 
-    if (adminRole && totalRefunded > 0) {
-      // Sum all admin commission transactions for this market
-      const { data: adminCommTxns } = await adminClient
-        .from("transactions")
-        .select("amount")
-        .eq("market_id", market_id)
-        .eq("user_id", adminRole.user_id)
-        .eq("type", "commission")
-        .eq("status", "confirmed");
+      const feePercent = Number(commSettings?.prediction_fee_percent ?? 10) / 100;
 
-      const totalAdminFees = (adminCommTxns || []).reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+      // Calculate total fees collected for this market based on buy transaction amounts
+      const totalFeesCollected = (transactions || []).reduce((sum: number, tx: any) => {
+        return sum + (Number(tx.amount) * feePercent);
+      }, 0);
 
-      if (totalAdminFees > 0) {
-        await adminClient.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: -totalAdminFees, _bonus_delta: 0, _insurance_delta: 0 });
-
-        await adminClient.from("transactions").insert({
-          user_id: adminRole.user_id,
-          market_id: market_id,
-          type: "commission",
-          amount: totalAdminFees,
-          side: "fee_reversal",
-          status: "reversed",
-        });
-
-        console.log("cancel-market: Reversed admin fees:", totalAdminFees);
+      if (totalFeesCollected > 0) {
+        await adminClient.rpc("adjust_platform_pool", { _delta: -totalFeesCollected });
+        console.log("cancel-market: Reversed platform pool fees:", totalFeesCollected);
       }
     }
 

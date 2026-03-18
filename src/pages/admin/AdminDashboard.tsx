@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingUp, Users, MessageSquare, ShoppingBag, Loader2, DollarSign, Activity, Gift, UserPlus, Zap, UserCheck, Heart, ArrowDownLeft, ArrowUpRight, Wallet, Scale, Info } from "lucide-react";
+import { TrendingUp, Users, MessageSquare, ShoppingBag, Loader2, DollarSign, Activity, Gift, UserPlus, Zap, UserCheck, Heart, ArrowDownLeft, ArrowUpRight, Wallet, Scale, Info, Landmark } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
 
 
@@ -75,6 +75,7 @@ const AdminDashboard = () => {
   const [activityData, setActivityData] = useState<{ date: string; markets: number; bets: number }[]>([]);
   const [allDepositTxns, setAllDepositTxns] = useState<DepositTxn[]>([]);
   const [depositRange, setDepositRange] = useState<DepositRangeKey>("all");
+  const [platformPoolBalance, setPlatformPoolBalance] = useState<number>(0);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -316,6 +317,14 @@ const AdminDashboard = () => {
         }))
       );
 
+      // Fetch platform pool balance
+      const { data: poolData } = await supabase
+        .from("platform_pool")
+        .select("balance")
+        .limit(1)
+        .single();
+      setPlatformPoolBalance(Number(poolData?.balance || 0));
+
       setLoading(false);
     };
     fetchAll();
@@ -392,6 +401,20 @@ const AdminDashboard = () => {
             <span className="text-xl font-bold">{card.value}</span>
           </div>
         ))}
+      </div>
+
+      {/* Platform Pool Balance Card */}
+      <div className="bg-card border border-border rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Landmark className="w-5 h-5 text-primary" />
+          <h3 className="text-sm font-semibold">Platform Revenue Pool</h3>
+        </div>
+        <p className="text-3xl font-bold text-primary">
+          {platformPoolBalance >= 1000 ? `$${(platformPoolBalance / 1000).toFixed(1)}K` : `$${platformPoolBalance.toFixed(2)}`}
+        </p>
+        <p className="text-[10px] text-muted-foreground mt-1">
+          Accumulated platform fees (prediction fees, withdrawal fees). Creator & referral commissions are paid out from this pool.
+        </p>
       </div>
 
       {/* Financial Overview Card */}

@@ -1402,25 +1402,9 @@ async function executeBetInline(
       .eq("id", marketId);
   }
 
-  // Credit entire total fee to admin pool reserve
-  const { data: adminRole } = await supabase
-    .from("user_roles")
-    .select("user_id")
-    .eq("role", "admin")
-    .limit(1)
-    .single();
-
-  if (adminRole && totalFees > 0) {
-    await supabase.rpc("adjust_balance", { _user_id: adminRole.user_id, _delta: totalFees });
-
-    await supabase.from("transactions").insert({
-      user_id: adminRole.user_id,
-      type: "commission",
-      amount: totalFees,
-      market_id: marketId,
-      side,
-      status: "confirmed",
-    });
+  // Credit entire total fee to platform pool
+  if (totalFees > 0) {
+    await supabase.rpc("adjust_platform_pool", { _delta: totalFees });
   }
 
   // Queue commissions for 48-hour deferred release
@@ -1452,7 +1436,7 @@ async function executeBetInline(
 
   if (bc400Amount > 0) {
     await supabase.from("pending_commissions").insert({
-      user_id: adminRole?.user_id || "00000000-0000-0000-0000-000000000000",
+      user_id: "00000000-0000-0000-0000-000000000000",
       market_id: marketId, amount: bc400Amount,
       type: "bc400", status: "pending", releases_at: releasesAt,
     });
