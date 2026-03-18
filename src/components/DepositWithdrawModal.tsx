@@ -948,7 +948,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                           }`}
                         >
                           <Banknote className="w-3.5 h-3.5" />
-                          Fiat (NGN)
+                          Fiat (NAIRA)
                         </button>
                       </div>
                     )}
