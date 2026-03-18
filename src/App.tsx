@@ -310,6 +310,7 @@ const App = () => (
                           <Route path="telegram" element={<AdminTelegram />} />
                           <Route path="investor-deck" element={<InvestorDeck />} />
                           <Route path="aimtell" element={<AdminAimtell />} />
+                          <Route path="api-keys" element={<AdminApiKeys />} />
                         </Route>
                         <Route path="/embed/market/:id" element={<EmbedMarket />} />
                         <Route path="*" element={<NotFound />} />
