@@ -178,8 +178,8 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
               <div className="flex gap-1 p-1 rounded-xl bg-muted/50">
                 {([
                   { key: "activity" as const, label: "Activity", icon: Heart },
-                  { key: "followers" as const, label: `${followers.length}`, icon: Users },
-                  { key: "following" as const, label: `${following.length}`, icon: UserCheck },
+                  { key: "followers" as const, label: `${followersCount}`, icon: Users },
+                  { key: "following" as const, label: `${followingCount}`, icon: UserCheck },
                   { key: "suggestions" as const, label: "For You", icon: Sparkles },
                 ]).map((t) => (
                   <button
