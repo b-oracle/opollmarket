@@ -78,6 +78,7 @@ const SetupSecurity = lazy(() => import("./pages/SetupSecurity"));
 const SalesDeck = lazy(() => import("./pages/SalesDeck"));
 const EmbedMarket = lazy(() => import("./pages/EmbedMarket"));
 const EmbedTicker = lazy(() => import("./pages/EmbedTicker"));
+const Developers = lazy(() => import("./pages/Developers"));
 
 const queryClient = new QueryClient();
 
