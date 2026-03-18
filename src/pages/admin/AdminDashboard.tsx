@@ -403,6 +403,20 @@ const AdminDashboard = () => {
         ))}
       </div>
 
+      {/* Platform Pool Balance Card */}
+      <div className="bg-card border border-border rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Landmark className="w-5 h-5 text-primary" />
+          <h3 className="text-sm font-semibold">Platform Revenue Pool</h3>
+        </div>
+        <p className="text-3xl font-bold text-primary">
+          {platformPoolBalance >= 1000 ? `$${(platformPoolBalance / 1000).toFixed(1)}K` : `$${platformPoolBalance.toFixed(2)}`}
+        </p>
+        <p className="text-[10px] text-muted-foreground mt-1">
+          Accumulated platform fees (prediction fees, withdrawal fees). Creator & referral commissions are paid out from this pool.
+        </p>
+      </div>
+
       {/* Financial Overview Card */}
       {stats && (() => {
         const dep = stats.totalDeposits;
