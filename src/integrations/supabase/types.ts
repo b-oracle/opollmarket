@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      affiliate_earnings: {
+        Row: {
+          api_key_id: string
+          bet_amount: number
+          commission_amount: number
+          commission_percent: number
+          created_at: string
+          fee_amount: number
+          id: string
+          status: string
+          transaction_id: string
+        }
+        Insert: {
+          api_key_id: string
+          bet_amount: number
+          commission_amount: number
+          commission_percent?: number
+          created_at?: string
+          fee_amount: number
+          id?: string
+          status?: string
+          transaction_id: string
+        }
+        Update: {
+          api_key_id?: string
+          bet_amount?: number
+          commission_amount?: number
+          commission_percent?: number
+          created_at?: string
+          fee_amount?: number
+          id?: string
+          status?: string
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_earnings_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_earnings_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analytics_events: {
         Row: {
           created_at: string
@@ -40,7 +91,12 @@ export type Database = {
       }
       api_keys: {
         Row: {
+          affiliate_commission_percent: number
           api_key: string
+          brand_dark_bg: string | null
+          brand_logo_url: string | null
+          brand_name: string | null
+          brand_primary_color: string | null
           created_at: string
           id: string
           is_active: boolean
@@ -51,7 +107,12 @@ export type Database = {
           webhook_url: string | null
         }
         Insert: {
+          affiliate_commission_percent?: number
           api_key: string
+          brand_dark_bg?: string | null
+          brand_logo_url?: string | null
+          brand_name?: string | null
+          brand_primary_color?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -62,7 +123,12 @@ export type Database = {
           webhook_url?: string | null
         }
         Update: {
+          affiliate_commission_percent?: number
           api_key?: string
+          brand_dark_bg?: string | null
+          brand_logo_url?: string | null
+          brand_name?: string | null
+          brand_primary_color?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -1780,6 +1846,7 @@ export type Database = {
       transactions: {
         Row: {
           amount: number
+          api_key_id: string | null
           created_at: string
           id: string
           is_copy_trade: boolean
@@ -1797,6 +1864,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          api_key_id?: string | null
           created_at?: string
           id?: string
           is_copy_trade?: boolean
@@ -1814,6 +1882,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          api_key_id?: string | null
           created_at?: string
           id?: string
           is_copy_trade?: boolean
@@ -1830,6 +1899,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "transactions_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "transactions_market_id_fkey"
             columns: ["market_id"]
@@ -1916,6 +1992,50 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_events: {
+        Row: {
+          api_key_id: string
+          attempts: number
+          created_at: string
+          event_type: string
+          id: string
+          last_attempt_at: string | null
+          payload: Json
+          response_code: number | null
+          status: string
+        }
+        Insert: {
+          api_key_id: string
+          attempts?: number
+          created_at?: string
+          event_type: string
+          id?: string
+          last_attempt_at?: string | null
+          payload: Json
+          response_code?: number | null
+          status?: string
+        }
+        Update: {
+          api_key_id?: string
+          attempts?: number
+          created_at?: string
+          event_type?: string
+          id?: string
+          last_attempt_at?: string | null
+          payload?: Json
+          response_code?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_events_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
             referencedColumns: ["id"]
           },
         ]
