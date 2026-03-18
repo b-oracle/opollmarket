@@ -289,6 +289,10 @@ const Create = () => {
   const [feeBypass, setFeeBypass] = useState(false);
   const [depositModalOpen, setDepositModalOpen] = useState(false);
 
+  // Escrow state
+  const [escrowId, setEscrowId] = useState<string | null>(null);
+  const [showFeeConfirm, setShowFeeConfirm] = useState(false);
+
   // Draft state
   const [draftId, setDraftId] = useState<string | null>(null);
   const [draftLoading, setDraftLoading] = useState(true);
