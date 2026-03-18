@@ -1,5 +1,15 @@
 import LogoLoader from "@/components/LogoLoader";
 import { useUserBalance } from "@/hooks/useUserBalance";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAccount } from "wagmi";
 import { useAppKit } from "@reown/appkit/react";
