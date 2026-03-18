@@ -157,16 +157,15 @@ const Index = () => {
   const { data: platformStats } = useQuery({
     queryKey: ["platform-stats"],
     queryFn: async () => {
-      const [marketsRes, usersRes, volumeRes, qtRes] = await Promise.all([
+      const [marketsRes, usersRes, volRes] = await Promise.all([
         supabase.from("markets").select("*", { count: "exact", head: true }),
         supabase.from("profiles").select("*", { count: "exact", head: true }),
-        supabase.from("markets").select("volume"),
-        supabase.from("quick_bets").select("amount").in("status", ["won", "lost", "refunded"]),
+        supabase.rpc("get_platform_volume"),
       ]);
-      const marketVolume = (volumeRes.data ?? []).reduce((s, m) => s + Number(m.volume), 0);
-      const qtVolume = (qtRes.data ?? []).reduce((s, b) => s + Number(b.amount), 0);
+      const volRow = volRes.data?.[0] as { prediction_volume: number; qt_volume: number } | undefined;
+      const totalVol = Number(volRow?.prediction_volume ?? 0) + Number(volRow?.qt_volume ?? 0);
       return {
-        totalVolume: marketVolume + qtVolume,
+        totalVolume: totalVol,
         totalUsers: usersRes.count ?? 0,
         totalMarkets: marketsRes.count ?? 0,
         lastUpdated: new Date(),
