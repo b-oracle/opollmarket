@@ -75,6 +75,7 @@ const AdminDashboard = () => {
   const [activityData, setActivityData] = useState<{ date: string; markets: number; bets: number }[]>([]);
   const [allDepositTxns, setAllDepositTxns] = useState<DepositTxn[]>([]);
   const [depositRange, setDepositRange] = useState<DepositRangeKey>("all");
+  const [platformPoolBalance, setPlatformPoolBalance] = useState<number>(0);
 
   useEffect(() => {
     const fetchAll = async () => {
