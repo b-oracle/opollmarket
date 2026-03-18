@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Copy, Trash2, RefreshCw, Key, Eye, EyeOff } from "lucide-react";
+import { Loader2, Plus, Copy, Trash2, RefreshCw, Key, Eye, EyeOff, Palette, Globe, Webhook } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -15,6 +15,11 @@ interface ApiKey {
   permissions: string[];
   rate_limit_per_min: number;
   webhook_url: string | null;
+  affiliate_commission_percent: number;
+  brand_name: string | null;
+  brand_logo_url: string | null;
+  brand_primary_color: string | null;
+  brand_dark_bg: string | null;
   created_at: string;
 }
 
@@ -33,7 +38,9 @@ const AdminApiKeys = () => {
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [newPerms, setNewPerms] = useState<string[]>(["read"]);
+  const [newWebhook, setNewWebhook] = useState("");
   const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
+  const [editingBrand, setEditingBrand] = useState<string | null>(null);
 
   const fetchKeys = async () => {
     setLoading(true);
@@ -55,17 +62,20 @@ const AdminApiKeys = () => {
     if (!newName.trim()) { toast.error("Enter a partner name"); return; }
     setCreating(true);
     const apiKey = generateKey();
-    const { error } = await supabase.from("api_keys" as any).insert({
+    const insertData: any = {
       partner_name: newName.trim(),
       api_key: apiKey,
       permissions: newPerms,
-    } as any);
+    };
+    if (newWebhook.trim()) insertData.webhook_url = newWebhook.trim();
+    const { error } = await supabase.from("api_keys" as any).insert(insertData);
     if (error) {
       toast.error(error.message);
     } else {
       toast.success("API key created");
       setNewName("");
       setNewPerms(["read"]);
+      setNewWebhook("");
       fetchKeys();
     }
     setCreating(false);
@@ -98,12 +108,18 @@ const AdminApiKeys = () => {
 
   const maskKey = (key: string) => key.slice(0, 10) + "•".repeat(20) + key.slice(-4);
 
+  const updateField = async (id: string, field: string, value: any) => {
+    await supabase.from("api_keys" as any).update({ [field]: value } as any).eq("id", id);
+    fetchKeys();
+    toast.success("Updated");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold">API Keys</h2>
-          <p className="text-sm text-muted-foreground">Manage partner API access</p>
+          <p className="text-sm text-muted-foreground">Manage partner API access, webhooks & white-labeling</p>
         </div>
         <Button size="sm" variant="outline" onClick={fetchKeys}>
           <RefreshCw className="w-4 h-4 mr-1" /> Refresh
@@ -116,25 +132,26 @@ const AdminApiKeys = () => {
           <h3 className="text-sm font-semibold flex items-center gap-2"><Plus className="w-4 h-4" /> Create New Key</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input placeholder="Partner name" value={newName} onChange={(e) => setNewName(e.target.value)} />
-            <div className="flex flex-wrap gap-2">
-              {PERMISSION_OPTIONS.map((p) => (
-                <button
-                  key={p}
-                  onClick={() =>
-                    setNewPerms((prev) =>
-                      prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]
-                    )
-                  }
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
-                    newPerms.includes(p)
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-muted border-border text-muted-foreground"
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
+            <Input placeholder="Webhook URL (optional)" value={newWebhook} onChange={(e) => setNewWebhook(e.target.value)} />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {PERMISSION_OPTIONS.map((p) => (
+              <button
+                key={p}
+                onClick={() =>
+                  setNewPerms((prev) =>
+                    prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]
+                  )
+                }
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                  newPerms.includes(p)
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted border-border text-muted-foreground"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
           </div>
           <Button onClick={handleCreate} disabled={creating} size="sm">
             {creating ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Key className="w-4 h-4 mr-1" />}
@@ -151,7 +168,7 @@ const AdminApiKeys = () => {
       ) : (
         <div className="space-y-3">
           {keys.map((k) => (
-            <div key={k.id} className="bg-card border border-border rounded-xl p-4">
+            <div key={k.id} className="bg-card border border-border rounded-xl p-4 space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1">
@@ -169,16 +186,27 @@ const AdminApiKeys = () => {
                       <Copy className="w-3 h-3" />
                     </button>
                   </div>
-                  <div className="flex items-center gap-2 mt-1.5 text-[10px] text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-2 mt-1.5 text-[10px] text-muted-foreground">
                     <span>Permissions: {(k.permissions as string[]).join(", ")}</span>
                     <span>·</span>
                     <span>Rate: {k.rate_limit_per_min}/min</span>
                     <span>·</span>
+                    <span>Commission: {k.affiliate_commission_percent}%</span>
+                    <span>·</span>
                     <span>{new Date(k.created_at).toLocaleDateString()}</span>
                   </div>
+                  {k.webhook_url && (
+                    <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground">
+                      <Webhook className="w-3 h-3" />
+                      <span className="truncate max-w-[250px]">{k.webhook_url}</span>
+                    </div>
+                  )}
                 </div>
                 {canEdit && (
                   <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => setEditingBrand(editingBrand === k.id ? null : k.id)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground" title="White-label settings">
+                      <Palette className="w-4 h-4" />
+                    </button>
                     <Switch checked={k.is_active} onCheckedChange={() => toggleActive(k.id, k.is_active)} />
                     <button onClick={() => deleteKey(k.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive">
                       <Trash2 className="w-4 h-4" />
@@ -186,6 +214,85 @@ const AdminApiKeys = () => {
                   </div>
                 )}
               </div>
+
+              {/* Expandable white-label + webhook settings */}
+              {editingBrand === k.id && canEdit && (
+                <div className="border-t border-border/30 pt-3 space-y-3">
+                  <h4 className="text-xs font-semibold flex items-center gap-1.5"><Palette className="w-3.5 h-3.5" /> White-Label & Webhook Settings</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] text-muted-foreground">Brand Name</label>
+                      <Input
+                        defaultValue={k.brand_name || ""}
+                        placeholder="OPOLL"
+                        className="h-8 text-xs"
+                        onBlur={(e) => updateField(k.id, "brand_name", e.target.value || null)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground">Brand Logo URL</label>
+                      <Input
+                        defaultValue={k.brand_logo_url || ""}
+                        placeholder="https://..."
+                        className="h-8 text-xs"
+                        onBlur={(e) => updateField(k.id, "brand_logo_url", e.target.value || null)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground">Primary Color</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="color"
+                          defaultValue={k.brand_primary_color || "#3b82f6"}
+                          className="w-8 h-8 rounded cursor-pointer"
+                          onBlur={(e) => updateField(k.id, "brand_primary_color", e.target.value)}
+                        />
+                        <Input
+                          defaultValue={k.brand_primary_color || "#3b82f6"}
+                          className="h-8 text-xs flex-1"
+                          onBlur={(e) => updateField(k.id, "brand_primary_color", e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground">Dark Background</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="color"
+                          defaultValue={k.brand_dark_bg || "#0a0a0f"}
+                          className="w-8 h-8 rounded cursor-pointer"
+                          onBlur={(e) => updateField(k.id, "brand_dark_bg", e.target.value)}
+                        />
+                        <Input
+                          defaultValue={k.brand_dark_bg || "#0a0a0f"}
+                          className="h-8 text-xs flex-1"
+                          onBlur={(e) => updateField(k.id, "brand_dark_bg", e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground">Webhook URL</label>
+                      <Input
+                        defaultValue={k.webhook_url || ""}
+                        placeholder="https://your-server.com/webhook"
+                        className="h-8 text-xs"
+                        onBlur={(e) => updateField(k.id, "webhook_url", e.target.value || null)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground">Affiliate Commission %</label>
+                      <Input
+                        type="number"
+                        defaultValue={k.affiliate_commission_percent}
+                        min={0}
+                        max={50}
+                        className="h-8 text-xs"
+                        onBlur={(e) => updateField(k.id, "affiliate_commission_percent", parseFloat(e.target.value) || 5)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -204,23 +311,37 @@ const AdminApiKeys = () => {
   // List markets
   const { markets } = await opoll.getMarkets({ category: 'crypto', limit: 10 });
   
-  // Get single market
-  const { market } = await opoll.getMarket('MARKET_ID');
-  
   // Embed a market widget
   opoll.embedMarket('MARKET_ID', '#widget-container');
 </script>`}
           </pre>
-          <p><strong>REST API Base URL:</strong></p>
-          <code className="bg-muted/50 px-2 py-1 rounded text-[11px]">
-            https://dqtjuhqndncanfwgjwva.supabase.co/functions/v1/api-public
-          </code>
-          <p><strong>Embed Widget:</strong></p>
+          <p><strong>Embed Widget (with white-label):</strong></p>
           <pre className="bg-muted/50 p-3 rounded-lg overflow-x-auto text-[11px]">
-{`<iframe src="https://opoll.org/embed/market/MARKET_ID" 
+{`<iframe src="https://opoll.org/embed/market/MARKET_ID?key=YOUR_API_KEY" 
   width="400" height="320" frameborder="0" 
   style="border-radius:12px"></iframe>`}
           </pre>
+          <p><strong>Market Ticker:</strong></p>
+          <pre className="bg-muted/50 p-3 rounded-lg overflow-x-auto text-[11px]">
+{`<iframe src="https://opoll.org/embed/ticker?limit=10" 
+  width="100%" height="56" frameborder="0" 
+  style="border-radius:8px"></iframe>`}
+          </pre>
+          <p><strong>WordPress Plugin:</strong></p>
+          <pre className="bg-muted/50 p-3 rounded-lg overflow-x-auto text-[11px]">
+{`Download: https://dqtjuhqndncanfwgjwva.supabase.co/functions/v1/wp-plugin
+
+Shortcodes:
+  [opoll market="MARKET_ID"]
+  [opoll_ticker limit="5"]
+  [opoll_sdk api_key="YOUR_KEY"]`}
+          </pre>
+          <p><strong>Webhook Events:</strong></p>
+          <div className="bg-muted/50 p-3 rounded-lg text-[11px] space-y-1">
+            <p>• <code>market.resolved</code> — Fired when a market is resolved with winner info</p>
+            <p>• Events POST to your configured webhook URL with JSON payload</p>
+            <p>• Header <code>X-OPOLL-Event</code> contains the event type</p>
+          </div>
         </div>
       </div>
     </div>
