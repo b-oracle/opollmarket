@@ -2998,6 +2998,29 @@ const Create = () => {
       
       <BottomNav />
       <DepositWithdrawModal open={depositModalOpen} onClose={() => setDepositModalOpen(false)} initialTab="deposit" />
+
+      {/* Fee bypass confirmation dialog */}
+      <AlertDialog open={showFeeConfirm} onOpenChange={setShowFeeConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-yellow-500" />
+              Market Creation Fee
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>You will be charged <strong className="text-foreground">${marketCreationFee}</strong> for market creation. This fee will be held in escrow immediately.</p>
+              <p>The fee is <strong className="text-foreground">non-refundable</strong> and your funds will be locked until you complete your market creation.</p>
+              <p>Do you still want to proceed?</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmFeeEscrow}>
+              Proceed — Charge ${marketCreationFee}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
