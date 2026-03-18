@@ -5,6 +5,8 @@ import { FileText, Shield, AlertTriangle, HelpCircle, ChevronRight, LogIn, Downl
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import InstallAppModal from "@/components/InstallAppModal";
+import { useSocialLinks } from "@/hooks/useSocialLinks";
+import SocialIcon from "@/components/SocialIcon";
 
 interface MoreMenuProps {
   open: boolean;
@@ -22,11 +24,6 @@ const resourceLinks = [
   { icon: Download, label: "Download App", path: "__install__" },
 ];
 
-const socialLinks = [
-  { icon: "𝕏", label: "Follow on X", href: "https://x.com/opollmarket" },
-  { icon: "✈", label: "Join Telegram", href: "https://t.me" },
-];
-
 const staggerContainer = {
   hidden: {},
   show: {
@@ -42,6 +39,7 @@ const fadeUp = {
 const MoreMenu = ({ open, onOpenChange }: MoreMenuProps) => {
   const navigate = useNavigate();
   const [installOpen, setInstallOpen] = useState(false);
+  const { data: socialLinks = [] } = useSocialLinks();
 
   const handleNavigate = (path: string) => {
     onOpenChange(false);
@@ -120,26 +118,28 @@ const MoreMenu = ({ open, onOpenChange }: MoreMenuProps) => {
               </div>
             </motion.div>
 
-            <motion.div variants={fadeUp}>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Social</p>
-              <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
-                {socialLinks.map(({ icon, label, href }) => (
-                  <a
-                    key={href}
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 w-full px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 text-primary text-sm">
-                      {icon}
-                    </div>
-                    <span className="flex-1 text-sm font-medium text-foreground">{label}</span>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  </a>
-                ))}
-              </div>
-            </motion.div>
+            {socialLinks.length > 0 && (
+              <motion.div variants={fadeUp}>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Social</p>
+                <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
+                  {socialLinks.map((link) => (
+                    <a
+                      key={link.id}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 w-full px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 text-primary">
+                        <SocialIcon iconKey={link.icon_key} />
+                      </div>
+                      <span className="flex-1 text-sm font-medium text-foreground">{link.label}</span>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    </a>
+                  ))}
+                </div>
+              </motion.div>
+            )}
           </motion.div>
         </SheetContent>
       </Sheet>

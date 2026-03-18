@@ -1,9 +1,10 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Users, UserCheck, Heart, MessageCircle, Search, Eye, EyeOff, Shield, TrendingUp } from "lucide-react";
+import { Loader2, Users, UserCheck, Heart, MessageCircle, Search, Eye, EyeOff, Shield, TrendingUp, Share2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import AdminSocialLinks from "@/components/admin/AdminSocialLinks";
 
 const PAGE_SIZE = 20;
 
@@ -30,7 +31,7 @@ const AdminSocial = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [activeTab, setActiveTab] = useState<"overview" | "profiles" | "top">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "profiles" | "top" | "links">("overview");
 
   useEffect(() => {
     const timer = setTimeout(() => { setDebouncedSearch(search); setPage(1); }, 300);
@@ -161,9 +162,9 @@ const AdminSocial = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 rounded-xl bg-muted/50 w-fit">
-        {(["overview", "profiles", "top"] as const).map(t => (
-          <button key={t} onClick={() => setActiveTab(t)} className={`px-4 py-2 rounded-lg text-xs font-semibold capitalize transition-all ${activeTab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{t === "top" ? "Top Users" : t}</button>
+      <div className="flex gap-1 p-1 rounded-xl bg-muted/50 w-fit flex-wrap">
+        {(["overview", "profiles", "top", "links"] as const).map(t => (
+          <button key={t} onClick={() => setActiveTab(t)} className={`px-4 py-2 rounded-lg text-xs font-semibold capitalize transition-all ${activeTab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{t === "top" ? "Top Users" : t === "links" ? "Social Links" : t}</button>
         ))}
       </div>
 
@@ -305,6 +306,8 @@ const AdminSocial = () => {
           ) : <p className="text-sm text-muted-foreground text-center py-4">No data yet</p>}
         </div>
       )}
+
+      {activeTab === "links" && <AdminSocialLinks />}
     </div>
   );
 };
