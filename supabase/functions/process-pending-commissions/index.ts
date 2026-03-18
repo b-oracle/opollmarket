@@ -17,19 +17,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Get admin user for balance operations
-    const { data: adminRole } = await supabase
-      .from("user_roles")
-      .select("user_id")
-      .eq("role", "admin")
-      .limit(1)
-      .single();
-
-    if (!adminRole) {
-      return new Response(JSON.stringify({ error: "No admin found" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // No admin user lookup needed — we use platform_pool instead
 
     // Fetch all pending commissions that are due for release
     const { data: pendingCommissions, error: fetchErr } = await supabase
