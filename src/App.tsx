@@ -58,6 +58,7 @@ const AdminPredictions = lazy(() => import("./pages/admin/AdminPredictions"));
 const AdminSocial = lazy(() => import("./pages/admin/AdminSocial"));
 const InvestorDeck = lazy(() => import("./pages/admin/InvestorDeck"));
 const AdminAimtell = lazy(() => import("./pages/admin/AdminAimtell"));
+const AdminApiKeys = lazy(() => import("./pages/admin/AdminApiKeys"));
 const AdminFiatSettings = lazy(() => import("./pages/admin/AdminFiatSettings"));
 const AdminReferrals = lazy(() => import("./pages/admin/AdminReferrals"));
 const AdminWhatsApp = lazy(() => import("./pages/admin/AdminWhatsApp"));
@@ -75,31 +76,34 @@ const UserProfile = lazy(() => import("./pages/UserProfile"));
 const Followers = lazy(() => import("./pages/Followers"));
 const SetupSecurity = lazy(() => import("./pages/SetupSecurity"));
 const SalesDeck = lazy(() => import("./pages/SalesDeck"));
+const EmbedMarket = lazy(() => import("./pages/EmbedMarket"));
 
 const queryClient = new QueryClient();
 
 const isAdminRoute = (pathname: string) => pathname.startsWith("/admin");
+const isEmbedRoute = (pathname: string) => pathname.startsWith("/embed/");
 
 const noFooterRoutes = ["/feed", "/quick-trade"];
 
 const ConditionalFooter = () => {
   const location = useLocation();
-  if (isAdminRoute(location.pathname)) return null;
+  if (isAdminRoute(location.pathname) || isEmbedRoute(location.pathname)) return null;
   if (noFooterRoutes.includes(location.pathname)) return null;
   return <DesktopFooter />;
 };
 
 const ConditionalSidebar = () => {
   const location = useLocation();
-  if (isAdminRoute(location.pathname)) return null;
+  if (isAdminRoute(location.pathname) || isEmbedRoute(location.pathname)) return null;
   return <DesktopSidebar />;
 };
 
 const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const isAdmin = isAdminRoute(location.pathname);
+  const isEmbed = isEmbedRoute(location.pathname);
   const { collapsed } = useSidebarState();
-  const ml = isAdmin ? "" : collapsed ? "lg:ml-[4.5rem]" : "lg:ml-60";
+  const ml = (isAdmin || isEmbed) ? "" : collapsed ? "lg:ml-[4.5rem]" : "lg:ml-60";
   return <div className={`${ml} min-h-screen flex flex-col transition-all duration-300`}>{children}</div>;
 };
 
@@ -308,7 +312,9 @@ const App = () => (
                           <Route path="telegram" element={<AdminTelegram />} />
                           <Route path="investor-deck" element={<InvestorDeck />} />
                           <Route path="aimtell" element={<AdminAimtell />} />
+                          <Route path="api-keys" element={<AdminApiKeys />} />
                         </Route>
+                        <Route path="/embed/market/:id" element={<EmbedMarket />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
                       </SecuritySetupGuard>

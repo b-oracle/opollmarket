@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { X, Download, Copy, Share2, Loader2, Twitter, Facebook, MessageCircle, Send } from "lucide-react";
+import { X, Download, Copy, Share2, Loader2, Twitter, Facebook, MessageCircle, Send, Code } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import html2canvas from "html2canvas";
@@ -201,6 +201,14 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
     window.open(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(`🔥 "${title}" - Make your prediction now!`)}`, "_blank");
   };
 
+  const handleCopyEmbed = () => {
+    const marketId = marketUrl.split("/market/")[1]?.split("?")[0];
+    if (!marketId) { toast.error("Could not generate embed code"); return; }
+    const embedCode = `<iframe src="https://opoll.org/embed/market/${marketId}" width="400" height="320" frameborder="0" style="border-radius:12px" loading="lazy"></iframe>`;
+    navigator.clipboard.writeText(embedCode);
+    toast.success("Embed code copied!");
+  };
+
   if (!open) return null;
 
   return (
@@ -276,6 +284,9 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
               </button>
               <button onClick={handleTelegram} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors">
                 <Send className="w-3.5 h-3.5" /> Telegram
+              </button>
+              <button onClick={handleCopyEmbed} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors col-span-3">
+                <Code className="w-3.5 h-3.5" /> Copy Embed Code
               </button>
             </div>
           </div>

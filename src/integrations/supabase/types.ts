@@ -38,6 +38,74 @@ export type Database = {
         }
         Relationships: []
       }
+      api_keys: {
+        Row: {
+          api_key: string
+          created_at: string
+          id: string
+          is_active: boolean
+          partner_name: string
+          permissions: Json
+          rate_limit_per_min: number
+          updated_at: string
+          webhook_url: string | null
+        }
+        Insert: {
+          api_key: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          partner_name: string
+          permissions?: Json
+          rate_limit_per_min?: number
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Update: {
+          api_key?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          partner_name?: string
+          permissions?: Json
+          rate_limit_per_min?: number
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
+      api_request_logs: {
+        Row: {
+          api_key_id: string
+          created_at: string
+          endpoint: string
+          id: string
+          ip: string | null
+        }
+        Insert: {
+          api_key_id: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          ip?: string | null
+        }
+        Update: {
+          api_key_id?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          ip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_request_logs_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string

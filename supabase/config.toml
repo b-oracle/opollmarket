@@ -89,3 +89,7 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.balance-reconciliation]
     verify_jwt = false
+  [functions.api-public]
+    verify_jwt = false
+  [functions.sdk-js]
+    verify_jwt = false
