@@ -1238,7 +1238,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Payment Method</span>
                           <span className="font-semibold">
-                            {isDeposit && paymentMethod === "fiat" ? "Fiat (NGN)" : !isDeposit && withdrawMethod === "fiat" ? "Bank Transfer (NGN)" : ALL_CRYPTO_OPTIONS.find((c) => c.value === selectedCrypto)?.label}
+                            {isDeposit && paymentMethod === "fiat" ? "Fiat (NAIRA)" : !isDeposit && withdrawMethod === "fiat" ? "Bank Transfer (NGN)" : ALL_CRYPTO_OPTIONS.find((c) => c.value === selectedCrypto)?.label}
                           </span>
                         </div>
                         {!isDeposit && withdrawMethod === "crypto" && (
