@@ -1214,6 +1214,24 @@ export type Database = {
           },
         ]
       }
+      platform_pool: {
+        Row: {
+          balance: number
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       polymarket_presets: {
         Row: {
           auto_approve: boolean
@@ -1955,6 +1973,7 @@ export type Database = {
             }
             Returns: undefined
           }
+      adjust_platform_pool: { Args: { _delta: number }; Returns: undefined }
       debit_balance_atomic: {
         Args: { _bonus_deduct?: number; _main_deduct: number; _user_id: string }
         Returns: Json
