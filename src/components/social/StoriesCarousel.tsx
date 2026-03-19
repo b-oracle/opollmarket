@@ -93,19 +93,21 @@ const StoriesCarousel = () => {
             onClick={() => hasOwnStories ? setViewerData({ group: ownGroup!, index: 0 }) : setCreatorOpen(true)}
             className="flex flex-col items-center gap-1 shrink-0"
           >
-            <div className={`w-14 h-14 rounded-full flex items-center justify-center relative overflow-hidden ${
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center relative ${
               hasOwnStories ? "ring-2 ring-primary" : "ring-2 ring-dashed ring-muted-foreground/30"
             }`}>
-              {hasOwnStories && ownGroup?.profile?.avatar_url ? (
-                <img src={ownGroup.profile.avatar_url} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full bg-muted flex items-center justify-center">
-                  <Plus className="w-5 h-5 text-muted-foreground" />
-                </div>
-              )}
+              <div className="w-full h-full rounded-full overflow-hidden">
+                {hasOwnStories && ownGroup?.profile?.avatar_url ? (
+                  <img src={ownGroup.profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-muted flex items-center justify-center">
+                    <Plus className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
               {hasOwnStories && (
-                <div className="absolute bottom-0 right-0 w-4 h-4 bg-primary rounded-full flex items-center justify-center border-2 border-background">
-                  <Plus className="w-2.5 h-2.5 text-primary-foreground" />
+                <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center border-2 border-background z-10">
+                  <Plus className="w-3 h-3 text-primary-foreground" />
                 </div>
               )}
             </div>
