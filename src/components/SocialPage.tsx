@@ -28,7 +28,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const followCounts = useFollowCounts(user?.id);
-  const [activeTab, setActiveTab] = useState<"posts" | "activity" | "followers" | "following" | "suggestions">("posts");
+  const [activeTab, setActiveTab] = useState<"posts" | "activity" | "spaces" | "followers" | "following" | "suggestions">("posts");
   const [followersPage, setFollowersPage] = useState(1);
   const [followingPage, setFollowingPage] = useState(1);
   const [suggestionsPage, setSuggestionsPage] = useState(1);
