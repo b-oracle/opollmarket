@@ -43,6 +43,20 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle }
   const [searching, setSearching] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Pre-link market when opened from share modal
+  useEffect(() => {
+    if (open && preLinkedMarketId && !selectedMarket) {
+      supabase
+        .from("markets")
+        .select("id, title, image_url, yes_price, no_price")
+        .eq("id", preLinkedMarketId)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) setSelectedMarket(data as MarketResult);
+        });
+    }
+  }, [open, preLinkedMarketId]);
+
   if (!user) return null;
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
