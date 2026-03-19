@@ -486,8 +486,12 @@ const MarketDetail = () => {
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const [commentsReached, setCommentsReached] = useState(false);
 
-  // Dynamic SEO via SEOHead
-  const ogImageUrl = id ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-image?id=${id}` : undefined;
+  // Dynamic SEO via SEOHead — prefer the market's own image for rich social cards
+  const ogImageUrl = market?.image_url
+    ? market.image_url
+    : id
+      ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-image?id=${id}`
+      : undefined;
 
   const chartData = usePriceHistory(
     id, timePeriod, yesPercent, noPercent, isMulti, market?.options
