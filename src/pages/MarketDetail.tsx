@@ -29,6 +29,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useBookmark } from "@/hooks/useBookmark";
 import { toast } from "sonner";
 import useAnalytics from "@/hooks/useAnalytics";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 
 const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
