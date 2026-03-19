@@ -1,18 +1,57 @@
 
-## Plan: Move Wallet Connection into the Connect Section
 
-**Current state**: The Profile page has two separate sections:
-1. **"Wallet Connection"** section (lines 1378-1480) — standalone section with wallet connect/disconnect UI
-2. **"Connect"** section (lines 1746-1761) — contains Telegram, WhatsApp, and Follow on X
+## Plan: Link X (Twitter) Account to User Profile
 
-**Change**: Remove the standalone "Wallet Connection" section and move its content into the "Connect" section, placing it as the first item before Telegram.
+### Overview
+Allow users to connect their X account via OAuth 2.0 PKCE flow. Once linked, their verified handle displays on their profile, they can auto-share predictions, and their X identity is confirmed.
 
-### Implementation
+### What's Needed
 
-**File: `src/pages/Profile.tsx`**
+**1. Database Changes (Migration)**
+- Add columns to `profiles`: `twitter_username TEXT`, `twitter_id TEXT`, `twitter_avatar_url TEXT`, `twitter_linked_at TIMESTAMPTZ`
+- Create `twitter_tokens` table (user_id, access_token, refresh_token, expires_at, scopes) with RLS restricting access to service role only — no client reads
+- Add unique constraint on `twitter_id` to prevent two OPOLL accounts linking the same X account
 
-1. **Delete** the entire "Wallet Management" block (lines 1378-1480) — the `<div ref={walletSectionRef}>` wrapper with heading "Wallet Connection" and the `glass rounded-xl` card inside it.
+**2. Twitter Developer App Setup**
+- You'll need to configure OAuth 2.0 in your Twitter Developer Portal with:
+  - Redirect URI pointing to an Edge Function callback
+  - Scopes: `tweet.read`, `tweet.write`, `users.read`, `offline.access`
+- Two new secrets needed: `X_CLIENT_ID` and `X_CLIENT_SECRET`
 
-2. **Insert** the wallet card (the inner `<div className="glass rounded-xl p-4">` with all three states: connected, detected, no wallet) into the "Connect" section (line 1749), as the first child inside `<div className="space-y-2">`, before the Telegram and WhatsApp entries. Keep the `ref={walletSectionRef}` on the wallet card div so auto-scroll from `/create` still works.
+**3. Edge Functions**
 
-No other files need changes. The wallet logic (hooks, state, handlers) is already defined at the component level and will work regardless of where the JSX is placed.
+- **`twitter-auth-start`** — Generates OAuth 2.0 PKCE authorization URL with state + code_verifier stored in a temporary `twitter_auth_sessions` table. Returns the X authorization URL for the frontend to redirect to.
+
+- **`twitter-auth-callback`** — Handles the redirect from Twitter. Exchanges the authorization code for access + refresh tokens, fetches the user's X profile (`/2/users/me`), stores tokens in `twitter_tokens`, and updates `profiles` with `twitter_username`, `twitter_id`, `twitter_avatar_url`. Redirects user back to `/profile?twitter=linked`.
+
+- **`twitter-post-tweet`** — Authenticated endpoint that posts a tweet on behalf of the user. Accepts `text` body, refreshes token if expired, and calls `POST /2/tweets`. Used for auto-sharing predictions.
+
+- **`twitter-unlink`** — Revokes the token and clears `twitter_*` fields from profiles.
+
+**4. Frontend Changes**
+
+- **Profile Connect section** — Add "Link X Account" button (below wallet, above Telegram). When linked, show verified handle with ✓ badge and unlink option.
+
+- **BetModal / Create page** — Add "Share to X" toggle. When enabled, after a successful bet/market creation, call `twitter-post-tweet` with a pre-formatted message including the market link.
+
+- **UserProfile page** — Display the verified X handle as a clickable badge linking to their X profile.
+
+**5. Auto-Share Flow**
+After a bet is placed successfully, if the user has X linked and share toggle is on:
+- Call `twitter-post-tweet` with text like: "I just predicted YES on '{market_title}' 🔮\n\nJoin me → https://opoll.org/market/{id}"
+- Non-blocking — failure doesn't affect the bet
+
+### Security Considerations
+- `twitter_tokens` table: RLS denies all client access; only service role via Edge Functions
+- PKCE flow (no client secret exposed to browser)
+- State parameter to prevent CSRF
+- Unique `twitter_id` constraint prevents impersonation (one X account = one OPOLL account)
+- Token refresh handled server-side in Edge Functions
+
+### Implementation Order
+1. Ask user for `X_CLIENT_ID` and `X_CLIENT_SECRET`
+2. Create migration (profiles columns + twitter_tokens + twitter_auth_sessions tables)
+3. Build the 4 Edge Functions
+4. Add UI in Profile Connect section
+5. Add auto-share toggle to BetModal
+
