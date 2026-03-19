@@ -2310,7 +2310,7 @@ const Create = () => {
                   Back
                 </button>
                 <button
-                  onClick={saveDraft}
+                  onClick={() => saveDraft()}
                   disabled={savingDraft}
                   className="glass py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-95 flex items-center justify-center gap-2 px-4 disabled:opacity-50"
                 >
