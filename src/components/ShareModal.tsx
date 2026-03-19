@@ -189,7 +189,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
   };
 
   const handleTwitter = () => {
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`🔥 "${title}" - Make your prediction now!\n\n${referralLink}`)}`, "_blank");
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`🔥 "${title}" - Make your OPinion count, predict now 👇🏽\n\n${referralLink}`)}`, "_blank");
   };
   const handleFacebook = () => {
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(referralLink)}`, "_blank");
