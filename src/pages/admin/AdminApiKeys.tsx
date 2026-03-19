@@ -122,8 +122,8 @@ const AdminApiKeys = () => {
           <h2 className="text-xl font-bold">API Keys</h2>
           <p className="text-sm text-muted-foreground">Manage partner API access, webhooks & white-labeling</p>
         </div>
-        <Button size="sm" variant="outline" onClick={fetchKeys}>
-          <RefreshCw className="w-4 h-4 mr-1" /> Refresh
+        <Button size="sm" variant="outline" onClick={fetchKeys} disabled={loading}>
+          <RefreshCw className={`w-4 h-4 mr-1 transition-transform ${loading ? "animate-spin" : ""}`} /> Refresh
         </Button>
       </div>
 
