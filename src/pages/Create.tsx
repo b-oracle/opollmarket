@@ -1254,8 +1254,12 @@ const Create = () => {
   const handleFeeBypass = async () => {
     if (!user) { toast.error("Sign in first"); return; }
     if (balance < marketCreationFee) {
-      toast.error(`Insufficient balance. You need at least $${marketCreationFee} to proceed.`);
-      setDepositModalOpen(true);
+      toast.error(`Insufficient balance. You need at least $${marketCreationFee} to proceed.`, {
+        action: {
+          label: "Deposit Now",
+          onClick: () => navigate("/portfolio?deposit=true"),
+        },
+      });
       return;
     }
     setShowFeeConfirm(true);
