@@ -296,6 +296,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
               {/* Tabs */}
               <div className="flex gap-1 p-1 rounded-xl bg-muted/50">
                 {([
+                  { key: "posts", label: "Posts", icon: FileText },
                   { key: "activity", label: "Activity", icon: Heart },
                   { key: "followers", label: `${followers.length}`, icon: Users },
                   { key: "following", label: `${following.length}`, icon: UserCheck },
