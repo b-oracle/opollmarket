@@ -699,6 +699,7 @@ const Profile = () => {
   const [txFilter, setTxFilter] = useState<FilterType>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [txPage, setTxPage] = useState(1);
+  const [txHistoryOpen, setTxHistoryOpen] = useState(true);
   const TX_PER_PAGE = 10;
   const [editingProfile, setEditingProfile] = useState(false);
   const [editName, setEditName] = useState(user?.user_metadata?.display_name || "");
