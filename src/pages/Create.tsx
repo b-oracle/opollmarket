@@ -1281,6 +1281,7 @@ const Create = () => {
 
   const confirmFeeEscrow = async () => {
     setShowFeeConfirm(false);
+    setFeeBypassLoading(true);
     try {
       const { data, error } = await supabase.rpc("hold_creation_fee_escrow" as any, {
         _user_id: user!.id,
@@ -1297,6 +1298,8 @@ const Create = () => {
       toast.success("Access Granted! 🎉 Your $" + marketCreationFee + " fee is held in escrow.");
     } catch (err: any) {
       toast.error(err.message || "Escrow failed");
+    } finally {
+      setFeeBypassLoading(false);
     }
   };
 
