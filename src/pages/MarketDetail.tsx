@@ -727,6 +727,17 @@ const MarketDetail = () => {
           />
         )}
 
+        {/* Live Twitter Engagement Tracker */}
+        {market.twitterMetricType && market.twitterResourceId && (
+          <TwitterEngagementTracker
+            metricType={market.twitterMetricType}
+            resourceId={market.twitterResourceId}
+            currentCount={market.twitterCurrentCount ?? 0}
+            options={market.options}
+            deadline={market.autoResolveDeadline}
+          />
+        )}
+
         {activeBoost && (
           <div className="mb-4">
             <BoostCountdown endsAt={activeBoost.ends_at} tier={activeBoost.tier} />
