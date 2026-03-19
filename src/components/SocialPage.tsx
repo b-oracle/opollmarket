@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useFollowCounts } from "@/hooks/useFollow";
 import FollowButton from "@/components/FollowButton";
 import ActivityFeed from "@/components/ActivityFeed";
+import StatusFeed from "@/components/social/StatusFeed";
 import NftBadge, { isNftAvatar } from "@/components/NftBadge";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
