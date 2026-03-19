@@ -315,6 +315,7 @@ const Commissions = () => {
             <p className="text-sm text-muted-foreground">No commission records yet</p>
           </div>
         ) : (
+          <>
           <div className="space-y-2">
             {filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE).map((record) => {
               const badge = categoryBadge[record.category];
@@ -340,8 +341,6 @@ const Commissions = () => {
               );
             })}
           </div>
-
-          {/* Pagination */}
           {(() => {
             const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
             if (totalPages <= 1) return null;
@@ -377,6 +376,7 @@ const Commissions = () => {
               </div>
             );
           })()}
+          </>
         )}
       </div>
       <BottomNav />
