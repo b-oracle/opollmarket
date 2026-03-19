@@ -20,9 +20,6 @@ const StoriesCarousel = () => {
   const [creatorOpen, setCreatorOpen] = useState(false);
   const [viewerData, setViewerData] = useState<{ group: StoryGroup; index: number } | null>(null);
 
-  if (!isFeatureEnabled("social_stories")) return null;
-  const [creatorOpen, setCreatorOpen] = useState(false);
-  const [viewerData, setViewerData] = useState<{ group: StoryGroup; index: number } | null>(null);
 
   // Fetch all active stories filtered by follow connections
   const { data: storyGroups = [] } = useQuery({
