@@ -97,11 +97,19 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
     ? `${marketUrl}${marketUrl.includes("?") ? "&" : "?"}ref=${user.id}`
     : marketUrl;
 
-  // Build an OG-proxy link for social platforms (Twitter, Facebook) so crawlers see correct meta tags
+  // Clean link for display in share text
+  const cleanShareLink = (() => {
+    const marketId = marketUrl.split("/market/")[1]?.split("?")[0];
+    if (!marketId) return referralLink;
+    const base = `https://opoll.org/market/${marketId}`;
+    return user ? `${base}?ref=${user.id}` : base;
+  })();
+
+  // OG-proxy link for social platform crawlers (Twitter, Facebook) to read correct meta tags
   const ogShareLink = (() => {
     const marketId = marketUrl.split("/market/")[1]?.split("?")[0];
     if (!marketId) return referralLink;
-    const base = `https://opoll.org/functions/v1/og-share?id=${marketId}`;
+    const base = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-share?id=${marketId}`;
     return user ? `${base}&ref=${user.id}` : base;
   })();
 
