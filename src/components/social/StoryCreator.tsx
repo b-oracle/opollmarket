@@ -3,8 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { X, Image, Send, Loader2 } from "lucide-react";
+import { X, Image, Send, Loader2, BarChart3, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Input } from "@/components/ui/input";
 
 const BG_COLORS = [
   "#1a1a2e", "#16213e", "#0f3460", "#533483",
@@ -17,6 +18,14 @@ interface StoryCreatorProps {
   onClose: () => void;
 }
 
+interface MarketResult {
+  id: string;
+  title: string;
+  image_url: string | null;
+  yes_price: number;
+  no_price: number;
+}
+
 const StoryCreator = ({ open, onClose }: StoryCreatorProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -25,6 +34,11 @@ const StoryCreator = ({ open, onClose }: StoryCreatorProps) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
+  const [selectedMarket, setSelectedMarket] = useState<MarketResult | null>(null);
+  const [marketSearchOpen, setMarketSearchOpen] = useState(false);
+  const [marketQuery, setMarketQuery] = useState("");
+  const [marketResults, setMarketResults] = useState<MarketResult[]>([]);
+  const [searching, setSearching] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   if (!user) return null;
@@ -35,6 +49,21 @@ const StoryCreator = ({ open, onClose }: StoryCreatorProps) => {
     if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5MB"); return; }
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleMarketSearch = async (q: string) => {
+    setMarketQuery(q);
+    if (q.trim().length < 2) { setMarketResults([]); return; }
+    setSearching(true);
+    const { data } = await supabase
+      .from("markets")
+      .select("id, title, image_url, yes_price, no_price")
+      .ilike("title", `%${q.trim()}%`)
+      .in("status", ["active", "ended"])
+      .order("created_at", { ascending: false })
+      .limit(5);
+    setMarketResults((data as MarketResult[]) || []);
+    setSearching(false);
   };
 
   const handlePost = async () => {
@@ -56,12 +85,14 @@ const StoryCreator = ({ open, onClose }: StoryCreatorProps) => {
         content: content.trim() || null,
         image_url,
         background_color: imageFile ? null : bgColor,
+        market_id: selectedMarket?.id || null,
       });
       if (error) throw error;
 
       setContent("");
       setImageFile(null);
       setImagePreview(null);
+      setSelectedMarket(null);
       queryClient.invalidateQueries({ queryKey: ["stories"] });
       toast.success("Story posted!");
       onClose();
@@ -118,6 +149,24 @@ const StoryCreator = ({ open, onClose }: StoryCreatorProps) => {
                   className="absolute inset-0 w-full h-full bg-transparent text-white text-center text-lg font-bold p-6 resize-none focus:outline-none placeholder:text-white/40 flex items-center justify-center"
                   style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}
                 />
+                {/* Market preview on story */}
+                {selectedMarket && (
+                  <div className="absolute bottom-4 left-3 right-3 bg-black/60 backdrop-blur-md rounded-xl p-2.5 flex items-center gap-2.5 border border-white/10">
+                    {selectedMarket.image_url && (
+                      <img src={selectedMarket.image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-[10px] font-semibold truncate">{selectedMarket.title}</p>
+                      <div className="flex gap-2 mt-0.5">
+                        <span className="text-emerald-400 text-[9px] font-bold">Yes {Math.round(Number(selectedMarket.yes_price) * 100)}¢</span>
+                        <span className="text-red-400 text-[9px] font-bold">No {Math.round(Number(selectedMarket.no_price) * 100)}¢</span>
+                      </div>
+                    </div>
+                    <button onClick={() => setSelectedMarket(null)} className="text-white/50 hover:text-white">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -136,13 +185,48 @@ const StoryCreator = ({ open, onClose }: StoryCreatorProps) => {
                   ))}
                 </div>
               )}
-              <div className="flex justify-center">
+
+              {/* Market search picker */}
+              {marketSearchOpen && (
+                <div className="bg-muted rounded-xl p-3 space-y-2">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <Input
+                      value={marketQuery}
+                      onChange={(e) => handleMarketSearch(e.target.value)}
+                      placeholder="Search markets..."
+                      className="pl-8 h-8 text-xs"
+                      autoFocus
+                    />
+                  </div>
+                  {searching && <p className="text-[10px] text-muted-foreground text-center">Searching…</p>}
+                  {marketResults.map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => { setSelectedMarket(m); setMarketSearchOpen(false); setMarketQuery(""); setMarketResults([]); }}
+                      className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-background/60 transition-colors text-left"
+                    >
+                      {m.image_url && <img src={m.image_url} alt="" className="w-8 h-8 rounded object-cover shrink-0" />}
+                      <span className="text-xs font-medium truncate flex-1">{m.title}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex justify-center gap-3">
                 <button
                   onClick={() => fileRef.current?.click()}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl glass text-sm font-medium hover:bg-muted transition-colors"
                 >
                   <Image className="w-4 h-4" />
                   {imagePreview ? "Change Image" : "Add Image"}
+                </button>
+                <button
+                  onClick={() => setMarketSearchOpen(!marketSearchOpen)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl glass text-sm font-medium hover:bg-muted transition-colors ${selectedMarket ? "ring-1 ring-primary" : ""}`}
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  {selectedMarket ? "Change Market" : "Link Market"}
                 </button>
                 <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
               </div>

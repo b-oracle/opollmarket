@@ -1983,6 +1983,7 @@ export type Database = {
           expires_at: string
           id: string
           image_url: string | null
+          market_id: string | null
           user_id: string
         }
         Insert: {
@@ -1992,6 +1993,7 @@ export type Database = {
           expires_at?: string
           id?: string
           image_url?: string | null
+          market_id?: string | null
           user_id: string
         }
         Update: {
@@ -2001,9 +2003,18 @@ export type Database = {
           expires_at?: string
           id?: string
           image_url?: string | null
+          market_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "stories_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       story_views: {
         Row: {

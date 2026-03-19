@@ -1,10 +1,22 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Story {
   id: string;
@@ -12,6 +24,7 @@ interface Story {
   content?: string | null;
   image_url?: string | null;
   background_color?: string | null;
+  market_id?: string | null;
   expires_at: string;
   created_at: string;
 }
@@ -23,14 +36,34 @@ interface StoryViewerProps {
   onClose: () => void;
 }
 
-const StoryViewer = ({ stories, initialIndex = 0, profile, onClose }: StoryViewerProps) => {
+const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClose }: StoryViewerProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const [stories, setStories] = useState(initialStories);
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [progress, setProgress] = useState(0);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const story = stories[currentIndex];
-  const DURATION = 5000; // 5 seconds per story
+  const isOwnStory = user?.id === story?.user_id;
+  const DURATION = 5000;
+
+  // Fetch market details if story has a market_id
+  const { data: market } = useQuery({
+    queryKey: ["story-market", story?.market_id],
+    queryFn: async () => {
+      if (!story?.market_id) return null;
+      const { data } = await supabase
+        .from("markets")
+        .select("id, title, image_url, yes_price, no_price, category")
+        .eq("id", story.market_id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!story?.market_id,
+  });
 
   // Record view
   useEffect(() => {
@@ -40,8 +73,9 @@ const StoryViewer = ({ stories, initialIndex = 0, profile, onClose }: StoryViewe
     });
   }, [story?.id, user?.id]);
 
-  // Auto-advance timer
+  // Auto-advance timer — pause during delete confirmation
   useEffect(() => {
+    if (showDeleteConfirm) return;
     setProgress(0);
     const interval = setInterval(() => {
       setProgress((p) => {
@@ -58,7 +92,7 @@ const StoryViewer = ({ stories, initialIndex = 0, profile, onClose }: StoryViewe
       });
     }, 50);
     return () => clearInterval(interval);
-  }, [currentIndex, stories.length]);
+  }, [currentIndex, stories.length, showDeleteConfirm]);
 
   const goNext = useCallback(() => {
     if (currentIndex < stories.length - 1) {
@@ -75,6 +109,44 @@ const StoryViewer = ({ stories, initialIndex = 0, profile, onClose }: StoryViewe
       setProgress(0);
     }
   }, [currentIndex]);
+
+  const handleDelete = async () => {
+    if (!story || !user) return;
+    setDeleting(true);
+    try {
+      // Delete image from storage if present
+      if (story.image_url) {
+        const urlParts = story.image_url.split("/social-media/");
+        if (urlParts[1]) {
+          await supabase.storage.from("social-media").remove([urlParts[1]]);
+        }
+      }
+      const { error } = await supabase
+        .from("stories")
+        .delete()
+        .eq("id", story.id)
+        .eq("user_id", user.id);
+      if (error) throw error;
+
+      toast.success("Story deleted");
+      queryClient.invalidateQueries({ queryKey: ["stories"] });
+
+      // Remove from local list and advance
+      const remaining = stories.filter((s) => s.id !== story.id);
+      if (remaining.length === 0) {
+        onClose();
+      } else {
+        setStories(remaining);
+        setCurrentIndex(Math.min(currentIndex, remaining.length - 1));
+        setProgress(0);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete story");
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
 
   if (!story) return null;
 
@@ -116,6 +188,14 @@ const StoryViewer = ({ stories, initialIndex = 0, profile, onClose }: StoryViewe
             <p className="text-white text-xs font-semibold truncate">{name}</p>
             <p className="text-white/50 text-[9px]">{timeAgo}</p>
           </div>
+          {isOwnStory && (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"
+            >
+              <Trash2 className="w-4 h-4 text-red-400" />
+            </button>
+          )}
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
             <X className="w-4 h-4 text-white" />
           </button>
@@ -139,6 +219,26 @@ const StoryViewer = ({ stories, initialIndex = 0, profile, onClose }: StoryViewe
           )}
         </div>
 
+        {/* Market card overlay */}
+        {market && (
+          <button
+            onClick={() => { onClose(); navigate(`/market/${market.id}`); }}
+            className="absolute bottom-16 left-4 right-4 z-20 bg-black/60 backdrop-blur-md rounded-xl p-3 flex items-center gap-3 border border-white/10"
+          >
+            {market.image_url && (
+              <img src={market.image_url} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
+            )}
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-white text-xs font-semibold truncate">{market.title}</p>
+              <div className="flex gap-2 mt-1">
+                <span className="text-emerald-400 text-[10px] font-bold">Yes {Math.round(Number(market.yes_price) * 100)}¢</span>
+                <span className="text-red-400 text-[10px] font-bold">No {Math.round(Number(market.no_price) * 100)}¢</span>
+              </div>
+            </div>
+            <span className="text-white/50 text-[9px] shrink-0">View →</span>
+          </button>
+        )}
+
         {/* Tap zones */}
         <div className="absolute inset-0 z-10 flex">
           <div className="w-1/3 h-full cursor-pointer" onClick={goPrev} />
@@ -146,6 +246,24 @@ const StoryViewer = ({ stories, initialIndex = 0, profile, onClose }: StoryViewe
           <div className="w-1/3 h-full cursor-pointer" onClick={goNext} />
         </div>
       </motion.div>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent className="z-[90]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Story</AlertDialogTitle>
+            <AlertDialogDescription>
+              This story will be permanently deleted. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AnimatePresence>
   );
 };
