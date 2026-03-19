@@ -1,19 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import StatusCard from "./StatusCard";
 import StatusComposer from "./StatusComposer";
 import { Loader2, FileText } from "lucide-react";
 
 interface StatusFeedProps {
-  /** If provided, show statuses only from this user */
   userId?: string;
-  /** Show composer at top */
   showComposer?: boolean;
 }
 
 const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
   const { user } = useAuth();
+  const { isFeatureEnabled } = useFeatureToggles();
+
+  
 
   // If userId provided, show that user's statuses. Otherwise show ALL public posts (Twitter-style).
   const { data: statuses = [], isLoading } = useQuery({
@@ -53,6 +55,8 @@ const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
     },
     enabled: authorIds.length > 0,
   });
+
+  if (!isFeatureEnabled("social_status_feed")) return null;
 
   if (isLoading) {
     return (
