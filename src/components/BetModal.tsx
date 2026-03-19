@@ -1,6 +1,7 @@
 import LogoLoader from "@/components/LogoLoader";
 import { useState, useCallback, useMemo } from "react";
 import BottomSheet from "@/components/BottomSheet";
+import DepositWithdrawModal from "@/components/DepositWithdrawModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -109,6 +110,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
   const [orderType, setOrderType] = useState<OrderType>("market");
   const [limitPriceInput, setLimitPriceInput] = useState("");
   const [insuranceTier, setInsuranceTier] = useState<number | null>(null);
+  const [showDepositModal, setShowDepositModal] = useState(false);
 
   const numAmount = parseFloat(amount) || 0;
   const limitPriceNum = parseFloat(limitPriceInput) || 0;
@@ -216,6 +218,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
   if (!open) return null;
 
   return (
+    <>
     <BottomSheet open={open} onClose={handleClose} maxHeight="80dvh" className="p-4">
               <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-3" />
 
@@ -368,7 +371,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                         <span>Insufficient balance. You need ${(mainNeeded - balance).toFixed(2)} more.</span>
                         <button
                           type="button"
-                          onClick={() => navigate("/profile")}
+                          onClick={() => setShowDepositModal(true)}
                           className="underline font-semibold hover:text-destructive/80 transition-colors"
                         >
                           Deposit
@@ -765,6 +768,13 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                 )}
               </AnimatePresence>
     </BottomSheet>
+
+      <DepositWithdrawModal
+        open={showDepositModal}
+        onClose={() => setShowDepositModal(false)}
+        initialTab="deposit"
+      />
+    </>
   );
 };
 
