@@ -88,11 +88,22 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!bank_code || !account_number || account_number.length < 10 || !account_name) {
+    const normalizedBankCode = String(bank_code ?? "").replace(/\s+/g, "").trim();
+    const normalizedAccountNumber = String(account_number ?? "").replace(/\D/g, "");
+
+    if (!normalizedBankCode || normalizedAccountNumber.length !== 10 || !account_name) {
       return new Response(
         JSON.stringify({ error: "Valid bank details (bank code, account number, account name) required" }),
         { status: 400, headers: corsHeaders }
       );
+    }
+
+    const payazaBankCode =
+      Object.entries(PAYAZA_TO_FW_MAP).find(([, fwCode]) => fwCode === normalizedBankCode)?.[0] ||
+      normalizedBankCode;
+
+    if (payazaBankCode !== normalizedBankCode) {
+      console.log(`Mapped incoming bank code ${normalizedBankCode} -> ${payazaBankCode} for Payaza payout`);
     }
 
     // ─── Deposit requirement check ───
@@ -211,7 +222,7 @@ Deno.serve(async (req) => {
     await adminClient.from("withdrawal_requests").insert({
       user_id: userId,
       amount,
-      wallet_address: `${bank_code}:${account_number}:${account_name}`,
+      wallet_address: `${payazaBankCode}:${normalizedAccountNumber}:${account_name}`,
       crypto_currency: "NGN",
       status: "pending",
     });
@@ -238,8 +249,8 @@ Deno.serve(async (req) => {
         merchantKey: Deno.env.get("PAYAZA_MERCHANT_KEY") || "",
         transactionReference,
         ngnPayout,
-        accountNumber: account_number,
-        bankCode: bank_code,
+        accountNumber: normalizedAccountNumber,
+        bankCode: payazaBankCode,
         accountName: account_name,
         netAmount,
       });
@@ -253,8 +264,8 @@ Deno.serve(async (req) => {
         secretKey: flutterwaveKey,
         transactionReference,
         ngnPayout,
-        accountNumber: account_number,
-        bankCode: bank_code,
+        accountNumber: normalizedAccountNumber,
+        bankCode: payazaBankCode,
         netAmount,
       });
     };
