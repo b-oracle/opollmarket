@@ -99,9 +99,6 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
   const [postingToFeed, setPostingToFeed] = useState(false);
   const [storyCreatorOpen, setStoryCreatorOpen] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [screenshot, setScreenshot] = useState<string | null>(null);
-  const [capturing, setCapturing] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const referralLink = user
     ? `${marketUrl}${marketUrl.includes("?") ? "&" : "?"}ref=${user.id}`
