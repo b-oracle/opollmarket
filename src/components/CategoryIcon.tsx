@@ -1,4 +1,4 @@
-import { Bitcoin, Bot, Rocket, TrendingUp, Music, Trophy, Landmark, Lightbulb, BarChart3, ArrowLeftRight, type LucideIcon } from "lucide-react";
+import { Bitcoin, Bot, Rocket, TrendingUp, Music, Trophy, Landmark, Lightbulb, BarChart3, ArrowLeftRight, Twitter, type LucideIcon } from "lucide-react";
 
 export const categoryIconMap: Record<string, LucideIcon> = {
   Crypto: Bitcoin,
@@ -10,6 +10,7 @@ export const categoryIconMap: Record<string, LucideIcon> = {
   Entertainment: Music,
   Sports: Trophy,
   Politics: Landmark,
+  "Twitter/X": Twitter,
   Other: Lightbulb,
 };
 
