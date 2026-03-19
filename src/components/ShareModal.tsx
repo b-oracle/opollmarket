@@ -225,109 +225,167 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
   };
 
   const handleCopyEmbed = () => {
-    const marketId = marketUrl.split("/market/")[1]?.split("?")[0];
-    if (!marketId) { toast.error("Could not generate embed code"); return; }
-    const embedCode = `<iframe src="https://opoll.org/embed/market/${marketId}" width="400" height="320" frameborder="0" style="border-radius:12px" loading="lazy"></iframe>`;
+    const mId = marketUrl.split("/market/")[1]?.split("?")[0];
+    if (!mId) { toast.error("Could not generate embed code"); return; }
+    const embedCode = `<iframe src="https://opoll.org/embed/market/${mId}" width="400" height="320" frameborder="0" style="border-radius:12px" loading="lazy"></iframe>`;
     navigator.clipboard.writeText(embedCode);
     toast.success("Embed code copied!");
   };
 
-  if (!open) return null;
+  const handleShareToFeed = async () => {
+    if (!user) { toast.error("Sign in to share to feed"); return; }
+    setPostingToFeed(true);
+    try {
+      const { error } = await supabase.from("social_posts").insert({
+        user_id: user.id,
+        content: `🔥 Check out "${title}" on our prediction market! Make your OPinion count 👇🏽\n\n${cleanShareLink}`,
+        market_id: marketId || null,
+      });
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["social-posts"] });
+      toast.success("Shared to your feed!");
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to share to feed");
+    } finally {
+      setPostingToFeed(false);
+    }
+  };
+
+  const handleShareToStory = () => {
+    if (!user) { toast.error("Sign in to share to story"); return; }
+    onOpenChange(false);
+    setTimeout(() => setStoryCreatorOpen(true), 300);
+  };
+
+  if (!open && !storyCreatorOpen) return null;
 
   return (
     <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-50 bg-background/60 backdrop-blur-sm"
-        onClick={() => onOpenChange(false)}
-      />
+      {open && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-50 bg-background/60 backdrop-blur-sm"
+            onClick={() => onOpenChange(false)}
+          />
 
-      {/* Modal */}
-      <div className="fixed inset-x-0 z-50 flex items-center justify-center pointer-events-none"
-        style={{ top: "calc(3.5rem + env(safe-area-inset-top))", bottom: "calc(4rem + env(safe-area-inset-bottom))", padding: "1rem" }}>
-        <div
-          className="pointer-events-auto w-full max-w-sm md:max-w-lg bg-card border border-border rounded-2xl shadow-xl overflow-hidden flex flex-col"
-          style={{ maxHeight: "100%" }}
-        >
-          {/* Sticky header with close button */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 shrink-0">
-            <h3 className="text-sm font-bold">Share</h3>
-            <button
-              onClick={() => onOpenChange(false)}
-              className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
+          {/* Modal */}
+          <div className="fixed inset-x-0 z-50 flex items-center justify-center pointer-events-none"
+            style={{ top: "calc(3.5rem + env(safe-area-inset-top))", bottom: "calc(4rem + env(safe-area-inset-bottom))", padding: "1rem" }}>
+            <div
+              className="pointer-events-auto w-full max-w-sm md:max-w-lg bg-card border border-border rounded-2xl shadow-xl overflow-hidden flex flex-col"
+              style={{ maxHeight: "100%" }}
             >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+              {/* Sticky header with close button */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 shrink-0">
+                <h3 className="text-sm font-bold">Share</h3>
+                <button
+                  onClick={() => onOpenChange(false)}
+                  className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
 
-          {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", willChange: "scroll-position" } as React.CSSProperties}>
-            {/* Screenshot preview */}
-            <div className="px-4 py-3">
-              <div className="rounded-xl overflow-hidden bg-muted/30 border border-border/20 flex items-center justify-center min-h-[120px]">
-                {capturing ? (
-                  <div className="flex flex-col items-center gap-2 py-8">
-                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                    <span className="text-xs text-muted-foreground">Generating preview...</span>
+              {/* Scrollable content */}
+              <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", willChange: "scroll-position" } as React.CSSProperties}>
+                {/* Screenshot preview */}
+                <div className="px-4 py-3">
+                  <div className="rounded-xl overflow-hidden bg-muted/30 border border-border/20 flex items-center justify-center min-h-[120px]">
+                    {capturing ? (
+                      <div className="flex flex-col items-center gap-2 py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                        <span className="text-xs text-muted-foreground">Generating preview...</span>
+                      </div>
+                    ) : screenshot ? (
+                      <img src={screenshot} alt="Preview" className="w-full object-contain max-h-[40vh]" />
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 py-8">
+                        <Share2 className="w-6 h-6 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Preview unavailable</span>
+                      </div>
+                    )}
                   </div>
-                ) : screenshot ? (
-                  <img src={screenshot} alt="Preview" className="w-full object-contain max-h-[40vh]" />
-                ) : (
-                  <div className="flex flex-col items-center gap-2 py-8">
-                    <Share2 className="w-6 h-6 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Preview unavailable</span>
+                </div>
+
+                {/* Sales message */}
+                <div className="px-4 pb-3">
+                  <div className="rounded-xl bg-muted/30 border border-border/20 p-3">
+                    <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-line">{salesMessage}</p>
+                  </div>
+                </div>
+
+                {/* In-app share buttons */}
+                {user && (
+                  <div className="px-4 pb-3 grid grid-cols-2 gap-2">
+                    <button
+                      onClick={handleShareToFeed}
+                      disabled={postingToFeed}
+                      className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary/10 border border-primary/20 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors disabled:opacity-50"
+                    >
+                      {postingToFeed ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <BookOpen className="w-3.5 h-3.5" />}
+                      Share to Feed
+                    </button>
+                    <button
+                      onClick={handleShareToStory}
+                      className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary/10 border border-primary/20 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors"
+                    >
+                      <Camera className="w-3.5 h-3.5" /> Share to Story
+                    </button>
                   </div>
                 )}
-              </div>
-            </div>
 
-            {/* Sales message */}
-            <div className="px-4 pb-3">
-              <div className="rounded-xl bg-muted/30 border border-border/20 p-3">
-                <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-line">{salesMessage}</p>
+                {/* Action buttons */}
+                <div className="px-4 pb-3 grid grid-cols-3 gap-2">
+                  <button onClick={handleCopy} disabled={capturing} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors disabled:opacity-50">
+                    <Copy className="w-3.5 h-3.5" /> Copy
+                  </button>
+                  <button onClick={handleDownload} disabled={capturing || !screenshot} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors disabled:opacity-50">
+                    <Download className="w-3.5 h-3.5" /> Save
+                  </button>
+                  <button onClick={handleTwitter} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors">
+                    <Twitter className="w-3.5 h-3.5" /> Twitter
+                  </button>
+                  <button onClick={handleFacebook} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors">
+                    <Facebook className="w-3.5 h-3.5" /> Facebook
+                  </button>
+                  <button onClick={handleWhatsApp} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors">
+                    <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                  </button>
+                  <button onClick={handleTelegram} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors">
+                    <Send className="w-3.5 h-3.5" /> Telegram
+                  </button>
+                  <button onClick={handleCopyEmbed} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors col-span-3">
+                    <Code className="w-3.5 h-3.5" /> Copy Embed Code
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {/* Action buttons */}
-            <div className="px-4 pb-3 grid grid-cols-3 gap-2">
-              <button onClick={handleCopy} disabled={capturing} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors disabled:opacity-50">
-                <Copy className="w-3.5 h-3.5" /> Copy
-              </button>
-              <button onClick={handleDownload} disabled={capturing || !screenshot} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors disabled:opacity-50">
-                <Download className="w-3.5 h-3.5" /> Save
-              </button>
-              <button onClick={handleTwitter} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors">
-                <Twitter className="w-3.5 h-3.5" /> Twitter
-              </button>
-              <button onClick={handleFacebook} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors">
-                <Facebook className="w-3.5 h-3.5" /> Facebook
-              </button>
-              <button onClick={handleWhatsApp} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors">
-                <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
-              </button>
-              <button onClick={handleTelegram} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors">
-                <Send className="w-3.5 h-3.5" /> Telegram
-              </button>
-              <button onClick={handleCopyEmbed} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors col-span-3">
-                <Code className="w-3.5 h-3.5" /> Copy Embed Code
-              </button>
+              {/* Sticky footer: native share */}
+              {typeof navigator !== "undefined" && navigator.share && (
+                <div className="px-4 py-3 border-t border-border/30 shrink-0" style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}>
+                  <button
+                    onClick={handleNativeShare}
+                    disabled={capturing}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  >
+                    <Share2 className="w-4 h-4" /> Share via...
+                  </button>
+                </div>
+              )}
             </div>
           </div>
+        </>
+      )}
 
-          {/* Sticky footer: native share */}
-          {typeof navigator !== "undefined" && navigator.share && (
-            <div className="px-4 py-3 border-t border-border/30 shrink-0" style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}>
-              <button
-                onClick={handleNativeShare}
-                disabled={capturing}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-colors disabled:opacity-50"
-              >
-                <Share2 className="w-4 h-4" /> Share via...
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Story creator with pre-linked market */}
+      <StoryCreator
+        open={storyCreatorOpen}
+        onClose={() => setStoryCreatorOpen(false)}
+        preLinkedMarketId={marketId}
+        preLinkedMarketTitle={title}
+      />
     </>
   );
 };
