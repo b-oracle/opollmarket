@@ -11,7 +11,7 @@ import SpacesFeed from "@/components/social/SpacesFeed";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Users, UserCheck, Heart, Sparkles, Loader2, ChevronDown, Search, X, FileText,
+  Users, UserCheck, Heart, Sparkles, Loader2, ChevronDown, Search, X, FileText, Radio,
 } from "lucide-react";
 
 interface SocialSectionProps {
