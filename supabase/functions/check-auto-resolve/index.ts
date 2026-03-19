@@ -434,6 +434,144 @@ Deno.serve(async (req) => {
       resolvedCount++;
     }
 
+    // Piggyback: update Twitter market counts & auto-resolve
+    let twitterResolved = 0;
+    try {
+      const { data: twitterData } = await adminClient.functions.invoke("fetch-twitter-metrics", {
+        headers: { Authorization: `Bearer ${serviceRoleKey}` },
+      });
+      console.log("Twitter metrics update:", twitterData?.updated ?? 0);
+
+      // Now check for Twitter markets that have passed their deadline
+      const { data: twitterMarkets } = await adminClient
+        .from("markets")
+        .select("*, market_options!market_options_market_id_fkey(*)")
+        .eq("status", "active")
+        .eq("auto_resolve", true)
+        .not("twitter_metric_type", "is", null)
+        .not("twitter_resource_id", "is", null);
+
+      if (twitterMarkets && twitterMarkets.length > 0) {
+        for (const tm of twitterMarkets) {
+          const deadline = tm.auto_resolve_deadline ? new Date(tm.auto_resolve_deadline) : new Date(tm.end_date);
+          if (new Date() <= deadline) continue; // Not past deadline yet
+
+          const count = tm.twitter_current_count ?? 0;
+          const options = (tm.market_options || []).sort((a: any, b: any) => a.sort_order - b.sort_order);
+
+          if (options.length === 0) continue;
+
+          // Find the winning option based on which range bracket the count falls into
+          let winningOptionId: string | null = null;
+          for (const opt of options) {
+            const rangeMatch = opt.label.match(/^(\d+)\s*[-–]\s*(\d+)$/);
+            const ltMatch = opt.label.match(/^[<≤]\s*(\d+)$/);
+            const gtMatch = opt.label.match(/^[>≥]\s*(\d+)$/);
+
+            if (rangeMatch && count >= parseInt(rangeMatch[1]) && count <= parseInt(rangeMatch[2])) {
+              winningOptionId = opt.id;
+              break;
+            }
+            if (ltMatch && count < parseInt(ltMatch[1])) {
+              winningOptionId = opt.id;
+              break;
+            }
+            if (gtMatch && count > parseInt(gtMatch[1])) {
+              winningOptionId = opt.id;
+              break;
+            }
+          }
+
+          if (!winningOptionId) {
+            // Default to last option (usually "Other" or highest range)
+            winningOptionId = options[options.length - 1].id;
+          }
+
+          // Resolve the market
+          await adminClient
+            .from("markets")
+            .update({
+              status: "resolved",
+              winning_option_id: winningOptionId,
+            })
+            .eq("id", tm.id);
+
+          // Find winning positions (those who picked the winning option)
+          const { data: winPositions } = await adminClient
+            .from("positions")
+            .select("*")
+            .eq("market_id", tm.id)
+            .eq("option_id", winningOptionId)
+            .gt("shares", 0);
+
+          const { data: allPositions } = await adminClient
+            .from("positions")
+            .select("*")
+            .eq("market_id", tm.id)
+            .gt("shares", 0);
+
+          const winners = winPositions || [];
+          const losers = (allPositions || []).filter((p: any) => p.option_id !== winningOptionId);
+          const isOneSided = losers.length === 0 || winners.length === 0;
+
+          if (winners.length === 0) {
+            console.log(`Twitter market ${tm.id}: No winners — platform profit`);
+          } else if (isOneSided && losers.length === 0) {
+            const { data: feeSettings } = await adminClient
+              .from("commission_settings")
+              .select("admin_fee_percent")
+              .limit(1)
+              .single();
+            const adminFeePercent = feeSettings?.admin_fee_percent ?? 2;
+            for (const pos of winners) {
+              const capital = pos.shares * pos.avg_price;
+              const fee = capital * (adminFeePercent / 100);
+              const payout = capital - fee;
+              if (payout <= 0) continue;
+              await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout });
+              await adminClient.from("transactions").insert({
+                user_id: pos.user_id, market_id: tm.id, option_id: pos.option_id,
+                type: "payout", amount: payout, side: pos.side, shares: pos.shares,
+                price: pos.avg_price, status: "confirmed",
+              });
+            }
+          } else {
+            for (const pos of winners) {
+              const payout = pos.shares;
+              await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout });
+              await adminClient.from("transactions").insert({
+                user_id: pos.user_id, market_id: tm.id, option_id: pos.option_id,
+                type: "payout", amount: payout, side: pos.side, shares: pos.shares,
+                price: 1, status: "confirmed",
+              });
+            }
+          }
+
+          // Notifications
+          const winningLabel = options.find((o: any) => o.id === winningOptionId)?.label || "Unknown";
+          const uniqueUsers = new Map<string, string>();
+          for (const p of allPositions || []) {
+            if (!uniqueUsers.has(p.user_id)) uniqueUsers.set(p.user_id, p.option_id);
+          }
+          const notifs = Array.from(uniqueUsers.entries()).map(([userId, optId]) => {
+            const won = optId === winningOptionId;
+            return {
+              user_id: userId,
+              title: won ? "You Won! 🎉 Twitter Market Resolved" : "Twitter Market Resolved",
+              message: `"${tm.title}" resolved to "${winningLabel}" (Count: ${count}). ${won ? "Your payout has been credited!" : "Better luck next time!"}`,
+              type: won ? "payout" : "resolution",
+              market_id: tm.id,
+            };
+          });
+          if (notifs.length > 0) await adminClient.from("notifications").insert(notifs);
+          console.log(`Twitter market ${tm.id}: Resolved to "${winningLabel}" (count=${count})`);
+          twitterResolved++;
+        }
+      }
+    } catch (twitterErr) {
+      console.error("Twitter auto-resolve failed:", twitterErr);
+    }
+
     // Piggyback: run bulk verification sweep
     let verificationResult = null;
     try {
