@@ -1260,9 +1260,14 @@ const Create = () => {
   }, [isConnected, settingsLoaded]);
 
   // Fee bypass — check balance, show confirmation, then escrow
+  const [feeBypassLoading, setFeeBypassLoading] = useState(false);
   const handleFeeBypass = async () => {
     if (!user) { toast.error("Sign in first"); return; }
-    if (balance < marketCreationFee) {
+    if (balanceLoading) {
+      toast.info("Loading your balance, please wait...");
+      return;
+    }
+    if (totalBalance < marketCreationFee) {
       toast.error(`Insufficient balance. You need at least $${marketCreationFee} to proceed.`, {
         action: {
           label: "Deposit Now",
