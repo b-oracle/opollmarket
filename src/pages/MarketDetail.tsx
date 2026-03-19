@@ -487,8 +487,8 @@ const MarketDetail = () => {
   const [commentsReached, setCommentsReached] = useState(false);
 
   // Dynamic SEO via SEOHead — prefer the market's own image for rich social cards
-  const ogImageUrl = market?.image_url
-    ? market.image_url
+  const ogImageUrl = market?.imageUrl
+    ? market.imageUrl
     : id
       ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-image?id=${id}`
       : undefined;
