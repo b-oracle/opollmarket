@@ -164,7 +164,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
     const email = user?.email || "customer@opoll.com";
     const firstName = email.split("@")[0];
 
