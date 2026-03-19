@@ -68,6 +68,9 @@ const mapDbToMarket = (db: DbMarket): Market => ({
   sportPredictedOutcome: db.sport_predicted_outcome || undefined,
   sportLeague: db.sport_league || undefined,
   polymarketEventSlug: db.polymarket_event_slug || undefined,
+  twitterMetricType: db.twitter_metric_type || undefined,
+  twitterResourceId: db.twitter_resource_id || undefined,
+  twitterCurrentCount: db.twitter_current_count ?? 0,
   status: db.status,
   options: db.market_options?.length
     ? db.market_options
