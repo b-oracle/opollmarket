@@ -202,7 +202,29 @@ const StatusCard = ({ status, profile, market, index = 0 }: StatusCardProps) => 
       {/* Content */}
       <RichContent content={status.content} />
 
-      {status.image_url && (
+      {/* Market preview card */}
+      {market && (
+        <div
+          onClick={() => navigate(`/market/${market.id}`)}
+          className="rounded-lg border border-border overflow-hidden cursor-pointer hover:bg-muted/30 transition-colors"
+        >
+          <div className="flex items-center gap-2 p-2">
+            {market.image_url && (
+              <img src={market.image_url} alt="" className="w-12 h-12 rounded object-cover shrink-0" />
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold line-clamp-2">{market.title}</p>
+              <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                <span className="text-emerald-500">Yes {Math.round(market.yes_price * 100)}¢</span>
+                <span className="text-rose-500">No {Math.round(market.no_price * 100)}¢</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Legacy image display (only if no market linked) */}
+      {!market && status.image_url && (
         <img src={status.image_url} alt="" className="rounded-lg max-h-60 w-full object-cover" loading="lazy" />
       )}
 
