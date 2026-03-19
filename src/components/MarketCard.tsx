@@ -686,6 +686,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         onOpenChange={setShareOpen}
         title={market.title}
         description={market.description}
+        marketId={market.id}
         marketUrl={`${window.location.origin}/market/${market.id}`}
         captureRef={captureContentRef}
       />

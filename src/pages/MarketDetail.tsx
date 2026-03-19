@@ -943,6 +943,7 @@ const MarketDetail = () => {
         onOpenChange={setShareOpen}
         title={market.title}
         description={market.description}
+        marketId={market.id}
         marketUrl={window.location.href}
         captureRef={shareRef}
       />
