@@ -1512,6 +1512,10 @@ export type Database = {
           is_public: boolean
           referred_by: string | null
           social_tutorial_seen: boolean
+          twitter_avatar_url: string | null
+          twitter_id: string | null
+          twitter_linked_at: string | null
+          twitter_username: string | null
           updated_at: string
           verification_level: string
           wallet_address: string | null
@@ -1526,6 +1530,10 @@ export type Database = {
           is_public?: boolean
           referred_by?: string | null
           social_tutorial_seen?: boolean
+          twitter_avatar_url?: string | null
+          twitter_id?: string | null
+          twitter_linked_at?: string | null
+          twitter_username?: string | null
           updated_at?: string
           verification_level?: string
           wallet_address?: string | null
@@ -1540,6 +1548,10 @@ export type Database = {
           is_public?: boolean
           referred_by?: string | null
           social_tutorial_seen?: boolean
+          twitter_avatar_url?: string | null
+          twitter_id?: string | null
+          twitter_linked_at?: string | null
+          twitter_username?: string | null
           updated_at?: string
           verification_level?: string
           wallet_address?: string | null
@@ -2200,6 +2212,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      twitter_auth_sessions: {
+        Row: {
+          code_verifier: string
+          created_at: string
+          id: string
+          redirect_url: string | null
+          state: string
+          user_id: string
+        }
+        Insert: {
+          code_verifier: string
+          created_at?: string
+          id?: string
+          redirect_url?: string | null
+          state: string
+          user_id: string
+        }
+        Update: {
+          code_verifier?: string
+          created_at?: string
+          id?: string
+          redirect_url?: string | null
+          state?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      twitter_tokens: {
+        Row: {
+          access_token: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          refresh_token: string | null
+          scopes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          refresh_token?: string | null
+          scopes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          refresh_token?: string | null
+          scopes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
