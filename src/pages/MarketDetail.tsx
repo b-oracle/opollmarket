@@ -450,8 +450,8 @@ const MarketDetail = () => {
   const { boostDetails } = useActiveBoosts();
   const activeBoost = id ? boostDetails.get(id) : undefined;
   const { track } = useAnalytics();
-  const { isFeatureEnabled } = useFeatureToggles();
-  const showWagered = isFeatureEnabled("show_wagered_stats");
+  const { toggles } = useFeatureToggles();
+  const showWagered = toggles.find(t => t.feature_key === "show_wagered_stats")?.enabled ?? false;
 
   const { data: totalWagered } = useQuery({
     queryKey: ["market-total-wagered", id],
