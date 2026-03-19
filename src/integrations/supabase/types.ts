@@ -1063,6 +1063,9 @@ export type Database = {
           status: string
           title: string
           trending: boolean
+          twitter_current_count: number | null
+          twitter_metric_type: string | null
+          twitter_resource_id: string | null
           tx_hash: string | null
           updated_at: string
           video_url: string | null
@@ -1109,6 +1112,9 @@ export type Database = {
           status?: string
           title: string
           trending?: boolean
+          twitter_current_count?: number | null
+          twitter_metric_type?: string | null
+          twitter_resource_id?: string | null
           tx_hash?: string | null
           updated_at?: string
           video_url?: string | null
@@ -1155,6 +1161,9 @@ export type Database = {
           status?: string
           title?: string
           trending?: boolean
+          twitter_current_count?: number | null
+          twitter_metric_type?: string | null
+          twitter_resource_id?: string | null
           tx_hash?: string | null
           updated_at?: string
           video_url?: string | null

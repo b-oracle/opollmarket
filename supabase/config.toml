@@ -99,3 +99,5 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.og-share]
     verify_jwt = false
+  [functions.fetch-twitter-metrics]
+    verify_jwt = false

@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import CryptoPriceTicker from "@/components/CryptoPriceTicker";
 import SportsMatchTicker from "@/components/SportsMatchTicker";
+import TwitterEngagementTracker from "@/components/TwitterEngagementTracker";
 import { useAuth } from "@/hooks/useAuth";
 import { useBookmark } from "@/hooks/useBookmark";
 import { toast } from "sonner";
@@ -722,6 +723,17 @@ const MarketDetail = () => {
             matchId={market.sportMatchId}
             predictedOutcome={market.sportPredictedOutcome}
             league={market.sportLeague}
+            deadline={market.autoResolveDeadline}
+          />
+        )}
+
+        {/* Live Twitter Engagement Tracker */}
+        {market.twitterMetricType && market.twitterResourceId && (
+          <TwitterEngagementTracker
+            metricType={market.twitterMetricType}
+            resourceId={market.twitterResourceId}
+            currentCount={market.twitterCurrentCount ?? 0}
+            options={market.options}
             deadline={market.autoResolveDeadline}
           />
         )}

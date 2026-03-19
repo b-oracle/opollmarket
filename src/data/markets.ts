@@ -35,6 +35,9 @@ export interface Market {
   sportPredictedOutcome?: string;
   sportLeague?: string;
   polymarketEventSlug?: string;
+  twitterMetricType?: string;
+  twitterResourceId?: string;
+  twitterCurrentCount?: number;
   status?: string;
 }
 

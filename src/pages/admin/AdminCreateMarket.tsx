@@ -23,6 +23,7 @@ import {
   Zap,
   Trophy,
   Sparkles,
+  Twitter,
 } from "lucide-react";
 
 import CategoryIcon from "@/components/CategoryIcon";
@@ -33,7 +34,7 @@ import { isPriceAutoResolveCategory, getAssetsForCategory, getAssetClassLabel, g
 
 const CATEGORIES = [
   "Crypto", "Commodities", "Forex", "AI & Tech", "Science", "Economy",
-  "Entertainment", "Sports", "Politics", "Other",
+  "Entertainment", "Sports", "Politics", "Twitter/X", "Other",
 ];
 
 const AdminCreateMarket = () => {
@@ -72,6 +73,11 @@ const AdminCreateMarket = () => {
   const [sportPredictedOutcome, setSportPredictedOutcome] = useState("");
   const [sportLeague, setSportLeague] = useState("");
   const [selectedFixtureData, setSelectedFixtureData] = useState<{ homeTeam: string; awayTeam: string; date: string; league: string; venue: string } | null>(null);
+
+  // Twitter engagement market state
+  const [twitterMetricType, setTwitterMetricType] = useState<"likes" | "replies" | "retweets" | "tweets">("likes");
+  const [twitterResourceId, setTwitterResourceId] = useState("");
+  const [twitterBrackets, setTwitterBrackets] = useState<string[]>(["0-19", "20-39", "40-59", "60-79", "80-99", "> 99"]);
 
   const generateSportsAutoFill = (fixture: { homeTeam: string; awayTeam: string; date: string; league: string; venue: string }, outcome: string) => {
     const matchDate = (() => { try { return new Date(fixture.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); } catch { return fixture.date; } })();
@@ -330,9 +336,12 @@ const AdminCreateMarket = () => {
       }
 
       // Create market
-      const autoResolveDeadline = autoResolve && endDate && autoResolveTime
+      const isTwitterMarket = category === "Twitter/X" && twitterResourceId.trim();
+      const autoResolveDeadline = (autoResolve || isTwitterMarket) && endDate && autoResolveTime
         ? new Date(`${endDate}T${autoResolveTime}:00Z`).toISOString()
         : null;
+
+      const effectiveMarketType = isTwitterMarket ? "multi" : (autoResolve ? "binary" : marketType);
 
       const { data, error } = await supabase
         .from("markets")
@@ -341,7 +350,7 @@ const AdminCreateMarket = () => {
           creator_name: displayName,
           title: title.trim(),
           description: description.trim(),
-          category,
+          category: isTwitterMarket ? "Entertainment" : category,
           end_date: endDate,
           resolution_source: resolutionSource.trim(),
           initial_liquidity: parseFloat(initialLiquidity) || 100,
@@ -350,13 +359,13 @@ const AdminCreateMarket = () => {
           participants: 0,
           simulated_volume: parseFloat(initialVolume) || 0,
           simulated_participants: parseInt(initialTraders) || 0,
-          market_type: autoResolve ? "binary" : marketType,
+          market_type: effectiveMarketType,
           image_url: imageUrl,
           video_url: mediaType === "video" && videoUrl.trim() && isYouTubeUrl(videoUrl.trim()) ? videoUrl.trim() : null,
           details: details.trim() || null,
           trending,
           status: "active",
-          auto_resolve: autoResolve,
+          auto_resolve: autoResolve || !!isTwitterMarket,
           auto_resolve_asset: autoResolve && isPriceAutoResolveCategory(category) ? autoResolveAsset : null,
           auto_resolve_target_price: autoResolve && isPriceAutoResolveCategory(category) ? parseFloat(autoResolveTargetPrice) : null,
           auto_resolve_operator: autoResolve && isPriceAutoResolveCategory(category) ? autoResolveOperator : null,
@@ -365,18 +374,24 @@ const AdminCreateMarket = () => {
           sport_match_id: autoResolve && category === "Sports" ? sportMatchId : null,
           sport_predicted_outcome: autoResolve && category === "Sports" ? sportPredictedOutcome : null,
           sport_league: autoResolve && category === "Sports" ? sportLeague || null : null,
+          twitter_metric_type: isTwitterMarket ? twitterMetricType : null,
+          twitter_resource_id: isTwitterMarket ? twitterResourceId.trim() : null,
+          twitter_current_count: 0,
         } as any)
         .select("id")
         .maybeSingle();
 
       if (error) throw error;
 
-      // Save options for multi markets
-      if (marketType === "multi" && data?.id) {
-        const validOptions = options.filter((o) => o.trim());
-        const equalPrice = Math.round((1 / validOptions.length) * 100) / 100;
+      // Save options for multi markets or Twitter bracket markets
+      const shouldSaveOptions = (effectiveMarketType === "multi" && data?.id);
+      if (shouldSaveOptions) {
+        const optionLabels = isTwitterMarket
+          ? twitterBrackets.filter((b) => b.trim())
+          : options.filter((o) => o.trim());
+        const equalPrice = Math.round((1 / optionLabels.length) * 100) / 100;
         await supabase.from("market_options").insert(
-          validOptions.map((label, i) => ({
+          optionLabels.map((label, i) => ({
             market_id: data.id,
             label: label.trim(),
             price: equalPrice,
@@ -893,6 +908,122 @@ const AdminCreateMarket = () => {
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Twitter/X Engagement Market Template */}
+        {category === "Twitter/X" && (
+          <div className="bg-muted/30 border border-border rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="flex items-center gap-2 text-sm font-semibold">
+                  <Twitter className="w-4 h-4 text-primary" />
+                  Twitter Engagement Market
+                </label>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  Auto-resolves by fetching live X/Twitter metrics at deadline
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-2 border-t border-border/50">
+              <div>
+                <label className="text-xs font-semibold mb-1.5 block">Metric Type</label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {(["likes", "replies", "retweets", "tweets"] as const).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => {
+                        setTwitterMetricType(m);
+                        setAutoResolve(true);
+                        setMarketType("multi");
+                        setResolutionSource(`Auto-resolved via X API (${m} count)`);
+                      }}
+                      className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all capitalize ${
+                        twitterMetricType === m
+                          ? "bg-primary/15 border border-primary/40 text-primary"
+                          : "bg-muted/50 border border-border text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {m === "likes" ? "❤️" : m === "replies" ? "💬" : m === "retweets" ? "🔁" : "🐦"} {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold mb-1.5 block">
+                  {twitterMetricType === "tweets" ? "User ID" : "Tweet ID"}
+                </label>
+                <input
+                  type="text"
+                  value={twitterResourceId}
+                  onChange={(e) => setTwitterResourceId(e.target.value.trim())}
+                  placeholder={twitterMetricType === "tweets" ? "e.g. 44196397 (Elon Musk)" : "e.g. 1234567890123456789"}
+                  className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {twitterMetricType === "tweets"
+                    ? "The numeric User ID from X (use a lookup tool to find it)"
+                    : "The tweet ID from the URL (the numeric part after /status/)"}
+                </p>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold mb-1.5 block">Range Brackets</label>
+                <div className="space-y-1.5">
+                  {twitterBrackets.map((bracket, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={bracket}
+                        onChange={(e) => {
+                          const newBrackets = [...twitterBrackets];
+                          newBrackets[i] = e.target.value;
+                          setTwitterBrackets(newBrackets);
+                        }}
+                        placeholder="e.g. 80-99"
+                        className="flex-1 bg-muted/50 border border-border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                      {twitterBrackets.length > 2 && (
+                        <button onClick={() => setTwitterBrackets(twitterBrackets.filter((_, j) => j !== i))} className="p-1 text-muted-foreground hover:text-destructive">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {twitterBrackets.length < 8 && (
+                    <button
+                      onClick={() => setTwitterBrackets([...twitterBrackets, ""])}
+                      className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 mt-1"
+                    >
+                      <Plus className="w-3 h-3" /> Add bracket
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold mb-1.5 block">Resolution Deadline Time (UTC)</label>
+                <input
+                  type="time"
+                  value={autoResolveTime}
+                  onChange={(e) => setAutoResolveTime(e.target.value)}
+                  className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+
+              {twitterResourceId && endDate && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
+                  <p className="text-xs font-medium text-primary">
+                    🐦 Resolves based on {twitterMetricType} count for {twitterMetricType === "tweets" ? "user" : "tweet"} #{twitterResourceId} at {endDate} {autoResolveTime} UTC
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Brackets: {twitterBrackets.filter(b => b.trim()).join(" | ")}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
