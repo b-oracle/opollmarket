@@ -316,6 +316,10 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
               </div>
 
               {/* Content */}
+              {activeTab === "posts" && (
+                <StatusFeed showComposer />
+              )}
+
               {activeTab === "activity" && (
                 <ActivityFeed userId={user.id} isOwnProfile isPublic />
               )}
