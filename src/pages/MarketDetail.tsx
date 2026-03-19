@@ -845,7 +845,19 @@ const MarketDetail = () => {
         <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4">
           <div className="glass rounded-xl p-2.5 sm:p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><TrendingUp className="w-3.5 h-3.5" /><span className="text-[11px] sm:text-xs">Volume</span></div><span className="text-base sm:text-lg font-bold">{formatVolume(market.volume)}</span></div>
           <div className="glass rounded-xl p-2.5 sm:p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Droplets className="w-3.5 h-3.5" /><span className="text-[11px] sm:text-xs">Liquidity</span></div><span className="text-base sm:text-lg font-bold">{formatVolume(market.liquidity)}</span></div>
-          <div className="glass rounded-xl p-2.5 sm:p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Users className="w-3.5 h-3.5" /><span className="text-[11px] sm:text-xs">Traders</span></div><span className="text-base sm:text-lg font-bold">{market.participants.toLocaleString()}</span></div>
+          <div
+            className={`glass rounded-xl p-2.5 sm:p-3 ${isSuperAdmin ? "cursor-pointer active:scale-[0.97] transition-transform" : ""}`}
+            onClick={() => isSuperAdmin && setStatMode(prev => prev === "traders" ? "wagered" : "traders")}
+          >
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              {statMode === "traders" ? <Users className="w-3.5 h-3.5" /> : <BarChart3 className="w-3.5 h-3.5" />}
+              <span className="text-[11px] sm:text-xs">{statMode === "traders" ? "Traders" : "Total Wagered"}</span>
+              {isSuperAdmin && <span className="ml-auto text-[9px] opacity-50">tap</span>}
+            </div>
+            <span className="text-base sm:text-lg font-bold">
+              {statMode === "traders" ? market.participants.toLocaleString() : formatVolume(totalWagered ?? 0)}
+            </span>
+          </div>
           <div className="glass rounded-xl p-2.5 sm:p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Clock className="w-3.5 h-3.5" /><span className="text-[11px] sm:text-xs">Ends</span></div><span className="text-base sm:text-lg font-bold">{getTimeRemaining(market.endDate)}</span></div>
         </div>
 
