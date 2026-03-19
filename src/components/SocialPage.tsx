@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Users, UserCheck, Heart, Gift, Trophy,
-  Sparkles, ChevronRight, ChevronLeft, Loader2, X, Search,
+  Sparkles, ChevronRight, ChevronLeft, Loader2, X, Search, FileText,
 } from "lucide-react";
 
 const ITEMS_PER_PAGE = 10;
