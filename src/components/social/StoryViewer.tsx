@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -167,13 +168,13 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
   const name = profile?.display_name || "Anonymous";
   const timeAgo = formatDistanceToNow(new Date(story.created_at), { addSuffix: true });
 
-  return (
+  const content = (
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[9999] bg-black flex items-center justify-center"
+        className="fixed inset-0 z-[60] bg-black flex items-center justify-center"
       >
         {/* Progress bars */}
         <div className="absolute top-3 left-3 right-3 z-20 flex gap-1">
@@ -286,6 +287,10 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
       </AlertDialog>
     </AnimatePresence>
   );
+
+  if (typeof document === "undefined") return content;
+
+  return createPortal(content, document.body);
 };
 
 export default StoryViewer;
