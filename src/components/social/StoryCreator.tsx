@@ -146,11 +146,11 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle }
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[70] flex flex-col"
+          className="fixed inset-0 z-[70] flex items-center justify-center"
         >
           <div className="absolute inset-0 bg-background/95 backdrop-blur-xl" onClick={handleClose} />
 
-          <div className="relative z-10 flex flex-col h-full">
+          <div className="relative z-10 flex flex-col h-full w-full lg:h-auto lg:max-h-[90vh] lg:max-w-lg lg:rounded-2xl lg:border lg:border-border lg:bg-background lg:shadow-2xl lg:overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 shrink-0">
               <button onClick={handleClose} className="w-9 h-9 rounded-full glass flex items-center justify-center">
@@ -174,9 +174,9 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle }
             </div>
 
             {/* Preview */}
-            <div className="flex-1 flex items-center justify-center px-6 py-4">
+            <div className="flex-1 flex items-center justify-center px-6 py-4 lg:py-6">
               <div
-                className="w-full max-w-sm aspect-[9/16] rounded-2xl overflow-hidden flex items-center justify-center relative"
+                className="w-full max-w-[240px] lg:max-w-[260px] aspect-[9/16] rounded-2xl overflow-hidden flex items-center justify-center relative"
                 style={{ backgroundColor: imagePreview ? "#000" : bgColor }}
               >
                 {imagePreview ? (
@@ -229,7 +229,7 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle }
 
               {/* Market search picker */}
               {marketSearchOpen && (
-                <div className="bg-muted rounded-xl p-3 space-y-2">
+                <div className="bg-muted rounded-xl p-3 space-y-2 max-w-md mx-auto w-full">
                   <div className="relative">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                     <Input
