@@ -33,24 +33,31 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const { data: followersCount = 0 } = useQuery({
-    queryKey: ["social-followers-count", userId],
+  const { data: postsCount = 0 } = useQuery({
+    queryKey: ["social-posts-count", userId],
     queryFn: async () => {
       const { count } = await supabase
-        .from("follows")
+        .from("status_updates")
         .select("id", { count: "exact", head: true })
-        .eq("following_id", userId);
+        .eq("user_id", userId);
       return count || 0;
     },
   });
 
-  const { data: followingCount = 0 } = useQuery({
-    queryKey: ["social-following-count", userId],
+  const { data: likesCount = 0 } = useQuery({
+    queryKey: ["social-likes-received-count", userId],
     queryFn: async () => {
+      // Count total likes received on user's posts
+      const { data: userStatuses } = await supabase
+        .from("status_updates")
+        .select("id")
+        .eq("user_id", userId);
+      if (!userStatuses || userStatuses.length === 0) return 0;
+      const statusIds = userStatuses.map((s: any) => s.id);
       const { count } = await supabase
-        .from("follows")
+        .from("status_likes")
         .select("id", { count: "exact", head: true })
-        .eq("follower_id", userId);
+        .in("status_id", statusIds.slice(0, 50));
       return count || 0;
     },
   });
