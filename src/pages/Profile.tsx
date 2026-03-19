@@ -1749,6 +1749,7 @@ const Profile = () => {
             {/* Telegram Section */}
             {isFeatureEnabled("predict_via_telegram") && <TelegramSection userId={user?.id} />}
             {isFeatureEnabled("predict_via_whatsapp") && <WhatsAppSection userId={user?.id} />}
+            <TwitterSection userId={user?.id} />
             <a href="https://x.com/opollmarket" target="_blank" rel="noopener noreferrer" className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
               <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0 text-foreground">
                 <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
