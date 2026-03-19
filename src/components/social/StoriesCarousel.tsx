@@ -18,14 +18,31 @@ const StoriesCarousel = () => {
   const [creatorOpen, setCreatorOpen] = useState(false);
   const [viewerData, setViewerData] = useState<{ group: StoryGroup; index: number } | null>(null);
 
-  // Fetch all active stories
+  // Fetch all active stories filtered by follow connections
   const { data: storyGroups = [] } = useQuery({
     queryKey: ["stories", user?.id],
     queryFn: async () => {
+      if (!user) return [];
+
+      // Get follow connections (people I follow + people who follow me)
+      const { data: followRows } = await supabase
+        .from("follows")
+        .select("follower_id, following_id")
+        .or(`follower_id.eq.${user.id},following_id.eq.${user.id}`);
+
+      const connectedIds = new Set<string>([user.id]);
+      for (const row of followRows || []) {
+        connectedIds.add(row.follower_id);
+        connectedIds.add(row.following_id);
+      }
+
+      const connectedArray = [...connectedIds];
+
       const { data: stories } = await supabase
         .from("stories")
         .select("*")
         .gt("expires_at", new Date().toISOString())
+        .in("user_id", connectedArray.slice(0, 100))
         .order("created_at", { ascending: false })
         .limit(200);
 
@@ -40,14 +57,11 @@ const StoriesCarousel = () => {
       const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
       // Get user's viewed stories
-      let viewedIds = new Set<string>();
-      if (user) {
-        const { data: views } = await supabase
-          .from("story_views")
-          .select("story_id")
-          .eq("viewer_id", user.id);
-        viewedIds = new Set((views || []).map((v: any) => v.story_id));
-      }
+      const { data: views } = await supabase
+        .from("story_views")
+        .select("story_id")
+        .eq("viewer_id", user.id);
+      const viewedIds = new Set((views || []).map((v: any) => v.story_id));
 
       // Group by user
       const grouped = new Map<string, StoryGroup>();
@@ -62,7 +76,7 @@ const StoriesCarousel = () => {
         }
         const group = grouped.get(story.user_id)!;
         group.stories.push(story);
-        if (!viewedIds.has(story.id) && story.user_id !== user?.id) {
+        if (!viewedIds.has(story.id) && story.user_id !== user.id) {
           group.hasUnviewed = true;
         }
       }
@@ -70,8 +84,8 @@ const StoriesCarousel = () => {
       // Sort: own first, then unviewed, then viewed
       const groups = [...grouped.values()];
       groups.sort((a, b) => {
-        if (a.userId === user?.id) return -1;
-        if (b.userId === user?.id) return 1;
+        if (a.userId === user.id) return -1;
+        if (b.userId === user.id) return 1;
         if (a.hasUnviewed && !b.hasUnviewed) return -1;
         if (!a.hasUnviewed && b.hasUnviewed) return 1;
         return 0;
@@ -79,8 +93,11 @@ const StoriesCarousel = () => {
 
       return groups;
     },
+    enabled: !!user,
     refetchInterval: 30000,
   });
+
+  if (!user) return null;
 
   const ownGroup = storyGroups.find((g) => g.userId === user?.id);
   const hasOwnStories = ownGroup && ownGroup.stories.length > 0;
@@ -89,32 +106,30 @@ const StoriesCarousel = () => {
     <>
       <div className="flex gap-3 overflow-x-auto scrollbar-hide py-2 px-1">
         {/* Add Story button */}
-        {user && (
-          <button
-            onClick={() => hasOwnStories ? setViewerData({ group: ownGroup!, index: 0 }) : setCreatorOpen(true)}
-            className="flex flex-col items-center gap-1 shrink-0"
-          >
-            <div className={`w-14 h-14 rounded-full flex items-center justify-center relative ${
-              hasOwnStories ? "ring-2 ring-primary" : "ring-2 ring-dashed ring-muted-foreground/30"
-            }`}>
-              <div className="w-full h-full rounded-full overflow-hidden">
-                {hasOwnStories && ownGroup?.profile?.avatar_url ? (
-                  <img src={ownGroup.profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-muted flex items-center justify-center">
-                    <Plus className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                )}
-              </div>
-              {hasOwnStories && (
-                <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center border-2 border-background z-10">
-                  <Plus className="w-3 h-3 text-primary-foreground" />
+        <button
+          onClick={() => hasOwnStories ? setViewerData({ group: ownGroup!, index: 0 }) : setCreatorOpen(true)}
+          className="flex flex-col items-center gap-1 shrink-0"
+        >
+          <div className={`w-14 h-14 rounded-full flex items-center justify-center relative ${
+            hasOwnStories ? "ring-2 ring-primary" : "ring-2 ring-dashed ring-muted-foreground/30"
+          }`}>
+            <div className="w-full h-full rounded-full overflow-hidden">
+              {hasOwnStories && ownGroup?.profile?.avatar_url ? (
+                <img src={ownGroup.profile.avatar_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-muted flex items-center justify-center">
+                  <Plus className="w-5 h-5 text-muted-foreground" />
                 </div>
               )}
             </div>
-            <span className="text-[9px] font-medium text-muted-foreground">Your Story</span>
-          </button>
-        )}
+            {hasOwnStories && (
+              <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center border-2 border-background z-10">
+                <Plus className="w-3 h-3 text-primary-foreground" />
+              </div>
+            )}
+          </div>
+          <span className="text-[9px] font-medium text-muted-foreground">Your Story</span>
+        </button>
 
         {/* Other users' stories */}
         {storyGroups
