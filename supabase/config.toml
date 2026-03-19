@@ -103,3 +103,5 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.livekit-token]
     verify_jwt = false
+  [functions.cleanup-expired-stories]
+    verify_jwt = false

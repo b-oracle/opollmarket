@@ -25,6 +25,7 @@ const StoriesCarousel = () => {
       const { data: stories } = await supabase
         .from("stories")
         .select("*")
+        .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false })
         .limit(200);
 
