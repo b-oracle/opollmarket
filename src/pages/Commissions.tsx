@@ -38,6 +38,8 @@ const Commissions = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabKey>("all");
   const [showChart, setShowChart] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
 
   // Fetch pending_commissions (creator + referral, released + pending)
   const { data: pendingCommissions, isLoading: loadingPC } = useQuery({
