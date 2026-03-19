@@ -193,8 +193,8 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
                   { key: "posts" as const, label: `Posts (${postsCount})`, icon: FileText },
                   { key: "activity" as const, label: "Activity", icon: Heart },
                   { key: "spaces" as const, label: "Spaces", icon: Radio },
-                  { key: "followers" as const, label: `❤️ ${likesCount}`, icon: Heart },
-                  { key: "following" as const, label: `Followers`, icon: Users },
+                  { key: "followers" as const, label: `Followers (${followers.length})`, icon: Users },
+                  { key: "following" as const, label: `Following (${following.length})`, icon: UserCheck },
                   { key: "suggestions" as const, label: "For You", icon: Sparkles },
                 ]).map((t) => (
                   <button
