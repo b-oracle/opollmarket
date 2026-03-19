@@ -91,8 +91,14 @@ const addWatermark = async (canvas: HTMLCanvasElement) => {
   });
 };
 
-const ShareModal = ({ open, onOpenChange, title, description, marketUrl, captureRef }: ShareModalProps) => {
+const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketId, captureRef }: ShareModalProps) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [screenshot, setScreenshot] = useState<string | null>(null);
+  const [capturing, setCapturing] = useState(false);
+  const [postingToFeed, setPostingToFeed] = useState(false);
+  const [storyCreatorOpen, setStoryCreatorOpen] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
