@@ -149,8 +149,8 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
               />
 
               {mode === "scheduled" && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1 min-w-0">
+                <div className="space-y-3">
+                  <div className="space-y-1">
                     <label className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
                       <Calendar className="w-3 h-3 shrink-0" /> Date
                     </label>
@@ -159,10 +159,10 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
                       value={scheduledDate}
                       onChange={(e) => setScheduledDate(e.target.value)}
                       min={minDate}
-                      className="w-full min-w-0 bg-muted/50 border border-border rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      className="block w-full appearance-none bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                   </div>
-                  <div className="space-y-1 min-w-0">
+                  <div className="space-y-1">
                     <label className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
                       <Clock className="w-3 h-3 shrink-0" /> Time
                     </label>
@@ -171,7 +171,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
                       value={scheduledTime}
                       onChange={(e) => setScheduledTime(e.target.value)}
                       min={minTime}
-                      className="w-full min-w-0 bg-muted/50 border border-border rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      className="block w-full appearance-none bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                   </div>
                 </div>
