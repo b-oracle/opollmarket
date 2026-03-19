@@ -83,10 +83,10 @@ const Commissions = () => {
   // Compute totals
   const totals = useMemo(() => {
     const creator = (pendingCommissions ?? [])
-      .filter((c) => c.type === "creator" && c.status === "released")
+      .filter((c) => c.type === "creator")
       .reduce((s, c) => s + Number(c.amount), 0);
     const referral = (pendingCommissions ?? [])
-      .filter((c) => c.type === "referral" && c.status === "released")
+      .filter((c) => c.type === "referral")
       .reduce((s, c) => s + Number(c.amount), 0);
     const copyTrade = (copyEarnings ?? []).reduce((s, c) => s + Number(c.commission_amount), 0);
     const signup = (signupBonuses ?? []).reduce((s, c) => s + Number(c.amount), 0);
