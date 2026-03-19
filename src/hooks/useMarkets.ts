@@ -34,6 +34,9 @@ interface DbMarket {
   sport_league: string | null;
   market_options: { id: string; label: string; price: number; sort_order: number }[];
   polymarket_event_slug: string | null;
+  twitter_metric_type: string | null;
+  twitter_resource_id: string | null;
+  twitter_current_count: number | null;
 }
 
 const mapDbToMarket = (db: DbMarket): Market => ({
