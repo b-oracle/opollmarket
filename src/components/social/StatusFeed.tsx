@@ -56,6 +56,8 @@ const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
     enabled: authorIds.length > 0,
   });
 
+  if (!isFeatureEnabled("social_status_feed")) return null;
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
