@@ -124,7 +124,7 @@ const CategoryCarousel = ({
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-card/90 to-transparent" />
                 <div className="absolute top-2 right-2 glass rounded-full px-2 py-0.5">
-                  <span className="text-[30px] font-bold neon-yes">
+                  <span className="text-[10px] font-bold neon-yes">
                     {displayPercent}%
                   </span>
                 </div>
