@@ -326,6 +326,40 @@ const AdminDashboard = () => {
         .single();
       setPlatformPoolBalance(Number(poolData?.balance || 0));
 
+      // Calculate QT revenue pool (Wagered - Payouts - Refunded - Bonus)
+      const fetchAllQtBets = async () => {
+        const rows: { amount: number; payout: number | null; status: string }[] = [];
+        let from = 0;
+        const batchSize = 1000;
+        while (true) {
+          const { data, error } = await supabase.from("quick_bets").select("amount, payout, status").range(from, from + batchSize - 1);
+          if (error || !data || data.length === 0) break;
+          rows.push(...data);
+          if (data.length < batchSize) break;
+          from += batchSize;
+        }
+        return rows;
+      };
+      const fetchAllBonusTxs = async () => {
+        const rows: { amount: number }[] = [];
+        let from = 0;
+        const batchSize = 1000;
+        while (true) {
+          const { data, error } = await supabase.from("transactions").select("amount").eq("type", "qt_one_sided_bonus").eq("status", "confirmed").range(from, from + batchSize - 1);
+          if (error || !data || data.length === 0) break;
+          rows.push(...data);
+          if (data.length < batchSize) break;
+          from += batchSize;
+        }
+        return rows;
+      };
+      const [allQtBets, allBonusTxs] = await Promise.all([fetchAllQtBets(), fetchAllBonusTxs()]);
+      const qtWagered = allQtBets.filter(b => b.status === "won" || b.status === "lost").reduce((s, b) => s + Number(b.amount), 0);
+      const qtPayouts = allQtBets.filter(b => b.status === "won").reduce((s, b) => s + Number(b.payout || 0), 0);
+      const qtRefunded = allQtBets.filter(b => b.status === "refunded").reduce((s, b) => s + Number(b.payout || 0), 0);
+      const qtBonusPaid = allBonusTxs.reduce((s, t) => s + Number(t.amount), 0);
+      setQtRevenuePool(qtWagered - qtPayouts - qtRefunded - qtBonusPaid);
+
       setLoading(false);
     };
     fetchAll();
