@@ -298,6 +298,7 @@ const Create = () => {
   const [draftLoading, setDraftLoading] = useState(true);
   const [draftBannerDraft, setDraftBannerDraft] = useState<{ id: string; title: string } | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
+  const [lastAutoSaveTime, setLastAutoSaveTime] = useState<number | null>(null);
 
   // Form state — restore from sessionStorage on mount
   const getStored = (key: string, fallback: string) => {
@@ -580,9 +581,9 @@ const Create = () => {
     return urlData.publicUrl;
   };
 
-  const saveDraft = useCallback(async () => {
-    if (!user) { toast.error("Sign in to save drafts"); return; }
-    setSavingDraft(true);
+  const saveDraft = useCallback(async (silent = false) => {
+    if (!user) { if (!silent) toast.error("Sign in to save drafts"); return; }
+    if (!silent) setSavingDraft(true);
     try {
       let imageUrl: string | null = imagePreview?.startsWith("blob:") ? null : (imagePreview || null);
       if (imageFile && imagePreview?.startsWith("blob:")) {
@@ -643,12 +644,13 @@ const Create = () => {
         }
       }
 
-      toast.success("Draft saved!");
+      if (!silent) toast.success("Draft saved!");
+      if (silent) setLastAutoSaveTime(Date.now());
     } catch (err: any) {
       console.error("Draft save error:", err);
-      toast.error("Failed to save draft");
+      if (!silent) toast.error("Failed to save draft");
     } finally {
-      setSavingDraft(false);
+      if (!silent) setSavingDraft(false);
     }
   }, [user, draftId, title, description, details, category, endDate, resolutionSource, initialLiquidity, marketType, options, videoUrl, imageFile, imagePreview, autoResolve, autoResolveAsset, autoResolveOperator, autoResolveTargetPrice, autoResolveTime, sportType, sportMatchId, sportPredictedOutcome, sportLeague, displayName]);
 
@@ -658,21 +660,28 @@ const Create = () => {
   const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastAutoSaveDataRef = useRef<string>("");
 
+  // Build fingerprint from current form data for change detection
+  const formFingerprint = JSON.stringify({ title, description, details, category, endDate, resolutionSource, initialLiquidity, marketType, options, videoUrl, autoResolve, autoResolveAsset, autoResolveOperator, autoResolveTargetPrice, autoResolveTime, sportType, sportMatchId, sportPredictedOutcome, sportLeague });
+  const formFingerprintRef = useRef(formFingerprint);
+  formFingerprintRef.current = formFingerprint;
+
+  // Track if user has entered a title
+  const hasTitleRef = useRef(!!title.trim());
+  hasTitleRef.current = !!title.trim();
+
   useEffect(() => {
-    // Only auto-save when user is signed in and has entered at least a title
+    // Auto-save every 30s — uses refs so no need for form field deps
     autoSaveTimerRef.current = setInterval(() => {
-      if (!user || !title.trim()) return;
-      // Fingerprint current form data to avoid saving unchanged drafts
-      const fingerprint = JSON.stringify({ title, description, details, category, endDate, resolutionSource, initialLiquidity, marketType, options, videoUrl, autoResolve, autoResolveAsset, autoResolveOperator, autoResolveTargetPrice, autoResolveTime, sportType, sportMatchId, sportPredictedOutcome, sportLeague });
-      if (fingerprint === lastAutoSaveDataRef.current) return;
-      lastAutoSaveDataRef.current = fingerprint;
-      saveDraftRef.current();
+      if (!hasTitleRef.current) return;
+      if (formFingerprintRef.current === lastAutoSaveDataRef.current) return;
+      lastAutoSaveDataRef.current = formFingerprintRef.current;
+      saveDraftRef.current(true); // silent auto-save
     }, 30000);
 
     return () => {
       if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current);
     };
-  }, [user, title, description, details, category, endDate, resolutionSource, initialLiquidity, marketType, options, videoUrl, autoResolve, autoResolveAsset, autoResolveOperator, autoResolveTargetPrice, autoResolveTime, sportType, sportMatchId, sportPredictedOutcome, sportLeague]);
+  }, [user]); // only depend on user — refs handle the rest
 
   const addOption = () => {
     if (options.length < 6) setOptions([...options, ""]);
@@ -1864,7 +1873,7 @@ const Create = () => {
 
               <div className="flex gap-3">
                 <button
-                  onClick={saveDraft}
+                  onClick={() => saveDraft()}
                   disabled={savingDraft}
                   className="flex-1 glass py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
                 >
@@ -2308,7 +2317,7 @@ const Create = () => {
                   Back
                 </button>
                 <button
-                  onClick={saveDraft}
+                  onClick={() => saveDraft()}
                   disabled={savingDraft}
                   className="glass py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-95 flex items-center justify-center gap-2 px-4 disabled:opacity-50"
                 >
@@ -2593,7 +2602,7 @@ const Create = () => {
                     Back
                   </button>
                   <button
-                    onClick={saveDraft}
+                    onClick={() => saveDraft()}
                     disabled={savingDraft}
                     className="glass py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-95 flex items-center justify-center gap-2 px-4 disabled:opacity-50"
                   >
