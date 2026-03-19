@@ -110,7 +110,7 @@ const Commissions = () => {
     (pendingCommissions ?? []).forEach((c) => {
       records.push({
         id: c.id,
-        category: c.status === "pending" ? "pending" : (c.type as "creator" | "referral"),
+        category: c.type as "creator" | "referral",
         amount: Number(c.amount),
         date: c.created_at,
         status: c.status as "released" | "pending",
