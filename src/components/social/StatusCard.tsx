@@ -109,7 +109,7 @@ interface StatusCardProps {
   index?: number;
 }
 
-const StatusCard = ({ status, profile, index = 0 }: StatusCardProps) => {
+const StatusCard = ({ status, profile, market, index = 0 }: StatusCardProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
