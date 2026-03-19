@@ -660,20 +660,28 @@ const Create = () => {
   const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastAutoSaveDataRef = useRef<string>("");
 
+  // Build fingerprint from current form data for change detection
+  const formFingerprint = JSON.stringify({ title, description, details, category, endDate, resolutionSource, initialLiquidity, marketType, options, videoUrl, autoResolve, autoResolveAsset, autoResolveOperator, autoResolveTargetPrice, autoResolveTime, sportType, sportMatchId, sportPredictedOutcome, sportLeague });
+  const formFingerprintRef = useRef(formFingerprint);
+  formFingerprintRef.current = formFingerprint;
+
+  // Track if user has entered a title
+  const hasTitleRef = useRef(!!title.trim());
+  hasTitleRef.current = !!title.trim();
+
   useEffect(() => {
-    // Auto-save every 30s — uses saveDraftRef so no need for form field deps
+    // Auto-save every 30s — uses refs so no need for form field deps
     autoSaveTimerRef.current = setInterval(() => {
-      if (!user || !title.trim()) return;
-      const fingerprint = JSON.stringify({ title, description, details, category, endDate, resolutionSource, initialLiquidity, marketType, options, videoUrl, autoResolve, autoResolveAsset, autoResolveOperator, autoResolveTargetPrice, autoResolveTime, sportType, sportMatchId, sportPredictedOutcome, sportLeague });
-      if (fingerprint === lastAutoSaveDataRef.current) return;
-      lastAutoSaveDataRef.current = fingerprint;
+      if (!hasTitleRef.current) return;
+      if (formFingerprintRef.current === lastAutoSaveDataRef.current) return;
+      lastAutoSaveDataRef.current = formFingerprintRef.current;
       saveDraftRef.current(true); // silent auto-save
     }, 30000);
 
     return () => {
       if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current);
     };
-  }, [user]); // only depend on user — saveDraftRef handles the rest
+  }, [user]); // only depend on user — refs handle the rest
 
   const addOption = () => {
     if (options.length < 6) setOptions([...options, ""]);
