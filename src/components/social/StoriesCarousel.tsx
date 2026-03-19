@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { Plus } from "lucide-react";
 import StoryCreator from "./StoryCreator";
 import StoryViewer from "./StoryViewer";
@@ -15,6 +16,11 @@ interface StoryGroup {
 
 const StoriesCarousel = () => {
   const { user } = useAuth();
+  const { isFeatureEnabled } = useFeatureToggles();
+  const [creatorOpen, setCreatorOpen] = useState(false);
+  const [viewerData, setViewerData] = useState<{ group: StoryGroup; index: number } | null>(null);
+
+  if (!isFeatureEnabled("social_stories")) return null;
   const [creatorOpen, setCreatorOpen] = useState(false);
   const [viewerData, setViewerData] = useState<{ group: StoryGroup; index: number } | null>(null);
 

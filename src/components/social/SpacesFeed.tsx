@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import SpaceCard from "./SpaceCard";
 import SpaceRoom from "./SpaceRoom";
 import CreateSpaceModal from "./CreateSpaceModal";
@@ -10,6 +11,9 @@ import { motion } from "framer-motion";
 
 const SpacesFeed = () => {
   const { user } = useAuth();
+  const { isFeatureEnabled } = useFeatureToggles();
+
+  if (!isFeatureEnabled("social_spaces")) return null;
   const [createOpen, setCreateOpen] = useState(false);
   const [activeRoom, setActiveRoom] = useState<{
     id: string;
