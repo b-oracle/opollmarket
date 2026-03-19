@@ -661,20 +661,19 @@ const Create = () => {
   const lastAutoSaveDataRef = useRef<string>("");
 
   useEffect(() => {
-    // Only auto-save when user is signed in and has entered at least a title
+    // Auto-save every 30s — uses saveDraftRef so no need for form field deps
     autoSaveTimerRef.current = setInterval(() => {
       if (!user || !title.trim()) return;
-      // Fingerprint current form data to avoid saving unchanged drafts
       const fingerprint = JSON.stringify({ title, description, details, category, endDate, resolutionSource, initialLiquidity, marketType, options, videoUrl, autoResolve, autoResolveAsset, autoResolveOperator, autoResolveTargetPrice, autoResolveTime, sportType, sportMatchId, sportPredictedOutcome, sportLeague });
       if (fingerprint === lastAutoSaveDataRef.current) return;
       lastAutoSaveDataRef.current = fingerprint;
-      saveDraftRef.current();
+      saveDraftRef.current(true); // silent auto-save
     }, 30000);
 
     return () => {
       if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current);
     };
-  }, [user, title, description, details, category, endDate, resolutionSource, initialLiquidity, marketType, options, videoUrl, autoResolve, autoResolveAsset, autoResolveOperator, autoResolveTargetPrice, autoResolveTime, sportType, sportMatchId, sportPredictedOutcome, sportLeague]);
+  }, [user]); // only depend on user — saveDraftRef handles the rest
 
   const addOption = () => {
     if (options.length < 6) setOptions([...options, ""]);
