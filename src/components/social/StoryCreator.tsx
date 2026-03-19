@@ -16,6 +16,8 @@ const BG_COLORS = [
 interface StoryCreatorProps {
   open: boolean;
   onClose: () => void;
+  preLinkedMarketId?: string;
+  preLinkedMarketTitle?: string;
 }
 
 interface MarketResult {
@@ -26,7 +28,7 @@ interface MarketResult {
   no_price: number;
 }
 
-const StoryCreator = ({ open, onClose }: StoryCreatorProps) => {
+const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle }: StoryCreatorProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [content, setContent] = useState("");
