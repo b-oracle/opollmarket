@@ -97,3 +97,5 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.wp-plugin]
     verify_jwt = false
+  [functions.og-share]
+    verify_jwt = false
