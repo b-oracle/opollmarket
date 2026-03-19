@@ -29,6 +29,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useBookmark } from "@/hooks/useBookmark";
 import { toast } from "sonner";
 import useAnalytics from "@/hooks/useAnalytics";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 
 const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
@@ -449,7 +450,8 @@ const MarketDetail = () => {
   const { boostDetails } = useActiveBoosts();
   const activeBoost = id ? boostDetails.get(id) : undefined;
   const { track } = useAnalytics();
-  const [statMode, setStatMode] = useState<"traders" | "wagered">("traders");
+  const { toggles } = useFeatureToggles();
+  const showWagered = toggles.find(t => t.feature_key === "show_wagered_stats")?.enabled ?? false;
 
   const { data: totalWagered } = useQuery({
     queryKey: ["market-total-wagered", id],
@@ -462,7 +464,7 @@ const MarketDetail = () => {
       if (error) return 0;
       return (data || []).reduce((s, r) => s + Number(r.amount), 0);
     },
-    enabled: !!id && isSuperAdmin,
+    enabled: !!id && showWagered,
   });
 
   const isCreator = !!(user && market && market.creatorAddress === user.id);
@@ -845,17 +847,13 @@ const MarketDetail = () => {
         <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4">
           <div className="glass rounded-xl p-2.5 sm:p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><TrendingUp className="w-3.5 h-3.5" /><span className="text-[11px] sm:text-xs">Volume</span></div><span className="text-base sm:text-lg font-bold">{formatVolume(market.volume)}</span></div>
           <div className="glass rounded-xl p-2.5 sm:p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Droplets className="w-3.5 h-3.5" /><span className="text-[11px] sm:text-xs">Liquidity</span></div><span className="text-base sm:text-lg font-bold">{formatVolume(market.liquidity)}</span></div>
-          <div
-            className={`glass rounded-xl p-2.5 sm:p-3 ${isSuperAdmin ? "cursor-pointer active:scale-[0.97] transition-transform" : ""}`}
-            onClick={() => isSuperAdmin && setStatMode(prev => prev === "traders" ? "wagered" : "traders")}
-          >
+          <div className="glass rounded-xl p-2.5 sm:p-3">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              {statMode === "traders" ? <Users className="w-3.5 h-3.5" /> : <BarChart3 className="w-3.5 h-3.5" />}
-              <span className="text-[11px] sm:text-xs">{statMode === "traders" ? "Traders" : "Total Wagered"}</span>
-              {isSuperAdmin && <span className="ml-auto text-[9px] opacity-50">tap</span>}
+              {showWagered ? <BarChart3 className="w-3.5 h-3.5" /> : <Users className="w-3.5 h-3.5" />}
+              <span className="text-[11px] sm:text-xs">{showWagered ? "Total Wagered" : "Traders"}</span>
             </div>
             <span className="text-base sm:text-lg font-bold">
-              {statMode === "traders" ? market.participants.toLocaleString() : formatVolume(totalWagered ?? 0)}
+              {showWagered ? formatVolume(totalWagered ?? 0) : market.participants.toLocaleString()}
             </span>
           </div>
           <div className="glass rounded-xl p-2.5 sm:p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Clock className="w-3.5 h-3.5" /><span className="text-[11px] sm:text-xs">Ends</span></div><span className="text-base sm:text-lg font-bold">{getTimeRemaining(market.endDate)}</span></div>
