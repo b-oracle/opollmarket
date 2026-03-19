@@ -177,11 +177,15 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
             className="overflow-hidden"
           >
             <div className="pt-3 space-y-3">
+              {/* Stories */}
+              <StoriesCarousel />
+
               {/* Tabs */}
-              <div className="flex gap-1 p-1 rounded-xl bg-muted/50">
+              <div className="flex gap-1 p-1 rounded-xl bg-muted/50 overflow-x-auto scrollbar-hide">
                 {([
                   { key: "posts" as const, label: "Posts", icon: FileText },
                   { key: "activity" as const, label: "Activity", icon: Heart },
+                  { key: "spaces" as const, label: "Spaces", icon: Radio },
                   { key: "followers" as const, label: `${followersCount}`, icon: Users },
                   { key: "following" as const, label: `${followingCount}`, icon: UserCheck },
                   { key: "suggestions" as const, label: "For You", icon: Sparkles },
@@ -189,7 +193,7 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
                   <button
                     key={t.key}
                     onClick={() => setActiveTab(t.key)}
-                    className={`flex-1 py-2 rounded-lg text-[10px] font-semibold transition-all flex flex-col items-center gap-0.5 ${
+                    className={`flex-1 py-2 rounded-lg text-[10px] font-semibold transition-all flex flex-col items-center gap-0.5 shrink-0 min-w-[48px] ${
                       activeTab === t.key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
                     }`}
                   >
@@ -206,6 +210,10 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
 
               {activeTab === "activity" && (
                 <ActivityFeed userId={userId} isOwnProfile={isOwnProfile} isPublic={isPublic} />
+              )}
+
+              {activeTab === "spaces" && (
+                <SpacesFeed />
               )}
 
               {activeTab === "followers" && (
