@@ -451,20 +451,20 @@ const MarketDetail = () => {
   const activeBoost = id ? boostDetails.get(id) : undefined;
   const { track } = useAnalytics();
   const { toggles } = useFeatureToggles();
-  const showWagered = toggles.find(t => t.feature_key === "show_wagered_stats")?.enabled ?? false;
+  const showPageViews = toggles.find(t => t.feature_key === "show_wagered_stats")?.enabled ?? false;
 
-  const { data: totalWagered } = useQuery({
-    queryKey: ["market-total-wagered", id],
+  const { data: pageViewCount } = useQuery({
+    queryKey: ["market-page-views", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("transactions")
-        .select("amount")
-        .eq("market_id", id!)
-        .eq("type", "buy");
+      const { count, error } = await supabase
+        .from("analytics_events")
+        .select("id", { count: "exact", head: true })
+        .eq("event_name", "page_view")
+        .contains("properties", { marketId: id });
       if (error) return 0;
-      return (data || []).reduce((s, r) => s + Number(r.amount), 0);
+      return count ?? 0;
     },
-    enabled: !!id && showWagered,
+    enabled: !!id && showPageViews,
   });
 
   const isCreator = !!(user && market && market.creatorAddress === user.id);
