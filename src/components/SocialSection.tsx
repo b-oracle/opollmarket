@@ -190,11 +190,11 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
               {/* Tabs */}
               <div className="flex gap-1 p-1 rounded-xl bg-muted/50 overflow-x-auto scrollbar-hide">
                 {([
-                  { key: "posts" as const, label: "Posts", icon: FileText },
+                  { key: "posts" as const, label: `Posts (${postsCount})`, icon: FileText },
                   { key: "activity" as const, label: "Activity", icon: Heart },
                   { key: "spaces" as const, label: "Spaces", icon: Radio },
-                  { key: "followers" as const, label: `${followersCount}`, icon: Users },
-                  { key: "following" as const, label: `${followingCount}`, icon: UserCheck },
+                  { key: "followers" as const, label: `❤️ ${likesCount}`, icon: Heart },
+                  { key: "following" as const, label: `Followers`, icon: Users },
                   { key: "suggestions" as const, label: "For You", icon: Sparkles },
                 ]).map((t) => (
                   <button
