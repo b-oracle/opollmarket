@@ -973,18 +973,21 @@ const Profile = () => {
       return result;
     }
     let result = transactions;
+    
+    // Hide all commission transactions (moved to commissions breakdown page)
+    result = result.filter((t: any) => t.type !== "commission");
+    
+    // Hide failed withdrawals
+    result = result.filter((t: any) => !((t.type === "withdraw" || t.type === "withdrawal") && t.status === "failed"));
+    
     if (txFilter === "trades") result = result.filter((t: any) => t.type === "buy" || t.type === "sell");
     else if (txFilter === "deposits") result = result.filter((t: any) => t.type === "deposit");
     else if (txFilter === "withdrawals") result = result.filter((t: any) => t.type === "withdraw" || t.type === "withdrawal");
-    
 
     // Hide expired deposits everywhere except the "failed" status filter
     if (statusFilter !== "failed") {
       result = result.filter((t: any) => !(t.type === "deposit" && t.status === "expired"));
     }
-
-    // Hide zero-amount commission transactions
-    result = result.filter((t: any) => !(t.type === "commission" && Number(t.amount) === 0));
 
     if (statusFilter !== "all") {
       result = result.filter((t: any) =>
