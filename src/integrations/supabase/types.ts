@@ -1997,6 +1997,7 @@ export type Database = {
           id: string
           image_url: string | null
           likes_count: number
+          market_id: string | null
           replies_count: number
           user_id: string
         }
@@ -2007,6 +2008,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           likes_count?: number
+          market_id?: string | null
           replies_count?: number
           user_id: string
         }
@@ -2017,10 +2019,19 @@ export type Database = {
           id?: string
           image_url?: string | null
           likes_count?: number
+          market_id?: string | null
           replies_count?: number
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "status_updates_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stories: {
         Row: {
