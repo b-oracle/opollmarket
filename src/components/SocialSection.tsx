@@ -198,6 +198,10 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
               </div>
 
               {/* Content */}
+              {activeTab === "posts" && (
+                <StatusFeed userId={userId} showComposer={isOwnProfile} />
+              )}
+
               {activeTab === "activity" && (
                 <ActivityFeed userId={userId} isOwnProfile={isOwnProfile} isPublic={isPublic} />
               )}
