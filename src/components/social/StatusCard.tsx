@@ -191,7 +191,7 @@ const StatusCard = ({ status, profile, index = 0 }: StatusCardProps) => {
       </div>
 
       {/* Content */}
-      <p className="text-sm whitespace-pre-wrap break-words">{status.content}</p>
+      <RichContent content={status.content} />
 
       {status.image_url && (
         <img src={status.image_url} alt="" className="rounded-lg max-h-60 w-full object-cover" loading="lazy" />
