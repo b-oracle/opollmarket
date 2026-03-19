@@ -532,14 +532,35 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     setStep("executing");
     setErrorMsg("");
     try {
-      // Route to correct provider based on admin settings
-      const depositFn = depositProvider === "flutterwave" ? "create-flutterwave-deposit" : "create-payaza-deposit";
-      const { data, error } = await supabase.functions.invoke(depositFn, {
+      // Route to correct provider based on admin settings, with fallback
+      const primaryFn = depositProvider === "flutterwave" ? "create-flutterwave-deposit" : "create-payaza-deposit";
+      const fallbackFn = depositProvider === "flutterwave" ? "create-payaza-deposit" : "create-flutterwave-deposit";
+
+      let data: any = null;
+      let usedFallback = false;
+
+      // Try primary provider
+      const primary = await supabase.functions.invoke(primaryFn, {
         body: { amount: numAmount },
       });
-      if (error || data?.error) {
-        const msg = data?.error || "Payment service temporarily unavailable. Please try again later.";
-        throw new Error(msg);
+      if (primary.error || primary.data?.error) {
+        console.warn(`Primary deposit provider (${primaryFn}) failed, trying fallback...`);
+        // Try fallback provider
+        const fallback = await supabase.functions.invoke(fallbackFn, {
+          body: { amount: numAmount },
+        });
+        if (fallback.error || fallback.data?.error) {
+          const msg = fallback.data?.error || primary.data?.error || "Payment service temporarily unavailable. Please try again later.";
+          throw new Error(msg);
+        }
+        data = fallback.data;
+        usedFallback = true;
+      } else {
+        data = primary.data;
+      }
+
+      if (usedFallback) {
+        console.log("Deposit created via fallback provider");
       }
 
       if (data.mode === "direct_api") {
@@ -584,30 +605,49 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     try {
       // Determine which withdrawal path to take
       if (withdrawMethod === "fiat") {
-        // Route to correct provider based on admin settings
-        const withdrawFn = payoutProvider === "flutterwave" ? "request-flutterwave-withdrawal" : "request-payaza-withdrawal";
-        const { data, error } = await supabase.functions.invoke(withdrawFn, {
-          body: {
-            amount: numAmount,
-            bank_code: bankCode,
-            account_number: accountNumber.trim(),
-            account_name: accountName.trim(),
-          },
-        });
+        // Route to correct provider based on admin settings, with fallback
+        const primaryFn = payoutProvider === "flutterwave" ? "request-flutterwave-withdrawal" : "request-payaza-withdrawal";
+        const fallbackFn = payoutProvider === "flutterwave" ? "request-payaza-withdrawal" : "request-flutterwave-withdrawal";
+        const withdrawBody = {
+          amount: numAmount,
+          bank_code: bankCode,
+          account_number: accountNumber.trim(),
+          account_name: accountName.trim(),
+        };
 
-        if (error) {
-          let specificMsg = "";
-          try {
-            const ctx = (error as any).context;
-            if (ctx && typeof ctx.json === "function") {
-              const body = await ctx.json();
-              specificMsg = body?.error || "";
-            }
-          } catch {}
-          if (!specificMsg && data?.error) specificMsg = data.error;
-          throw new Error(specificMsg || error.message || "Withdrawal request failed");
+        let data: any = null;
+
+        // Try primary provider
+        const primary = await supabase.functions.invoke(primaryFn, { body: withdrawBody });
+        let primaryFailed = false;
+        if (primary.error || primary.data?.error) {
+          primaryFailed = true;
+          console.warn(`Primary payout provider (${primaryFn}) failed, trying fallback...`);
+        } else {
+          data = primary.data;
         }
-        if (data?.error) throw new Error(data.error);
+
+        // Try fallback provider if primary failed
+        if (primaryFailed) {
+          const fallback = await supabase.functions.invoke(fallbackFn, { body: withdrawBody });
+          if (fallback.error || fallback.data?.error) {
+            // Both providers failed — fall through to manual
+            console.warn("Both payout providers failed, falling back to manual withdrawal");
+            const manualResult = await supabase.functions.invoke("request-withdrawal", {
+              body: {
+                amount: numAmount,
+                wallet_address: `NGN:${bankCode}:${accountNumber.trim()}:${accountName.trim()}`,
+              },
+            });
+            if (manualResult.error || manualResult.data?.error) {
+              const msg = manualResult.data?.error || fallback.data?.error || primary.data?.error || "Withdrawal request failed";
+              throw new Error(msg);
+            }
+            data = manualResult.data;
+          } else {
+            data = fallback.data;
+          }
+        }
 
         setNgnPayoutRate(data?.payout_rate || null);
         queryClient.invalidateQueries({ queryKey: ["balance"] });
