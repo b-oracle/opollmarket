@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
     // ─── Fetch settings ───
     const { data: settings } = await adminClient
       .from("commission_settings")
-      .select("min_withdrawal_amount, withdrawal_cooldown_minutes, withdrawal_multiplier, withdrawal_limit_enabled, withdrawal_fee_percent, naira_payout_markdown, fallback_naira_rate, fallback_payout_naira_rate")
+      .select("min_withdrawal_amount, withdrawal_cooldown_minutes, withdrawal_multiplier, withdrawal_limit_enabled, withdrawal_fee_percent, naira_payout_markdown, fallback_naira_rate, fallback_payout_naira_rate, payout_provider")
       .limit(1)
       .single();
 
@@ -196,9 +196,9 @@ Deno.serve(async (req) => {
     const netAmount = amount - feeAmount;
     const ngnPayout = Math.floor(netAmount * payoutRate);
 
-    console.log(`[Payout] USD ${amount} - fee ${feeAmount} = net ${netAmount} × ₦${payoutRate} = ₦${ngnPayout}`);
+    console.log(`[NGN Payout] USD ${amount} - fee ${feeAmount} = net ${netAmount} × ₦${payoutRate} = ₦${ngnPayout}`);
 
-    // ─── Deduct balance immediately ───
+    // ─── Deduct balance immediately (ONCE, before any provider attempts) ───
     await adminClient
       .from("balances")
       .update({ amount: currentBalance - amount, updated_at: new Date().toISOString() })
@@ -207,7 +207,7 @@ Deno.serve(async (req) => {
 
     const transactionReference = `wd_${userId}_${Date.now()}`;
 
-    // ─── Create withdrawal records ───
+    // ─── Create withdrawal records (ONCE) ───
     await adminClient.from("withdrawal_requests").insert({
       user_id: userId,
       amount,
@@ -225,16 +225,17 @@ Deno.serve(async (req) => {
       nowpayments_payment_id: transactionReference,
     });
 
-    // ─── Attempt Payaza payout ───
-    let payoutSuccess = false;
+    // ─── Determine provider order based on admin settings ───
+    const configuredPrimary = (settings as any)?.payout_provider || "payaza";
+    const providers: Array<{ name: string; attempt: () => Promise<boolean> }> = [];
 
-    const payazaSecretKey = Deno.env.get("PAYAZA_SECRET_KEY");
-    const payazaMerchantKey = Deno.env.get("PAYAZA_MERCHANT_KEY");
-
-    if (payazaSecretKey) {
-      payoutSuccess = await tryPayazaPayout({
+    // Payaza attempt
+    const payazaAttempt = async (): Promise<boolean> => {
+      const payazaSecretKey = Deno.env.get("PAYAZA_SECRET_KEY");
+      if (!payazaSecretKey) return false;
+      return tryPayazaPayout({
         secretKey: payazaSecretKey,
-        merchantKey: payazaMerchantKey || "",
+        merchantKey: Deno.env.get("PAYAZA_MERCHANT_KEY") || "",
         transactionReference,
         ngnPayout,
         accountNumber: account_number,
@@ -242,8 +243,52 @@ Deno.serve(async (req) => {
         accountName: account_name,
         netAmount,
       });
+    };
+
+    // Flutterwave attempt
+    const flutterwaveAttempt = async (): Promise<boolean> => {
+      const flutterwaveKey = Deno.env.get("FLUTTERWAVE_SECRET_KEY");
+      if (!flutterwaveKey) return false;
+      return tryFlutterwavePayout({
+        secretKey: flutterwaveKey,
+        transactionReference,
+        ngnPayout,
+        accountNumber: account_number,
+        bankCode: bank_code,
+        netAmount,
+      });
+    };
+
+    // Order providers: configured primary first, then fallback
+    if (configuredPrimary === "flutterwave") {
+      providers.push({ name: "flutterwave", attempt: flutterwaveAttempt });
+      providers.push({ name: "payaza", attempt: payazaAttempt });
+    } else {
+      providers.push({ name: "payaza", attempt: payazaAttempt });
+      providers.push({ name: "flutterwave", attempt: flutterwaveAttempt });
     }
 
+    // ─── Try providers in order ───
+    let payoutSuccess = false;
+    let successProvider = "";
+
+    for (const provider of providers) {
+      try {
+        console.log(`Attempting ${provider.name} payout...`);
+        const result = await provider.attempt();
+        if (result) {
+          payoutSuccess = true;
+          successProvider = provider.name;
+          console.log(`${provider.name} payout SUCCESS`);
+          break;
+        }
+        console.warn(`${provider.name} payout failed, trying next...`);
+      } catch (err) {
+        console.error(`${provider.name} payout error:`, err);
+      }
+    }
+
+    // ─── Update records based on result ───
     if (payoutSuccess) {
       await adminClient
         .from("withdrawal_requests")
@@ -256,7 +301,7 @@ Deno.serve(async (req) => {
 
       await adminClient
         .from("transactions")
-        .update({ status: "confirmed", payment_provider: "payaza" })
+        .update({ status: "confirmed", payment_provider: successProvider })
         .eq("nowpayments_payment_id", transactionReference)
         .eq("type", "withdrawal");
     }
@@ -281,6 +326,9 @@ Deno.serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Both providers failed — leave as pending for manual processing
+    console.warn("All payout providers failed, withdrawal left as pending for manual processing");
 
     await adminClient.from("notifications").insert({
       user_id: userId,
@@ -308,7 +356,7 @@ Deno.serve(async (req) => {
   }
 });
 
-// ─── Payaza payout attempt (correct payload format per official payaza_lib SDK) ───
+// ─── Payaza payout attempt ───
 interface PayazaPayoutParams {
   secretKey: string;
   merchantKey: string;
@@ -321,15 +369,13 @@ interface PayazaPayoutParams {
 }
 
 async function tryPayazaPayout(params: PayazaPayoutParams): Promise<boolean> {
-  const { secretKey, merchantKey, transactionReference, ngnPayout, accountNumber, bankCode, accountName, netAmount } = params;
+  const { secretKey, transactionReference, ngnPayout, accountNumber, bankCode, accountName, netAmount } = params;
 
   try {
     const proxyUrl = Deno.env.get("QUOTAGUARD_URL");
     const transactionPin = Deno.env.get("PAYAZA_TRANSACTION_PIN");
-
-    // Correct Payaza payout payload structure (matches official payaza_lib npm package)
-    // account_reference = merchant's own account reference (PAYAZA_MERCHANT_KEY), NOT the recipient's bank account
     const merchantAccountRef = Deno.env.get("PAYAZA_MERCHANT_KEY") || "";
+
     const payoutPayload: Record<string, unknown> = {
       transaction_type: "nuban",
       service_payload: {
@@ -356,93 +402,112 @@ async function tryPayazaPayout(params: PayazaPayoutParams): Promise<boolean> {
       },
     };
 
-    console.log("[Payaza] Payout payload:", JSON.stringify(payoutPayload).substring(0, 500));
-
     const payazaUrl = "https://api.payaza.africa/live/payout-receptor/payout";
-
-    // Per official payaza_lib SDK: base64-encode the secret key, use "Payaza <encoded>" header
-    // Also requires X-TenantID: live
     const encodedSecret = encodePayazaKey(secretKey);
-    const encodedMerchant = merchantKey ? encodePayazaKey(merchantKey) : null;
+    const fetchHeaders: Record<string, string> = {
+      "Content-Type": "application/json",
+      "Authorization": `Payaza ${encodedSecret}`,
+      "Accept": "application/json",
+      "X-TenantID": "live",
+    };
 
-    // Only use the secret key for auth (merchant key is an account reference, not an API key)
-    const authVariants: string[] = [];
-    authVariants.push(`Payaza ${encodedSecret}`);
+    let payazaResponse: Response | null = null;
 
-    for (const authValue of authVariants) {
-      const authLabel = authValue.substring(0, 30) + "...";
-      let payazaResponse: Response | null = null;
-
-      const fetchHeaders: Record<string, string> = {
-        "Content-Type": "application/json",
-        "Authorization": authValue,
-        "Accept": "application/json",
-        "X-TenantID": "live",
-      };
-
-      // Try with proxy first (for IP whitelisting)
-      if (proxyUrl) {
-        try {
-          const httpClient = Deno.createHttpClient({ proxy: { url: proxyUrl } });
-          payazaResponse = await fetch(payazaUrl, {
-            method: "POST",
-            headers: fetchHeaders,
-            body: JSON.stringify(payoutPayload),
-            // @ts-ignore
-            client: httpClient,
-          });
-          httpClient.close();
-          const preview = await payazaResponse.clone().text();
-          if (preview.includes("<html") || preview.includes("<!DOCTYPE")) {
-            console.warn(`Payaza proxy returned HTML page (${authLabel})`);
-            payazaResponse = null;
-          }
-        } catch (err) {
-          console.warn(`Payaza proxy payout failed (${authLabel}):`, err);
-        }
-      }
-
-      // Direct fallback
-      if (!payazaResponse) {
+    // Try with proxy first (for IP whitelisting)
+    if (proxyUrl) {
+      try {
+        const httpClient = Deno.createHttpClient({ proxy: { url: proxyUrl } });
         payazaResponse = await fetch(payazaUrl, {
           method: "POST",
           headers: fetchHeaders,
           body: JSON.stringify(payoutPayload),
+          // @ts-ignore
+          client: httpClient,
         });
-      }
-
-      const payazaText = await payazaResponse.text();
-      console.log(`Payaza payout [${authLabel}] → ${payazaResponse.status}: ${payazaText.substring(0, 500)}`);
-
-      if (payazaResponse.ok) {
-        try {
-          const result = JSON.parse(payazaText);
-          // Check for success indicators in the response
-          const isSuccess = result?.status === 201 || result?.status === 200 || 
-                           result?.type === "success" || 
-                           result?.response_code === "00" ||
-                           result?.message?.toLowerCase()?.includes("success");
-          
-          if (isSuccess) {
-            console.log(`Payaza payout SUCCESS with auth: ${authLabel}`);
-            return true;
-          }
-          console.warn(`Payaza payout response OK but not clearly successful:`, JSON.stringify(result).substring(0, 300));
-          // Still treat 2xx as success if parseable
-          return true;
-        } catch {
-          console.error("Failed to parse Payaza payout response");
+        httpClient.close();
+        const preview = await payazaResponse.clone().text();
+        if (preview.includes("<html") || preview.includes("<!DOCTYPE")) {
+          console.warn("Payaza proxy returned HTML page");
+          payazaResponse = null;
         }
+      } catch (err) {
+        console.warn("Payaza proxy payout failed:", err);
       }
+    }
 
-      // If we get a non-auth error (not 401/403), stop trying other auth variants
-      if (payazaResponse.status !== 401 && payazaResponse.status !== 403) {
-        console.warn(`Payaza payout returned ${payazaResponse.status}, stopping auth rotation`);
-        break;
+    // Direct fallback
+    if (!payazaResponse) {
+      payazaResponse = await fetch(payazaUrl, {
+        method: "POST",
+        headers: fetchHeaders,
+        body: JSON.stringify(payoutPayload),
+      });
+    }
+
+    const payazaText = await payazaResponse.text();
+    console.log(`Payaza payout → ${payazaResponse.status}: ${payazaText.substring(0, 500)}`);
+
+    if (payazaResponse.ok) {
+      try {
+        const result = JSON.parse(payazaText);
+        const isSuccess = result?.status === 201 || result?.status === 200 ||
+                          result?.type === "success" ||
+                          result?.response_code === "00" ||
+                          result?.message?.toLowerCase()?.includes("success");
+        if (isSuccess) return true;
+        // Treat any 2xx as success
+        return true;
+      } catch {
+        console.error("Failed to parse Payaza payout response");
       }
     }
   } catch (err) {
     console.error("Payaza payout error:", err);
+  }
+  return false;
+}
+
+// ─── Flutterwave payout attempt (fallback) ───
+interface FlutterwavePayoutParams {
+  secretKey: string;
+  transactionReference: string;
+  ngnPayout: number;
+  accountNumber: string;
+  bankCode: string;
+  netAmount: number;
+}
+
+async function tryFlutterwavePayout(params: FlutterwavePayoutParams): Promise<boolean> {
+  const { secretKey, transactionReference, ngnPayout, accountNumber, bankCode, netAmount } = params;
+
+  try {
+    const transferRes = await fetch("https://api.flutterwave.com/v3/transfers", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${secretKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        account_bank: bankCode,
+        account_number: accountNumber,
+        amount: ngnPayout,
+        narration: `OPOLL withdrawal $${netAmount.toFixed(2)}`,
+        currency: "NGN",
+        reference: transactionReference,
+        callback_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/flutterwave-webhook`,
+        debit_currency: "NGN",
+      }),
+    });
+
+    const transferData = await transferRes.json();
+    console.log(`Flutterwave transfer → ${transferRes.status}:`, JSON.stringify(transferData).substring(0, 500));
+
+    if (transferData.status === "success") {
+      return true;
+    }
+    console.warn("Flutterwave transfer failed:", transferData.message);
+  } catch (err) {
+    console.error("Flutterwave transfer error:", err);
   }
   return false;
 }
