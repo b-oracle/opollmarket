@@ -754,7 +754,7 @@ const MarketDetail = () => {
         <div className="glass rounded-2xl p-4 mb-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-muted-foreground">Price Chart</span>
-            <span className="text-sm font-bold text-green-500">{isMulti && market.options?.length ? (() => { const leading = market.options!.reduce((a, b) => b.price > a.price ? b : a); return `${Math.round(leading.price * 100)}% Chance · ${leading.label}`; })() : `${yesPercent}% Chance`}</span>
+            <span className="text-xs font-bold text-green-500">{isMulti && market.options?.length ? (() => { const leading = market.options!.reduce((a, b) => b.price > a.price ? b : a); return `${Math.round(leading.price * 100)}% Chance · ${leading.label}`; })() : `${yesPercent}% Chance`}</span>
           </div>
           <div className="flex gap-1 p-0.5 rounded-lg bg-muted/50 mb-3 w-fit">
             {(["1D", "1W", "1M", "All"] as const).map((p) => (
