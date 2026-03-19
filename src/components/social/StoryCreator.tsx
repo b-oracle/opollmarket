@@ -84,8 +84,6 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle }
     setSearching(false);
   };
 
-  const [justPosted, setJustPosted] = useState(false);
-  const [storyCount, setStoryCount] = useState(0);
 
   const resetForm = () => {
     setContent("");
