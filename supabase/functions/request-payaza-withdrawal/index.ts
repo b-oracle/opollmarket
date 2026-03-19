@@ -467,6 +467,38 @@ async function tryPayazaPayout(params: PayazaPayoutParams): Promise<boolean> {
   return false;
 }
 
+/**
+ * Mapping from Payaza/NIP 6-digit codes to Flutterwave 3-digit CBN codes.
+ * Used when falling back to Flutterwave for payout.
+ */
+const PAYAZA_TO_FW_MAP: Record<string, string> = {
+  "000014": "044", // Access Bank
+  "000005": "063", // Access (Diamond)
+  "000009": "023", // Citibank
+  "000010": "050", // Ecobank
+  "000007": "070", // Fidelity Bank
+  "000016": "011", // First Bank
+  "000003": "214", // FCMB
+  "000013": "058", // GTBank
+  "000020": "030", // Heritage Bank
+  "000006": "301", // Jaiz Bank
+  "000002": "082", // Keystone Bank
+  "000008": "076", // Polaris Bank
+  "000023": "101", // Providus Bank
+  "000012": "221", // Stanbic IBTC
+  "000021": "068", // Standard Chartered
+  "000001": "232", // Sterling Bank
+  "000004": "033", // UBA
+  "000018": "032", // Union Bank
+  "000011": "215", // Unity Bank
+  "000017": "035", // Wema Bank
+  "000015": "057", // Zenith Bank
+  "100004": "999992", // OPay
+  "090267": "50211", // Kuda
+  "100033": "999991", // PalmPay
+  "090405": "50515", // Moniepoint
+};
+
 // ─── Flutterwave payout attempt (fallback) ───
 interface FlutterwavePayoutParams {
   secretKey: string;
@@ -481,6 +513,9 @@ async function tryFlutterwavePayout(params: FlutterwavePayoutParams): Promise<bo
   const { secretKey, transactionReference, ngnPayout, accountNumber, bankCode, netAmount } = params;
 
   try {
+    // Map Payaza code to Flutterwave code if needed
+    const fwBankCode = PAYAZA_TO_FW_MAP[bankCode] || bankCode;
+
     const transferRes = await fetch("https://api.flutterwave.com/v3/transfers", {
       method: "POST",
       headers: {
@@ -488,7 +523,7 @@ async function tryFlutterwavePayout(params: FlutterwavePayoutParams): Promise<bo
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        account_bank: bankCode,
+        account_bank: fwBankCode,
         account_number: accountNumber,
         amount: ngnPayout,
         narration: `OPOLL withdrawal $${netAmount.toFixed(2)}`,
@@ -500,7 +535,7 @@ async function tryFlutterwavePayout(params: FlutterwavePayoutParams): Promise<bo
     });
 
     const transferData = await transferRes.json();
-    console.log(`Flutterwave transfer → ${transferRes.status}:`, JSON.stringify(transferData).substring(0, 500));
+    console.log(`Flutterwave transfer (code=${fwBankCode}) → ${transferRes.status}:`, JSON.stringify(transferData).substring(0, 500));
 
     if (transferData.status === "success") {
       return true;
