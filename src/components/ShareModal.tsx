@@ -239,7 +239,6 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
       const { error } = await supabase.from("status_updates").insert({
         user_id: user.id,
         content: `🔥 Check out "${title}" on our prediction market! Make your OPinion count 👇🏽\n\n${cleanShareLink}`,
-        market_id: marketId || null,
       });
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["social-posts"] });
