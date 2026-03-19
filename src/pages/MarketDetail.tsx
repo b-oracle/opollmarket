@@ -449,7 +449,8 @@ const MarketDetail = () => {
   const { boostDetails } = useActiveBoosts();
   const activeBoost = id ? boostDetails.get(id) : undefined;
   const { track } = useAnalytics();
-  const [statMode, setStatMode] = useState<"traders" | "wagered">("traders");
+  const { isFeatureEnabled } = useFeatureToggles();
+  const showWagered = isFeatureEnabled("show_wagered_stats");
 
   const { data: totalWagered } = useQuery({
     queryKey: ["market-total-wagered", id],
@@ -462,7 +463,7 @@ const MarketDetail = () => {
       if (error) return 0;
       return (data || []).reduce((s, r) => s + Number(r.amount), 0);
     },
-    enabled: !!id && isSuperAdmin,
+    enabled: !!id && showWagered,
   });
 
   const isCreator = !!(user && market && market.creatorAddress === user.id);
