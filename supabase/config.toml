@@ -105,3 +105,11 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.cleanup-expired-stories]
     verify_jwt = false
+  [functions.twitter-auth-start]
+    verify_jwt = false
+  [functions.twitter-auth-callback]
+    verify_jwt = false
+  [functions.twitter-post-tweet]
+    verify_jwt = false
+  [functions.twitter-unlink]
+    verify_jwt = false
