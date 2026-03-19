@@ -152,7 +152,7 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle }
 
           <div className="relative z-10 flex flex-col h-full w-full lg:h-auto lg:max-h-[90vh] lg:max-w-lg lg:rounded-2xl lg:border lg:border-border lg:bg-background lg:shadow-2xl lg:overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 shrink-0">
+            <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ paddingTop: `calc(0.75rem + env(safe-area-inset-top, 0px))` }}>
               <button onClick={handleClose} className="w-9 h-9 rounded-full glass flex items-center justify-center">
                 <X className="w-5 h-5" />
               </button>
