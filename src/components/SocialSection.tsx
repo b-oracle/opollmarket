@@ -24,7 +24,7 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
   const navigate = useNavigate();
   const { user } = useAuth();
   const [expanded, setExpanded] = useState(false);
-  const [activeTab, setActiveTab] = useState<"posts" | "activity" | "followers" | "following" | "suggestions">("posts");
+  const [activeTab, setActiveTab] = useState<"posts" | "activity" | "spaces" | "followers" | "following" | "suggestions">("posts");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
