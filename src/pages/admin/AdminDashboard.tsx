@@ -76,6 +76,7 @@ const AdminDashboard = () => {
   const [allDepositTxns, setAllDepositTxns] = useState<DepositTxn[]>([]);
   const [depositRange, setDepositRange] = useState<DepositRangeKey>("all");
   const [platformPoolBalance, setPlatformPoolBalance] = useState<number>(0);
+  const [qtRevenuePool, setQtRevenuePool] = useState<number>(0);
 
   useEffect(() => {
     const fetchAll = async () => {
