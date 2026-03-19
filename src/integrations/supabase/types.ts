@@ -1807,6 +1807,35 @@ export type Database = {
           },
         ]
       }
+      space_reminders: {
+        Row: {
+          created_at: string
+          id: string
+          space_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          space_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          space_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_reminders_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spaces: {
         Row: {
           created_at: string
@@ -1814,6 +1843,8 @@ export type Database = {
           host_id: string
           id: string
           listener_count: number
+          reminder_count: number
+          scheduled_at: string | null
           started_at: string
           status: Database["public"]["Enums"]["space_status"]
           title: string
@@ -1824,6 +1855,8 @@ export type Database = {
           host_id: string
           id?: string
           listener_count?: number
+          reminder_count?: number
+          scheduled_at?: string | null
           started_at?: string
           status?: Database["public"]["Enums"]["space_status"]
           title: string
@@ -1834,6 +1867,8 @@ export type Database = {
           host_id?: string
           id?: string
           listener_count?: number
+          reminder_count?: number
+          scheduled_at?: string | null
           started_at?: string
           status?: Database["public"]["Enums"]["space_status"]
           title?: string
