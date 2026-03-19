@@ -1272,7 +1272,14 @@ const Profile = () => {
                 const currentValue = p.shares * currentPrice;
                 return sum + (currentValue - invested);
               }, 0);
-            const pnl = totalPayouts + totalSold - totalBought + unrealizedPnl;
+            // Quick Trade P&L
+            const qtPnl = quickBets
+              .filter((qb: any) => qb.status === "won" || qb.status === "lost")
+              .reduce((sum: number, qb: any) => {
+                if (qb.status === "won") return sum + (Number(qb.payout || 0) - Number(qb.amount));
+                return sum - Number(qb.amount);
+              }, 0);
+            const pnl = totalPayouts + totalSold - totalBought + unrealizedPnl + qtPnl;
             const totalPredictions = predictionBuyTxns.length;
             const refundTxns = transactions.filter((t: any) => t.type === "refund" && t.status === "confirmed");
             const resolvedCount = payoutTxns.length + Math.max(0, totalPredictions - payoutTxns.length - refundTxns.length);
