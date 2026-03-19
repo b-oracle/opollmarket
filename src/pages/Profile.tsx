@@ -652,6 +652,25 @@ const Profile = () => {
   const walletSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { track("page_view", { page: "profile" }); }, []);
+
+  // Handle Twitter link callback
+  useEffect(() => {
+    const twitterStatus = searchParams.get("twitter");
+    if (twitterStatus === "linked") {
+      toast.success("X account linked successfully! ✓");
+      // Clean up URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete("twitter");
+      window.history.replaceState({}, "", url.toString());
+    } else if (twitterStatus === "error") {
+      const msg = searchParams.get("msg") || "Failed to link X account";
+      toast.error(msg);
+      const url = new URL(window.location.href);
+      url.searchParams.delete("twitter");
+      url.searchParams.delete("msg");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [searchParams]);
   const queryClient = useQueryClient();
   const { address, isConnected } = useAccount();
   const { connect, connectors, isPending } = useFilteredConnectors();
