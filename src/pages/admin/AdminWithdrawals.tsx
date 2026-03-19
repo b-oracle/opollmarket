@@ -302,7 +302,7 @@ const AdminWithdrawals = () => {
                       </span>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground max-w-[120px] truncate">
-                      {w.admin_note || (w.nowpayments_id ? (
+                      {w.admin_note || (w.nowpayments_id || (w.crypto_currency === "NGN" && w.status === "completed" && !w.admin_note) ? (
                         <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20 text-[10px] font-semibold">Auto</span>
                       ) : "—")}
                     </TableCell>
