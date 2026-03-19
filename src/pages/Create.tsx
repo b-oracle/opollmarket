@@ -292,6 +292,7 @@ const Create = () => {
   // Escrow state
   const [escrowId, setEscrowId] = useState<string | null>(null);
   const [showFeeConfirm, setShowFeeConfirm] = useState(false);
+  const [feeBypassLoading, setFeeBypassLoading] = useState(false);
 
   // Draft state
   const [draftId, setDraftId] = useState<string | null>(null);
