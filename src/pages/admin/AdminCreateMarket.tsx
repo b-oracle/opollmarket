@@ -336,9 +336,12 @@ const AdminCreateMarket = () => {
       }
 
       // Create market
-      const autoResolveDeadline = autoResolve && endDate && autoResolveTime
+      const isTwitterMarket = category === "Twitter/X" && twitterResourceId.trim();
+      const autoResolveDeadline = (autoResolve || isTwitterMarket) && endDate && autoResolveTime
         ? new Date(`${endDate}T${autoResolveTime}:00Z`).toISOString()
         : null;
+
+      const effectiveMarketType = isTwitterMarket ? "multi" : (autoResolve ? "binary" : marketType);
 
       const { data, error } = await supabase
         .from("markets")
@@ -347,7 +350,7 @@ const AdminCreateMarket = () => {
           creator_name: displayName,
           title: title.trim(),
           description: description.trim(),
-          category,
+          category: isTwitterMarket ? "Entertainment" : category,
           end_date: endDate,
           resolution_source: resolutionSource.trim(),
           initial_liquidity: parseFloat(initialLiquidity) || 100,
@@ -356,13 +359,13 @@ const AdminCreateMarket = () => {
           participants: 0,
           simulated_volume: parseFloat(initialVolume) || 0,
           simulated_participants: parseInt(initialTraders) || 0,
-          market_type: autoResolve ? "binary" : marketType,
+          market_type: effectiveMarketType,
           image_url: imageUrl,
           video_url: mediaType === "video" && videoUrl.trim() && isYouTubeUrl(videoUrl.trim()) ? videoUrl.trim() : null,
           details: details.trim() || null,
           trending,
           status: "active",
-          auto_resolve: autoResolve,
+          auto_resolve: autoResolve || !!isTwitterMarket,
           auto_resolve_asset: autoResolve && isPriceAutoResolveCategory(category) ? autoResolveAsset : null,
           auto_resolve_target_price: autoResolve && isPriceAutoResolveCategory(category) ? parseFloat(autoResolveTargetPrice) : null,
           auto_resolve_operator: autoResolve && isPriceAutoResolveCategory(category) ? autoResolveOperator : null,
@@ -371,18 +374,24 @@ const AdminCreateMarket = () => {
           sport_match_id: autoResolve && category === "Sports" ? sportMatchId : null,
           sport_predicted_outcome: autoResolve && category === "Sports" ? sportPredictedOutcome : null,
           sport_league: autoResolve && category === "Sports" ? sportLeague || null : null,
+          twitter_metric_type: isTwitterMarket ? twitterMetricType : null,
+          twitter_resource_id: isTwitterMarket ? twitterResourceId.trim() : null,
+          twitter_current_count: 0,
         } as any)
         .select("id")
         .maybeSingle();
 
       if (error) throw error;
 
-      // Save options for multi markets
-      if (marketType === "multi" && data?.id) {
-        const validOptions = options.filter((o) => o.trim());
-        const equalPrice = Math.round((1 / validOptions.length) * 100) / 100;
+      // Save options for multi markets or Twitter bracket markets
+      const shouldSaveOptions = (effectiveMarketType === "multi" && data?.id);
+      if (shouldSaveOptions) {
+        const optionLabels = isTwitterMarket
+          ? twitterBrackets.filter((b) => b.trim())
+          : options.filter((o) => o.trim());
+        const equalPrice = Math.round((1 / optionLabels.length) * 100) / 100;
         await supabase.from("market_options").insert(
-          validOptions.map((label, i) => ({
+          optionLabels.map((label, i) => ({
             market_id: data.id,
             label: label.trim(),
             price: equalPrice,
