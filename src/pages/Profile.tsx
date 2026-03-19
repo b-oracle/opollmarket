@@ -1816,7 +1816,10 @@ const Profile = () => {
             <div className="glass rounded-xl p-8 text-center">
               <p className="text-sm text-muted-foreground">No transactions yet</p>
             </div>
-          )}
+           )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Security Settings */}
