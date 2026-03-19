@@ -197,7 +197,7 @@ const Create = () => {
   const { isFeatureEnabled } = useFeatureToggles();
   const navigate = useNavigate();
   const location = useLocation();
-  const { balance } = useUserBalance();
+  const { balance, totalBalance, isLoading: balanceLoading } = useUserBalance();
 
   // Gate thresholds & settings from DB
   const [minTokenBalance, setMinTokenBalance] = useState(10_000_000);
