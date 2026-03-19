@@ -1577,10 +1577,15 @@ const Create = () => {
                 {/* No NFT or Token? Proceed with fee */}
                 <button
                   onClick={handleFeeBypass}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-neon-yes text-background font-semibold transition-all active:scale-95 hover:opacity-90"
+                  disabled={feeBypassLoading || balanceLoading}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-neon-yes text-background font-semibold transition-all active:scale-95 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <DollarSign className="w-4 h-4" />
-                  No NFT or BC400? No problem.
+                  {feeBypassLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <DollarSign className="w-4 h-4" />
+                  )}
+                  {feeBypassLoading ? "Processing..." : balanceLoading ? "Loading balance..." : "No NFT or BC400? No problem."}
                 </button>
 
               </motion.div>
