@@ -298,6 +298,7 @@ const Create = () => {
   const [draftLoading, setDraftLoading] = useState(true);
   const [draftBannerDraft, setDraftBannerDraft] = useState<{ id: string; title: string } | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
+  const [lastAutoSaveTime, setLastAutoSaveTime] = useState<number | null>(null);
 
   // Form state — restore from sessionStorage on mount
   const getStored = (key: string, fallback: string) => {
