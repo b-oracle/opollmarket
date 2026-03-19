@@ -23,6 +23,7 @@ import {
   Zap,
   Trophy,
   Sparkles,
+  Twitter,
 } from "lucide-react";
 
 import CategoryIcon from "@/components/CategoryIcon";
