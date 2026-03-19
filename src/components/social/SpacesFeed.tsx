@@ -13,7 +13,6 @@ const SpacesFeed = () => {
   const { user } = useAuth();
   const { isFeatureEnabled } = useFeatureToggles();
 
-  
   const [createOpen, setCreateOpen] = useState(false);
   const [activeRoom, setActiveRoom] = useState<{
     id: string;
@@ -27,7 +26,7 @@ const SpacesFeed = () => {
       const { data } = await supabase
         .from("spaces")
         .select("*")
-        .eq("status", "live")
+        .in("status", ["live", "scheduled"])
         .order("started_at", { ascending: false })
         .limit(30);
       return data || [];
@@ -71,6 +70,10 @@ const SpacesFeed = () => {
     );
   }
 
+  // Separate live and scheduled spaces
+  const liveSpaces = spaces.filter((s: any) => s.status === "live");
+  const scheduledSpaces = spaces.filter((s: any) => s.status === "scheduled");
+
   return (
     <div className="space-y-2">
       {/* Start a Space button */}
@@ -85,32 +88,52 @@ const SpacesFeed = () => {
           </div>
           <div className="text-left">
             <p className="text-sm font-semibold">Start a Space</p>
-            <p className="text-[10px] text-muted-foreground">Go live with voice chat</p>
+            <p className="text-[10px] text-muted-foreground">Go live or schedule for later</p>
           </div>
         </motion.button>
       )}
 
-      {spaces.length === 0 ? (
+      {liveSpaces.length === 0 && scheduledSpaces.length === 0 ? (
         <div className="flex flex-col items-center py-12">
           <Radio className="w-8 h-8 text-muted-foreground mb-2" />
           <p className="text-sm text-muted-foreground">No live spaces right now</p>
           <p className="text-[10px] text-muted-foreground mt-1">Be the first to start one!</p>
         </div>
       ) : (
-        spaces.map((s: any, i: number) => (
-          <SpaceCard
-            key={s.id}
-            space={s}
-            hostProfile={(hostMap as Map<string, any>).get(s.host_id)}
-            index={i}
-            onJoinRoom={handleJoinRoom}
-          />
-        ))
+        <>
+          {liveSpaces.map((s: any, i: number) => (
+            <SpaceCard
+              key={s.id}
+              space={s}
+              hostProfile={(hostMap as Map<string, any>).get(s.host_id)}
+              index={i}
+              onJoinRoom={handleJoinRoom}
+            />
+          ))}
+
+          {scheduledSpaces.length > 0 && (
+            <>
+              {liveSpaces.length > 0 && (
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pt-2">
+                  Upcoming
+                </p>
+              )}
+              {scheduledSpaces.map((s: any, i: number) => (
+                <SpaceCard
+                  key={s.id}
+                  space={s}
+                  hostProfile={(hostMap as Map<string, any>).get(s.host_id)}
+                  index={i + liveSpaces.length}
+                  onJoinRoom={handleJoinRoom}
+                />
+              ))}
+            </>
+          )}
+        </>
       )}
 
       <CreateSpaceModal open={createOpen} onClose={() => setCreateOpen(false)} />
 
-      {/* Active voice room */}
       {activeRoom && (
         <SpaceRoom
           spaceId={activeRoom.id}
