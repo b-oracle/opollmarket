@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { motion } from "framer-motion";
-import { Heart, Trash2, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Heart, Trash2, Loader2, MessageCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { toast } from "sonner";
+import StatusComments from "./StatusComments";
 
 interface StatusCardProps {
   status: {
@@ -16,6 +17,7 @@ interface StatusCardProps {
     content: string;
     image_url?: string | null;
     likes_count: number;
+    comments_count?: number;
     created_at: string;
   };
   profile?: {
@@ -31,6 +33,7 @@ const StatusCard = ({ status, profile, index = 0 }: StatusCardProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [likeLoading, setLikeLoading] = useState(false);
+  const [showComments, setShowComments] = useState(false);
 
   const { data: isLiked = false } = useQuery({
     queryKey: ["status-liked", status.id, user?.id],
@@ -136,7 +139,29 @@ const StatusCard = ({ status, profile, index = 0 }: StatusCardProps) => {
           )}
           {status.likes_count > 0 && status.likes_count}
         </button>
+        <button
+          onClick={() => setShowComments(!showComments)}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+        >
+          <MessageCircle className="w-3.5 h-3.5" />
+          {(status.comments_count || 0) > 0 && status.comments_count}
+        </button>
       </div>
+
+      {/* Comments Section */}
+      <AnimatePresence>
+        {showComments && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden border-t border-border pt-2"
+          >
+            <StatusComments statusId={status.id} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

@@ -15,9 +15,9 @@ interface StatusFeedProps {
 const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
   const { user } = useAuth();
 
-  // If userId provided, show that user's statuses. Otherwise show statuses from followed users.
+  // If userId provided, show that user's statuses. Otherwise show ALL public posts (Twitter-style).
   const { data: statuses = [], isLoading } = useQuery({
-    queryKey: ["status-feed", userId || "following", user?.id],
+    queryKey: ["status-feed", userId || "global", user?.id],
     queryFn: async () => {
       if (userId) {
         const { data } = await supabase
@@ -29,22 +29,10 @@ const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
         return data || [];
       }
 
-      // Get followed user IDs
-      if (!user) return [];
-      const { data: follows } = await supabase
-        .from("follows")
-        .select("following_id")
-        .eq("follower_id", user.id);
-
-      const followedIds = (follows || []).map((f: any) => f.following_id);
-      // Include own posts
-      const allIds = [...new Set([...followedIds, user.id])];
-      if (allIds.length === 0) return [];
-
+      // Global feed — show all posts from all users
       const { data } = await supabase
         .from("status_updates")
         .select("*")
-        .in("user_id", allIds.slice(0, 50))
         .order("created_at", { ascending: false })
         .limit(50);
       return data || [];
