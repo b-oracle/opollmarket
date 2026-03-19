@@ -699,6 +699,7 @@ const Profile = () => {
   const [txFilter, setTxFilter] = useState<FilterType>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [txPage, setTxPage] = useState(1);
+  const [txHistoryOpen, setTxHistoryOpen] = useState(true);
   const TX_PER_PAGE = 10;
   const [editingProfile, setEditingProfile] = useState(false);
   const [editName, setEditName] = useState(user?.user_metadata?.display_name || "");
@@ -1542,10 +1543,17 @@ const Profile = () => {
 
 
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Transaction History</h3>
+          <div
+            className="flex items-center justify-between mb-4 cursor-pointer select-none"
+            onClick={() => setTxHistoryOpen((o) => !o)}
+          >
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Transaction History</h3>
+              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${txHistoryOpen ? "rotate-180" : ""}`} />
+            </div>
             <motion.button
-              onClick={async () => {
+              onClick={async (e) => {
+                e.stopPropagation();
                 await Promise.all([
                   queryClient.invalidateQueries({ queryKey: ["transactions", user?.id] }),
                   queryClient.invalidateQueries({ queryKey: ["quick-bets-profile", user?.id] }),
@@ -1559,6 +1567,15 @@ const Profile = () => {
               <Repeat className="w-4 h-4 text-muted-foreground" />
             </motion.button>
           </div>
+          <AnimatePresence initial={false}>
+            {txHistoryOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
           <div className="flex gap-2 mb-3 flex-wrap">
             {(["all", "trades", "quick_trades", "deposits", "withdrawals", "earnings"] as FilterType[]).map((f) => (
               <button key={f} onClick={() => { setTxFilter(f); setTxPage(1); }}
@@ -1799,7 +1816,10 @@ const Profile = () => {
             <div className="glass rounded-xl p-8 text-center">
               <p className="text-sm text-muted-foreground">No transactions yet</p>
             </div>
-          )}
+           )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Security Settings */}
