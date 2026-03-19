@@ -452,6 +452,20 @@ const AdminDashboard = () => {
         </p>
       </div>
 
+      {/* Quick Trade Revenue Pool Card */}
+      <div className="bg-card border border-border rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Zap className="w-5 h-5 text-amber-500" />
+          <h3 className="text-sm font-semibold">Quick Trade Revenue Pool</h3>
+        </div>
+        <p className={`text-3xl font-bold ${qtRevenuePool >= 0 ? "text-green-500" : "text-red-500"}`}>
+          {qtRevenuePool >= 1000 ? `$${(qtRevenuePool / 1000).toFixed(1)}K` : qtRevenuePool <= -1000 ? `-$${(Math.abs(qtRevenuePool) / 1000).toFixed(1)}K` : `$${qtRevenuePool.toFixed(2)}`}
+        </p>
+        <p className="text-[10px] text-muted-foreground mt-1">
+          Quick Trade profit (Wagered − Payouts − Refunded − Bonus). One-sided bonuses are paid from this pool.
+        </p>
+      </div>
+
       {/* Financial Overview Card */}
       {stats && (() => {
         const dep = stats.totalDeposits;
