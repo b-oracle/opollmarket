@@ -691,6 +691,9 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                       </motion.div>
                     )}
 
+                    {/* Share to X */}
+                    <ShareToXButton marketTitle={marketTitle} marketId={marketId} side={side} optionLabel={optionLabel} />
+
                     <div className="flex gap-3 w-full">
                       <button onClick={handleClose} className="flex-1 glass py-3 rounded-xl font-semibold text-sm transition-all active:scale-95">Close</button>
                       <button

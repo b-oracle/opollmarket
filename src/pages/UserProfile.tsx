@@ -385,6 +385,18 @@ const UserProfile = () => {
                 {isVerified && <NftBadge size={18} className="shrink-0" level={verificationLevel} />}
               </div>
               {profile.bio && <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{profile.bio}</p>}
+              {(profile as any).twitter_username && (
+                <a
+                  href={`https://x.com/${(profile as any).twitter_username}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-foreground/5 border border-foreground/10 text-[10px] font-semibold text-muted-foreground hover:text-foreground transition-colors mb-2"
+                >
+                  <svg viewBox="0 0 24 24" className="w-3 h-3" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                  @{(profile as any).twitter_username}
+                  <ShieldCheck className="w-3 h-3 text-primary" />
+                </a>
+              )}
 
               {/* Stats Row */}
               <div className="flex items-center gap-4 text-xs">
