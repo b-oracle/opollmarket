@@ -236,12 +236,26 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
     if (!user) { toast.error("Sign in to share to feed"); return; }
     setPostingToFeed(true);
     try {
+      // Fetch market image if available
+      let image_url: string | null = null;
+      if (marketId) {
+        const { data: market } = await supabase
+          .from("markets")
+          .select("image_url")
+          .eq("id", marketId)
+          .single();
+        image_url = market?.image_url || null;
+      }
+
       const { error } = await supabase.from("status_updates").insert({
         user_id: user.id,
         content: `🔥 Check out "${title}" on our prediction market! Make your OPinion count 👇🏽\n\n${cleanShareLink}`,
+        image_url,
       });
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["social-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["status-feed"] });
+      queryClient.invalidateQueries({ queryKey: ["activity-statuses"] });
       toast.success("Shared to your feed!");
       onOpenChange(false);
     } catch (err: any) {
