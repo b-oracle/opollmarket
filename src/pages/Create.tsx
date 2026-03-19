@@ -197,7 +197,7 @@ const Create = () => {
   const { isFeatureEnabled } = useFeatureToggles();
   const navigate = useNavigate();
   const location = useLocation();
-  const { balance } = useUserBalance();
+  const { balance, totalBalance, isLoading: balanceLoading } = useUserBalance();
 
   // Gate thresholds & settings from DB
   const [minTokenBalance, setMinTokenBalance] = useState(10_000_000);
@@ -292,6 +292,7 @@ const Create = () => {
   // Escrow state
   const [escrowId, setEscrowId] = useState<string | null>(null);
   const [showFeeConfirm, setShowFeeConfirm] = useState(false);
+  const [feeBypassLoading, setFeeBypassLoading] = useState(false);
 
   // Draft state
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -1262,7 +1263,11 @@ const Create = () => {
   // Fee bypass — check balance, show confirmation, then escrow
   const handleFeeBypass = async () => {
     if (!user) { toast.error("Sign in first"); return; }
-    if (balance < marketCreationFee) {
+    if (balanceLoading) {
+      toast.info("Loading your balance, please wait...");
+      return;
+    }
+    if (totalBalance < marketCreationFee) {
       toast.error(`Insufficient balance. You need at least $${marketCreationFee} to proceed.`, {
         action: {
           label: "Deposit Now",
@@ -1276,6 +1281,7 @@ const Create = () => {
 
   const confirmFeeEscrow = async () => {
     setShowFeeConfirm(false);
+    setFeeBypassLoading(true);
     try {
       const { data, error } = await supabase.rpc("hold_creation_fee_escrow" as any, {
         _user_id: user!.id,
@@ -1292,6 +1298,8 @@ const Create = () => {
       toast.success("Access Granted! 🎉 Your $" + marketCreationFee + " fee is held in escrow.");
     } catch (err: any) {
       toast.error(err.message || "Escrow failed");
+    } finally {
+      setFeeBypassLoading(false);
     }
   };
 
@@ -1569,10 +1577,15 @@ const Create = () => {
                 {/* No NFT or Token? Proceed with fee */}
                 <button
                   onClick={handleFeeBypass}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-neon-yes text-background font-semibold transition-all active:scale-95 hover:opacity-90"
+                  disabled={feeBypassLoading || balanceLoading}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-neon-yes text-background font-semibold transition-all active:scale-95 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <DollarSign className="w-4 h-4" />
-                  No NFT or BC400? No problem.
+                  {feeBypassLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <DollarSign className="w-4 h-4" />
+                  )}
+                  {feeBypassLoading ? "Processing..." : balanceLoading ? "Loading balance..." : "No NFT or BC400? No problem."}
                 </button>
 
               </motion.div>
