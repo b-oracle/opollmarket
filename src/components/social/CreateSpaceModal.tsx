@@ -61,41 +61,43 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
             className="fixed inset-0 bg-background/60 backdrop-blur-sm z-[70]"
             onClick={onClose}
           />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ type: "spring", damping: 28, stiffness: 300 }}
-            className="fixed z-[71] bg-background p-6 space-y-4 bottom-0 left-0 right-0 rounded-t-2xl border-t border-border lg:bottom-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:max-w-md lg:w-full lg:rounded-2xl lg:border lg:shadow-2xl"
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold flex items-center gap-2">
-                <Radio className="w-5 h-5 text-primary" />
-                Start a Space
-              </h3>
-              <button onClick={onClose} className="w-8 h-8 rounded-full glass flex items-center justify-center">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="What do you want to talk about?"
-              maxLength={100}
-              className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground"
-            />
-
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={handleCreate}
-              disabled={creating || !title.trim()}
-              className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm disabled:opacity-40 flex items-center justify-center gap-2"
+          <div className="fixed inset-0 z-[71] flex items-end lg:items-center lg:justify-center pointer-events-none">
+            <motion.div
+              initial={{ opacity: 0, y: 24, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 24, scale: 0.98 }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="pointer-events-auto w-full bg-background p-6 space-y-4 rounded-t-2xl border-t border-border lg:max-w-md lg:rounded-2xl lg:border lg:shadow-2xl"
             >
-              {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Radio className="w-4 h-4" />}
-              Go Live
-            </motion.button>
-          </motion.div>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  <Radio className="w-5 h-5 text-primary" />
+                  Start a Space
+                </h3>
+                <button onClick={onClose} className="w-8 h-8 rounded-full glass flex items-center justify-center">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="What do you want to talk about?"
+                maxLength={100}
+                className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground"
+              />
+
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={handleCreate}
+                disabled={creating || !title.trim()}
+                className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Radio className="w-4 h-4" />}
+                Go Live
+              </motion.button>
+            </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>
