@@ -1,5 +1,10 @@
 // App root – v2
 import { lazy, Suspense, useState, useEffect, useRef } from "react";
+
+// Clear chunk reload counter on successful load
+if (typeof sessionStorage !== "undefined") {
+  sessionStorage.removeItem("chunk_reload");
+}
 import { Navigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
