@@ -509,7 +509,7 @@ const TwitterSection = ({ userId }: { userId?: string }) => {
   );
 };
 
-
+const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
   const queryClient = useQueryClient();
   const { data: secSettings, isLoading } = useQuery({
     queryKey: ["security_settings", userId],
