@@ -1,6 +1,7 @@
 import LogoLoader from "@/components/LogoLoader";
 import { useState, useCallback, useMemo } from "react";
 import BottomSheet from "@/components/BottomSheet";
+import DepositWithdrawModal from "@/components/DepositWithdrawModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
