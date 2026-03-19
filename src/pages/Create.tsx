@@ -1257,7 +1257,7 @@ const Create = () => {
       toast.error(`Insufficient balance. You need at least $${marketCreationFee} to proceed.`, {
         action: {
           label: "Deposit Now",
-          onClick: () => setDepositModalOpen(true),
+          onClick: () => navigate("/profile"),
         },
       });
       return;
