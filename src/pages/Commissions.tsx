@@ -1,12 +1,12 @@
 import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, DollarSign, Users, Gift, Copy, Clock, Sparkles, PieChart as PieChartIcon, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { ArrowLeft, DollarSign, Users, Gift, Copy, Clock, Sparkles, PieChart as PieChartIcon, ChevronDown, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
@@ -39,6 +39,7 @@ const Commissions = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("all");
   const [showChart, setShowChart] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const ITEMS_PER_PAGE = 15;
 
   // Fetch pending_commissions (creator + referral, released + pending)
@@ -62,7 +63,7 @@ const Commissions = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("copy_trade_earnings")
-        .select("id, commission_amount, trade_type, created_at, market_id")
+        .select("id, commission_amount, trade_type, created_at, market_id, copier_user_id, commission_percent")
         .eq("trader_user_id", user!.id)
         .order("created_at", { ascending: false });
       return data ?? [];
@@ -82,6 +83,73 @@ const Commissions = () => {
       return data ?? [];
     },
     enabled: !!user?.id,
+  });
+
+  // Fetch market titles for all market IDs
+  const allMarketIds = useMemo(() => {
+    const ids = new Set<string>();
+    (pendingCommissions ?? []).forEach((c) => c.market_id && ids.add(c.market_id));
+    (copyEarnings ?? []).forEach((c) => c.market_id && ids.add(c.market_id));
+    return Array.from(ids);
+  }, [pendingCommissions, copyEarnings]);
+
+  const { data: marketTitles } = useQuery({
+    queryKey: ["commission-market-titles", allMarketIds],
+    queryFn: async () => {
+      if (allMarketIds.length === 0) return {};
+      const { data } = await supabase
+        .from("markets")
+        .select("id, title")
+        .in("id", allMarketIds);
+      const map: Record<string, string> = {};
+      (data ?? []).forEach((m) => { map[m.id] = m.title; });
+      return map;
+    },
+    enabled: allMarketIds.length > 0,
+  });
+
+  // Fetch referred user profiles
+  const allReferredIds = useMemo(() => {
+    const ids = new Set<string>();
+    (signupBonuses ?? []).forEach((b) => b.referred_id && ids.add(b.referred_id));
+    return Array.from(ids);
+  }, [signupBonuses]);
+
+  const { data: referredProfiles } = useQuery({
+    queryKey: ["referred-profiles", allReferredIds],
+    queryFn: async () => {
+      if (allReferredIds.length === 0) return {};
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .in("id", allReferredIds);
+      const map: Record<string, { display_name: string | null; avatar_url: string | null }> = {};
+      (data ?? []).forEach((p) => { map[p.id] = { display_name: p.display_name, avatar_url: p.avatar_url }; });
+      return map;
+    },
+    enabled: allReferredIds.length > 0,
+  });
+
+  // Fetch copier profiles for copy trade earnings
+  const allCopierIds = useMemo(() => {
+    const ids = new Set<string>();
+    (copyEarnings ?? []).forEach((c) => c.copier_user_id && ids.add(c.copier_user_id));
+    return Array.from(ids);
+  }, [copyEarnings]);
+
+  const { data: copierProfiles } = useQuery({
+    queryKey: ["copier-profiles", allCopierIds],
+    queryFn: async () => {
+      if (allCopierIds.length === 0) return {};
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .in("id", allCopierIds);
+      const map: Record<string, { display_name: string | null; avatar_url: string | null }> = {};
+      (data ?? []).forEach((p) => { map[p.id] = { display_name: p.display_name, avatar_url: p.avatar_url }; });
+      return map;
+    },
+    enabled: allCopierIds.length > 0,
   });
 
   const isLoading = loadingPC || loadingCT || loadingSB;
@@ -111,6 +179,10 @@ const Commissions = () => {
       date: string;
       status: "released" | "pending";
       marketId?: string | null;
+      referredId?: string | null;
+      copierId?: string | null;
+      commissionPercent?: number | null;
+      releasesAt?: string | null;
     }[] = [];
 
     (pendingCommissions ?? []).forEach((c) => {
@@ -121,6 +193,7 @@ const Commissions = () => {
         date: c.created_at,
         status: c.status as "released" | "pending",
         marketId: c.market_id,
+        releasesAt: c.releases_at,
       });
     });
 
@@ -132,6 +205,8 @@ const Commissions = () => {
         date: c.created_at,
         status: "released",
         marketId: c.market_id,
+        copierId: c.copier_user_id,
+        commissionPercent: c.commission_percent,
       });
     });
 
@@ -142,6 +217,7 @@ const Commissions = () => {
         amount: Number(c.amount),
         date: c.created_at,
         status: "released",
+        referredId: c.referred_id,
       });
     });
 
@@ -185,6 +261,101 @@ const Commissions = () => {
       </div>
     );
   }
+
+  const renderExpandedDetails = (record: typeof allRecords[0]) => {
+    const marketTitle = record.marketId ? marketTitles?.[record.marketId] : null;
+    const referredProfile = record.referredId ? referredProfiles?.[record.referredId] : null;
+    const copierProfile = record.copierId ? copierProfiles?.[record.copierId] : null;
+
+    return (
+      <motion.div
+        initial={{ height: 0, opacity: 0 }}
+        animate={{ height: "auto", opacity: 1 }}
+        exit={{ height: 0, opacity: 0 }}
+        transition={{ duration: 0.2, ease: "easeInOut" }}
+        className="overflow-hidden"
+      >
+        <div className="pt-2 mt-2 border-t border-border/50 space-y-2">
+          {/* Amount & Date */}
+          <div className="flex justify-between text-[11px]">
+            <span className="text-muted-foreground">Amount</span>
+            <span className="font-semibold text-green-500">+{formatAmount(record.amount)}</span>
+          </div>
+          <div className="flex justify-between text-[11px]">
+            <span className="text-muted-foreground">Date</span>
+            <span className="text-foreground">{formatDate(record.date)}</span>
+          </div>
+
+          {/* Status */}
+          {record.status === "pending" && record.releasesAt && (
+            <div className="flex justify-between text-[11px]">
+              <span className="text-muted-foreground">Releases</span>
+              <span className="text-foreground">{formatDate(record.releasesAt)}</span>
+            </div>
+          )}
+
+          {/* Commission percent for copy trades */}
+          {record.commissionPercent != null && (
+            <div className="flex justify-between text-[11px]">
+              <span className="text-muted-foreground">Commission Rate</span>
+              <span className="text-foreground">{record.commissionPercent}%</span>
+            </div>
+          )}
+
+          {/* Market link */}
+          {marketTitle && record.marketId && (
+            <div className="flex justify-between items-start gap-2 text-[11px]">
+              <span className="text-muted-foreground shrink-0">Market</span>
+              <Link
+                to={`/market/${record.marketId}`}
+                className="text-primary hover:underline text-right flex items-center gap-1 min-w-0"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="truncate">{marketTitle}</span>
+                <ExternalLink className="w-3 h-3 shrink-0" />
+              </Link>
+            </div>
+          )}
+
+          {/* Referred user for signup bonuses */}
+          {record.referredId && (
+            <div className="flex justify-between items-center gap-2 text-[11px]">
+              <span className="text-muted-foreground">Referred User</span>
+              <Link
+                to={`/user/${record.referredId}`}
+                className="text-primary hover:underline flex items-center gap-1.5"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {referredProfile?.avatar_url && (
+                  <img src={referredProfile.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
+                )}
+                <span>{referredProfile?.display_name || "User"}</span>
+                <ExternalLink className="w-3 h-3 shrink-0" />
+              </Link>
+            </div>
+          )}
+
+          {/* Copier for copy trade earnings */}
+          {record.copierId && (
+            <div className="flex justify-between items-center gap-2 text-[11px]">
+              <span className="text-muted-foreground">Copier</span>
+              <Link
+                to={`/user/${record.copierId}`}
+                className="text-primary hover:underline flex items-center gap-1.5"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {copierProfile?.avatar_url && (
+                  <img src={copierProfile.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
+                )}
+                <span>{copierProfile?.display_name || "User"}</span>
+                <ExternalLink className="w-3 h-3 shrink-0" />
+              </Link>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -319,24 +490,31 @@ const Commissions = () => {
           <div className="space-y-2">
             {filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE).map((record) => {
               const badge = categoryBadge[record.category];
+              const isExpanded = expandedId === record.id;
               return (
                 <div
                   key={record.id}
-                  className="glass rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-accent/30 transition-colors"
-                  onClick={() => record.marketId && navigate(`/market/${record.marketId}`)}
+                  className="glass rounded-xl p-3 cursor-pointer hover:bg-accent/30 transition-colors"
+                  onClick={() => setExpandedId(isExpanded ? null : record.id)}
                 >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${badge?.className ?? ""}`}>
-                        {badge?.label ?? record.category}
-                      </Badge>
-                      {record.status === "pending" && (
-                        <span className="text-[10px] text-muted-foreground">⏳ 48h hold</span>
-                      )}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${badge?.className ?? ""}`}>
+                          {badge?.label ?? record.category}
+                        </Badge>
+                        {record.status === "pending" && (
+                          <span className="text-[10px] text-muted-foreground">⏳ 48h hold</span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">{formatDate(record.date)}</p>
                     </div>
-                    <p className="text-[11px] text-muted-foreground">{formatDate(record.date)}</p>
+                    <span className="text-sm font-bold text-green-500">+{formatAmount(record.amount)}</span>
+                    <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                   </div>
-                  <span className="text-sm font-bold text-green-500">+{formatAmount(record.amount)}</span>
+                  <AnimatePresence>
+                    {isExpanded && renderExpandedDetails(record)}
+                  </AnimatePresence>
                 </div>
               );
             })}
