@@ -212,8 +212,8 @@ const AdminAuditLog = () => {
           <h2 className="text-xl sm:text-2xl font-bold">Audit Log</h2>
           <span className="text-xs text-muted-foreground">{data?.total || 0} entries</span>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()}>
-          <RefreshCw className="w-4 h-4 mr-1" /> Refresh
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
+          <RefreshCw className={`w-4 h-4 mr-1 transition-transform ${isLoading ? "animate-spin" : ""}`} /> Refresh
         </Button>
       </div>
 
