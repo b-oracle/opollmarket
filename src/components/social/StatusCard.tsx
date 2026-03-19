@@ -1,14 +1,86 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Trash2, Loader2, MessageCircle } from "lucide-react";
+import { Heart, Trash2, Loader2, MessageCircle, ExternalLink } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { toast } from "sonner";
 import StatusComments from "./StatusComments";
+
+/** Detect URLs in text and return array of text/link segments */
+const URL_REGEX = /(https?:\/\/[^\s]+)/g;
+
+const parseContentWithLinks = (text: string) => {
+  const parts = text.split(URL_REGEX);
+  return parts.map((part, i) => {
+    if (URL_REGEX.test(part)) {
+      // Reset regex lastIndex
+      URL_REGEX.lastIndex = 0;
+      return { type: "link" as const, value: part, key: i };
+    }
+    return { type: "text" as const, value: part, key: i };
+  });
+};
+
+/** Extract internal path from a URL if it's an opoll/lovable link */
+const getInternalPath = (url: string): string | null => {
+  try {
+    const u = new URL(url);
+    const isInternal =
+      u.hostname === "opoll.org" ||
+      u.hostname.endsWith(".lovable.app") ||
+      u.hostname.endsWith(".lovableproject.com");
+    if (isInternal) return u.pathname + u.search;
+  } catch {}
+  return null;
+};
+
+/** Rich content renderer that turns URLs into clickable links */
+const RichContent = ({ content }: { content: string }) => {
+  const segments = useMemo(() => parseContentWithLinks(content), [content]);
+
+  return (
+    <p className="text-sm whitespace-pre-wrap break-words">
+      {segments.map((seg) => {
+        if (seg.type === "link") {
+          const internalPath = getInternalPath(seg.value);
+          if (internalPath) {
+            return (
+              <Link
+                key={seg.key}
+                to={internalPath}
+                className="text-primary hover:underline inline-flex items-center gap-0.5"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {internalPath.startsWith("/market/")
+                  ? "🔗 View Market"
+                  : internalPath.startsWith("/user/")
+                  ? "🔗 View Profile"
+                  : "🔗 Open Link"}
+              </Link>
+            );
+          }
+          return (
+            <a
+              key={seg.key}
+              href={seg.value}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline inline-flex items-center gap-0.5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {new URL(seg.value).hostname} <ExternalLink className="w-3 h-3 inline" />
+            </a>
+          );
+        }
+        return <span key={seg.key}>{seg.value}</span>;
+      })}
+    </p>
+  );
+};
 
 interface StatusCardProps {
   status: {
