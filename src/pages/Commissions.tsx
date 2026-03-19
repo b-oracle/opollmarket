@@ -83,10 +83,10 @@ const Commissions = () => {
   // Compute totals
   const totals = useMemo(() => {
     const creator = (pendingCommissions ?? [])
-      .filter((c) => c.type === "creator" && c.status === "released")
+      .filter((c) => c.type === "creator")
       .reduce((s, c) => s + Number(c.amount), 0);
     const referral = (pendingCommissions ?? [])
-      .filter((c) => c.type === "referral" && c.status === "released")
+      .filter((c) => c.type === "referral")
       .reduce((s, c) => s + Number(c.amount), 0);
     const copyTrade = (copyEarnings ?? []).reduce((s, c) => s + Number(c.commission_amount), 0);
     const signup = (signupBonuses ?? []).reduce((s, c) => s + Number(c.amount), 0);
@@ -110,7 +110,7 @@ const Commissions = () => {
     (pendingCommissions ?? []).forEach((c) => {
       records.push({
         id: c.id,
-        category: c.status === "pending" ? "pending" : (c.type as "creator" | "referral"),
+        category: c.type as "creator" | "referral",
         amount: Number(c.amount),
         date: c.created_at,
         status: c.status as "released" | "pending",
@@ -143,8 +143,12 @@ const Commissions = () => {
     return records;
   }, [pendingCommissions, copyEarnings, signupBonuses]);
 
-  const filtered = (activeTab === "all" ? allRecords : allRecords.filter((r) => r.category === activeTab))
-    .filter((r) => r.amount >= 0.005);
+  const filtered = (activeTab === "all"
+    ? allRecords
+    : activeTab === "pending"
+      ? allRecords.filter((r) => r.status === "pending")
+      : allRecords.filter((r) => r.category === activeTab)
+  ).filter((r) => r.amount >= 0.005);
 
 
   const summaryCards = [
