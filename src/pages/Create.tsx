@@ -580,9 +580,9 @@ const Create = () => {
     return urlData.publicUrl;
   };
 
-  const saveDraft = useCallback(async () => {
-    if (!user) { toast.error("Sign in to save drafts"); return; }
-    setSavingDraft(true);
+  const saveDraft = useCallback(async (silent = false) => {
+    if (!user) { if (!silent) toast.error("Sign in to save drafts"); return; }
+    if (!silent) setSavingDraft(true);
     try {
       let imageUrl: string | null = imagePreview?.startsWith("blob:") ? null : (imagePreview || null);
       if (imageFile && imagePreview?.startsWith("blob:")) {
@@ -643,12 +643,13 @@ const Create = () => {
         }
       }
 
-      toast.success("Draft saved!");
+      if (!silent) toast.success("Draft saved!");
+      if (silent) setLastAutoSaveTime(Date.now());
     } catch (err: any) {
       console.error("Draft save error:", err);
-      toast.error("Failed to save draft");
+      if (!silent) toast.error("Failed to save draft");
     } finally {
-      setSavingDraft(false);
+      if (!silent) setSavingDraft(false);
     }
   }, [user, draftId, title, description, details, category, endDate, resolutionSource, initialLiquidity, marketType, options, videoUrl, imageFile, imagePreview, autoResolve, autoResolveAsset, autoResolveOperator, autoResolveTargetPrice, autoResolveTime, sportType, sportMatchId, sportPredictedOutcome, sportLeague, displayName]);
 
