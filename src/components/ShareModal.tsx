@@ -97,7 +97,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
     ? `${marketUrl}${marketUrl.includes("?") ? "&" : "?"}ref=${user.id}`
     : marketUrl;
 
-  const salesMessage = `🔥 Check out "${title}" on our prediction market! Make your prediction now 👇\n\n${referralLink}`;
+  const salesMessage = `🔥 Check out "${title}" on our prediction market! Make your OPinion count, predict now 👇🏽\n\n${referralLink}`;
 
   // Capture screenshot when modal opens
   useEffect(() => {
@@ -189,16 +189,16 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
   };
 
   const handleTwitter = () => {
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`🔥 "${title}" - Make your prediction now!\n\n${referralLink}`)}`, "_blank");
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`🔥 "${title}" - Make your OPinion count, predict now 👇🏽\n\n${referralLink}`)}`, "_blank");
   };
   const handleFacebook = () => {
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(referralLink)}`, "_blank");
   };
   const handleWhatsApp = () => {
-    window.open(`https://wa.me/?text=${encodeURIComponent(`🔥 "${title}" - Make your prediction now!\n\n${referralLink}`)}`, "_blank");
+    window.open(`https://wa.me/?text=${encodeURIComponent(`🔥 "${title}" - Make your OPinion count, predict now 👇🏽\n\n${referralLink}`)}`, "_blank");
   };
   const handleTelegram = () => {
-    window.open(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(`🔥 "${title}" - Make your prediction now!`)}`, "_blank");
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(`🔥 "${title}" - Make your OPinion count, predict now 👇🏽`)}`, "_blank");
   };
 
   const handleCopyEmbed = () => {
