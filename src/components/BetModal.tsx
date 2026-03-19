@@ -370,7 +370,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                         <span>Insufficient balance. You need ${(mainNeeded - balance).toFixed(2)} more.</span>
                         <button
                           type="button"
-                          onClick={() => navigate("/profile")}
+                          onClick={() => setShowDepositModal(true)}
                           className="underline font-semibold hover:text-destructive/80 transition-colors"
                         >
                           Deposit
