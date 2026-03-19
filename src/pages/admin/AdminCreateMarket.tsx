@@ -74,6 +74,11 @@ const AdminCreateMarket = () => {
   const [sportLeague, setSportLeague] = useState("");
   const [selectedFixtureData, setSelectedFixtureData] = useState<{ homeTeam: string; awayTeam: string; date: string; league: string; venue: string } | null>(null);
 
+  // Twitter engagement market state
+  const [twitterMetricType, setTwitterMetricType] = useState<"likes" | "replies" | "retweets" | "tweets">("likes");
+  const [twitterResourceId, setTwitterResourceId] = useState("");
+  const [twitterBrackets, setTwitterBrackets] = useState<string[]>(["0-19", "20-39", "40-59", "60-79", "80-99", "> 99"]);
+
   const generateSportsAutoFill = (fixture: { homeTeam: string; awayTeam: string; date: string; league: string; venue: string }, outcome: string) => {
     const matchDate = (() => { try { return new Date(fixture.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); } catch { return fixture.date; } })();
     let newTitle: string;
