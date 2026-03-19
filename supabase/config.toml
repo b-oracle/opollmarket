@@ -101,3 +101,5 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.fetch-twitter-metrics]
     verify_jwt = false
+  [functions.livekit-token]
+    verify_jwt = false

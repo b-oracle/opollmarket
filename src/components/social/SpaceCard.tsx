@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,9 +18,10 @@ interface SpaceCardProps {
   };
   hostProfile?: { display_name?: string | null; avatar_url?: string | null } | null;
   index?: number;
+  onJoinRoom?: (spaceId: string) => void;
 }
 
-const SpaceCard = ({ space, hostProfile, index = 0 }: SpaceCardProps) => {
+const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [joining, setJoining] = useState(false);
@@ -44,27 +44,21 @@ const SpaceCard = ({ space, hostProfile, index = 0 }: SpaceCardProps) => {
   const handleJoinLeave = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user) { toast.error("Sign in to join spaces"); return; }
+    if (!isParticipant && onJoinRoom) {
+      // Join via LiveKit room
+      onJoinRoom(space.id);
+      return;
+    }
+    // Leave
     setJoining(true);
     try {
-      if (isParticipant) {
-        // Leave
-        await supabase
-          .from("space_participants")
-          .update({ left_at: new Date().toISOString() })
-          .eq("space_id", space.id)
-          .eq("user_id", user.id)
-          .is("left_at", null);
-        toast.success("Left the space");
-      } else {
-        // Join
-        await supabase.from("space_participants").upsert({
-          space_id: space.id,
-          user_id: user.id,
-          role: "listener",
-          left_at: null,
-        }, { onConflict: "space_id,user_id" });
-        toast.success("Joined the space! 🎧");
-      }
+      await supabase
+        .from("space_participants")
+        .update({ left_at: new Date().toISOString() })
+        .eq("space_id", space.id)
+        .eq("user_id", user.id)
+        .is("left_at", null);
+      toast.success("Left the space");
       queryClient.invalidateQueries({ queryKey: ["space-participant", space.id] });
       queryClient.invalidateQueries({ queryKey: ["spaces"] });
     } catch (err: any) {
@@ -85,6 +79,11 @@ const SpaceCard = ({ space, hostProfile, index = 0 }: SpaceCardProps) => {
     toast.success("Space ended");
   };
 
+  const handleCardClick = () => {
+    if (!user) { toast.error("Sign in to join spaces"); return; }
+    if (onJoinRoom) onJoinRoom(space.id);
+  };
+
   const hostName = hostProfile?.display_name || "Anonymous";
   const isHost = user?.id === space.host_id;
   const isLive = space.status === "live";
@@ -94,7 +93,8 @@ const SpaceCard = ({ space, hostProfile, index = 0 }: SpaceCardProps) => {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04 }}
-      className="glass rounded-xl p-3.5 space-y-2"
+      className="glass rounded-xl p-3.5 space-y-2 cursor-pointer hover:bg-accent/20 transition-colors"
+      onClick={handleCardClick}
     >
       {/* Header */}
       <div className="flex items-start gap-3">

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import SpaceCard from "./SpaceCard";
+import SpaceRoom from "./SpaceRoom";
 import CreateSpaceModal from "./CreateSpaceModal";
 import { Radio, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -10,6 +11,11 @@ import { motion } from "framer-motion";
 const SpacesFeed = () => {
   const { user } = useAuth();
   const [createOpen, setCreateOpen] = useState(false);
+  const [activeRoom, setActiveRoom] = useState<{
+    id: string;
+    title: string;
+    hostId: string;
+  } | null>(null);
 
   const { data: spaces = [], isLoading } = useQuery({
     queryKey: ["spaces"],
@@ -40,6 +46,17 @@ const SpacesFeed = () => {
     enabled: hostIds.length > 0,
   });
 
+  const handleJoinRoom = (spaceId: string) => {
+    const space = spaces.find((s: any) => s.id === spaceId);
+    if (space) {
+      setActiveRoom({
+        id: space.id,
+        title: (space as any).title,
+        hostId: (space as any).host_id,
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -62,7 +79,7 @@ const SpacesFeed = () => {
           </div>
           <div className="text-left">
             <p className="text-sm font-semibold">Start a Space</p>
-            <p className="text-[10px] text-muted-foreground">Go live and chat with your followers</p>
+            <p className="text-[10px] text-muted-foreground">Go live with voice chat</p>
           </div>
         </motion.button>
       )}
@@ -80,11 +97,22 @@ const SpacesFeed = () => {
             space={s}
             hostProfile={(hostMap as Map<string, any>).get(s.host_id)}
             index={i}
+            onJoinRoom={handleJoinRoom}
           />
         ))
       )}
 
       <CreateSpaceModal open={createOpen} onClose={() => setCreateOpen(false)} />
+
+      {/* Active voice room */}
+      {activeRoom && (
+        <SpaceRoom
+          spaceId={activeRoom.id}
+          spaceTitle={activeRoom.title}
+          hostId={activeRoom.hostId}
+          onClose={() => setActiveRoom(null)}
+        />
+      )}
     </div>
   );
 };
