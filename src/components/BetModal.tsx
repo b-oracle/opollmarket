@@ -767,6 +767,13 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                 )}
               </AnimatePresence>
     </BottomSheet>
+
+      <DepositWithdrawModal
+        open={showDepositModal}
+        onClose={() => setShowDepositModal(false)}
+        initialTab="deposit"
+      />
+    </>
   );
 };
 
