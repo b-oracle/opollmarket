@@ -177,7 +177,7 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
         className="fixed inset-0 z-[60] bg-black flex items-center justify-center"
       >
         {/* Progress bars */}
-        <div className="absolute top-3 left-3 right-3 z-20 flex gap-1">
+        <div className="absolute left-3 right-3 z-20 flex gap-1" style={{ top: 'max(0.75rem, env(safe-area-inset-top, 0.75rem))' }}>
           {stories.map((_, i) => (
             <div key={i} className="flex-1 h-0.5 rounded-full bg-white/20 overflow-hidden">
               <div
@@ -191,7 +191,7 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
         </div>
 
         {/* Header */}
-        <div className="absolute top-6 left-3 right-3 z-20 flex items-center gap-2.5">
+        <div className="absolute left-3 right-3 z-20 flex items-center gap-2.5" style={{ top: 'calc(max(0.75rem, env(safe-area-inset-top, 0.75rem)) + 0.75rem)' }}>
           <div className="w-8 h-8 rounded-full bg-white/20 overflow-hidden flex items-center justify-center">
             {profile?.avatar_url ? (
               <img src={profile.avatar_url} alt={name} className="w-full h-full object-cover" />
