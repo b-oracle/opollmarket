@@ -52,7 +52,7 @@ const formatTimeAgo = (date: string) => {
   return `${Math.floor(hrs / 24)}d ago`;
 };
 
-type FilterType = "all" | "trades" | "deposits" | "withdrawals" | "quick_trades" | "earnings";
+type FilterType = "all" | "trades" | "deposits" | "withdrawals" | "quick_trades";
 type StatusFilter = "all" | "confirmed" | "pending" | "failed";
 
 const TelegramSection = ({ userId }: { userId?: string }) => {
