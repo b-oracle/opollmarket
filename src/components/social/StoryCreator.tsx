@@ -42,6 +42,8 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle }
   const [marketResults, setMarketResults] = useState<MarketResult[]>([]);
   const [searching, setSearching] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [justPosted, setJustPosted] = useState(false);
+  const [storyCount, setStoryCount] = useState(0);
 
   // Pre-link market when opened from share modal
   useEffect(() => {
@@ -82,6 +84,18 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle }
     setSearching(false);
   };
 
+
+  const resetForm = () => {
+    setContent("");
+    setImageFile(null);
+    setImagePreview(null);
+    setSelectedMarket(null);
+    setBgColor(BG_COLORS[Math.floor(Math.random() * BG_COLORS.length)]);
+    setMarketSearchOpen(false);
+    setMarketQuery("");
+    setMarketResults([]);
+  };
+
   const handlePost = async () => {
     if (!content.trim() && !imageFile) return;
     setPosting(true);
@@ -105,18 +119,24 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle }
       });
       if (error) throw error;
 
-      setContent("");
-      setImageFile(null);
-      setImagePreview(null);
-      setSelectedMarket(null);
+      setStoryCount((c) => c + 1);
+      resetForm();
       queryClient.invalidateQueries({ queryKey: ["stories"] });
-      toast.success("Story posted!");
-      onClose();
+      setJustPosted(true);
+      setTimeout(() => setJustPosted(false), 2000);
+      toast.success("Story posted! Add another or close.");
     } catch (err: any) {
       toast.error(err.message || "Failed to post story");
     } finally {
       setPosting(false);
     }
+  };
+
+  const handleClose = () => {
+    resetForm();
+    setStoryCount(0);
+    setJustPosted(false);
+    onClose();
   };
 
   return (
@@ -128,15 +148,20 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle }
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[70] flex flex-col"
         >
-          <div className="absolute inset-0 bg-background/95 backdrop-blur-xl" onClick={onClose} />
+          <div className="absolute inset-0 bg-background/95 backdrop-blur-xl" onClick={handleClose} />
 
           <div className="relative z-10 flex flex-col h-full">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 shrink-0">
-              <button onClick={onClose} className="w-9 h-9 rounded-full glass flex items-center justify-center">
+              <button onClick={handleClose} className="w-9 h-9 rounded-full glass flex items-center justify-center">
                 <X className="w-5 h-5" />
               </button>
-              <h3 className="text-sm font-bold">Create Story</h3>
+              <div className="text-center">
+                <h3 className="text-sm font-bold">Create Story</h3>
+                {storyCount > 0 && (
+                  <span className="text-[10px] text-muted-foreground">{storyCount} story{storyCount > 1 ? "ies" : ""} posted</span>
+                )}
+              </div>
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={handlePost}
@@ -144,7 +169,7 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle }
                 className="px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-40 flex items-center gap-1.5"
               >
                 {posting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                Share
+                {justPosted ? "Next" : "Share"}
               </motion.button>
             </div>
 
