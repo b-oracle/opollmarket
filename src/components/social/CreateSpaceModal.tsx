@@ -62,11 +62,11 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
             onClick={onClose}
           />
           <motion.div
-            initial={{ y: "100%", opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: "100%", opacity: 0 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-[71] bg-background rounded-t-2xl border-t border-border p-6 space-y-4 lg:bottom-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:max-w-md lg:w-full lg:rounded-2xl lg:border lg:shadow-2xl"
+            className="fixed z-[71] bg-background p-6 space-y-4 bottom-0 left-0 right-0 rounded-t-2xl border-t border-border lg:bottom-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:max-w-md lg:w-full lg:rounded-2xl lg:border lg:shadow-2xl"
           >
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold flex items-center gap-2">
