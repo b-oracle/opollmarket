@@ -198,7 +198,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
     window.open(`https://wa.me/?text=${encodeURIComponent(`🔥 "${title}" - Make your OPinion count, predict now 👇🏽\n\n${referralLink}`)}`, "_blank");
   };
   const handleTelegram = () => {
-    window.open(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(`🔥 "${title}" - Make your prediction now!`)}`, "_blank");
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(`🔥 "${title}" - Make your OPinion count, predict now 👇🏽`)}`, "_blank");
   };
 
   const handleCopyEmbed = () => {
