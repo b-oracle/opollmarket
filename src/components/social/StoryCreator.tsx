@@ -215,12 +215,12 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle }
             <div className="px-4 space-y-3 shrink-0 pb-24 lg:pb-6" style={{ paddingBottom: `calc(6rem + env(safe-area-inset-bottom, 0px))` }}>
               {/* Background colors */}
               {!imagePreview && (
-                <div className="flex gap-2 justify-center flex-wrap">
+                <div className="flex gap-2 overflow-x-auto no-scrollbar px-1 py-1">
                   {BG_COLORS.map((c) => (
                     <button
                       key={c}
                       onClick={() => setBgColor(c)}
-                      className={`w-7 h-7 rounded-full border-2 transition-all ${bgColor === c ? "border-primary scale-110" : "border-transparent"}`}
+                      className={`w-7 h-7 rounded-full border-2 transition-all shrink-0 ${bgColor === c ? "border-primary scale-110" : "border-transparent"}`}
                       style={{ backgroundColor: c }}
                     />
                   ))}
