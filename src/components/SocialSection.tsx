@@ -9,7 +9,7 @@ import StatusFeed from "@/components/social/StatusFeed";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Users, UserCheck, Heart, Sparkles, Loader2, ChevronDown, Search, X,
+  Users, UserCheck, Heart, Sparkles, Loader2, ChevronDown, Search, X, FileText,
 } from "lucide-react";
 
 interface SocialSectionProps {
