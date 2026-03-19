@@ -203,11 +203,17 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
             <p className="text-white/50 text-[9px]">{timeAgo}</p>
           </div>
           {isOwnStory && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10">
+              <Eye className="w-3.5 h-3.5 text-white/70" />
+              <span className="text-white/70 text-[10px] font-semibold">{viewCount}</span>
+            </div>
+          )}
+          {isOwnStory && (
             <button
               onClick={() => setShowDeleteConfirm(true)}
               className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"
             >
-              <Trash2 className="w-4 h-4 text-red-400" />
+              <Trash2 className="w-4 h-4 text-destructive" />
             </button>
           )}
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
