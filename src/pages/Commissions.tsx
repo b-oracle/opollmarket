@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, DollarSign, Users, Gift, Copy, Clock, Sparkles, PieChart as PieChartIcon, ChevronDown } from "lucide-react";
+import { ArrowLeft, DollarSign, Users, Gift, Copy, Clock, Sparkles, PieChart as PieChartIcon, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +38,8 @@ const Commissions = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabKey>("all");
   const [showChart, setShowChart] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
 
   // Fetch pending_commissions (creator + referral, released + pending)
   const { data: pendingCommissions, isLoading: loadingPC } = useQuery({
@@ -287,7 +289,7 @@ const Commissions = () => {
           {tabs.map((tab) => (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => { setActiveTab(tab.key); setCurrentPage(1); }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
                 activeTab === tab.key
                   ? "bg-primary text-primary-foreground"
@@ -313,8 +315,9 @@ const Commissions = () => {
             <p className="text-sm text-muted-foreground">No commission records yet</p>
           </div>
         ) : (
+          <>
           <div className="space-y-2">
-            {filtered.map((record) => {
+            {filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE).map((record) => {
               const badge = categoryBadge[record.category];
               return (
                 <div
@@ -338,6 +341,42 @@ const Commissions = () => {
               );
             })}
           </div>
+          {(() => {
+            const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+            if (totalPages <= 1) return null;
+            return (
+              <div className="flex items-center justify-center gap-1.5 mt-4">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${
+                      page === currentPage
+                        ? "bg-primary text-primary-foreground"
+                        : "hover:bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            );
+          })()}
+          </>
         )}
       </div>
       <BottomNav />
