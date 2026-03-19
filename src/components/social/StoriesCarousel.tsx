@@ -46,7 +46,7 @@ const StoriesCarousel = () => {
         .select("*")
         .gt("expires_at", new Date().toISOString())
         .in("user_id", connectedArray.slice(0, 100))
-        .order("created_at", { ascending: false })
+        .order("created_at", { ascending: true })
         .limit(200);
 
       if (!stories || stories.length === 0) return [];
