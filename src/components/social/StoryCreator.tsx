@@ -152,7 +152,7 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle }
 
           <div className="relative z-10 flex flex-col h-full w-full lg:h-auto lg:max-h-[90vh] lg:max-w-lg lg:rounded-2xl lg:border lg:border-border lg:bg-background lg:shadow-2xl lg:overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 shrink-0">
+            <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ paddingTop: `calc(0.75rem + env(safe-area-inset-top, 0px))` }}>
               <button onClick={handleClose} className="w-9 h-9 rounded-full glass flex items-center justify-center">
                 <X className="w-5 h-5" />
               </button>
@@ -215,12 +215,12 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle }
             <div className="px-4 space-y-3 shrink-0 pb-24 lg:pb-6" style={{ paddingBottom: `calc(6rem + env(safe-area-inset-bottom, 0px))` }}>
               {/* Background colors */}
               {!imagePreview && (
-                <div className="flex gap-2 justify-center flex-wrap">
+                <div className="flex gap-2 overflow-x-auto no-scrollbar px-1 py-1">
                   {BG_COLORS.map((c) => (
                     <button
                       key={c}
                       onClick={() => setBgColor(c)}
-                      className={`w-7 h-7 rounded-full border-2 transition-all ${bgColor === c ? "border-primary scale-110" : "border-transparent"}`}
+                      className={`w-7 h-7 rounded-full border-2 transition-all shrink-0 ${bgColor === c ? "border-primary scale-110" : "border-transparent"}`}
                       style={{ backgroundColor: c }}
                     />
                   ))}
