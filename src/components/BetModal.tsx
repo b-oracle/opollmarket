@@ -322,7 +322,16 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                     </div>
 
                     {!canAfford && numAmount > 0 && user && (
-                      <p className="text-xs text-destructive mb-2">Insufficient balance. You need ${(mainNeeded - balance).toFixed(2)} more.</p>
+                      <div className="flex items-center gap-1.5 text-xs text-destructive mb-2 flex-wrap">
+                        <span>Insufficient balance. You need ${(mainNeeded - balance).toFixed(2)} more.</span>
+                        <button
+                          type="button"
+                          onClick={() => navigate("/portfolio?deposit=true")}
+                          className="underline font-semibold hover:text-destructive/80 transition-colors"
+                        >
+                          Deposit
+                        </button>
+                      </div>
                     )}
 
                     <div className="flex gap-2 mb-4">
