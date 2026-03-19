@@ -65,6 +65,20 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
     enabled: !!story?.market_id,
   });
 
+  // Fetch view count for current story (own stories)
+  const { data: viewCount = 0 } = useQuery({
+    queryKey: ["story-view-count", story?.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("story_views")
+        .select("*", { count: "exact", head: true })
+        .eq("story_id", story!.id);
+      return count || 0;
+    },
+    enabled: !!story && isOwnStory,
+    refetchInterval: 10000,
+  });
+
   // Record view
   useEffect(() => {
     if (!user || !story || user.id === story.user_id) return;
