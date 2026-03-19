@@ -532,14 +532,35 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     setStep("executing");
     setErrorMsg("");
     try {
-      // Route to correct provider based on admin settings
-      const depositFn = depositProvider === "flutterwave" ? "create-flutterwave-deposit" : "create-payaza-deposit";
-      const { data, error } = await supabase.functions.invoke(depositFn, {
+      // Route to correct provider based on admin settings, with fallback
+      const primaryFn = depositProvider === "flutterwave" ? "create-flutterwave-deposit" : "create-payaza-deposit";
+      const fallbackFn = depositProvider === "flutterwave" ? "create-payaza-deposit" : "create-flutterwave-deposit";
+
+      let data: any = null;
+      let usedFallback = false;
+
+      // Try primary provider
+      const primary = await supabase.functions.invoke(primaryFn, {
         body: { amount: numAmount },
       });
-      if (error || data?.error) {
-        const msg = data?.error || "Payment service temporarily unavailable. Please try again later.";
-        throw new Error(msg);
+      if (primary.error || primary.data?.error) {
+        console.warn(`Primary deposit provider (${primaryFn}) failed, trying fallback...`);
+        // Try fallback provider
+        const fallback = await supabase.functions.invoke(fallbackFn, {
+          body: { amount: numAmount },
+        });
+        if (fallback.error || fallback.data?.error) {
+          const msg = fallback.data?.error || primary.data?.error || "Payment service temporarily unavailable. Please try again later.";
+          throw new Error(msg);
+        }
+        data = fallback.data;
+        usedFallback = true;
+      } else {
+        data = primary.data;
+      }
+
+      if (usedFallback) {
+        console.log("Deposit created via fallback provider");
       }
 
       if (data.mode === "direct_api") {
