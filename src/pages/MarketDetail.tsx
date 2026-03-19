@@ -444,11 +444,26 @@ const MarketDetailsCollapsible = ({ details }: { details: string }) => {
 const MarketDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isSuperAdmin } = useAuth();
   const { data: market, isLoading, isError } = useMarket(id);
   const { boostDetails } = useActiveBoosts();
   const activeBoost = id ? boostDetails.get(id) : undefined;
   const { track } = useAnalytics();
+  const [statMode, setStatMode] = useState<"traders" | "wagered">("traders");
+
+  const { data: totalWagered } = useQuery({
+    queryKey: ["market-total-wagered", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("amount")
+        .eq("market_id", id!)
+        .eq("type", "bet");
+      if (error) return 0;
+      return (data || []).reduce((s, r) => s + Number(r.amount), 0);
+    },
+    enabled: !!id && isSuperAdmin,
+  });
 
   const isCreator = !!(user && market && market.creatorAddress === user.id);
   const needsFirstPrediction = isCreator && market && market.participants === 0;
