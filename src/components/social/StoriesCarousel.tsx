@@ -1,0 +1,162 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Plus } from "lucide-react";
+import StoryCreator from "./StoryCreator";
+import StoryViewer from "./StoryViewer";
+
+interface StoryGroup {
+  userId: string;
+  profile: { display_name?: string | null; avatar_url?: string | null } | null;
+  stories: any[];
+  hasUnviewed: boolean;
+}
+
+const StoriesCarousel = () => {
+  const { user } = useAuth();
+  const [creatorOpen, setCreatorOpen] = useState(false);
+  const [viewerData, setViewerData] = useState<{ group: StoryGroup; index: number } | null>(null);
+
+  // Fetch all active stories
+  const { data: storyGroups = [] } = useQuery({
+    queryKey: ["stories", user?.id],
+    queryFn: async () => {
+      const { data: stories } = await supabase
+        .from("stories")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
+
+      if (!stories || stories.length === 0) return [];
+
+      // Get profiles
+      const userIds = [...new Set(stories.map((s: any) => s.user_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .in("id", userIds.slice(0, 50));
+      const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+
+      // Get user's viewed stories
+      let viewedIds = new Set<string>();
+      if (user) {
+        const { data: views } = await supabase
+          .from("story_views")
+          .select("story_id")
+          .eq("viewer_id", user.id);
+        viewedIds = new Set((views || []).map((v: any) => v.story_id));
+      }
+
+      // Group by user
+      const grouped = new Map<string, StoryGroup>();
+      for (const story of stories) {
+        if (!grouped.has(story.user_id)) {
+          grouped.set(story.user_id, {
+            userId: story.user_id,
+            profile: profileMap.get(story.user_id) || null,
+            stories: [],
+            hasUnviewed: false,
+          });
+        }
+        const group = grouped.get(story.user_id)!;
+        group.stories.push(story);
+        if (!viewedIds.has(story.id) && story.user_id !== user?.id) {
+          group.hasUnviewed = true;
+        }
+      }
+
+      // Sort: own first, then unviewed, then viewed
+      const groups = [...grouped.values()];
+      groups.sort((a, b) => {
+        if (a.userId === user?.id) return -1;
+        if (b.userId === user?.id) return 1;
+        if (a.hasUnviewed && !b.hasUnviewed) return -1;
+        if (!a.hasUnviewed && b.hasUnviewed) return 1;
+        return 0;
+      });
+
+      return groups;
+    },
+    refetchInterval: 30000,
+  });
+
+  const ownGroup = storyGroups.find((g) => g.userId === user?.id);
+  const hasOwnStories = ownGroup && ownGroup.stories.length > 0;
+
+  return (
+    <>
+      <div className="flex gap-3 overflow-x-auto scrollbar-hide py-2 px-1">
+        {/* Add Story button */}
+        {user && (
+          <button
+            onClick={() => hasOwnStories ? setViewerData({ group: ownGroup!, index: 0 }) : setCreatorOpen(true)}
+            className="flex flex-col items-center gap-1 shrink-0"
+          >
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center relative overflow-hidden ${
+              hasOwnStories ? "ring-2 ring-primary" : "ring-2 ring-dashed ring-muted-foreground/30"
+            }`}>
+              {hasOwnStories && ownGroup?.profile?.avatar_url ? (
+                <img src={ownGroup.profile.avatar_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-muted flex items-center justify-center">
+                  <Plus className="w-5 h-5 text-muted-foreground" />
+                </div>
+              )}
+              {hasOwnStories && (
+                <div className="absolute bottom-0 right-0 w-4 h-4 bg-primary rounded-full flex items-center justify-center border-2 border-background">
+                  <Plus className="w-2.5 h-2.5 text-primary-foreground" />
+                </div>
+              )}
+            </div>
+            <span className="text-[9px] font-medium text-muted-foreground">Your Story</span>
+          </button>
+        )}
+
+        {/* Other users' stories */}
+        {storyGroups
+          .filter((g) => g.userId !== user?.id)
+          .map((group) => {
+            const name = group.profile?.display_name || "Anonymous";
+            return (
+              <button
+                key={group.userId}
+                onClick={() => setViewerData({ group, index: 0 })}
+                className="flex flex-col items-center gap-1 shrink-0"
+              >
+                <div className={`w-14 h-14 rounded-full overflow-hidden ${
+                  group.hasUnviewed
+                    ? "ring-2 ring-primary"
+                    : "ring-2 ring-muted-foreground/20"
+                }`}>
+                  {group.profile?.avatar_url ? (
+                    <img src={group.profile.avatar_url} alt={name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-primary/20 flex items-center justify-center">
+                      <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
+                    </div>
+                  )}
+                </div>
+                <span className="text-[9px] font-medium text-muted-foreground truncate max-w-[56px]">
+                  {name.split(" ")[0]}
+                </span>
+              </button>
+            );
+          })}
+      </div>
+
+      <StoryCreator open={creatorOpen} onClose={() => setCreatorOpen(false)} />
+
+      {viewerData && (
+        <StoryViewer
+          stories={viewerData.group.stories}
+          initialIndex={viewerData.index}
+          profile={viewerData.group.profile}
+          onClose={() => setViewerData(null)}
+        />
+      )}
+    </>
+  );
+};
+
+export default StoriesCarousel;
