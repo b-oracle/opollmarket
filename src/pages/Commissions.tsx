@@ -148,7 +148,7 @@ const Commissions = () => {
     : activeTab === "pending"
       ? allRecords.filter((r) => r.status === "pending")
       : allRecords.filter((r) => r.category === activeTab)
-  ).filter((r) => r.amount >= 0.005);
+  ).filter((r) => r.amount >= 0.0001);
 
 
   const summaryCards = [
