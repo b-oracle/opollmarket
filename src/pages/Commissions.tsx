@@ -144,7 +144,7 @@ const Commissions = () => {
   }, [pendingCommissions, copyEarnings, signupBonuses]);
 
   const filtered = (activeTab === "all" ? allRecords : allRecords.filter((r) => r.category === activeTab))
-    .filter((r) => r.amount > 0);
+    .filter((r) => r.amount >= 0.005);
 
 
   const summaryCards = [
