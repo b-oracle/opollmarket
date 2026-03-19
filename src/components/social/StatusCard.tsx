@@ -91,11 +91,20 @@ interface StatusCardProps {
     likes_count: number;
     comments_count?: number;
     created_at: string;
+    market_id?: string | null;
   };
   profile?: {
     display_name?: string | null;
     avatar_url?: string | null;
     verification_level?: string;
+  } | null;
+  market?: {
+    id: string;
+    title: string;
+    image_url?: string | null;
+    yes_price: number;
+    no_price: number;
+    status?: string;
   } | null;
   index?: number;
 }

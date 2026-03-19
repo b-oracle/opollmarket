@@ -15,9 +15,6 @@ const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
   const { user } = useAuth();
   const { isFeatureEnabled } = useFeatureToggles();
 
-  
-
-  // If userId provided, show that user's statuses. Otherwise show ALL public posts (Twitter-style).
   const { data: statuses = [], isLoading } = useQuery({
     queryKey: ["status-feed", userId || "global", user?.id],
     queryFn: async () => {
@@ -31,7 +28,6 @@ const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
         return data || [];
       }
 
-      // Global feed — show all posts from all users
       const { data } = await supabase
         .from("status_updates")
         .select("*")
@@ -54,6 +50,21 @@ const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
       return new Map((data || []).map((p: any) => [p.id, p]));
     },
     enabled: authorIds.length > 0,
+  });
+
+  // Fetch market data for statuses that have a market_id
+  const marketIds = [...new Set(statuses.filter((s: any) => s.market_id).map((s: any) => s.market_id))];
+  const { data: marketMap = new Map() } = useQuery({
+    queryKey: ["status-markets", marketIds.join(",")],
+    queryFn: async () => {
+      if (marketIds.length === 0) return new Map();
+      const { data } = await supabase
+        .from("markets")
+        .select("id, title, image_url, yes_price, no_price, status")
+        .in("id", marketIds.slice(0, 50));
+      return new Map((data || []).map((m: any) => [m.id, m]));
+    },
+    enabled: marketIds.length > 0,
   });
 
   if (!isFeatureEnabled("social_status_feed")) return null;
@@ -81,6 +92,7 @@ const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
             key={s.id}
             status={s}
             profile={(profileMap as Map<string, any>).get(s.user_id)}
+            market={s.market_id ? (marketMap as Map<string, any>).get(s.market_id) : undefined}
             index={i}
           />
         ))

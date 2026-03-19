@@ -1,23 +1,41 @@
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Image, Loader2, Send, X } from "lucide-react";
-import { motion } from "framer-motion";
+import { Image, Loader2, Send, X, BarChart3, Search } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Input } from "@/components/ui/input";
 
 const MAX_CHARS = 280;
 
+interface MarketResult {
+  id: string;
+  title: string;
+  image_url: string | null;
+  yes_price: number;
+  no_price: number;
+}
+
 const StatusComposer = () => {
   const { user } = useAuth();
+  const { isFeatureEnabled } = useFeatureToggles();
   const queryClient = useQueryClient();
   const [content, setContent] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
+  const [selectedMarket, setSelectedMarket] = useState<MarketResult | null>(null);
+  const [marketSearchOpen, setMarketSearchOpen] = useState(false);
+  const [marketQuery, setMarketQuery] = useState("");
+  const [marketResults, setMarketResults] = useState<MarketResult[]>([]);
+  const [searching, setSearching] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   if (!user) return null;
+
+  const showImageUpload = isFeatureEnabled("status_image_upload");
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -36,9 +54,35 @@ const StatusComposer = () => {
     if (fileRef.current) fileRef.current.value = "";
   };
 
+  const handleMarketSearch = async (q: string) => {
+    setMarketQuery(q);
+    if (q.trim().length < 2) { setMarketResults([]); return; }
+    setSearching(true);
+    const { data } = await supabase
+      .from("markets")
+      .select("id, title, image_url, yes_price, no_price")
+      .ilike("title", `%${q.trim()}%`)
+      .in("status", ["active", "ended"])
+      .order("created_at", { ascending: false })
+      .limit(5);
+    setMarketResults((data as MarketResult[]) || []);
+    setSearching(false);
+  };
+
+  const selectMarket = (market: MarketResult) => {
+    setSelectedMarket(market);
+    setMarketSearchOpen(false);
+    setMarketQuery("");
+    setMarketResults([]);
+  };
+
+  const removeMarket = () => {
+    setSelectedMarket(null);
+  };
+
   const handlePost = async () => {
     const trimmed = content.trim();
-    if (!trimmed && !imageFile) return;
+    if (!trimmed && !imageFile && !selectedMarket) return;
     if (trimmed.length > MAX_CHARS) return;
 
     setPosting(true);
@@ -54,17 +98,21 @@ const StatusComposer = () => {
         if (uploadError) throw uploadError;
         const { data: urlData } = supabase.storage.from("social-media").getPublicUrl(path);
         image_url = urlData.publicUrl;
+      } else if (selectedMarket?.image_url) {
+        image_url = selectedMarket.image_url;
       }
 
       const { error } = await supabase.from("status_updates").insert({
         user_id: user.id,
-        content: trimmed,
+        content: trimmed || (selectedMarket ? selectedMarket.title : ""),
         image_url,
-      });
+        market_id: selectedMarket?.id || null,
+      } as any);
       if (error) throw error;
 
       setContent("");
       removeImage();
+      removeMarket();
       queryClient.invalidateQueries({ queryKey: ["status-feed"] });
       queryClient.invalidateQueries({ queryKey: ["activity-statuses"] });
       toast.success("Posted!");
@@ -83,11 +131,88 @@ const StatusComposer = () => {
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder="What's happening?"
+        placeholder={selectedMarket ? "What do you think about this market?" : "What's happening?"}
         rows={2}
         className="w-full bg-transparent text-sm placeholder:text-muted-foreground resize-none focus:outline-none"
         maxLength={MAX_CHARS + 10}
       />
+
+      {/* Selected market preview */}
+      <AnimatePresence>
+        {selectedMarket && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="relative rounded-lg border border-border overflow-hidden"
+          >
+            <div className="flex items-center gap-2 p-2 bg-muted/30">
+              {selectedMarket.image_url && (
+                <img src={selectedMarket.image_url} alt="" className="w-10 h-10 rounded object-cover shrink-0" />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold truncate">{selectedMarket.title}</p>
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                  <span className="text-emerald-500">Yes {Math.round(selectedMarket.yes_price * 100)}¢</span>
+                  <span className="text-rose-500">No {Math.round(selectedMarket.no_price * 100)}¢</span>
+                </div>
+              </div>
+              <button
+                onClick={removeMarket}
+                className="w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shrink-0"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Market search dropdown */}
+      <AnimatePresence>
+        {marketSearchOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="space-y-1"
+          >
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input
+                value={marketQuery}
+                onChange={(e) => handleMarketSearch(e.target.value)}
+                placeholder="Search markets..."
+                className="h-8 text-xs pl-7 bg-muted/30"
+                autoFocus
+              />
+              {searching && <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 animate-spin text-muted-foreground" />}
+            </div>
+            {marketResults.length > 0 && (
+              <div className="rounded-lg border border-border bg-popover overflow-hidden max-h-40 overflow-y-auto">
+                {marketResults.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => selectMarket(m)}
+                    className="w-full flex items-center gap-2 p-2 hover:bg-muted/50 transition-colors text-left"
+                  >
+                    {m.image_url && (
+                      <img src={m.image_url} alt="" className="w-8 h-8 rounded object-cover shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">{m.title}</p>
+                      <div className="flex gap-2 text-[10px] text-muted-foreground">
+                        <span className="text-emerald-500">Yes {Math.round(m.yes_price * 100)}¢</span>
+                        <span className="text-rose-500">No {Math.round(m.no_price * 100)}¢</span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {imagePreview && (
         <div className="relative inline-block">
@@ -103,13 +228,32 @@ const StatusComposer = () => {
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
+          {/* Link Market button */}
           <button
-            onClick={() => fileRef.current?.click()}
-            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground"
+            onClick={() => {
+              setMarketSearchOpen(!marketSearchOpen);
+              if (marketSearchOpen) { setMarketQuery(""); setMarketResults([]); }
+            }}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors ${
+              selectedMarket ? "text-primary" : "text-muted-foreground"
+            }`}
           >
-            <Image className="w-4 h-4" />
+            <BarChart3 className="w-4 h-4" />
           </button>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+
+          {/* Image upload - hidden behind feature toggle */}
+          {showImageUpload && (
+            <>
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground"
+              >
+                <Image className="w-4 h-4" />
+              </button>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+            </>
+          )}
+
           <span className={`text-[10px] font-medium ${overLimit ? "text-destructive" : charsLeft <= 20 ? "text-yellow-500" : "text-muted-foreground"}`}>
             {charsLeft}
           </span>
@@ -118,7 +262,7 @@ const StatusComposer = () => {
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={handlePost}
-          disabled={posting || (!content.trim() && !imageFile) || overLimit}
+          disabled={posting || (!content.trim() && !imageFile && !selectedMarket) || overLimit}
           className="px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-40 flex items-center gap-1.5 transition-colors"
         >
           {posting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
