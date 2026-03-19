@@ -49,6 +49,48 @@ const PRESET_AMOUNTS = [10, 25, 50, 100];
 const MIN_AMOUNT = 1;
 const MAX_AMOUNT = 10000;
 
+const ShareToXButton = ({ marketTitle, marketId, side, optionLabel }: { marketTitle: string; marketId?: string; side: string; optionLabel?: string }) => {
+  const [sharing, setSharing] = useState(false);
+  const [shared, setShared] = useState(false);
+  const { user } = useAuth();
+
+  const handleShare = async () => {
+    if (!user || !marketId) return;
+    setSharing(true);
+    try {
+      const text = `I just predicted ${optionLabel || side.toUpperCase()} on "${marketTitle}" 🔮\n\nJoin me → https://opoll.org/market/${marketId}`;
+      const { data, error } = await supabase.functions.invoke("twitter-post-tweet", { body: { text } });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setShared(true);
+      toast.success("Shared to X!");
+    } catch (err: any) {
+      if (err.message?.includes("not linked")) {
+        toast.error("Link your X account first in Profile → Connect");
+      } else {
+        toast.error(err.message || "Failed to share");
+      }
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  if (shared) return null;
+
+  return (
+    <button
+      onClick={handleShare}
+      disabled={sharing}
+      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl glass text-sm font-semibold mb-3 hover:bg-accent/50 transition-all active:scale-95 disabled:opacity-50"
+    >
+      {sharing ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+        <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      )}
+      Share to X
+    </button>
+  );
+};
+
 const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId, optionLabel, optionColor }: BetModalProps) => {
   const { user, isEmailVerified } = useAuth();
   const { balance, bonusBalance, totalBalance } = useUserBalance();
