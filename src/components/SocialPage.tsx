@@ -6,12 +6,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { useFollowCounts } from "@/hooks/useFollow";
 import FollowButton from "@/components/FollowButton";
 import ActivityFeed from "@/components/ActivityFeed";
+import StatusFeed from "@/components/social/StatusFeed";
 import NftBadge, { isNftAvatar } from "@/components/NftBadge";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Users, UserCheck, Heart, Gift, Trophy,
-  Sparkles, ChevronRight, ChevronLeft, Loader2, X, Search,
+  Sparkles, ChevronRight, ChevronLeft, Loader2, X, Search, FileText,
 } from "lucide-react";
 
 const ITEMS_PER_PAGE = 10;
@@ -25,7 +26,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const followCounts = useFollowCounts(user?.id);
-  const [activeTab, setActiveTab] = useState<"activity" | "followers" | "following" | "suggestions">("activity");
+  const [activeTab, setActiveTab] = useState<"posts" | "activity" | "followers" | "following" | "suggestions">("posts");
   const [followersPage, setFollowersPage] = useState(1);
   const [followingPage, setFollowingPage] = useState(1);
   const [suggestionsPage, setSuggestionsPage] = useState(1);
@@ -295,6 +296,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
               {/* Tabs */}
               <div className="flex gap-1 p-1 rounded-xl bg-muted/50">
                 {([
+                  { key: "posts", label: "Posts", icon: FileText },
                   { key: "activity", label: "Activity", icon: Heart },
                   { key: "followers", label: `${followers.length}`, icon: Users },
                   { key: "following", label: `${following.length}`, icon: UserCheck },
@@ -314,6 +316,10 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
               </div>
 
               {/* Content */}
+              {activeTab === "posts" && (
+                <StatusFeed showComposer />
+              )}
+
               {activeTab === "activity" && (
                 <ActivityFeed userId={user.id} isOwnProfile isPublic />
               )}
