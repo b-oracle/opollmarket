@@ -7,12 +7,14 @@ import { useFollowCounts } from "@/hooks/useFollow";
 import FollowButton from "@/components/FollowButton";
 import ActivityFeed from "@/components/ActivityFeed";
 import StatusFeed from "@/components/social/StatusFeed";
+import StoriesCarousel from "@/components/social/StoriesCarousel";
+import SpacesFeed from "@/components/social/SpacesFeed";
 import NftBadge, { isNftAvatar } from "@/components/NftBadge";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Users, UserCheck, Heart, Gift, Trophy,
-  Sparkles, ChevronRight, ChevronLeft, Loader2, X, Search, FileText,
+  Sparkles, ChevronRight, ChevronLeft, Loader2, X, Search, FileText, Radio,
 } from "lucide-react";
 
 const ITEMS_PER_PAGE = 10;
@@ -26,7 +28,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const followCounts = useFollowCounts(user?.id);
-  const [activeTab, setActiveTab] = useState<"posts" | "activity" | "followers" | "following" | "suggestions">("posts");
+  const [activeTab, setActiveTab] = useState<"posts" | "activity" | "spaces" | "followers" | "following" | "suggestions">("posts");
   const [followersPage, setFollowersPage] = useState(1);
   const [followingPage, setFollowingPage] = useState(1);
   const [suggestionsPage, setSuggestionsPage] = useState(1);
@@ -293,11 +295,15 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
                 </button>
               </div>
 
+              {/* Stories Carousel */}
+              <StoriesCarousel />
+
               {/* Tabs */}
-              <div className="flex gap-1 p-1 rounded-xl bg-muted/50">
+              <div className="flex gap-1 p-1 rounded-xl bg-muted/50 overflow-x-auto scrollbar-hide">
                 {([
                   { key: "posts", label: "Posts", icon: FileText },
                   { key: "activity", label: "Activity", icon: Heart },
+                  { key: "spaces", label: "Spaces", icon: Radio },
                   { key: "followers", label: `${followers.length}`, icon: Users },
                   { key: "following", label: `${following.length}`, icon: UserCheck },
                   { key: "suggestions", label: "For You", icon: Sparkles },
@@ -305,7 +311,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
                   <button
                     key={t.key}
                     onClick={() => setActiveTab(t.key)}
-                    className={`flex-1 py-2 rounded-lg text-[10px] font-semibold transition-all flex flex-col items-center gap-0.5 ${
+                    className={`flex-1 py-2 rounded-lg text-[10px] font-semibold transition-all flex flex-col items-center gap-0.5 shrink-0 min-w-[52px] ${
                       activeTab === t.key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
                     }`}
                   >
@@ -322,6 +328,10 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
 
               {activeTab === "activity" && (
                 <ActivityFeed userId={user.id} isOwnProfile isPublic />
+              )}
+
+              {activeTab === "spaces" && (
+                <SpacesFeed />
               )}
 
               {activeTab === "followers" && (
