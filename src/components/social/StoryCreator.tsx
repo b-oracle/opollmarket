@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
@@ -16,6 +16,8 @@ const BG_COLORS = [
 interface StoryCreatorProps {
   open: boolean;
   onClose: () => void;
+  preLinkedMarketId?: string;
+  preLinkedMarketTitle?: string;
 }
 
 interface MarketResult {
@@ -26,7 +28,7 @@ interface MarketResult {
   no_price: number;
 }
 
-const StoryCreator = ({ open, onClose }: StoryCreatorProps) => {
+const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle }: StoryCreatorProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [content, setContent] = useState("");
@@ -40,6 +42,20 @@ const StoryCreator = ({ open, onClose }: StoryCreatorProps) => {
   const [marketResults, setMarketResults] = useState<MarketResult[]>([]);
   const [searching, setSearching] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Pre-link market when opened from share modal
+  useEffect(() => {
+    if (open && preLinkedMarketId && !selectedMarket) {
+      supabase
+        .from("markets")
+        .select("id, title, image_url, yes_price, no_price")
+        .eq("id", preLinkedMarketId)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) setSelectedMarket(data as MarketResult);
+        });
+    }
+  }, [open, preLinkedMarketId]);
 
   if (!user) return null;
 
