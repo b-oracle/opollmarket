@@ -100,7 +100,7 @@ const StoriesCarousel = () => {
     refetchInterval: 30000,
   });
 
-  if (!user) return null;
+  if (!user || !isFeatureEnabled("social_stories")) return null;
 
   const ownGroup = storyGroups.find((g) => g.userId === user?.id);
   const hasOwnStories = ownGroup && ownGroup.stories.length > 0;

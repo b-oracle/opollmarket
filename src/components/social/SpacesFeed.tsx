@@ -13,7 +13,7 @@ const SpacesFeed = () => {
   const { user } = useAuth();
   const { isFeatureEnabled } = useFeatureToggles();
 
-  if (!isFeatureEnabled("social_spaces")) return null;
+  
   const [createOpen, setCreateOpen] = useState(false);
   const [activeRoom, setActiveRoom] = useState<{
     id: string;

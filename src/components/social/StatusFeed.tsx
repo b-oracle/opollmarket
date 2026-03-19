@@ -15,7 +15,7 @@ const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
   const { user } = useAuth();
   const { isFeatureEnabled } = useFeatureToggles();
 
-  if (!isFeatureEnabled("social_status_feed")) return null;
+  
 
   // If userId provided, show that user's statuses. Otherwise show ALL public posts (Twitter-style).
   const { data: statuses = [], isLoading } = useQuery({
