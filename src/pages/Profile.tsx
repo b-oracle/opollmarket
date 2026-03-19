@@ -381,7 +381,135 @@ const WhatsAppSection = ({ userId }: { userId?: string }) => {
   );
 };
 
-const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
+const TwitterSection = ({ userId }: { userId?: string }) => {
+  const [linking, setLinking] = useState(false);
+  const [unlinking, setUnlinking] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data: twitterData, isLoading } = useQuery({
+    queryKey: ["twitter-link", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("twitter_username, twitter_id, twitter_avatar_url, twitter_linked_at")
+        .eq("id", userId)
+        .maybeSingle();
+      return data?.twitter_id ? data : null;
+    },
+    enabled: !!userId,
+  });
+
+  const handleLink = async () => {
+    setLinking(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("twitter-auth-start", {
+        body: { redirect_url: window.location.origin + "/profile" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data?.url) window.location.href = data.url;
+    } catch (err: any) {
+      toast.error(err.message || "Failed to start X link");
+      setLinking(false);
+    }
+  };
+
+  const handleUnlink = async () => {
+    setUnlinking(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("twitter-unlink");
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      queryClient.invalidateQueries({ queryKey: ["twitter-link", userId] });
+      toast.success("X account unlinked");
+    } catch {
+      toast.error("Failed to unlink X account");
+    } finally {
+      setUnlinking(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="glass rounded-xl p-4 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0 text-foreground">
+          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </div>
+        <span className="text-sm font-medium flex-1">X (Twitter)</span>
+        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (twitterData) {
+    return (
+      <div className="glass rounded-xl p-4 space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-foreground/10 flex items-center justify-center shrink-0 overflow-hidden">
+            {twitterData.twitter_avatar_url ? (
+              <img src={twitterData.twitter_avatar_url} alt={twitterData.twitter_username} className="w-full h-full object-cover rounded-full" />
+            ) : (
+              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              X Linked
+            </p>
+            <p className="text-xs text-muted-foreground truncate">@{twitterData.twitter_username}</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <a
+            href={`https://x.com/${twitterData.twitter_username}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-muted/50 border border-border text-xs font-semibold hover:bg-accent/50 transition-colors"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            View Profile
+          </a>
+          <button
+            onClick={handleUnlink}
+            disabled={unlinking}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-destructive/10 border border-destructive/20 text-xs font-semibold text-destructive hover:bg-destructive/20 transition-colors disabled:opacity-50"
+          >
+            {unlinking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Unlink className="w-3.5 h-3.5" />}
+            Unlink
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="glass rounded-xl p-4 space-y-3">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0 text-foreground">
+          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold">Link X Account</p>
+          <p className="text-xs text-muted-foreground">Verify your identity & auto-share predictions</p>
+        </div>
+      </div>
+      <button
+        onClick={handleLink}
+        disabled={linking}
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-foreground/10 border border-foreground/20 text-sm font-semibold hover:bg-foreground/20 transition-colors disabled:opacity-50"
+      >
+        {linking ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+          <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        )}
+        {linking ? "Connecting..." : "Connect X Account"}
+      </button>
+    </div>
+  );
+};
+
+
   const queryClient = useQueryClient();
   const { data: secSettings, isLoading } = useQuery({
     queryKey: ["security_settings", userId],
