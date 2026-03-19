@@ -1772,6 +1772,74 @@ export type Database = {
         }
         Relationships: []
       }
+      space_participants: {
+        Row: {
+          id: string
+          joined_at: string
+          left_at: string | null
+          role: Database["public"]["Enums"]["space_role"]
+          space_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          left_at?: string | null
+          role?: Database["public"]["Enums"]["space_role"]
+          space_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          left_at?: string | null
+          role?: Database["public"]["Enums"]["space_role"]
+          space_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_participants_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spaces: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          host_id: string
+          id: string
+          listener_count: number
+          started_at: string
+          status: Database["public"]["Enums"]["space_status"]
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          host_id: string
+          id?: string
+          listener_count?: number
+          started_at?: string
+          status?: Database["public"]["Enums"]["space_status"]
+          title: string
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          host_id?: string
+          id?: string
+          listener_count?: number
+          started_at?: string
+          status?: Database["public"]["Enums"]["space_status"]
+          title?: string
+        }
+        Relationships: []
+      }
       sport_score_cache: {
         Row: {
           away_score: number | null
@@ -1871,6 +1939,65 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      stories: {
+        Row: {
+          background_color: string | null
+          content: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          image_url: string | null
+          user_id: string
+        }
+        Insert: {
+          background_color?: string | null
+          content?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          image_url?: string | null
+          user_id: string
+        }
+        Update: {
+          background_color?: string | null
+          content?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          image_url?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      story_views: {
+        Row: {
+          created_at: string
+          id: string
+          story_id: string
+          viewer_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          story_id: string
+          viewer_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          story_id?: string
+          viewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_views_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       telegram_link_sessions: {
         Row: {
@@ -2418,6 +2545,8 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user" | "super_admin"
+      space_role: "host" | "speaker" | "listener"
+      space_status: "live" | "ended"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2546,6 +2675,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user", "super_admin"],
+      space_role: ["host", "speaker", "listener"],
+      space_status: ["live", "ended"],
     },
   },
 } as const
