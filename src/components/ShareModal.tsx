@@ -113,7 +113,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
     return user ? `${base}&ref=${user.id}` : base;
   })();
 
-  const salesMessage = `🔥 Check out "${title}" on our prediction market! Make your OPinion count, predict now 👇🏽\n\n${referralLink}`;
+  const salesMessage = `🔥 Check out "${title}" on our prediction market! Make your OPinion count, predict now 👇🏽\n\n${cleanShareLink}`;
 
   // Capture screenshot when modal opens
   useEffect(() => {
