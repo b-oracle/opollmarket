@@ -588,6 +588,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         message: "Auto-resolve check complete",
         resolved: resolvedCount,
+        twitter_resolved: twitterResolved,
         verification_sweep: verificationResult,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
