@@ -1291,9 +1291,21 @@ const Profile = () => {
               { label: "Win Rate", value: winRate !== null ? `${winRate}%` : "—" },
               { label: "PnL", value: pnl !== 0 ? `${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}` : "—" },
             ].map(({ label, value }) => (
-              <div key={label} className="glass rounded-xl p-3 text-center">
+              <div key={label} className="glass rounded-xl p-3 text-center relative">
                 <p className={`text-lg font-bold ${label === "PnL" && pnl > 0 ? "text-primary" : label === "PnL" && pnl < 0 ? "text-destructive" : ""}`}>{value}</p>
-                <p className="text-[10px] text-muted-foreground">{label}</p>
+                <p className="text-[10px] text-muted-foreground inline-flex items-center gap-0.5">
+                  {label}
+                  {label === "PnL" && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-3 h-3 text-muted-foreground cursor-help inline-block" />
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-[220px] text-xs">
+                        Payouts + Sells − Wagers + Unrealized P&L from open positions + Quick Trade wins/losses.
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </p>
               </div>
             ));
           })()}
