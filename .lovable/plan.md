@@ -1,42 +1,18 @@
 
+## Plan: Move Wallet Connection into the Connect Section
 
-## Plan: Stories — Followers-only visibility, Delete, and Market attachment
+**Current state**: The Profile page has two separate sections:
+1. **"Wallet Connection"** section (lines 1378-1480) — standalone section with wallet connect/disconnect UI
+2. **"Connect"** section (lines 1746-1761) — contains Telegram, WhatsApp, and Follow on X
 
-### What changes
+**Change**: Remove the standalone "Wallet Connection" section and move its content into the "Connect" section, placing it as the first item before Telegram.
 
-**1. Database: Add `market_id` column to stories table**
-- Add nullable `market_id` (UUID, references markets) to the `stories` table so users can attach a market to their story.
+### Implementation
 
-**2. Stories visibility — followers/following only (StoriesCarousel.tsx)**
-- Currently fetches ALL active stories globally. Change to:
-  - Fetch the user's follow connections (from `follows` table — where user is `follower_id` OR `following_id`)
-  - Filter stories to only show from: the user themselves + users they follow + users who follow them (mutual visibility like WhatsApp/Instagram)
-  - For logged-out users, show nothing (stories are a social feature)
+**File: `src/pages/Profile.tsx`**
 
-**3. Delete own story (StoryViewer.tsx)**
-- When viewing your own story, show a **trash/delete button** in the header
-- On delete: remove the story row from DB, delete the image from storage if present, invalidate queries, advance to next story or close viewer
-- Confirmation dialog before deleting
+1. **Delete** the entire "Wallet Management" block (lines 1378-1480) — the `<div ref={walletSectionRef}>` wrapper with heading "Wallet Connection" and the `glass rounded-xl` card inside it.
 
-**4. Add market to story (StoryCreator.tsx)**
-- Add a "Link Market" button in the controls section (alongside Add Image)
-- Opens a simple market search/picker: search markets by title, select one
-- Selected market shown as a card preview overlaid on the story preview
-- Store `market_id` in the stories insert
+2. **Insert** the wallet card (the inner `<div className="glass rounded-xl p-4">` with all three states: connected, detected, no wallet) into the "Connect" section (line 1749), as the first child inside `<div className="space-y-2">`, before the Telegram and WhatsApp entries. Keep the `ref={walletSectionRef}` on the wallet card div so auto-scroll from `/create` still works.
 
-**5. Display market in story (StoryViewer.tsx)**
-- When a story has a `market_id`, fetch market details (title, image, yes/no prices)
-- Show a tappable market card at the bottom of the story that navigates to the market detail page
-
-### Files to modify
-- **Migration SQL**: Add `market_id` column to `stories`
-- **StoriesCarousel.tsx**: Filter stories by follow connections
-- **StoryViewer.tsx**: Add delete button for own stories; render market card overlay
-- **StoryCreator.tsx**: Add market picker UI and pass `market_id` on insert
-
-### Technical details
-- Follow connections query: `SELECT follower_id, following_id FROM follows WHERE follower_id = uid OR following_id = uid` — extract the set of connected user IDs, then filter stories to `user_id IN (connectedIds + own id)`
-- Delete: `supabase.from("stories").delete().eq("id", storyId).eq("user_id", userId)` — the `.eq("user_id")` ensures only own stories can be deleted
-- Market picker: reuse existing markets query, simple text search with `ilike`, show top 5 results
-- Market card on story: small floating card at bottom with market title + prices, tapping opens `/market/:id`
-
+No other files need changes. The wallet logic (hooks, state, handlers) is already defined at the component level and will work regardless of where the JSX is placed.
