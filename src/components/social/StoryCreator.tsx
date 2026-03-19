@@ -82,6 +82,20 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle }
     setSearching(false);
   };
 
+  const [justPosted, setJustPosted] = useState(false);
+  const [storyCount, setStoryCount] = useState(0);
+
+  const resetForm = () => {
+    setContent("");
+    setImageFile(null);
+    setImagePreview(null);
+    setSelectedMarket(null);
+    setBgColor(BG_COLORS[Math.floor(Math.random() * BG_COLORS.length)]);
+    setMarketSearchOpen(false);
+    setMarketQuery("");
+    setMarketResults([]);
+  };
+
   const handlePost = async () => {
     if (!content.trim() && !imageFile) return;
     setPosting(true);
@@ -105,18 +119,24 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle }
       });
       if (error) throw error;
 
-      setContent("");
-      setImageFile(null);
-      setImagePreview(null);
-      setSelectedMarket(null);
+      setStoryCount((c) => c + 1);
+      resetForm();
       queryClient.invalidateQueries({ queryKey: ["stories"] });
-      toast.success("Story posted!");
-      onClose();
+      setJustPosted(true);
+      setTimeout(() => setJustPosted(false), 2000);
+      toast.success("Story posted! Add another or close.");
     } catch (err: any) {
       toast.error(err.message || "Failed to post story");
     } finally {
       setPosting(false);
     }
+  };
+
+  const handleClose = () => {
+    resetForm();
+    setStoryCount(0);
+    setJustPosted(false);
+    onClose();
   };
 
   return (
