@@ -97,6 +97,14 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
     ? `${marketUrl}${marketUrl.includes("?") ? "&" : "?"}ref=${user.id}`
     : marketUrl;
 
+  // Build an OG-proxy link for social platforms (Twitter, Facebook) so crawlers see correct meta tags
+  const ogShareLink = (() => {
+    const marketId = marketUrl.split("/market/")[1]?.split("?")[0];
+    if (!marketId) return referralLink;
+    const base = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-share?id=${marketId}`;
+    return user ? `${base}&ref=${user.id}` : base;
+  })();
+
   const salesMessage = `🔥 Check out "${title}" on our prediction market! Make your OPinion count, predict now 👇🏽\n\n${referralLink}`;
 
   // Capture screenshot when modal opens
