@@ -406,9 +406,25 @@ const TwitterSection = ({ userId }: { userId?: string }) => {
       const { data, error } = await supabase.functions.invoke("twitter-auth-start", {
         body: { redirect_url: window.location.origin + "/profile" },
       });
+
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      if (data?.url) window.location.href = data.url;
+      if (!data?.url) throw new Error("Missing X authorization URL");
+
+      const authUrl = data.url as string;
+      const inIframe = window.self !== window.top;
+
+      if (inIframe) {
+        const popup = window.open(authUrl, "_blank", "noopener,noreferrer");
+        if (!popup) {
+          throw new Error("Popup blocked. Please allow popups and try again.");
+        }
+        toast.success("X authorization opened in a new tab");
+        setLinking(false);
+        return;
+      }
+
+      window.location.href = authUrl;
     } catch (err: any) {
       toast.error(err.message || "Failed to start X link");
       setLinking(false);
