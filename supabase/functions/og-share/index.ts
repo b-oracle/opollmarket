@@ -17,13 +17,30 @@ Deno.serve(async (req) => {
     const ref = url.searchParams.get("ref") || "";
 
     if (!marketId) {
-      // Redirect to homepage if no market id
       return new Response(null, {
         status: 302,
         headers: { Location: "https://opoll.org" },
       });
     }
 
+    // Detect if this is a bot/crawler that needs OG tags
+    const ua = (req.headers.get("user-agent") || "").toLowerCase();
+    const isCrawler = /bot|crawl|spider|slurp|facebookexternalhit|twitterbot|whatsapp|telegram|linkedinbot|discordbot|embedly|quora|pinterest|slack|vkshare|redditbot|applebot/i.test(ua);
+
+    // Build the redirect URL
+    const redirectUrl = ref
+      ? `https://opoll.org/market/${marketId}?ref=${ref}`
+      : `https://opoll.org/market/${marketId}`;
+
+    // For real users (not crawlers), redirect immediately with 302
+    if (!isCrawler) {
+      return new Response(null, {
+        status: 302,
+        headers: { Location: redirectUrl },
+      });
+    }
+
+    // For crawlers, serve the OG meta tags
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const client = createClient(supabaseUrl, serviceRoleKey);
@@ -37,7 +54,7 @@ Deno.serve(async (req) => {
     if (!market) {
       return new Response(null, {
         status: 302,
-        headers: { Location: `https://opoll.org/market/${marketId}` },
+        headers: { Location: redirectUrl },
       });
     }
 
@@ -45,15 +62,9 @@ Deno.serve(async (req) => {
     const pageTitle = `${market.title} | OPoll Market`;
     const pageDesc = market.description || `YES ${yesPercent}% · NO ${100 - yesPercent}% · $${Number(market.volume).toLocaleString()} volume`;
 
-    // Use market-specific image, fall back to OG image generator, then default
     const ogImageUrl = market.image_url
       ? market.image_url
       : `${supabaseUrl}/functions/v1/og-image?id=${marketId}`;
-
-    // Build the redirect URL
-    const redirectUrl = ref
-      ? `https://opoll.org/market/${marketId}?ref=${ref}`
-      : `https://opoll.org/market/${marketId}`;
 
     const html = `<!DOCTYPE html>
 <html lang="en">
@@ -78,13 +89,10 @@ Deno.serve(async (req) => {
   <meta name="twitter:description" content="${escapeHtml(pageDesc)}" />
   <meta name="twitter:image" content="${escapeHtml(ogImageUrl)}" />
 
-  <!-- Redirect real users to the actual page -->
-  <meta http-equiv="refresh" content="0;url=${escapeHtml(redirectUrl)}" />
   <link rel="canonical" href="${escapeHtml(redirectUrl)}" />
 </head>
 <body>
   <p>Redirecting to <a href="${escapeHtml(redirectUrl)}">OPoll Market</a>...</p>
-  <script>window.location.replace(${JSON.stringify(redirectUrl)});</script>
 </body>
 </html>`;
 
