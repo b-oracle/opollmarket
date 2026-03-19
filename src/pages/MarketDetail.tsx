@@ -451,20 +451,20 @@ const MarketDetail = () => {
   const activeBoost = id ? boostDetails.get(id) : undefined;
   const { track } = useAnalytics();
   const { toggles } = useFeatureToggles();
-  const showWagered = toggles.find(t => t.feature_key === "show_wagered_stats")?.enabled ?? false;
+  const showPageViews = toggles.find(t => t.feature_key === "show_wagered_stats")?.enabled ?? false;
 
-  const { data: totalWagered } = useQuery({
-    queryKey: ["market-total-wagered", id],
+  const { data: pageViewCount } = useQuery({
+    queryKey: ["market-page-views", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("transactions")
-        .select("amount")
-        .eq("market_id", id!)
-        .eq("type", "buy");
+      const { count, error } = await supabase
+        .from("analytics_events")
+        .select("id", { count: "exact", head: true })
+        .eq("event_name", "page_view")
+        .contains("properties", { marketId: id });
       if (error) return 0;
-      return (data || []).reduce((s, r) => s + Number(r.amount), 0);
+      return count ?? 0;
     },
-    enabled: !!id && showWagered,
+    enabled: !!id && showPageViews,
   });
 
   const isCreator = !!(user && market && market.creatorAddress === user.id);
@@ -849,11 +849,11 @@ const MarketDetail = () => {
           <div className="glass rounded-xl p-2.5 sm:p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Droplets className="w-3.5 h-3.5" /><span className="text-[11px] sm:text-xs">Liquidity</span></div><span className="text-base sm:text-lg font-bold">{formatVolume(market.liquidity)}</span></div>
           <div className="glass rounded-xl p-2.5 sm:p-3">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              {showWagered ? <BarChart3 className="w-3.5 h-3.5" /> : <Users className="w-3.5 h-3.5" />}
-              <span className="text-[11px] sm:text-xs">{showWagered ? "Total Wagered" : "Traders"}</span>
+              {showPageViews ? <BarChart3 className="w-3.5 h-3.5" /> : <Users className="w-3.5 h-3.5" />}
+              <span className="text-[11px] sm:text-xs">{showPageViews ? "Page Views" : "Traders"}</span>
             </div>
             <span className="text-base sm:text-lg font-bold">
-              {showWagered ? formatVolume(totalWagered ?? 0) : market.participants.toLocaleString()}
+              {showPageViews ? (pageViewCount ?? 0).toLocaleString() : market.participants.toLocaleString()}
             </span>
           </div>
           <div className="glass rounded-xl p-2.5 sm:p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Clock className="w-3.5 h-3.5" /><span className="text-[11px] sm:text-xs">Ends</span></div><span className="text-base sm:text-lg font-bold">{getTimeRemaining(market.endDate)}</span></div>
