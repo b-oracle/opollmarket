@@ -23,7 +23,11 @@ const tabs: { key: TabKey; label: string; icon: typeof DollarSign }[] = [
   { key: "pending", label: "Pending", icon: Clock },
 ];
 
-const formatAmount = (n: number) => `$${n.toFixed(2)}`;
+const formatAmount = (n: number) => {
+  if (n === 0) return "$0.00";
+  if (n < 0.01) return `$${n.toFixed(4)}`;
+  return `$${n.toFixed(2)}`;
+};
 const formatDate = (d: string) => {
   const date = new Date(d);
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
