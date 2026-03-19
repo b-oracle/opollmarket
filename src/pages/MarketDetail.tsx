@@ -460,7 +460,7 @@ const MarketDetail = () => {
         .from("transactions")
         .select("amount")
         .eq("market_id", id!)
-        .eq("type", "bet");
+        .eq("type", "buy");
       if (error) return 0;
       return (data || []).reduce((s, r) => s + Number(r.amount), 0);
     },
