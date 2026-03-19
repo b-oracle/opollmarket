@@ -605,7 +605,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     try {
       // Determine which withdrawal path to take
       if (withdrawMethod === "fiat") {
-        // Route to correct provider based on admin settings, with fast fallback
+        // Route to correct provider based on admin settings, with fallback
         const primaryFn = payoutProvider === "flutterwave" ? "request-flutterwave-withdrawal" : "request-payaza-withdrawal";
         const fallbackFn = payoutProvider === "flutterwave" ? "request-payaza-withdrawal" : "request-flutterwave-withdrawal";
         const withdrawBody = {
@@ -617,43 +617,36 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
 
         let data: any = null;
 
-        // Helper: invoke with a timeout (8s) to avoid long waits
-        const invokeWithTimeout = async (fnName: string, body: any, timeoutMs = 8000) => {
-          const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), timeoutMs);
-          try {
-            const result = await supabase.functions.invoke(fnName, { body });
-            clearTimeout(timer);
-            if (result.error || result.data?.error) return null;
-            return result.data;
-          } catch {
-            clearTimeout(timer);
-            return null;
-          }
-        };
-
-        // Try primary provider (fast timeout)
-        data = await invokeWithTimeout(primaryFn, withdrawBody);
-
-        // Fallback if primary failed
-        if (!data) {
-          console.warn(`Primary payout (${primaryFn}) failed/timed out, trying fallback...`);
-          data = await invokeWithTimeout(fallbackFn, withdrawBody);
+        // Try primary provider
+        const primary = await supabase.functions.invoke(primaryFn, { body: withdrawBody });
+        let primaryFailed = false;
+        if (primary.error || primary.data?.error) {
+          primaryFailed = true;
+          console.warn(`Primary payout provider (${primaryFn}) failed, trying fallback...`);
+        } else {
+          data = primary.data;
         }
 
-        // Both failed — fall through to manual
-        if (!data) {
-          console.warn("Both payout providers failed, falling back to manual withdrawal");
-          const manualResult = await supabase.functions.invoke("request-withdrawal", {
-            body: {
-              amount: numAmount,
-              wallet_address: `NGN:${bankCode}:${accountNumber.trim()}:${accountName.trim()}`,
-            },
-          });
-          if (manualResult.error || manualResult.data?.error) {
-            throw new Error(manualResult.data?.error || "Withdrawal request failed. Please try again.");
+        // Try fallback provider if primary failed
+        if (primaryFailed) {
+          const fallback = await supabase.functions.invoke(fallbackFn, { body: withdrawBody });
+          if (fallback.error || fallback.data?.error) {
+            // Both providers failed — fall through to manual
+            console.warn("Both payout providers failed, falling back to manual withdrawal");
+            const manualResult = await supabase.functions.invoke("request-withdrawal", {
+              body: {
+                amount: numAmount,
+                wallet_address: `NGN:${bankCode}:${accountNumber.trim()}:${accountName.trim()}`,
+              },
+            });
+            if (manualResult.error || manualResult.data?.error) {
+              const msg = manualResult.data?.error || fallback.data?.error || primary.data?.error || "Withdrawal request failed";
+              throw new Error(msg);
+            }
+            data = manualResult.data;
+          } else {
+            data = fallback.data;
           }
-          data = manualResult.data;
         }
 
         setNgnPayoutRate(data?.payout_rate || null);
