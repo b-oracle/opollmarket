@@ -113,3 +113,5 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.twitter-unlink]
     verify_jwt = false
+  [functions.place-bet]
+    verify_jwt = false
