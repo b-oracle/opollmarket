@@ -178,6 +178,7 @@ const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) =
               {/* Tabs */}
               <div className="flex gap-1 p-1 rounded-xl bg-muted/50">
                 {([
+                  { key: "posts" as const, label: "Posts", icon: FileText },
                   { key: "activity" as const, label: "Activity", icon: Heart },
                   { key: "followers" as const, label: `${followersCount}`, icon: Users },
                   { key: "following" as const, label: `${followingCount}`, icon: UserCheck },
