@@ -42,6 +42,8 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle }
   const [marketResults, setMarketResults] = useState<MarketResult[]>([]);
   const [searching, setSearching] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [justPosted, setJustPosted] = useState(false);
+  const [storyCount, setStoryCount] = useState(0);
 
   // Pre-link market when opened from share modal
   useEffect(() => {
