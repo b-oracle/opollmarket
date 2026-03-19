@@ -173,7 +173,7 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[80] bg-black flex items-center justify-center"
+        className="fixed inset-0 z-[9999] bg-black flex items-center justify-center"
       >
         {/* Progress bars */}
         <div className="absolute top-3 left-3 right-3 z-20 flex gap-1">
