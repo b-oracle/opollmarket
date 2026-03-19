@@ -1261,7 +1261,6 @@ const Create = () => {
   }, [isConnected, settingsLoaded]);
 
   // Fee bypass — check balance, show confirmation, then escrow
-  const [feeBypassLoading, setFeeBypassLoading] = useState(false);
   const handleFeeBypass = async () => {
     if (!user) { toast.error("Sign in first"); return; }
     if (balanceLoading) {
