@@ -236,7 +236,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
     if (!user) { toast.error("Sign in to share to feed"); return; }
     setPostingToFeed(true);
     try {
-      const { error } = await supabase.from("social_posts").insert({
+      const { error } = await supabase.from("status_updates").insert({
         user_id: user.id,
         content: `🔥 Check out "${title}" on our prediction market! Make your OPinion count 👇🏽\n\n${cleanShareLink}`,
         market_id: marketId || null,
