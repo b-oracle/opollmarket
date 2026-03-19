@@ -101,7 +101,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, capture
   const ogShareLink = (() => {
     const marketId = marketUrl.split("/market/")[1]?.split("?")[0];
     if (!marketId) return referralLink;
-    const base = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-share?id=${marketId}`;
+    const base = `https://opoll.org/functions/v1/og-share?id=${marketId}`;
     return user ? `${base}&ref=${user.id}` : base;
   })();
 
