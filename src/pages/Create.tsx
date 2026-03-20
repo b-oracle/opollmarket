@@ -789,6 +789,7 @@ const Create = () => {
     // Validate cover image (either file upload or AI-generated URL)
     if (!imageFile && !imagePreview) {
       toast.error("A cover image is required to create a market");
+      isSubmittingRef.current = false;
       return;
     }
 
