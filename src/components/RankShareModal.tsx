@@ -273,6 +273,12 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
 
             {/* Action buttons */}
             <div className="px-4 pb-3 grid grid-cols-3 gap-2">
+              <button onClick={handlePostToFeed} disabled={postingToFeed} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary/10 border border-primary/20 text-xs font-semibold hover:bg-primary/20 transition-colors disabled:opacity-50 text-primary">
+                {postingToFeed ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PenSquare className="w-3.5 h-3.5" />} Feed
+              </button>
+              <button onClick={handleShareToStory} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary/10 border border-primary/20 text-xs font-semibold hover:bg-primary/20 transition-colors text-primary">
+                <BookOpen className="w-3.5 h-3.5" /> Story
+              </button>
               <button onClick={handleCopy} disabled={capturing} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors disabled:opacity-50">
                 <Copy className="w-3.5 h-3.5" /> Copy
               </button>
