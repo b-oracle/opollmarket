@@ -154,6 +154,31 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
     window.open(`https://t.me/share/url?url=${url}&text=${text}`, "_blank");
   };
 
+  const handlePostToFeed = async () => {
+    if (!user) { toast.error("Sign in to post to feed"); return; }
+    setPostingToFeed(true);
+    try {
+      const { error } = await supabase.from("status_updates").insert({
+        user_id: user.id,
+        content: shareText,
+      });
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["status-feed"] });
+      toast.success("Posted to feed!");
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to post");
+    } finally {
+      setPostingToFeed(false);
+    }
+  };
+
+  const handleShareToStory = () => {
+    if (!user) { toast.error("Sign in to share to story"); return; }
+    onOpenChange(false);
+    setTimeout(() => setStoryCreatorOpen(true), 300);
+  };
+
   const topPercent = Math.round((rank / totalCount) * 100);
 
   const rankTheme = rank === 1
