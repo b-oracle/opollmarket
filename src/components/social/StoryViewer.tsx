@@ -192,7 +192,10 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
 
         {/* Header */}
         <div className="absolute left-3 right-3 z-20 flex items-center gap-2.5" style={{ top: 'calc(max(0.75rem, env(safe-area-inset-top, 0.75rem)) + 0.75rem)' }}>
-          <div className="w-8 h-8 rounded-full bg-white/20 overflow-hidden flex items-center justify-center">
+          <div
+            className="w-8 h-8 rounded-full bg-white/20 overflow-hidden flex items-center justify-center cursor-pointer"
+            onClick={() => { onClose(); navigate(`/user/${story.user_id}`); }}
+          >
             {profile?.avatar_url ? (
               <img src={profile.avatar_url} alt={name} className="w-full h-full object-cover" />
             ) : (
@@ -200,7 +203,7 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-white text-xs font-semibold truncate">{name}</p>
+            <p className="text-white text-xs font-semibold truncate cursor-pointer hover:underline" onClick={() => { onClose(); navigate(`/user/${story.user_id}`); }}>{name}</p>
             <p className="text-white/50 text-[9px]">{timeAgo}</p>
           </div>
           {isOwnStory && (
