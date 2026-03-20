@@ -17,30 +17,23 @@ interface AimtellSendPushProps {
 
 const AimtellSendPush = ({ externalTitle, externalBody, externalUrl }: AimtellSendPushProps) => {
   const { canEdit } = useAdminContext();
-  const [pushTitle, setPushTitle] = useState(externalTitle || "");
-  const [pushBody, setPushBody] = useState(externalBody || "");
-  const [pushUrl, setPushUrl] = useState(externalUrl || "https://opoll.org");
+  const [pushTitle, setPushTitle] = useState("");
+  const [pushBody, setPushBody] = useState("");
+  const [pushUrl, setPushUrl] = useState("https://opoll.org");
   const [pushSegment, setPushSegment] = useState("");
   const [broadcastAll, setBroadcastAll] = useState(true);
   const [sending, setSending] = useState(false);
+  const [lastApplied, setLastApplied] = useState("");
 
   // Sync external props when template is applied
-  const applyTemplate = (title: string, body: string, url: string) => {
-    setPushTitle(title);
-    setPushBody(body);
-    setPushUrl(url);
-  };
-
-  // Expose for parent
-  if (externalTitle !== undefined && externalTitle !== pushTitle) {
-    setPushTitle(externalTitle);
-  }
-  if (externalBody !== undefined && externalBody !== pushBody) {
-    setPushBody(externalBody);
-  }
-  if (externalUrl !== undefined && externalUrl !== pushUrl) {
-    setPushUrl(externalUrl);
-  }
+  useEffect(() => {
+    if (externalTitle && externalTitle !== lastApplied) {
+      setPushTitle(externalTitle);
+      setPushBody(externalBody || "");
+      setPushUrl(externalUrl || "https://opoll.org");
+      setLastApplied(externalTitle);
+    }
+  }, [externalTitle, externalBody, externalUrl]);
 
   const handleSendPush = async () => {
     if (!pushTitle.trim()) {
