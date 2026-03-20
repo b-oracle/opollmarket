@@ -158,12 +158,24 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
     if (!user) { toast.error("Sign in to post to feed"); return; }
     setPostingToFeed(true);
     try {
+      let image_url: string | null = null;
+      const blob = await getBlob();
+      if (blob) {
+        const path = `${user.id}/rank-share-${Date.now()}.png`;
+        const { error: uploadError } = await supabase.storage.from("social-media").upload(path, blob, { upsert: true, contentType: "image/png" });
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage.from("social-media").getPublicUrl(path);
+          image_url = urlData.publicUrl;
+        }
+      }
       const { error } = await supabase.from("status_updates").insert({
         user_id: user.id,
         content: shareText,
+        image_url,
       });
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["status-feed"] });
+      queryClient.invalidateQueries({ queryKey: ["social-posts"] });
       toast.success("Posted to feed!");
       onOpenChange(false);
     } catch (err: any) {
@@ -189,7 +201,7 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
     ? { gradient: "from-orange-900/30 via-card to-orange-500/10", border: "border-orange-700/50", accent: "#B45309", accentBg: "bg-orange-700/20", ring: "ring-orange-700/30" }
     : { gradient: "from-card via-card to-primary/10", border: "border-border/30", accent: "hsl(var(--primary))", accentBg: "bg-primary/20", ring: "ring-primary/30" };
 
-  if (!open) return null;
+  if (!open && !storyCreatorOpen) return null;
 
   return (
     <>
