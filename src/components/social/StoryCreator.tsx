@@ -19,6 +19,7 @@ interface StoryCreatorProps {
   preLinkedMarketId?: string;
   preLinkedMarketTitle?: string;
   preContent?: string;
+  preImageUrl?: string;
 }
 
 interface MarketResult {
@@ -29,7 +30,7 @@ interface MarketResult {
   no_price: number;
 }
 
-const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle, preContent }: StoryCreatorProps) => {
+const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle, preContent, preImageUrl }: StoryCreatorProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [content, setContent] = useState("");
@@ -46,7 +47,7 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle, 
   const [justPosted, setJustPosted] = useState(false);
   const [storyCount, setStoryCount] = useState(0);
 
-  // Pre-link market when opened from share modal
+  // Pre-link market/content/image when opened from share modal
   useEffect(() => {
     if (open && preLinkedMarketId && !selectedMarket) {
       supabase
@@ -58,11 +59,16 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle, 
           if (data) setSelectedMarket(data as MarketResult);
         });
     }
-    // Pre-fill content when opened with preContent (e.g. profile share)
+
     if (open && preContent && !content) {
       setContent(preContent);
     }
-  }, [open, preLinkedMarketId, preContent]);
+
+    if (open && preImageUrl && !imagePreview) {
+      setImageFile(null);
+      setImagePreview(preImageUrl);
+    }
+  }, [open, preLinkedMarketId, preContent, preImageUrl, selectedMarket, content, imagePreview]);
 
   if (!user) return null;
 
@@ -102,10 +108,11 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle, 
   };
 
   const handlePost = async () => {
-    if (!content.trim() && !imageFile) return;
+    if (!content.trim() && !imageFile && !imagePreview) return;
     setPosting(true);
     try {
       let image_url: string | null = null;
+
       if (imageFile) {
         const ext = imageFile.name.split(".").pop() || "jpg";
         const path = `${user.id}/story-${Date.now()}.${ext}`;
@@ -113,13 +120,15 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle, 
         if (uploadError) throw uploadError;
         const { data: urlData } = supabase.storage.from("social-media").getPublicUrl(path);
         image_url = urlData.publicUrl;
+      } else if (imagePreview && /^https?:\/\//i.test(imagePreview)) {
+        image_url = imagePreview;
       }
 
       const { error } = await supabase.from("stories").insert({
         user_id: user.id,
         content: content.trim() || null,
         image_url,
-        background_color: imageFile ? null : bgColor,
+        background_color: image_url ? null : bgColor,
         market_id: selectedMarket?.id || null,
       });
       if (error) throw error;
@@ -170,7 +179,7 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle, 
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={handlePost}
-                disabled={posting || (!content.trim() && !imageFile)}
+                disabled={posting || (!content.trim() && !imageFile && !imagePreview)}
                 className="px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-40 flex items-center gap-1.5"
               >
                 {posting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
