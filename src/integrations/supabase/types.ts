@@ -65,6 +65,72 @@ export type Database = {
           },
         ]
       }
+      aimtell_auto_broadcast_settings: {
+        Row: {
+          body_template: string
+          enabled: boolean
+          event_type: string
+          id: string
+          segment_id: string | null
+          title_template: string
+          updated_at: string
+          updated_by: string | null
+          url_template: string | null
+        }
+        Insert: {
+          body_template?: string
+          enabled?: boolean
+          event_type: string
+          id?: string
+          segment_id?: string | null
+          title_template: string
+          updated_at?: string
+          updated_by?: string | null
+          url_template?: string | null
+        }
+        Update: {
+          body_template?: string
+          enabled?: boolean
+          event_type?: string
+          id?: string
+          segment_id?: string | null
+          title_template?: string
+          updated_at?: string
+          updated_by?: string | null
+          url_template?: string | null
+        }
+        Relationships: []
+      }
+      aimtell_push_templates: {
+        Row: {
+          body: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          title: string
+          url: string | null
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          title: string
+          url?: string | null
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          title?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
       analytics_events: {
         Row: {
           created_at: string
@@ -1750,6 +1816,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      scheduled_aimtell_pushes: {
+        Row: {
+          body: string | null
+          broadcast_all: boolean | null
+          created_at: string
+          created_by: string | null
+          error_message: string | null
+          id: string
+          scheduled_at: string
+          segment_id: string | null
+          sent_at: string | null
+          status: string
+          title: string
+          url: string | null
+        }
+        Insert: {
+          body?: string | null
+          broadcast_all?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          id?: string
+          scheduled_at: string
+          segment_id?: string | null
+          sent_at?: string | null
+          status?: string
+          title: string
+          url?: string | null
+        }
+        Update: {
+          body?: string | null
+          broadcast_all?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          id?: string
+          scheduled_at?: string
+          segment_id?: string | null
+          sent_at?: string | null
+          status?: string
+          title?: string
+          url?: string | null
+        }
+        Relationships: []
       }
       social_links: {
         Row: {
