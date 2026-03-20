@@ -904,7 +904,12 @@ const Create = () => {
     const result = typeof deductResult === "string" ? JSON.parse(deductResult) : deductResult;
     if (!result?.success) {
       setSubmitStep("error");
-      toast.error(result?.error || "Insufficient balance for market creation");
+      toast.error(result?.error || "Insufficient balance for market creation", {
+        action: {
+          label: "Deposit Now",
+          onClick: () => setDepositModalOpen(true),
+        },
+      });
       return;
     }
 
