@@ -203,7 +203,7 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-white text-xs font-semibold truncate">{name}</p>
+            <p className="text-white text-xs font-semibold truncate cursor-pointer hover:underline" onClick={() => { onClose(); navigate(`/user/${story.user_id}`); }}>{name}</p>
             <p className="text-white/50 text-[9px]">{timeAgo}</p>
           </div>
           {isOwnStory && (
