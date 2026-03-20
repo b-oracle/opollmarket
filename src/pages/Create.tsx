@@ -2978,7 +2978,7 @@ const Create = () => {
                         Telegram
                       </a>
                       <a
-                        href={`https://wa.me/?text=${encodeURIComponent(`I just created a prediction market: "${title}" 🔮 Predict now on OPoll! ${window.location.origin}/market/${newMarketId}`)}`}
+                        href={`https://wa.me/?text=${encodeURIComponent(`I just created a prediction market: "${title}" 🔮 Predict now on OPoll! https://opoll.org/market/${newMarketId}`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-muted/50 border border-border text-xs font-semibold hover:bg-accent/50 transition-colors"
