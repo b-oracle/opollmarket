@@ -84,11 +84,30 @@ Deno.serve(async (req) => {
     const isHost = space.host_id === userId;
     const roomName = `space-${space_id}`;
 
-    const apiKey = Deno.env.get("LIVEKIT_API_KEY");
-    const apiSecret = Deno.env.get("LIVEKIT_API_SECRET");
-    const livekitUrl = Deno.env.get("LIVEKIT_URL");
+    const sanitizeSecret = (value: string | null) =>
+      (value || "").trim().replace(/^['\"]|['\"]$/g, "");
 
-    console.log("LiveKit config:", { hasKey: !!apiKey, hasSecret: !!apiSecret, hasUrl: !!livekitUrl, userId, roomName, isHost });
+    const apiKeyRaw = Deno.env.get("LIVEKIT_API_KEY");
+    const apiSecretRaw = Deno.env.get("LIVEKIT_API_SECRET");
+    const livekitUrlRaw = Deno.env.get("LIVEKIT_URL");
+
+    const apiKey = sanitizeSecret(apiKeyRaw);
+    const apiSecret = sanitizeSecret(apiSecretRaw);
+    const livekitUrl = (livekitUrlRaw || "").trim();
+
+    console.log("LiveKit config:", {
+      hasKey: !!apiKey,
+      hasSecret: !!apiSecret,
+      hasUrl: !!livekitUrl,
+      keySanitized: apiKeyRaw !== apiKey,
+      secretSanitized: apiSecretRaw !== apiSecret,
+      urlSanitized: livekitUrlRaw !== livekitUrl,
+      keyLength: apiKey.length,
+      secretLength: apiSecret.length,
+      userId,
+      roomName,
+      isHost,
+    });
 
     if (!apiKey || !apiSecret || !livekitUrl) {
       return new Response(JSON.stringify({ error: "LiveKit not configured" }), {
