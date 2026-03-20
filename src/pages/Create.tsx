@@ -1671,6 +1671,7 @@ const Create = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        <DepositWithdrawModal open={depositModalOpen} onClose={() => setDepositModalOpen(false)} initialTab="deposit" />
       </div>
     );
   }
