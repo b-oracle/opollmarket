@@ -18,6 +18,7 @@ interface StoryCreatorProps {
   onClose: () => void;
   preLinkedMarketId?: string;
   preLinkedMarketTitle?: string;
+  preContent?: string;
 }
 
 interface MarketResult {
@@ -28,7 +29,7 @@ interface MarketResult {
   no_price: number;
 }
 
-const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle }: StoryCreatorProps) => {
+const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle, preContent }: StoryCreatorProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [content, setContent] = useState("");
@@ -57,7 +58,11 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle }
           if (data) setSelectedMarket(data as MarketResult);
         });
     }
-  }, [open, preLinkedMarketId]);
+    // Pre-fill content when opened with preContent (e.g. profile share)
+    if (open && preContent && !content) {
+      setContent(preContent);
+    }
+  }, [open, preLinkedMarketId, preContent]);
 
   if (!user) return null;
 
