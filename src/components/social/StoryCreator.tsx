@@ -18,6 +18,7 @@ interface StoryCreatorProps {
   onClose: () => void;
   preLinkedMarketId?: string;
   preLinkedMarketTitle?: string;
+  preContent?: string;
 }
 
 interface MarketResult {
