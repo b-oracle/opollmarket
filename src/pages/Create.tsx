@@ -582,8 +582,12 @@ const Create = () => {
     return urlData.publicUrl;
   };
 
+  const isSubmittingRef = useRef(false);
+
   const saveDraft = useCallback(async (silent = false) => {
     if (!user) { if (!silent) toast.error("Sign in to save drafts"); return; }
+    // Prevent auto-save from running during submission (race condition causes duplicate options)
+    if (silent && isSubmittingRef.current) return;
     if (!silent) setSavingDraft(true);
     try {
       let imageUrl: string | null = imagePreview?.startsWith("blob:") ? null : (imagePreview || null);
