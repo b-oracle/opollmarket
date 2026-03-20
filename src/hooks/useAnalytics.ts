@@ -9,6 +9,7 @@ type EventName =
   | "bet_confirmed"
   | "prediction_confirmed"
   | "deposit_started"
+  | "deposit_completed"
   | "withdrawal_requested"
   | "market_created"
   | "market_shared"
@@ -22,7 +23,17 @@ type EventName =
   | "limit_order_started"
   | "limit_order_cancelled"
   | "push_enabled_first_bet"
-  | "push_enabled_first_prediction";
+  | "push_enabled_first_prediction"
+  | "copy_trade_started"
+  | "referral_shared"
+  | "profile_viewed"
+  | "quick_trade_won"
+  | "quick_trade_lost"
+  | "category_crypto"
+  | "category_sports"
+  | "category_politics"
+  | "category_entertainment"
+  | "category_finance";
 
 interface EventProperties {
   [key: string]: string | number | boolean | undefined;
@@ -35,8 +46,23 @@ const AIMTELL_EVENT_MAP: Partial<Record<EventName, string>> = {
   prediction_placed: "prediction",
   prediction_confirmed: "prediction",
   deposit_started: "depositor",
+  deposit_completed: "depositor-confirmed",
   market_created: "creator",
   login_completed: "logged-in",
+  copy_trade_started: "copy-trader",
+  referral_shared: "referrer",
+  quick_trade_won: "qt-winner",
+  quick_trade_lost: "qt-active",
+  category_crypto: "cat-crypto",
+  category_sports: "cat-sports",
+  category_politics: "cat-politics",
+  category_entertainment: "cat-entertainment",
+  category_finance: "cat-finance",
+  comment_posted: "commenter",
+  market_liked: "engager",
+  market_bookmarked: "bookmarker",
+  market_shared: "sharer",
+  withdrawal_requested: "withdrawer",
 };
 
 const useAnalytics = () => {
