@@ -358,7 +358,7 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
           setStoryCreatorOpen(false);
           onOpenChange(false);
         }}
-        preContent={shareText}
+        preContent={storyText}
         preImageUrl={storyImageUrl || undefined}
       />
     </>

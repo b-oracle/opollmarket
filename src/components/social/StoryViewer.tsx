@@ -224,19 +224,33 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
 
         {/* Story content */}
         <div
-          className="w-full h-full flex items-center justify-center"
-          style={{ backgroundColor: story.image_url ? "#000" : (story.background_color || "#1a1a2e") }}
+          className="w-full h-full"
+          style={{ backgroundColor: story.image_url ? "hsl(var(--background))" : (story.background_color || "#1a1a2e") }}
         >
-          {story.image_url && (
-            <img src={story.image_url} alt="" className="w-full h-full object-contain" />
-          )}
-          {story.content && (
-            <p
-              className="absolute text-white text-center text-lg font-bold px-8 max-w-sm"
-              style={{ textShadow: "0 2px 8px rgba(0,0,0,0.7)" }}
-            >
-              {story.content}
-            </p>
+          {story.image_url ? (
+            <div className="h-full w-full flex flex-col">
+              <div className="flex-1 min-h-0 bg-black flex items-center justify-center">
+                <img src={story.image_url} alt="" className="w-full h-full object-cover" />
+              </div>
+              {story.content && (
+                <div className="shrink-0 bg-background/95 border-t border-border/40 px-5 py-4">
+                  <p className="text-foreground text-sm font-semibold text-center leading-relaxed break-words">
+                    {story.content}
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center px-8">
+              {story.content && (
+                <p
+                  className="text-white text-center text-lg font-bold max-w-sm break-words"
+                  style={{ textShadow: "0 2px 8px rgba(0,0,0,0.7)" }}
+                >
+                  {story.content}
+                </p>
+              )}
+            </div>
           )}
         </div>
 
