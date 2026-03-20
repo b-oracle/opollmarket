@@ -205,10 +205,10 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
   };
 
   const handleTwitter = () => {
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`🔥 "${title}" - Make your OPinion count, predict now 👇🏽`)}&url=${encodeURIComponent(ogShareLink)}`, "_blank");
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`🔥 "${title}" - Make your OPinion count, predict now 👇🏽`)}&url=${encodeURIComponent(cleanShareLink)}`, "_blank");
   };
   const handleFacebook = () => {
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(ogShareLink)}`, "_blank");
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(cleanShareLink)}`, "_blank");
   };
   const handleWhatsApp = () => {
     window.open(`https://wa.me/?text=${encodeURIComponent(`🔥 "${title}" - Make your OPinion count, predict now 👇🏽\n\n${cleanShareLink}`)}`, "_blank");

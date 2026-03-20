@@ -2988,7 +2988,7 @@ const Create = () => {
                       </a>
                       <button
                         onClick={() => {
-                          navigator.clipboard.writeText(`${window.location.origin}/market/${newMarketId}`);
+                          navigator.clipboard.writeText(`https://opoll.org/market/${newMarketId}`);
                           toast.success("Link copied!");
                         }}
                         className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-muted/50 border border-border text-xs font-semibold hover:bg-accent/50 transition-colors"
