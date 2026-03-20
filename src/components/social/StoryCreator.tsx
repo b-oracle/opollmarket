@@ -190,20 +190,34 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle, 
             {/* Preview */}
             <div className="flex-1 flex items-center justify-center px-6 py-4 lg:py-6">
               <div
-                className="w-full max-w-[240px] lg:max-w-[260px] aspect-[9/16] rounded-2xl overflow-hidden flex items-center justify-center relative"
-                style={{ backgroundColor: imagePreview ? "#000" : bgColor }}
+                className="w-full max-w-[240px] lg:max-w-[260px] aspect-[9/16] rounded-2xl overflow-hidden relative"
+                style={{ backgroundColor: imagePreview ? "hsl(var(--background))" : bgColor }}
               >
                 {imagePreview ? (
-                  <img src={imagePreview} alt="Story" className="w-full h-full object-cover" />
-                ) : null}
-                <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Type your story..."
-                  maxLength={200}
-                  className="absolute inset-0 w-full h-full bg-transparent text-white text-center text-lg font-bold p-6 resize-none focus:outline-none placeholder:text-white/40 flex items-center justify-center"
-                  style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}
-                />
+                  <div className="h-full w-full flex flex-col">
+                    <div className="flex-1 min-h-0 bg-black">
+                      <img src={imagePreview} alt="Story" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="shrink-0 bg-background/95 border-t border-border/40 px-4 py-3">
+                      <textarea
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        placeholder="Add a caption..."
+                        maxLength={200}
+                        className="w-full min-h-[72px] bg-transparent text-foreground text-sm leading-relaxed text-center font-semibold resize-none focus:outline-none placeholder:text-muted-foreground break-words"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <textarea
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    placeholder="Type your story..."
+                    maxLength={200}
+                    className="absolute inset-0 w-full h-full bg-transparent text-white text-center text-lg font-bold p-6 resize-none focus:outline-none placeholder:text-white/40 flex items-center justify-center"
+                    style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}
+                  />
+                )}
                 {/* Market preview on story */}
                 {selectedMarket && (
                   <div className="absolute bottom-4 left-3 right-3 bg-black/60 backdrop-blur-md rounded-xl p-2.5 flex items-center gap-2.5 border border-white/10">

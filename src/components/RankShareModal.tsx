@@ -43,6 +43,7 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
 
   const shareUrl = window.location.href;
   const shareText = `🏆 I'm ranked #${rank} on the ${category} leaderboard with ${valueLine}! Top ${Math.round((rank / totalCount) * 100)}% — Can you beat me?\n\n${shareUrl}`;
+  const storyText = `🏆 #${rank} on ${category}\n${valueLine} • Top ${Math.round((rank / totalCount) * 100)}%`;
 
   useEffect(() => {
     if (!open) {
@@ -357,7 +358,7 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
           setStoryCreatorOpen(false);
           onOpenChange(false);
         }}
-        preContent={shareText}
+        preContent={storyText}
         preImageUrl={storyImageUrl || undefined}
       />
     </>
