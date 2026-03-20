@@ -80,6 +80,17 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     });
     roomRef.current = room;
 
+    const normalizeLivekitUrl = (url: string) => {
+      try {
+        const parsed = new URL(url);
+        if (parsed.protocol === "https:") parsed.protocol = "wss:";
+        if (parsed.protocol === "http:") parsed.protocol = "ws:";
+        return parsed.toString();
+      } catch {
+        return url;
+      }
+    };
+
     const connect = async () => {
       try {
         const { data, error } = await supabase.functions.invoke("livekit-token", {
@@ -112,7 +123,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           }
         });
 
-        await room.connect(data.url, data.token);
+        const livekitUrl = normalizeLivekitUrl(data.url);
+        await room.connect(livekitUrl, data.token);
 
         if (cancelled) {
           room.disconnect();
@@ -122,10 +134,16 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         setConnected(true);
         setConnecting(false);
 
-        // If host, enable mic by default
+        // If host, try to enable mic by default but don't fail join if permission is denied
         if (data.isHost) {
-          await room.localParticipant.setMicrophoneEnabled(true);
-          setMuted(false);
+          try {
+            await room.localParticipant.setMicrophoneEnabled(true);
+            setMuted(false);
+          } catch (micErr) {
+            console.warn("Microphone permission unavailable, staying muted:", micErr);
+            setMuted(true);
+            toast.info("Joined muted. Enable microphone when ready.");
+          }
         }
 
         updateParticipants(room);
@@ -143,7 +161,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         queryClient.invalidateQueries({ queryKey: ["spaces"] });
       } catch (err: any) {
         if (!cancelled) {
-          toast.error("Failed to connect to voice room");
+          const message = err?.message || "Failed to connect to voice room";
+          toast.error(message);
           console.error("LiveKit connect error:", err);
           onClose();
         }
