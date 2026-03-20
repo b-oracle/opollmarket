@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
       throw new Error("AIMTELL_SITE_ID is not configured");
     }
 
-    const { title, body, url, segment_id, subscriber_uids, alias } = await req.json();
+    const { title, body, url, segment_id, subscriber_uids, alias, broadcast_all } = await req.json();
 
     if (!title) {
       return new Response(JSON.stringify({ error: "title is required" }), {
@@ -29,8 +29,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (!segment_id && !subscriber_uids && !alias) {
-      return new Response(JSON.stringify({ error: "One of segment_id, subscriber_uids, or alias is required. Create an 'All Subscribers' segment in Aimtell dashboard to broadcast to everyone." }), {
+    // Allow broadcast_all to skip targeting requirement
+    if (!broadcast_all && !segment_id && !subscriber_uids && !alias) {
+      return new Response(JSON.stringify({ error: "One of segment_id, subscriber_uids, alias, or broadcast_all is required." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -46,6 +47,7 @@ Deno.serve(async (req) => {
     if (segment_id) pushPayload.segmentId = segment_id;
     if (subscriber_uids) pushPayload.subscriber_uids = subscriber_uids;
     if (alias) pushPayload.alias = alias;
+    // For broadcast_all, we send without targeting — Aimtell sends to all site subscribers
 
     const response = await fetch("https://api.aimtell.com/prod/push", {
       method: "POST",
