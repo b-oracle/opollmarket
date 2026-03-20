@@ -30,8 +30,12 @@ const rankBadge = (rank: number) => {
 };
 
 const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, valuePositive, statLine, category, totalCount }: RankShareModalProps) => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
+  const [postingToFeed, setPostingToFeed] = useState(false);
+  const [storyCreatorOpen, setStoryCreatorOpen] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
