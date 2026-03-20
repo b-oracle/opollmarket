@@ -201,7 +201,7 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
     ? { gradient: "from-orange-900/30 via-card to-orange-500/10", border: "border-orange-700/50", accent: "#B45309", accentBg: "bg-orange-700/20", ring: "ring-orange-700/30" }
     : { gradient: "from-card via-card to-primary/10", border: "border-border/30", accent: "hsl(var(--primary))", accentBg: "bg-primary/20", ring: "ring-primary/30" };
 
-  if (!open) return null;
+  if (!open && !storyCreatorOpen) return null;
 
   return (
     <>
