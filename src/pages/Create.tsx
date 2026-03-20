@@ -743,6 +743,12 @@ const Create = () => {
   // Submission state
   type SubmitStep = "idle" | "moderating" | "deploying" | "saving" | "success" | "first_prediction" | "placing_prediction" | "error";
   const [submitStep, setSubmitStep] = useState<SubmitStep>("idle");
+  // Reset submitting guard when submission ends (error or idle) so auto-save can resume
+  useEffect(() => {
+    if (submitStep === "error" || submitStep === "idle") {
+      isSubmittingRef.current = false;
+    }
+  }, [submitStep]);
   const [txHash, setTxHash] = useState("");
   const [newMarketId, setNewMarketId] = useState("");
   const [similarMarkets, setSimilarMarkets] = useState<Array<{ id: string; title: string; category: string }>>([]);
