@@ -582,8 +582,12 @@ const Create = () => {
     return urlData.publicUrl;
   };
 
+  const isSubmittingRef = useRef(false);
+
   const saveDraft = useCallback(async (silent = false) => {
     if (!user) { if (!silent) toast.error("Sign in to save drafts"); return; }
+    // Prevent auto-save from running during submission (race condition causes duplicate options)
+    if (silent && isSubmittingRef.current) return;
     if (!silent) setSavingDraft(true);
     try {
       let imageUrl: string | null = imagePreview?.startsWith("blob:") ? null : (imagePreview || null);
@@ -739,6 +743,12 @@ const Create = () => {
   // Submission state
   type SubmitStep = "idle" | "moderating" | "deploying" | "saving" | "success" | "first_prediction" | "placing_prediction" | "error";
   const [submitStep, setSubmitStep] = useState<SubmitStep>("idle");
+  // Reset submitting guard when submission ends (error or idle) so auto-save can resume
+  useEffect(() => {
+    if (submitStep === "error" || submitStep === "idle") {
+      isSubmittingRef.current = false;
+    }
+  }, [submitStep]);
   const [txHash, setTxHash] = useState("");
   const [newMarketId, setNewMarketId] = useState("");
   const [similarMarkets, setSimilarMarkets] = useState<Array<{ id: string; title: string; category: string }>>([]);
@@ -775,7 +785,8 @@ const Create = () => {
   const handleCreateMarket = useCallback(async () => {
     if (!user || !address) return;
 
-    // Stop auto-save to prevent duplicate option inserts during submission
+    // Block auto-save and stop timer to prevent duplicate option inserts during submission
+    isSubmittingRef.current = true;
     if (autoSaveTimerRef.current) {
       clearInterval(autoSaveTimerRef.current);
       autoSaveTimerRef.current = null;
@@ -784,6 +795,7 @@ const Create = () => {
     // Validate cover image (either file upload or AI-generated URL)
     if (!imageFile && !imagePreview) {
       toast.error("A cover image is required to create a market");
+      isSubmittingRef.current = false;
       return;
     }
 
