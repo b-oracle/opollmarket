@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Send, Clock, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useAdminContext } from "../../pages/admin/AdminLayout";
+import { useAdminContext } from "@/pages/admin/AdminLayout";
 import { format } from "date-fns";
 
 interface ScheduledPush {

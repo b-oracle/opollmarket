@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useAdminContext } from "../../pages/admin/AdminLayout";
+import { useAdminContext } from "@/pages/admin/AdminLayout";
 
 interface AimtellSendPushProps {
   externalTitle?: string;

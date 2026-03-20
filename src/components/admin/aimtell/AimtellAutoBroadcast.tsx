@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useAdminContext } from "../../pages/admin/AdminLayout";
+import { useAdminContext } from "@/pages/admin/AdminLayout";
 
 interface AutoBroadcastSetting {
   id: string;
