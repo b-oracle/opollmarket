@@ -82,9 +82,30 @@ Deno.serve(async (req) => {
     const isHost = space.host_id === userId;
     const roomName = `space-${space_id}`;
 
+    const connect = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("livekit-token", {
+          body: { space_id: spaceId },
+        });
+
+        if (error || data?.error) {
+          toast.error(data?.error || "Failed to get voice token");
+          onClose();
+          return;
+        }
+
+        if (cancelled) return;
+
+        setIsHost(data.isHost);
+
+        // Set up event listeners
+        room.on(RoomEvent.ParticipantConnected, () => updateParticipants(room));
+...
     const apiKey = Deno.env.get("LIVEKIT_API_KEY");
     const apiSecret = Deno.env.get("LIVEKIT_API_SECRET");
     const livekitUrl = Deno.env.get("LIVEKIT_URL");
+
+    console.log("LiveKit config check:", { hasApiKey: !!apiKey, hasApiSecret: !!apiSecret, hasUrl: !!livekitUrl });
 
     if (!apiKey || !apiSecret || !livekitUrl) {
       return new Response(JSON.stringify({ error: "LiveKit not configured" }), {
@@ -92,6 +113,8 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    console.log("Generating token for user:", userId, "room:", roomName, "isHost:", isHost);
 
     const at = new AccessToken(apiKey, apiSecret, {
       identity: userId,
@@ -102,12 +125,13 @@ Deno.serve(async (req) => {
     at.addGrant({
       room: roomName,
       roomJoin: true,
-      canPublish: isHost, // only host can speak initially
+      canPublish: isHost,
       canSubscribe: true,
       canPublishData: true,
     });
 
     const accessToken = await at.toJwt();
+    console.log("Token generated successfully, length:", accessToken.length);
 
     return new Response(
       JSON.stringify({
