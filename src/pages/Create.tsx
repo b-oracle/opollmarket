@@ -2960,7 +2960,7 @@ const Create = () => {
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 text-center font-semibold">Share your market</p>
                     <div className="grid grid-cols-2 gap-2">
                       <a
-                        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`I just created a prediction market: "${title}" 🔮\n\nPredict now on OPoll 👇`)}&url=${encodeURIComponent(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-share?id=${newMarketId}`)}`}
+                        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`I just created a prediction market: "${title}" 🔮\n\nPredict now on OPoll 👇`)}&url=${encodeURIComponent(`https://opoll.org/market/${newMarketId}`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-muted/50 border border-border text-xs font-semibold hover:bg-accent/50 transition-colors"
@@ -2969,7 +2969,7 @@ const Create = () => {
                         Post on X
                       </a>
                       <a
-                        href={`https://t.me/share/url?url=${encodeURIComponent(`${window.location.origin}/market/${newMarketId}`)}&text=${encodeURIComponent(`I just created a prediction market: "${title}" 🔮 Predict now on OPoll!`)}`}
+                        href={`https://t.me/share/url?url=${encodeURIComponent(`https://opoll.org/market/${newMarketId}`)}&text=${encodeURIComponent(`I just created a prediction market: "${title}" 🔮 Predict now on OPoll!`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-muted/50 border border-border text-xs font-semibold hover:bg-accent/50 transition-colors"
@@ -2978,7 +2978,7 @@ const Create = () => {
                         Telegram
                       </a>
                       <a
-                        href={`https://wa.me/?text=${encodeURIComponent(`I just created a prediction market: "${title}" 🔮 Predict now on OPoll! ${window.location.origin}/market/${newMarketId}`)}`}
+                        href={`https://wa.me/?text=${encodeURIComponent(`I just created a prediction market: "${title}" 🔮 Predict now on OPoll! https://opoll.org/market/${newMarketId}`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-muted/50 border border-border text-xs font-semibold hover:bg-accent/50 transition-colors"
@@ -2988,7 +2988,7 @@ const Create = () => {
                       </a>
                       <button
                         onClick={() => {
-                          navigator.clipboard.writeText(`${window.location.origin}/market/${newMarketId}`);
+                          navigator.clipboard.writeText(`https://opoll.org/market/${newMarketId}`);
                           toast.success("Link copied!");
                         }}
                         className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-muted/50 border border-border text-xs font-semibold hover:bg-accent/50 transition-colors"
