@@ -22,6 +22,9 @@ const AimtellPushPrompt = () => {
       if (Date.now() - dismissedAt < 7 * 24 * 60 * 60 * 1000) return;
     }
 
+    // Check if Notification API is available
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+
     // Check if already subscribed
     if (Notification.permission === "granted") return;
     if (Notification.permission === "denied") return;
