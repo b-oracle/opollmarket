@@ -15,9 +15,37 @@ const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
   const { user } = useAuth();
   const { isFeatureEnabled } = useFeatureToggles();
 
-  const { data: statuses = [], isLoading } = useQuery({
-    queryKey: ["status-feed", userId || "global", user?.id],
+  // Fetch the social circle (followers + following) for the profile user
+  const { data: socialCircleIds = [] } = useQuery({
+    queryKey: ["social-circle", userId],
     queryFn: async () => {
+      if (!userId) return [];
+      const [{ data: followers }, { data: following }] = await Promise.all([
+        supabase.from("follows").select("follower_id").eq("following_id", userId),
+        supabase.from("follows").select("following_id").eq("follower_id", userId),
+      ]);
+      const ids = new Set<string>();
+      ids.add(userId);
+      (followers || []).forEach((f: any) => ids.add(f.follower_id));
+      (following || []).forEach((f: any) => ids.add(f.following_id));
+      return [...ids];
+    },
+    enabled: !!userId,
+  });
+
+  const { data: statuses = [], isLoading } = useQuery({
+    queryKey: ["status-feed", userId || "global", user?.id, socialCircleIds.length],
+    queryFn: async () => {
+      if (userId && socialCircleIds.length > 0) {
+        const { data } = await supabase
+          .from("status_updates")
+          .select("*")
+          .in("user_id", socialCircleIds.slice(0, 50))
+          .order("created_at", { ascending: false })
+          .limit(50);
+        return data || [];
+      }
+
       if (userId) {
         const { data } = await supabase
           .from("status_updates")
@@ -35,6 +63,7 @@ const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
         .limit(50);
       return data || [];
     },
+    enabled: !userId || socialCircleIds.length > 0,
   });
 
   // Fetch profiles for all status authors
