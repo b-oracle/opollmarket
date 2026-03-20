@@ -2960,7 +2960,7 @@ const Create = () => {
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 text-center font-semibold">Share your market</p>
                     <div className="grid grid-cols-2 gap-2">
                       <a
-                        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`I just created a prediction market: "${title}" 🔮\n\nPredict now on OPoll 👇`)}&url=${encodeURIComponent(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-share?id=${newMarketId}`)}`}
+                        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`I just created a prediction market: "${title}" 🔮\n\nPredict now on OPoll 👇`)}&url=${encodeURIComponent(`https://opoll.org/market/${newMarketId}`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-muted/50 border border-border text-xs font-semibold hover:bg-accent/50 transition-colors"
