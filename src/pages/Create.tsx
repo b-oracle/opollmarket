@@ -904,7 +904,12 @@ const Create = () => {
     const result = typeof deductResult === "string" ? JSON.parse(deductResult) : deductResult;
     if (!result?.success) {
       setSubmitStep("error");
-      toast.error(result?.error || "Insufficient balance for market creation");
+      toast.error(result?.error || "Insufficient balance for market creation", {
+        action: {
+          label: "Deposit Now",
+          onClick: () => setDepositModalOpen(true),
+        },
+      });
       return;
     }
 
@@ -1283,7 +1288,7 @@ const Create = () => {
       toast.error(`Insufficient balance. You need at least $${marketCreationFee} to proceed.`, {
         action: {
           label: "Deposit Now",
-          onClick: () => navigate("/profile"),
+          onClick: () => setDepositModalOpen(true),
         },
       });
       return;
@@ -1666,6 +1671,7 @@ const Create = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        <DepositWithdrawModal open={depositModalOpen} onClose={() => setDepositModalOpen(false)} initialTab="deposit" />
       </div>
     );
   }
