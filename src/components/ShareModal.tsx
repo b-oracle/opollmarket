@@ -104,12 +104,23 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
     ? `${marketUrl}${marketUrl.includes("?") ? "&" : "?"}ref=${user.id}`
     : marketUrl;
 
-  // Clean link for display in share text
+  // Extract market ID from URL
+  const extractedMarketId = marketUrl.split("/market/")[1]?.split("?")[0] || marketId;
+
+  // Clean link for display/copy and non-crawler platforms
   const cleanShareLink = (() => {
-    const marketId = marketUrl.split("/market/")[1]?.split("?")[0];
-    if (!marketId) return referralLink;
-    const base = `https://opoll.org/market/${marketId}`;
+    if (!extractedMarketId) return referralLink;
+    const base = `https://opoll.org/market/${extractedMarketId}`;
     return user ? `${base}?ref=${user.id}` : base;
+  })();
+
+  // OG-aware link for social platforms (crawlers get proper OG tags, users get redirected)
+  const ogShareLink = (() => {
+    if (!extractedMarketId) return cleanShareLink;
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    if (!projectId) return cleanShareLink;
+    const base = `https://${projectId}.supabase.co/functions/v1/og-share?id=${extractedMarketId}`;
+    return user ? `${base}&ref=${user.id}` : base;
   })();
 
 
@@ -205,16 +216,16 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
   };
 
   const handleTwitter = () => {
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`🔥 "${title}" - Make your OPinion count, predict now 👇🏽`)}&url=${encodeURIComponent(cleanShareLink)}`, "_blank");
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`🔥 "${title}" - Make your OPinion count, predict now 👇🏽`)}&url=${encodeURIComponent(ogShareLink)}`, "_blank");
   };
   const handleFacebook = () => {
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(cleanShareLink)}`, "_blank");
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(ogShareLink)}`, "_blank");
   };
   const handleWhatsApp = () => {
-    window.open(`https://wa.me/?text=${encodeURIComponent(`🔥 "${title}" - Make your OPinion count, predict now 👇🏽\n\n${cleanShareLink}`)}`, "_blank");
+    window.open(`https://wa.me/?text=${encodeURIComponent(`🔥 "${title}" - Make your OPinion count, predict now 👇🏽\n\n${ogShareLink}`)}`, "_blank");
   };
   const handleTelegram = () => {
-    window.open(`https://t.me/share/url?url=${encodeURIComponent(cleanShareLink)}&text=${encodeURIComponent(`🔥 "${title}" - Make your OPinion count, predict now 👇🏽`)}`, "_blank");
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(ogShareLink)}&text=${encodeURIComponent(`🔥 "${title}" - Make your OPinion count, predict now 👇🏽`)}`, "_blank");
   };
 
   const handleCopyEmbed = () => {
