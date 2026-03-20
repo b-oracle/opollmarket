@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { AccessToken } from "npm:livekit-server-sdk@2";
+import { AccessToken } from "npm:livekit-server-sdk@2.15.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,6 +29,7 @@ Deno.serve(async (req) => {
 
     const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
     if (userError || !authUser) {
+      console.error("Auth error:", userError?.message);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -58,6 +59,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (spaceErr || !space) {
+      console.error("Space lookup error:", spaceErr?.message);
       return new Response(JSON.stringify({ error: "Space not found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -86,9 +88,11 @@ Deno.serve(async (req) => {
     const apiSecret = Deno.env.get("LIVEKIT_API_SECRET");
     const livekitUrl = Deno.env.get("LIVEKIT_URL");
 
+    console.log("LiveKit config:", { hasKey: !!apiKey, hasSecret: !!apiSecret, hasUrl: !!livekitUrl, userId, roomName, isHost });
+
     if (!apiKey || !apiSecret || !livekitUrl) {
       return new Response(JSON.stringify({ error: "LiveKit not configured" }), {
-        status: 500,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -102,12 +106,13 @@ Deno.serve(async (req) => {
     at.addGrant({
       room: roomName,
       roomJoin: true,
-      canPublish: isHost, // only host can speak initially
+      canPublish: isHost,
       canSubscribe: true,
       canPublishData: true,
     });
 
     const accessToken = await at.toJwt();
+    console.log("Token generated, length:", accessToken.length);
 
     return new Response(
       JSON.stringify({
