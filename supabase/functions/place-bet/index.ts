@@ -66,7 +66,14 @@ Deno.serve(async (req) => {
     }
 
     if (marketCheck.status !== "active") {
-      return new Response(JSON.stringify({ error: "Market is no longer active" }), {
+      const statusMessages: Record<string, string> = {
+        pending: "This market is still awaiting approval. Please wait for it to be reviewed.",
+        ended: "This market has ended and is no longer accepting predictions.",
+        resolved: "This market has already been resolved.",
+        cancelled: "This market has been cancelled.",
+      };
+      const msg = statusMessages[marketCheck.status] || "This market is not currently active.";
+      return new Response(JSON.stringify({ error: msg }), {
         status: 400, headers: corsHeaders,
       });
     }
