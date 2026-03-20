@@ -58,7 +58,11 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle, 
           if (data) setSelectedMarket(data as MarketResult);
         });
     }
-  }, [open, preLinkedMarketId]);
+    // Pre-fill content when opened with preContent (e.g. profile share)
+    if (open && preContent && !content) {
+      setContent(preContent);
+    }
+  }, [open, preLinkedMarketId, preContent]);
 
   if (!user) return null;
 
