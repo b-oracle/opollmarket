@@ -1,9 +1,13 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { X, Download, Copy, Share2, Loader2, Twitter, MessageCircle, Send, Trophy, TrendingUp, Crown, Medal, Award } from "lucide-react";
+import { X, Download, Copy, Share2, Loader2, Twitter, MessageCircle, Send, Trophy, TrendingUp, Crown, Medal, Award, PenSquare, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
+import StoryCreator from "@/components/social/StoryCreator";
 
 interface RankShareModalProps {
   open: boolean;
@@ -26,8 +30,12 @@ const rankBadge = (rank: number) => {
 };
 
 const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, valuePositive, statLine, category, totalCount }: RankShareModalProps) => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
+  const [postingToFeed, setPostingToFeed] = useState(false);
+  const [storyCreatorOpen, setStoryCreatorOpen] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -146,6 +154,31 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
     window.open(`https://t.me/share/url?url=${url}&text=${text}`, "_blank");
   };
 
+  const handlePostToFeed = async () => {
+    if (!user) { toast.error("Sign in to post to feed"); return; }
+    setPostingToFeed(true);
+    try {
+      const { error } = await supabase.from("status_updates").insert({
+        user_id: user.id,
+        content: shareText,
+      });
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["status-feed"] });
+      toast.success("Posted to feed!");
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to post");
+    } finally {
+      setPostingToFeed(false);
+    }
+  };
+
+  const handleShareToStory = () => {
+    if (!user) { toast.error("Sign in to share to story"); return; }
+    onOpenChange(false);
+    setTimeout(() => setStoryCreatorOpen(true), 300);
+  };
+
   const topPercent = Math.round((rank / totalCount) * 100);
 
   const rankTheme = rank === 1
@@ -240,6 +273,12 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
 
             {/* Action buttons */}
             <div className="px-4 pb-3 grid grid-cols-3 gap-2">
+              <button onClick={handlePostToFeed} disabled={postingToFeed} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary/10 border border-primary/20 text-xs font-semibold hover:bg-primary/20 transition-colors disabled:opacity-50 text-primary">
+                {postingToFeed ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PenSquare className="w-3.5 h-3.5" />} Feed
+              </button>
+              <button onClick={handleShareToStory} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary/10 border border-primary/20 text-xs font-semibold hover:bg-primary/20 transition-colors text-primary">
+                <BookOpen className="w-3.5 h-3.5" /> Story
+              </button>
               <button onClick={handleCopy} disabled={capturing} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors disabled:opacity-50">
                 <Copy className="w-3.5 h-3.5" /> Copy
               </button>
@@ -272,6 +311,13 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
           )}
         </div>
       </div>
+
+      {/* Story creator */}
+      <StoryCreator
+        open={storyCreatorOpen}
+        onClose={() => setStoryCreatorOpen(false)}
+        preContent={shareText}
+      />
     </>
   );
 };
