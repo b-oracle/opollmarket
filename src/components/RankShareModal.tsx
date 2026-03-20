@@ -1,9 +1,13 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { X, Download, Copy, Share2, Loader2, Twitter, MessageCircle, Send, Trophy, TrendingUp, Crown, Medal, Award } from "lucide-react";
+import { X, Download, Copy, Share2, Loader2, Twitter, MessageCircle, Send, Trophy, TrendingUp, Crown, Medal, Award, PenSquare, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
+import StoryCreator from "@/components/social/StoryCreator";
 
 interface RankShareModalProps {
   open: boolean;
