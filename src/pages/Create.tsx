@@ -779,7 +779,8 @@ const Create = () => {
   const handleCreateMarket = useCallback(async () => {
     if (!user || !address) return;
 
-    // Stop auto-save to prevent duplicate option inserts during submission
+    // Block auto-save and stop timer to prevent duplicate option inserts during submission
+    isSubmittingRef.current = true;
     if (autoSaveTimerRef.current) {
       clearInterval(autoSaveTimerRef.current);
       autoSaveTimerRef.current = null;
