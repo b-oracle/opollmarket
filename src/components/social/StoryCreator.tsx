@@ -29,7 +29,7 @@ interface MarketResult {
   no_price: number;
 }
 
-const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle }: StoryCreatorProps) => {
+const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle, preContent }: StoryCreatorProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [content, setContent] = useState("");
