@@ -311,6 +311,13 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
           )}
         </div>
       </div>
+
+      {/* Story creator */}
+      <StoryCreator
+        open={storyCreatorOpen}
+        onClose={() => setStoryCreatorOpen(false)}
+        preContent={shareText}
+      />
     </>
   );
 };
