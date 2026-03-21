@@ -81,6 +81,9 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
 
   const [selectedTier, setSelectedTier] = useState<BoostTier | null>(null);
   const [broadcastSelected, setBroadcastSelected] = useState(false);
+  const [socialAdSelected, setSocialAdSelected] = useState(false);
+  const [adHeadline, setAdHeadline] = useState("");
+  const [adVideoUrl, setAdVideoUrl] = useState("");
   const [step, setStep] = useState<Step>("select");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);

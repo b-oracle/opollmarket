@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import StatusCard from "./StatusCard";
 import StatusComposer from "./StatusComposer";
+import SocialAdCard from "./SocialAdCard";
 import { Loader2, FileText } from "lucide-react";
 import { useMemo } from "react";
 
@@ -13,10 +14,11 @@ interface StatusFeedProps {
 }
 
 interface FeedItem {
-  type: "original" | "repost";
+  type: "original" | "repost" | "ad";
   status: any;
   sortTime: string;
   reposterId?: string;
+  ad?: any;
 }
 
 const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
@@ -91,6 +93,22 @@ const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
     enabled: !userId || socialCircleIds.length > 0,
   });
 
+  // Fetch active social ads
+  const { data: socialAds = [] } = useQuery({
+    queryKey: ["social-ads-feed"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("social_ads")
+        .select("id, market_id, headline, video_url, impressions, clicks")
+        .eq("status", "active")
+        .gte("ends_at", new Date().toISOString())
+        .order("created_at", { ascending: false })
+        .limit(10);
+      return data || [];
+    },
+    staleTime: 60_000,
+  });
+
   // Fetch the actual statuses for reposts that aren't already in the feed
   const repostStatusIds = reposts
     .map((r: any) => r.status_id)
@@ -139,14 +157,31 @@ const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
     });
 
     items.sort((a, b) => new Date(b.sortTime).getTime() - new Date(a.sortTime).getTime());
-    return items.slice(0, 80);
-  }, [statuses, reposts, allStatuses]);
+    
+    // Inject social ads every 5 posts
+    const withAds = [...items.slice(0, 80)];
+    if (socialAds.length > 0) {
+      socialAds.forEach((ad: any, adIdx: number) => {
+        const insertAt = (adIdx + 1) * 5;
+        if (insertAt <= withAds.length) {
+          withAds.splice(insertAt, 0, {
+            type: "ad" as const,
+            status: null,
+            sortTime: "",
+            ad,
+          });
+        }
+      });
+    }
+
+    return withAds;
+  }, [statuses, reposts, allStatuses, socialAds]);
 
   // Fetch profiles for all authors + reposters
   const allUserIds = useMemo(() => {
     const ids = new Set<string>();
     feedItems.forEach((item) => {
-      ids.add(item.status.user_id);
+      if (item.status) ids.add(item.status.user_id);
       if (item.reposterId) ids.add(item.reposterId);
     });
     return [...ids];
@@ -165,8 +200,16 @@ const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
     enabled: allUserIds.length > 0,
   });
 
-  // Fetch market data for statuses that have a market_id
-  const marketIds = [...new Set(feedItems.filter((i) => i.status.market_id).map((i) => i.status.market_id))];
+  // Fetch market data for statuses that have a market_id + social ads
+  const marketIds = useMemo(() => {
+    const ids = new Set<string>();
+    feedItems.forEach((i) => {
+      if (i.status?.market_id) ids.add(i.status.market_id);
+      if (i.ad?.market_id) ids.add(i.ad.market_id);
+    });
+    return [...ids];
+  }, [feedItems]);
+
   const { data: marketMap = new Map() } = useQuery({
     queryKey: ["status-markets", marketIds.join(",")],
     queryFn: async () => {
@@ -201,6 +244,17 @@ const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
         </div>
       ) : (
         feedItems.map((item, i) => {
+          if (item.type === "ad" && item.ad) {
+            return (
+              <SocialAdCard
+                key={`ad-${item.ad.id}`}
+                ad={item.ad}
+                market={(marketMap as Map<string, any>).get(item.ad.market_id)}
+                index={i}
+              />
+            );
+          }
+
           const reposterProfile = item.reposterId
             ? (profileMap as Map<string, any>).get(item.reposterId)
             : null;
