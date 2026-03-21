@@ -249,6 +249,19 @@ const SocialTutorialTrigger = () => {
   );
 };
 
+const GlobalSpaceRoom = () => {
+  const { activeSpace, leaveSpace } = useActiveSpace();
+  if (!activeSpace) return null;
+  return (
+    <SpaceRoom
+      spaceId={activeSpace.id}
+      spaceTitle={activeSpace.title}
+      hostId={activeSpace.hostId}
+      onClose={leaveSpace}
+    />
+  );
+};
+
 const App = () => (
   <ErrorBoundary>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
