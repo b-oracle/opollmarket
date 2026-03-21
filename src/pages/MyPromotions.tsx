@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { Loader2, Zap, Megaphone, Eye, MousePointerClick, BarChart3, ArrowLeft, Timer, Crown, Flame, Radio } from "lucide-react";
-import { format, formatDistanceToNow, isPast } from "date-fns";
+import { format, formatDistanceToNow, isPast, differenceInHours } from "date-fns";
 import BoostCountdown from "@/components/BoostCountdown";
 
 type TabKey = "boosts" | "social_ads" | "broadcasts";
@@ -14,9 +14,29 @@ type TabKey = "boosts" | "social_ads" | "broadcasts";
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
   active: "bg-green-500/10 text-green-500 border-green-500/20",
+  sent: "bg-green-500/10 text-green-500 border-green-500/20",
   cancelled: "bg-destructive/10 text-destructive border-destructive/20",
   expired: "bg-muted text-muted-foreground border-border",
+  payment_expired: "bg-orange-500/10 text-orange-500 border-orange-500/20",
 };
+
+function getResolvedBroadcastStatus(bc: any): { display: string; key: string } {
+  if (bc.status === "sent" || bc.status === "active") return { display: "Sent", key: "sent" };
+  if (bc.status === "expired") {
+    return (bc.tx_hash || bc.nowpayments_payment_id)
+      ? { display: "Sent", key: "sent" }
+      : { display: "Payment Expired", key: "payment_expired" };
+  }
+  if (bc.status === "pending") {
+    if (differenceInHours(new Date(), new Date(bc.created_at)) >= 2) {
+      return { display: "Payment Expired", key: "payment_expired" };
+    }
+    return { display: "Pending Payment", key: "pending" };
+  }
+  return { display: bc.status, key: bc.status };
+}
+
+type BroadcastFilter = "all" | "sent" | "pending" | "payment_expired";
 
 const tierIcons: Record<string, typeof Zap> = { flash: Zap, standard: Flame, whale: Crown };
 
