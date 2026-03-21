@@ -270,6 +270,16 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
         </div>
       </div>
     </motion.div>
+
+    <SpaceShareSheet
+      open={shareOpen}
+      onClose={() => setShareOpen(false)}
+      spaceId={space.id}
+      spaceTitle={space.title}
+      hostName={hostName}
+      isLive={isLive}
+    />
+    </>
   );
 };
 
