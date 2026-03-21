@@ -480,9 +480,100 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
   };
 
+  const startClientRecording = async () => {
+    try {
+      setRecordingLoading(true);
+      const room = roomRef.current;
+      if (!room) throw new Error("Not connected");
+
+      const ctx = new AudioContext();
+      audioContextRef.current = ctx;
+      const destination = ctx.createMediaStreamDestination();
+
+      // Mix local mic if unmuted
+      room.localParticipant.audioTrackPublications.forEach((pub) => {
+        if (pub.track?.mediaStream) {
+          const src = ctx.createMediaStreamSource(pub.track.mediaStream);
+          src.connect(destination);
+        }
+      });
+
+      // Mix all remote audio
+      audioElementsRef.current.forEach((el) => {
+        if (el.srcObject instanceof MediaStream) {
+          const src = ctx.createMediaStreamSource(el.srcObject);
+          src.connect(destination);
+        }
+      });
+
+      recordedChunksRef.current = [];
+      const recorder = new MediaRecorder(destination.stream, {
+        mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+          ? "audio/webm;codecs=opus"
+          : "audio/webm",
+      });
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) recordedChunksRef.current.push(e.data);
+      };
+      recorder.start(1000); // collect chunks every second
+      mediaRecorderRef.current = recorder;
+      setRecording(true);
+      toast.success("Recording started 🔴");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to start recording");
+    } finally {
+      setRecordingLoading(false);
+    }
+  };
+
+  const stopClientRecording = async () => {
+    try {
+      setRecordingLoading(true);
+      const recorder = mediaRecorderRef.current;
+      if (!recorder || recorder.state === "inactive") return;
+
+      await new Promise<void>((resolve) => {
+        recorder.onstop = () => resolve();
+        recorder.stop();
+      });
+
+      audioContextRef.current?.close();
+      audioContextRef.current = null;
+      mediaRecorderRef.current = null;
+
+      const blob = new Blob(recordedChunksRef.current, { type: "audio/webm" });
+      recordedChunksRef.current = [];
+
+      if (blob.size < 1000) {
+        toast.error("Recording too short");
+        setRecording(false);
+        setRecordingLoading(false);
+        return;
+      }
+
+      // Upload to storage
+      const fileName = `${user!.id}/space-${spaceId}-${Date.now()}.webm`;
+      const { error: uploadErr } = await supabase.storage
+        .from("space-recordings")
+        .upload(fileName, blob, { contentType: "audio/webm" });
+
+      if (uploadErr) throw uploadErr;
+
+      // Mark space as recorded
+      await supabase.from("spaces").update({ is_recorded: true }).eq("id", spaceId);
+
+      toast.success("Recording saved ✅");
+      setRecording(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save recording");
+    } finally {
+      setRecordingLoading(false);
+    }
+  };
+
   const toggleRecording = () => {
-    setRecordingLoading(true);
-    invokeAction(recording ? "stop_recording" : "start_recording");
+    if (recording) stopClientRecording();
+    else startClientRecording();
   };
 
   const speakers = participants.filter((p) => p.audioTrack || p.canPublish || p.identity === hostId);
