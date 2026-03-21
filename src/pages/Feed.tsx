@@ -13,7 +13,7 @@ import { Loader2, TrendingUp, Users, Clock, Heart, MessageCircle, Zap, Flame, Ex
 import { motion } from "framer-motion";
 import useAnalytics from "@/hooks/useAnalytics";
 import CategoryIcon from "@/components/CategoryIcon";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState as useStateHook, useEffect as useEffectHook } from "react";
 import { useBookmarkedMarkets } from "@/hooks/useBookmarkedMarkets";
