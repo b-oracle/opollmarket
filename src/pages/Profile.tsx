@@ -18,15 +18,18 @@ import { bsc } from "wagmi/chains";
 import {
   Wallet, Gift, ArrowDownToLine, ArrowUpFromLine, ArrowUpRight, ArrowDownLeft,
   Repeat, LogIn, Send, MessageCircle, ExternalLink, ChevronRight, ChevronDown,
-  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image, BarChart3, Globe, EyeOff, Users, Sparkles, Zap, ArrowUp, ArrowDown, DollarSign, Bell, Check,
+  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image, BarChart3, Globe, EyeOff, Users, Sparkles, Zap, ArrowUp, ArrowDown, DollarSign, Bell, Check, CalendarIcon,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import NftBadge, { isNftAvatar } from "@/components/NftBadge";
 import { AnimatePresence, motion } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 
 import CopyTradeStats from "@/components/CopyTradeStats";
-import PersonalInfoSection from "@/components/PersonalInfoSection";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 
 type TxType = "buy" | "sell" | "deposit" | "withdraw" | "withdrawal" | "commission" | "payout" | "refund" | "initial_liquidity" | "qt_one_sided_bonus";
@@ -714,7 +717,7 @@ const Profile = () => {
   const [selectedNftUrl, setSelectedNftUrl] = useState<string | null>(null);
   const [editBio, setEditBio] = useState("");
   const [editIsPublic, setEditIsPublic] = useState(true);
-  const [editAge, setEditAge] = useState("");
+  const [editDob, setEditDob] = useState<Date | undefined>(undefined);
   const [editGender, setEditGender] = useState("");
   const [editLocation, setEditLocation] = useState("");
   const [editInterests, setEditInterests] = useState<string[]>([]);
@@ -1137,7 +1140,7 @@ const Profile = () => {
                 setEditName(profile?.display_name || authDisplayName);
                 setEditBio((profile as any)?.bio || "");
                 setEditIsPublic((profile as any)?.is_public ?? true);
-                setEditAge((profile as any)?.age?.toString() || "");
+                setEditDob((profile as any)?.date_of_birth ? new Date((profile as any).date_of_birth) : (profile as any)?.age ? new Date(new Date().getFullYear() - (profile as any).age, 0, 1) : undefined);
                 setEditGender((profile as any)?.gender || "");
                 setEditLocation((profile as any)?.location || "");
                 setEditInterests((profile as any)?.interests || []);
@@ -1299,18 +1302,37 @@ const Profile = () => {
                       <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Personal Info</h4>
                       <span className="text-[9px] text-muted-foreground/60 px-1.5 py-0.5 rounded bg-muted/50">Private</span>
                     </div>
-                    {/* Age */}
+                    {/* Date of Birth */}
                     <div className="space-y-1.5 mb-3">
-                      <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">Age</label>
-                      <input
-                        type="number"
-                        value={editAge}
-                        onChange={(e) => setEditAge(e.target.value)}
-                        placeholder="Your age"
-                        min={13}
-                        max={120}
-                        className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted/30 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-                      />
+                      <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">Date of Birth</label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className={cn(
+                              "w-full px-3 py-2.5 rounded-lg border border-border bg-muted/30 text-sm text-left focus:outline-none focus:ring-1 focus:ring-primary/50 flex items-center gap-2",
+                              !editDob && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="w-4 h-4" />
+                            {editDob ? format(editDob, "PPP") : "Select your date of birth"}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 z-[60]" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={editDob}
+                            onSelect={setEditDob}
+                            disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                            defaultMonth={editDob || new Date(2000, 0)}
+                            captionLayout="dropdown-buttons"
+                            fromYear={1920}
+                            toYear={new Date().getFullYear()}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     {/* Gender */}
                     <div className="space-y-1.5 mb-3">
@@ -1435,12 +1457,16 @@ const Profile = () => {
                             }
                           }
 
-                          // Validate age
-                          const ageNum = editAge ? parseInt(editAge, 10) : null;
-                          if (editAge && (isNaN(ageNum!) || ageNum! < 13 || ageNum! > 120)) {
-                            toast.error("Please enter a valid age (13–120)");
-                            setSavingProfile(false);
-                            return;
+                          // Validate DOB - must be at least 13 years old
+                          if (editDob) {
+                            const ageDiff = new Date().getFullYear() - editDob.getFullYear();
+                            const monthDiff = new Date().getMonth() - editDob.getMonth();
+                            const calculatedAge = monthDiff < 0 || (monthDiff === 0 && new Date().getDate() < editDob.getDate()) ? ageDiff - 1 : ageDiff;
+                            if (calculatedAge < 13) {
+                              toast.error("You must be at least 13 years old");
+                              setSavingProfile(false);
+                              return;
+                            }
                           }
 
                           // Update profile table first (more reliable)
@@ -1448,7 +1474,8 @@ const Profile = () => {
                             display_name: editName.trim(),
                             bio: editBio.trim(),
                             is_public: editIsPublic,
-                            age: ageNum,
+                            date_of_birth: editDob ? editDob.toISOString().split("T")[0] : null,
+                            age: editDob ? Math.floor((Date.now() - editDob.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null,
                             gender: editGender || null,
                             location: editLocation.trim().slice(0, 100) || null,
                             interests: editInterests,
