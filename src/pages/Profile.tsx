@@ -1357,14 +1357,7 @@ const Profile = () => {
                     {/* Location */}
                     <div className="space-y-1.5 mb-3">
                       <label className="text-xs font-medium text-muted-foreground">Location</label>
-                      <input
-                        type="text"
-                        value={editLocation}
-                        onChange={(e) => setEditLocation(e.target.value)}
-                        placeholder="City, Country"
-                        maxLength={100}
-                        className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted/30 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-                      />
+                      <LocationPicker value={editLocation} onChange={setEditLocation} />
                     </div>
                     {/* Interests */}
                     <div className="space-y-1.5">
