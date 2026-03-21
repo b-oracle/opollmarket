@@ -31,7 +31,7 @@ import { format } from "date-fns";
 
 import CopyTradeStats from "@/components/CopyTradeStats";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
-import LocationPicker from "@/components/LocationPicker";
+import LocationAutocomplete from "@/components/LocationAutocomplete";
 
 type TxType = "buy" | "sell" | "deposit" | "withdraw" | "withdrawal" | "commission" | "payout" | "refund" | "initial_liquidity" | "qt_one_sided_bonus";
 
@@ -1358,7 +1358,7 @@ const Profile = () => {
                     {/* Location */}
                     <div className="space-y-1.5 mb-3">
                       <label className="text-xs font-medium text-muted-foreground">Location</label>
-                      <LocationPicker value={editLocation} onChange={setEditLocation} />
+                      <LocationAutocomplete value={editLocation} onChange={setEditLocation} />
                     </div>
                     {/* Interests */}
                     <div className="space-y-1.5">
