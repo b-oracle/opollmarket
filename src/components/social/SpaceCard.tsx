@@ -29,6 +29,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
   const queryClient = useQueryClient();
   const [joining, setJoining] = useState(false);
   const [togglingReminder, setTogglingReminder] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const { data: isParticipant = false } = useQuery({
     queryKey: ["space-participant", space.id, user?.id],
