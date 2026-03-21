@@ -714,7 +714,7 @@ const Profile = () => {
   const [selectedNftUrl, setSelectedNftUrl] = useState<string | null>(null);
   const [editBio, setEditBio] = useState("");
   const [editIsPublic, setEditIsPublic] = useState(true);
-  const [editAge, setEditAge] = useState("");
+  const [editDob, setEditDob] = useState<Date | undefined>(undefined);
   const [editGender, setEditGender] = useState("");
   const [editLocation, setEditLocation] = useState("");
   const [editInterests, setEditInterests] = useState<string[]>([]);
