@@ -172,8 +172,8 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
     }
   }, [open]);
 
-  const totalPrice = (selectedTier?.price || 0) + (broadcastSelected ? BROADCAST_PRICE : 0);
-  const hasSelection = selectedTier || broadcastSelected;
+  const totalPrice = (selectedTier?.price || 0) + (broadcastSelected ? BROADCAST_PRICE : 0) + (socialAdSelected ? SOCIAL_AD_PRICE : 0);
+  const hasSelection = selectedTier || broadcastSelected || socialAdSelected;
 
   // Balance breakdown calculation
   const bonusDeduct = Math.min(bonusBalance, totalPrice);
