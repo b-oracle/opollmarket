@@ -9,6 +9,9 @@ import { formatDistanceToNow } from "date-fns";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { toast } from "sonner";
 import StatusComments from "./StatusComments";
+import LiveAvatarBadge from "./LiveAvatarBadge";
+import { useLiveSpaceUsers, useLiveSpaceForUser } from "@/hooks/useLiveSpaceUsers";
+import { useActiveSpace } from "@/hooks/useActiveSpace";
 
 /** Detect URLs in text and return array of text/link segments */
 const URL_REGEX = /(https?:\/\/[^\s]+)/g;
@@ -117,6 +120,10 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
   const [likeLoading, setLikeLoading] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [repostLoading, setRepostLoading] = useState(false);
+  const liveUserIds = useLiveSpaceUsers();
+  const liveSpace = useLiveSpaceForUser(liveUserIds.has(status.user_id) ? status.user_id : undefined);
+  const { joinSpace } = useActiveSpace();
+  const isUserLive = liveUserIds.has(status.user_id);
 
   const { data: isLiked = false } = useQuery({
     queryKey: ["status-liked", status.id, user?.id],
@@ -222,9 +229,17 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
       {/* Header */}
       <div className="flex items-center gap-2.5">
         <div
-          className="w-9 h-9 rounded-full bg-primary/20 border border-primary/30 overflow-hidden flex items-center justify-center shrink-0 cursor-pointer"
-          onClick={() => navigate(`/user/${status.user_id}`)}
+          className={`relative w-9 h-9 rounded-full bg-primary/20 border ${isUserLive ? "border-destructive" : "border-primary/30"} overflow-hidden flex items-center justify-center shrink-0 cursor-pointer`}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isUserLive && liveSpace) {
+              joinSpace({ id: liveSpace.spaceId, title: liveSpace.title, hostId: liveSpace.hostId });
+            } else {
+              navigate(`/user/${status.user_id}`);
+            }
+          }}
         >
+          <LiveAvatarBadge isLive={isUserLive} />
           {profile?.avatar_url ? (
             <img src={profile.avatar_url} alt={name} className="w-full h-full object-cover" />
           ) : (

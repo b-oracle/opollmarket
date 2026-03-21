@@ -3,9 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Radio, Headphones, LogIn, LogOut, Loader2, Bell, BellOff, Calendar, Clock } from "lucide-react";
+import { Radio, Headphones, LogIn, LogOut, Loader2, Bell, BellOff, Calendar, Clock, Share2 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { useState } from "react";
+import SpaceShareSheet from "./SpaceShareSheet";
 
 interface SpaceCardProps {
   space: {
@@ -28,6 +29,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
   const queryClient = useQueryClient();
   const [joining, setJoining] = useState(false);
   const [togglingReminder, setTogglingReminder] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const { data: isParticipant = false } = useQuery({
     queryKey: ["space-participant", space.id, user?.id],
@@ -134,6 +136,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
   const isScheduled = space.status === "scheduled";
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
@@ -194,6 +197,13 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
           )}
         </div>
         <div className="flex items-center gap-2">
+          {/* Share button - always visible */}
+          <button
+            onClick={(e) => { e.stopPropagation(); setShareOpen(true); }}
+            className="px-2.5 py-1.5 rounded-lg bg-muted text-muted-foreground hover:text-foreground text-[10px] font-semibold flex items-center gap-1 transition-colors"
+          >
+            <Share2 className="w-3 h-3" />
+          </button>
           {isScheduled && (
             <button
               onClick={handleToggleReminder}
@@ -261,6 +271,16 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
         </div>
       </div>
     </motion.div>
+
+    <SpaceShareSheet
+      open={shareOpen}
+      onClose={() => setShareOpen(false)}
+      spaceId={space.id}
+      spaceTitle={space.title}
+      hostName={hostName}
+      isLive={isLive}
+    />
+    </>
   );
 };
 

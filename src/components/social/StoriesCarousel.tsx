@@ -6,6 +6,9 @@ import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { Plus } from "lucide-react";
 import StoryCreator from "./StoryCreator";
 import StoryViewer from "./StoryViewer";
+import LiveAvatarBadge from "./LiveAvatarBadge";
+import { useLiveSpaceUsers, useLiveSpaceForUser } from "@/hooks/useLiveSpaceUsers";
+import { useActiveSpace } from "@/hooks/useActiveSpace";
 
 interface StoryGroup {
   userId: string;
@@ -14,12 +17,56 @@ interface StoryGroup {
   hasUnviewed: boolean;
 }
 
+// Sub-component for story bubbles with live badge (needs its own hook call)
+const StoryBubble = ({ group, name, isLive, onView, onJoinSpace }: {
+  group: StoryGroup; name: string; isLive: boolean;
+  onView: () => void;
+  onJoinSpace: (space: { id: string; title: string; hostId: string }) => void;
+}) => {
+  const liveSpace = useLiveSpaceForUser(isLive ? group.userId : undefined);
+  return (
+    <button
+      onClick={() => {
+        if (isLive && liveSpace) {
+          onJoinSpace({ id: liveSpace.spaceId, title: liveSpace.title, hostId: liveSpace.hostId });
+        } else {
+          onView();
+        }
+      }}
+      className="flex flex-col items-center gap-1 shrink-0"
+    >
+      <div className={`relative w-14 h-14 overflow-visible ${
+        isLive
+          ? "ring-2 ring-destructive rounded-full"
+          : group.hasUnviewed
+          ? "ring-2 ring-primary rounded-full"
+          : "ring-2 ring-muted-foreground/20 rounded-full"
+      }`}>
+        <LiveAvatarBadge isLive={isLive} size="md" />
+        <div className="w-full h-full rounded-full overflow-hidden">
+          {group.profile?.avatar_url ? (
+            <img src={group.profile.avatar_url} alt={name} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-primary/20 flex items-center justify-center">
+              <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
+            </div>
+          )}
+        </div>
+      </div>
+      <span className={`text-[9px] font-medium truncate max-w-[56px] ${isLive ? "text-destructive" : "text-muted-foreground"}`}>
+        {isLive ? "LIVE" : name.split(" ")[0]}
+      </span>
+    </button>
+  );
+};
+
 const StoriesCarousel = () => {
   const { user } = useAuth();
   const { isFeatureEnabled } = useFeatureToggles();
   const [creatorOpen, setCreatorOpen] = useState(false);
   const [viewerData, setViewerData] = useState<{ group: StoryGroup; index: number } | null>(null);
-
+  const liveUserIds = useLiveSpaceUsers();
+  const { joinSpace } = useActiveSpace();
 
   // Fetch all active stories filtered by follow connections
   const { data: storyGroups = [] } = useQuery({
@@ -139,29 +186,16 @@ const StoriesCarousel = () => {
           .filter((g) => g.userId !== user?.id)
           .map((group) => {
             const name = group.profile?.display_name || "Anonymous";
+            const isLive = liveUserIds.has(group.userId);
             return (
-              <button
+              <StoryBubble
                 key={group.userId}
-                onClick={() => setViewerData({ group, index: 0 })}
-                className="flex flex-col items-center gap-1 shrink-0"
-              >
-                <div className={`w-14 h-14 rounded-full overflow-hidden ${
-                  group.hasUnviewed
-                    ? "ring-2 ring-primary"
-                    : "ring-2 ring-muted-foreground/20"
-                }`}>
-                  {group.profile?.avatar_url ? (
-                    <img src={group.profile.avatar_url} alt={name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-primary/20 flex items-center justify-center">
-                      <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
-                    </div>
-                  )}
-                </div>
-                <span className="text-[9px] font-medium text-muted-foreground truncate max-w-[56px]">
-                  {name.split(" ")[0]}
-                </span>
-              </button>
+                group={group}
+                name={name}
+                isLive={isLive}
+                onView={() => setViewerData({ group, index: 0 })}
+                onJoinSpace={joinSpace}
+              />
             );
           })}
       </div>
