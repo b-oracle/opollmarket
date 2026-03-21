@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Trash2, Eye } from "lucide-react";
+import { X, Trash2, Eye, Heart } from "lucide-react";
 import StoryContentRenderer from "./StoryContentRenderer";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -80,6 +80,45 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
     enabled: !!story && isOwnStory,
     refetchInterval: 10000,
   });
+
+  // Fetch like count for current story
+  const { data: likeCount = 0 } = useQuery({
+    queryKey: ["story-like-count", story?.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("story_likes" as any)
+        .select("*", { count: "exact", head: true })
+        .eq("story_id", story!.id);
+      return count || 0;
+    },
+    enabled: !!story,
+  });
+
+  // Check if current user liked this story
+  const { data: hasLiked = false } = useQuery({
+    queryKey: ["story-liked", story?.id, user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("story_likes" as any)
+        .select("id")
+        .eq("story_id", story!.id)
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!story && !!user,
+  });
+
+  const handleLike = async () => {
+    if (!user || !story) { toast.error("Sign in to like"); return; }
+    if (hasLiked) {
+      await supabase.from("story_likes" as any).delete().eq("story_id", story.id).eq("user_id", user.id);
+    } else {
+      await supabase.from("story_likes" as any).insert({ story_id: story.id, user_id: user.id } as any);
+    }
+    queryClient.invalidateQueries({ queryKey: ["story-like-count", story.id] });
+    queryClient.invalidateQueries({ queryKey: ["story-liked", story.id, user.id] });
+  };
 
   // Record view
   useEffect(() => {
@@ -269,6 +308,35 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
             </div>
             <span className="text-white/50 text-[9px] shrink-0">View →</span>
           </button>
+        )}
+
+        {/* Like button */}
+        {!isOwnStory && (
+          <button
+            onClick={(e) => { e.stopPropagation(); handleLike(); }}
+            className="absolute right-4 z-20 flex flex-col items-center gap-1"
+            style={{ bottom: market ? '6rem' : '2rem' }}
+          >
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${hasLiked ? 'bg-red-500/20' : 'bg-white/10'}`}>
+              <Heart className={`w-5 h-5 transition-all ${hasLiked ? 'fill-red-500 text-red-500 scale-110' : 'text-white'}`} />
+            </div>
+            {(likeCount as number) > 0 && (
+              <span className="text-white text-[10px] font-semibold">{likeCount}</span>
+            )}
+          </button>
+        )}
+
+        {/* Like count for own stories */}
+        {isOwnStory && (likeCount as number) > 0 && (
+          <div
+            className="absolute right-4 z-20 flex flex-col items-center gap-1"
+            style={{ bottom: market ? '6rem' : '2rem' }}
+          >
+            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+              <Heart className="w-5 h-5 text-red-500 fill-red-500" />
+            </div>
+            <span className="text-white text-[10px] font-semibold">{likeCount}</span>
+          </div>
         )}
 
         {/* Tap zones */}
