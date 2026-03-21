@@ -6,7 +6,7 @@ import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
 import SpaceCard from "./SpaceCard";
 import CreateSpaceModal from "./CreateSpaceModal";
-import { Radio, Loader2 } from "lucide-react";
+import { Radio, Loader2, Users } from "lucide-react";
 import { motion } from "framer-motion";
 
 const SpacesFeed = () => {
@@ -17,16 +17,18 @@ const SpacesFeed = () => {
   const [createOpen, setCreateOpen] = useState(false);
 
   const { data: spaces = [], isLoading } = useQuery({
-    queryKey: ["spaces"],
+    queryKey: ["spaces", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("spaces")
-        .select("*")
-        .in("status", ["live", "scheduled"])
-        .order("started_at", { ascending: false })
-        .limit(30);
-      return data || [];
+      if (!user) {
+        // Unauthenticated users see nothing
+        return [];
+      }
+      const { data } = await supabase.rpc("get_visible_spaces" as any, {
+        _user_id: user.id,
+      });
+      return (data as any[]) || [];
     },
+    enabled: !!user,
     refetchInterval: 10000,
   });
 
@@ -85,15 +87,18 @@ const SpacesFeed = () => {
           <div className="text-left">
             <p className="text-sm font-semibold">Start a Space</p>
             <p className="text-[10px] text-muted-foreground">Go live or schedule for later</p>
+            <p className="text-[9px] text-muted-foreground/60 mt-0.5">
+              Visible only to people you follow and people who follow you.
+            </p>
           </div>
         </motion.button>
       )}
 
       {liveSpaces.length === 0 && scheduledSpaces.length === 0 ? (
         <div className="flex flex-col items-center py-12">
-          <Radio className="w-8 h-8 text-muted-foreground mb-2" />
-          <p className="text-sm text-muted-foreground">No live spaces right now</p>
-          <p className="text-[10px] text-muted-foreground mt-1">Be the first to start one!</p>
+          <Users className="w-8 h-8 text-muted-foreground mb-2" />
+          <p className="text-sm text-muted-foreground">No Spaces from your network yet</p>
+          <p className="text-[10px] text-muted-foreground mt-1">Follow more people or invite your community to start a Space.</p>
         </div>
       ) : (
         <>
