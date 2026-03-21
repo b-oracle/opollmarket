@@ -282,28 +282,56 @@ const MyPromotions = () => {
 
             {/* Broadcasts Tab */}
             {tab === "broadcasts" && (
-              <div className="space-y-2">
-                {broadcasts.length === 0 ? (
+              <div className="space-y-3">
+                {/* Broadcast Filters */}
+                <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 overflow-x-auto">
+                  {([
+                    { key: "all" as BroadcastFilter, label: "All", count: broadcastStats.total },
+                    { key: "sent" as BroadcastFilter, label: "Sent", count: broadcastStats.sent },
+                    { key: "pending" as BroadcastFilter, label: "Pending", count: broadcastStats.pending },
+                    { key: "payment_expired" as BroadcastFilter, label: "Expired", count: broadcastStats.paymentExpired },
+                  ]).map((f) => (
+                    <button
+                      key={f.key}
+                      onClick={() => setBcFilter(f.key)}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                        bcFilter === f.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {f.label}
+                      {f.count > 0 && (
+                        <span className={`ml-1.5 text-[10px] font-bold ${bcFilter === f.key ? "text-primary" : "text-muted-foreground"}`}>
+                          {f.count}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {filteredBroadcasts.length === 0 ? (
                   <EmptyState icon={Megaphone} label="No broadcasts yet" description="Send a broadcast alert to notify all users about a market" />
-                ) : broadcasts.map((bc: any) => (
-                  <div key={bc.id} className="bg-card border border-border rounded-xl p-4 space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Megaphone className="w-4 h-4 text-primary" />
-                      <span className="text-sm font-bold truncate max-w-[250px] cursor-pointer hover:text-primary" onClick={() => navigate(`/market/${bc.market_id}`)}>
-                        {bc.markets?.title || "Unknown Market"}
-                      </span>
-                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
-                        statusColors[bc.status] || statusColors.expired
-                      }`}>
-                        {bc.status}
-                      </span>
-                      <span className="text-xs font-semibold text-muted-foreground ml-auto">${bc.amount}</span>
+                ) : filteredBroadcasts.map((bc: any) => {
+                  const { display, key } = getResolvedBroadcastStatus(bc);
+                  return (
+                    <div key={bc.id} className="bg-card border border-border rounded-xl p-4 space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Megaphone className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-bold truncate max-w-[250px] cursor-pointer hover:text-primary" onClick={() => navigate(`/market/${bc.market_id}`)}>
+                          {bc.markets?.title || "Unknown Market"}
+                        </span>
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
+                          statusColors[key] || statusColors.expired
+                        }`}>
+                          {display}
+                        </span>
+                        <span className="text-xs font-semibold text-muted-foreground ml-auto">${bc.amount}</span>
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        Created {format(new Date(bc.created_at), "MMM d, yyyy HH:mm")}
+                      </div>
                     </div>
-                    <div className="text-[11px] text-muted-foreground">
-                      Created {format(new Date(bc.created_at), "MMM d, yyyy HH:mm")}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>
