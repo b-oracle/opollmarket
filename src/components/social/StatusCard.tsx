@@ -120,6 +120,10 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
   const [likeLoading, setLikeLoading] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [repostLoading, setRepostLoading] = useState(false);
+  const liveUserIds = useLiveSpaceUsers();
+  const liveSpace = useLiveSpaceForUser(liveUserIds.has(status.user_id) ? status.user_id : undefined);
+  const { joinSpace } = useActiveSpace();
+  const isUserLive = liveUserIds.has(status.user_id);
 
   const { data: isLiked = false } = useQuery({
     queryKey: ["status-liked", status.id, user?.id],
