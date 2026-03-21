@@ -787,7 +787,7 @@ const Profile = () => {
       if (!user) return null;
       const { data } = await supabase
         .from("profiles")
-        .select("wallet_address, avatar_url, display_name, is_public, bio, verification_level")
+        .select("wallet_address, avatar_url, display_name, is_public, bio, verification_level, age, gender, location, interests")
         .eq("id", user.id)
         .single();
       return data;
