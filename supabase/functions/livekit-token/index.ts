@@ -203,7 +203,7 @@ Deno.serve(async (req) => {
         filepath: `recordings/space-${space_id}-{time}.ogg`,
       });
 
-      const info = await egressClient.startRoomCompositeEgress(roomName, { file: output }, { audioOnly: true });
+      const info = await egressClient.startRoomCompositeEgress(roomName, { fileOutputs: [output] }, { audioOnly: true });
       const egressId = info.egressId;
 
       await supabaseAdmin
