@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Country, State, City, ICountry, IState, ICity } from "country-state-city";
 import { MapPin, ChevronDown, X, Search } from "lucide-react";
 
@@ -7,17 +7,23 @@ interface LocationPickerProps {
   onChange: (value: string) => void;
 }
 
+interface DropdownItem {
+  key: string;
+  label: string;
+}
+
+const VISIBLE_LIMIT = 50;
+
 const LocationPicker = ({ value, onChange }: LocationPickerProps) => {
   const allCountries = useMemo(() => Country.getAllCountries(), []);
 
-  // Parse existing value like "Lagos, Nigeria" or "California, United States"
   const [selectedCountry, setSelectedCountry] = useState<ICountry | null>(null);
   const [selectedState, setSelectedState] = useState<IState | null>(null);
   const [selectedCity, setSelectedCity] = useState<ICity | null>(null);
   const [openDropdown, setOpenDropdown] = useState<"country" | "state" | "city" | null>(null);
   const [search, setSearch] = useState("");
 
-  // Parse initial value on mount
+  // Parse initial value on mount only
   useEffect(() => {
     if (!value) return;
     const parts = value.split(",").map((s) => s.trim());
@@ -28,18 +34,18 @@ const LocationPicker = ({ value, onChange }: LocationPickerProps) => {
       if (country) {
         setSelectedCountry(country);
         if (parts.length >= 2) {
-          const states = State.getStatesOfCountry(country.isoCode);
-          const state = states.find(
+          const sts = State.getStatesOfCountry(country.isoCode);
+          const st = sts.find(
             (s) => s.name.toLowerCase() === parts[parts.length - 2]?.toLowerCase()
           );
-          if (state) {
-            setSelectedState(state);
+          if (st) {
+            setSelectedState(st);
             if (parts.length >= 3) {
-              const cities = City.getCitiesOfState(country.isoCode, state.isoCode);
-              const city = cities.find(
+              const cts = City.getCitiesOfState(country.isoCode, st.isoCode);
+              const ct = cts.find(
                 (c) => c.name.toLowerCase() === parts[0]?.toLowerCase()
               );
-              if (city) setSelectedCity(city);
+              if (ct) setSelectedCity(ct);
             }
           }
         }
@@ -60,80 +66,99 @@ const LocationPicker = ({ value, onChange }: LocationPickerProps) => {
     [selectedCountry, selectedState]
   );
 
-  const buildLocationString = (
-    country: ICountry | null,
-    state: IState | null,
-    city: ICity | null
-  ) => {
-    const parts: string[] = [];
-    if (city) parts.push(city.name);
-    if (state) parts.push(state.name);
-    if (country) parts.push(country.name);
-    return parts.join(", ");
-  };
+  const buildLocationString = useCallback(
+    (country: ICountry | null, state: IState | null, city: ICity | null) => {
+      const parts: string[] = [];
+      if (city) parts.push(city.name);
+      if (state) parts.push(state.name);
+      if (country) parts.push(country.name);
+      return parts.join(", ");
+    },
+    []
+  );
 
-  const handleCountrySelect = (country: ICountry) => {
-    setSelectedCountry(country);
-    setSelectedState(null);
-    setSelectedCity(null);
-    setOpenDropdown(null);
-    setSearch("");
-    onChange(buildLocationString(country, null, null));
-  };
+  const handleCountrySelect = useCallback(
+    (isoCode: string) => {
+      const country = allCountries.find((c) => c.isoCode === isoCode);
+      if (!country) return;
+      setSelectedCountry(country);
+      setSelectedState(null);
+      setSelectedCity(null);
+      setOpenDropdown(null);
+      setSearch("");
+      onChange(buildLocationString(country, null, null));
+    },
+    [allCountries, onChange, buildLocationString]
+  );
 
-  const handleStateSelect = (state: IState) => {
-    setSelectedState(state);
-    setSelectedCity(null);
-    setOpenDropdown(null);
-    setSearch("");
-    onChange(buildLocationString(selectedCountry, state, null));
-  };
+  const handleStateSelect = useCallback(
+    (isoCode: string) => {
+      const state = states.find((s) => s.isoCode === isoCode);
+      if (!state) return;
+      setSelectedState(state);
+      setSelectedCity(null);
+      setOpenDropdown(null);
+      setSearch("");
+      onChange(buildLocationString(selectedCountry, state, null));
+    },
+    [states, selectedCountry, onChange, buildLocationString]
+  );
 
-  const handleCitySelect = (city: ICity) => {
-    setSelectedCity(city);
-    setOpenDropdown(null);
-    setSearch("");
-    onChange(buildLocationString(selectedCountry, selectedState, city));
-  };
+  const handleCitySelect = useCallback(
+    (name: string) => {
+      const city = cities.find((c) => c.name === name);
+      if (!city) return;
+      setSelectedCity(city);
+      setOpenDropdown(null);
+      setSearch("");
+      onChange(buildLocationString(selectedCountry, selectedState, city));
+    },
+    [cities, selectedCountry, selectedState, onChange, buildLocationString]
+  );
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     setSelectedCountry(null);
     setSelectedState(null);
     setSelectedCity(null);
     setOpenDropdown(null);
     onChange("");
-  };
+  }, [onChange]);
 
-  const filteredCountries = useMemo(
-    () =>
-      search
-        ? allCountries.filter((c) =>
-            c.name.toLowerCase().includes(search.toLowerCase())
-          ).slice(0, 50)
-        : allCountries,
-    [search, allCountries]
-  );
+  // Build lightweight dropdown items — no object spreading
+  const countryItems: DropdownItem[] = useMemo(() => {
+    const lowerSearch = search.toLowerCase();
+    const source = search
+      ? allCountries.filter((c) => c.name.toLowerCase().includes(lowerSearch))
+      : allCountries;
+    return source.slice(0, VISIBLE_LIMIT).map((c) => ({
+      key: c.isoCode,
+      label: `${c.flag} ${c.name}`,
+    }));
+  }, [search, allCountries]);
 
-  const filteredStates = useMemo(
-    () =>
-      search
-        ? states.filter((s) => s.name.toLowerCase().includes(search.toLowerCase()))
-        : states,
-    [search, states]
-  );
+  const stateItems: DropdownItem[] = useMemo(() => {
+    const lowerSearch = search.toLowerCase();
+    const source = search
+      ? states.filter((s) => s.name.toLowerCase().includes(lowerSearch))
+      : states;
+    return source.slice(0, VISIBLE_LIMIT).map((s) => ({
+      key: s.isoCode,
+      label: s.name,
+    }));
+  }, [search, states]);
 
-  const filteredCities = useMemo(
-    () =>
-      search
-        ? cities.filter((c) => c.name.toLowerCase().includes(search.toLowerCase())).slice(0, 50)
-        : cities.slice(0, 50),
-    [search, cities]
-  );
+  const cityItems: DropdownItem[] = useMemo(() => {
+    const lowerSearch = search.toLowerCase();
+    const source = search
+      ? cities.filter((c) => c.name.toLowerCase().includes(lowerSearch))
+      : cities;
+    return source.slice(0, VISIBLE_LIMIT).map((c) => ({
+      key: c.name,
+      label: c.name,
+    }));
+  }, [search, cities]);
 
-  const renderDropdown = (
-    items: { name: string; key: string }[],
-    onSelect: (item: any) => void
-  ) => (
+  const renderDropdown = (items: DropdownItem[], onSelect: (key: string) => void) => (
     <div className="absolute left-0 right-0 top-full mt-1 z-[70] bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
       <div className="sticky top-0 bg-card p-2 border-b border-border">
         <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 border border-border">
@@ -155,10 +180,10 @@ const LocationPicker = ({ value, onChange }: LocationPickerProps) => {
           <button
             key={item.key}
             type="button"
-            onClick={() => onSelect(item)}
+            onClick={() => onSelect(item.key)}
             className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors truncate"
           >
-            {item.name}
+            {item.label}
           </button>
         ))
       )}
@@ -167,7 +192,6 @@ const LocationPicker = ({ value, onChange }: LocationPickerProps) => {
 
   return (
     <div className="space-y-2">
-      {/* Summary display */}
       {value && (
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/20 text-sm">
           <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
@@ -190,11 +214,7 @@ const LocationPicker = ({ value, onChange }: LocationPickerProps) => {
           </span>
           <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${openDropdown === "country" ? "rotate-180" : ""}`} />
         </button>
-        {openDropdown === "country" &&
-          renderDropdown(
-            filteredCountries.map((c) => ({ ...c, key: c.isoCode, name: `${c.flag} ${c.name}` })),
-            (item) => handleCountrySelect(allCountries.find((c) => c.isoCode === item.isoCode)!)
-          )}
+        {openDropdown === "country" && renderDropdown(countryItems, handleCountrySelect)}
       </div>
 
       {/* State */}
@@ -210,11 +230,7 @@ const LocationPicker = ({ value, onChange }: LocationPickerProps) => {
             </span>
             <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${openDropdown === "state" ? "rotate-180" : ""}`} />
           </button>
-          {openDropdown === "state" &&
-            renderDropdown(
-              filteredStates.map((s) => ({ ...s, key: s.isoCode })),
-              (item) => handleStateSelect(states.find((s) => s.isoCode === item.isoCode)!)
-            )}
+          {openDropdown === "state" && renderDropdown(stateItems, handleStateSelect)}
         </div>
       )}
 
@@ -231,11 +247,7 @@ const LocationPicker = ({ value, onChange }: LocationPickerProps) => {
             </span>
             <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${openDropdown === "city" ? "rotate-180" : ""}`} />
           </button>
-          {openDropdown === "city" &&
-            renderDropdown(
-              filteredCities.map((c) => ({ ...c, key: `${c.name}-${c.stateCode}` })),
-              (item) => handleCitySelect(cities.find((c) => c.name === item.name)!)
-            )}
+          {openDropdown === "city" && renderDropdown(cityItems, handleCitySelect)}
         </div>
       )}
     </div>
