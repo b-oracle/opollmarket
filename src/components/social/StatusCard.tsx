@@ -299,7 +299,7 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
         <button
           onClick={handleLike}
           disabled={likeLoading}
-          className={`flex items-center gap-1 text-xs transition-colors ${isLiked ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
+          className={`flex items-center gap-1 text-xs transition-colors ${isLiked ? "text-destructive" : "text-muted-foreground hover:text-destructive"}`}
         >
           {likeLoading ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
