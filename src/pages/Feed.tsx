@@ -18,6 +18,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useState as useStateHook, useEffect as useEffectHook } from "react";
 import { useBookmarkedMarkets } from "@/hooks/useBookmarkedMarkets";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveSpace } from "@/hooks/useActiveSpace";
+import { supabase } from "@/integrations/supabase/client";
 
 const useIsDesktop = () => {
   const [isDesktop, setIsDesktop] = useStateHook(false);
