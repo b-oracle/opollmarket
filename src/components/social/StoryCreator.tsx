@@ -190,7 +190,7 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle, 
             {/* Preview */}
             <div className="flex-1 flex items-center justify-center px-6 py-4 lg:py-6">
               <div
-                className="w-full max-w-[240px] lg:max-w-[260px] aspect-[9/16] rounded-2xl overflow-hidden relative"
+                className="w-full max-w-[240px] md:max-w-[300px] lg:max-w-[260px] aspect-[9/16] rounded-2xl overflow-hidden relative"
                 style={{ backgroundColor: imagePreview ? "hsl(var(--background))" : bgColor }}
               >
                 {imagePreview ? (
