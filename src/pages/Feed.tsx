@@ -232,6 +232,7 @@ const DesktopFeedCard = ({ market, isBoosted, boostEndsAt, boostTier
 };
 
 const Feed = () => {
+  const navigate = useNavigate();
   const [tabOpen, setTabOpen] = useState(false);
   const [watchlistPulse, setWatchlistPulse] = useState(false);
   const prevBookmarkCount = useRef<number | null>(null);
