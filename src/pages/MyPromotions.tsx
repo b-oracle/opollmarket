@@ -105,11 +105,21 @@ const MyPromotions = () => {
     return { active: active.length, total: socialAds.length, totalImpressions, totalClicks, spent };
   }, [socialAds]);
 
+  const [bcFilter, setBcFilter] = useState<BroadcastFilter>("all");
+
   const broadcastStats = useMemo(() => {
     const total = broadcasts.length;
-    const spent = broadcasts.filter((b: any) => b.status === "active" || b.status === "sent").reduce((s: number, b: any) => s + b.amount, 0);
-    return { total, spent };
+    const sent = broadcasts.filter((b: any) => getResolvedBroadcastStatus(b).key === "sent").length;
+    const pending = broadcasts.filter((b: any) => getResolvedBroadcastStatus(b).key === "pending").length;
+    const paymentExpired = broadcasts.filter((b: any) => getResolvedBroadcastStatus(b).key === "payment_expired").length;
+    const spent = broadcasts.filter((b: any) => getResolvedBroadcastStatus(b).key === "sent").reduce((s: number, b: any) => s + b.amount, 0);
+    return { total, sent, pending, paymentExpired, spent };
   }, [broadcasts]);
+
+  const filteredBroadcasts = useMemo(() => {
+    if (bcFilter === "all") return broadcasts;
+    return broadcasts.filter((b: any) => getResolvedBroadcastStatus(b).key === bcFilter);
+  }, [broadcasts, bcFilter]);
 
   const tabs: { key: TabKey; label: string; icon: typeof Zap; count: number }[] = [
     { key: "boosts", label: "Boosts", icon: Zap, count: boosts.length },
