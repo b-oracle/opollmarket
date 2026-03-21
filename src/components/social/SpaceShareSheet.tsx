@@ -141,7 +141,7 @@ const SpaceShareSheet = ({ open, onClose, spaceId, spaceTitle, hostName, isLive 
                     onClick={() => handleShareExternal(p.id)}
                     className="flex flex-col items-center gap-1.5 py-2 rounded-xl hover:bg-muted/50 transition-colors"
                   >
-                    <SocialIcon platform={p.id} className="w-8 h-8" />
+                    <SocialIcon iconKey={p.id} className="w-8 h-8" />
                     <span className="text-[9px] text-muted-foreground">{p.label}</span>
                   </button>
                 ))}
