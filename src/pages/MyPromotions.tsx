@@ -15,6 +15,7 @@ const statusColors: Record<string, string> = {
   pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
   active: "bg-green-500/10 text-green-500 border-green-500/20",
   sent: "bg-green-500/10 text-green-500 border-green-500/20",
+  ended: "bg-muted text-muted-foreground border-border",
   cancelled: "bg-destructive/10 text-destructive border-destructive/20",
   expired: "bg-muted text-muted-foreground border-border",
   payment_expired: "bg-orange-500/10 text-orange-500 border-orange-500/20",
@@ -37,6 +38,42 @@ function getResolvedBroadcastStatus(bc: any): { display: string; key: string } {
 }
 
 type BroadcastFilter = "all" | "sent" | "pending" | "payment_expired";
+type BoostFilter = "all" | "active" | "ended" | "pending" | "payment_expired";
+type AdFilter = "all" | "active" | "ended" | "pending" | "payment_expired";
+
+function getResolvedBoostStatus(b: any): { display: string; key: string } {
+  if (b.status === "active" && !isPast(new Date(b.ends_at))) return { display: "Active", key: "active" };
+  if (b.status === "active" && isPast(new Date(b.ends_at))) return { display: "Ended", key: "ended" };
+  if (b.status === "expired") {
+    return (b.tx_hash || b.nowpayments_payment_id)
+      ? { display: "Ended", key: "ended" }
+      : { display: "Payment Expired", key: "payment_expired" };
+  }
+  if (b.status === "pending") {
+    if (differenceInHours(new Date(), new Date(b.created_at)) >= 2) {
+      return { display: "Payment Expired", key: "payment_expired" };
+    }
+    return { display: "Pending Payment", key: "pending" };
+  }
+  return { display: b.status, key: b.status };
+}
+
+function getResolvedAdStatus(a: any): { display: string; key: string } {
+  if (a.status === "active" && !isPast(new Date(a.ends_at))) return { display: "Active", key: "active" };
+  if (a.status === "active" && isPast(new Date(a.ends_at))) return { display: "Ended", key: "ended" };
+  if (a.status === "expired") {
+    return (a.tx_hash || a.nowpayments_payment_id)
+      ? { display: "Ended", key: "ended" }
+      : { display: "Payment Expired", key: "payment_expired" };
+  }
+  if (a.status === "pending") {
+    if (differenceInHours(new Date(), new Date(a.created_at)) >= 2) {
+      return { display: "Payment Expired", key: "payment_expired" };
+    }
+    return { display: "Pending Payment", key: "pending" };
+  }
+  return { display: a.status, key: a.status };
+}
 
 const tierIcons: Record<string, typeof Zap> = { flash: Zap, standard: Flame, whale: Crown };
 
@@ -106,6 +143,8 @@ const MyPromotions = () => {
   }, [socialAds]);
 
   const [bcFilter, setBcFilter] = useState<BroadcastFilter>("all");
+  const [boostFilter, setBoostFilter] = useState<BoostFilter>("all");
+  const [adFilter, setAdFilter] = useState<AdFilter>("all");
 
   const broadcastStats = useMemo(() => {
     const total = broadcasts.length;
@@ -116,10 +155,36 @@ const MyPromotions = () => {
     return { total, sent, pending, paymentExpired, spent };
   }, [broadcasts]);
 
+  const boostFilterStats = useMemo(() => {
+    const active = boosts.filter((b: any) => getResolvedBoostStatus(b).key === "active").length;
+    const ended = boosts.filter((b: any) => getResolvedBoostStatus(b).key === "ended").length;
+    const pending = boosts.filter((b: any) => getResolvedBoostStatus(b).key === "pending").length;
+    const paymentExpired = boosts.filter((b: any) => getResolvedBoostStatus(b).key === "payment_expired").length;
+    return { total: boosts.length, active, ended, pending, paymentExpired };
+  }, [boosts]);
+
+  const adFilterStats = useMemo(() => {
+    const active = socialAds.filter((a: any) => getResolvedAdStatus(a).key === "active").length;
+    const ended = socialAds.filter((a: any) => getResolvedAdStatus(a).key === "ended").length;
+    const pending = socialAds.filter((a: any) => getResolvedAdStatus(a).key === "pending").length;
+    const paymentExpired = socialAds.filter((a: any) => getResolvedAdStatus(a).key === "payment_expired").length;
+    return { total: socialAds.length, active, ended, pending, paymentExpired };
+  }, [socialAds]);
+
   const filteredBroadcasts = useMemo(() => {
     if (bcFilter === "all") return broadcasts;
     return broadcasts.filter((b: any) => getResolvedBroadcastStatus(b).key === bcFilter);
   }, [broadcasts, bcFilter]);
+
+  const filteredBoosts = useMemo(() => {
+    if (boostFilter === "all") return boosts;
+    return boosts.filter((b: any) => getResolvedBoostStatus(b).key === boostFilter);
+  }, [boosts, boostFilter]);
+
+  const filteredAds = useMemo(() => {
+    if (adFilter === "all") return socialAds;
+    return socialAds.filter((a: any) => getResolvedAdStatus(a).key === adFilter);
+  }, [socialAds, adFilter]);
 
   const tabs: { key: TabKey; label: string; icon: typeof Zap; count: number }[] = [
     { key: "boosts", label: "Boosts", icon: Zap, count: boosts.length },
@@ -203,12 +268,38 @@ const MyPromotions = () => {
         ) : (
           <>
             {/* Boosts Tab */}
-            {tab === "boosts" && (
-              <div className="space-y-2">
-                {boosts.length === 0 ? (
+             {tab === "boosts" && (
+              <div className="space-y-3">
+                {/* Boost Filters */}
+                <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 overflow-x-auto">
+                  {([
+                    { key: "all" as BoostFilter, label: "All", count: boostFilterStats.total },
+                    { key: "active" as BoostFilter, label: "Active", count: boostFilterStats.active },
+                    { key: "ended" as BoostFilter, label: "Ended", count: boostFilterStats.ended },
+                    { key: "pending" as BoostFilter, label: "Pending", count: boostFilterStats.pending },
+                    { key: "payment_expired" as BoostFilter, label: "Expired", count: boostFilterStats.paymentExpired },
+                  ]).map((f) => (
+                    <button
+                      key={f.key}
+                      onClick={() => setBoostFilter(f.key)}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                        boostFilter === f.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {f.label}
+                      {f.count > 0 && (
+                        <span className={`ml-1.5 text-[10px] font-bold ${boostFilter === f.key ? "text-primary" : "text-muted-foreground"}`}>
+                          {f.count}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {filteredBoosts.length === 0 ? (
                   <EmptyState icon={Zap} label="No boosts yet" description="Boost a market to increase its visibility" />
-                ) : boosts.map((boost: any) => {
-                  const isActive = boost.status === "active" && !isPast(new Date(boost.ends_at));
+                ) : filteredBoosts.map((boost: any) => {
+                  const { display, key } = getResolvedBoostStatus(boost);
                   const TierIcon = tierIcons[boost.tier] || Zap;
                   return (
                     <div key={boost.id} className="bg-card border border-border rounded-xl p-4 space-y-2">
@@ -218,16 +309,16 @@ const MyPromotions = () => {
                           {(boost as any).markets?.title || "Unknown Market"}
                         </span>
                         <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
-                          isActive ? statusColors.active : statusColors[boost.status] || statusColors.expired
+                          statusColors[key] || statusColors.expired
                         }`}>
-                          {isActive ? "Active" : boost.status}
+                          {display}
                         </span>
                         <span className="text-xs font-semibold text-muted-foreground ml-auto">${boost.amount}</span>
                       </div>
-                      {isActive && <BoostCountdown endsAt={boost.ends_at} tier={boost.tier} />}
+                      {key === "active" && <BoostCountdown endsAt={boost.ends_at} tier={boost.tier} />}
                       <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
                         <span>Created {format(new Date(boost.created_at), "MMM d, HH:mm")}</span>
-                        {boost.ends_at && !isPast(new Date(boost.ends_at)) && (
+                        {key === "active" && boost.ends_at && (
                           <span className="text-green-500 font-medium">{formatDistanceToNow(new Date(boost.ends_at))} left</span>
                         )}
                       </div>
@@ -238,12 +329,38 @@ const MyPromotions = () => {
             )}
 
             {/* Social Ads Tab */}
-            {tab === "social_ads" && (
-              <div className="space-y-2">
-                {socialAds.length === 0 ? (
+             {tab === "social_ads" && (
+              <div className="space-y-3">
+                {/* Ad Filters */}
+                <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 overflow-x-auto">
+                  {([
+                    { key: "all" as AdFilter, label: "All", count: adFilterStats.total },
+                    { key: "active" as AdFilter, label: "Active", count: adFilterStats.active },
+                    { key: "ended" as AdFilter, label: "Ended", count: adFilterStats.ended },
+                    { key: "pending" as AdFilter, label: "Pending", count: adFilterStats.pending },
+                    { key: "payment_expired" as AdFilter, label: "Expired", count: adFilterStats.paymentExpired },
+                  ]).map((f) => (
+                    <button
+                      key={f.key}
+                      onClick={() => setAdFilter(f.key)}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                        adFilter === f.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {f.label}
+                      {f.count > 0 && (
+                        <span className={`ml-1.5 text-[10px] font-bold ${adFilter === f.key ? "text-primary" : "text-muted-foreground"}`}>
+                          {f.count}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {filteredAds.length === 0 ? (
                   <EmptyState icon={Eye} label="No social ads yet" description="Create a social ad to appear in users' feeds" />
-                ) : socialAds.map((ad: any) => {
-                  const isActive = ad.status === "active" && !isPast(new Date(ad.ends_at));
+                ) : filteredAds.map((ad: any) => {
+                  const { display, key } = getResolvedAdStatus(ad);
                   const ctr = ad.impressions > 0 ? ((ad.clicks / ad.impressions) * 100).toFixed(1) : "0.0";
                   return (
                     <div key={ad.id} className="bg-card border border-border rounded-xl p-4 space-y-3">
@@ -253,16 +370,15 @@ const MyPromotions = () => {
                           {ad.markets?.title || "Unknown Market"}
                         </span>
                         <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
-                          isActive ? statusColors.active : statusColors[ad.status] || statusColors.expired
+                          statusColors[key] || statusColors.expired
                         }`}>
-                          {isActive ? "Active" : ad.status}
+                          {display}
                         </span>
                         <span className="text-xs font-semibold text-muted-foreground ml-auto">${ad.amount}</span>
                       </div>
                       {ad.headline && (
                         <p className="text-xs text-muted-foreground italic">"{ad.headline}"</p>
                       )}
-                      {/* Metrics */}
                       <div className="grid grid-cols-3 gap-2">
                         <MetricCard icon={Eye} label="Impressions" value={ad.impressions?.toLocaleString() || "0"} />
                         <MetricCard icon={MousePointerClick} label="Clicks" value={ad.clicks?.toLocaleString() || "0"} />
@@ -270,7 +386,7 @@ const MyPromotions = () => {
                       </div>
                       <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
                         <span>Created {format(new Date(ad.created_at), "MMM d, HH:mm")}</span>
-                        {isActive && (
+                        {key === "active" && ad.ends_at && (
                           <span className="text-green-500 font-medium">{formatDistanceToNow(new Date(ad.ends_at))} left</span>
                         )}
                       </div>
