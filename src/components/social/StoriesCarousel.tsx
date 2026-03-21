@@ -17,6 +17,49 @@ interface StoryGroup {
   hasUnviewed: boolean;
 }
 
+// Sub-component for story bubbles with live badge (needs its own hook call)
+const StoryBubble = ({ group, name, isLive, onView, onJoinSpace }: {
+  group: StoryGroup; name: string; isLive: boolean;
+  onView: () => void;
+  onJoinSpace: (space: { id: string; title: string; hostId: string }) => void;
+}) => {
+  const liveSpace = useLiveSpaceForUser(isLive ? group.userId : undefined);
+  return (
+    <button
+      onClick={() => {
+        if (isLive && liveSpace) {
+          onJoinSpace({ id: liveSpace.spaceId, title: liveSpace.title, hostId: liveSpace.hostId });
+        } else {
+          onView();
+        }
+      }}
+      className="flex flex-col items-center gap-1 shrink-0"
+    >
+      <div className={`relative w-14 h-14 overflow-visible ${
+        isLive
+          ? "ring-2 ring-destructive rounded-full"
+          : group.hasUnviewed
+          ? "ring-2 ring-primary rounded-full"
+          : "ring-2 ring-muted-foreground/20 rounded-full"
+      }`}>
+        <LiveAvatarBadge isLive={isLive} size="md" />
+        <div className="w-full h-full rounded-full overflow-hidden">
+          {group.profile?.avatar_url ? (
+            <img src={group.profile.avatar_url} alt={name} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-primary/20 flex items-center justify-center">
+              <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
+            </div>
+          )}
+        </div>
+      </div>
+      <span className={`text-[9px] font-medium truncate max-w-[56px] ${isLive ? "text-destructive" : "text-muted-foreground"}`}>
+        {isLive ? "LIVE" : name.split(" ")[0]}
+      </span>
+    </button>
+  );
+};
+
 const StoriesCarousel = () => {
   const { user } = useAuth();
   const { isFeatureEnabled } = useFeatureToggles();
