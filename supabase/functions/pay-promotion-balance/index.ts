@@ -87,7 +87,8 @@ Deno.serve(async (req) => {
 
     const boostCost = tierConfig?.price || 0;
     const broadcastCost = include_broadcast ? BROADCAST_PRICE : 0;
-    const totalCost = boostCost + broadcastCost;
+    const socialAdCost = include_social_ad ? SOCIAL_AD_PRICE : 0;
+    const totalCost = boostCost + broadcastCost + socialAdCost;
 
     if (totalCost <= 0) {
       return new Response(JSON.stringify({ error: "No items selected" }), {
