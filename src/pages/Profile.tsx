@@ -1396,29 +1396,11 @@ const Profile = () => {
                         if (!editName.trim()) { toast.error("Name cannot be empty"); return; }
                         setSavingProfile(true);
                         try {
-                          // Moderate display name
-                          try {
-                            const { data: nameModData } = await supabase.functions.invoke("moderate-display-name", {
-                              body: { name: editName.trim() },
-                            });
-                            if (nameModData?.flagged) {
-                              await supabase.from("moderation_logs").insert({
-                                content_type: "display_name",
-                                user_id: user!.id,
-                                flagged_content: editName.trim(),
-                                reason: nameModData.reason || "Flagged by AI",
-                                category: "profanity",
-                              });
-              toast.error("Display name not allowed", {
-                description: nameModData.reason || "This display name contains inappropriate content. Please choose another.",
-                duration: 6000,
-              });
-                              setSavingProfile(false);
-                              return;
-                            }
-                          } catch (err) {
-                            console.error("Name moderation check failed, proceeding:", err);
-                          }
+                          // Fire moderation check in background (non-blocking)
+                          const nameModPromise = supabase.functions.invoke("moderate-display-name", {
+                            body: { name: editName.trim() },
+                          }).catch(() => ({ data: null }));
+
 
                           let avatarUrl: string | null = null;
                           if (selectedNftUrl) {
