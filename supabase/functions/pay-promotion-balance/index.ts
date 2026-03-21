@@ -12,6 +12,7 @@ const DEFAULT_BOOST_TIERS: Record<string, { durationHours: number; price: number
   whale: { durationHours: 168, price: 150, rank: 3 },
 };
 let DEFAULT_BROADCAST_PRICE = 5;
+let SOCIAL_AD_PRICE = 10;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -43,7 +44,7 @@ Deno.serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub as string;
-    const { market_id, boost_tier, include_broadcast } = await req.json();
+    const { market_id, boost_tier, include_broadcast, include_social_ad, ad_headline, ad_video_url } = await req.json();
 
     if (!market_id) {
       return new Response(JSON.stringify({ error: "market_id required" }), {
@@ -63,7 +64,7 @@ Deno.serve(async (req) => {
     try {
       const { data: cs } = await adminClient
         .from("commission_settings")
-        .select("boost_flash_price, boost_standard_price, boost_whale_price, broadcast_price")
+        .select("boost_flash_price, boost_standard_price, boost_whale_price, broadcast_price, social_ad_price")
         .limit(1)
         .single();
       if (cs) {
@@ -71,6 +72,7 @@ Deno.serve(async (req) => {
         BOOST_TIERS.standard = { ...BOOST_TIERS.standard, price: Number(cs.boost_standard_price) || 50 };
         BOOST_TIERS.whale = { ...BOOST_TIERS.whale, price: Number(cs.boost_whale_price) || 150 };
         if (cs.broadcast_price != null) BROADCAST_PRICE = Number(cs.broadcast_price);
+        if (cs.social_ad_price != null) SOCIAL_AD_PRICE = Number(cs.social_ad_price);
       }
     } catch { /* use defaults */ }
 
@@ -85,7 +87,8 @@ Deno.serve(async (req) => {
 
     const boostCost = tierConfig?.price || 0;
     const broadcastCost = include_broadcast ? BROADCAST_PRICE : 0;
-    const totalCost = boostCost + broadcastCost;
+    const socialAdCost = include_social_ad ? SOCIAL_AD_PRICE : 0;
+    const totalCost = boostCost + broadcastCost + socialAdCost;
 
     if (totalCost <= 0) {
       return new Response(JSON.stringify({ error: "No items selected" }), {
@@ -261,6 +264,37 @@ Deno.serve(async (req) => {
         }
 
         result.broadcast_id = broadcast.id;
+      }
+    }
+
+    // Create social ad record
+    if (include_social_ad) {
+      const adEndsAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h duration
+      const { data: adRecord, error: adErr } = await adminClient
+        .from("social_ads")
+        .insert({
+          market_id,
+          user_id: userId,
+          headline: ad_headline || null,
+          video_url: ad_video_url || null,
+          amount: SOCIAL_AD_PRICE,
+          status: "active",
+          ends_at: adEndsAt.toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (!adErr && adRecord) {
+        // Log transaction
+        await adminClient.from("transactions").insert({
+          user_id: userId,
+          type: "buy",
+          amount: SOCIAL_AD_PRICE,
+          market_id,
+          status: "confirmed",
+          side: "social_ad",
+        });
+        result.social_ad_id = adRecord.id;
       }
     }
 

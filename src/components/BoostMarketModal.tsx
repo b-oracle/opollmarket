@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Zap, Flame, Crown, Copy, Check, Loader2, AlertTriangle, ChevronLeft, Megaphone, Clock, Wallet, CreditCard, Banknote } from "lucide-react";
+import { X, Zap, Flame, Crown, Copy, Check, Loader2, AlertTriangle, ChevronLeft, Megaphone, Clock, Wallet, CreditCard, Banknote, Tv, Link2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -78,9 +78,13 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
     commissionSettings?.boost_whale_price ?? 150,
   );
   const BROADCAST_PRICE = commissionSettings?.broadcast_price ?? BROADCAST_PRICE_DEFAULT;
+  const SOCIAL_AD_PRICE = commissionSettings?.social_ad_price ?? 10;
 
   const [selectedTier, setSelectedTier] = useState<BoostTier | null>(null);
   const [broadcastSelected, setBroadcastSelected] = useState(false);
+  const [socialAdSelected, setSocialAdSelected] = useState(false);
+  const [adHeadline, setAdHeadline] = useState("");
+  const [adVideoUrl, setAdVideoUrl] = useState("");
   const [step, setStep] = useState<Step>("select");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -159,14 +163,17 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
       setLoading(false);
       setSelectedTier(null);
       setBroadcastSelected(false);
+      setSocialAdSelected(false);
+      setAdHeadline("");
+      setAdVideoUrl("");
       setPayMethod(balancePayEnabled ? "balance" : "crypto");
       setNgnCopied(null);
       if (pollRef.current) clearInterval(pollRef.current);
     }
   }, [open]);
 
-  const totalPrice = (selectedTier?.price || 0) + (broadcastSelected ? BROADCAST_PRICE : 0);
-  const hasSelection = selectedTier || broadcastSelected;
+  const totalPrice = (selectedTier?.price || 0) + (broadcastSelected ? BROADCAST_PRICE : 0) + (socialAdSelected ? SOCIAL_AD_PRICE : 0);
+  const hasSelection = selectedTier || broadcastSelected || socialAdSelected;
 
   // Balance breakdown calculation
   const bonusDeduct = Math.min(bonusBalance, totalPrice);
@@ -233,6 +240,9 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
           market_id: marketId,
           boost_tier: selectedTier?.id || null,
           include_broadcast: broadcastSelected,
+          include_social_ad: socialAdSelected,
+          ad_headline: adHeadline || null,
+          ad_video_url: adVideoUrl || null,
         },
       });
       if (error) throw error;
@@ -456,6 +466,53 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
               </button>
             </div>
 
+            {/* Social Ad Section */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">📺 Social Ad</p>
+              <button
+                onClick={() => setSocialAdSelected(!socialAdSelected)}
+                className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all ${
+                  socialAdSelected
+                    ? "border-primary/50 bg-primary/5"
+                    : "border-border bg-muted/30 hover:border-muted-foreground/30"
+                }`}
+              >
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${socialAdSelected ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
+                  <Tv className="w-7 h-7" />
+                </div>
+                <div className="flex-1 text-left">
+                  <span className="text-sm font-bold block">Sponsored Post</span>
+                  <span className="text-xs text-muted-foreground">Appears in everyone's feed as an ad</span>
+                </div>
+                <span className="text-sm font-bold px-3 py-1 rounded-md bg-background border border-border">
+                  ${SOCIAL_AD_PRICE}
+                </span>
+              </button>
+
+              {socialAdSelected && (
+                <div className="mt-3 space-y-2">
+                  <input
+                    type="text"
+                    value={adHeadline}
+                    onChange={(e) => setAdHeadline(e.target.value)}
+                    placeholder="Custom headline (optional)"
+                    className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted/30 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    maxLength={120}
+                  />
+                  <div className="relative">
+                    <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="url"
+                      value={adVideoUrl}
+                      onChange={(e) => setAdVideoUrl(e.target.value)}
+                      placeholder="YouTube video URL (optional)"
+                      className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-muted/30 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button
               onClick={() => setStep("confirm")}
               disabled={!hasSelection}
@@ -546,6 +603,12 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Broadcast Alert</span>
                     <span className="font-medium text-foreground">${BROADCAST_PRICE.toFixed(2)}</span>
+                  </div>
+                )}
+                {socialAdSelected && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Social Ad</span>
+                    <span className="font-medium text-foreground">${SOCIAL_AD_PRICE.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between border-t border-border pt-2 mt-2">
@@ -747,7 +810,11 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
                   ? paymentInfo?.extending ? "Boost Extended & Broadcast Sent!" : "Boost & Broadcast Live!"
                   : selectedTier
                   ? paymentInfo?.extending ? "Boost Extended!" : "Boost is Live!"
-                  : "Broadcast Sent!"}
+                  : socialAdSelected && !broadcastSelected
+                  ? "Social Ad is Live!"
+                  : broadcastSelected
+                  ? "Broadcast Sent!"
+                  : "Promotion Active!"}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
                 {selectedTier && paymentInfo?.extending && paymentInfo?.new_ends_at
@@ -755,7 +822,8 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
                   : selectedTier
                   ? `Your ${selectedTier.label} boost (${selectedTier.duration}) is now active. `
                   : ""}
-                {broadcastSelected && "A push notification has been sent to all users."}
+                {broadcastSelected && "A push notification has been sent to all users. "}
+                {socialAdSelected && "Your sponsored post is now live in everyone's feed."}
               </p>
               {/* Balance payment receipt */}
               {paymentInfo?.total_charged != null && (
