@@ -250,7 +250,31 @@ const Feed = () => {
   const [visibleCount, setVisibleCount] = useState(20);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  const [searchParams] = useSearchParams();
+
   useEffect(() => {track("page_view", { page: "feed" });}, []);
+
+  // Handle ?space= deep link — redirect to auth if not logged in, otherwise open space
+  useEffect(() => {
+    const spaceId = searchParams.get("space");
+    if (!spaceId) return;
+    const ref = searchParams.get("ref");
+
+    if (!user) {
+      // Redirect to auth with referral code and return URL
+      const params = new URLSearchParams();
+      if (ref) params.set("ref", ref);
+      params.set("redirect", `/feed?space=${spaceId}`);
+      navigate(`/auth?${params.toString()}`, { replace: true });
+      return;
+    }
+
+    // User is logged in — navigate to social page / open space
+    // Clear the query params so it doesn't re-trigger
+    navigate("/feed", { replace: true });
+    // Emit a custom event that the SocialPage/SpacesFeed can listen for
+    window.dispatchEvent(new CustomEvent("open-space", { detail: { spaceId } }));
+  }, [searchParams, user, navigate]);
 
   // Pulse when bookmarks increase
   useEffect(() => {
