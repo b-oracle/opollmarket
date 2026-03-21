@@ -187,60 +187,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- START RECORDING ---
-    if (action === "start_recording") {
-      requireHost();
-      if (space.recording_egress_id) {
-        return new Response(JSON.stringify({ error: "Already recording" }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const egressClient = new EgressClient(httpUrl, apiKey, apiSecret);
-      const output = new EncodedFileOutput({
-        fileType: EncodedFileType.OGG,
-        filepath: `recordings/space-${space_id}-{time}.ogg`,
-      });
-
-      const info = await egressClient.startRoomCompositeEgress(roomName, { fileOutputs: [output] }, { audioOnly: true });
-      const egressId = info.egressId;
-
-      await supabaseAdmin
-        .from("spaces")
-        .update({ recording_egress_id: egressId })
-        .eq("id", space_id);
-
-      return new Response(JSON.stringify({ success: true, action: "recording_started", egressId }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // --- STOP RECORDING ---
-    if (action === "stop_recording") {
-      requireHost();
-      if (!space.recording_egress_id) {
-        return new Response(JSON.stringify({ error: "Not recording" }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const egressClient = new EgressClient(httpUrl, apiKey, apiSecret);
-      await egressClient.stopEgress(space.recording_egress_id);
-
-      await supabaseAdmin
-        .from("spaces")
-        .update({ recording_egress_id: null, is_recorded: true })
-        .eq("id", space_id);
-
-      return new Response(JSON.stringify({ success: true, action: "recording_stopped" }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     // --- Default: JOIN ---
     const { data: profile } = await supabaseAdmin
       .from("profiles")
