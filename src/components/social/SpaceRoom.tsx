@@ -559,8 +559,12 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
       if (uploadErr) throw uploadErr;
 
-      // Mark space as recorded
-      await supabase.from("spaces").update({ is_recorded: true }).eq("id", spaceId);
+      // Get public URL and mark space as recorded
+      const { data: urlData } = supabase.storage.from("space-recordings").getPublicUrl(fileName);
+      await supabase.from("spaces").update({
+        is_recorded: true,
+        recording_url: urlData.publicUrl,
+      } as any).eq("id", spaceId);
 
       toast.success("Recording saved ✅");
       setRecording(false);
