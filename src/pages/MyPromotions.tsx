@@ -328,12 +328,38 @@ const MyPromotions = () => {
             )}
 
             {/* Social Ads Tab */}
-            {tab === "social_ads" && (
-              <div className="space-y-2">
-                {socialAds.length === 0 ? (
+             {tab === "social_ads" && (
+              <div className="space-y-3">
+                {/* Ad Filters */}
+                <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 overflow-x-auto">
+                  {([
+                    { key: "all" as AdFilter, label: "All", count: adFilterStats.total },
+                    { key: "active" as AdFilter, label: "Active", count: adFilterStats.active },
+                    { key: "ended" as AdFilter, label: "Ended", count: adFilterStats.ended },
+                    { key: "pending" as AdFilter, label: "Pending", count: adFilterStats.pending },
+                    { key: "payment_expired" as AdFilter, label: "Expired", count: adFilterStats.paymentExpired },
+                  ]).map((f) => (
+                    <button
+                      key={f.key}
+                      onClick={() => setAdFilter(f.key)}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                        adFilter === f.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {f.label}
+                      {f.count > 0 && (
+                        <span className={`ml-1.5 text-[10px] font-bold ${adFilter === f.key ? "text-primary" : "text-muted-foreground"}`}>
+                          {f.count}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {filteredAds.length === 0 ? (
                   <EmptyState icon={Eye} label="No social ads yet" description="Create a social ad to appear in users' feeds" />
-                ) : socialAds.map((ad: any) => {
-                  const isActive = ad.status === "active" && !isPast(new Date(ad.ends_at));
+                ) : filteredAds.map((ad: any) => {
+                  const { display, key } = getResolvedAdStatus(ad);
                   const ctr = ad.impressions > 0 ? ((ad.clicks / ad.impressions) * 100).toFixed(1) : "0.0";
                   return (
                     <div key={ad.id} className="bg-card border border-border rounded-xl p-4 space-y-3">
@@ -343,16 +369,15 @@ const MyPromotions = () => {
                           {ad.markets?.title || "Unknown Market"}
                         </span>
                         <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
-                          isActive ? statusColors.active : statusColors[ad.status] || statusColors.expired
+                          statusColors[key] || statusColors.expired
                         }`}>
-                          {isActive ? "Active" : ad.status}
+                          {display}
                         </span>
                         <span className="text-xs font-semibold text-muted-foreground ml-auto">${ad.amount}</span>
                       </div>
                       {ad.headline && (
                         <p className="text-xs text-muted-foreground italic">"{ad.headline}"</p>
                       )}
-                      {/* Metrics */}
                       <div className="grid grid-cols-3 gap-2">
                         <MetricCard icon={Eye} label="Impressions" value={ad.impressions?.toLocaleString() || "0"} />
                         <MetricCard icon={MousePointerClick} label="Clicks" value={ad.clicks?.toLocaleString() || "0"} />
@@ -360,7 +385,7 @@ const MyPromotions = () => {
                       </div>
                       <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
                         <span>Created {format(new Date(ad.created_at), "MMM d, HH:mm")}</span>
-                        {isActive && (
+                        {key === "active" && ad.ends_at && (
                           <span className="text-green-500 font-medium">{formatDistanceToNow(new Date(ad.ends_at))} left</span>
                         )}
                       </div>
