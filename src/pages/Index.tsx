@@ -18,6 +18,7 @@ import BoostedCarousel from "@/components/BoostedCarousel";
 import CategoryCarousel from "@/components/CategoryCarousel";
 import LivePriceBadge from "@/components/LivePriceBadge";
 import { Gem, ArrowLeftRight } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import BoostMarketModal from "@/components/BoostMarketModal";
 import { useCommentCount } from "@/hooks/useCommentCount";
 import useAnalytics from "@/hooks/useAnalytics";
