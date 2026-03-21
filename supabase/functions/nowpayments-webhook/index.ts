@@ -94,16 +94,24 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
 
   const matchedTx = matchByPaymentId || matchByUserPending;
 
-  // Use outcome_amount (net received after NP fees) as the credit amount.
-  // price_amount is the gross requested amount — crediting it causes over-crediting
-  // by the NP fee amount on every deposit.
+  // price_amount = the USD amount the user requested to deposit.
+  // outcome_amount = NP's reported net received — but can be wildly wrong
+  // (e.g. "Wrong Asset Confirmed" can return inflated values).
+  // SAFETY: never credit more than the requested amount.
   const requestedAmount = Number(price_amount) || matchedTx?.amount || 0;
   const netReceived = Number(outcome_amount) || Number(actually_paid) || 0;
   
-  // Credit the net amount actually received, not the gross requested
-  const creditAmount = netReceived > 0 ? netReceived : requestedAmount;
+  // Cap credit at the requested amount to prevent over-crediting from bogus outcome_amount
+  const creditAmount = requestedAmount > 0
+    ? Math.min(netReceived > 0 ? netReceived : requestedAmount, requestedAmount)
+    : netReceived; // fallback if no price_amount
   const isPartial = creditAmount < requestedAmount * 0.98; // 2% tolerance
   const finalStatus = isPartial ? "partial" : "confirmed";
+
+  // Log a warning if NP reported more than requested (indicates wrong asset or NP bug)
+  if (netReceived > requestedAmount * 1.05) {
+    console.warn(`OVER-CREDIT PREVENTED: NP outcome_amount=$${netReceived} > requested=$${requestedAmount} for payment ${paymentIdStr}. Capped at $${creditAmount}.`);
+  }
 
   // 3. Credit the user's balance atomically (prevents race conditions)
   const { error: balanceError } = await supabase.rpc("adjust_balance", { 
