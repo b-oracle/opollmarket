@@ -1137,7 +1137,7 @@ const Profile = () => {
                 setEditName(profile?.display_name || authDisplayName);
                 setEditBio((profile as any)?.bio || "");
                 setEditIsPublic((profile as any)?.is_public ?? true);
-                setEditAge((profile as any)?.age?.toString() || "");
+                setEditDob((profile as any)?.date_of_birth ? new Date((profile as any).date_of_birth) : (profile as any)?.age ? new Date(new Date().getFullYear() - (profile as any).age, 0, 1) : undefined);
                 setEditGender((profile as any)?.gender || "");
                 setEditLocation((profile as any)?.location || "");
                 setEditInterests((profile as any)?.interests || []);
