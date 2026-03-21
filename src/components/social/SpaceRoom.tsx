@@ -355,19 +355,34 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     <Users className="w-3 h-3" /> Listeners
                   </p>
                   <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                    {listeners.map((p) => (
-                      <div
-                        key={p.identity}
-                        className="flex flex-col items-center gap-1"
-                      >
-                        <div className="w-10 h-10 rounded-full bg-muted/50 border border-border flex items-center justify-center text-sm font-bold">
-                          {p.name.charAt(0).toUpperCase()}
+                    {listeners.map((p) => {
+                      const prof = profiles[p.identity];
+                      const vLevel = prof?.verification_level || "none";
+                      return (
+                        <div
+                          key={p.identity}
+                          className="flex flex-col items-center gap-1"
+                        >
+                          <div className="relative">
+                            <div className="w-10 h-10 rounded-full bg-muted/50 border border-border flex items-center justify-center text-sm font-bold overflow-hidden">
+                              {prof?.avatar_url ? (
+                                <img src={prof.avatar_url} alt={p.name} className="w-full h-full object-cover" />
+                              ) : (
+                                p.name.charAt(0).toUpperCase()
+                              )}
+                            </div>
+                            {vLevel !== "none" && (
+                              <div className="absolute -bottom-0.5 -right-0.5">
+                                <NftBadge level={vLevel} size={12} />
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-[9px] text-muted-foreground truncate max-w-[60px]">
+                            {p.name}
+                          </p>
                         </div>
-                        <p className="text-[9px] text-muted-foreground truncate max-w-[60px]">
-                          {p.name}
-                        </p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
