@@ -2045,6 +2045,7 @@ export type Database = {
           started_at: string
           status: Database["public"]["Enums"]["space_status"]
           title: string
+          visibility_scope: string
         }
         Insert: {
           created_at?: string
@@ -2060,6 +2061,7 @@ export type Database = {
           started_at?: string
           status?: Database["public"]["Enums"]["space_status"]
           title: string
+          visibility_scope?: string
         }
         Update: {
           created_at?: string
@@ -2075,6 +2077,7 @@ export type Database = {
           started_at?: string
           status?: Database["public"]["Enums"]["space_status"]
           title?: string
+          visibility_scope?: string
         }
         Relationships: []
       }
@@ -2816,6 +2819,7 @@ export type Database = {
             Returns: undefined
           }
       adjust_platform_pool: { Args: { _delta: number }; Returns: undefined }
+      count_visible_live_spaces: { Args: { _user_id: string }; Returns: number }
       debit_balance_atomic: {
         Args: { _bonus_deduct?: number; _main_deduct: number; _user_id: string }
         Returns: Json
@@ -2940,6 +2944,31 @@ export type Database = {
           predictions: number
           quick_trades: number
         }[]
+      }
+      get_visible_spaces: {
+        Args: { _user_id: string }
+        Returns: {
+          created_at: string
+          ended_at: string | null
+          host_id: string
+          id: string
+          is_recorded: boolean
+          listener_count: number
+          recording_egress_id: string | null
+          recording_url: string | null
+          reminder_count: number
+          scheduled_at: string | null
+          started_at: string
+          status: Database["public"]["Enums"]["space_status"]
+          title: string
+          visibility_scope: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "spaces"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       has_role: {
         Args: {
