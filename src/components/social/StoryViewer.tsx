@@ -6,6 +6,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Trash2, Eye } from "lucide-react";
+import StoryContentRenderer from "./StoryContentRenderer";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -237,21 +238,14 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
               </div>
               {story.content && (
                 <div className="shrink-0 bg-background/95 border-t border-border/40 px-5 py-4">
-                  <p className="text-foreground text-sm font-semibold text-center leading-relaxed break-words">
-                    {story.content}
-                  </p>
+                  <StoryContentRenderer content={story.content} variant="caption" />
                 </div>
               )}
             </div>
           ) : (
             <div className="w-full h-full flex items-center justify-center px-8">
               {story.content && (
-                <p
-                  className="text-white text-center text-lg font-bold max-w-sm break-words"
-                  style={{ textShadow: "0 2px 8px rgba(0,0,0,0.7)" }}
-                >
-                  {story.content}
-                </p>
+                <StoryContentRenderer content={story.content} variant="overlay" />
               )}
             </div>
           )}
