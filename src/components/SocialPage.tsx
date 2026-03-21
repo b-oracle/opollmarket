@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFollowCounts } from "@/hooks/useFollow";
+import { useLiveSpacesCount } from "@/hooks/useLiveSpacesCount";
 import FollowButton from "@/components/FollowButton";
 import ActivityFeed from "@/components/ActivityFeed";
 import StatusFeed from "@/components/social/StatusFeed";

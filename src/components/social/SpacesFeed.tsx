@@ -87,15 +87,18 @@ const SpacesFeed = () => {
           <div className="text-left">
             <p className="text-sm font-semibold">Start a Space</p>
             <p className="text-[10px] text-muted-foreground">Go live or schedule for later</p>
+            <p className="text-[9px] text-muted-foreground/60 mt-0.5">
+              Visible only to people you follow and people who follow you.
+            </p>
           </div>
         </motion.button>
       )}
 
       {liveSpaces.length === 0 && scheduledSpaces.length === 0 ? (
         <div className="flex flex-col items-center py-12">
-          <Radio className="w-8 h-8 text-muted-foreground mb-2" />
-          <p className="text-sm text-muted-foreground">No live spaces right now</p>
-          <p className="text-[10px] text-muted-foreground mt-1">Be the first to start one!</p>
+          <Users className="w-8 h-8 text-muted-foreground mb-2" />
+          <p className="text-sm text-muted-foreground">No Spaces from your network yet</p>
+          <p className="text-[10px] text-muted-foreground mt-1">Follow more people or invite your community to start a Space.</p>
         </div>
       ) : (
         <>
