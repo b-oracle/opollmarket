@@ -15,6 +15,7 @@ const statusColors: Record<string, string> = {
   pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
   active: "bg-green-500/10 text-green-500 border-green-500/20",
   sent: "bg-green-500/10 text-green-500 border-green-500/20",
+  ended: "bg-muted text-muted-foreground border-border",
   cancelled: "bg-destructive/10 text-destructive border-destructive/20",
   expired: "bg-muted text-muted-foreground border-border",
   payment_expired: "bg-orange-500/10 text-orange-500 border-orange-500/20",
