@@ -317,13 +317,13 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
         </button>
         <button
           onClick={handleRepost}
-          disabled={repostLoading}
-          className={`flex items-center gap-1 text-xs transition-colors ${isReposted ? "text-emerald-500" : "text-muted-foreground hover:text-emerald-500"}`}
+          disabled={repostLoading || (!!user && user.id === status.user_id)}
+          className={`flex items-center gap-1 text-xs transition-colors ${isReposted && user?.id !== status.user_id ? "text-emerald-500" : "text-muted-foreground hover:text-emerald-500"} ${user?.id === status.user_id ? "opacity-40 cursor-not-allowed hover:text-muted-foreground" : ""}`}
         >
           {repostLoading ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
           ) : (
-            <Repeat2 className={`w-3.5 h-3.5 ${isReposted ? "stroke-[2.5]" : ""}`} />
+            <Repeat2 className={`w-3.5 h-3.5 ${isReposted && user?.id !== status.user_id ? "stroke-[2.5]" : ""}`} />
           )}
           {(status.reposts_count || 0) > 0 && status.reposts_count}
         </button>
