@@ -88,11 +88,16 @@ Deno.serve(async (req) => {
       const normalized = (value || "").trim();
       if (!normalized) return "";
 
-      const fromNamedLine = normalized.match(
-        new RegExp(`(?:^|\\n)\\s*${key}\\s*=\\s*([^\\n\\r]+)`, "i")
-      )?.[1];
+      const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const assignmentMatch = normalized.match(
+        new RegExp(
+          `(?:^|[\\n\\r;\\s])${escapedKey}\\s*=\\s*(?:"([^"\\n\\r]+)"|'([^'\\n\\r]+)'|([^\\s;\\n\\r]+))`,
+          "i"
+        )
+      );
 
-      const candidate = (fromNamedLine || normalized).trim();
+      const fromAssignment = assignmentMatch?.[1] || assignmentMatch?.[2] || assignmentMatch?.[3];
+      const candidate = (fromAssignment || normalized).trim();
       return candidate.replace(/^['\"`]|['\"`]$/g, "");
     };
 
