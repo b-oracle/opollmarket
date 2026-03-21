@@ -251,6 +251,7 @@ const Feed = () => {
   const { user } = useAuth();
   const [feedTab, setFeedTab] = useState<"foryou" | "bookmarks">("foryou");
   const [visibleCount, setVisibleCount] = useState(20);
+  const { joinSpace } = useActiveSpace();
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const [searchParams] = useSearchParams();
