@@ -240,7 +240,8 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle, 
             </div>
 
             {/* Controls */}
-            <div className="px-4 space-y-3 shrink-0 pb-4 lg:pb-6" style={{ paddingBottom: `calc(5rem + env(safe-area-inset-bottom, 0px))` }}>
+            {/* Controls - use flex-col-reverse so search results grow upward */}
+            <div className="px-4 shrink-0 pb-4 lg:pb-6 flex flex-col gap-3" style={{ paddingBottom: `calc(5rem + env(safe-area-inset-bottom, 0px))` }}>
               {/* Background colors */}
               {!imagePreview && (
                 <div className="flex gap-2 overflow-x-auto no-scrollbar px-1 py-1 justify-center">
@@ -255,10 +256,10 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle, 
                 </div>
               )}
 
-              {/* Market search picker */}
+              {/* Market search picker - results scroll upward */}
               {marketSearchOpen && (
-                <div className="bg-muted rounded-xl p-3 space-y-2 max-w-md mx-auto w-full">
-                  <div className="relative">
+                <div className="bg-muted rounded-xl p-3 space-y-2 max-w-md mx-auto w-full max-h-[40vh] overflow-y-auto overscroll-contain">
+                  <div className="relative sticky top-0 z-10 bg-muted pb-1">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                     <Input
                       value={marketQuery}
