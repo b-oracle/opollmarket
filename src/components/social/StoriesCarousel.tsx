@@ -161,8 +161,11 @@ const StoriesCarousel = () => {
           className="flex flex-col items-center gap-1 shrink-0"
         >
           <div className={`w-14 h-14 rounded-full flex items-center justify-center relative ${
-            hasOwnStories ? "ring-2 ring-primary" : "ring-2 ring-dashed ring-muted-foreground/30"
+            liveUserIds.has(user?.id || "")
+              ? "ring-2 ring-destructive"
+              : hasOwnStories ? "ring-2 ring-primary" : "ring-2 ring-dashed ring-muted-foreground/30"
           }`}>
+            <LiveAvatarBadge isLive={liveUserIds.has(user?.id || "")} size="md" />
             <div className="w-full h-full rounded-full overflow-hidden">
               {hasOwnStories && ownGroup?.profile?.avatar_url ? (
                 <img src={ownGroup.profile.avatar_url} alt="" className="w-full h-full object-cover" />
