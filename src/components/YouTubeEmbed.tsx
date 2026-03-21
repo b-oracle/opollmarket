@@ -1,6 +1,10 @@
+import { useState, useEffect } from "react";
+
 interface YouTubeEmbedProps {
   url: string;
   className?: string;
+  fallbackImage?: string | null;
+  fallbackAlt?: string;
 }
 
 /**
@@ -19,9 +23,35 @@ export const getYouTubeId = (url: string): string | null => {
 
 export const isYouTubeUrl = (url: string): boolean => !!getYouTubeId(url);
 
-const YouTubeEmbed = ({ url, className = "" }: YouTubeEmbedProps) => {
+const YouTubeEmbed = ({ url, className = "", fallbackImage, fallbackAlt }: YouTubeEmbedProps) => {
   const videoId = getYouTubeId(url);
+  const [showFallback, setShowFallback] = useState(false);
+
+  // Check if video exists via thumbnail probe
+  useEffect(() => {
+    if (!videoId) return;
+    const img = new Image();
+    img.onload = () => {
+      // YouTube returns a 120x90 default placeholder for unavailable videos
+      if (img.naturalWidth === 120 && img.naturalHeight === 90) {
+        setShowFallback(true);
+      }
+    };
+    img.onerror = () => setShowFallback(true);
+    img.src = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+  }, [videoId]);
+
   if (!videoId) return null;
+
+  if (showFallback && fallbackImage) {
+    return (
+      <img
+        src={fallbackImage}
+        alt={fallbackAlt || ""}
+        className={`${className} object-cover`}
+      />
+    );
+  }
 
   return (
     <iframe
