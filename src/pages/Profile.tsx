@@ -714,6 +714,10 @@ const Profile = () => {
   const [selectedNftUrl, setSelectedNftUrl] = useState<string | null>(null);
   const [editBio, setEditBio] = useState("");
   const [editIsPublic, setEditIsPublic] = useState(true);
+  const [editAge, setEditAge] = useState("");
+  const [editGender, setEditGender] = useState("");
+  const [editLocation, setEditLocation] = useState("");
+  const [editInterests, setEditInterests] = useState<string[]>([]);
   const [swipeHintDismissed, setSwipeHintDismissed] = useState(() => localStorage.getItem("social_swipe_used") === "1");
   const [revealX, setRevealX] = useState(0);
   const revealAnimating = useRef(false);
