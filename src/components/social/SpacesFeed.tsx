@@ -6,7 +6,7 @@ import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
 import SpaceCard from "./SpaceCard";
 import CreateSpaceModal from "./CreateSpaceModal";
-import { Radio, Loader2 } from "lucide-react";
+import { Radio, Loader2, Users } from "lucide-react";
 import { motion } from "framer-motion";
 
 const SpacesFeed = () => {
@@ -17,16 +17,18 @@ const SpacesFeed = () => {
   const [createOpen, setCreateOpen] = useState(false);
 
   const { data: spaces = [], isLoading } = useQuery({
-    queryKey: ["spaces"],
+    queryKey: ["spaces", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("spaces")
-        .select("*")
-        .in("status", ["live", "scheduled"])
-        .order("started_at", { ascending: false })
-        .limit(30);
-      return data || [];
+      if (!user) {
+        // Unauthenticated users see nothing
+        return [];
+      }
+      const { data } = await supabase.rpc("get_visible_spaces" as any, {
+        _user_id: user.id,
+      });
+      return (data as any[]) || [];
     },
+    enabled: !!user,
     refetchInterval: 10000,
   });
 
