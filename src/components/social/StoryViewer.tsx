@@ -238,9 +238,7 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
               </div>
               {story.content && (
                 <div className="shrink-0 bg-background/95 border-t border-border/40 px-5 py-4">
-                  <p className="text-foreground text-sm font-semibold text-center leading-relaxed break-words">
-                    {story.content}
-                  </p>
+                  <StoryContentRenderer content={story.content} variant="caption" />
                 </div>
               )}
             </div>
