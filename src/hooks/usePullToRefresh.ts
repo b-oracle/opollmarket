@@ -53,7 +53,9 @@ export function usePullToRefresh({ onRefresh, scrollRef }: UsePullToRefreshOptio
       return;
     }
     const deltaY = e.touches[0].clientY - touchStartY.current;
-    if (deltaY > 0) {
+    if (deltaY > 10) {
+      // Prevent native overscroll/bounce when we're handling the pull
+      try { e.preventDefault(); } catch (_) { /* passive listener fallback */ }
       const dampened = Math.min(deltaY * DAMPEN_FACTOR, MAX_PULL);
       setPulling(true);
       setPullDistance(dampened);
