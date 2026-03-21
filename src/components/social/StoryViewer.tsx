@@ -6,6 +6,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Trash2, Eye } from "lucide-react";
+import StoryContentRenderer from "./StoryContentRenderer";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import {
