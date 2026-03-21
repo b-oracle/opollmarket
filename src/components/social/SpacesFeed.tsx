@@ -68,9 +68,10 @@ const SpacesFeed = () => {
     );
   }
 
-  // Separate live and scheduled spaces
+  // Separate live, scheduled, and recorded spaces
   const liveSpaces = spaces.filter((s: any) => s.status === "live");
   const scheduledSpaces = spaces.filter((s: any) => s.status === "scheduled");
+  const recordedSpaces = spaces.filter((s: any) => s.status === "ended" && s.is_recorded && s.recording_url);
 
   return (
     <div className="space-y-2">
@@ -94,7 +95,7 @@ const SpacesFeed = () => {
         </motion.button>
       )}
 
-      {liveSpaces.length === 0 && scheduledSpaces.length === 0 ? (
+      {liveSpaces.length === 0 && scheduledSpaces.length === 0 && recordedSpaces.length === 0 ? (
         <div className="flex flex-col items-center py-12">
           <Users className="w-8 h-8 text-muted-foreground mb-2" />
           <p className="text-sm text-muted-foreground">No Spaces from your network yet</p>
@@ -125,6 +126,23 @@ const SpacesFeed = () => {
                   space={s}
                   hostProfile={(hostMap as Map<string, any>).get(s.host_id)}
                   index={i + liveSpaces.length}
+                  onJoinRoom={handleJoinRoom}
+                />
+              ))}
+            </>
+          )}
+
+          {recordedSpaces.length > 0 && (
+            <>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pt-2">
+                Recordings
+              </p>
+              {recordedSpaces.map((s: any, i: number) => (
+                <SpaceCard
+                  key={s.id}
+                  space={s}
+                  hostProfile={(hostMap as Map<string, any>).get(s.host_id)}
+                  index={i + liveSpaces.length + scheduledSpaces.length}
                   onJoinRoom={handleJoinRoom}
                 />
               ))}
