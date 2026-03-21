@@ -81,6 +81,45 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
     refetchInterval: 10000,
   });
 
+  // Fetch like count for current story
+  const { data: likeCount = 0 } = useQuery({
+    queryKey: ["story-like-count", story?.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("story_likes" as any)
+        .select("*", { count: "exact", head: true })
+        .eq("story_id", story!.id);
+      return count || 0;
+    },
+    enabled: !!story,
+  });
+
+  // Check if current user liked this story
+  const { data: hasLiked = false } = useQuery({
+    queryKey: ["story-liked", story?.id, user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("story_likes" as any)
+        .select("id")
+        .eq("story_id", story!.id)
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!story && !!user,
+  });
+
+  const handleLike = async () => {
+    if (!user || !story) { toast.error("Sign in to like"); return; }
+    if (hasLiked) {
+      await supabase.from("story_likes" as any).delete().eq("story_id", story.id).eq("user_id", user.id);
+    } else {
+      await supabase.from("story_likes" as any).insert({ story_id: story.id, user_id: user.id } as any);
+    }
+    queryClient.invalidateQueries({ queryKey: ["story-like-count", story.id] });
+    queryClient.invalidateQueries({ queryKey: ["story-liked", story.id, user.id] });
+  };
+
   // Record view
   useEffect(() => {
     if (!user || !story || user.id === story.user_id) return;
