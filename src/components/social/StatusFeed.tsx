@@ -5,10 +5,18 @@ import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import StatusCard from "./StatusCard";
 import StatusComposer from "./StatusComposer";
 import { Loader2, FileText } from "lucide-react";
+import { useMemo } from "react";
 
 interface StatusFeedProps {
   userId?: string;
   showComposer?: boolean;
+}
+
+interface FeedItem {
+  type: "original" | "repost";
+  status: any;
+  sortTime: string;
+  reposterId?: string;
 }
 
 const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
@@ -45,7 +53,6 @@ const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
           .limit(50);
         return data || [];
       }
-
       if (userId) {
         const { data } = await supabase
           .from("status_updates")
@@ -55,7 +62,6 @@ const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
           .limit(50);
         return data || [];
       }
-
       const { data } = await supabase
         .from("status_updates")
         .select("*")
@@ -66,23 +72,101 @@ const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
     enabled: !userId || socialCircleIds.length > 0,
   });
 
-  // Fetch profiles for all status authors
-  const authorIds = [...new Set(statuses.map((s: any) => s.user_id))];
-  const { data: profileMap = new Map() } = useQuery({
-    queryKey: ["status-profiles", authorIds.join(",")],
+  // Fetch reposts from social circle
+  const { data: reposts = [] } = useQuery({
+    queryKey: ["status-feed-reposts", userId || "global", socialCircleIds.length],
     queryFn: async () => {
-      if (authorIds.length === 0) return new Map();
+      const targetIds = userId && socialCircleIds.length > 0 ? socialCircleIds : null;
+      let query = supabase
+        .from("status_reposts")
+        .select("status_id, user_id, created_at")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (targetIds) {
+        query = query.in("user_id", targetIds.slice(0, 50));
+      }
+      const { data } = await query;
+      return data || [];
+    },
+    enabled: !userId || socialCircleIds.length > 0,
+  });
+
+  // Fetch the actual statuses for reposts that aren't already in the feed
+  const repostStatusIds = reposts
+    .map((r: any) => r.status_id)
+    .filter((id: string) => !statuses.some((s: any) => s.id === id));
+
+  const { data: repostedStatuses = [] } = useQuery({
+    queryKey: ["reposted-statuses", repostStatusIds.join(",")],
+    queryFn: async () => {
+      if (repostStatusIds.length === 0) return [];
+      const { data } = await supabase
+        .from("status_updates")
+        .select("*")
+        .in("id", repostStatusIds.slice(0, 50));
+      return data || [];
+    },
+    enabled: repostStatusIds.length > 0,
+  });
+
+  // Merge into a unified feed
+  const allStatuses = useMemo(() => {
+    const statusMap = new Map<string, any>();
+    [...statuses, ...repostedStatuses].forEach((s: any) => statusMap.set(s.id, s));
+    return statusMap;
+  }, [statuses, repostedStatuses]);
+
+  const feedItems: FeedItem[] = useMemo(() => {
+    const items: FeedItem[] = [];
+    const seen = new Set<string>();
+
+    // Add original statuses
+    statuses.forEach((s: any) => {
+      items.push({ type: "original", status: s, sortTime: s.created_at });
+      seen.add(s.id);
+    });
+
+    // Add reposts (may duplicate the original, that's intentional - shows as "X repolled")
+    reposts.forEach((r: any) => {
+      const status = allStatuses.get(r.status_id);
+      if (!status) return;
+      // Don't show repost if user reposted their own post
+      if (r.user_id === status.user_id) return;
+      const key = `repost-${r.user_id}-${r.status_id}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      items.push({ type: "repost", status, sortTime: r.created_at, reposterId: r.user_id });
+    });
+
+    items.sort((a, b) => new Date(b.sortTime).getTime() - new Date(a.sortTime).getTime());
+    return items.slice(0, 80);
+  }, [statuses, reposts, allStatuses]);
+
+  // Fetch profiles for all authors + reposters
+  const allUserIds = useMemo(() => {
+    const ids = new Set<string>();
+    feedItems.forEach((item) => {
+      ids.add(item.status.user_id);
+      if (item.reposterId) ids.add(item.reposterId);
+    });
+    return [...ids];
+  }, [feedItems]);
+
+  const { data: profileMap = new Map() } = useQuery({
+    queryKey: ["status-profiles", allUserIds.join(",")],
+    queryFn: async () => {
+      if (allUserIds.length === 0) return new Map();
       const { data } = await supabase
         .from("profiles")
         .select("id, display_name, avatar_url, verification_level")
-        .in("id", authorIds.slice(0, 50));
+        .in("id", allUserIds.slice(0, 50));
       return new Map((data || []).map((p: any) => [p.id, p]));
     },
-    enabled: authorIds.length > 0,
+    enabled: allUserIds.length > 0,
   });
 
   // Fetch market data for statuses that have a market_id
-  const marketIds = [...new Set(statuses.filter((s: any) => s.market_id).map((s: any) => s.market_id))];
+  const marketIds = [...new Set(feedItems.filter((i) => i.status.market_id).map((i) => i.status.market_id))];
   const { data: marketMap = new Map() } = useQuery({
     queryKey: ["status-markets", marketIds.join(",")],
     queryFn: async () => {
@@ -110,21 +194,31 @@ const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
     <div className="space-y-2">
       {showComposer && <StatusComposer />}
 
-      {statuses.length === 0 ? (
+      {feedItems.length === 0 ? (
         <div className="flex flex-col items-center py-16">
           <FileText className="w-8 h-8 text-muted-foreground mb-2" />
           <p className="text-sm text-muted-foreground">No posts yet</p>
         </div>
       ) : (
-        statuses.map((s: any, i: number) => (
-          <StatusCard
-            key={s.id}
-            status={s}
-            profile={(profileMap as Map<string, any>).get(s.user_id)}
-            market={s.market_id ? (marketMap as Map<string, any>).get(s.market_id) : undefined}
-            index={i}
-          />
-        ))
+        feedItems.map((item, i) => {
+          const reposterProfile = item.reposterId
+            ? (profileMap as Map<string, any>).get(item.reposterId)
+            : null;
+          return (
+            <StatusCard
+              key={item.type === "repost" ? `repost-${item.reposterId}-${item.status.id}` : item.status.id}
+              status={item.status}
+              profile={(profileMap as Map<string, any>).get(item.status.user_id)}
+              market={item.status.market_id ? (marketMap as Map<string, any>).get(item.status.market_id) : undefined}
+              index={i}
+              repostedBy={
+                item.type === "repost" && item.reposterId
+                  ? { name: reposterProfile?.display_name || "Someone", userId: item.reposterId }
+                  : null
+              }
+            />
+          );
+        })
       )}
     </div>
   );
