@@ -273,12 +273,21 @@ const Feed = () => {
       return;
     }
 
-    // User is logged in — navigate to social page / open space
-    // Clear the query params so it doesn't re-trigger
+    // User is logged in — fetch space details and join
     navigate("/feed", { replace: true });
-    // Emit a custom event that the SocialPage/SpacesFeed can listen for
-    window.dispatchEvent(new CustomEvent("open-space", { detail: { spaceId } }));
-  }, [searchParams, user, navigate]);
+    (async () => {
+      const { data: space } = await supabase
+        .from("spaces")
+        .select("id, title, host_id")
+        .eq("id", spaceId)
+        .maybeSingle();
+      if (space) {
+        joinSpace({ id: space.id, title: space.title, hostId: space.host_id });
+      } else {
+        toast("This space is no longer available", { duration: 3000 });
+      }
+    })();
+  }, [searchParams, user, navigate, joinSpace]);
 
   // Pulse when bookmarks increase
   useEffect(() => {
