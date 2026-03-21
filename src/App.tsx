@@ -355,6 +355,7 @@ const App = () => (
                 </BrowserRouter>
               </TooltipProvider>
             </SidebarStateProvider>
+            </ActiveSpaceProvider>
           </AuthProvider>
           </VerificationThresholdProvider>
         </QueryClientProvider>
