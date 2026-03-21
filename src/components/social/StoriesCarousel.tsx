@@ -22,7 +22,8 @@ const StoriesCarousel = () => {
   const { isFeatureEnabled } = useFeatureToggles();
   const [creatorOpen, setCreatorOpen] = useState(false);
   const [viewerData, setViewerData] = useState<{ group: StoryGroup; index: number } | null>(null);
-
+  const liveUserIds = useLiveSpaceUsers();
+  const { joinSpace } = useActiveSpace();
 
   // Fetch all active stories filtered by follow connections
   const { data: storyGroups = [] } = useQuery({
