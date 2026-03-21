@@ -99,6 +99,7 @@ export const useCommissionSettings = () => {
         osure_25_premium: Number(d.osure_25_premium ?? 10),
         osure_50_premium: Number(d.osure_50_premium ?? 20),
         osure_100_premium: Number(d.osure_100_premium ?? 30),
+        social_ad_price: Number(d.social_ad_price ?? 10),
       };
     },
     staleTime: 60_000,
