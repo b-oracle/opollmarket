@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface YouTubeEmbedProps {
   url: string;
@@ -25,11 +25,25 @@ export const isYouTubeUrl = (url: string): boolean => !!getYouTubeId(url);
 
 const YouTubeEmbed = ({ url, className = "", fallbackImage, fallbackAlt }: YouTubeEmbedProps) => {
   const videoId = getYouTubeId(url);
-  const [hasError, setHasError] = useState(false);
+  const [showFallback, setShowFallback] = useState(false);
+
+  // Check if video exists via thumbnail probe
+  useEffect(() => {
+    if (!videoId) return;
+    const img = new Image();
+    img.onload = () => {
+      // YouTube returns a 120x90 default placeholder for unavailable videos
+      if (img.naturalWidth === 120 && img.naturalHeight === 90) {
+        setShowFallback(true);
+      }
+    };
+    img.onerror = () => setShowFallback(true);
+    img.src = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+  }, [videoId]);
 
   if (!videoId) return null;
 
-  if (hasError && fallbackImage) {
+  if (showFallback && fallbackImage) {
     return (
       <img
         src={fallbackImage}
@@ -47,7 +61,6 @@ const YouTubeEmbed = ({ url, className = "", fallbackImage, fallbackAlt }: YouTu
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
       allowFullScreen
       loading="lazy"
-      onError={() => setHasError(true)}
     />
   );
 };
