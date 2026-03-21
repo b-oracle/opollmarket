@@ -1,10 +1,25 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { AccessToken } from "npm:livekit-server-sdk@2.15.0";
+import { AccessToken, RoomServiceClient } from "npm:livekit-server-sdk@2.15.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+const extractEnvValue = (value: string | null, key: string) => {
+  const normalized = (value || "").trim();
+  if (!normalized) return "";
+  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const assignmentMatch = normalized.match(
+    new RegExp(
+      `(?:^|[\\n\\r;\\s])${escapedKey}\\s*=\\s*(?:"([^"\\n\\r]+)"|'([^'\\n\\r]+)'|([^\\s;\\n\\r]+))`,
+      "i"
+    )
+  );
+  const fromAssignment = assignmentMatch?.[1] || assignmentMatch?.[2] || assignmentMatch?.[3];
+  const candidate = (fromAssignment || normalized).trim();
+  return candidate.replace(/^['\"`]|['\"`]$/g, "");
 };
 
 Deno.serve(async (req) => {
@@ -29,7 +44,6 @@ Deno.serve(async (req) => {
 
     const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
     if (userError || !authUser) {
-      console.error("Auth error:", userError?.message);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -37,8 +51,9 @@ Deno.serve(async (req) => {
     }
 
     const userId = authUser.id;
+    const body = await req.json();
+    const { space_id, action, target_user_id } = body;
 
-    const { space_id } = await req.json();
     if (!space_id) {
       return new Response(JSON.stringify({ error: "space_id required" }), {
         status: 400,
@@ -46,7 +61,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify space exists and is live
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -59,7 +73,6 @@ Deno.serve(async (req) => {
       .single();
 
     if (spaceErr || !space) {
-      console.error("Space lookup error:", spaceErr?.message);
       return new Response(JSON.stringify({ error: "Space not found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -73,7 +86,83 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get display name
+    const apiKey = extractEnvValue(Deno.env.get("LIVEKIT_API_KEY"), "LIVEKIT_API_KEY");
+    const apiSecret = extractEnvValue(Deno.env.get("LIVEKIT_API_SECRET"), "LIVEKIT_API_SECRET");
+    const livekitUrl = extractEnvValue(Deno.env.get("LIVEKIT_URL"), "LIVEKIT_URL");
+
+    if (!apiKey || !apiSecret || !livekitUrl) {
+      return new Response(JSON.stringify({ error: "LiveKit not configured" }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const roomName = `space-${space_id}`;
+    const isHost = space.host_id === userId;
+
+    // --- PROMOTE action: host grants publish permission to a listener ---
+    if (action === "promote" && target_user_id) {
+      if (!isHost) {
+        return new Response(JSON.stringify({ error: "Only the host can promote participants" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Use LiveKit RoomService to update participant permissions
+      const httpUrl = livekitUrl.replace(/^wss:/, "https:").replace(/^ws:/, "http:");
+      const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
+      
+      await svc.updateParticipant(roomName, target_user_id, undefined, {
+        canPublish: true,
+        canSubscribe: true,
+        canPublishData: true,
+      });
+
+      // Update DB role
+      await supabaseAdmin
+        .from("space_participants")
+        .update({ role: "speaker" })
+        .eq("space_id", space_id)
+        .eq("user_id", target_user_id);
+
+      return new Response(JSON.stringify({ success: true, action: "promoted" }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // --- DEMOTE action: host revokes publish permission ---
+    if (action === "demote" && target_user_id) {
+      if (!isHost) {
+        return new Response(JSON.stringify({ error: "Only the host can demote participants" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const httpUrl = livekitUrl.replace(/^wss:/, "https:").replace(/^ws:/, "http:");
+      const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
+      
+      await svc.updateParticipant(roomName, target_user_id, undefined, {
+        canPublish: false,
+        canSubscribe: true,
+        canPublishData: true,
+      });
+
+      await supabaseAdmin
+        .from("space_participants")
+        .update({ role: "listener" })
+        .eq("space_id", space_id)
+        .eq("user_id", target_user_id);
+
+      return new Response(JSON.stringify({ success: true, action: "demoted" }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // --- Default: JOIN — generate a token ---
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("display_name")
@@ -81,57 +170,6 @@ Deno.serve(async (req) => {
       .single();
 
     const displayName = profile?.display_name || "Anonymous";
-    const isHost = space.host_id === userId;
-    const roomName = `space-${space_id}`;
-
-    const extractEnvValue = (value: string | null, key: string) => {
-      const normalized = (value || "").trim();
-      if (!normalized) return "";
-
-      const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const assignmentMatch = normalized.match(
-        new RegExp(
-          `(?:^|[\\n\\r;\\s])${escapedKey}\\s*=\\s*(?:"([^"\\n\\r]+)"|'([^'\\n\\r]+)'|([^\\s;\\n\\r]+))`,
-          "i"
-        )
-      );
-
-      const fromAssignment = assignmentMatch?.[1] || assignmentMatch?.[2] || assignmentMatch?.[3];
-      const candidate = (fromAssignment || normalized).trim();
-      return candidate.replace(/^['\"`]|['\"`]$/g, "");
-    };
-
-    const apiKeyRaw = Deno.env.get("LIVEKIT_API_KEY");
-    const apiSecretRaw = Deno.env.get("LIVEKIT_API_SECRET");
-    const livekitUrlRaw = Deno.env.get("LIVEKIT_URL");
-
-    const apiKey = extractEnvValue(apiKeyRaw, "LIVEKIT_API_KEY");
-    const apiSecret = extractEnvValue(apiSecretRaw, "LIVEKIT_API_SECRET");
-    const livekitUrl = extractEnvValue(livekitUrlRaw, "LIVEKIT_URL");
-
-    const malformedSecret = /^LIVEKIT_/i.test(apiSecret);
-
-    console.log("LiveKit config:", {
-      hasKey: !!apiKey,
-      hasSecret: !!apiSecret,
-      hasUrl: !!livekitUrl,
-      malformedSecret,
-      keyLength: apiKey.length,
-      secretLength: apiSecret.length,
-      urlValue: livekitUrl,
-      keyPrefix: apiKey.slice(0, 6),
-      secretPrefix: apiSecret.slice(0, 6),
-      userId,
-      roomName,
-      isHost,
-    });
-
-    if (!apiKey || !apiSecret || !livekitUrl || malformedSecret) {
-      return new Response(JSON.stringify({ error: "LiveKit credentials malformed. Paste raw key/secret values only." }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     const at = new AccessToken(apiKey, apiSecret, {
       identity: userId,
@@ -148,28 +186,16 @@ Deno.serve(async (req) => {
     });
 
     const accessToken = await at.toJwt();
-    console.log("Token generated, length:", accessToken.length);
 
     return new Response(
-      JSON.stringify({
-        token: accessToken,
-        url: livekitUrl,
-        room: roomName,
-        isHost,
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ token: accessToken, url: livekitUrl, room: roomName, isHost }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: any) {
     console.error("livekit-token error:", err);
     return new Response(
       JSON.stringify({ error: err.message || "Internal error" }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

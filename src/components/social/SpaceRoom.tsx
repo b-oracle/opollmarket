@@ -7,22 +7,21 @@ import {
   Room,
   RoomEvent,
   Track,
-  RemoteParticipant,
-  LocalParticipant,
+  RemoteTrackPublication,
   Participant,
-  ConnectionState,
 } from "livekit-client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Mic,
   MicOff,
   PhoneOff,
-  Radio,
   Hand,
   Users,
   Loader2,
   X,
   Volume2,
+  UserPlus,
+  UserMinus,
 } from "lucide-react";
 import NftBadge, { VerificationLevel } from "@/components/NftBadge";
 
@@ -39,6 +38,7 @@ interface ParticipantInfo {
   isSpeaking: boolean;
   isMuted: boolean;
   audioTrack: boolean;
+  canPublish: boolean;
 }
 
 interface ProfileInfo {
@@ -50,6 +50,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const roomRef = useRef<Room | null>(null);
+  const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
   const [connecting, setConnecting] = useState(true);
   const [connected, setConnected] = useState(false);
   const [muted, setMuted] = useState(true);
@@ -57,6 +58,40 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [profiles, setProfiles] = useState<Record<string, ProfileInfo>>({});
   const [isHost, setIsHost] = useState(false);
   const [handRaised, setHandRaised] = useState(false);
+  const [canPublish, setCanPublish] = useState(false);
+  const [promoting, setPromoting] = useState<string | null>(null);
+
+  // Attach audio for remote tracks
+  const attachAudio = useCallback((publication: RemoteTrackPublication) => {
+    if (publication.kind !== Track.Kind.Audio || !publication.track) return;
+    const participantId = publication.track.sid;
+    if (audioElementsRef.current.has(participantId)) return;
+
+    const el = publication.track.attach();
+    el.id = `audio-${participantId}`;
+    el.style.display = "none";
+    document.body.appendChild(el);
+    audioElementsRef.current.set(participantId, el);
+  }, []);
+
+  const detachAudio = useCallback((publication: RemoteTrackPublication) => {
+    if (publication.kind !== Track.Kind.Audio || !publication.track) return;
+    const participantId = publication.track.sid;
+    const el = audioElementsRef.current.get(participantId);
+    if (el) {
+      publication.track.detach(el);
+      el.remove();
+      audioElementsRef.current.delete(participantId);
+    }
+  }, []);
+
+  // Cleanup all audio on unmount
+  useEffect(() => {
+    return () => {
+      audioElementsRef.current.forEach((el) => el.remove());
+      audioElementsRef.current.clear();
+    };
+  }, []);
 
   const updateParticipants = useCallback((room: Room) => {
     const all: ParticipantInfo[] = [];
@@ -68,12 +103,19 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         isSpeaking: p.isSpeaking,
         isMuted: !p.isMicrophoneEnabled,
         audioTrack: p.audioTrackPublications.size > 0,
+        canPublish: (p as any).permissions?.canPublish ?? false,
       });
     };
 
     addParticipant(room.localParticipant);
     room.remoteParticipants.forEach((p) => addParticipant(p));
     setParticipants(all);
+
+    // Update local canPublish state
+    const localPerms = (room.localParticipant as any).permissions;
+    if (localPerms) {
+      setCanPublish(localPerms.canPublish ?? false);
+    }
   }, []);
 
   // Fetch profiles for all participants
@@ -140,15 +182,45 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         if (cancelled) return;
 
         setIsHost(data.isHost);
+        setCanPublish(data.isHost);
 
-        // Set up event listeners
+        // Audio track handling
+        room.on(RoomEvent.TrackSubscribed, (track, pub) => {
+          if (track.kind === Track.Kind.Audio) {
+            const el = track.attach();
+            el.style.display = "none";
+            document.body.appendChild(el);
+            audioElementsRef.current.set(track.sid, el);
+          }
+          updateParticipants(room);
+        });
+
+        room.on(RoomEvent.TrackUnsubscribed, (track) => {
+          if (track.kind === Track.Kind.Audio) {
+            const el = audioElementsRef.current.get(track.sid);
+            if (el) {
+              track.detach(el);
+              el.remove();
+              audioElementsRef.current.delete(track.sid);
+            }
+          }
+          updateParticipants(room);
+        });
+
         room.on(RoomEvent.ParticipantConnected, () => updateParticipants(room));
         room.on(RoomEvent.ParticipantDisconnected, () => updateParticipants(room));
-        room.on(RoomEvent.TrackSubscribed, () => updateParticipants(room));
-        room.on(RoomEvent.TrackUnsubscribed, () => updateParticipants(room));
         room.on(RoomEvent.TrackMuted, () => updateParticipants(room));
         room.on(RoomEvent.TrackUnmuted, () => updateParticipants(room));
         room.on(RoomEvent.ActiveSpeakersChanged, () => updateParticipants(room));
+        room.on(RoomEvent.ParticipantPermissionsChanged, () => {
+          updateParticipants(room);
+          // If we just got publish permission, notify
+          const perms = (room.localParticipant as any).permissions;
+          if (perms?.canPublish && !canPublish) {
+            setCanPublish(true);
+            toast.success("You've been promoted to speaker! 🎙️");
+          }
+        });
         room.on(RoomEvent.Disconnected, () => {
           if (!cancelled) {
             setConnected(false);
@@ -168,13 +240,12 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         setConnected(true);
         setConnecting(false);
 
-        // If host, try to enable mic by default but don't fail join if permission is denied
+        // If host, enable mic
         if (data.isHost) {
           try {
             await room.localParticipant.setMicrophoneEnabled(true);
             setMuted(false);
-          } catch (micErr) {
-            console.warn("Microphone permission unavailable, staying muted:", micErr);
+          } catch {
             setMuted(true);
             toast.info("Joined muted. Enable microphone when ready.");
           }
@@ -182,7 +253,6 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
         updateParticipants(room);
 
-        // Upsert participant in DB
         await supabase.from("space_participants").upsert(
           {
             space_id: spaceId,
@@ -195,8 +265,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         queryClient.invalidateQueries({ queryKey: ["spaces"] });
       } catch (err: any) {
         if (!cancelled) {
-          const message = err?.message || "Failed to connect to voice room";
-          toast.error(message);
+          toast.error(err?.message || "Failed to connect to voice room");
           console.error("LiveKit connect error:", err);
           onClose();
         }
@@ -217,14 +286,16 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const toggleMute = async () => {
     if (!roomRef.current) return;
     const newMuted = !muted;
-    await roomRef.current.localParticipant.setMicrophoneEnabled(!newMuted);
-    setMuted(newMuted);
+    try {
+      await roomRef.current.localParticipant.setMicrophoneEnabled(!newMuted);
+      setMuted(newMuted);
+    } catch {
+      toast.error("Microphone access denied");
+    }
   };
 
   const handleLeave = async () => {
-    if (roomRef.current) {
-      roomRef.current.disconnect();
-    }
+    if (roomRef.current) roomRef.current.disconnect();
     if (user) {
       await supabase
         .from("space_participants")
@@ -233,7 +304,6 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         .eq("user_id", user.id)
         .is("left_at", null);
 
-      // If host, end the space
       if (isHost) {
         await supabase
           .from("spaces")
@@ -250,18 +320,92 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     toast.info(handRaised ? "Hand lowered" : "Hand raised ✋");
   };
 
-  const speakers = participants.filter((p) => p.audioTrack || p.identity === user?.id);
-  const listeners = participants.filter((p) => !p.audioTrack && p.identity !== user?.id);
+  const handlePromote = async (targetUserId: string) => {
+    setPromoting(targetUserId);
+    try {
+      const { data, error } = await supabase.functions.invoke("livekit-token", {
+        body: { space_id: spaceId, action: "promote", target_user_id: targetUserId },
+      });
+      if (error || data?.error) {
+        toast.error(data?.error || "Failed to promote");
+      } else {
+        toast.success("Participant promoted to speaker");
+      }
+    } catch {
+      toast.error("Failed to promote participant");
+    } finally {
+      setPromoting(null);
+    }
+  };
+
+  const handleDemote = async (targetUserId: string) => {
+    setPromoting(targetUserId);
+    try {
+      const { data, error } = await supabase.functions.invoke("livekit-token", {
+        body: { space_id: spaceId, action: "demote", target_user_id: targetUserId },
+      });
+      if (error || data?.error) {
+        toast.error(data?.error || "Failed to demote");
+      } else {
+        toast.success("Participant moved to listeners");
+      }
+    } catch {
+      toast.error("Failed to demote participant");
+    } finally {
+      setPromoting(null);
+    }
+  };
+
+  const speakers = participants.filter(
+    (p) => p.audioTrack || p.canPublish || p.identity === hostId
+  );
+  const listeners = participants.filter(
+    (p) => !p.audioTrack && !p.canPublish && p.identity !== hostId
+  );
+
+  const renderAvatar = (p: ParticipantInfo, size: "lg" | "sm") => {
+    const prof = profiles[p.identity];
+    const vLevel = prof?.verification_level || "none";
+    const dim = size === "lg" ? "w-14 h-14" : "w-10 h-10";
+    const badgeSize = size === "lg" ? 14 : 12;
+
+    return (
+      <div className="relative">
+        <div
+          className={`${dim} rounded-full flex items-center justify-center font-bold transition-all overflow-hidden ${
+            p.isSpeaking
+              ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+              : "border border-border"
+          } ${!prof?.avatar_url ? (p.isSpeaking ? "bg-primary/30" : "bg-muted/50") : ""}`}
+        >
+          {prof?.avatar_url ? (
+            <img src={prof.avatar_url} alt={p.name} className="w-full h-full object-cover" />
+          ) : (
+            <span className={size === "lg" ? "text-lg" : "text-sm"}>
+              {p.name.charAt(0).toUpperCase()}
+            </span>
+          )}
+        </div>
+        {vLevel !== "none" && (
+          <div className="absolute -bottom-0.5 -right-0.5">
+            <NftBadge level={vLevel} size={badgeSize} />
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <AnimatePresence>
       <motion.div
+        key="space-backdrop"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 bg-background/80 backdrop-blur-md z-[80]"
       />
       <motion.div
+        key="space-panel"
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
@@ -306,45 +450,33 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   <Volume2 className="w-3 h-3" /> Speakers
                 </p>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                  {speakers.map((p) => {
-                    const prof = profiles[p.identity];
-                    const vLevel = prof?.verification_level || "none";
-                    return (
-                      <motion.div
-                        key={p.identity}
-                        layout
-                        className="flex flex-col items-center gap-1.5"
-                      >
-                        <div className="relative">
-                          <div
-                            className={`w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold transition-all overflow-hidden ${
-                              p.isSpeaking
-                                ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
-                                : "border border-border"
-                            } ${!prof?.avatar_url ? (p.isSpeaking ? "bg-primary/30" : "bg-muted/50") : ""}`}
+                  {speakers.map((p) => (
+                    <motion.div
+                      key={p.identity}
+                      layout
+                      className="flex flex-col items-center gap-1.5"
+                    >
+                      {renderAvatar(p, "lg")}
+                      <p className="text-[10px] font-medium truncate max-w-[80px] text-center">
+                        {p.name}
+                        {p.identity === hostId && " 🎙️"}
+                      </p>
+                      <div className="flex items-center gap-1">
+                        {p.isMuted && <MicOff className="w-3 h-3 text-muted-foreground" />}
+                        {/* Host can demote non-host speakers */}
+                        {isHost && p.identity !== hostId && p.identity !== user?.id && (
+                          <button
+                            onClick={() => handleDemote(p.identity)}
+                            disabled={promoting === p.identity}
+                            className="p-0.5 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                            title="Move to listeners"
                           >
-                            {prof?.avatar_url ? (
-                              <img src={prof.avatar_url} alt={p.name} className="w-full h-full object-cover" />
-                            ) : (
-                              p.name.charAt(0).toUpperCase()
-                            )}
-                          </div>
-                          {vLevel !== "none" && (
-                            <div className="absolute -bottom-0.5 -right-0.5">
-                              <NftBadge level={vLevel} size={14} />
-                            </div>
-                          )}
-                        </div>
-                        <p className="text-[10px] font-medium truncate max-w-[80px] text-center">
-                          {p.name}
-                          {p.identity === hostId && " 🎙️"}
-                        </p>
-                        {p.isMuted && (
-                          <MicOff className="w-3 h-3 text-muted-foreground" />
+                            <UserMinus className="w-3 h-3" />
+                          </button>
                         )}
-                      </motion.div>
-                    );
-                  })}
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
               </div>
 
@@ -355,34 +487,32 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     <Users className="w-3 h-3" /> Listeners
                   </p>
                   <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                    {listeners.map((p) => {
-                      const prof = profiles[p.identity];
-                      const vLevel = prof?.verification_level || "none";
-                      return (
-                        <div
-                          key={p.identity}
-                          className="flex flex-col items-center gap-1"
-                        >
-                          <div className="relative">
-                            <div className="w-10 h-10 rounded-full bg-muted/50 border border-border flex items-center justify-center text-sm font-bold overflow-hidden">
-                              {prof?.avatar_url ? (
-                                <img src={prof.avatar_url} alt={p.name} className="w-full h-full object-cover" />
-                              ) : (
-                                p.name.charAt(0).toUpperCase()
-                              )}
-                            </div>
-                            {vLevel !== "none" && (
-                              <div className="absolute -bottom-0.5 -right-0.5">
-                                <NftBadge level={vLevel} size={12} />
-                              </div>
+                    {listeners.map((p) => (
+                      <div
+                        key={p.identity}
+                        className="flex flex-col items-center gap-1"
+                      >
+                        {renderAvatar(p, "sm")}
+                        <p className="text-[9px] text-muted-foreground truncate max-w-[60px]">
+                          {p.name}
+                        </p>
+                        {/* Host can promote listeners */}
+                        {isHost && (
+                          <button
+                            onClick={() => handlePromote(p.identity)}
+                            disabled={promoting === p.identity}
+                            className="p-0.5 rounded-full hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                            title="Promote to speaker"
+                          >
+                            {promoting === p.identity ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <UserPlus className="w-3 h-3" />
                             )}
-                          </div>
-                          <p className="text-[9px] text-muted-foreground truncate max-w-[60px]">
-                            {p.name}
-                          </p>
-                        </div>
-                      );
-                    })}
+                          </button>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -393,7 +523,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         {/* Controls bar */}
         {connected && (
           <div className="border-t border-border px-5 py-4 flex items-center justify-center gap-4">
-            {(isHost || !muted) && (
+            {/* Show mic toggle if host or has publish permission */}
+            {(isHost || canPublish) && (
               <button
                 onClick={toggleMute}
                 className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
@@ -406,7 +537,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
               </button>
             )}
 
-            {!isHost && (
+            {/* Non-speakers can raise hand */}
+            {!isHost && !canPublish && (
               <button
                 onClick={toggleHand}
                 className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
