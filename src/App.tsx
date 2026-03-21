@@ -84,6 +84,7 @@ const SalesDeck = lazy(() => import("./pages/SalesDeck"));
 const EmbedMarket = lazy(() => import("./pages/EmbedMarket"));
 const EmbedTicker = lazy(() => import("./pages/EmbedTicker"));
 const Developers = lazy(() => import("./pages/Developers"));
+const MyPromotions = lazy(() => import("./pages/MyPromotions"));
 
 const queryClient = new QueryClient();
 
