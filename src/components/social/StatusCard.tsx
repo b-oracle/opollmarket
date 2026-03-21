@@ -229,9 +229,17 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
       {/* Header */}
       <div className="flex items-center gap-2.5">
         <div
-          className="w-9 h-9 rounded-full bg-primary/20 border border-primary/30 overflow-hidden flex items-center justify-center shrink-0 cursor-pointer"
-          onClick={() => navigate(`/user/${status.user_id}`)}
+          className={`relative w-9 h-9 rounded-full bg-primary/20 border ${isUserLive ? "border-destructive" : "border-primary/30"} overflow-hidden flex items-center justify-center shrink-0 cursor-pointer`}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isUserLive && liveSpace) {
+              joinSpace({ id: liveSpace.spaceId, title: liveSpace.title, hostId: liveSpace.hostId });
+            } else {
+              navigate(`/user/${status.user_id}`);
+            }
+          }}
         >
+          <LiveAvatarBadge isLive={isUserLive} />
           {profile?.avatar_url ? (
             <img src={profile.avatar_url} alt={name} className="w-full h-full object-cover" />
           ) : (
