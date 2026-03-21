@@ -306,30 +306,45 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   <Volume2 className="w-3 h-3" /> Speakers
                 </p>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                  {speakers.map((p) => (
-                    <motion.div
-                      key={p.identity}
-                      layout
-                      className="flex flex-col items-center gap-1.5"
-                    >
-                      <div
-                        className={`w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold transition-all ${
-                          p.isSpeaking
-                            ? "bg-primary/30 ring-2 ring-primary ring-offset-2 ring-offset-background"
-                            : "bg-muted/50 border border-border"
-                        }`}
+                  {speakers.map((p) => {
+                    const prof = profiles[p.identity];
+                    const vLevel = prof?.verification_level || "none";
+                    return (
+                      <motion.div
+                        key={p.identity}
+                        layout
+                        className="flex flex-col items-center gap-1.5"
                       >
-                        {p.name.charAt(0).toUpperCase()}
-                      </div>
-                      <p className="text-[10px] font-medium truncate max-w-[80px] text-center">
-                        {p.name}
-                        {p.identity === hostId && " 🎙️"}
-                      </p>
-                      {p.isMuted && (
-                        <MicOff className="w-3 h-3 text-muted-foreground" />
-                      )}
-                    </motion.div>
-                  ))}
+                        <div className="relative">
+                          <div
+                            className={`w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold transition-all overflow-hidden ${
+                              p.isSpeaking
+                                ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                                : "border border-border"
+                            } ${!prof?.avatar_url ? (p.isSpeaking ? "bg-primary/30" : "bg-muted/50") : ""}`}
+                          >
+                            {prof?.avatar_url ? (
+                              <img src={prof.avatar_url} alt={p.name} className="w-full h-full object-cover" />
+                            ) : (
+                              p.name.charAt(0).toUpperCase()
+                            )}
+                          </div>
+                          {vLevel !== "none" && (
+                            <div className="absolute -bottom-0.5 -right-0.5">
+                              <NftBadge level={vLevel} size={14} />
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-[10px] font-medium truncate max-w-[80px] text-center">
+                          {p.name}
+                          {p.identity === hostId && " 🎙️"}
+                        </p>
+                        {p.isMuted && (
+                          <MicOff className="w-3 h-3 text-muted-foreground" />
+                        )}
+                      </motion.div>
+                    );
+                  })}
                 </div>
               </div>
 
