@@ -669,12 +669,6 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             <h3 className="text-sm font-bold mt-0.5 truncate">{spaceTitle}</h3>
           </div>
           <div className="flex items-center gap-1">
-            {/* Minimize button */}
-            <button onClick={toggleMinimize}
-              className="w-9 h-9 rounded-full flex items-center justify-center bg-muted text-muted-foreground hover:text-foreground transition-colors"
-              title="Minimize">
-              <Minimize2 className="w-4 h-4" />
-            </button>
             {/* Chat / close toggle with unread badge */}
             <button onClick={() => setChatOpen(!chatOpen)}
               className={`relative w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
