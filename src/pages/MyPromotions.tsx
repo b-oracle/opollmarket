@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { Loader2, Zap, Megaphone, Eye, MousePointerClick, BarChart3, ArrowLeft, Timer, Crown, Flame, Radio } from "lucide-react";
-import { format, formatDistanceToNow, isPast } from "date-fns";
+import { format, formatDistanceToNow, isPast, differenceInHours } from "date-fns";
 import BoostCountdown from "@/components/BoostCountdown";
 
 type TabKey = "boosts" | "social_ads" | "broadcasts";
@@ -14,9 +14,29 @@ type TabKey = "boosts" | "social_ads" | "broadcasts";
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
   active: "bg-green-500/10 text-green-500 border-green-500/20",
+  sent: "bg-green-500/10 text-green-500 border-green-500/20",
   cancelled: "bg-destructive/10 text-destructive border-destructive/20",
   expired: "bg-muted text-muted-foreground border-border",
+  payment_expired: "bg-orange-500/10 text-orange-500 border-orange-500/20",
 };
+
+function getResolvedBroadcastStatus(bc: any): { display: string; key: string } {
+  if (bc.status === "sent" || bc.status === "active") return { display: "Sent", key: "sent" };
+  if (bc.status === "expired") {
+    return (bc.tx_hash || bc.nowpayments_payment_id)
+      ? { display: "Sent", key: "sent" }
+      : { display: "Payment Expired", key: "payment_expired" };
+  }
+  if (bc.status === "pending") {
+    if (differenceInHours(new Date(), new Date(bc.created_at)) >= 2) {
+      return { display: "Payment Expired", key: "payment_expired" };
+    }
+    return { display: "Pending Payment", key: "pending" };
+  }
+  return { display: bc.status, key: bc.status };
+}
+
+type BroadcastFilter = "all" | "sent" | "pending" | "payment_expired";
 
 const tierIcons: Record<string, typeof Zap> = { flash: Zap, standard: Flame, whale: Crown };
 
@@ -85,11 +105,21 @@ const MyPromotions = () => {
     return { active: active.length, total: socialAds.length, totalImpressions, totalClicks, spent };
   }, [socialAds]);
 
+  const [bcFilter, setBcFilter] = useState<BroadcastFilter>("all");
+
   const broadcastStats = useMemo(() => {
     const total = broadcasts.length;
-    const spent = broadcasts.filter((b: any) => b.status === "active" || b.status === "sent").reduce((s: number, b: any) => s + b.amount, 0);
-    return { total, spent };
+    const sent = broadcasts.filter((b: any) => getResolvedBroadcastStatus(b).key === "sent").length;
+    const pending = broadcasts.filter((b: any) => getResolvedBroadcastStatus(b).key === "pending").length;
+    const paymentExpired = broadcasts.filter((b: any) => getResolvedBroadcastStatus(b).key === "payment_expired").length;
+    const spent = broadcasts.filter((b: any) => getResolvedBroadcastStatus(b).key === "sent").reduce((s: number, b: any) => s + b.amount, 0);
+    return { total, sent, pending, paymentExpired, spent };
   }, [broadcasts]);
+
+  const filteredBroadcasts = useMemo(() => {
+    if (bcFilter === "all") return broadcasts;
+    return broadcasts.filter((b: any) => getResolvedBroadcastStatus(b).key === bcFilter);
+  }, [broadcasts, bcFilter]);
 
   const tabs: { key: TabKey; label: string; icon: typeof Zap; count: number }[] = [
     { key: "boosts", label: "Boosts", icon: Zap, count: boosts.length },
@@ -252,28 +282,56 @@ const MyPromotions = () => {
 
             {/* Broadcasts Tab */}
             {tab === "broadcasts" && (
-              <div className="space-y-2">
-                {broadcasts.length === 0 ? (
+              <div className="space-y-3">
+                {/* Broadcast Filters */}
+                <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 overflow-x-auto">
+                  {([
+                    { key: "all" as BroadcastFilter, label: "All", count: broadcastStats.total },
+                    { key: "sent" as BroadcastFilter, label: "Sent", count: broadcastStats.sent },
+                    { key: "pending" as BroadcastFilter, label: "Pending", count: broadcastStats.pending },
+                    { key: "payment_expired" as BroadcastFilter, label: "Expired", count: broadcastStats.paymentExpired },
+                  ]).map((f) => (
+                    <button
+                      key={f.key}
+                      onClick={() => setBcFilter(f.key)}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                        bcFilter === f.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {f.label}
+                      {f.count > 0 && (
+                        <span className={`ml-1.5 text-[10px] font-bold ${bcFilter === f.key ? "text-primary" : "text-muted-foreground"}`}>
+                          {f.count}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {filteredBroadcasts.length === 0 ? (
                   <EmptyState icon={Megaphone} label="No broadcasts yet" description="Send a broadcast alert to notify all users about a market" />
-                ) : broadcasts.map((bc: any) => (
-                  <div key={bc.id} className="bg-card border border-border rounded-xl p-4 space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Megaphone className="w-4 h-4 text-primary" />
-                      <span className="text-sm font-bold truncate max-w-[250px] cursor-pointer hover:text-primary" onClick={() => navigate(`/market/${bc.market_id}`)}>
-                        {bc.markets?.title || "Unknown Market"}
-                      </span>
-                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
-                        statusColors[bc.status] || statusColors.expired
-                      }`}>
-                        {bc.status}
-                      </span>
-                      <span className="text-xs font-semibold text-muted-foreground ml-auto">${bc.amount}</span>
+                ) : filteredBroadcasts.map((bc: any) => {
+                  const { display, key } = getResolvedBroadcastStatus(bc);
+                  return (
+                    <div key={bc.id} className="bg-card border border-border rounded-xl p-4 space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Megaphone className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-bold truncate max-w-[250px] cursor-pointer hover:text-primary" onClick={() => navigate(`/market/${bc.market_id}`)}>
+                          {bc.markets?.title || "Unknown Market"}
+                        </span>
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
+                          statusColors[key] || statusColors.expired
+                        }`}>
+                          {display}
+                        </span>
+                        <span className="text-xs font-semibold text-muted-foreground ml-auto">${bc.amount}</span>
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        Created {format(new Date(bc.created_at), "MMM d, yyyy HH:mm")}
+                      </div>
                     </div>
-                    <div className="text-[11px] text-muted-foreground">
-                      Created {format(new Date(bc.created_at), "MMM d, yyyy HH:mm")}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>
