@@ -6,6 +6,9 @@ import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { Plus } from "lucide-react";
 import StoryCreator from "./StoryCreator";
 import StoryViewer from "./StoryViewer";
+import LiveAvatarBadge from "./LiveAvatarBadge";
+import { useLiveSpaceUsers, useLiveSpaceForUser } from "@/hooks/useLiveSpaceUsers";
+import { useActiveSpace } from "@/hooks/useActiveSpace";
 
 interface StoryGroup {
   userId: string;
