@@ -100,7 +100,7 @@ const SpaceShareSheet = ({ open, onClose, spaceId, spaceTitle, hostName, isLive 
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 300, opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed bottom-0 inset-x-0 z-[101] bg-card rounded-t-2xl border-t border-border p-5 space-y-4 max-h-[70vh] overflow-y-auto"
+              className="fixed z-[101] bg-card border border-border p-5 space-y-4 max-h-[70vh] overflow-y-auto bottom-0 inset-x-0 rounded-t-2xl border-t lg:bottom-auto lg:inset-0 lg:m-auto lg:w-full lg:max-w-md lg:h-fit lg:rounded-2xl"
             >
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold">Share Space</h3>
