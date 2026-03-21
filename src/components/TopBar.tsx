@@ -66,26 +66,7 @@ const TopBar = () => {
         <div className="flex items-center gap-2">
           {/* Admin mode toggle for admin users */}
           {hasAdminAccess && user && (
-            <button
-              onClick={() => navigate(isAdminRoute ? "/" : "/admin")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all active:scale-95 ${
-                isAdminRoute
-                  ? "bg-primary/20 text-primary border border-primary/30"
-                  : "bg-muted/50 text-muted-foreground border border-border hover:border-primary/30 hover:text-primary"
-              }`}
-            >
-              {isAdminRoute ? (
-                <>
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  User Mode
-                </>
-              ) : (
-                <>
-                  <Shield className="w-3.5 h-3.5" />
-                  Admin
-                </>
-              )}
-            </button>
+            <AdminBadgeButton isAdminRoute={isAdminRoute} onClick={() => navigate(isAdminRoute ? "/" : "/admin")} userId={user.id} />
           )}
           <NotificationBell />
           <ThemeToggle />
