@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { AccessToken, RoomServiceClient } from "npm:livekit-server-sdk@2.15.0";
+import { AccessToken, RoomServiceClient, EgressClient, EncodedFileOutput, EncodedFileType } from "npm:livekit-server-sdk@2.15.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,6 +21,14 @@ const extractEnvValue = (value: string | null, key: string) => {
   const candidate = (fromAssignment || normalized).trim();
   return candidate.replace(/^['\"`]|['\"`]$/g, "");
 };
+
+function getLivekitConfig() {
+  const apiKey = extractEnvValue(Deno.env.get("LIVEKIT_API_KEY"), "LIVEKIT_API_KEY");
+  const apiSecret = extractEnvValue(Deno.env.get("LIVEKIT_API_SECRET"), "LIVEKIT_API_SECRET");
+  const livekitUrl = extractEnvValue(Deno.env.get("LIVEKIT_URL"), "LIVEKIT_URL");
+  const httpUrl = livekitUrl.replace(/^wss:/, "https:").replace(/^ws:/, "http:");
+  return { apiKey, apiSecret, livekitUrl, httpUrl };
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -68,7 +76,7 @@ Deno.serve(async (req) => {
 
     const { data: space, error: spaceErr } = await supabaseAdmin
       .from("spaces")
-      .select("id, host_id, status")
+      .select("id, host_id, status, recording_egress_id")
       .eq("id", space_id)
       .single();
 
@@ -86,9 +94,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const apiKey = extractEnvValue(Deno.env.get("LIVEKIT_API_KEY"), "LIVEKIT_API_KEY");
-    const apiSecret = extractEnvValue(Deno.env.get("LIVEKIT_API_SECRET"), "LIVEKIT_API_SECRET");
-    const livekitUrl = extractEnvValue(Deno.env.get("LIVEKIT_URL"), "LIVEKIT_URL");
+    const { apiKey, apiSecret, livekitUrl, httpUrl } = getLivekitConfig();
 
     if (!apiKey || !apiSecret || !livekitUrl) {
       return new Response(JSON.stringify({ error: "LiveKit not configured" }), {
@@ -100,69 +106,142 @@ Deno.serve(async (req) => {
     const roomName = `space-${space_id}`;
     const isHost = space.host_id === userId;
 
-    // --- PROMOTE action: host grants publish permission to a listener ---
-    if (action === "promote" && target_user_id) {
-      if (!isHost) {
-        return new Response(JSON.stringify({ error: "Only the host can promote participants" }), {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+    // Helper to ensure host
+    const requireHost = () => {
+      if (!isHost) throw new Error("Only the host can perform this action");
+    };
 
-      // Use LiveKit RoomService to update participant permissions
-      const httpUrl = livekitUrl.replace(/^wss:/, "https:").replace(/^ws:/, "http:");
+    // --- PROMOTE ---
+    if (action === "promote" && target_user_id) {
+      requireHost();
       const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
-      
       await svc.updateParticipant(roomName, target_user_id, undefined, {
         canPublish: true,
         canSubscribe: true,
         canPublishData: true,
       });
-
-      // Update DB role
       await supabaseAdmin
         .from("space_participants")
         .update({ role: "speaker" })
         .eq("space_id", space_id)
         .eq("user_id", target_user_id);
-
       return new Response(JSON.stringify({ success: true, action: "promoted" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // --- DEMOTE action: host revokes publish permission ---
+    // --- DEMOTE ---
     if (action === "demote" && target_user_id) {
-      if (!isHost) {
-        return new Response(JSON.stringify({ error: "Only the host can demote participants" }), {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const httpUrl = livekitUrl.replace(/^wss:/, "https:").replace(/^ws:/, "http:");
+      requireHost();
       const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
-      
       await svc.updateParticipant(roomName, target_user_id, undefined, {
         canPublish: false,
         canSubscribe: true,
         canPublishData: true,
       });
-
       await supabaseAdmin
         .from("space_participants")
         .update({ role: "listener" })
         .eq("space_id", space_id)
         .eq("user_id", target_user_id);
-
       return new Response(JSON.stringify({ success: true, action: "demoted" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // --- Default: JOIN — generate a token ---
+    // --- FORCE MUTE ---
+    if (action === "mute" && target_user_id) {
+      requireHost();
+      const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
+      // Mute all audio tracks for this participant
+      const participant = await svc.getParticipant(roomName, target_user_id);
+      if (participant.tracks) {
+        for (const track of participant.tracks) {
+          if (track.type === 1) { // AUDIO type
+            await svc.mutePublishedTrack(roomName, target_user_id, track.sid!, true);
+          }
+        }
+      }
+      return new Response(JSON.stringify({ success: true, action: "muted" }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // --- KICK ---
+    if (action === "kick" && target_user_id) {
+      requireHost();
+      const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
+      await svc.removeParticipant(roomName, target_user_id);
+      // Mark them as left in DB
+      await supabaseAdmin
+        .from("space_participants")
+        .update({ left_at: new Date().toISOString(), role: "kicked" })
+        .eq("space_id", space_id)
+        .eq("user_id", target_user_id);
+      return new Response(JSON.stringify({ success: true, action: "kicked" }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // --- START RECORDING ---
+    if (action === "start_recording") {
+      requireHost();
+      if (space.recording_egress_id) {
+        return new Response(JSON.stringify({ error: "Already recording" }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const egressClient = new EgressClient(httpUrl, apiKey, apiSecret);
+      const output = new EncodedFileOutput({
+        fileType: EncodedFileType.OGG,
+        filepath: `recordings/space-${space_id}-{time}.ogg`,
+      });
+
+      const info = await egressClient.startRoomCompositeEgress(roomName, { file: output }, { audioOnly: true });
+      const egressId = info.egressId;
+
+      await supabaseAdmin
+        .from("spaces")
+        .update({ recording_egress_id: egressId })
+        .eq("id", space_id);
+
+      return new Response(JSON.stringify({ success: true, action: "recording_started", egressId }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // --- STOP RECORDING ---
+    if (action === "stop_recording") {
+      requireHost();
+      if (!space.recording_egress_id) {
+        return new Response(JSON.stringify({ error: "Not recording" }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const egressClient = new EgressClient(httpUrl, apiKey, apiSecret);
+      await egressClient.stopEgress(space.recording_egress_id);
+
+      await supabaseAdmin
+        .from("spaces")
+        .update({ recording_egress_id: null, is_recorded: true })
+        .eq("id", space_id);
+
+      return new Response(JSON.stringify({ success: true, action: "recording_stopped" }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // --- Default: JOIN ---
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("display_name")
