@@ -245,12 +245,7 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
           ) : (
             <div className="w-full h-full flex items-center justify-center px-8">
               {story.content && (
-                <p
-                  className="text-white text-center text-lg font-bold max-w-sm break-words"
-                  style={{ textShadow: "0 2px 8px rgba(0,0,0,0.7)" }}
-                >
-                  {story.content}
-                </p>
+                <StoryContentRenderer content={story.content} variant="overlay" />
               )}
             </div>
           )}
