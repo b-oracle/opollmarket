@@ -1137,6 +1137,10 @@ const Profile = () => {
                 setEditName(profile?.display_name || authDisplayName);
                 setEditBio((profile as any)?.bio || "");
                 setEditIsPublic((profile as any)?.is_public ?? true);
+                setEditAge((profile as any)?.age?.toString() || "");
+                setEditGender((profile as any)?.gender || "");
+                setEditLocation((profile as any)?.location || "");
+                setEditInterests((profile as any)?.interests || []);
                 setAvatarPreview(null);
                 setAvatarFile(null);
                 setSelectedNftUrl(null);
