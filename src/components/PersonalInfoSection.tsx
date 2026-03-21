@@ -138,17 +138,9 @@ const PersonalInfoSection = ({ userId }: PersonalInfoSectionProps) => {
           {/* Location */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5" />
               Location
             </label>
-            <input
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="City, Country"
-              maxLength={100}
-              className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted/30 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-            />
+            <LocationAutocomplete value={location} onChange={setLocation} />
           </div>
 
           {/* Interests */}
