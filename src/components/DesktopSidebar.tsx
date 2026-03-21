@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Home, Compass, PlusCircle, BarChart3, User, Trophy, Gift, HelpCircle, LogIn, LogOut, ChevronsLeft, ChevronsRight, Zap } from "lucide-react";
+import { Home, Compass, PlusCircle, BarChart3, User, Trophy, Gift, HelpCircle, LogIn, LogOut, ChevronsLeft, ChevronsRight, LineChart } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import SignOutConfirmDialog from "@/components/SignOutConfirmDialog";
@@ -10,7 +10,7 @@ import logo from "@/assets/logo.png";
 const allNavItems: { icon: typeof Home; label: string; path: string; featureKey: string | null; requiresAuth?: boolean }[] = [
 { icon: Home, label: "Home", path: "/", featureKey: null },
 { icon: Compass, label: "Feed", path: "/feed", featureKey: "feed" },
-{ icon: Zap, label: "Quick Trade", path: "/quick-trade", featureKey: "quick_trade" },
+{ icon: LineChart, label: "Quick Trade", path: "/quick-trade", featureKey: "quick_trade" },
 { icon: PlusCircle, label: "Create", path: "/create", featureKey: "create_market" },
 { icon: BarChart3, label: "Portfolio", path: "/portfolio", featureKey: "portfolio" },
 { icon: User, label: "Profile", path: "/profile", featureKey: "social_profiles" },
