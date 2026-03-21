@@ -163,7 +163,6 @@ const SpaceShareSheet = ({ open, onClose, spaceId, spaceTitle, hostName, isLive 
       <StoryCreator
         open={storyOpen}
         onClose={() => setStoryOpen(false)}
-        prefillText={shareText}
       />
     </>
   );
