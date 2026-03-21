@@ -24,6 +24,7 @@ import {
   X,
   Volume2,
 } from "lucide-react";
+import NftBadge, { VerificationLevel } from "@/components/NftBadge";
 
 interface SpaceRoomProps {
   spaceId: string;
@@ -38,6 +39,11 @@ interface ParticipantInfo {
   isSpeaking: boolean;
   isMuted: boolean;
   audioTrack: boolean;
+}
+
+interface ProfileInfo {
+  avatar_url: string | null;
+  verification_level: VerificationLevel;
 }
 
 const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => {
