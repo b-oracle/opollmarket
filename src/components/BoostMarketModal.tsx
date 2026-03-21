@@ -78,6 +78,7 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
     commissionSettings?.boost_whale_price ?? 150,
   );
   const BROADCAST_PRICE = commissionSettings?.broadcast_price ?? BROADCAST_PRICE_DEFAULT;
+  const SOCIAL_AD_PRICE = commissionSettings?.social_ad_price ?? 10;
 
   const [selectedTier, setSelectedTier] = useState<BoostTier | null>(null);
   const [broadcastSelected, setBroadcastSelected] = useState(false);
