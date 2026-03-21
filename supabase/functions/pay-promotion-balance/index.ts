@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
     try {
       const { data: cs } = await adminClient
         .from("commission_settings")
-        .select("boost_flash_price, boost_standard_price, boost_whale_price, broadcast_price")
+        .select("boost_flash_price, boost_standard_price, boost_whale_price, broadcast_price, social_ad_price")
         .limit(1)
         .single();
       if (cs) {
@@ -71,6 +71,7 @@ Deno.serve(async (req) => {
         BOOST_TIERS.standard = { ...BOOST_TIERS.standard, price: Number(cs.boost_standard_price) || 50 };
         BOOST_TIERS.whale = { ...BOOST_TIERS.whale, price: Number(cs.boost_whale_price) || 150 };
         if (cs.broadcast_price != null) BROADCAST_PRICE = Number(cs.broadcast_price);
+        if (cs.social_ad_price != null) SOCIAL_AD_PRICE = Number(cs.social_ad_price);
       }
     } catch { /* use defaults */ }
 
