@@ -267,12 +267,38 @@ const MyPromotions = () => {
         ) : (
           <>
             {/* Boosts Tab */}
-            {tab === "boosts" && (
-              <div className="space-y-2">
-                {boosts.length === 0 ? (
+             {tab === "boosts" && (
+              <div className="space-y-3">
+                {/* Boost Filters */}
+                <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 overflow-x-auto">
+                  {([
+                    { key: "all" as BoostFilter, label: "All", count: boostFilterStats.total },
+                    { key: "active" as BoostFilter, label: "Active", count: boostFilterStats.active },
+                    { key: "ended" as BoostFilter, label: "Ended", count: boostFilterStats.ended },
+                    { key: "pending" as BoostFilter, label: "Pending", count: boostFilterStats.pending },
+                    { key: "payment_expired" as BoostFilter, label: "Expired", count: boostFilterStats.paymentExpired },
+                  ]).map((f) => (
+                    <button
+                      key={f.key}
+                      onClick={() => setBoostFilter(f.key)}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                        boostFilter === f.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {f.label}
+                      {f.count > 0 && (
+                        <span className={`ml-1.5 text-[10px] font-bold ${boostFilter === f.key ? "text-primary" : "text-muted-foreground"}`}>
+                          {f.count}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {filteredBoosts.length === 0 ? (
                   <EmptyState icon={Zap} label="No boosts yet" description="Boost a market to increase its visibility" />
-                ) : boosts.map((boost: any) => {
-                  const isActive = boost.status === "active" && !isPast(new Date(boost.ends_at));
+                ) : filteredBoosts.map((boost: any) => {
+                  const { display, key } = getResolvedBoostStatus(boost);
                   const TierIcon = tierIcons[boost.tier] || Zap;
                   return (
                     <div key={boost.id} className="bg-card border border-border rounded-xl p-4 space-y-2">
@@ -282,16 +308,16 @@ const MyPromotions = () => {
                           {(boost as any).markets?.title || "Unknown Market"}
                         </span>
                         <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
-                          isActive ? statusColors.active : statusColors[boost.status] || statusColors.expired
+                          statusColors[key] || statusColors.expired
                         }`}>
-                          {isActive ? "Active" : boost.status}
+                          {display}
                         </span>
                         <span className="text-xs font-semibold text-muted-foreground ml-auto">${boost.amount}</span>
                       </div>
-                      {isActive && <BoostCountdown endsAt={boost.ends_at} tier={boost.tier} />}
+                      {key === "active" && <BoostCountdown endsAt={boost.ends_at} tier={boost.tier} />}
                       <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
                         <span>Created {format(new Date(boost.created_at), "MMM d, HH:mm")}</span>
-                        {boost.ends_at && !isPast(new Date(boost.ends_at)) && (
+                        {key === "active" && boost.ends_at && (
                           <span className="text-green-500 font-medium">{formatDistanceToNow(new Date(boost.ends_at))} left</span>
                         )}
                       </div>
