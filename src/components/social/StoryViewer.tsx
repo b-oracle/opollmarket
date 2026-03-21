@@ -252,6 +252,23 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
               <span className="text-white/70 text-[10px] font-semibold">{viewCount}</span>
             </div>
           )}
+          {/* Like button / count inline in header */}
+          {!isOwnStory ? (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleLike(); }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10"
+            >
+              <Heart className={`w-3.5 h-3.5 transition-all ${hasLiked ? 'fill-red-500 text-red-500' : 'text-white/70'}`} />
+              {(likeCount as number) > 0 && (
+                <span className="text-white/70 text-[10px] font-semibold">{likeCount}</span>
+              )}
+            </button>
+          ) : (likeCount as number) > 0 ? (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10">
+              <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" />
+              <span className="text-white/70 text-[10px] font-semibold">{likeCount}</span>
+            </div>
+          ) : null}
           {isOwnStory && (
             <button
               onClick={() => setShowDeleteConfirm(true)}
