@@ -491,6 +491,7 @@ export type Database = {
           quick_trade_fee_percent: number
           referral_reward_amount: number
           referrer_commission_percent: number
+          social_ad_price: number
           token_contract_address: string | null
           token_decimals: number | null
           updated_at: string
@@ -554,6 +555,7 @@ export type Database = {
           quick_trade_fee_percent?: number
           referral_reward_amount?: number
           referrer_commission_percent?: number
+          social_ad_price?: number
           token_contract_address?: string | null
           token_decimals?: number | null
           updated_at?: string
@@ -617,6 +619,7 @@ export type Database = {
           quick_trade_fee_percent?: number
           referral_reward_amount?: number
           referrer_commission_percent?: number
+          social_ad_price?: number
           token_contract_address?: string | null
           token_decimals?: number | null
           updated_at?: string
@@ -1861,6 +1864,59 @@ export type Database = {
           url?: string | null
         }
         Relationships: []
+      }
+      social_ads: {
+        Row: {
+          amount: number
+          clicks: number
+          created_at: string
+          ends_at: string
+          headline: string | null
+          id: string
+          impressions: number
+          market_id: string
+          starts_at: string
+          status: string
+          user_id: string
+          video_url: string | null
+        }
+        Insert: {
+          amount?: number
+          clicks?: number
+          created_at?: string
+          ends_at: string
+          headline?: string | null
+          id?: string
+          impressions?: number
+          market_id: string
+          starts_at?: string
+          status?: string
+          user_id: string
+          video_url?: string | null
+        }
+        Update: {
+          amount?: number
+          clicks?: number
+          created_at?: string
+          ends_at?: string
+          headline?: string | null
+          id?: string
+          impressions?: number
+          market_id?: string
+          starts_at?: string
+          status?: string
+          user_id?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_ads_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       social_links: {
         Row: {
