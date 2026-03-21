@@ -23,8 +23,8 @@ const SpaceShareSheet = ({ open, onClose, spaceId, spaceTitle, hostName, isLive 
 
   const shareUrl = `https://opoll.org/feed?space=${spaceId}`;
   const shareText = isLive
-    ? `🎙️ Join me LIVE on "${spaceTitle}" — Make your OPinion count, predict now 👇🏽`
-    : `🗓️ "${spaceTitle}" is coming soon on OPoll Spaces — Make your OPinion count, predict now 👇🏽`;
+    ? `🎙️ Join me LIVE on "${spaceTitle}" — Let's discuss your opinion, JOIN NOW 👇🏽`
+    : `🗓️ "${spaceTitle}" is coming soon on OPoll Spaces — Let's discuss your opinion, JOIN NOW 👇🏽`;
 
   const handleCopy = async () => {
     try {
