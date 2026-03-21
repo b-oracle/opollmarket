@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
 
     const { data: space, error: spaceErr } = await supabaseAdmin
       .from("spaces")
-      .select("id, host_id, status, recording_egress_id")
+      .select("id, host_id, status")
       .eq("id", space_id)
       .single();
 
