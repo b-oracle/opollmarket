@@ -37,6 +37,42 @@ function getResolvedBroadcastStatus(bc: any): { display: string; key: string } {
 }
 
 type BroadcastFilter = "all" | "sent" | "pending" | "payment_expired";
+type BoostFilter = "all" | "active" | "ended" | "pending" | "payment_expired";
+type AdFilter = "all" | "active" | "ended" | "pending" | "payment_expired";
+
+function getResolvedBoostStatus(b: any): { display: string; key: string } {
+  if (b.status === "active" && !isPast(new Date(b.ends_at))) return { display: "Active", key: "active" };
+  if (b.status === "active" && isPast(new Date(b.ends_at))) return { display: "Ended", key: "ended" };
+  if (b.status === "expired") {
+    return (b.tx_hash || b.nowpayments_payment_id)
+      ? { display: "Ended", key: "ended" }
+      : { display: "Payment Expired", key: "payment_expired" };
+  }
+  if (b.status === "pending") {
+    if (differenceInHours(new Date(), new Date(b.created_at)) >= 2) {
+      return { display: "Payment Expired", key: "payment_expired" };
+    }
+    return { display: "Pending Payment", key: "pending" };
+  }
+  return { display: b.status, key: b.status };
+}
+
+function getResolvedAdStatus(a: any): { display: string; key: string } {
+  if (a.status === "active" && !isPast(new Date(a.ends_at))) return { display: "Active", key: "active" };
+  if (a.status === "active" && isPast(new Date(a.ends_at))) return { display: "Ended", key: "ended" };
+  if (a.status === "expired") {
+    return (a.tx_hash || a.nowpayments_payment_id)
+      ? { display: "Ended", key: "ended" }
+      : { display: "Payment Expired", key: "payment_expired" };
+  }
+  if (a.status === "pending") {
+    if (differenceInHours(new Date(), new Date(a.created_at)) >= 2) {
+      return { display: "Payment Expired", key: "payment_expired" };
+    }
+    return { display: "Pending Payment", key: "pending" };
+  }
+  return { display: a.status, key: a.status };
+}
 
 const tierIcons: Record<string, typeof Zap> = { flash: Zap, standard: Flame, whale: Crown };
 
