@@ -155,16 +155,16 @@ const StoriesCarousel = () => {
   return (
     <>
       <div className="flex gap-3 overflow-x-auto scrollbar-hide py-2 px-1">
-        {/* Add Story button */}
-        <button
-          onClick={() => hasOwnStories ? setViewerData({ group: ownGroup!, index: 0 }) : setCreatorOpen(true)}
-          className="flex flex-col items-center gap-1 shrink-0"
-        >
-          <div className={`w-14 h-14 rounded-full flex items-center justify-center relative ${
-            liveUserIds.has(user?.id || "")
-              ? "ring-2 ring-destructive"
-              : hasOwnStories ? "ring-2 ring-primary" : "ring-2 ring-dashed ring-muted-foreground/30"
-          }`}>
+        {/* Add Story / View own stories */}
+        <div className="flex flex-col items-center gap-1 shrink-0">
+          <div
+            className={`w-14 h-14 rounded-full flex items-center justify-center relative cursor-pointer ${
+              liveUserIds.has(user?.id || "")
+                ? "ring-2 ring-destructive"
+                : hasOwnStories ? "ring-2 ring-primary" : "ring-2 ring-dashed ring-muted-foreground/30"
+            }`}
+            onClick={() => hasOwnStories ? setViewerData({ group: ownGroup!, index: 0 }) : setCreatorOpen(true)}
+          >
             <LiveAvatarBadge isLive={liveUserIds.has(user?.id || "")} size="md" />
             <div className="w-full h-full rounded-full overflow-hidden">
               {hasOwnStories && ownGroup?.profile?.avatar_url ? (
@@ -176,13 +176,16 @@ const StoriesCarousel = () => {
               )}
             </div>
             {hasOwnStories && (
-              <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center border-2 border-background z-10">
+              <button
+                onClick={(e) => { e.stopPropagation(); setCreatorOpen(true); }}
+                className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center border-2 border-background z-10"
+              >
                 <Plus className="w-3 h-3 text-primary-foreground" />
-              </div>
+              </button>
             )}
           </div>
           <span className="text-[9px] font-medium text-muted-foreground">Your Story</span>
-        </button>
+        </div>
 
         {/* Other users' stories */}
         {storyGroups
