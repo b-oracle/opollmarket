@@ -228,23 +228,25 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
 
       {/* Header */}
       <div className="flex items-center gap-2.5">
-        <div
-          className={`relative w-9 h-9 rounded-full bg-primary/20 border ${isUserLive ? "border-destructive" : "border-primary/30"} overflow-hidden flex items-center justify-center shrink-0 cursor-pointer`}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (isUserLive && liveSpace) {
-              joinSpace({ id: liveSpace.spaceId, title: liveSpace.title, hostId: liveSpace.hostId });
-            } else {
-              navigate(`/user/${status.user_id}`);
-            }
-          }}
-        >
+        <div className="relative shrink-0">
+          <div
+            className={`w-9 h-9 rounded-full bg-primary/20 border ${isUserLive ? "border-destructive" : "border-primary/30"} overflow-hidden flex items-center justify-center cursor-pointer`}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isUserLive && liveSpace) {
+                joinSpace({ id: liveSpace.spaceId, title: liveSpace.title, hostId: liveSpace.hostId });
+              } else {
+                navigate(`/user/${status.user_id}`);
+              }
+            }}
+          >
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt={name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
+            )}
+          </div>
           <LiveAvatarBadge isLive={isUserLive} />
-          {profile?.avatar_url ? (
-            <img src={profile.avatar_url} alt={name} className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
-          )}
         </div>
         <div className="flex-1 min-w-0">
           <p
