@@ -2151,6 +2151,35 @@ export type Database = {
           },
         ]
       }
+      status_reposts: {
+        Row: {
+          created_at: string
+          id: string
+          status_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          status_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          status_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "status_reposts_status_id_fkey"
+            columns: ["status_id"]
+            isOneToOne: false
+            referencedRelation: "status_updates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       status_updates: {
         Row: {
           comments_count: number
@@ -2161,6 +2190,7 @@ export type Database = {
           likes_count: number
           market_id: string | null
           replies_count: number
+          reposts_count: number
           user_id: string
         }
         Insert: {
@@ -2172,6 +2202,7 @@ export type Database = {
           likes_count?: number
           market_id?: string | null
           replies_count?: number
+          reposts_count?: number
           user_id: string
         }
         Update: {
@@ -2183,6 +2214,7 @@ export type Database = {
           likes_count?: number
           market_id?: string | null
           replies_count?: number
+          reposts_count?: number
           user_id?: string
         }
         Relationships: [
