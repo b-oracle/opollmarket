@@ -18,6 +18,7 @@ import BoostedCarousel from "@/components/BoostedCarousel";
 import CategoryCarousel from "@/components/CategoryCarousel";
 import LivePriceBadge from "@/components/LivePriceBadge";
 import { Gem, ArrowLeftRight } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import BoostMarketModal from "@/components/BoostMarketModal";
 import { useCommentCount } from "@/hooks/useCommentCount";
 import useAnalytics from "@/hooks/useAnalytics";
@@ -67,6 +68,7 @@ const Index = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
   const { track } = useAnalytics();
+  const { user } = useAuth();
 
   useEffect(() => { track("page_view", { page: "home" }); }, []);
 
@@ -506,7 +508,7 @@ const Index = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1.5 py-0.5 rounded bg-muted/80 border border-border">{market.category}</span>
-                    {isBoosted && boost && <BoostCountdown endsAt={boost.ends_at} tier={boost.tier} compact />}
+                    {isBoosted && boost && user?.id === market.creatorAddress && <BoostCountdown endsAt={boost.ends_at} tier={boost.tier} compact />}
                     {!isBoosted && market.trending && (
                       <span className="text-[10px] font-bold text-primary flex items-center gap-0.5"><Zap className="w-3 h-3" /> Trending</span>
                     )}

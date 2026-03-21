@@ -80,12 +80,9 @@ const LikeBadge = ({ marketId }: {marketId: string;}) => {
 
 /* ── Desktop/Tablet Feed Card ── */
 const DesktopFeedCard = ({ market, isBoosted, boostEndsAt, boostTier
-
-
-
-
 }: {market: any;isBoosted: boolean;boostEndsAt?: string;boostTier?: string;}) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const yesPercent = Math.round(market.yesPrice * 100);
   const noPercent = Math.round(market.noPrice * 100);
   const isMulti = market.marketType === "multi" || market.marketType === "range";
@@ -158,7 +155,7 @@ const DesktopFeedCard = ({ market, isBoosted, boostEndsAt, boostTier
 
       {/* Content */}
       <div className="p-4">
-        {isBoosted && boostEndsAt &&
+        {isBoosted && boostEndsAt && user?.id === market.creatorAddress &&
         <div className="mb-2">
             <BoostCountdown endsAt={boostEndsAt} tier={boostTier} />
           </div>
