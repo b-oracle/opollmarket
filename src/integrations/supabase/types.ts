@@ -1572,13 +1572,17 @@ export type Database = {
       }
       profiles: {
         Row: {
+          age: number | null
           avatar_url: string | null
           bio: string | null
           created_at: string
           display_name: string | null
           email: string | null
+          gender: string | null
           id: string
+          interests: string[] | null
           is_public: boolean
+          location: string | null
           referred_by: string | null
           social_tutorial_seen: boolean
           twitter_avatar_url: string | null
@@ -1590,13 +1594,17 @@ export type Database = {
           wallet_address: string | null
         }
         Insert: {
+          age?: number | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
           display_name?: string | null
           email?: string | null
+          gender?: string | null
           id: string
+          interests?: string[] | null
           is_public?: boolean
+          location?: string | null
           referred_by?: string | null
           social_tutorial_seen?: boolean
           twitter_avatar_url?: string | null
@@ -1608,13 +1616,17 @@ export type Database = {
           wallet_address?: string | null
         }
         Update: {
+          age?: number | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
           display_name?: string | null
           email?: string | null
+          gender?: string | null
           id?: string
+          interests?: string[] | null
           is_public?: boolean
+          location?: string | null
           referred_by?: string | null
           social_tutorial_seen?: boolean
           twitter_avatar_url?: string | null

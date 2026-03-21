@@ -26,6 +26,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import CopyTradeStats from "@/components/CopyTradeStats";
+import PersonalInfoSection from "@/components/PersonalInfoSection";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 
 type TxType = "buy" | "sell" | "deposit" | "withdraw" | "withdrawal" | "commission" | "payout" | "refund" | "initial_liquidity" | "qt_one_sided_bonus";
@@ -787,7 +788,7 @@ const Profile = () => {
       if (!user) return null;
       const { data } = await supabase
         .from("profiles")
-        .select("wallet_address, avatar_url, display_name, is_public, bio, verification_level")
+        .select("wallet_address, avatar_url, display_name, is_public, bio, verification_level, age, gender, location, interests")
         .eq("id", user.id)
         .single();
       return data;
@@ -1807,6 +1808,9 @@ const Profile = () => {
 
         {/* Security Settings */}
         <SecuritySettingsSection userId={user?.id} />
+
+        {/* Personal Info (private) */}
+        <PersonalInfoSection userId={user?.id} />
 
         {/* Telegram & Connect */}
         <div className="mb-6">
