@@ -12,6 +12,7 @@ const DEFAULT_BOOST_TIERS: Record<string, { durationHours: number; price: number
   whale: { durationHours: 168, price: 150, rank: 3 },
 };
 let DEFAULT_BROADCAST_PRICE = 5;
+let SOCIAL_AD_PRICE = 10;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
