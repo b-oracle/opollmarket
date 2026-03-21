@@ -269,6 +269,7 @@ const App = () => (
         <QueryClientProvider client={queryClient}>
           <VerificationThresholdProvider>
           <AuthProvider>
+            <ActiveSpaceProvider>
             <SidebarStateProvider>
               <TooltipProvider>
                 <Toaster />
@@ -278,6 +279,7 @@ const App = () => (
                 <SocialTutorialTrigger />
                 <AimtellProvider />
                 <PendingCopyTrades />
+                <GlobalSpaceRoom />
                 <ConditionalSidebar />
                 <ConditionalLayout>
                   <div className="flex-1">
