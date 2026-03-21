@@ -1435,11 +1435,23 @@ const Profile = () => {
                             }
                           }
 
+                          // Validate age
+                          const ageNum = editAge ? parseInt(editAge, 10) : null;
+                          if (editAge && (isNaN(ageNum!) || ageNum! < 13 || ageNum! > 120)) {
+                            toast.error("Please enter a valid age (13–120)");
+                            setSavingProfile(false);
+                            return;
+                          }
+
                           // Update profile table first (more reliable)
                           const { error: profileError } = await supabase.from("profiles").update({
                             display_name: editName.trim(),
                             bio: editBio.trim(),
                             is_public: editIsPublic,
+                            age: ageNum,
+                            gender: editGender || null,
+                            location: editLocation.trim().slice(0, 100) || null,
+                            interests: editInterests,
                             ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
                           } as any).eq("id", user!.id);
                           if (profileError) {
