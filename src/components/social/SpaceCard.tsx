@@ -196,6 +196,13 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
           )}
         </div>
         <div className="flex items-center gap-2">
+          {/* Share button - always visible */}
+          <button
+            onClick={(e) => { e.stopPropagation(); setShareOpen(true); }}
+            className="px-2.5 py-1.5 rounded-lg bg-muted text-muted-foreground hover:text-foreground text-[10px] font-semibold flex items-center gap-1 transition-colors"
+          >
+            <Share2 className="w-3 h-3" />
+          </button>
           {isScheduled && (
             <button
               onClick={handleToggleReminder}
