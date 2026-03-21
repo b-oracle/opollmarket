@@ -96,22 +96,63 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
 
   // price_amount = the USD amount the user requested to deposit.
   // outcome_amount = NP's reported net received — but can be wildly wrong
-  // (e.g. "Wrong Asset Confirmed" can return inflated values).
-  // SAFETY: never credit more than the requested amount.
+  // (e.g. "Wrong Asset Confirmed" can return inflated/deflated values).
   const requestedAmount = Number(price_amount) || matchedTx?.amount || 0;
   const netReceived = Number(outcome_amount) || Number(actually_paid) || 0;
-  
-  // Cap credit at the requested amount to prevent over-crediting from bogus outcome_amount
+
+  // WRONG ASSET DETECTION: if outcome_amount diverges wildly from price_amount,
+  // NP likely confirmed a wrong asset. Do NOT auto-credit — flag for manual review.
+  const divergenceRatio = requestedAmount > 0 ? netReceived / requestedAmount : 1;
+  if (divergenceRatio > 2 || (divergenceRatio < 0.3 && netReceived > 0)) {
+    console.warn(`WRONG ASSET DETECTED: outcome=$${netReceived} vs requested=$${requestedAmount} (ratio ${divergenceRatio.toFixed(2)}) for payment ${paymentIdStr}. Skipping auto-credit.`);
+
+    // Mark the transaction as needing manual review instead of crediting
+    if (matchedTx) {
+      await supabase
+        .from("transactions")
+        .update({ status: "wrong_asset", nowpayments_payment_id: paymentIdStr })
+        .eq("id", matchedTx.id);
+    } else {
+      await supabase.from("transactions").insert({
+        user_id: userId,
+        type: "deposit",
+        amount: requestedAmount,
+        status: "wrong_asset",
+        nowpayments_payment_id: paymentIdStr,
+      });
+    }
+
+    // Notify admins
+    const { data: adminRoles } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .in("role", ["admin", "super_admin"]);
+    for (const admin of adminRoles || []) {
+      await supabase.from("notifications").insert({
+        user_id: admin.user_id,
+        title: "⚠️ Wrong Asset Deposit Detected",
+        message: `User ${userId.slice(0, 8)}… sent wrong asset for payment ${paymentIdStr}. Requested $${requestedAmount}, NP reported $${netReceived.toFixed(2)}. Manual review required.`,
+        type: "info",
+      });
+    }
+
+    // Notify user
+    await supabase.from("notifications").insert({
+      user_id: userId,
+      title: "Deposit Issue ⚠️",
+      message: `Your $${requestedAmount.toFixed(2)} deposit was flagged because the wrong cryptocurrency was sent. Please contact support for assistance.`,
+      type: "deposit",
+    });
+
+    return; // Do NOT credit
+  }
+
+  // Normal credit flow — cap at requested amount as safety net
   const creditAmount = requestedAmount > 0
     ? Math.min(netReceived > 0 ? netReceived : requestedAmount, requestedAmount)
-    : netReceived; // fallback if no price_amount
+    : netReceived;
   const isPartial = creditAmount < requestedAmount * 0.98; // 2% tolerance
   const finalStatus = isPartial ? "partial" : "confirmed";
-
-  // Log a warning if NP reported more than requested (indicates wrong asset or NP bug)
-  if (netReceived > requestedAmount * 1.05) {
-    console.warn(`OVER-CREDIT PREVENTED: NP outcome_amount=$${netReceived} > requested=$${requestedAmount} for payment ${paymentIdStr}. Capped at $${creditAmount}.`);
-  }
 
   // 3. Credit the user's balance atomically (prevents race conditions)
   const { error: balanceError } = await supabase.rpc("adjust_balance", { 
