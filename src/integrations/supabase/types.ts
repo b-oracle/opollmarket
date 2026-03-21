@@ -1965,7 +1965,10 @@ export type Database = {
           ended_at: string | null
           host_id: string
           id: string
+          is_recorded: boolean
           listener_count: number
+          recording_egress_id: string | null
+          recording_url: string | null
           reminder_count: number
           scheduled_at: string | null
           started_at: string
@@ -1977,7 +1980,10 @@ export type Database = {
           ended_at?: string | null
           host_id: string
           id?: string
+          is_recorded?: boolean
           listener_count?: number
+          recording_egress_id?: string | null
+          recording_url?: string | null
           reminder_count?: number
           scheduled_at?: string | null
           started_at?: string
@@ -1989,7 +1995,10 @@ export type Database = {
           ended_at?: string | null
           host_id?: string
           id?: string
+          is_recorded?: boolean
           listener_count?: number
+          recording_egress_id?: string | null
+          recording_url?: string | null
           reminder_count?: number
           scheduled_at?: string | null
           started_at?: string
