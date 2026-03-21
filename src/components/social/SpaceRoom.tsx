@@ -27,6 +27,7 @@ import {
   UserX,
   Circle,
   CircleStop,
+  Bell,
 } from "lucide-react";
 import NftBadge, { VerificationLevel } from "@/components/NftBadge";
 
@@ -44,6 +45,7 @@ interface ParticipantInfo {
   isMuted: boolean;
   audioTrack: boolean;
   canPublish: boolean;
+  handRaised?: boolean;
 }
 
 interface ProfileInfo {
@@ -84,10 +86,18 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [floatingReactions, setFloatingReactions] = useState<{ id: string; emoji: string }[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Recording state
   const [recording, setRecording] = useState(false);
   const [recordingLoading, setRecordingLoading] = useState(false);
+
+  // Remote hand raises tracked by identity
+  const [remoteHandRaises, setRemoteHandRaises] = useState<Set<string>>(new Set());
+
+  // Participant action sheet state
+  const [actionTarget, setActionTarget] = useState<ParticipantInfo | null>(null);
+  const [actionType, setActionType] = useState<"speaker" | "listener" | null>(null);
 
   // Cleanup audio on unmount
   useEffect(() => {
@@ -96,6 +106,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       audioElementsRef.current.clear();
     };
   }, []);
+
+  // Reset unread when chat opens
+  useEffect(() => {
+    if (chatOpen) setUnreadCount(0);
+  }, [chatOpen]);
 
   const updateParticipants = useCallback((room: Room) => {
     const all: ParticipantInfo[] = [];
@@ -115,7 +130,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     setCanPublish(room.localParticipant.permissions?.canPublish ?? false);
   }, []);
 
-  // Handle incoming data messages (chat + reactions)
+  // Handle incoming data messages (chat + reactions + hand raises)
   const handleDataReceived = useCallback((payload: Uint8Array, participant: any) => {
     try {
       const decoded = new TextDecoder().decode(payload);
@@ -136,6 +151,25 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             timestamp: Date.now(),
           },
         ]);
+        // Increment unread if chat is closed
+        setChatOpen((open) => {
+          if (!open) setUnreadCount((c) => c + 1);
+          return open;
+        });
+      } else if (data.type === "hand_raise") {
+        const identity = participant?.identity;
+        if (identity) {
+          if (data.raised) {
+            setRemoteHandRaises((prev) => new Set(prev).add(identity));
+            toast.info(`${data.senderName || "Someone"} raised their hand ✋`);
+          } else {
+            setRemoteHandRaises((prev) => {
+              const next = new Set(prev);
+              next.delete(identity);
+              return next;
+            });
+          }
+        }
       }
     } catch {
       // ignore malformed
@@ -306,8 +340,18 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   };
 
   const toggleHand = () => {
-    setHandRaised(!handRaised);
-    toast.info(handRaised ? "Hand lowered" : "Hand raised ✋");
+    const newRaised = !handRaised;
+    setHandRaised(newRaised);
+    toast.info(newRaised ? "Hand raised ✋" : "Hand lowered");
+    // Broadcast hand raise to all participants
+    if (roomRef.current) {
+      const data = JSON.stringify({
+        type: "hand_raise",
+        raised: newRaised,
+        senderName: roomRef.current.localParticipant.name || "Someone",
+      });
+      roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
+    }
   };
 
   const invokeAction = async (action: string, target_user_id?: string) => {
@@ -327,8 +371,16 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       );
       if (action === "start_recording") setRecording(true);
       if (action === "stop_recording") setRecording(false);
+      // Clear hand raise when promoted
+      if (action === "promote" && target_user_id) {
+        setRemoteHandRaises((prev) => {
+          const next = new Set(prev);
+          next.delete(target_user_id);
+          return next;
+        });
+      }
     } catch { toast.error(`Failed to ${action}`); }
-    finally { setPromoting(null); setRecordingLoading(false); }
+    finally { setPromoting(null); setRecordingLoading(false); setActionTarget(null); setActionType(null); }
   };
 
   const sendChat = () => {
@@ -357,7 +409,6 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     if (!roomRef.current) return;
     const data = JSON.stringify({ type: "reaction", emoji });
     roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: false });
-    // Show locally too
     const id = `${Date.now()}-${Math.random()}`;
     setFloatingReactions((prev) => [...prev, { id, emoji }]);
     setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
@@ -376,6 +427,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     const vLevel = prof?.verification_level || "none";
     const dim = size === "lg" ? "w-14 h-14" : "w-10 h-10";
     const badgeSize = size === "lg" ? 14 : 12;
+    const hasHandUp = remoteHandRaises.has(p.identity);
     return (
       <div className="relative">
         <div className={`${dim} rounded-full flex items-center justify-center font-bold transition-all overflow-hidden ${
@@ -390,6 +442,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         {vLevel !== "none" && (
           <div className="absolute -bottom-0.5 -right-0.5">
             <NftBadge level={vLevel} size={badgeSize} />
+          </div>
+        )}
+        {hasHandUp && (
+          <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-yellow-500 flex items-center justify-center text-[10px] animate-bounce">
+            ✋
           </div>
         )}
       </div>
@@ -421,7 +478,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           </AnimatePresence>
         </div>
 
-        {/* Header */}
+        {/* Header - no X button, chat toggles to close */}
         <div className="px-5 py-3 border-b border-border flex items-center gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
@@ -441,15 +498,17 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             <h3 className="text-sm font-bold mt-0.5 truncate">{spaceTitle}</h3>
           </div>
           <div className="flex items-center gap-1">
+            {/* Chat / close toggle with unread badge */}
             <button onClick={() => setChatOpen(!chatOpen)}
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                chatOpen ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+              className={`relative w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+                chatOpen ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"
               }`}>
-              <MessageCircle className="w-4 h-4" />
-            </button>
-            <button onClick={handleLeave}
-              className="w-8 h-8 rounded-full bg-destructive/10 text-destructive flex items-center justify-center">
-              <X className="w-4 h-4" />
+              {chatOpen ? <X className="w-4 h-4" /> : <MessageCircle className="w-4 h-4" />}
+              {!chatOpen && unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center px-1">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -507,36 +566,19 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 </p>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                   {speakers.map((p) => (
-                    <motion.div key={p.identity} layout className="flex flex-col items-center gap-1">
+                    <motion.div key={p.identity} layout className="flex flex-col items-center gap-1"
+                      onClick={() => {
+                        if (isHost && p.identity !== hostId && p.identity !== user?.id) {
+                          setActionTarget(p);
+                          setActionType("speaker");
+                        }
+                      }}>
                       {renderAvatar(p, "lg")}
                       <p className="text-[10px] font-medium truncate max-w-[80px] text-center">
                         {p.name}{p.identity === hostId && " 🎙️"}
                       </p>
                       <div className="flex items-center gap-0.5">
                         {p.isMuted && <MicOff className="w-3 h-3 text-muted-foreground" />}
-                        {/* Host controls on speakers */}
-                        {isHost && p.identity !== hostId && p.identity !== user?.id && (
-                          <>
-                            <button onClick={() => invokeAction("mute", p.identity)}
-                              disabled={promoting === p.identity}
-                              className="p-0.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground"
-                              title="Force mute">
-                              <VolumeX className="w-3 h-3" />
-                            </button>
-                            <button onClick={() => invokeAction("demote", p.identity)}
-                              disabled={promoting === p.identity}
-                              className="p-0.5 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                              title="Move to listeners">
-                              <UserMinus className="w-3 h-3" />
-                            </button>
-                            <button onClick={() => invokeAction("kick", p.identity)}
-                              disabled={promoting === p.identity}
-                              className="p-0.5 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                              title="Remove from space">
-                              <UserX className="w-3 h-3" />
-                            </button>
-                          </>
-                        )}
                       </div>
                     </motion.div>
                   ))}
@@ -551,25 +593,15 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   </p>
                   <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                     {listeners.map((p) => (
-                      <div key={p.identity} className="flex flex-col items-center gap-1">
+                      <div key={p.identity} className="flex flex-col items-center gap-1 cursor-pointer"
+                        onClick={() => {
+                          if (isHost) {
+                            setActionTarget(p);
+                            setActionType("listener");
+                          }
+                        }}>
                         {renderAvatar(p, "sm")}
                         <p className="text-[9px] text-muted-foreground truncate max-w-[60px]">{p.name}</p>
-                        {isHost && (
-                          <div className="flex items-center gap-0.5">
-                            <button onClick={() => invokeAction("promote", p.identity)}
-                              disabled={promoting === p.identity}
-                              className="p-0.5 rounded-full hover:bg-primary/10 text-muted-foreground hover:text-primary"
-                              title="Promote to speaker">
-                              {promoting === p.identity ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserPlus className="w-3 h-3" />}
-                            </button>
-                            <button onClick={() => invokeAction("kick", p.identity)}
-                              disabled={promoting === p.identity}
-                              className="p-0.5 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                              title="Remove">
-                              <UserX className="w-3 h-3" />
-                            </button>
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -630,6 +662,90 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             </button>
           </div>
         )}
+
+        {/* Participant action sheet (overlay) */}
+        <AnimatePresence>
+          {actionTarget && actionType && (
+            <>
+              <motion.div
+                key="action-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/40 z-[95]"
+                onClick={() => { setActionTarget(null); setActionType(null); }}
+              />
+              <motion.div
+                key="action-sheet"
+                initial={{ y: 200, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 200, opacity: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="absolute bottom-0 inset-x-0 z-[96] bg-card rounded-t-2xl border-t border-border p-5 space-y-4"
+              >
+                {/* Participant info */}
+                <div className="flex items-center gap-3">
+                  {renderAvatar(actionTarget, "lg")}
+                  <div>
+                    <p className="font-semibold text-sm">{actionTarget.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {actionType === "speaker" ? "Speaker" : "Listener"}
+                      {remoteHandRaises.has(actionTarget.identity) && " · ✋ Hand raised"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="space-y-2">
+                  {actionType === "listener" && (
+                    <button
+                      onClick={() => invokeAction("promote", actionTarget.identity)}
+                      disabled={promoting === actionTarget.identity}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+                    >
+                      {promoting === actionTarget.identity ? <Loader2 className="w-5 h-5 animate-spin" /> : <UserPlus className="w-5 h-5" />}
+                      <span className="text-sm font-medium">Promote to Speaker</span>
+                    </button>
+                  )}
+                  {actionType === "speaker" && (
+                    <>
+                      <button
+                        onClick={() => invokeAction("mute", actionTarget.identity)}
+                        disabled={promoting === actionTarget.identity}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-muted hover:bg-muted/80 text-foreground transition-colors"
+                      >
+                        <VolumeX className="w-5 h-5" />
+                        <span className="text-sm font-medium">Force Mute</span>
+                      </button>
+                      <button
+                        onClick={() => invokeAction("demote", actionTarget.identity)}
+                        disabled={promoting === actionTarget.identity}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-muted hover:bg-muted/80 text-foreground transition-colors"
+                      >
+                        <UserMinus className="w-5 h-5" />
+                        <span className="text-sm font-medium">Move to Listeners</span>
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={() => invokeAction("kick", actionTarget.identity)}
+                    disabled={promoting === actionTarget.identity}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors"
+                  >
+                    <UserX className="w-5 h-5" />
+                    <span className="text-sm font-medium">Remove from Space</span>
+                  </button>
+                  <button
+                    onClick={() => { setActionTarget(null); setActionType(null); }}
+                    className="w-full flex items-center justify-center px-4 py-3 rounded-xl bg-muted hover:bg-muted/80 text-muted-foreground transition-colors"
+                  >
+                    <span className="text-sm font-medium">Cancel</span>
+                  </button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </motion.div>
     </AnimatePresence>
   );
