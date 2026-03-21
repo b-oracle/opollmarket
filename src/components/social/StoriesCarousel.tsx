@@ -143,29 +143,16 @@ const StoriesCarousel = () => {
           .filter((g) => g.userId !== user?.id)
           .map((group) => {
             const name = group.profile?.display_name || "Anonymous";
+            const isLive = liveUserIds.has(group.userId);
             return (
-              <button
+              <StoryBubble
                 key={group.userId}
-                onClick={() => setViewerData({ group, index: 0 })}
-                className="flex flex-col items-center gap-1 shrink-0"
-              >
-                <div className={`w-14 h-14 rounded-full overflow-hidden ${
-                  group.hasUnviewed
-                    ? "ring-2 ring-primary"
-                    : "ring-2 ring-muted-foreground/20"
-                }`}>
-                  {group.profile?.avatar_url ? (
-                    <img src={group.profile.avatar_url} alt={name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-primary/20 flex items-center justify-center">
-                      <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
-                    </div>
-                  )}
-                </div>
-                <span className="text-[9px] font-medium text-muted-foreground truncate max-w-[56px]">
-                  {name.split(" ")[0]}
-                </span>
-              </button>
+                group={group}
+                name={name}
+                isLive={isLive}
+                onView={() => setViewerData({ group, index: 0 })}
+                onJoinSpace={joinSpace}
+              />
             );
           })}
       </div>
