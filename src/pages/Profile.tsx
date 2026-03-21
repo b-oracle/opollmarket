@@ -1175,8 +1175,8 @@ const Profile = () => {
               />
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-                className="fixed inset-3 z-50 m-auto w-[calc(100%-1.5rem)] max-w-md glass-strong rounded-2xl p-5 overflow-y-auto flex flex-col"
-                style={{ maxHeight: "calc(100dvh - 1.5rem)" }}
+                className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-md glass-strong rounded-2xl p-5 overflow-y-auto flex flex-col"
+                style={{ maxHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 6rem)" }}
               >
                 <h3 className="text-sm font-bold mb-4">Edit Profile</h3>
                 <div className="space-y-3">
