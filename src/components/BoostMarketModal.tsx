@@ -240,6 +240,9 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
           market_id: marketId,
           boost_tier: selectedTier?.id || null,
           include_broadcast: broadcastSelected,
+          include_social_ad: socialAdSelected,
+          ad_headline: adHeadline || null,
+          ad_video_url: adVideoUrl || null,
         },
       });
       if (error) throw error;
