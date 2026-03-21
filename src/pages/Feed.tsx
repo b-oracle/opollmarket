@@ -158,7 +158,7 @@ const DesktopFeedCard = ({ market, isBoosted, boostEndsAt, boostTier
 
       {/* Content */}
       <div className="p-4">
-        {isBoosted && boostEndsAt &&
+        {isBoosted && boostEndsAt && user?.id === market.creatorAddress &&
         <div className="mb-2">
             <BoostCountdown endsAt={boostEndsAt} tier={boostTier} />
           </div>
