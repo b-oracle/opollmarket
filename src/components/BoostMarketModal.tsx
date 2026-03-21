@@ -466,7 +466,53 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
               </button>
             </div>
 
-            <button
+            {/* Social Ad Section */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">📺 Social Ad</p>
+              <button
+                onClick={() => setSocialAdSelected(!socialAdSelected)}
+                className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all ${
+                  socialAdSelected
+                    ? "border-primary/50 bg-primary/5"
+                    : "border-border bg-muted/30 hover:border-muted-foreground/30"
+                }`}
+              >
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${socialAdSelected ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
+                  <Tv className="w-7 h-7" />
+                </div>
+                <div className="flex-1 text-left">
+                  <span className="text-sm font-bold block">Sponsored Post</span>
+                  <span className="text-xs text-muted-foreground">Appears in everyone's feed as an ad</span>
+                </div>
+                <span className="text-sm font-bold px-3 py-1 rounded-md bg-background border border-border">
+                  ${SOCIAL_AD_PRICE}
+                </span>
+              </button>
+
+              {socialAdSelected && (
+                <div className="mt-3 space-y-2">
+                  <input
+                    type="text"
+                    value={adHeadline}
+                    onChange={(e) => setAdHeadline(e.target.value)}
+                    placeholder="Custom headline (optional)"
+                    className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted/30 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    maxLength={120}
+                  />
+                  <div className="relative">
+                    <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="url"
+                      value={adVideoUrl}
+                      onChange={(e) => setAdVideoUrl(e.target.value)}
+                      placeholder="YouTube video URL (optional)"
+                      className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-muted/30 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
               onClick={() => setStep("confirm")}
               disabled={!hasSelection}
               className="w-full py-3.5 rounded-xl font-bold text-sm bg-primary text-primary-foreground transition-all active:scale-95 disabled:opacity-40 flex items-center justify-center gap-2"
