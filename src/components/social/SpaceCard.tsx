@@ -3,9 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Radio, Headphones, LogIn, LogOut, Loader2, Bell, BellOff, Calendar, Clock } from "lucide-react";
+import { Radio, Headphones, LogIn, LogOut, Loader2, Bell, BellOff, Calendar, Clock, Share2 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { useState } from "react";
+import SpaceShareSheet from "./SpaceShareSheet";
 
 interface SpaceCardProps {
   space: {
