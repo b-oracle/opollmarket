@@ -190,7 +190,7 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle, 
             {/* Preview */}
             <div className="flex-1 flex items-center justify-center px-6 py-4 lg:py-6">
               <div
-                className="w-full max-w-[240px] lg:max-w-[260px] aspect-[9/16] rounded-2xl overflow-hidden relative"
+                className="w-full max-w-[240px] md:max-w-[300px] lg:max-w-[260px] aspect-[9/16] rounded-2xl overflow-hidden relative"
                 style={{ backgroundColor: imagePreview ? "hsl(var(--background))" : bgColor }}
               >
                 {imagePreview ? (
@@ -243,7 +243,7 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle, 
             <div className="px-4 space-y-3 shrink-0 pb-4 lg:pb-6" style={{ paddingBottom: `calc(5rem + env(safe-area-inset-bottom, 0px))` }}>
               {/* Background colors */}
               {!imagePreview && (
-                <div className="flex gap-2 overflow-x-auto no-scrollbar px-1 py-1">
+                <div className="flex gap-2 overflow-x-auto no-scrollbar px-1 py-1 justify-center">
                   {BG_COLORS.map((c) => (
                     <button
                       key={c}
