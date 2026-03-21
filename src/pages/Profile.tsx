@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback, lazy, Suspense } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import useAnalytics from "@/hooks/useAnalytics";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -31,7 +31,7 @@ import { format } from "date-fns";
 
 import CopyTradeStats from "@/components/CopyTradeStats";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
-const LocationPicker = lazy(() => import("@/components/LocationPicker"));
+import LocationPicker from "@/components/LocationPicker";
 
 type TxType = "buy" | "sell" | "deposit" | "withdraw" | "withdrawal" | "commission" | "payout" | "refund" | "initial_liquidity" | "qt_one_sided_bonus";
 
@@ -1358,9 +1358,7 @@ const Profile = () => {
                     {/* Location */}
                     <div className="space-y-1.5 mb-3">
                       <label className="text-xs font-medium text-muted-foreground">Location</label>
-                      <Suspense fallback={<div className="h-10 rounded-lg bg-muted/30 animate-pulse" />}>
-                        <LocationPicker value={editLocation} onChange={setEditLocation} />
-                      </Suspense>
+                      <LocationPicker value={editLocation} onChange={setEditLocation} />
                     </div>
                     {/* Interests */}
                     <div className="space-y-1.5">
