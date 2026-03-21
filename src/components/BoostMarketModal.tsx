@@ -810,7 +810,11 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
                   ? paymentInfo?.extending ? "Boost Extended & Broadcast Sent!" : "Boost & Broadcast Live!"
                   : selectedTier
                   ? paymentInfo?.extending ? "Boost Extended!" : "Boost is Live!"
-                  : "Broadcast Sent!"}
+                  : socialAdSelected && !broadcastSelected
+                  ? "Social Ad is Live!"
+                  : broadcastSelected
+                  ? "Broadcast Sent!"
+                  : "Promotion Active!"}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
                 {selectedTier && paymentInfo?.extending && paymentInfo?.new_ends_at
@@ -818,7 +822,8 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
                   : selectedTier
                   ? `Your ${selectedTier.label} boost (${selectedTier.duration}) is now active. `
                   : ""}
-                {broadcastSelected && "A push notification has been sent to all users."}
+                {broadcastSelected && "A push notification has been sent to all users. "}
+                {socialAdSelected && "Your sponsored post is now live in everyone's feed."}
               </p>
               {/* Balance payment receipt */}
               {paymentInfo?.total_charged != null && (
