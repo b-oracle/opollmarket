@@ -513,6 +513,7 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
               )}
             </div>
 
+            <button
               onClick={() => setStep("confirm")}
               disabled={!hasSelection}
               className="w-full py-3.5 rounded-xl font-bold text-sm bg-primary text-primary-foreground transition-all active:scale-95 disabled:opacity-40 flex items-center justify-center gap-2"
