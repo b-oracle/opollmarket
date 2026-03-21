@@ -1,6 +1,10 @@
+import { useState } from "react";
+
 interface YouTubeEmbedProps {
   url: string;
   className?: string;
+  fallbackImage?: string | null;
+  fallbackAlt?: string;
 }
 
 /**
@@ -19,9 +23,21 @@ export const getYouTubeId = (url: string): string | null => {
 
 export const isYouTubeUrl = (url: string): boolean => !!getYouTubeId(url);
 
-const YouTubeEmbed = ({ url, className = "" }: YouTubeEmbedProps) => {
+const YouTubeEmbed = ({ url, className = "", fallbackImage, fallbackAlt }: YouTubeEmbedProps) => {
   const videoId = getYouTubeId(url);
+  const [hasError, setHasError] = useState(false);
+
   if (!videoId) return null;
+
+  if (hasError && fallbackImage) {
+    return (
+      <img
+        src={fallbackImage}
+        alt={fallbackAlt || ""}
+        className={`${className} object-cover`}
+      />
+    );
+  }
 
   return (
     <iframe
@@ -31,6 +47,7 @@ const YouTubeEmbed = ({ url, className = "" }: YouTubeEmbedProps) => {
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
       allowFullScreen
       loading="lazy"
+      onError={() => setHasError(true)}
     />
   );
 };
