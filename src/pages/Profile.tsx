@@ -1909,8 +1909,7 @@ const Profile = () => {
         {/* Security Settings */}
         <SecuritySettingsSection userId={user?.id} />
 
-        {/* Personal Info (private) */}
-        <PersonalInfoSection userId={user?.id} />
+        {/* Personal Info moved to Edit Profile modal */}
 
         {/* Telegram & Connect */}
         <div className="mb-6">
