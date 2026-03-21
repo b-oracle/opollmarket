@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { toast } from "sonner";
 import useAnalytics from "@/hooks/useAnalytics";
 import { useNavigate, useSearchParams } from "react-router-dom";
