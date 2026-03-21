@@ -9,6 +9,9 @@ import { formatDistanceToNow } from "date-fns";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { toast } from "sonner";
 import StatusComments from "./StatusComments";
+import LiveAvatarBadge from "./LiveAvatarBadge";
+import { useLiveSpaceUsers, useLiveSpaceForUser } from "@/hooks/useLiveSpaceUsers";
+import { useActiveSpace } from "@/hooks/useActiveSpace";
 
 /** Detect URLs in text and return array of text/link segments */
 const URL_REGEX = /(https?:\/\/[^\s]+)/g;
