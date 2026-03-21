@@ -1292,6 +1292,81 @@ const Profile = () => {
                     </div>
                     <Switch checked={editIsPublic} onCheckedChange={setEditIsPublic} />
                   </div>
+
+                  {/* Personal Info (Private) */}
+                  <div className="border-t border-border pt-3 mt-1">
+                    <div className="flex items-center gap-2 mb-3">
+                      <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Personal Info</h4>
+                      <span className="text-[9px] text-muted-foreground/60 px-1.5 py-0.5 rounded bg-muted/50">Private</span>
+                    </div>
+                    {/* Age */}
+                    <div className="space-y-1.5 mb-3">
+                      <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">Age</label>
+                      <input
+                        type="number"
+                        value={editAge}
+                        onChange={(e) => setEditAge(e.target.value)}
+                        placeholder="Your age"
+                        min={13}
+                        max={120}
+                        className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted/30 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                      />
+                    </div>
+                    {/* Gender */}
+                    <div className="space-y-1.5 mb-3">
+                      <label className="text-xs font-medium text-muted-foreground">Gender</label>
+                      <div className="flex flex-wrap gap-2">
+                        {["Male", "Female", "Non-binary", "Prefer not to say"].map((opt) => (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => setEditGender(editGender === opt ? "" : opt)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                              editGender === opt
+                                ? "border-primary/50 bg-primary/10 text-primary"
+                                : "border-border bg-muted/30 text-muted-foreground hover:border-muted-foreground/30"
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Location */}
+                    <div className="space-y-1.5 mb-3">
+                      <label className="text-xs font-medium text-muted-foreground">Location</label>
+                      <input
+                        type="text"
+                        value={editLocation}
+                        onChange={(e) => setEditLocation(e.target.value)}
+                        placeholder="City, Country"
+                        maxLength={100}
+                        className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted/30 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                      />
+                    </div>
+                    {/* Interests */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Interests</label>
+                      <div className="flex flex-wrap gap-2">
+                        {["Politics", "Entertainment", "Sports", "Crypto", "Finance", "Technology", "Science", "Gaming", "Music", "Fashion", "Health", "Education", "News", "Culture", "Business"].map((opt) => (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => setEditInterests((prev) => prev.includes(opt) ? prev.filter((i) => i !== opt) : [...prev, opt])}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all flex items-center gap-1 ${
+                              editInterests.includes(opt)
+                                ? "border-primary/50 bg-primary/10 text-primary"
+                                : "border-border bg-muted/30 text-muted-foreground hover:border-muted-foreground/30"
+                            }`}
+                          >
+                            {editInterests.includes(opt) && <Check className="w-3 h-3" />}
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="flex gap-2">
                     <button
                       onClick={() => setEditingProfile(false)}
