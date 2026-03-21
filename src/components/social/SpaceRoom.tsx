@@ -76,6 +76,33 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     setParticipants(all);
   }, []);
 
+  // Fetch profiles for all participants
+  useEffect(() => {
+    if (participants.length === 0) return;
+    const ids = participants.map((p) => p.identity).filter((id) => !profiles[id]);
+    if (ids.length === 0) return;
+
+    const fetchProfiles = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, avatar_url, verification_level")
+        .in("id", ids);
+      if (data) {
+        setProfiles((prev) => {
+          const next = { ...prev };
+          data.forEach((p) => {
+            next[p.id] = {
+              avatar_url: p.avatar_url,
+              verification_level: (p.verification_level as VerificationLevel) || "none",
+            };
+          });
+          return next;
+        });
+      }
+    };
+    fetchProfiles();
+  }, [participants]);
+
   useEffect(() => {
     if (!user) return;
 
