@@ -84,21 +84,33 @@ Deno.serve(async (req) => {
     const isHost = space.host_id === userId;
     const roomName = `space-${space_id}`;
 
-    const sanitizeSecret = (value: string | null) =>
-      (value || "").trim().replace(/^['\"]|['\"]$/g, "");
+    const extractEnvValue = (value: string | null, key: string) => {
+      const normalized = (value || "").trim();
+      if (!normalized) return "";
+
+      const fromNamedLine = normalized.match(
+        new RegExp(`(?:^|\\n)\\s*${key}\\s*=\\s*([^\\n\\r]+)`, "i")
+      )?.[1];
+
+      const candidate = (fromNamedLine || normalized).trim();
+      return candidate.replace(/^['\"`]|['\"`]$/g, "");
+    };
 
     const apiKeyRaw = Deno.env.get("LIVEKIT_API_KEY");
     const apiSecretRaw = Deno.env.get("LIVEKIT_API_SECRET");
     const livekitUrlRaw = Deno.env.get("LIVEKIT_URL");
 
-    const apiKey = sanitizeSecret(apiKeyRaw);
-    const apiSecret = sanitizeSecret(apiSecretRaw);
-    const livekitUrl = (livekitUrlRaw || "").trim();
+    const apiKey = extractEnvValue(apiKeyRaw, "LIVEKIT_API_KEY");
+    const apiSecret = extractEnvValue(apiSecretRaw, "LIVEKIT_API_SECRET");
+    const livekitUrl = extractEnvValue(livekitUrlRaw, "LIVEKIT_URL");
+
+    const malformedSecret = /^LIVEKIT_/i.test(apiSecret);
 
     console.log("LiveKit config:", {
       hasKey: !!apiKey,
       hasSecret: !!apiSecret,
       hasUrl: !!livekitUrl,
+      malformedSecret,
       keyLength: apiKey.length,
       secretLength: apiSecret.length,
       urlValue: livekitUrl,
@@ -109,8 +121,8 @@ Deno.serve(async (req) => {
       isHost,
     });
 
-    if (!apiKey || !apiSecret || !livekitUrl) {
-      return new Response(JSON.stringify({ error: "LiveKit not configured" }), {
+    if (!apiKey || !apiSecret || !livekitUrl || malformedSecret) {
+      return new Response(JSON.stringify({ error: "LiveKit credentials malformed. Paste raw key/secret values only." }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
