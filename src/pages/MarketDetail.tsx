@@ -738,7 +738,7 @@ const MarketDetail = () => {
           />
         )}
 
-        {activeBoost && (
+        {activeBoost && user?.id === market.creatorWallet && (
           <div className="mb-4">
             <BoostCountdown endsAt={activeBoost.ends_at} tier={activeBoost.tier} />
           </div>
