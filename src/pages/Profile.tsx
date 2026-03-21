@@ -1401,39 +1401,7 @@ const Profile = () => {
                             body: { name: editName.trim() },
                           }).catch(() => ({ data: null }));
 
-
-                          let avatarUrl: string | null = null;
-                          if (selectedNftUrl) {
-                            avatarUrl = selectedNftUrl;
-                          } else if (avatarFile) {
-                            avatarUrl = await uploadAvatar();
-                            if (!avatarUrl && avatarFile) { setSavingProfile(false); return; }
-                          }
-
-                          // Moderate uploaded image
-                          if (avatarUrl) {
-                            try {
-                              const { data: imgModData } = await supabase.functions.invoke("moderate-image", {
-                                body: { image_url: avatarUrl },
-                              });
-                              if (imgModData?.flagged) {
-                                await supabase.from("moderation_logs").insert({
-                                  content_type: "image",
-                                  user_id: user!.id,
-                                  flagged_content: avatarUrl,
-                                  reason: imgModData.reason || "Flagged by AI",
-                                  category: imgModData.category || "nsfw",
-                                });
-                                toast.error(imgModData.reason || "This image is not allowed");
-                                setSavingProfile(false);
-                                return;
-                              }
-                            } catch (err) {
-                              console.error("Image moderation check failed, proceeding:", err);
-                            }
-                          }
-
-                          // Validate DOB - must be at least 13 years old
+                          // Validate DOB early (no async needed)
                           if (editDob) {
                             const ageDiff = new Date().getFullYear() - editDob.getFullYear();
                             const monthDiff = new Date().getMonth() - editDob.getMonth();
@@ -1445,7 +1413,34 @@ const Profile = () => {
                             }
                           }
 
-                          // Update profile table first (more reliable)
+                          // Upload avatar if needed (parallel with name moderation)
+                          let avatarUrl: string | null = null;
+                          if (selectedNftUrl) {
+                            avatarUrl = selectedNftUrl;
+                          } else if (avatarFile) {
+                            avatarUrl = await uploadAvatar();
+                            if (!avatarUrl && avatarFile) { setSavingProfile(false); return; }
+                          }
+
+                          // Check name moderation result (should be done by now)
+                          const { data: nameModData } = await nameModPromise;
+                          if (nameModData?.flagged) {
+                            supabase.from("moderation_logs").insert({
+                              content_type: "display_name",
+                              user_id: user!.id,
+                              flagged_content: editName.trim(),
+                              reason: nameModData.reason || "Flagged by AI",
+                              category: "profanity",
+                            }).then(() => {});
+                            toast.error("Display name not allowed", {
+                              description: nameModData.reason || "This display name contains inappropriate content.",
+                              duration: 6000,
+                            });
+                            setSavingProfile(false);
+                            return;
+                          }
+
+                          // Update profile table
                           const { error: profileError } = await supabase.from("profiles").update({
                             display_name: editName.trim(),
                             bio: editBio.trim(),
@@ -1467,15 +1462,26 @@ const Profile = () => {
                             return;
                           }
 
-                          // Update auth metadata (fire-and-forget with timeout)
-                          const authUpdatePromise = supabase.auth.updateUser({
+                          // Fire-and-forget: auth metadata, image moderation, verification
+                          supabase.auth.updateUser({
                             data: { display_name: editName.trim(), ...(avatarUrl ? { avatar_url: avatarUrl } : {}) },
-                          });
-                          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000));
-                          try {
-                            await Promise.race([authUpdatePromise, timeoutPromise]);
-                          } catch {
-                            // Auth metadata update timed out or failed — profile is already saved, continue
+                          }).catch(() => {});
+
+                          if (avatarUrl) {
+                            supabase.functions.invoke("moderate-image", {
+                              body: { image_url: avatarUrl },
+                            }).then(({ data: imgModData }) => {
+                              if (imgModData?.flagged) {
+                                supabase.from("moderation_logs").insert({
+                                  content_type: "image",
+                                  user_id: user!.id,
+                                  flagged_content: avatarUrl!,
+                                  reason: imgModData.reason || "Flagged by AI",
+                                  category: imgModData.category || "nsfw",
+                                }).then(() => {});
+                                toast.error(imgModData.reason || "Image flagged — it may be reverted");
+                              }
+                            }).catch(() => {});
                           }
 
                           queryClient.invalidateQueries({ queryKey: ["profile", user!.id] });
@@ -1487,7 +1493,6 @@ const Profile = () => {
                           toast.success("Profile updated!");
                           setEditingProfile(false);
 
-                          // Refresh verification level in background
                           supabase.functions.invoke("update-verification").catch(() => {});
                           setTimeout(() => queryClient.invalidateQueries({ queryKey: ["profile", user!.id] }), 1500);
                         } catch (err) {
