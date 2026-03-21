@@ -180,13 +180,7 @@ const BoostedCarousel = ({
                   <span>{market.category}</span>
                   <span>{formatVolume(market.volume)} Vol</span>
                 </div>
-                {boost && (
-                  <BoostCountdown
-                    endsAt={boost.ends_at}
-                    tier={boost.tier}
-                    compact
-                  />
-                )}
+                {/* Boost countdown hidden - only visible to market owner on detail page */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
