@@ -92,9 +92,12 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [floatingReactions, setFloatingReactions] = useState<{ id: string; emoji: string }[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Recording state
+  // Recording state (client-side)
   const [recording, setRecording] = useState(false);
   const [recordingLoading, setRecordingLoading] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
 
   // Remote hand raises tracked by identity
   const [remoteHandRaises, setRemoteHandRaises] = useState<Set<string>>(new Set());
