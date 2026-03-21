@@ -267,6 +267,37 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Create social ad record
+    if (include_social_ad) {
+      const adEndsAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h duration
+      const { data: adRecord, error: adErr } = await adminClient
+        .from("social_ads")
+        .insert({
+          market_id,
+          user_id: userId,
+          headline: ad_headline || null,
+          video_url: ad_video_url || null,
+          amount: SOCIAL_AD_PRICE,
+          status: "active",
+          ends_at: adEndsAt.toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (!adErr && adRecord) {
+        // Log transaction
+        await adminClient.from("transactions").insert({
+          user_id: userId,
+          type: "buy",
+          amount: SOCIAL_AD_PRICE,
+          market_id,
+          status: "confirmed",
+          side: "social_ad",
+        });
+        result.social_ad_id = adRecord.id;
+      }
+    }
+
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
