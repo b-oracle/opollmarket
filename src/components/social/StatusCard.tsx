@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Trash2, Loader2, MessageCircle, ExternalLink } from "lucide-react";
+import { Heart, Trash2, Loader2, MessageCircle, ExternalLink, Repeat2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { toast } from "sonner";
@@ -17,7 +17,6 @@ const parseContentWithLinks = (text: string) => {
   const parts = text.split(URL_REGEX);
   return parts.map((part, i) => {
     if (URL_REGEX.test(part)) {
-      // Reset regex lastIndex
       URL_REGEX.lastIndex = 0;
       return { type: "link" as const, value: part, key: i };
     }
@@ -25,7 +24,6 @@ const parseContentWithLinks = (text: string) => {
   });
 };
 
-/** Extract internal path from a URL if it's an opoll/lovable link */
 const getInternalPath = (url: string): string | null => {
   try {
     const u = new URL(url);
@@ -38,10 +36,8 @@ const getInternalPath = (url: string): string | null => {
   return null;
 };
 
-/** Rich content renderer that turns URLs into clickable links */
 const RichContent = ({ content }: { content: string }) => {
   const segments = useMemo(() => parseContentWithLinks(content), [content]);
-
   return (
     <p className="text-sm whitespace-pre-wrap break-words">
       {segments.map((seg) => {
@@ -90,6 +86,7 @@ interface StatusCardProps {
     image_url?: string | null;
     likes_count: number;
     comments_count?: number;
+    reposts_count?: number;
     created_at: string;
     market_id?: string | null;
   };
@@ -107,14 +104,19 @@ interface StatusCardProps {
     status?: string;
   } | null;
   index?: number;
+  repostedBy?: {
+    name: string;
+    userId: string;
+  } | null;
 }
 
-const StatusCard = ({ status, profile, market, index = 0 }: StatusCardProps) => {
+const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCardProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [likeLoading, setLikeLoading] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [repostLoading, setRepostLoading] = useState(false);
 
   const { data: isLiked = false } = useQuery({
     queryKey: ["status-liked", status.id, user?.id],
@@ -122,6 +124,20 @@ const StatusCard = ({ status, profile, market, index = 0 }: StatusCardProps) => 
       if (!user) return false;
       const { count } = await supabase
         .from("status_likes")
+        .select("id", { count: "exact", head: true })
+        .eq("status_id", status.id)
+        .eq("user_id", user.id);
+      return (count || 0) > 0;
+    },
+    enabled: !!user,
+  });
+
+  const { data: isReposted = false } = useQuery({
+    queryKey: ["status-reposted", status.id, user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { count } = await supabase
+        .from("status_reposts")
         .select("id", { count: "exact", head: true })
         .eq("status_id", status.id)
         .eq("user_id", user.id);
@@ -150,6 +166,28 @@ const StatusCard = ({ status, profile, market, index = 0 }: StatusCardProps) => 
     }
   };
 
+  const handleRepost = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) { toast.error("Sign in to repoll"); return; }
+    if (user.id === status.user_id) { toast.error("Can't repoll your own post"); return; }
+    setRepostLoading(true);
+    try {
+      if (isReposted) {
+        await supabase.from("status_reposts").delete().eq("status_id", status.id).eq("user_id", user.id);
+        toast.success("Repoll removed");
+      } else {
+        await supabase.from("status_reposts").insert({ status_id: status.id, user_id: user.id });
+        toast.success("Repolled!");
+      }
+      queryClient.invalidateQueries({ queryKey: ["status-reposted", status.id] });
+      queryClient.invalidateQueries({ queryKey: ["status-feed"] });
+    } catch {
+      toast.error("Failed");
+    } finally {
+      setRepostLoading(false);
+    }
+  };
+
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const { error } = await supabase.from("status_updates").delete().eq("id", status.id);
@@ -170,6 +208,17 @@ const StatusCard = ({ status, profile, market, index = 0 }: StatusCardProps) => 
       transition={{ delay: index * 0.03 }}
       className="glass rounded-xl p-3 space-y-2"
     >
+      {/* Repost header */}
+      {repostedBy && (
+        <div
+          className="flex items-center gap-1.5 text-[10px] text-muted-foreground cursor-pointer hover:underline -mt-1 mb-1"
+          onClick={() => navigate(`/user/${repostedBy.userId}`)}
+        >
+          <Repeat2 className="w-3 h-3" />
+          <span>{repostedBy.name} repolled</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-2.5">
         <div
@@ -223,7 +272,7 @@ const StatusCard = ({ status, profile, market, index = 0 }: StatusCardProps) => 
         </div>
       )}
 
-      {/* Legacy image display (only if no market linked) */}
+      {/* Legacy image display */}
       {!market && status.image_url && (
         <img src={status.image_url} alt="" className="rounded-lg max-h-60 w-full object-cover" loading="lazy" />
       )}
@@ -248,6 +297,18 @@ const StatusCard = ({ status, profile, market, index = 0 }: StatusCardProps) => 
         >
           <MessageCircle className="w-3.5 h-3.5" />
           {(status.comments_count || 0) > 0 && status.comments_count}
+        </button>
+        <button
+          onClick={handleRepost}
+          disabled={repostLoading}
+          className={`flex items-center gap-1 text-xs transition-colors ${isReposted ? "text-emerald-500" : "text-muted-foreground hover:text-emerald-500"}`}
+        >
+          {repostLoading ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Repeat2 className={`w-3.5 h-3.5 ${isReposted ? "stroke-[2.5]" : ""}`} />
+          )}
+          {(status.reposts_count || 0) > 0 && status.reposts_count}
         </button>
       </div>
 
