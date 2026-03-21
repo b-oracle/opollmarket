@@ -1299,18 +1299,37 @@ const Profile = () => {
                       <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Personal Info</h4>
                       <span className="text-[9px] text-muted-foreground/60 px-1.5 py-0.5 rounded bg-muted/50">Private</span>
                     </div>
-                    {/* Age */}
+                    {/* Date of Birth */}
                     <div className="space-y-1.5 mb-3">
-                      <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">Age</label>
-                      <input
-                        type="number"
-                        value={editAge}
-                        onChange={(e) => setEditAge(e.target.value)}
-                        placeholder="Your age"
-                        min={13}
-                        max={120}
-                        className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted/30 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-                      />
+                      <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">Date of Birth</label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className={cn(
+                              "w-full px-3 py-2.5 rounded-lg border border-border bg-muted/30 text-sm text-left focus:outline-none focus:ring-1 focus:ring-primary/50 flex items-center gap-2",
+                              !editDob && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="w-4 h-4" />
+                            {editDob ? format(editDob, "PPP") : "Select your date of birth"}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 z-[60]" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={editDob}
+                            onSelect={setEditDob}
+                            disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                            defaultMonth={editDob || new Date(2000, 0)}
+                            captionLayout="dropdown-buttons"
+                            fromYear={1920}
+                            toYear={new Date().getFullYear()}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     {/* Gender */}
                     <div className="space-y-1.5 mb-3">
