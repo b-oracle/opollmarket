@@ -1,5 +1,7 @@
-// App root – v2
+// App root – v3
 import { lazy, Suspense, useState, useEffect, useRef } from "react";
+import { ActiveSpaceProvider, useActiveSpace } from "./hooks/useActiveSpace";
+import SpaceRoom from "./components/social/SpaceRoom";
 
 // Clear chunk reload counter on successful load
 if (typeof sessionStorage !== "undefined") {
@@ -247,6 +249,19 @@ const SocialTutorialTrigger = () => {
   );
 };
 
+const GlobalSpaceRoom = () => {
+  const { activeSpace, leaveSpace } = useActiveSpace();
+  if (!activeSpace) return null;
+  return (
+    <SpaceRoom
+      spaceId={activeSpace.id}
+      spaceTitle={activeSpace.title}
+      hostId={activeSpace.hostId}
+      onClose={leaveSpace}
+    />
+  );
+};
+
 const App = () => (
   <ErrorBoundary>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
@@ -254,6 +269,7 @@ const App = () => (
         <QueryClientProvider client={queryClient}>
           <VerificationThresholdProvider>
           <AuthProvider>
+            <ActiveSpaceProvider>
             <SidebarStateProvider>
               <TooltipProvider>
                 <Toaster />
@@ -263,6 +279,7 @@ const App = () => (
                 <SocialTutorialTrigger />
                 <AimtellProvider />
                 <PendingCopyTrades />
+                <GlobalSpaceRoom />
                 <ConditionalSidebar />
                 <ConditionalLayout>
                   <div className="flex-1">
@@ -338,6 +355,7 @@ const App = () => (
                 </BrowserRouter>
               </TooltipProvider>
             </SidebarStateProvider>
+            </ActiveSpaceProvider>
           </AuthProvider>
           </VerificationThresholdProvider>
         </QueryClientProvider>

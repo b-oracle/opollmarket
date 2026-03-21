@@ -28,8 +28,11 @@ import {
   Circle,
   CircleStop,
   Bell,
+  Minimize2,
 } from "lucide-react";
 import NftBadge, { VerificationLevel } from "@/components/NftBadge";
+import { useActiveSpace } from "@/hooks/useActiveSpace";
+import SpaceMiniPlayer from "./SpaceMiniPlayer";
 
 interface SpaceRoomProps {
   spaceId: string;
@@ -67,6 +70,7 @@ const REACTIONS = ["🔥", "👏", "❤️", "😂", "💯", "🎯"];
 const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { minimized, toggleMinimize } = useActiveSpace();
   const roomRef = useRef<Room | null>(null);
   const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -112,6 +116,54 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     if (chatOpen) setUnreadCount(0);
   }, [chatOpen]);
 
+  // ============ Session persistence on background / calls ============
+  useEffect(() => {
+    const handleVisibility = () => {
+      const room = roomRef.current;
+      if (!room) return;
+
+      if (document.visibilityState === "visible") {
+        // Re-enable audio tracks that may have been suspended
+        room.localParticipant.audioTrackPublications.forEach((pub) => {
+          if (pub.track) {
+            pub.track.mediaStreamTrack.enabled = !muted;
+          }
+        });
+      }
+    };
+
+    // Prevent the page from being frozen on mobile
+    const handleFreeze = (e: Event) => {
+      // Request a wake lock if available to keep the connection alive
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    document.addEventListener("freeze", handleFreeze);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      document.removeEventListener("freeze", handleFreeze);
+    };
+  }, [muted]);
+
+  // Keep-alive ping to prevent WebSocket timeout when backgrounded
+  useEffect(() => {
+    if (!connected) return;
+    const interval = setInterval(() => {
+      const room = roomRef.current;
+      if (room && room.state === "connected") {
+        // Sending a small data packet keeps the connection alive
+        try {
+          const ping = JSON.stringify({ type: "ping", ts: Date.now() });
+          room.localParticipant.publishData(new TextEncoder().encode(ping), { reliable: false });
+        } catch {
+          // ignore
+        }
+      }
+    }, 15000); // every 15 seconds
+    return () => clearInterval(interval);
+  }, [connected]);
+
   const updateParticipants = useCallback((room: Room) => {
     const all: ParticipantInfo[] = [];
     const addP = (p: any) => {
@@ -135,6 +187,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     try {
       const decoded = new TextDecoder().decode(payload);
       const data = JSON.parse(decoded);
+      // Ignore keep-alive pings
+      if (data.type === "ping") return;
       if (data.type === "reaction") {
         const id = `${Date.now()}-${Math.random()}`;
         setFloatingReactions((prev) => [...prev, { id, emoji: data.emoji }]);
@@ -214,6 +268,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       adaptiveStream: true,
       dynacast: true,
       audioCaptureDefaults: { echoCancellation: true, noiseSuppression: true },
+      // Keep connection alive when page is hidden
+      disconnectOnPageLeave: false,
     });
     roomRef.current = room;
 
@@ -281,6 +337,15 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           }
         });
 
+        // Auto-reconnect on transient failures
+        room.on(RoomEvent.Reconnecting, () => {
+          toast.info("Reconnecting to space…", { id: "space-reconnect" });
+        });
+        room.on(RoomEvent.Reconnected, () => {
+          toast.success("Reconnected! ✅", { id: "space-reconnect" });
+          updateParticipants(room);
+        });
+
         await room.connect(normUrl(data.url), data.token);
         if (cancelled) { room.disconnect(); return; }
 
@@ -343,7 +408,6 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     const newRaised = !handRaised;
     setHandRaised(newRaised);
     toast.info(newRaised ? "Hand raised ✋" : "Hand lowered");
-    // Broadcast hand raise to all participants
     if (roomRef.current) {
       const data = JSON.stringify({
         type: "hand_raise",
@@ -371,7 +435,6 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       );
       if (action === "start_recording") setRecording(true);
       if (action === "stop_recording") setRecording(false);
-      // Clear hand raise when promoted
       if (action === "promote" && target_user_id) {
         setRemoteHandRaises((prev) => {
           const next = new Set(prev);
@@ -453,6 +516,20 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     );
   };
 
+  // ============ MINIMIZED MODE ============
+  if (minimized) {
+    return (
+      <SpaceMiniPlayer
+        title={spaceTitle}
+        participantCount={participants.length}
+        isMuted={muted}
+        onToggleMute={toggleMute}
+        onLeave={handleLeave}
+      />
+    );
+  }
+
+  // ============ FULL MODE ============
   return (
     <AnimatePresence>
       <motion.div key="space-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -478,7 +555,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           </AnimatePresence>
         </div>
 
-        {/* Header - no X button, chat toggles to close */}
+        {/* Header */}
         <div className="px-5 py-3 border-b border-border flex items-center gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
@@ -498,6 +575,12 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             <h3 className="text-sm font-bold mt-0.5 truncate">{spaceTitle}</h3>
           </div>
           <div className="flex items-center gap-1">
+            {/* Minimize button */}
+            <button onClick={toggleMinimize}
+              className="w-9 h-9 rounded-full flex items-center justify-center bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              title="Minimize">
+              <Minimize2 className="w-4 h-4" />
+            </button>
             {/* Chat / close toggle with unread badge */}
             <button onClick={() => setChatOpen(!chatOpen)}
               className={`relative w-9 h-9 rounded-full flex items-center justify-center transition-colors ${

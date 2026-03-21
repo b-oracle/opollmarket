@@ -3,8 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
+import { useActiveSpace } from "@/hooks/useActiveSpace";
 import SpaceCard from "./SpaceCard";
-import SpaceRoom from "./SpaceRoom";
 import CreateSpaceModal from "./CreateSpaceModal";
 import { Radio, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -12,13 +12,9 @@ import { motion } from "framer-motion";
 const SpacesFeed = () => {
   const { user } = useAuth();
   const { isFeatureEnabled } = useFeatureToggles();
+  const { activeSpace, joinSpace } = useActiveSpace();
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [activeRoom, setActiveRoom] = useState<{
-    id: string;
-    title: string;
-    hostId: string;
-  } | null>(null);
 
   const { data: spaces = [], isLoading } = useQuery({
     queryKey: ["spaces"],
@@ -52,7 +48,7 @@ const SpacesFeed = () => {
   const handleJoinRoom = (spaceId: string) => {
     const space = spaces.find((s: any) => s.id === spaceId);
     if (space) {
-      setActiveRoom({
+      joinSpace({
         id: space.id,
         title: (space as any).title,
         hostId: (space as any).host_id,
@@ -133,15 +129,6 @@ const SpacesFeed = () => {
       )}
 
       <CreateSpaceModal open={createOpen} onClose={() => setCreateOpen(false)} />
-
-      {activeRoom && (
-        <SpaceRoom
-          spaceId={activeRoom.id}
-          spaceTitle={activeRoom.title}
-          hostId={activeRoom.hostId}
-          onClose={() => setActiveRoom(null)}
-        />
-      )}
     </div>
   );
 };
