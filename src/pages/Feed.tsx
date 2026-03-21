@@ -13,11 +13,13 @@ import { Loader2, TrendingUp, Users, Clock, Heart, MessageCircle, Zap, Flame, Ex
 import { motion } from "framer-motion";
 import useAnalytics from "@/hooks/useAnalytics";
 import CategoryIcon from "@/components/CategoryIcon";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState as useStateHook, useEffect as useEffectHook } from "react";
 import { useBookmarkedMarkets } from "@/hooks/useBookmarkedMarkets";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveSpace } from "@/hooks/useActiveSpace";
+import { supabase } from "@/integrations/supabase/client";
 
 const useIsDesktop = () => {
   const [isDesktop, setIsDesktop] = useStateHook(false);
@@ -232,6 +234,7 @@ const DesktopFeedCard = ({ market, isBoosted, boostEndsAt, boostTier
 };
 
 const Feed = () => {
+  const navigate = useNavigate();
   const [tabOpen, setTabOpen] = useState(false);
   const [watchlistPulse, setWatchlistPulse] = useState(false);
   const prevBookmarkCount = useRef<number | null>(null);
@@ -248,9 +251,43 @@ const Feed = () => {
   const { user } = useAuth();
   const [feedTab, setFeedTab] = useState<"foryou" | "bookmarks">("foryou");
   const [visibleCount, setVisibleCount] = useState(20);
+  const { joinSpace } = useActiveSpace();
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  const [searchParams] = useSearchParams();
+
   useEffect(() => {track("page_view", { page: "feed" });}, []);
+
+  // Handle ?space= deep link — redirect to auth if not logged in, otherwise open space
+  useEffect(() => {
+    const spaceId = searchParams.get("space");
+    if (!spaceId) return;
+    const ref = searchParams.get("ref");
+
+    if (!user) {
+      // Redirect to auth with referral code and return URL
+      const params = new URLSearchParams();
+      if (ref) params.set("ref", ref);
+      params.set("redirect", `/feed?space=${spaceId}`);
+      navigate(`/auth?${params.toString()}`, { replace: true });
+      return;
+    }
+
+    // User is logged in — fetch space details and join
+    navigate("/feed", { replace: true });
+    (async () => {
+      const { data: space } = await supabase
+        .from("spaces")
+        .select("id, title, host_id")
+        .eq("id", spaceId)
+        .maybeSingle();
+      if (space) {
+        joinSpace({ id: space.id, title: space.title, hostId: space.host_id });
+      } else {
+        toast("This space is no longer available", { duration: 3000 });
+      }
+    })();
+  }, [searchParams, user, navigate, joinSpace]);
 
   // Pulse when bookmarks increase
   useEffect(() => {

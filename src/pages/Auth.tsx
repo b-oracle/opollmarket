@@ -109,7 +109,8 @@ const Auth = () => {
           }
         }
         toast.success("Logged in successfully!");
-        navigate("/");
+        const redirectTo = searchParams.get("redirect");
+        navigate(redirectTo || "/");
         return;
       } else {
         // Validate referral code if provided
