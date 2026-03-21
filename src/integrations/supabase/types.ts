@@ -2048,11 +2048,42 @@ export type Database = {
           },
         ]
       }
+      status_comment_likes: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "status_comment_likes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "status_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       status_comments: {
         Row: {
           content: string
           created_at: string
           id: string
+          likes_count: number
+          parent_id: string | null
           status_id: string
           user_id: string
         }
@@ -2060,6 +2091,8 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          likes_count?: number
+          parent_id?: string | null
           status_id: string
           user_id: string
         }
@@ -2067,10 +2100,19 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          likes_count?: number
+          parent_id?: string | null
           status_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "status_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "status_comments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "status_comments_status_id_fkey"
             columns: ["status_id"]
