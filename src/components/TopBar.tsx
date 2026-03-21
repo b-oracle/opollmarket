@@ -11,6 +11,50 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
+const AdminBadgeButton = ({ isAdminRoute, onClick, userId }: { isAdminRoute: boolean; onClick: () => void; userId: string }) => {
+  const { data: pendingCount = 0 } = useQuery({
+    queryKey: ["admin-pending-count", userId],
+    queryFn: async () => {
+      const [withdrawals, markets, moderation] = await Promise.all([
+        supabase.from("transactions").select("id", { count: "exact", head: true }).eq("type", "withdrawal").eq("status", "pending"),
+        supabase.from("markets").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("moderation_logs").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      ]);
+      return (withdrawals.count || 0) + (markets.count || 0) + (moderation.count || 0);
+    },
+    refetchInterval: 30_000,
+    staleTime: 15_000,
+  });
+
+  return (
+    <button
+      onClick={onClick}
+      className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all active:scale-95 ${
+        isAdminRoute
+          ? "bg-primary/20 text-primary border border-primary/30"
+          : "bg-muted/50 text-muted-foreground border border-border hover:border-primary/30 hover:text-primary"
+      }`}
+    >
+      {isAdminRoute ? (
+        <>
+          <ArrowLeft className="w-3.5 h-3.5" />
+          User Mode
+        </>
+      ) : (
+        <>
+          <Shield className="w-3.5 h-3.5" />
+          Admin
+        </>
+      )}
+      {pendingCount > 0 && !isAdminRoute && (
+        <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1 animate-pulse">
+          {pendingCount > 99 ? "99+" : pendingCount}
+        </span>
+      )}
+    </button>
+  );
+};
+
 const TopBar = () => {
   const { user, isSuperAdmin, isAdmin, hasAdminAccess, signOut, loading, displayName } = useAuth();
   const navigate = useNavigate();
@@ -66,26 +110,7 @@ const TopBar = () => {
         <div className="flex items-center gap-2">
           {/* Admin mode toggle for admin users */}
           {hasAdminAccess && user && (
-            <button
-              onClick={() => navigate(isAdminRoute ? "/" : "/admin")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all active:scale-95 ${
-                isAdminRoute
-                  ? "bg-primary/20 text-primary border border-primary/30"
-                  : "bg-muted/50 text-muted-foreground border border-border hover:border-primary/30 hover:text-primary"
-              }`}
-            >
-              {isAdminRoute ? (
-                <>
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  User Mode
-                </>
-              ) : (
-                <>
-                  <Shield className="w-3.5 h-3.5" />
-                  Admin
-                </>
-              )}
-            </button>
+            <AdminBadgeButton isAdminRoute={isAdminRoute} onClick={() => navigate(isAdminRoute ? "/" : "/admin")} userId={user.id} />
           )}
           <NotificationBell />
           <ThemeToggle />
