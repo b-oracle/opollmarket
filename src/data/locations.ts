@@ -1,0 +1,101 @@
+export const LOCATIONS = [
+  // Africa
+  "Lagos, Nigeria", "Abuja, Nigeria", "Kano, Nigeria", "Port Harcourt, Nigeria", "Ibadan, Nigeria",
+  "Benin City, Nigeria", "Enugu, Nigeria", "Kaduna, Nigeria", "Ogun, Nigeria", "Owerri, Nigeria",
+  "Warri, Nigeria", "Uyo, Nigeria", "Calabar, Nigeria", "Jos, Nigeria", "Abeokuta, Nigeria",
+  "Nairobi, Kenya", "Mombasa, Kenya", "Kisumu, Kenya",
+  "Accra, Ghana", "Kumasi, Ghana", "Tamale, Ghana",
+  "Cairo, Egypt", "Alexandria, Egypt", "Giza, Egypt",
+  "Johannesburg, South Africa", "Cape Town, South Africa", "Durban, South Africa", "Pretoria, South Africa",
+  "Addis Ababa, Ethiopia", "Dar es Salaam, Tanzania", "Kampala, Uganda",
+  "Kinshasa, DR Congo", "Luanda, Angola", "Casablanca, Morocco", "Rabat, Morocco",
+  "Tunis, Tunisia", "Algiers, Algeria", "Dakar, Senegal", "Douala, Cameroon",
+  "Yaoundé, Cameroon", "Maputo, Mozambique", "Lusaka, Zambia", "Harare, Zimbabwe",
+  "Kigali, Rwanda", "Bamako, Mali", "Conakry, Guinea", "Lomé, Togo",
+  "Cotonou, Benin", "Freetown, Sierra Leone", "Monrovia, Liberia",
+  "Windhoek, Namibia", "Gaborone, Botswana", "Lilongwe, Malawi",
+
+  // Europe
+  "London, United Kingdom", "Manchester, United Kingdom", "Birmingham, United Kingdom",
+  "Edinburgh, United Kingdom", "Glasgow, United Kingdom", "Liverpool, United Kingdom",
+  "Paris, France", "Lyon, France", "Marseille, France", "Toulouse, France",
+  "Berlin, Germany", "Munich, Germany", "Hamburg, Germany", "Frankfurt, Germany", "Cologne, Germany",
+  "Madrid, Spain", "Barcelona, Spain", "Valencia, Spain", "Seville, Spain",
+  "Rome, Italy", "Milan, Italy", "Naples, Italy", "Turin, Italy",
+  "Amsterdam, Netherlands", "Rotterdam, Netherlands", "The Hague, Netherlands",
+  "Brussels, Belgium", "Antwerp, Belgium",
+  "Lisbon, Portugal", "Porto, Portugal",
+  "Vienna, Austria", "Zurich, Switzerland", "Geneva, Switzerland",
+  "Dublin, Ireland", "Stockholm, Sweden", "Gothenburg, Sweden",
+  "Oslo, Norway", "Copenhagen, Denmark", "Helsinki, Finland",
+  "Warsaw, Poland", "Kraków, Poland", "Prague, Czech Republic",
+  "Budapest, Hungary", "Bucharest, Romania", "Sofia, Bulgaria",
+  "Athens, Greece", "Thessaloniki, Greece",
+  "Istanbul, Turkey", "Ankara, Turkey", "Izmir, Turkey",
+  "Moscow, Russia", "Saint Petersburg, Russia", "Kyiv, Ukraine",
+  "Belgrade, Serbia", "Zagreb, Croatia", "Ljubljana, Slovenia",
+  "Bratislava, Slovakia", "Tallinn, Estonia", "Riga, Latvia", "Vilnius, Lithuania",
+
+  // North America
+  "New York, United States", "Los Angeles, United States", "Chicago, United States",
+  "Houston, United States", "Phoenix, United States", "Philadelphia, United States",
+  "San Antonio, United States", "San Diego, United States", "Dallas, United States",
+  "San Jose, United States", "Austin, United States", "Jacksonville, United States",
+  "San Francisco, United States", "Seattle, United States", "Denver, United States",
+  "Washington DC, United States", "Nashville, United States", "Boston, United States",
+  "Atlanta, United States", "Miami, United States", "Portland, United States",
+  "Las Vegas, United States", "Detroit, United States", "Minneapolis, United States",
+  "Charlotte, United States", "Orlando, United States", "Tampa, United States",
+  "Toronto, Canada", "Vancouver, Canada", "Montreal, Canada", "Calgary, Canada",
+  "Ottawa, Canada", "Edmonton, Canada", "Winnipeg, Canada",
+  "Mexico City, Mexico", "Guadalajara, Mexico", "Monterrey, Mexico", "Cancún, Mexico",
+
+  // South America
+  "São Paulo, Brazil", "Rio de Janeiro, Brazil", "Brasília, Brazil", "Salvador, Brazil",
+  "Fortaleza, Brazil", "Belo Horizonte, Brazil", "Curitiba, Brazil",
+  "Buenos Aires, Argentina", "Córdoba, Argentina", "Rosario, Argentina",
+  "Lima, Peru", "Bogotá, Colombia", "Medellín, Colombia", "Cali, Colombia",
+  "Santiago, Chile", "Caracas, Venezuela", "Quito, Ecuador", "Guayaquil, Ecuador",
+  "Montevideo, Uruguay", "Asunción, Paraguay", "La Paz, Bolivia",
+
+  // Asia
+  "Tokyo, Japan", "Osaka, Japan", "Yokohama, Japan", "Kyoto, Japan",
+  "Beijing, China", "Shanghai, China", "Shenzhen, China", "Guangzhou, China",
+  "Hong Kong, China", "Chengdu, China", "Hangzhou, China",
+  "Seoul, South Korea", "Busan, South Korea",
+  "Mumbai, India", "Delhi, India", "Bangalore, India", "Hyderabad, India",
+  "Chennai, India", "Kolkata, India", "Pune, India", "Ahmedabad, India",
+  "Singapore, Singapore",
+  "Kuala Lumpur, Malaysia", "Penang, Malaysia",
+  "Bangkok, Thailand", "Chiang Mai, Thailand",
+  "Jakarta, Indonesia", "Bali, Indonesia", "Surabaya, Indonesia",
+  "Manila, Philippines", "Cebu, Philippines",
+  "Hanoi, Vietnam", "Ho Chi Minh City, Vietnam",
+  "Taipei, Taiwan", "Kaohsiung, Taiwan",
+  "Dhaka, Bangladesh", "Colombo, Sri Lanka", "Kathmandu, Nepal",
+  "Islamabad, Pakistan", "Karachi, Pakistan", "Lahore, Pakistan",
+  "Phnom Penh, Cambodia", "Yangon, Myanmar", "Vientiane, Laos",
+  "Ulaanbaatar, Mongolia",
+
+  // Middle East
+  "Dubai, UAE", "Abu Dhabi, UAE", "Sharjah, UAE",
+  "Riyadh, Saudi Arabia", "Jeddah, Saudi Arabia", "Mecca, Saudi Arabia",
+  "Doha, Qatar", "Manama, Bahrain", "Kuwait City, Kuwait", "Muscat, Oman",
+  "Amman, Jordan", "Beirut, Lebanon", "Baghdad, Iraq",
+  "Tehran, Iran", "Tel Aviv, Israel", "Jerusalem, Israel",
+
+  // Oceania
+  "Sydney, Australia", "Melbourne, Australia", "Brisbane, Australia", "Perth, Australia",
+  "Adelaide, Australia", "Gold Coast, Australia",
+  "Auckland, New Zealand", "Wellington, New Zealand", "Christchurch, New Zealand",
+  "Suva, Fiji", "Port Moresby, Papua New Guinea",
+
+  // Caribbean
+  "Kingston, Jamaica", "Nassau, Bahamas", "Port of Spain, Trinidad and Tobago",
+  "Bridgetown, Barbados", "Havana, Cuba", "Santo Domingo, Dominican Republic",
+  "San Juan, Puerto Rico", "Port-au-Prince, Haiti",
+
+  // Central America
+  "Guatemala City, Guatemala", "San Salvador, El Salvador", "Tegucigalpa, Honduras",
+  "Managua, Nicaragua", "San José, Costa Rica", "Panama City, Panama", "Belize City, Belize",
+];
