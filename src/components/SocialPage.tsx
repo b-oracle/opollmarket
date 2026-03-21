@@ -303,22 +303,27 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
               {/* Tabs */}
               <div className="flex gap-1 p-1 rounded-xl bg-muted/50 overflow-x-auto scrollbar-hide">
                 {([
-                  { key: "posts", label: "Posts", icon: FileText },
-                  { key: "activity", label: "Activity", icon: Heart },
-                  { key: "spaces", label: "Spaces", icon: Radio },
-                  { key: "followers", label: `${followers.length}`, icon: Users },
-                  { key: "following", label: `${following.length}`, icon: UserCheck },
-                  { key: "suggestions", label: "For You", icon: Sparkles },
+                  { key: "posts", label: "Posts", icon: FileText, badge: 0 },
+                  { key: "activity", label: "Activity", icon: Heart, badge: 0 },
+                  { key: "spaces", label: "Spaces", icon: Radio, badge: liveSpacesCount },
+                  { key: "followers", label: `${followers.length}`, icon: Users, badge: 0 },
+                  { key: "following", label: `${following.length}`, icon: UserCheck, badge: 0 },
+                  { key: "suggestions", label: "For You", icon: Sparkles, badge: 0 },
                 ] as const).map((t) => (
                   <button
                     key={t.key}
                     onClick={() => setActiveTab(t.key)}
-                    className={`flex-1 py-2 rounded-lg text-[10px] font-semibold transition-all flex flex-col items-center gap-0.5 shrink-0 min-w-[52px] ${
+                    className={`relative flex-1 py-2 rounded-lg text-[10px] font-semibold transition-all flex flex-col items-center gap-0.5 shrink-0 min-w-[52px] ${
                       activeTab === t.key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
                     }`}
                   >
                     <t.icon className="w-3.5 h-3.5" />
                     {t.label}
+                    {t.badge > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[8px] font-bold shadow-[0_0_8px_hsl(var(--primary)/0.5)]">
+                        {t.badge > 9 ? "9+" : t.badge}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
