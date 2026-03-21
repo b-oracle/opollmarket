@@ -68,6 +68,7 @@ export const useCommissionSettings = () => {
           osure_25_premium: 10,
           osure_50_premium: 20,
           osure_100_premium: 30,
+          social_ad_price: 10,
         };
       }
       const d = data as any;
