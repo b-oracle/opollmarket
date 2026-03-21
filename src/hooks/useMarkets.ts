@@ -109,6 +109,7 @@ export const useMarkets = () => {
         .from("markets")
         .select("*, market_options!market_options_market_id_fkey(*)")
         .in("status", ["active", "ended"])
+        .gt("participants", 0)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
