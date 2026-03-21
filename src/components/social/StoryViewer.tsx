@@ -252,6 +252,23 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
               <span className="text-white/70 text-[10px] font-semibold">{viewCount}</span>
             </div>
           )}
+          {/* Like button / count inline in header */}
+          {!isOwnStory ? (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleLike(); }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10"
+            >
+              <Heart className={`w-3.5 h-3.5 transition-all ${hasLiked ? 'fill-red-500 text-red-500' : 'text-white/70'}`} />
+              {(likeCount as number) > 0 && (
+                <span className="text-white/70 text-[10px] font-semibold">{likeCount}</span>
+              )}
+            </button>
+          ) : (likeCount as number) > 0 ? (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10">
+              <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" />
+              <span className="text-white/70 text-[10px] font-semibold">{likeCount}</span>
+            </div>
+          ) : null}
           {isOwnStory && (
             <button
               onClick={() => setShowDeleteConfirm(true)}
@@ -308,35 +325,6 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
             </div>
             <span className="text-white/50 text-[9px] shrink-0">View →</span>
           </button>
-        )}
-
-        {/* Like button */}
-        {!isOwnStory && (
-          <button
-            onClick={(e) => { e.stopPropagation(); handleLike(); }}
-            className="absolute right-4 z-20 flex flex-col items-center gap-1"
-            style={{ bottom: market ? '6rem' : '2rem' }}
-          >
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${hasLiked ? 'bg-red-500/20' : 'bg-white/10'}`}>
-              <Heart className={`w-5 h-5 transition-all ${hasLiked ? 'fill-red-500 text-red-500 scale-110' : 'text-white'}`} />
-            </div>
-            {(likeCount as number) > 0 && (
-              <span className="text-white text-[10px] font-semibold">{likeCount}</span>
-            )}
-          </button>
-        )}
-
-        {/* Like count for own stories */}
-        {isOwnStory && (likeCount as number) > 0 && (
-          <div
-            className="absolute right-4 z-20 flex flex-col items-center gap-1"
-            style={{ bottom: market ? '6rem' : '2rem' }}
-          >
-            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-              <Heart className="w-5 h-5 text-red-500 fill-red-500" />
-            </div>
-            <span className="text-white text-[10px] font-semibold">{likeCount}</span>
-          </div>
         )}
 
         {/* Tap zones */}
