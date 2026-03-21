@@ -1454,12 +1454,16 @@ const Profile = () => {
                             }
                           }
 
-                          // Validate age
-                          const ageNum = editAge ? parseInt(editAge, 10) : null;
-                          if (editAge && (isNaN(ageNum!) || ageNum! < 13 || ageNum! > 120)) {
-                            toast.error("Please enter a valid age (13–120)");
-                            setSavingProfile(false);
-                            return;
+                          // Validate DOB - must be at least 13 years old
+                          if (editDob) {
+                            const ageDiff = new Date().getFullYear() - editDob.getFullYear();
+                            const monthDiff = new Date().getMonth() - editDob.getMonth();
+                            const calculatedAge = monthDiff < 0 || (monthDiff === 0 && new Date().getDate() < editDob.getDate()) ? ageDiff - 1 : ageDiff;
+                            if (calculatedAge < 13) {
+                              toast.error("You must be at least 13 years old");
+                              setSavingProfile(false);
+                              return;
+                            }
                           }
 
                           // Update profile table first (more reliable)
@@ -1467,7 +1471,8 @@ const Profile = () => {
                             display_name: editName.trim(),
                             bio: editBio.trim(),
                             is_public: editIsPublic,
-                            age: ageNum,
+                            date_of_birth: editDob ? editDob.toISOString().split("T")[0] : null,
+                            age: editDob ? Math.floor((Date.now() - editDob.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null,
                             gender: editGender || null,
                             location: editLocation.trim().slice(0, 100) || null,
                             interests: editInterests,
