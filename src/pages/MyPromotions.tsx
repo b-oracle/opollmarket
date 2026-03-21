@@ -142,6 +142,8 @@ const MyPromotions = () => {
   }, [socialAds]);
 
   const [bcFilter, setBcFilter] = useState<BroadcastFilter>("all");
+  const [boostFilter, setBoostFilter] = useState<BoostFilter>("all");
+  const [adFilter, setAdFilter] = useState<AdFilter>("all");
 
   const broadcastStats = useMemo(() => {
     const total = broadcasts.length;
@@ -152,10 +154,36 @@ const MyPromotions = () => {
     return { total, sent, pending, paymentExpired, spent };
   }, [broadcasts]);
 
+  const boostFilterStats = useMemo(() => {
+    const active = boosts.filter((b: any) => getResolvedBoostStatus(b).key === "active").length;
+    const ended = boosts.filter((b: any) => getResolvedBoostStatus(b).key === "ended").length;
+    const pending = boosts.filter((b: any) => getResolvedBoostStatus(b).key === "pending").length;
+    const paymentExpired = boosts.filter((b: any) => getResolvedBoostStatus(b).key === "payment_expired").length;
+    return { total: boosts.length, active, ended, pending, paymentExpired };
+  }, [boosts]);
+
+  const adFilterStats = useMemo(() => {
+    const active = socialAds.filter((a: any) => getResolvedAdStatus(a).key === "active").length;
+    const ended = socialAds.filter((a: any) => getResolvedAdStatus(a).key === "ended").length;
+    const pending = socialAds.filter((a: any) => getResolvedAdStatus(a).key === "pending").length;
+    const paymentExpired = socialAds.filter((a: any) => getResolvedAdStatus(a).key === "payment_expired").length;
+    return { total: socialAds.length, active, ended, pending, paymentExpired };
+  }, [socialAds]);
+
   const filteredBroadcasts = useMemo(() => {
     if (bcFilter === "all") return broadcasts;
     return broadcasts.filter((b: any) => getResolvedBroadcastStatus(b).key === bcFilter);
   }, [broadcasts, bcFilter]);
+
+  const filteredBoosts = useMemo(() => {
+    if (boostFilter === "all") return boosts;
+    return boosts.filter((b: any) => getResolvedBoostStatus(b).key === boostFilter);
+  }, [boosts, boostFilter]);
+
+  const filteredAds = useMemo(() => {
+    if (adFilter === "all") return socialAds;
+    return socialAds.filter((a: any) => getResolvedAdStatus(a).key === adFilter);
+  }, [socialAds, adFilter]);
 
   const tabs: { key: TabKey; label: string; icon: typeof Zap; count: number }[] = [
     { key: "boosts", label: "Boosts", icon: Zap, count: boosts.length },
