@@ -1809,6 +1809,9 @@ const Profile = () => {
         {/* Security Settings */}
         <SecuritySettingsSection userId={user?.id} />
 
+        {/* Personal Info (private) */}
+        <PersonalInfoSection userId={user?.id} />
+
         {/* Telegram & Connect */}
         <div className="mb-6">
           <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Connect</h3>
