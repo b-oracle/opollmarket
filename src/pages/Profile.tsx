@@ -1358,7 +1358,9 @@ const Profile = () => {
                     {/* Location */}
                     <div className="space-y-1.5 mb-3">
                       <label className="text-xs font-medium text-muted-foreground">Location</label>
-                      <LocationPicker value={editLocation} onChange={setEditLocation} />
+                      <Suspense fallback={<div className="h-10 rounded-lg bg-muted/30 animate-pulse" />}>
+                        <LocationPicker value={editLocation} onChange={setEditLocation} />
+                      </Suspense>
                     </div>
                     {/* Interests */}
                     <div className="space-y-1.5">
