@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub as string;
-    const { market_id, boost_tier, include_broadcast } = await req.json();
+    const { market_id, boost_tier, include_broadcast, include_social_ad, ad_headline, ad_video_url } = await req.json();
 
     if (!market_id) {
       return new Response(JSON.stringify({ error: "market_id required" }), {

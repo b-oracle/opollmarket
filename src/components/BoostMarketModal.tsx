@@ -605,6 +605,12 @@ const BoostMarketModal = ({ open, onClose, marketId, marketTitle }: BoostMarketM
                     <span className="font-medium text-foreground">${BROADCAST_PRICE.toFixed(2)}</span>
                   </div>
                 )}
+                {socialAdSelected && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Social Ad</span>
+                    <span className="font-medium text-foreground">${SOCIAL_AD_PRICE.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between border-t border-border pt-2 mt-2">
                   <span className="font-bold text-foreground">Total</span>
                   <span className="font-bold text-foreground">${totalPrice.toFixed(2)} USD</span>
