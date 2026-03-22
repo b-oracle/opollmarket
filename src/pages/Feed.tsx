@@ -15,7 +15,7 @@ import useAnalytics from "@/hooks/useAnalytics";
 import CategoryIcon from "@/components/CategoryIcon";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useState as useStateHook, useEffect as useEffectHook } from "react";
+
 import { useBookmarkedMarkets } from "@/hooks/useBookmarkedMarkets";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
