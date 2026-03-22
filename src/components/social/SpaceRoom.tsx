@@ -411,15 +411,27 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   };
 
   const handleLeave = async () => {
-    roomRef.current?.disconnect();
+    try { roomRef.current?.disconnect(); } catch { /* ignore */ }
+    roomRef.current = null;
+    // Clean up audio elements immediately
+    audioElementsRef.current.forEach((el) => { try { el.remove(); } catch {} });
+    audioElementsRef.current.clear();
+    // Update DB in background — don't block UI
     if (user) {
-      await supabase.from("space_participants").update({ left_at: new Date().toISOString() })
-        .eq("space_id", spaceId).eq("user_id", user.id).is("left_at", null);
+      const updates: Promise<any>[] = [
+        supabase.from("space_participants").update({ left_at: new Date().toISOString() })
+          .eq("space_id", spaceId).eq("user_id", user.id).is("left_at", null),
+      ];
       if (isHost) {
-        await supabase.from("spaces").update({ status: "ended", ended_at: new Date().toISOString() }).eq("id", spaceId);
+        updates.push(
+          supabase.from("spaces").update({ status: "ended", ended_at: new Date().toISOString() }).eq("id", spaceId)
+        );
       }
+      // Fire and forget — don't await
+      Promise.allSettled(updates).then(() => {
+        queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      });
     }
-    queryClient.invalidateQueries({ queryKey: ["spaces"] });
     onClose();
   };
 
