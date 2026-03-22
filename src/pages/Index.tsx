@@ -61,7 +61,7 @@ const LikeBadge = React.forwardRef<HTMLSpanElement, { marketId: string }>(({ mar
 const Index = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { data: markets = [], isLoading, isError, refetch } = useMarkets();
+  const { data: markets = [], isLoading, isError, error: marketsError, refetch } = useMarkets();
   const { boostedMarketIds, boostDetails, loading: boostsLoading } = useActiveBoosts();
   const [filter, setFilter] = useState<"trending" | "boosted" | "new" | "all" | "live">("all");
   const [boostModalMarket, setBoostModalMarket] = useState<{ id: string; title: string } | null>(null);
@@ -184,6 +184,13 @@ const Index = () => {
   const totalMarkets = platformStats?.totalMarkets ?? 0;
   const statsLastUpdated = platformStats?.lastUpdated;
   const liveCount = useMemo(() => markets.filter((m) => m.autoResolve && ((m.sportType && m.sportMatchId) || m.autoResolveAsset)).length, [markets]);
+  const marketErrorMessage = useMemo(() => {
+    if (!marketsError) return "Unable to load markets right now.";
+    if (marketsError instanceof Error && marketsError.message === "markets_fetch_timeout") {
+      return "Market loading timed out. Please tap retry.";
+    }
+    return "Unable to load markets right now.";
+  }, [marketsError]);
 
   // No blocking loader — render page immediately, show inline spinner in content area
 
@@ -448,7 +455,22 @@ const Index = () => {
               ))}
             </>
           )}
-          {!isLoading && filteredMarkets.length === 0 && (
+          {!isLoading && isError && markets.length === 0 && (
+            <div className="md:col-span-2 xl:col-span-3 glass rounded-2xl p-5 border border-border text-center">
+              <div className="w-10 h-10 mx-auto mb-3 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center justify-center">
+                <XCircle className="w-5 h-5 text-destructive" />
+              </div>
+              <p className="text-sm text-foreground font-semibold mb-1">{marketErrorMessage}</p>
+              <p className="text-xs text-muted-foreground mb-4">Check your connection and try again.</p>
+              <button
+                onClick={() => refetch()}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold transition-all hover:opacity-90 active:scale-95"
+              >
+                Retry loading markets
+              </button>
+            </div>
+          )}
+          {!isLoading && !isError && filteredMarkets.length === 0 && (
             <div className="text-center py-8 text-muted-foreground text-sm">No markets found.</div>
           )}
           {paginatedMarkets.map((market, i) => {
