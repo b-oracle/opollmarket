@@ -390,8 +390,14 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     connect();
     return () => {
       cancelled = true;
-      roomRef.current?.disconnect();
+      const r = roomRef.current;
       roomRef.current = null;
+      if (r) {
+        try { r.disconnect(); } catch { /* ignore */ }
+      }
+      // Cleanup any lingering audio elements
+      audioElementsRef.current.forEach((el) => { try { el.remove(); } catch {} });
+      audioElementsRef.current.clear();
     };
   }, [user, spaceId]);
 
