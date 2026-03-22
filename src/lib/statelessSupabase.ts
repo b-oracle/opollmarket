@@ -22,21 +22,18 @@ const readStoredAccessToken = (): string | null => {
   }
 };
 
-export const createStatelessReadClient = () => {
-  const accessToken = readStoredAccessToken();
+// Singleton stateless client — avoids spawning multiple GoTrueClient instances
+let _statelessClient: ReturnType<typeof createClient<Database>> | null = null;
 
-  return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+export const createStatelessReadClient = () => {
+  if (_statelessClient) return _statelessClient;
+
+  _statelessClient = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
       detectSessionInUrl: false,
     },
-    global: accessToken
-      ? {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      : undefined,
   });
+  return _statelessClient;
 };
