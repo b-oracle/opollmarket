@@ -108,10 +108,12 @@ export async function fetchCryptoPrice(
   const ccId = COINCAP_IDS[sym];
   const ccSym = CRYPTOCOMPARE_SYMS[sym];
 
+  // Binance first (most reliable from browser, no CORS issues), then fallbacks
   const providers: Array<{ name: string; fn: () => Promise<number | null> }> = [];
+  if (sym) providers.push({ name: "binance", fn: () => fetchFromBinanceSpot(sym) });
+  if (ccSym) providers.push({ name: "cryptocompare", fn: () => fetchFromCryptoCompare(ccSym) });
   if (gId) providers.push({ name: "coingecko", fn: () => fetchFromCoinGecko(gId) });
   if (ccId) providers.push({ name: "coincap", fn: () => fetchFromCoinCap(ccId) });
-  if (ccSym) providers.push({ name: "cryptocompare", fn: () => fetchFromCryptoCompare(ccSym) });
 
   for (const { name, fn } of providers) {
     try {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { createStatelessReadClient } from "@/lib/statelessSupabase";
+
 import { Loader2, BarChart3, Users, TrendingUp, MousePointerClick, DollarSign, Zap, Target, ArrowUpDown, Percent, Shield } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, Cell, PieChart, Pie } from "recharts";
 
@@ -70,7 +70,7 @@ const AdminAnalytics = () => {
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
-      const supabase = createStatelessReadClient();
+      // Use the main authenticated client for admin queries
       const since = new Date();
       since.setDate(since.getDate() - timeRange);
       const sinceISO = since.toISOString();

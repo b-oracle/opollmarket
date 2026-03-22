@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { createStatelessReadClient } from "@/lib/statelessSupabase";
+
 import { TrendingUp, Users, MessageSquare, ShoppingBag, Loader2, DollarSign, Activity, Gift, UserPlus, Zap, UserCheck, Heart, ArrowDownLeft, ArrowUpRight, Wallet, Scale, Info, Landmark } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
 
@@ -81,7 +81,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const supabase = createStatelessReadClient();
+      // Use the main authenticated client for admin queries
       // Use count queries for all counts (avoids 1000-row limit)
       const [markets, comments, boosts, users, txns, referrals, qtRounds, qtBets, follows, likes] = await Promise.all([
         supabase.from("markets").select("*", { count: "exact", head: true }),
