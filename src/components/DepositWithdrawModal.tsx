@@ -506,6 +506,8 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   }, [user, queryClient, numAmount]);
 
   const handleDeposit = useCallback(async () => {
+    if (depositLockRef.current) return;
+    depositLockRef.current = true;
     setStep("executing");
     setErrorMsg("");
     try {
@@ -528,6 +530,8 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     } catch (err: any) {
       setErrorMsg(err.message || "Something went wrong");
       setStep("error");
+    } finally {
+      depositLockRef.current = false;
     }
   }, [numAmount, selectedCrypto, startPolling]);
 
