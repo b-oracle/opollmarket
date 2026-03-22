@@ -1604,54 +1604,70 @@ export default function QuickTrade() {
             asset={selectedAsset.symbol}
           />
 
-          <QuickTradeHistory
-            recentRounds={recentRounds as any}
-            userBets={userBets as any}
-            selectedAssetSymbol={selectedAsset.symbol}
-            historyPage={historyPage}
-            historyTotal={historyTotal}
-            historyPerPage={HISTORY_PER_PAGE}
-            onPageChange={setHistoryPage}
-          />
+          <Suspense fallback={<div className="h-40" />}>
+            <QuickTradeHistory
+              recentRounds={recentRounds as any}
+              userBets={userBets as any}
+              selectedAssetSymbol={selectedAsset.symbol}
+              historyPage={historyPage}
+              historyTotal={historyTotal}
+              historyPerPage={HISTORY_PER_PAGE}
+              onPageChange={setHistoryPage}
+            />
+          </Suspense>
 
         </div>
       </div>
       <BottomNav />
-      <StreakMilestoneModal
-        open={milestoneModal.open}
-        onClose={() => setMilestoneModal(m => ({ ...m, open: false }))}
-        streak={milestoneModal.streak}
-        multiplier={milestoneModal.multiplier}
-      />
-      <ShareModal
-        open={showShareModal}
-        onOpenChange={setShowShareModal}
-        title={`${selectedAsset.symbol} Quick Trade — ${currentPrice ? `${getPricePrefix(selectedAsset)}${formatPrice(currentPrice, selectedAsset)}` : ""}`}
-        description={`${selectedTimeframe.label} UP/DOWN prediction on ${selectedAsset.label}`}
-        marketUrl={`${window.location.origin}/quick-trade`}
-        captureRef={chartCardRef}
-      />
+      {milestoneModal.open && (
+        <Suspense fallback={null}>
+          <StreakMilestoneModal
+            open={milestoneModal.open}
+            onClose={() => setMilestoneModal(m => ({ ...m, open: false }))}
+            streak={milestoneModal.streak}
+            multiplier={milestoneModal.multiplier}
+          />
+        </Suspense>
+      )}
+      {showShareModal && (
+        <Suspense fallback={null}>
+          <ShareModal
+            open={showShareModal}
+            onOpenChange={setShowShareModal}
+            title={`${selectedAsset.symbol} Quick Trade — ${currentPrice ? `${getPricePrefix(selectedAsset)}${formatPrice(currentPrice, selectedAsset)}` : ""}`}
+            description={`${selectedTimeframe.label} UP/DOWN prediction on ${selectedAsset.label}`}
+            marketUrl={`${window.location.origin}/quick-trade`}
+            captureRef={chartCardRef}
+          />
+        </Suspense>
+      )}
 
       {/* Win profit share */}
       {winShareData && (
-        <ProfitShareCard
-          ref={profitCardRef}
-          market={`${winShareData.asset} Quick Trade — ${winShareData.side.toUpperCase()} prediction`}
-          side={winShareData.side === "up" ? "YES" : "NO"}
-          profit={winShareData.profit}
-          payout={winShareData.payout}
-          displayName={user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Trader"}
-          referralCode={user?.user_metadata?.display_name || user?.id || ""}
-        />
+        <Suspense fallback={null}>
+          <ProfitShareCard
+            ref={profitCardRef}
+            market={`${winShareData.asset} Quick Trade — ${winShareData.side.toUpperCase()} prediction`}
+            side={winShareData.side === "up" ? "YES" : "NO"}
+            profit={winShareData.profit}
+            payout={winShareData.payout}
+            displayName={user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Trader"}
+            referralCode={user?.user_metadata?.display_name || user?.id || ""}
+          />
+        </Suspense>
       )}
-      <ShareModal
-        open={showWinShare}
-        onOpenChange={(open) => { setShowWinShare(open); if (!open) setWinShareData(null); }}
-        title={winShareData ? `I just won +$${winShareData.profit.toFixed(2)} on oPoll Quick Trade! 🔥` : ""}
-        description={winShareData ? `${winShareData.asset} ${winShareData.side.toUpperCase()} prediction` : ""}
-        marketUrl={`${window.location.origin}/quick-trade${user ? `?ref=${user.user_metadata?.display_name || user.id}` : ""}`}
-        captureRef={profitCardRef}
-      />
+      {showWinShare && (
+        <Suspense fallback={null}>
+          <ShareModal
+            open={showWinShare}
+            onOpenChange={(open) => { setShowWinShare(open); if (!open) setWinShareData(null); }}
+            title={winShareData ? `I just won +$${winShareData.profit.toFixed(2)} on oPoll Quick Trade! 🔥` : ""}
+            description={winShareData ? `${winShareData.asset} ${winShareData.side.toUpperCase()} prediction` : ""}
+            marketUrl={`${window.location.origin}/quick-trade${user ? `?ref=${user.user_metadata?.display_name || user.id}` : ""}`}
+            captureRef={profitCardRef}
+          />
+        </Suspense>
+      )}
     </>
   );
 }
