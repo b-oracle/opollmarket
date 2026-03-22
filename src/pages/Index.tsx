@@ -80,14 +80,14 @@ const Index = () => {
   });
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
 
-  // Capture referral param and redirect to signup
+  // Capture referral param and redirect to signup (only if not already logged in)
   useEffect(() => {
     const ref = searchParams.get("ref");
-    if (ref) {
+    if (ref && !user) {
       localStorage.setItem("referral_id", ref);
       navigate(`/auth?ref=${encodeURIComponent(ref)}`, { replace: true });
     }
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, user]);
 
   const boostedMarkets = useMemo(() => {
     if (boostsLoading) return []; // wait for boosts to load before committing

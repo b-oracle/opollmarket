@@ -39,10 +39,20 @@ const Auth = () => {
   const [rememberedName, setRememberedName] = useState<string | null>(null);
   const [showLoginSecurity, setShowLoginSecurity] = useState(false);
   const [loginSecReqs, setLoginSecReqs] = useState<{ require_pin: boolean; require_totp: boolean }>({ require_pin: false, require_totp: false });
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isDapp = useIsDappBrowser();
+
+  // Redirect already-authenticated users away from auth page
+  // This prevents logged-in users from seeing the registration form
+  // when they arrive via deep links (e.g. shared space links with ?ref=)
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) return;
+    const redirectTo = searchParams.get("redirect");
+    navigate(redirectTo || "/", { replace: true });
+  }, [user, authLoading, navigate, searchParams]);
 
   useEffect(() => {
     const saved = localStorage.getItem("remembered_display_name");
