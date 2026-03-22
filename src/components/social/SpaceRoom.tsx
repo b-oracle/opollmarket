@@ -291,6 +291,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           body: { space_id: spaceId },
         });
 
+        console.log("[SpaceRoom] livekit-token response:", { data: data ? { ...data, token: data.token ? "[SET]" : undefined } : null, error });
+
         // Extract error message from various response shapes
         const errMsg = error?.message || error?.context?.body?.error || data?.error;
         if (errMsg || (!data?.token)) {
