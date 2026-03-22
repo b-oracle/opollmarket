@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { TrendingUp, TrendingDown, Moon } from "lucide-react";
 import { toast } from "sonner";
-import confetti from "canvas-confetti";
+const loadConfetti = () => import("canvas-confetti").then(m => m.default);
 import { getAssetClass } from "@/data/assetClasses";
 import { fetchAssetPrice } from "@/lib/cryptoPriceProvider";
 import { isMarketOpen, getNextOpenTime } from "@/lib/marketHours";
