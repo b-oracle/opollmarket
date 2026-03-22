@@ -1,4 +1,4 @@
-// App root – v3
+// App root – v4 (performance optimized)
 import { lazy, Suspense, useState, useEffect, useRef } from "react";
 import { ActiveSpaceProvider, useActiveSpace } from "./hooks/useActiveSpace";
 import SpaceRoom from "./components/social/SpaceRoom";
@@ -16,7 +16,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider, onlineManager } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
-import LazyWagmiProvider from "./components/LazyWagmiProvider";
+import ConditionalWagmiProvider from "./components/ConditionalWagmiProvider";
 import ErrorBoundary from "./components/ErrorBoundary";
 import DesktopSidebar from "./components/DesktopSidebar";
 import DesktopFooter from "./components/DesktopFooter";
@@ -26,8 +26,11 @@ import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { SidebarStateProvider, useSidebarState } from "./hooks/useSidebarState";
 import SocialTutorial, { checkTutorialSeenFromDB } from "./components/SocialTutorial";
 import { useFeatureToggles } from "./hooks/useFeatureToggles";
-import PendingCopyTrades from "./components/PendingCopyTrades";
-import AimtellProvider from "./components/AimtellProvider";
+import DeferredMount from "./components/DeferredMount";
+import { VerificationThresholdProvider } from "./components/NftBadge";
+
+const PendingCopyTrades = lazy(() => import("./components/PendingCopyTrades"));
+const AimtellProvider = lazy(() => import("./components/AimtellProvider"));
 import { VerificationThresholdProvider } from "./components/NftBadge";
 
 // Lazy-loaded pages
