@@ -150,6 +150,9 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const [accountNameResolveFailed, setAccountNameResolveFailed] = useState(false);
   const [ngnPayoutRate, setNgnPayoutRate] = useState<number | null>(null);
 
+  // Ref-based lock to prevent concurrent deposit calls (guards against rapid clicks / re-renders)
+  const depositLockRef = useRef(false);
+
   // Fetch Nigerian banks from Flutterwave
   const { data: bankList = [] } = useQuery({
     queryKey: ["nigerian-banks"],
@@ -503,6 +506,8 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   }, [user, queryClient, numAmount]);
 
   const handleDeposit = useCallback(async () => {
+    if (depositLockRef.current) return;
+    depositLockRef.current = true;
     setStep("executing");
     setErrorMsg("");
     try {
@@ -525,10 +530,14 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     } catch (err: any) {
       setErrorMsg(err.message || "Something went wrong");
       setStep("error");
+    } finally {
+      depositLockRef.current = false;
     }
   }, [numAmount, selectedCrypto, startPolling]);
 
   const handleFiatDeposit = useCallback(async () => {
+    if (depositLockRef.current) return;
+    depositLockRef.current = true;
     setStep("executing");
     setErrorMsg("");
     try {
@@ -590,6 +599,8 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     } catch (err: any) {
       setErrorMsg(err.message || "Something went wrong");
       setStep("error");
+    } finally {
+      depositLockRef.current = false;
     }
   }, [numAmount, startPolling, depositProvider]);
 
