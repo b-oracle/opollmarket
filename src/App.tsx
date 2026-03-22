@@ -31,7 +31,6 @@ import { VerificationThresholdProvider } from "./components/NftBadge";
 
 const PendingCopyTrades = lazy(() => import("./components/PendingCopyTrades"));
 const AimtellProvider = lazy(() => import("./components/AimtellProvider"));
-import { VerificationThresholdProvider } from "./components/NftBadge";
 
 // Lazy-loaded pages
 const Index = lazy(() => import("./pages/Index"));
