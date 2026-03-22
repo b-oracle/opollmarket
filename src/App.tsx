@@ -16,7 +16,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider, onlineManager } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
-import LazyWagmiProvider from "./components/LazyWagmiProvider";
+import ConditionalWagmiProvider from "./components/ConditionalWagmiProvider";
 import ErrorBoundary from "./components/ErrorBoundary";
 import DesktopSidebar from "./components/DesktopSidebar";
 import DesktopFooter from "./components/DesktopFooter";
