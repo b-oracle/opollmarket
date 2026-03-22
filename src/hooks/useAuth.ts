@@ -239,7 +239,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    // Proactive refresh every 2 minutes
+    // Proactive refresh every 10 minutes (reduced from 2min to avoid token churn)
     const refreshInterval = setInterval(async () => {
       if (!mounted.current || !lastSessionRef.current) return;
       try {
@@ -252,7 +252,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch {
         // Silently ignore
       }
-    }, 2 * 60 * 1000);
+    }, 10 * 60 * 1000);
 
     document.addEventListener("visibilitychange", handleVisibility);
 

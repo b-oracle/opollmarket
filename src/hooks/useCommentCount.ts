@@ -2,28 +2,54 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const cache = new Map<string, number>();
-const pendingFetches = new Map<string, Promise<number | null>>();
 
-const fetchCount = (marketId: string): Promise<number | null> => {
-  const existing = pendingFetches.get(marketId);
-  if (existing) return existing;
+// Batch queue: collect market IDs and resolve them in one round-trip
+let batchQueue: string[] = [];
+let batchTimer: ReturnType<typeof setTimeout> | null = null;
+const batchListeners = new Map<string, Set<(count: number) => void>>();
 
-  const promise = Promise.resolve(
-    supabase
-      .from("comments")
-      .select("*", { count: "exact", head: true })
-      .eq("market_id", marketId)
-  ).then(({ count: c, error }) => {
-    pendingFetches.delete(marketId);
-    if (!error && c !== null) {
-      cache.set(marketId, c);
-      return c;
-    }
-    return null;
-  });
+const flushBatch = async () => {
+  const ids = [...new Set(batchQueue)];
+  batchQueue = [];
+  if (ids.length === 0) return;
 
-  pendingFetches.set(marketId, promise);
-  return promise;
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += 50) {
+    chunks.push(ids.slice(i, i + 50));
+  }
+
+  await Promise.all(
+    chunks.map(async (chunk) => {
+      const { data, error } = await supabase
+        .from("comments")
+        .select("market_id")
+        .in("market_id", chunk);
+
+      if (error) return;
+
+      const counts = new Map<string, number>();
+      chunk.forEach((id) => counts.set(id, 0));
+      (data || []).forEach((row: { market_id: string }) => {
+        counts.set(row.market_id, (counts.get(row.market_id) || 0) + 1);
+      });
+
+      counts.forEach((count, marketId) => {
+        cache.set(marketId, count);
+        batchListeners.get(marketId)?.forEach((cb) => cb(count));
+      });
+    })
+  );
+};
+
+const enqueue = (marketId: string, callback: (count: number) => void) => {
+  if (!batchListeners.has(marketId)) {
+    batchListeners.set(marketId, new Set());
+  }
+  batchListeners.get(marketId)!.add(callback);
+
+  batchQueue.push(marketId);
+  if (batchTimer) clearTimeout(batchTimer);
+  batchTimer = setTimeout(flushBatch, 50);
 };
 
 export const useCommentCount = (marketId: string) => {
@@ -33,22 +59,18 @@ export const useCommentCount = (marketId: string) => {
   useEffect(() => {
     isMounted.current = true;
 
-    // Use cached value if available, skip network request
     if (cache.has(marketId)) {
       setCount(cache.get(marketId)!);
     }
 
-    // Debounce the fetch slightly to avoid flooding
-    const timer = setTimeout(async () => {
-      const c = await fetchCount(marketId);
-      if (c !== null && isMounted.current) {
-        setCount(c);
-      }
-    }, Math.random() * 200); // Stagger requests
+    const cb = (c: number) => {
+      if (isMounted.current) setCount(c);
+    };
+    enqueue(marketId, cb);
 
     return () => {
       isMounted.current = false;
-      clearTimeout(timer);
+      batchListeners.get(marketId)?.delete(cb);
     };
   }, [marketId]);
 

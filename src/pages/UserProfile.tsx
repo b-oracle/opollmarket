@@ -100,15 +100,11 @@ const UserProfile = () => {
         .select("id, display_name, avatar_url, is_public, bio, created_at, wallet_address, verification_level, twitter_username, twitter_id")
         .eq("id", id)
         .maybeSingle();
-      // If no data and user is logged in, it might be a session propagation delay — throw to trigger retry
-      if (!data && user) {
-        throw new Error("Profile not found — retrying");
-      }
-      return data;
+      return data ?? null;
     },
     enabled: !!id && !authLoading,
-    retry: 2,
-    retryDelay: 800,
+    retry: 1,
+    retryDelay: 500,
   });
 
   // Markets created by user

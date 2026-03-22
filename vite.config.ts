@@ -43,6 +43,8 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
         navigateFallbackDenylist: [/^\/~oauth/, /^\/auth/],
         globPatterns: ["**/*.{js,css,ico,png,svg,jpg,jpeg,webp}"],
         importScripts: ["/push-sw.js"],
