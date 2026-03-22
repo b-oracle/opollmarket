@@ -17,6 +17,7 @@ interface ProfileRow {
   created_at: string;
   roles: string[];
   balance: number;
+  is_blocked: boolean;
 }
 
 const PAGE_SIZE = 20;
