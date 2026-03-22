@@ -16,7 +16,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider, onlineManager } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
-import LazyWagmiProvider from "./components/LazyWagmiProvider";
+import ConditionalWagmiProvider from "./components/ConditionalWagmiProvider";
 import ErrorBoundary from "./components/ErrorBoundary";
 import DesktopSidebar from "./components/DesktopSidebar";
 import DesktopFooter from "./components/DesktopFooter";
@@ -344,7 +344,7 @@ const App = () => (
               <Sonner />
               <PWAUpdatePrompt />
               <BrowserRouter>
-              <LazyWagmiProvider>
+              <ConditionalWagmiProvider>
               {/* Deferred: these components trigger network requests but aren't needed for first paint */}
               <DeferredMount delay={2000}>
                 <Suspense fallback={null}><AimtellProvider /></Suspense>
@@ -425,7 +425,7 @@ const App = () => (
                 
                 <ConditionalFooter />
               </ConditionalLayout>
-              </LazyWagmiProvider>
+              </ConditionalWagmiProvider>
               </BrowserRouter>
             </TooltipProvider>
           </SidebarStateProvider>

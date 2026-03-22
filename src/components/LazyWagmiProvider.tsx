@@ -16,7 +16,7 @@ const WagmiProviderLazy = lazy(() =>
  * fire outside the provider context.
  */
 const LazyWagmiProvider = ({ children }: { children: ReactNode }) => (
-  <Suspense fallback={<>{children}</>}>
+  <Suspense fallback={null}>
     <WagmiProviderLazy>{children}</WagmiProviderLazy>
   </Suspense>
 );
