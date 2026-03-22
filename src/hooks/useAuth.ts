@@ -102,7 +102,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         // Reset swipe hints on sign-in (but NOT the social tutorial — it should only replay manually)
-        if (event === "SIGNED_IN") {
+        if (event === "SIGNED_IN" && newSession?.user) {
+          // Check if user is banned
+          const { data: blockCheck } = await supabase
+            .from("profiles")
+            .select("is_blocked")
+            .eq("id", newSession.user.id)
+            .maybeSingle();
+          if (blockCheck?.is_blocked) {
+            await supabase.auth.signOut();
+            return;
+          }
           localStorage.removeItem("social_swipe_used");
           localStorage.removeItem("feed_swipe_hint_seen");
           // Recheck verification level in background (catches stale badges)

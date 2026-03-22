@@ -363,11 +363,11 @@ const AdminUsers = () => {
                             <button
                               onClick={() => toggleBlock(u.id, u.display_name || u.email || "User", u.is_blocked)}
                               className={`p-1.5 rounded-lg transition-colors ${
-                                u.is_blocked ? "hover:bg-green-500/10 text-green-500" : "hover:bg-destructive/10 text-muted-foreground"
+                                u.is_blocked ? "hover:bg-destructive/20 text-destructive" : "hover:bg-destructive/10 text-muted-foreground"
                               }`}
-                              title={u.is_blocked ? "Unblock User" : "Block User"}
+                              title={u.is_blocked ? "Unban User" : "Ban User"}
                             >
-                              {u.is_blocked ? <CheckCircle className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
+                              <Ban className={`w-4 h-4 ${u.is_blocked ? "fill-destructive/20" : ""}`} />
                             </button>
                           </>
                         ) : isSelf ? (
