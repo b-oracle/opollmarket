@@ -50,7 +50,7 @@ const formatDollar = (v: number) => {
 const UserProfile = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
   const isOwnProfile = user?.id === id;
   const { isFollowing, loading: followLoading, toggleFollow } = useFollow(id);
@@ -89,9 +89,10 @@ const UserProfile = () => {
     toggleFollow();
   }, [toggleFollow]);
 
-  // Profile data
+  // Profile data — include user?.id in queryKey so it re-fetches once auth resolves
+  // (anon can only see is_public=true profiles via RLS)
   const { data: profile, isLoading: profileLoading } = useQuery({
-    queryKey: ["user-profile", id],
+    queryKey: ["user-profile", id, user?.id ?? "anon"],
     queryFn: async () => {
       if (!id) return null;
       const { data } = await supabase
@@ -101,7 +102,7 @@ const UserProfile = () => {
         .maybeSingle();
       return data;
     },
-    enabled: !!id,
+    enabled: !!id && !authLoading,
   });
 
   // Markets created by user
@@ -244,7 +245,7 @@ const UserProfile = () => {
   const isVerified = verificationLevel !== "none";
   const displayName = profile?.display_name || "Anonymous";
 
-  if (profileLoading) {
+  if (profileLoading || authLoading) {
     return (
       <div className="min-h-dvh bg-background flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
