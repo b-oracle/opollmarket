@@ -358,7 +358,16 @@ const AdminUsers = () => {
                               }`}
                               title={isSA ? "Remove Super Admin" : "Make Super Admin"}
                             >
-                              <Crown className="w-4 h-4" />
+                            <Crown className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => toggleBlock(u.id, u.display_name || u.email || "User", u.is_blocked)}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                u.is_blocked ? "hover:bg-green-500/10 text-green-500" : "hover:bg-destructive/10 text-muted-foreground"
+                              }`}
+                              title={u.is_blocked ? "Unblock User" : "Block User"}
+                            >
+                              {u.is_blocked ? <CheckCircle className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
                             </button>
                           </>
                         ) : isSelf ? (
