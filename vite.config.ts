@@ -46,8 +46,6 @@ export default defineConfig(({ mode }) => ({
         navigateFallbackDenylist: [/^\/~oauth/, /^\/auth/],
         globPatterns: ["**/*.{js,css,ico,png,svg,jpg,jpeg,webp}"],
         importScripts: ["/push-sw.js"],
-        skipWaiting: true,
-        clientsClaim: true,
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
