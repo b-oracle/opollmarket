@@ -19,12 +19,24 @@ export const useFeatureToggles = () => {
   const { data: toggles = [], isLoading } = useQuery({
     queryKey: ["feature-toggles"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("feature_toggles" as any)
-        .select("*")
-        .order("label");
-      if (error) throw error;
-      return (data ?? []) as unknown as FeatureToggle[];
+      const result = (await Promise.race([
+        supabase
+          .from("feature_toggles" as any)
+          .select("*")
+          .order("label"),
+        new Promise<{ data: null; error: Error }>((resolve) => {
+          setTimeout(() => {
+            resolve({ data: null, error: new Error("feature_toggles timeout") });
+          }, 5000);
+        }),
+      ])) as { data: unknown[] | null; error: { message?: string } | null };
+
+      if (result.error) {
+        console.warn("feature_toggles unavailable, continuing with safe defaults", result.error.message);
+        return [] as FeatureToggle[];
+      }
+
+      return (result.data ?? []) as FeatureToggle[];
     },
     staleTime: 60_000,
     gcTime: 5 * 60_000,
