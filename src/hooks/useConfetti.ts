@@ -1,8 +1,10 @@
 import { useCallback } from "react";
-import confetti from "canvas-confetti";
+
+const loadConfetti = () => import("canvas-confetti").then(m => m.default);
 
 export const useConfetti = () => {
-  const fireWinConfetti = useCallback(() => {
+  const fireWinConfetti = useCallback(async () => {
+    const confetti = await loadConfetti();
     const duration = 3000;
     const end = Date.now() + duration;
 
@@ -43,7 +45,8 @@ export const useConfetti = () => {
     frame();
   }, []);
 
-  const fireSubtleConfetti = useCallback(() => {
+  const fireSubtleConfetti = useCallback(async () => {
+    const confetti = await loadConfetti();
     confetti({
       particleCount: 50,
       spread: 60,

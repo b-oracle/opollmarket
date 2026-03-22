@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { X, Download, Copy, Share2, Loader2, Twitter, MessageCircle, Send, Trophy, TrendingUp, Crown, Medal, Award, PenSquare, BookOpen } from "lucide-react";
 import { toast } from "sonner";
-import html2canvas from "html2canvas";
+const loadHtml2Canvas = () => import("html2canvas").then(m => m.default);
 import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,6 +57,7 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
       await new Promise((r) => setTimeout(r, 400));
       try {
         if (!cardRef.current) throw new Error("Card not ready");
+        const html2canvas = await loadHtml2Canvas();
         const canvas = await html2canvas(cardRef.current, {
           useCORS: true,
           allowTaint: true,

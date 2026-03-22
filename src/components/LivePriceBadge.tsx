@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { TrendingUp, TrendingDown, Moon } from "lucide-react";
 import { toast } from "sonner";
-import confetti from "canvas-confetti";
+const loadConfetti = () => import("canvas-confetti").then(m => m.default);
 import { getAssetClass } from "@/data/assetClasses";
 import { fetchAssetPrice } from "@/lib/cryptoPriceProvider";
 import { isMarketOpen, getNextOpenTime } from "@/lib/marketHours";
@@ -61,7 +61,7 @@ const LivePriceBadge = React.forwardRef<HTMLDivElement, LivePriceBadgeProps>(({ 
               description: `Target: ${targetLabel}`,
               duration: 10000,
             });
-            confetti({
+            loadConfetti().then(confetti => confetti({
               particleCount: 50,
               spread: 60,
               origin: { y: 0.7 },
@@ -69,7 +69,7 @@ const LivePriceBadge = React.forwardRef<HTMLDivElement, LivePriceBadgeProps>(({ 
               zIndex: 9999,
               gravity: 1.2,
               scalar: 0.8,
-            });
+            }));
           } else if (prog != null && prog >= 95 && !met && !toastFiredRef.current) {
             toastFiredRef.current = true;
             toast.warning(`🔥 ${asset} is ${prog}% toward its target!`, {

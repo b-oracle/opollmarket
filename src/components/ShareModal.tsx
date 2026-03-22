@@ -3,7 +3,7 @@ import { X, Download, Copy, Share2, Loader2, Twitter, Facebook, MessageCircle, S
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
-import html2canvas from "html2canvas";
+const loadHtml2Canvas = () => import("html2canvas").then(m => m.default);
 import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,7 +45,7 @@ const captureElement = async (target: HTMLElement): Promise<HTMLCanvasElement> =
 
   try {
     const canvas = await Promise.race([
-      html2canvas(target, {
+      (await loadHtml2Canvas())(target, {
         useCORS: true,
         allowTaint: true,
         scale: 2,
