@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { TrendingUp, TrendingDown, Moon } from "lucide-react";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
@@ -16,7 +16,7 @@ interface LivePriceBadgeProps {
   operator?: string;
 }
 
-const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) => {
+const LivePriceBadge = React.forwardRef<HTMLDivElement, LivePriceBadgeProps>(({ asset, targetPrice, operator }, ref) => {
   const [price, setPrice] = useState<number | null>(null);
   const [prev, setPrev] = useState<number | null>(null);
   const [flash, setFlash] = useState<"up" | "down" | null>(null);
@@ -122,6 +122,7 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
 
   return (
     <div
+      ref={ref}
       className={`inline-flex flex-col rounded-lg text-[10px] font-bold tabular-nums backdrop-blur-sm transition-all duration-500 overflow-hidden ${
         !marketOpen
           ? "bg-muted/30 border border-muted-foreground/20 text-muted-foreground"
@@ -206,6 +207,6 @@ const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) =
       )}
     </div>
   );
-};
+});
 
 export default LivePriceBadge;

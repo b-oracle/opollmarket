@@ -15,15 +15,15 @@ import useAnalytics from "@/hooks/useAnalytics";
 import CategoryIcon from "@/components/CategoryIcon";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useState as useStateHook, useEffect as useEffectHook } from "react";
+
 import { useBookmarkedMarkets } from "@/hooks/useBookmarkedMarkets";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
 import { supabase } from "@/integrations/supabase/client";
 
 const useIsDesktop = () => {
-  const [isDesktop, setIsDesktop] = useStateHook(false);
-  useEffectHook(() => {
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
     const mql = window.matchMedia("(min-width: 1024px)");
     const onChange = () => setIsDesktop(mql.matches);
     mql.addEventListener("change", onChange);

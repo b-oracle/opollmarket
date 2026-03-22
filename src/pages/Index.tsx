@@ -12,7 +12,7 @@ import CategoryIcon from "@/components/CategoryIcon";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
-import { useMemo, useState, useEffect, useRef, useCallback } from "react";
+import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import BoostCountdown from "@/components/BoostCountdown";
 import BoostedCarousel from "@/components/BoostedCarousel";
 import CategoryCarousel from "@/components/CategoryCarousel";
@@ -46,16 +46,16 @@ const CommentBadge = ({ marketId }: { marketId: string }) => {
   );
 };
 
-const LikeBadge = ({ marketId }: { marketId: string }) => {
+const LikeBadge = React.forwardRef<HTMLSpanElement, { marketId: string }>(({ marketId }, ref) => {
   const count = useLikeCount(marketId);
   if (count === 0) return null;
   return (
-    <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+    <span ref={ref} className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
       <Heart className="w-3 h-3" />
       {count}
     </span>
   );
-};
+});
 
 const Index = () => {
   const navigate = useNavigate();
@@ -68,7 +68,7 @@ const Index = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
   const { track } = useAnalytics();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => { track("page_view", { page: "home" }); }, []);
 
@@ -82,12 +82,13 @@ const Index = () => {
 
   // Capture referral param and redirect to signup (only if not already logged in)
   useEffect(() => {
+    if (authLoading) return; // Wait for auth to resolve before deciding
     const ref = searchParams.get("ref");
     if (ref && !user) {
       localStorage.setItem("referral_id", ref);
       navigate(`/auth?ref=${encodeURIComponent(ref)}`, { replace: true });
     }
-  }, [searchParams, navigate, user]);
+  }, [searchParams, navigate, user, authLoading]);
 
   const boostedMarkets = useMemo(() => {
     if (boostsLoading) return []; // wait for boosts to load before committing
