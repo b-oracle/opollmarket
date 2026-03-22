@@ -26,6 +26,7 @@ const AdminSocial = () => {
   const [totalFollows, setTotalFollows] = useState(0);
   const [totalLikes, setTotalLikes] = useState(0);
   const [totalComments, setTotalComments] = useState(0);
+  const [totalViews, setTotalViews] = useState(0);
   const [followGrowth, setFollowGrowth] = useState<{ date: string; count: number }[]>([]);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
