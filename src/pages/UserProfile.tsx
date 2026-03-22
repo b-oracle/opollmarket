@@ -91,20 +91,29 @@ const UserProfile = () => {
 
   // Profile data — include user?.id in queryKey so it re-fetches once auth resolves
   // (anon can only see is_public=true profiles via RLS)
-  const { data: profile, isLoading: profileLoading, isFetching: profileFetching } = useQuery({
+  const { data: profile, isLoading: profileLoading, isFetching: profileFetching, isError: profileError } = useQuery({
     queryKey: ["user-profile", id, user?.id ?? "anon"],
     queryFn: async () => {
       if (!id) return null;
-      const { data } = await supabase
+      // Ensure we have a valid session before querying
+      const { data: { session } } = await supabase.auth.getSession();
+      const { data, error } = await supabase
         .from("profiles")
         .select("id, display_name, avatar_url, is_public, bio, created_at, wallet_address, verification_level, twitter_username, twitter_id")
         .eq("id", id)
         .maybeSingle();
+      // If no data and we're authenticated, this might be a transient RLS issue — throw to trigger retry
+      if (!data && !error && session) {
+        throw new Error("Profile not found — retrying");
+      }
+      if (error) throw error;
       return data ?? null;
     },
     enabled: !!id && !authLoading,
-    retry: 1,
-    retryDelay: 500,
+    retry: 3,
+    retryDelay: (attempt) => Math.min(500 * 2 ** attempt, 3000),
+    staleTime: 10_000,
+    refetchOnMount: true,
   });
 
   // Markets created by user
