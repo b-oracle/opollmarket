@@ -19,7 +19,9 @@ type AuditAction =
   | "withdrawal_approved"
   | "withdrawal_rejected"
   | "balance_adjusted"
-  | "settings_updated";
+  | "settings_updated"
+  | "user_blocked"
+  | "user_unblocked";
 
 interface AuditLogParams {
   action: AuditAction;
