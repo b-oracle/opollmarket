@@ -150,6 +150,9 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const [accountNameResolveFailed, setAccountNameResolveFailed] = useState(false);
   const [ngnPayoutRate, setNgnPayoutRate] = useState<number | null>(null);
 
+  // Ref-based lock to prevent concurrent deposit calls (guards against rapid clicks / re-renders)
+  const depositLockRef = useRef(false);
+
   // Fetch Nigerian banks from Flutterwave
   const { data: bankList = [] } = useQuery({
     queryKey: ["nigerian-banks"],
