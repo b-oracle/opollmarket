@@ -425,7 +425,7 @@ const App = () => (
                 
                 <ConditionalFooter />
               </ConditionalLayout>
-              </LazyWagmiProvider>
+              </ConditionalWagmiProvider>
               </BrowserRouter>
             </TooltipProvider>
           </SidebarStateProvider>
