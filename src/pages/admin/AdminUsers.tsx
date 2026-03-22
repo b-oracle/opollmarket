@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Shield, ShieldOff, DollarSign, X, ShieldCheck, ShieldMinus, Search, Crown, Eye } from "lucide-react";
+import { Loader2, Shield, ShieldOff, DollarSign, X, ShieldCheck, ShieldMinus, Search, Crown, Eye, Ban, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { logAuditEvent } from "@/lib/auditLog";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,6 +17,7 @@ interface ProfileRow {
   created_at: string;
   roles: string[];
   balance: number;
+  is_blocked: boolean;
 }
 
 const PAGE_SIZE = 20;
@@ -94,6 +95,7 @@ const AdminUsers = () => {
         ...p,
         roles: roleMap.get(p.id) || [],
         balance: balanceMap.get(p.id) ?? 0,
+        is_blocked: !!(p as any).is_blocked,
       }))
     );
     setLoading(false);
@@ -117,6 +119,32 @@ const AdminUsers = () => {
       targetType: "user",
       details: { role },
     });
+    fetchUsers();
+  };
+
+  const toggleBlock = async (userId: string, name: string, currentlyBlocked: boolean) => {
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        is_blocked: !currentlyBlocked,
+        blocked_at: !currentlyBlocked ? new Date().toISOString() : null,
+        block_reason: !currentlyBlocked ? "Blocked by admin" : null,
+      } as any)
+      .eq("id", userId);
+
+    if (error) {
+      toast.error(`Failed to ${currentlyBlocked ? "unblock" : "block"} user`);
+      return;
+    }
+
+    logAuditEvent({
+      action: currentlyBlocked ? "user_unblocked" : "user_blocked",
+      targetId: userId,
+      targetType: "user",
+      details: { user_name: name },
+    });
+
+    toast.success(`${name} has been ${currentlyBlocked ? "unblocked" : "blocked"}`);
     fetchUsers();
   };
 
@@ -251,8 +279,15 @@ const AdminUsers = () => {
                 const isMod = u.roles.includes("moderator");
                 const isSelf = u.id === currentUser?.id;
                 return (
-                  <tr key={u.id} className="border-b border-border/50 hover:bg-muted/30">
-                    <td className="p-3 font-medium">{u.display_name || "—"}</td>
+                  <tr key={u.id} className={`border-b border-border/50 hover:bg-muted/30 ${u.is_blocked ? "opacity-60 bg-destructive/5" : ""}`}>
+                    <td className="p-3 font-medium">
+                      <div className="flex items-center gap-1.5">
+                        {u.display_name || "—"}
+                        {u.is_blocked && (
+                          <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-destructive/15 text-destructive">BLOCKED</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="p-3 text-muted-foreground text-xs">{u.email || "—"}</td>
                     <td className="p-3">
                       <span className="text-sm font-semibold">${u.balance.toLocaleString()}</span>
@@ -323,7 +358,16 @@ const AdminUsers = () => {
                               }`}
                               title={isSA ? "Remove Super Admin" : "Make Super Admin"}
                             >
-                              <Crown className="w-4 h-4" />
+                            <Crown className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => toggleBlock(u.id, u.display_name || u.email || "User", u.is_blocked)}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                u.is_blocked ? "hover:bg-green-500/10 text-green-500" : "hover:bg-destructive/10 text-muted-foreground"
+                              }`}
+                              title={u.is_blocked ? "Unblock User" : "Block User"}
+                            >
+                              {u.is_blocked ? <CheckCircle className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
                             </button>
                           </>
                         ) : isSelf ? (
