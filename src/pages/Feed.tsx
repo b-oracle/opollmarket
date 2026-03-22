@@ -248,7 +248,7 @@ const Feed = () => {
   const { collapsed } = useSidebarState();
   const sidebarLeft = !isDesktop ? 0 : collapsed ? '4.5rem' : '15rem';
   const { bookmarkedIds } = useBookmarkedMarkets();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [feedTab, setFeedTab] = useState<"foryou" | "bookmarks">("foryou");
   const [visibleCount, setVisibleCount] = useState(20);
   const { joinSpace } = useActiveSpace();
