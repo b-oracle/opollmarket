@@ -264,7 +264,7 @@ const GlobalSpaceRoom = () => {
 const App = () => (
   <ErrorBoundary>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-      <WagmiProvider config={config}>
+      <LazyWagmiProvider>
         <QueryClientProvider client={queryClient}>
           <VerificationThresholdProvider>
           <AuthProvider>
