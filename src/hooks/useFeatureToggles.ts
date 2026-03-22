@@ -28,6 +28,7 @@ export const useFeatureToggles = () => {
     },
     staleTime: 60_000,
     gcTime: 5 * 60_000,
+  });
 
   const isFeatureEnabled = (key: string): boolean => {
     if (isAdmin || isSuperAdmin) return true;
