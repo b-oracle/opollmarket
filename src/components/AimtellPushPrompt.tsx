@@ -3,7 +3,39 @@ import { Bell, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { aimtellPromptSubscribe } from "@/lib/aimtell";
 
-const STORAGE_KEY = "aimtell_prompt_dismissed";
+const STORAGE_KEY = "aimtell_prompt_cooldown_until";
+const SESSION_KEY = "aimtell_prompt_seen_session";
+const COOLDOWN_MS = 14 * 24 * 60 * 60 * 1000;
+
+const isStandaloneDisplay = () => {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia?.("(display-mode: standalone)").matches ||
+    (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+  );
+};
+
+const supportsWebPush = () => {
+  if (typeof window === "undefined") return false;
+  if (!window.isSecureContext) return false;
+  if (!("Notification" in window)) return false;
+  if (!("serviceWorker" in navigator)) return false;
+  if (!("PushManager" in window)) return false;
+
+  // iOS requires the app to run as an installed web app for push support.
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  if (isIOS && !isStandaloneDisplay()) return false;
+
+  return true;
+};
+
+const setPromptCooldown = () => {
+  try {
+    localStorage.setItem(STORAGE_KEY, String(Date.now() + COOLDOWN_MS));
+  } catch {
+    // ignore storage failures
+  }
+};
 
 /**
  * Custom styled "soft ask" prompt for push notifications.
@@ -15,32 +47,40 @@ const AimtellPushPrompt = () => {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Check if already dismissed recently
-    const dismissed = localStorage.getItem(STORAGE_KEY);
-    if (dismissed) {
-      const dismissedAt = parseInt(dismissed, 10);
-      if (Date.now() - dismissedAt < 7 * 24 * 60 * 60 * 1000) return;
+    if (!supportsWebPush()) return;
+
+    try {
+      if (sessionStorage.getItem(SESSION_KEY) === "1") return;
+      const cooldownUntil = Number(localStorage.getItem(STORAGE_KEY) ?? "0");
+      if (Number.isFinite(cooldownUntil) && cooldownUntil > Date.now()) return;
+    } catch {
+      // ignore storage failures
     }
 
-    // Check if Notification API is available
-    if (typeof window === "undefined" || !("Notification" in window)) return;
+    // Prompt only when browser has not already decided.
+    if (Notification.permission !== "default") return;
 
-    // Check if already subscribed
-    if (Notification.permission === "granted") return;
-    if (Notification.permission === "denied") return;
+    const timer = setTimeout(() => {
+      setVisible(true);
+      try {
+        sessionStorage.setItem(SESSION_KEY, "1");
+      } catch {
+        // ignore
+      }
+    }, 6000);
 
-    const timer = setTimeout(() => setVisible(true), 6000);
     return () => clearTimeout(timer);
   }, []);
 
   const handleAccept = () => {
     setVisible(false);
+    setPromptCooldown();
     aimtellPromptSubscribe();
   };
 
   const handleDismiss = () => {
     setVisible(false);
-    localStorage.setItem(STORAGE_KEY, String(Date.now()));
+    setPromptCooldown();
   };
 
   return (
