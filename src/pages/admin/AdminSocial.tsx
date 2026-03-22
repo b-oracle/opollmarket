@@ -57,15 +57,17 @@ const AdminSocial = () => {
       return allFollows;
     };
 
-    const [{ count: followCount }, { count: likeCount }, { count: commentCount }, followRows] = await Promise.all([
+    const [{ count: followCount }, { count: likeCount }, { count: commentCount }, { count: viewCount }, followRows] = await Promise.all([
       supabase.from("follows").select("id", { count: "exact", head: true }),
       supabase.from("market_likes").select("id", { count: "exact", head: true }),
       supabase.from("comments").select("id", { count: "exact", head: true }),
+      supabase.from("status_views").select("id", { count: "exact", head: true }),
       fetchAllFollows(),
     ]);
     setTotalFollows(followCount ?? 0);
     setTotalLikes(likeCount ?? 0);
     setTotalComments(commentCount ?? 0);
+    setTotalViews(viewCount ?? 0);
 
     // Follow growth over last 30 days
     const dayMap = new Map<string, number>();
