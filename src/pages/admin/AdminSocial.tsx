@@ -145,6 +145,7 @@ const AdminSocial = () => {
     { label: "Total Likes", value: totalLikes, icon: Heart, color: "text-pink-500" },
     { label: "Total Comments", value: totalComments, icon: MessageCircle, color: "text-blue-500" },
     { label: "Total Profiles", value: totalCount, icon: Users, color: "text-emerald-500" },
+    { label: "Social Views", value: totalViews, icon: BarChart3, color: "text-amber-500" },
   ];
 
   return (
