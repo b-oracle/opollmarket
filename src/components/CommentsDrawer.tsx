@@ -172,7 +172,7 @@ const CommentItem = ({
 };
 
 const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawerProps) => {
-  const { address } = useAccount();
+  
   const { user, displayName } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(false);
