@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { TrendingUp, TrendingDown, Moon } from "lucide-react";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
