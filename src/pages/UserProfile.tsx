@@ -251,7 +251,7 @@ const UserProfile = () => {
   const isVerified = verificationLevel !== "none";
   const displayName = profile?.display_name || "Anonymous";
 
-  if (profileLoading || authLoading) {
+  if (profileLoading || authLoading || profileFetching) {
     return (
       <div className="min-h-dvh bg-background flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
