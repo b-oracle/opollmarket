@@ -61,7 +61,7 @@ const LikeBadge = React.forwardRef<HTMLSpanElement, { marketId: string }>(({ mar
 const Index = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { data: markets = [], isLoading, isError, error: marketsError, refetch } = useMarkets();
+  const { data: markets = [], isLoading, isError, refetch } = useMarkets();
   const { boostedMarketIds, boostDetails, loading: boostsLoading } = useActiveBoosts();
   const [filter, setFilter] = useState<"trending" | "boosted" | "new" | "all" | "live">("all");
   const [boostModalMarket, setBoostModalMarket] = useState<{ id: string; title: string } | null>(null);
@@ -184,13 +184,7 @@ const Index = () => {
   const totalMarkets = platformStats?.totalMarkets ?? 0;
   const statsLastUpdated = platformStats?.lastUpdated;
   const liveCount = useMemo(() => markets.filter((m) => m.autoResolve && ((m.sportType && m.sportMatchId) || m.autoResolveAsset)).length, [markets]);
-  const marketErrorMessage = useMemo(() => {
-    if (!marketsError) return "Unable to load markets right now.";
-    if (marketsError instanceof Error && marketsError.message === "markets_fetch_timeout") {
-      return "Market loading timed out. Please tap retry.";
-    }
-    return "Unable to load markets right now.";
-  }, [marketsError]);
+  const marketErrorMessage = "Unable to load markets right now.";
 
   // No blocking loader — render page immediately, show inline spinner in content area
 
