@@ -51,9 +51,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const headers = { "x-apisports-key": apiKey };
+    const apiHeaders = { "x-apisports-key": apiKey };
     const url = `https://${config.host}${config.fixturePath}?${config.idParam}=${matchId}`;
-    const resp = await fetch(url, { headers });
+    const resp = await fetch(url, { headers: apiHeaders });
     const data = await resp.json();
     const items = data?.response || [];
 
@@ -86,6 +86,66 @@ Deno.serve(async (req) => {
         periodScores.push({ label: "PEN", home: item.score.penalty.home, away: item.score.penalty.away });
       }
 
+      // Extract match events (goals, cards, substitutions)
+      const events: any[] = [];
+      if (item.events && Array.isArray(item.events)) {
+        for (const ev of item.events) {
+          events.push({
+            time: ev.time?.elapsed ?? null,
+            extraTime: ev.time?.extra ?? null,
+            team: ev.team?.name || "",
+            teamLogo: ev.team?.logo || "",
+            player: ev.player?.name || "",
+            assist: ev.assist?.name || null,
+            type: ev.type || "",        // "Goal", "Card", "subst", "Var"
+            detail: ev.detail || "",    // "Normal Goal", "Penalty", "Yellow Card", "Red Card", "Substitution 1", etc.
+          });
+        }
+      }
+
+      // Extract match statistics
+      const statistics: any[] = [];
+      if (item.statistics && Array.isArray(item.statistics) && item.statistics.length >= 2) {
+        const homeStats = item.statistics[0]?.statistics || [];
+        const awayStats = item.statistics[1]?.statistics || [];
+        for (let i = 0; i < homeStats.length; i++) {
+          const hStat = homeStats[i];
+          const aStat = awayStats[i];
+          if (hStat && aStat) {
+            statistics.push({
+              type: hStat.type || "",
+              home: hStat.value ?? 0,
+              away: aStat.value ?? 0,
+            });
+          }
+        }
+      }
+
+      // Extract lineups
+      const lineups: any[] = [];
+      if (item.lineups && Array.isArray(item.lineups)) {
+        for (const lineup of item.lineups) {
+          lineups.push({
+            team: lineup.team?.name || "",
+            teamLogo: lineup.team?.logo || "",
+            formation: lineup.formation || "",
+            coach: lineup.coach?.name || "",
+            startXI: (lineup.startXI || []).map((p: any) => ({
+              id: p.player?.id,
+              name: p.player?.name || "",
+              number: p.player?.number ?? null,
+              pos: p.player?.pos || "",
+            })),
+            substitutes: (lineup.substitutes || []).map((p: any) => ({
+              id: p.player?.id,
+              name: p.player?.name || "",
+              number: p.player?.number ?? null,
+              pos: p.player?.pos || "",
+            })),
+          });
+        }
+      }
+
       match = {
         homeTeam: item.teams?.home?.name || "TBD",
         awayTeam: item.teams?.away?.name || "TBD",
@@ -103,6 +163,9 @@ Deno.serve(async (req) => {
         leagueLogo: item.league?.logo || "",
         venue: item.fixture?.venue?.name || "",
         periodScores,
+        events,
+        statistics,
+        lineups,
       };
     } else {
       // Generic for other sports
@@ -118,14 +181,12 @@ Deno.serve(async (req) => {
       const periodScores: any[] = [];
       const scores = item.scores;
       if (scores) {
-        // Basketball: quarter1, quarter2, quarter3, quarter4, over_time
         for (const key of ["quarter_1", "quarter_2", "quarter_3", "quarter_4", "over_time"]) {
           if (scores.home?.[key] !== null && scores.home?.[key] !== undefined) {
             const label = key === "over_time" ? "OT" : key.replace("quarter_", "Q");
             periodScores.push({ label, home: scores.home[key], away: scores.away?.[key] ?? null });
           }
         }
-        // NFL / American Football: similar structure
         if (periodScores.length === 0) {
           for (const key of ["first", "second", "third", "fourth", "overtime"]) {
             const hVal = scores.home?.[key];
@@ -135,7 +196,6 @@ Deno.serve(async (req) => {
             }
           }
         }
-        // Hockey: period1, period2, period3, overtime
         if (periodScores.length === 0) {
           for (const key of ["period_1", "period_2", "period_3", "overtime"]) {
             const hVal = scores.home?.[key];
@@ -145,7 +205,6 @@ Deno.serve(async (req) => {
             }
           }
         }
-        // Baseball: innings
         if (periodScores.length === 0) {
           for (let i = 1; i <= 9; i++) {
             const key = `inning_${i}`;
@@ -173,6 +232,9 @@ Deno.serve(async (req) => {
         leagueLogo: item.league?.logo || "",
         venue: "",
         periodScores,
+        events: [],
+        statistics: [],
+        lineups: [],
       };
     }
 
