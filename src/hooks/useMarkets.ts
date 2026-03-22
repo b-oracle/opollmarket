@@ -96,6 +96,12 @@ const mapDbToMarket = (db: DbMarket): Market => ({
 export const useMarkets = () => {
   const queryClient = useQueryClient();
 
+  const shouldRetry = (failureCount: number, error: unknown) => {
+    const isTimeout = error instanceof Error && error.message.toLowerCase().includes("timeout");
+    if (isTimeout) return false;
+    return failureCount < 2;
+  };
+
   // Realtime: refresh market list when any market is updated
   useEffect(() => {
     const channel = supabase
@@ -131,7 +137,7 @@ export const useMarkets = () => {
       return (data as unknown as DbMarket[]).map(mapDbToMarket);
     },
     staleTime: 30_000,
-    retry: 2,
+    retry: shouldRetry,
     retryDelay: 1000,
   });
 };
@@ -182,6 +188,10 @@ export const useMarket = (id: string | undefined) => {
       return mapDbToMarket(data as unknown as DbMarket);
     },
     enabled: !!id,
-    retry: 3,
+    retry: (failureCount, error) => {
+      const isTimeout = error instanceof Error && error.message.toLowerCase().includes("timeout");
+      if (isTimeout) return false;
+      return failureCount < 3;
+    },
   });
 };
