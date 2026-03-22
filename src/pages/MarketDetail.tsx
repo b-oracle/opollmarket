@@ -522,7 +522,12 @@ const MarketDetail = () => {
   }, [market]);
 
   if (isLoading) return <div className="h-dvh flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
-  if (isError) return <div className="h-dvh flex items-center justify-center text-muted-foreground">Failed to load market. Please try again.</div>;
+  if (isError) return (
+    <div className="h-dvh flex flex-col items-center justify-center gap-4 text-muted-foreground">
+      <p>Failed to load market. Please try again.</p>
+      <button onClick={() => window.location.reload()} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium">Retry</button>
+    </div>
+  );
   if (!market) return <div className="h-dvh flex items-center justify-center text-muted-foreground">Market not found</div>;
 
   const selectedOptionIdx = selectedOption ? market.options?.findIndex(o => o.label === selectedOption) ?? -1 : -1;
