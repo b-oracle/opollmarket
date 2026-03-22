@@ -91,7 +91,7 @@ const UserProfile = () => {
 
   // Profile data — include user?.id in queryKey so it re-fetches once auth resolves
   // (anon can only see is_public=true profiles via RLS)
-  const { data: profile, isLoading: profileLoading } = useQuery({
+  const { data: profile, isLoading: profileLoading, isFetching: profileFetching } = useQuery({
     queryKey: ["user-profile", id, user?.id ?? "anon"],
     queryFn: async () => {
       if (!id) return null;
@@ -100,9 +100,15 @@ const UserProfile = () => {
         .select("id, display_name, avatar_url, is_public, bio, created_at, wallet_address, verification_level, twitter_username, twitter_id")
         .eq("id", id)
         .maybeSingle();
+      // If no data and user is logged in, it might be a session propagation delay — throw to trigger retry
+      if (!data && user) {
+        throw new Error("Profile not found — retrying");
+      }
       return data;
     },
     enabled: !!id && !authLoading,
+    retry: 2,
+    retryDelay: 800,
   });
 
   // Markets created by user
@@ -245,7 +251,7 @@ const UserProfile = () => {
   const isVerified = verificationLevel !== "none";
   const displayName = profile?.display_name || "Anonymous";
 
-  if (profileLoading || authLoading) {
+  if (profileLoading || authLoading || profileFetching) {
     return (
       <div className="min-h-dvh bg-background flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
