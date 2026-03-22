@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCanonicalOrigin } from "@/lib/canonical";
 import { lovable } from "@/integrations/lovable/index";
 import SecurityVerificationModal from "@/components/SecurityVerificationModal";
+import { createStatelessReadClient } from "@/lib/statelessSupabase";
 
 const useIsDappBrowser = () =>
   useMemo(() => {
@@ -20,9 +21,22 @@ const useIsDappBrowser = () =>
       w.ethereum?.isSafePal ||
       w.ethereum?.isBitKeep ||
       w.ethereum?.isCoinbaseWallet ||
-      w.ethereum?.isMetaMask && w.ethereum?.isInApp
+      (w.ethereum?.isMetaMask && w.ethereum?.isInApp)
     );
   }, []);
+
+const withTimeout = async <T,>(promiseLike: PromiseLike<T>, timeoutMs: number): Promise<T | null> => {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  const timeoutPromise = new Promise<null>((resolve) => {
+    timeoutId = setTimeout(() => resolve(null), timeoutMs);
+  });
+
+  try {
+    return await Promise.race([Promise.resolve(promiseLike), timeoutPromise]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+};
 
 const Auth = () => {
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -58,7 +72,6 @@ const Auth = () => {
     const saved = localStorage.getItem("remembered_display_name");
     if (saved) setRememberedName(saved);
   }, []);
-  
 
   const resetSent = searchParams.get("reset_sent") === "1";
 
@@ -94,11 +107,27 @@ const Auth = () => {
           }
           return;
         }
-        // Use cached session (no network call) to avoid Web Lock deadlocks
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
+
+        // Use cached session (no network call) to avoid auth-lock deadlocks
+        const sessionResult = await withTimeout(Promise.resolve(supabase.auth.getSession()), 4000);
+        const currentSession = sessionResult?.data?.session ?? null;
         const userId = currentSession?.user?.id;
+
         if (userId) {
-          const { data: profile } = await supabase.from("profiles").select("display_name, is_blocked").eq("id", userId).single();
+          const statelessRead = createStatelessReadClient();
+
+          const profileResult = await withTimeout(
+            Promise.resolve(
+              statelessRead
+                .from("profiles")
+                .select("display_name, is_blocked")
+                .eq("id", userId)
+                .single()
+            ),
+            5000
+          );
+
+          const profile = profileResult?.data;
           if (profile?.is_blocked) {
             await supabase.auth.signOut();
             toast.error("Your account has been banned. Please contact support.");
@@ -107,13 +136,25 @@ const Auth = () => {
           if (profile?.display_name) localStorage.setItem("remembered_display_name", profile.display_name);
 
           // Check if login security is required
-          const { data: secData } = await supabase
-            .from("user_security_settings" as any)
-            .select("pin_enabled, totp_enabled, require_pin_login, require_totp_login")
-            .eq("user_id", userId)
-            .maybeSingle();
+          const secResult = await withTimeout(
+            Promise.resolve(
+              statelessRead
+                .from("user_security_settings" as any)
+                .select("pin_enabled, totp_enabled, require_pin_login, require_totp_login")
+                .eq("user_id", userId)
+                .maybeSingle()
+            ),
+            5000
+          );
 
-          const sec = secData as unknown as { pin_enabled: boolean; totp_enabled: boolean; require_pin_login: boolean; require_totp_login: boolean } | null;
+          const secData = secResult?.data ?? null;
+          const sec = secData as unknown as {
+            pin_enabled: boolean;
+            totp_enabled: boolean;
+            require_pin_login: boolean;
+            require_totp_login: boolean;
+          } | null;
+
           const needPin = sec?.pin_enabled && sec?.require_pin_login;
           const needTotp = sec?.totp_enabled && sec?.require_totp_login;
 
@@ -123,6 +164,7 @@ const Auth = () => {
             return;
           }
         }
+
         toast.success("Logged in successfully!");
         const redirectTo = searchParams.get("redirect");
         navigate(redirectTo || "/");
@@ -141,8 +183,13 @@ const Auth = () => {
           localStorage.setItem("referral_id", referrerId);
         }
         const { error } = await signUp(email, password, displayName);
-        if (error) { toast.error(error.message); }
-        else { toast.success("Account created! Please check your email to verify your account."); setMode("login"); return; }
+        if (error) {
+          toast.error(error.message);
+        } else {
+          toast.success("Account created! Please check your email to verify your account.");
+          setMode("login");
+          return;
+        }
       }
     } catch (err: any) {
       console.error("Auth error:", err);
