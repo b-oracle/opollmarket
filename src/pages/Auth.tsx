@@ -88,7 +88,12 @@ const Auth = () => {
         const { data: { user: loggedInUser } } = await supabase.auth.getUser();
         const userId = loggedInUser?.id;
         if (userId) {
-          const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", userId).single();
+          const { data: profile } = await supabase.from("profiles").select("display_name, is_blocked").eq("id", userId).single();
+          if (profile?.is_blocked) {
+            await supabase.auth.signOut();
+            toast.error("Your account has been banned. Please contact support.");
+            return;
+          }
           if (profile?.display_name) localStorage.setItem("remembered_display_name", profile.display_name);
 
           // Check if login security is required
