@@ -27,6 +27,7 @@ import { SidebarStateProvider, useSidebarState } from "./hooks/useSidebarState";
 import SocialTutorial, { checkTutorialSeenFromDB } from "./components/SocialTutorial";
 import { useFeatureToggles } from "./hooks/useFeatureToggles";
 import PendingCopyTrades from "./components/PendingCopyTrades";
+import AimtellProvider from "./components/AimtellProvider";
 import { VerificationThresholdProvider } from "./components/NftBadge";
 
 // Lazy-loaded pages
