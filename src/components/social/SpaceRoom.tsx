@@ -290,14 +290,19 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         const { data, error } = await supabase.functions.invoke("livekit-token", {
           body: { space_id: spaceId },
         });
-        if (error || data?.error) {
-          const errMsg = data?.error || "Failed to get voice token";
-          if (errMsg === "Space has ended") {
+
+        console.log("[SpaceRoom] livekit-token response:", { data: data ? { ...data, token: data.token ? "[SET]" : undefined } : null, error });
+
+        // Extract error message from various response shapes
+        const errMsg = error?.message || error?.context?.body?.error || data?.error;
+        if (errMsg || (!data?.token)) {
+          const msg = errMsg || "Failed to get voice token";
+          if (typeof msg === "string" && (msg.includes("ended") || msg.includes("isn't live"))) {
             toast.info("This Space isn't live yet or has already ended");
-          } else if (errMsg === "LiveKit not configured") {
+          } else if (msg === "LiveKit not configured") {
             toast.error("Voice is not available right now");
           } else {
-            toast.error(errMsg);
+            toast.error(typeof msg === "string" ? msg : "Failed to get voice token");
           }
           onClose();
           return;
@@ -387,8 +392,14 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     connect();
     return () => {
       cancelled = true;
-      roomRef.current?.disconnect();
+      const r = roomRef.current;
       roomRef.current = null;
+      if (r) {
+        try { r.disconnect(); } catch { /* ignore */ }
+      }
+      // Cleanup any lingering audio elements
+      audioElementsRef.current.forEach((el) => { try { el.remove(); } catch {} });
+      audioElementsRef.current.clear();
     };
   }, [user, spaceId]);
 
@@ -402,15 +413,28 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   };
 
   const handleLeave = async () => {
-    roomRef.current?.disconnect();
+    try { roomRef.current?.disconnect(); } catch { /* ignore */ }
+    roomRef.current = null;
+    // Clean up audio elements immediately
+    audioElementsRef.current.forEach((el) => { try { el.remove(); } catch {} });
+    audioElementsRef.current.clear();
+    // Update DB in background — don't block UI
     if (user) {
-      await supabase.from("space_participants").update({ left_at: new Date().toISOString() })
-        .eq("space_id", spaceId).eq("user_id", user.id).is("left_at", null);
+      const updates = [];
+      updates.push(
+        Promise.resolve(supabase.from("space_participants").update({ left_at: new Date().toISOString() })
+          .eq("space_id", spaceId).eq("user_id", user.id).is("left_at", null))
+      );
       if (isHost) {
-        await supabase.from("spaces").update({ status: "ended", ended_at: new Date().toISOString() }).eq("id", spaceId);
+        updates.push(
+          Promise.resolve(supabase.from("spaces").update({ status: "ended", ended_at: new Date().toISOString() }).eq("id", spaceId))
+        );
       }
+      // Fire and forget — don't await
+      Promise.allSettled(updates).then(() => {
+        queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      });
     }
-    queryClient.invalidateQueries({ queryKey: ["spaces"] });
     onClose();
   };
 
