@@ -4,7 +4,7 @@ import BottomSheet from "@/components/BottomSheet";
 import { X, Send, ChevronDown, Heart, CornerDownRight, Loader2, Pencil, Trash2, Check } from "lucide-react";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { supabase } from "@/integrations/supabase/client";
-import { useAccount } from "wagmi";
+
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useRateLimit } from "@/hooks/useRateLimit";
@@ -172,7 +172,7 @@ const CommentItem = ({
 };
 
 const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawerProps) => {
-  const { address } = useAccount();
+  
   const { user, displayName } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(false);
