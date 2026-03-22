@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Users, UserCheck, Heart, MessageCircle, Search, Eye, EyeOff, Shield, TrendingUp, Share2 } from "lucide-react";
+import { Loader2, Users, UserCheck, Heart, MessageCircle, Search, Eye, EyeOff, Shield, TrendingUp, Share2, BarChart3 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -26,6 +26,7 @@ const AdminSocial = () => {
   const [totalFollows, setTotalFollows] = useState(0);
   const [totalLikes, setTotalLikes] = useState(0);
   const [totalComments, setTotalComments] = useState(0);
+  const [totalViews, setTotalViews] = useState(0);
   const [followGrowth, setFollowGrowth] = useState<{ date: string; count: number }[]>([]);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -56,15 +57,17 @@ const AdminSocial = () => {
       return allFollows;
     };
 
-    const [{ count: followCount }, { count: likeCount }, { count: commentCount }, followRows] = await Promise.all([
+    const [{ count: followCount }, { count: likeCount }, { count: commentCount }, { count: viewCount }, followRows] = await Promise.all([
       supabase.from("follows").select("id", { count: "exact", head: true }),
       supabase.from("market_likes").select("id", { count: "exact", head: true }),
       supabase.from("comments").select("id", { count: "exact", head: true }),
+      supabase.from("status_views").select("id", { count: "exact", head: true }),
       fetchAllFollows(),
     ]);
     setTotalFollows(followCount ?? 0);
     setTotalLikes(likeCount ?? 0);
     setTotalComments(commentCount ?? 0);
+    setTotalViews(viewCount ?? 0);
 
     // Follow growth over last 30 days
     const dayMap = new Map<string, number>();
@@ -142,6 +145,7 @@ const AdminSocial = () => {
     { label: "Total Likes", value: totalLikes, icon: Heart, color: "text-pink-500" },
     { label: "Total Comments", value: totalComments, icon: MessageCircle, color: "text-blue-500" },
     { label: "Total Profiles", value: totalCount, icon: Users, color: "text-emerald-500" },
+    { label: "Social Views", value: totalViews, icon: BarChart3, color: "text-amber-500" },
   ];
 
   return (
@@ -149,7 +153,7 @@ const AdminSocial = () => {
       <h1 className="text-2xl font-bold flex items-center gap-2"><Users className="w-6 h-6 text-primary" /> Social & Profiles</h1>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {statCards.map(c => (
           <div key={c.label} className="bg-card border border-border rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
