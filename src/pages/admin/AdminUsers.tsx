@@ -95,6 +95,7 @@ const AdminUsers = () => {
         ...p,
         roles: roleMap.get(p.id) || [],
         balance: balanceMap.get(p.id) ?? 0,
+        is_blocked: !!(p as any).is_blocked,
       }))
     );
     setLoading(false);
