@@ -290,14 +290,17 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         const { data, error } = await supabase.functions.invoke("livekit-token", {
           body: { space_id: spaceId },
         });
-        if (error || data?.error) {
-          const errMsg = data?.error || "Failed to get voice token";
-          if (errMsg === "Space has ended") {
+
+        // Extract error message from various response shapes
+        const errMsg = error?.message || error?.context?.body?.error || data?.error;
+        if (errMsg || (!data?.token)) {
+          const msg = errMsg || "Failed to get voice token";
+          if (typeof msg === "string" && (msg.includes("ended") || msg.includes("isn't live"))) {
             toast.info("This Space isn't live yet or has already ended");
-          } else if (errMsg === "LiveKit not configured") {
+          } else if (msg === "LiveKit not configured") {
             toast.error("Voice is not available right now");
           } else {
-            toast.error(errMsg);
+            toast.error(typeof msg === "string" ? msg : "Failed to get voice token");
           }
           onClose();
           return;
