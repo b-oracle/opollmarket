@@ -61,7 +61,7 @@ const LikeBadge = React.forwardRef<HTMLSpanElement, { marketId: string }>(({ mar
 const Index = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { data: markets = [], isLoading, isError, error: marketsError, refetch } = useMarkets();
+  const { data: markets = [], isLoading, isError, refetch } = useMarkets();
   const { boostedMarketIds, boostDetails, loading: boostsLoading } = useActiveBoosts();
   const [filter, setFilter] = useState<"trending" | "boosted" | "new" | "all" | "live">("all");
   const [boostModalMarket, setBoostModalMarket] = useState<{ id: string; title: string } | null>(null);
