@@ -1575,6 +1575,8 @@ export type Database = {
           age: number | null
           avatar_url: string | null
           bio: string | null
+          block_reason: string | null
+          blocked_at: string | null
           created_at: string
           date_of_birth: string | null
           display_name: string | null
@@ -1582,6 +1584,7 @@ export type Database = {
           gender: string | null
           id: string
           interests: string[] | null
+          is_blocked: boolean
           is_public: boolean
           location: string | null
           referred_by: string | null
@@ -1598,6 +1601,8 @@ export type Database = {
           age?: number | null
           avatar_url?: string | null
           bio?: string | null
+          block_reason?: string | null
+          blocked_at?: string | null
           created_at?: string
           date_of_birth?: string | null
           display_name?: string | null
@@ -1605,6 +1610,7 @@ export type Database = {
           gender?: string | null
           id: string
           interests?: string[] | null
+          is_blocked?: boolean
           is_public?: boolean
           location?: string | null
           referred_by?: string | null
@@ -1621,6 +1627,8 @@ export type Database = {
           age?: number | null
           avatar_url?: string | null
           bio?: string | null
+          block_reason?: string | null
+          blocked_at?: string | null
           created_at?: string
           date_of_birth?: string | null
           display_name?: string | null
@@ -1628,6 +1636,7 @@ export type Database = {
           gender?: string | null
           id?: string
           interests?: string[] | null
+          is_blocked?: boolean
           is_public?: boolean
           location?: string | null
           referred_by?: string | null
