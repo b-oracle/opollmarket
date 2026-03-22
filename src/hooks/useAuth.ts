@@ -178,26 +178,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         if (mounted.current) setLoading(false);
       })
-      .catch(async () => {
-        if (!mounted.current) return;
-        try {
-          await supabase.auth.signOut({ scope: "local" });
-        } catch {
-          // ignore
-        }
-        lastSessionRef.current = null;
-        setSession(null);
-        setUser(null);
-        setIsSuperAdmin(false);
-        setIsAdmin(false);
-        setIsModerator(false);
-        setProfileDisplayName(null);
-        setLoading(false);
+      .catch(() => {
+        // Network/parse error — don't sign out, just stop loading
+        if (mounted.current) setLoading(false);
       });
 
     // Re-validate session on foreground
     const handleVisibility = async () => {
       if (document.visibilityState !== "visible" || !mounted.current) return;
+      if (!lastSessionRef.current) return; // No session to recover
 
       try {
         const { data: { session: freshSession } } = await supabase.auth.getSession();
@@ -212,26 +201,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               lastSessionRef.current = refreshed.session;
               setSession(refreshed.session);
               setUser(refreshed.session.user);
-              return;
             }
+            // If refresh fails, keep current state — don't sign out
+            return;
           }
           lastSessionRef.current = freshSession;
           setSession(freshSession);
           setUser(freshSession.user);
-          await checkRoles(freshSession.user.id, mounted);
-        } else if (lastSessionRef.current) {
-          const { data: refreshed } = await supabase.auth.refreshSession();
-          if (refreshed.session && mounted.current) {
-            lastSessionRef.current = refreshed.session;
-            setSession(refreshed.session);
-            setUser(refreshed.session.user);
-            await checkRoles(refreshed.session.user.id, mounted);
-          } else if (mounted.current) {
-            lastSessionRef.current = null;
-            setSession(null);
-            setUser(null);
-            setIsAdmin(false);
-            setIsModerator(false);
+        } else {
+          // getSession returned null but we had a session — try to refresh
+          try {
+            const { data: refreshed } = await supabase.auth.refreshSession();
+            if (refreshed.session && mounted.current) {
+              lastSessionRef.current = refreshed.session;
+              setSession(refreshed.session);
+              setUser(refreshed.session.user);
+            }
+            // If refresh returns null session, keep UI state — the token may
+            // still be valid server-side. Only an explicit SIGNED_OUT event
+            // from onAuthStateChange should clear the user.
+          } catch {
+            // Network error during refresh — keep current state
           }
         }
       } catch {
