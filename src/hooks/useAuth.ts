@@ -70,6 +70,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const mounted = { current: true };
 
+    // Recover from malformed auth storage that can cause blank-screen startup loops
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      if (projectId) {
+        const authKey = `sb-${projectId}-auth-token`;
+        const raw = localStorage.getItem(authKey);
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            const accessToken = parsed?.access_token;
+            if (typeof accessToken !== "string" || accessToken.split(".").length !== 3) {
+              localStorage.removeItem(authKey);
+            }
+          } catch {
+            localStorage.removeItem(authKey);
+          }
+        }
+      }
+    } catch {
+      // ignore storage access issues
+    }
+
     // 1. Set up auth listener FIRST (Supabase recommended order)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
@@ -142,19 +164,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 
     // 2. THEN get initial session
-    supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
-      if (!mounted.current) return;
-      lastSessionRef.current = initialSession;
-      setSession(initialSession);
-      setUser(initialSession?.user ?? null);
-      if (initialSession?.user) {
-        await Promise.all([
-          checkRoles(initialSession.user.id, mounted),
-          fetchDisplayName(initialSession.user.id, mounted),
-        ]);
-      }
-      if (mounted.current) setLoading(false);
-    });
+    supabase.auth.getSession()
+      .then(async ({ data: { session: initialSession } }) => {
+        if (!mounted.current) return;
+        lastSessionRef.current = initialSession;
+        setSession(initialSession);
+        setUser(initialSession?.user ?? null);
+        if (initialSession?.user) {
+          await Promise.all([
+            checkRoles(initialSession.user.id, mounted),
+            fetchDisplayName(initialSession.user.id, mounted),
+          ]);
+        }
+        if (mounted.current) setLoading(false);
+      })
+      .catch(async () => {
+        if (!mounted.current) return;
+        try {
+          await supabase.auth.signOut({ scope: "local" });
+        } catch {
+          // ignore
+        }
+        lastSessionRef.current = null;
+        setSession(null);
+        setUser(null);
+        setIsSuperAdmin(false);
+        setIsAdmin(false);
+        setIsModerator(false);
+        setProfileDisplayName(null);
+        setLoading(false);
+      });
 
     // Re-validate session on foreground
     const handleVisibility = async () => {
