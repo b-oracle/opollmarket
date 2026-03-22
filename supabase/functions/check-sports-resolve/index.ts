@@ -221,9 +221,29 @@ Deno.serve(async (req) => {
       if (result && result.finished) {
         winningSide = determineWinningSide(predictedOutcome, result);
       } else if (deadline && now > deadline) {
-        // Deadline passed, match might not have happened or API didn't return
-        // If match is finished but we couldn't determine outcome, resolve NO
-        winningSide = "no";
+        // Only force-resolve if the match actually finished but we couldn't determine the outcome,
+        // OR if a generous grace period (6 hours past deadline) has elapsed (match likely cancelled/postponed).
+        // Do NOT resolve if the match simply hasn't started yet (status NS/TBD/PST).
+        const matchStatus = result?.status?.toUpperCase() || "UNKNOWN";
+        const notStartedStatuses = ["NS", "TBD", "PST", "CANC", "ABD", "UNKNOWN", ""];
+        const gracePeriodMs = 6 * 60 * 60 * 1000; // 6 hours
+
+        if (result && result.finished) {
+          // Match finished but determineWinningSide returned null — force NO
+          winningSide = "no";
+        } else if (!notStartedStatuses.includes(matchStatus) && result) {
+          // Match is in some live/post state but not marked finished — skip, wait longer
+          console.log(`Market ${market.id}: Match status ${matchStatus}, waiting for finish...`);
+          continue;
+        } else if (now.getTime() - deadline.getTime() > gracePeriodMs) {
+          // 6+ hours past deadline and match never started — likely postponed/cancelled, resolve NO
+          console.log(`Market ${market.id}: 6h+ past deadline, match status ${matchStatus}, force-resolving NO`);
+          winningSide = "no";
+        } else {
+          // Deadline passed but match hasn't started and we're within grace period — skip
+          console.log(`Market ${market.id}: Deadline passed but match not started (${matchStatus}), waiting...`);
+          continue;
+        }
       }
 
       if (!winningSide) continue;
