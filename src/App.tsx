@@ -191,6 +191,7 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
       setNeedsSetup(false);
       checkedUserRef.current = userId;
       setChecked(true);
+      if (userId) try { sessionStorage.setItem(`security_ok_${userId}`, "1"); } catch {}
     };
     window.addEventListener("security-setup-complete", handler);
     return () => window.removeEventListener("security-setup-complete", handler);
@@ -209,6 +210,16 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
       setChecked(true);
       return;
     }
+
+    // Check sessionStorage cache first to skip network request
+    try {
+      if (sessionStorage.getItem(`security_ok_${userId}`) === "1") {
+        checkedUserRef.current = userId;
+        setChecked(true);
+        setNeedsSetup(false);
+        return;
+      }
+    } catch {}
 
     if (checkingRef.current) return; // prevent concurrent checks
     checkingRef.current = true;
@@ -242,6 +253,7 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
         setNeedsSetup(needs);
         checkedUserRef.current = userId;
         setChecked(true);
+        if (!needs) try { sessionStorage.setItem(`security_ok_${userId}`, "1"); } catch {}
       })
       .catch(() => {
         if (!active) return;
