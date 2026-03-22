@@ -35,12 +35,15 @@ export const usePWAUpdate = () => {
           });
         });
 
-        // Check for updates every 2 minutes
+        // Check for updates every 60 seconds (more aggressive)
         intervalRef.current = window.setInterval(() => {
           if (document.visibilityState === "visible") {
             registration.update();
           }
-        }, 2 * 60 * 1000);
+        }, 60 * 1000);
+
+        // Also do an immediate update check
+        registration.update();
       }
     },
     onRegisterError(error) {
@@ -48,7 +51,7 @@ export const usePWAUpdate = () => {
     },
   });
 
-  // Also check on visibility change
+  // Also check on visibility change + listen for controllerchange to auto-reload
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
@@ -56,9 +59,17 @@ export const usePWAUpdate = () => {
       }
     };
 
+    // When a new SW takes over (via skipWaiting), reload the page
+    const handleControllerChange = () => {
+      window.location.reload();
+    };
+
     document.addEventListener("visibilitychange", handleVisibility);
+    navigator.serviceWorker?.addEventListener("controllerchange", handleControllerChange);
+
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);
+      navigator.serviceWorker?.removeEventListener("controllerchange", handleControllerChange);
       if (intervalRef.current) {
         window.clearInterval(intervalRef.current);
         intervalRef.current = null;
