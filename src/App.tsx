@@ -190,12 +190,13 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
     }, 5000);
 
     import("@/integrations/supabase/client").then(({ supabase }) => {
-      supabase
-        .from("user_security_settings" as any)
-        .select("security_setup_complete")
-        .eq("user_id", userId)
-        .maybeSingle()
-        .then(({ data, error }) => {
+      Promise.resolve(
+        supabase
+          .from("user_security_settings" as any)
+          .select("security_setup_complete")
+          .eq("user_id", userId)
+          .maybeSingle()
+      ).then(({ data, error }) => {
           clearTimeout(safetyTimer);
           checkingRef.current = false;
           if (error) {
