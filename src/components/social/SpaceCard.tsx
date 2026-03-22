@@ -70,7 +70,10 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current.play().catch(() => toast.error("Failed to play recording"));
+      audioRef.current.play().catch((err) => {
+        console.error("Recording playback error:", err);
+        toast.error("Failed to play recording");
+      });
       setIsPlaying(true);
     }
   };
