@@ -358,6 +358,12 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
           )}
           {(status.reposts_count || 0) > 0 && status.reposts_count}
         </button>
+        {(status.views_count || 0) > 0 && (
+          <span className="flex items-center gap-1 text-xs text-muted-foreground ml-auto">
+            <BarChart3 className="w-3.5 h-3.5" />
+            {formatViewCount(status.views_count || 0)}
+          </span>
+        )}
       </div>
 
       {/* Comments Section */}
