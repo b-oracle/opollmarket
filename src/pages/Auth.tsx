@@ -25,91 +25,23 @@ const useIsDappBrowser = () =>
     );
   }, []);
 
-const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number): Promise<T | null> => {
+const withTimeout = async <T,>(promiseLike: PromiseLike<T>, timeoutMs: number): Promise<T | null> => {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   const timeoutPromise = new Promise<null>((resolve) => {
     timeoutId = setTimeout(() => resolve(null), timeoutMs);
   });
 
   try {
-    return await Promise.race([promise, timeoutPromise]);
+    return await Promise.race([Promise.resolve(promiseLike), timeoutPromise]);
   } finally {
     if (timeoutId) clearTimeout(timeoutId);
   }
 };
 
 const Auth = () => {
-  const [mode, setMode] = useState<"login" | "signup">("login");
-  const [showResetPrompt, setShowResetPrompt] = useState(false);
-  const [resetEmail, setResetEmail] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [referralCode, setReferralCode] = useState("");
-  const [referralFromLink, setReferralFromLink] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [sendingReset, setSendingReset] = useState(false);
-  const [rememberedName, setRememberedName] = useState<string | null>(null);
-  const [showLoginSecurity, setShowLoginSecurity] = useState(false);
-  const [loginSecReqs, setLoginSecReqs] = useState<{ require_pin: boolean; require_totp: boolean }>({ require_pin: false, require_totp: false });
-  const { signIn, signUp, user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const isDapp = useIsDappBrowser();
-
-  // Redirect already-authenticated users away from auth page
-  // This prevents logged-in users from seeing the registration form
-  // when they arrive via deep links (e.g. shared space links with ?ref=)
-  useEffect(() => {
-    if (authLoading) return;
-    if (!user) return;
-    const redirectTo = searchParams.get("redirect");
-    navigate(redirectTo || "/", { replace: true });
-  }, [user, authLoading, navigate, searchParams]);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("remembered_display_name");
-    if (saved) setRememberedName(saved);
-  }, []);
-
-  const resetSent = searchParams.get("reset_sent") === "1";
-
-  // Capture referral param
-  useEffect(() => {
-    const ref = searchParams.get("ref");
-    if (ref) {
-      setReferralCode(ref);
-      setReferralFromLink(true);
-      setMode("signup");
-    }
-  }, [searchParams]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      if (mode === "login") {
-        let result = await signIn(email, password);
-        // Retry once on network failure (common in preview iframe)
-        if (result.error && result.error.message?.toLowerCase().includes("load failed")) {
-          result = await signIn(email, password);
-        }
-        if (result.error) {
-          // Detect OAuth-only accounts trying email/password login
-          const msg = result.error.message?.toLowerCase() || "";
-          if (msg.includes("invalid login credentials") || msg.includes("invalid credentials")) {
-            toast.error("Incorrect email or password. Please try again.");
-            setShowResetPrompt(true);
-            setResetEmail(email);
-          } else {
-            toast.error(result.error.message);
-          }
-          return;
-        }
-
+...
         // Use cached session (no network call) to avoid auth-lock deadlocks
-        const sessionResult = await withTimeout(supabase.auth.getSession(), 4000);
+        const sessionResult = await withTimeout(Promise.resolve(supabase.auth.getSession()), 4000);
         const currentSession = sessionResult?.data?.session ?? null;
         const userId = currentSession?.user?.id;
 
@@ -117,11 +49,13 @@ const Auth = () => {
           const statelessRead = createStatelessReadClient();
 
           const profileResult = await withTimeout(
-            statelessRead
-              .from("profiles")
-              .select("display_name, is_blocked")
-              .eq("id", userId)
-              .single(),
+            Promise.resolve(
+              statelessRead
+                .from("profiles")
+                .select("display_name, is_blocked")
+                .eq("id", userId)
+                .single()
+            ),
             5000
           );
 
@@ -135,11 +69,13 @@ const Auth = () => {
 
           // Check if login security is required
           const secResult = await withTimeout(
-            statelessRead
-              .from("user_security_settings" as any)
-              .select("pin_enabled, totp_enabled, require_pin_login, require_totp_login")
-              .eq("user_id", userId)
-              .maybeSingle(),
+            Promise.resolve(
+              statelessRead
+                .from("user_security_settings" as any)
+                .select("pin_enabled, totp_enabled, require_pin_login, require_totp_login")
+                .eq("user_id", userId)
+                .maybeSingle()
+            ),
             5000
           );
 
