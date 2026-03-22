@@ -24,7 +24,7 @@ import { useCommentCount } from "@/hooks/useCommentCount";
 import useAnalytics from "@/hooks/useAnalytics";
 import { useLikeCount } from "@/hooks/useLikeCount";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { createStatelessReadClient } from "@/lib/statelessSupabase";
 
 
 const formatVolume = (v: number) => {
@@ -161,11 +161,17 @@ const Index = () => {
   const { data: platformStats } = useQuery({
     queryKey: ["platform-stats"],
     queryFn: async () => {
+      const supabase = createStatelessReadClient();
       const [marketsRes, usersRes, volRes] = await Promise.all([
         supabase.from("markets").select("id", { count: "exact", head: true }),
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.rpc("get_platform_volume"),
       ]);
+
+      if (marketsRes.error) throw marketsRes.error;
+      if (usersRes.error) throw usersRes.error;
+      if (volRes.error) throw volRes.error;
+
       const volRow = volRes.data?.[0] as { prediction_volume: number; qt_volume: number } | undefined;
       const totalVol = Number(volRow?.prediction_volume ?? 0) + Number(volRow?.qt_volume ?? 0);
       return {
