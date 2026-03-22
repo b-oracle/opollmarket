@@ -1,7 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import type { Market, MarketOption } from "@/data/markets";
+import type { Market } from "@/data/markets";
 
 interface DbMarket {
   id: string;
@@ -48,6 +49,21 @@ const withTimeout = async <T>(operation: () => Promise<T>, ms: number, timeoutMe
   ]);
 };
 
+const isTimeoutError = (error: unknown) =>
+  error instanceof Error && error.message.toLowerCase().includes("timeout");
+
+const publicReadClient = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  }
+);
+
 const mapDbToMarket = (db: DbMarket): Market => ({
   id: db.id,
   title: db.title,
@@ -93,16 +109,42 @@ const mapDbToMarket = (db: DbMarket): Market => ({
     : undefined,
 });
 
+const fetchMarkets = async (client: typeof supabase) => {
+  return withTimeout(
+    async () =>
+      await client
+        .from("markets")
+        .select("id,title,description,category,market_type,yes_price,no_price,volume,liquidity,participants,end_date,creator_wallet,creator_name,image_url,video_url,details,trending,status,created_at,auto_resolve,auto_resolve_asset,auto_resolve_target_price,auto_resolve_operator,auto_resolve_deadline,sport_type,sport_match_id,sport_predicted_outcome,sport_league,polymarket_event_slug,twitter_metric_type,twitter_resource_id,twitter_current_count,simulated_volume,simulated_participants, market_options!market_options_market_id_fkey(id,label,price,sort_order)")
+        .in("status", ["active", "ended"])
+        .gt("participants", 0)
+        .order("created_at", { ascending: false })
+        .limit(100),
+    8_000,
+    "markets query timeout"
+  );
+};
+
+const fetchMarketDetail = async (client: typeof supabase, id: string) => {
+  return withTimeout(
+    async () =>
+      await client
+        .from("markets")
+        .select("*, market_options!market_options_market_id_fkey(*)")
+        .eq("id", id)
+        .maybeSingle(),
+    8_000,
+    "market detail query timeout"
+  );
+};
+
 export const useMarkets = () => {
   const queryClient = useQueryClient();
 
   const shouldRetry = (failureCount: number, error: unknown) => {
-    const isTimeout = error instanceof Error && error.message.toLowerCase().includes("timeout");
-    if (isTimeout) return false;
+    if (isTimeoutError(error)) return false;
     return failureCount < 2;
   };
 
-  // Realtime: refresh market list when any market is updated
   useEffect(() => {
     const channel = supabase
       .channel("markets-list-realtime")
@@ -114,7 +156,9 @@ export const useMarkets = () => {
         }
       )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [queryClient]);
 
   return useQuery({
@@ -122,28 +166,23 @@ export const useMarkets = () => {
     queryFn: async (): Promise<Market[]> => {
       console.log("[useMarkets] queryFn called");
       try {
-        const { data, error } = await withTimeout(
-          async () =>
-            await supabase
-              .from("markets")
-              .select("id,title,description,category,market_type,yes_price,no_price,volume,liquidity,participants,end_date,creator_wallet,creator_name,image_url,video_url,details,trending,status,created_at,auto_resolve,auto_resolve_asset,auto_resolve_target_price,auto_resolve_operator,auto_resolve_deadline,sport_type,sport_match_id,sport_predicted_outcome,sport_league,polymarket_event_slug,twitter_metric_type,twitter_resource_id,twitter_current_count,simulated_volume,simulated_participants, market_options!market_options_market_id_fkey(id,label,price,sort_order)")
-              .in("status", ["active", "ended"])
-              .gt("participants", 0)
-              .order("created_at", { ascending: false })
-              .limit(100),
-          8_000,
-          "markets query timeout"
-        );
-
-        if (error) {
-          console.error("[useMarkets] supabase error:", error);
-          throw error;
-        }
-        console.log("[useMarkets] got", data?.length, "markets");
+        const { data, error } = await fetchMarkets(supabase);
+        if (error) throw error;
         return (data as unknown as DbMarket[]).map(mapDbToMarket);
-      } catch (e) {
-        console.error("[useMarkets] queryFn exception:", e);
-        throw e;
+      } catch (primaryError) {
+        if (!isTimeoutError(primaryError)) {
+          console.error("[useMarkets] primary client error:", primaryError);
+          throw primaryError;
+        }
+
+        console.warn("[useMarkets] primary client timeout, retrying with stateless public client");
+        const { data: fallbackData, error: fallbackError } = await fetchMarkets(publicReadClient as typeof supabase);
+        if (fallbackError) {
+          console.error("[useMarkets] fallback client error:", fallbackError);
+          throw fallbackError;
+        }
+
+        return (fallbackData as unknown as DbMarket[]).map(mapDbToMarket);
       }
     },
     staleTime: 30_000,
@@ -155,7 +194,6 @@ export const useMarkets = () => {
 export const useMarket = (id: string | undefined) => {
   const queryClient = useQueryClient();
 
-  // Realtime: refresh this market when it's updated
   useEffect(() => {
     if (!id) return;
     const channel = supabase
@@ -175,45 +213,43 @@ export const useMarket = (id: string | undefined) => {
         }
       )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [id, queryClient]);
 
-    return useQuery({
+  return useQuery({
     queryKey: ["market", id],
     queryFn: async (): Promise<Market | null> => {
       if (!id) return null;
       console.log("[useMarket] queryFn called for id:", id);
-      try {
-        const { data, error } = await withTimeout(
-          async () =>
-            await supabase
-              .from("markets")
-              .select("*, market_options!market_options_market_id_fkey(*)")
-              .eq("id", id)
-              .maybeSingle(),
-          8_000,
-          "market detail query timeout"
-        );
 
-        if (error) {
-          console.error("[useMarket] supabase error:", error);
-          throw error;
-        }
-        if (!data) {
-          console.warn("[useMarket] no data for id:", id);
-          return null;
-        }
-        console.log("[useMarket] got market:", data.title);
+      try {
+        const { data, error } = await fetchMarketDetail(supabase, id);
+        if (error) throw error;
+        if (!data) return null;
         return mapDbToMarket(data as unknown as DbMarket);
-      } catch (e) {
-        console.error("[useMarket] queryFn exception:", e);
-        throw e;
+      } catch (primaryError) {
+        if (!isTimeoutError(primaryError)) {
+          console.error("[useMarket] primary client error:", primaryError);
+          throw primaryError;
+        }
+
+        console.warn("[useMarket] primary client timeout, retrying with stateless public client", id);
+        const { data: fallbackData, error: fallbackError } = await fetchMarketDetail(publicReadClient as typeof supabase, id);
+
+        if (fallbackError) {
+          console.error("[useMarket] fallback client error:", fallbackError);
+          throw fallbackError;
+        }
+        if (!fallbackData) return null;
+
+        return mapDbToMarket(fallbackData as unknown as DbMarket);
       }
     },
     enabled: !!id,
     retry: (failureCount, error) => {
-      const isTimeout = error instanceof Error && error.message.toLowerCase().includes("timeout");
-      if (isTimeout) return false;
+      if (isTimeoutError(error)) return false;
       return failureCount < 3;
     },
   });
