@@ -39,6 +39,15 @@ interface DbMarket {
   twitter_current_count: number | null;
 }
 
+const withTimeout = async <T>(operation: () => Promise<T>, ms: number, timeoutMessage: string): Promise<T> => {
+  return Promise.race([
+    operation(),
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error(timeoutMessage)), ms);
+    }),
+  ]);
+};
+
 const mapDbToMarket = (db: DbMarket): Market => ({
   id: db.id,
   title: db.title,
@@ -87,6 +96,12 @@ const mapDbToMarket = (db: DbMarket): Market => ({
 export const useMarkets = () => {
   const queryClient = useQueryClient();
 
+  const shouldRetry = (failureCount: number, error: unknown) => {
+    const isTimeout = error instanceof Error && error.message.toLowerCase().includes("timeout");
+    if (isTimeout) return false;
+    return failureCount < 2;
+  };
+
   // Realtime: refresh market list when any market is updated
   useEffect(() => {
     const channel = supabase
@@ -105,19 +120,24 @@ export const useMarkets = () => {
   return useQuery({
     queryKey: ["markets"],
     queryFn: async (): Promise<Market[]> => {
-      const { data, error } = await supabase
-        .from("markets")
-        .select("id,title,description,category,market_type,yes_price,no_price,volume,liquidity,participants,end_date,creator_wallet,creator_name,image_url,video_url,details,trending,status,created_at,auto_resolve,auto_resolve_asset,auto_resolve_target_price,auto_resolve_operator,auto_resolve_deadline,sport_type,sport_match_id,sport_predicted_outcome,sport_league,polymarket_event_slug,twitter_metric_type,twitter_resource_id,twitter_current_count,simulated_volume,simulated_participants, market_options!market_options_market_id_fkey(id,label,price,sort_order)")
-        .in("status", ["active", "ended"])
-        .gt("participants", 0)
-        .order("created_at", { ascending: false })
-        .limit(100);
+      const { data, error } = await withTimeout(
+        async () =>
+          await supabase
+            .from("markets")
+            .select("id,title,description,category,market_type,yes_price,no_price,volume,liquidity,participants,end_date,creator_wallet,creator_name,image_url,video_url,details,trending,status,created_at,auto_resolve,auto_resolve_asset,auto_resolve_target_price,auto_resolve_operator,auto_resolve_deadline,sport_type,sport_match_id,sport_predicted_outcome,sport_league,polymarket_event_slug,twitter_metric_type,twitter_resource_id,twitter_current_count,simulated_volume,simulated_participants, market_options!market_options_market_id_fkey(id,label,price,sort_order)")
+            .in("status", ["active", "ended"])
+            .gt("participants", 0)
+            .order("created_at", { ascending: false })
+            .limit(100),
+        8_000,
+        "markets query timeout"
+      );
 
       if (error) throw error;
       return (data as unknown as DbMarket[]).map(mapDbToMarket);
     },
     staleTime: 30_000,
-    retry: 2,
+    retry: shouldRetry,
     retryDelay: 1000,
   });
 };
@@ -152,17 +172,26 @@ export const useMarket = (id: string | undefined) => {
     queryKey: ["market", id],
     queryFn: async (): Promise<Market | null> => {
       if (!id) return null;
-      const { data, error } = await supabase
-        .from("markets")
-        .select("*, market_options!market_options_market_id_fkey(*)")
-        .eq("id", id)
-        .maybeSingle();
+      const { data, error } = await withTimeout(
+        async () =>
+          await supabase
+            .from("markets")
+            .select("*, market_options!market_options_market_id_fkey(*)")
+            .eq("id", id)
+            .maybeSingle(),
+        8_000,
+        "market detail query timeout"
+      );
 
       if (error) throw error; // let react-query retry on network errors
       if (!data) return null;
       return mapDbToMarket(data as unknown as DbMarket);
     },
     enabled: !!id,
-    retry: 3,
+    retry: (failureCount, error) => {
+      const isTimeout = error instanceof Error && error.message.toLowerCase().includes("timeout");
+      if (isTimeout) return false;
+      return failureCount < 3;
+    },
   });
 };

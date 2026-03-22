@@ -195,58 +195,68 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
   }, [userId]);
 
   useEffect(() => {
-    if (!userId || loading) { setChecked(true); setNeedsSetup(false); return; }
+    if (!userId || loading) {
+      checkingRef.current = false;
+      setChecked(true);
+      setNeedsSetup(false);
+      return;
+    }
 
-    // If we already checked this user and determined setup is NOT needed, skip
-    if (checkedUserRef.current === userId && !needsSetup) {
+    // If we already checked this user, keep previous result and avoid re-query loops.
+    if (checkedUserRef.current === userId) {
       setChecked(true);
       return;
     }
 
     if (checkingRef.current) return; // prevent concurrent checks
     checkingRef.current = true;
+    setChecked(false);
+
+    let active = true;
 
     // Safety timeout: if the query hangs for >5s, unblock the app
-    const safetyTimer = setTimeout(() => {
-      if (!checked) {
-        checkingRef.current = false;
-        setChecked(true);
-      }
+    const safetyTimer = window.setTimeout(() => {
+      if (!active) return;
+      checkingRef.current = false;
+      setChecked(true);
     }, 5000);
 
-    import("@/integrations/supabase/client").then(({ supabase }) => {
-      Promise.resolve(
+    import("@/integrations/supabase/client")
+      .then(({ supabase }) =>
         supabase
           .from("user_security_settings" as any)
           .select("security_setup_complete")
           .eq("user_id", userId)
           .maybeSingle()
-      ).then(({ data, error }) => {
-          clearTimeout(safetyTimer);
-          checkingRef.current = false;
-          if (error) {
-            setChecked(true);
-            return;
-          }
-          const d = data as any;
-          const needs = !d || d.security_setup_complete === false;
-          setNeedsSetup(needs);
-          checkedUserRef.current = userId;
+      )
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) {
           setChecked(true);
-        })
-        .catch(() => {
-          clearTimeout(safetyTimer);
-          checkingRef.current = false;
-          setChecked(true);
-        });
-    }).catch(() => {
-      clearTimeout(safetyTimer);
-      checkingRef.current = false;
-      setChecked(true);
-    });
+          return;
+        }
+        const d = data as any;
+        const needs = !d || d.security_setup_complete === false;
+        setNeedsSetup(needs);
+        checkedUserRef.current = userId;
+        setChecked(true);
+      })
+      .catch(() => {
+        if (!active) return;
+        setChecked(true);
+      })
+      .finally(() => {
+        if (!active) return;
+        window.clearTimeout(safetyTimer);
+        checkingRef.current = false;
+      });
 
-    return () => clearTimeout(safetyTimer);
-  }, [userId, loading, location.pathname]);
+    return () => {
+      active = false;
+      window.clearTimeout(safetyTimer);
+      checkingRef.current = false;
+    };
+  }, [userId, loading]);
 
   if (!checked) return <PageFallback />;
   if (needsSetup && !isAllowed) return <Navigate to="/setup-security" replace />;
