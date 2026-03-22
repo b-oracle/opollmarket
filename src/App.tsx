@@ -13,7 +13,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { useLocation } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, onlineManager } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import LazyWagmiProvider from "./components/LazyWagmiProvider";
@@ -97,6 +97,22 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Some mobile/PWA environments incorrectly report offline and pause all react-query fetches.
+// Keep query execution unblocked and rely on per-request errors instead of navigator.onLine.
+if (typeof window !== "undefined") {
+  onlineManager.setEventListener((setOnline) => {
+    const markOnline = () => setOnline(true);
+    window.addEventListener("online", markOnline);
+    window.addEventListener("offline", markOnline);
+    markOnline();
+
+    return () => {
+      window.removeEventListener("online", markOnline);
+      window.removeEventListener("offline", markOnline);
+    };
+  });
+}
 
 const isAdminRoute = (pathname: string) => pathname.startsWith("/admin");
 const isEmbedRoute = (pathname: string) => pathname.startsWith("/embed/") || pathname === "/embed";
