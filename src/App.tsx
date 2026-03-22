@@ -295,6 +295,7 @@ const App = () => (
                 <Sonner />
                 <PWAUpdatePrompt />
                 <BrowserRouter>
+                <AimtellProvider />
                 <SocialTutorialTrigger />
                 <PendingCopyTrades />
                 <GlobalSpaceRoom />
