@@ -1,10 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Trash2, Loader2, MessageCircle, ExternalLink, Repeat2 } from "lucide-react";
+import { Heart, Trash2, Loader2, MessageCircle, ExternalLink, Repeat2, BarChart3 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { toast } from "sonner";
@@ -81,6 +81,12 @@ const RichContent = ({ content }: { content: string }) => {
   );
 };
 
+const formatViewCount = (count: number) => {
+  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
+  if (count >= 1_000) return `${(count / 1_000).toFixed(1)}K`;
+  return count.toString();
+};
+
 interface StatusCardProps {
   status: {
     id: string;
@@ -90,6 +96,7 @@ interface StatusCardProps {
     likes_count: number;
     comments_count?: number;
     reposts_count?: number;
+    views_count?: number;
     created_at: string;
     market_id?: string | null;
   };
@@ -120,10 +127,39 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
   const [likeLoading, setLikeLoading] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [repostLoading, setRepostLoading] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const viewTracked = useRef(false);
   const liveUserIds = useLiveSpaceUsers();
   const liveSpace = useLiveSpaceForUser(liveUserIds.has(status.user_id) ? status.user_id : undefined);
   const { joinSpace } = useActiveSpace();
   const isUserLive = liveUserIds.has(status.user_id);
+
+  // Track view when post becomes visible
+  useEffect(() => {
+    if (!user || viewTracked.current) return;
+    const el = cardRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !viewTracked.current) {
+          viewTracked.current = true;
+          supabase
+            .from("status_views" as any)
+            .upsert(
+              { status_id: status.id, user_id: user.id },
+              { onConflict: "status_id,user_id" }
+            )
+            .then(() => {});
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [user, status.id]);
 
   const { data: isLiked = false } = useQuery({
     queryKey: ["status-liked", status.id, user?.id],
@@ -210,6 +246,7 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
 
   return (
     <motion.div
+      ref={cardRef}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.03 }}
@@ -327,6 +364,12 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
           )}
           {(status.reposts_count || 0) > 0 && status.reposts_count}
         </button>
+        {(status.views_count || 0) > 0 && (
+          <span className="flex items-center gap-1 text-xs text-muted-foreground ml-auto">
+            <BarChart3 className="w-3.5 h-3.5" />
+            {formatViewCount(status.views_count || 0)}
+          </span>
+        )}
       </div>
 
       {/* Comments Section */}
