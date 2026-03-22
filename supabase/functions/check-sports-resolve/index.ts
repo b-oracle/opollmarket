@@ -221,26 +221,70 @@ Deno.serve(async (req) => {
       if (result && result.finished) {
         winningSide = determineWinningSide(predictedOutcome, result);
       } else if (deadline && now > deadline) {
-        // Only force-resolve if the match actually finished but we couldn't determine the outcome,
-        // OR if a generous grace period (6 hours past deadline) has elapsed (match likely cancelled/postponed).
-        // Do NOT resolve if the match simply hasn't started yet (status NS/TBD/PST).
         const matchStatus = result?.status?.toUpperCase() || "UNKNOWN";
-        const notStartedStatuses = ["NS", "TBD", "PST", "CANC", "ABD", "UNKNOWN", ""];
-        const gracePeriodMs = 6 * 60 * 60 * 1000; // 6 hours
+        const cancelledStatuses = ["PST", "CANC", "ABD", "WO", "INT", "SUSP"];
+        const notStartedStatuses = ["NS", "TBD", "UNKNOWN", ""];
 
         if (result && result.finished) {
           // Match finished but determineWinningSide returned null — force NO
           winningSide = "no";
+        } else if (cancelledStatuses.includes(matchStatus)) {
+          // Match was postponed/cancelled/abandoned — move to "ended" for admin review
+          await adminClient
+            .from("markets")
+            .update({ status: "ended" })
+            .eq("id", market.id);
+
+          // Notify admins
+          const { data: adminUsers } = await adminClient
+            .from("user_roles")
+            .select("user_id")
+            .in("role", ["admin", "super_admin"]);
+
+          if (adminUsers && adminUsers.length > 0) {
+            const adminNotifs = adminUsers.map((a) => ({
+              user_id: a.user_id,
+              title: "⚠️ Match Postponed/Cancelled",
+              message: `"${market.title}" — match status: ${matchStatus}. Please resolve manually.`,
+              type: "pending_review",
+              market_id: market.id,
+            }));
+            await adminClient.from("notifications").insert(adminNotifs);
+          }
+
+          console.log(`Market ${market.id}: Match ${matchStatus}, moved to ended for admin review`);
+          continue;
         } else if (!notStartedStatuses.includes(matchStatus) && result) {
-          // Match is in some live/post state but not marked finished — skip, wait longer
+          // Match is in some live/post state but not marked finished — wait longer
           console.log(`Market ${market.id}: Match status ${matchStatus}, waiting for finish...`);
           continue;
-        } else if (now.getTime() - deadline.getTime() > gracePeriodMs) {
-          // 6+ hours past deadline and match never started — likely postponed/cancelled, resolve NO
-          console.log(`Market ${market.id}: 6h+ past deadline, match status ${matchStatus}, force-resolving NO`);
-          winningSide = "no";
+        } else if (now.getTime() - deadline.getTime() > 6 * 60 * 60 * 1000) {
+          // 6h+ past deadline, match never started — move to ended for admin review
+          await adminClient
+            .from("markets")
+            .update({ status: "ended" })
+            .eq("id", market.id);
+
+          const { data: adminUsers } = await adminClient
+            .from("user_roles")
+            .select("user_id")
+            .in("role", ["admin", "super_admin"]);
+
+          if (adminUsers && adminUsers.length > 0) {
+            const adminNotifs = adminUsers.map((a) => ({
+              user_id: a.user_id,
+              title: "⚠️ Match Not Started — Review Needed",
+              message: `"${market.title}" deadline passed 6h+ ago, match status: ${matchStatus}. Please resolve manually.`,
+              type: "pending_review",
+              market_id: market.id,
+            }));
+            await adminClient.from("notifications").insert(adminNotifs);
+          }
+
+          console.log(`Market ${market.id}: 6h+ past deadline, status ${matchStatus}, moved to ended for admin review`);
+          continue;
         } else {
-          // Deadline passed but match hasn't started and we're within grace period — skip
+          // Within grace period, match hasn't started — skip
           console.log(`Market ${market.id}: Deadline passed but match not started (${matchStatus}), waiting...`);
           continue;
         }
