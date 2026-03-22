@@ -358,7 +358,7 @@ const App = () => (
           </AuthProvider>
           </VerificationThresholdProvider>
         </QueryClientProvider>
-      </WagmiProvider>
+      </LazyWagmiProvider>
     </ThemeProvider>
   </ErrorBoundary>
 );
