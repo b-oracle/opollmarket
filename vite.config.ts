@@ -44,14 +44,23 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         navigateFallbackDenylist: [/^\/~oauth/, /^\/auth/],
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp}"],
+        globPatterns: ["**/*.{js,css,ico,png,svg,jpg,jpeg,webp}"],
         importScripts: ["/push-sw.js"],
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
-            // ALL Supabase requests must bypass SW cache to prevent stale tokens
+            // Always get latest HTML for navigations to avoid stale chunk references
+            urlPattern: ({ request }) => request.mode === "navigate",
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "html-pages",
+              networkTimeoutSeconds: 5,
+            },
+          },
+          {
+            // Backend auth/data calls must bypass SW cache to prevent stale tokens/data
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
             handler: "NetworkOnly",
           },

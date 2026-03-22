@@ -134,7 +134,7 @@ const MaintenanceGuard = ({ children }: { children: React.ReactNode }) => {
   const { isAdmin, isSuperAdmin } = useAuth();
   const location = useLocation();
 
-  if (isLoading) return null;
+  if (isLoading) return <PageFallback />;
   if (isAdmin || isSuperAdmin) return <>{children}</>;
 
   const allowedPaths = ["/maintenance", "/auth", "/terms", "/privacy", "/disclaimer", "/reset-password", "/forgot-password"];
@@ -203,7 +203,7 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
     });
   }, [userId, loading, location.pathname]);
 
-  if (!checked) return null;
+  if (!checked) return <PageFallback />;
   if (needsSetup && !isAllowed) return <Navigate to="/setup-security" replace />;
   return <>{children}</>;
 };
