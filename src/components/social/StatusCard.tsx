@@ -90,6 +90,7 @@ interface StatusCardProps {
     likes_count: number;
     comments_count?: number;
     reposts_count?: number;
+    views_count?: number;
     created_at: string;
     market_id?: string | null;
   };
