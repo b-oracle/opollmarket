@@ -117,11 +117,7 @@ Deno.serve(async (req) => {
 
     const payment = await npResponse.json();
 
-    // Insert pending deposit transaction
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    // Insert pending deposit transaction (adminClient already created above)
 
     await adminClient.from("transactions").insert({
       user_id: userId,
