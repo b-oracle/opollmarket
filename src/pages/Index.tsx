@@ -35,16 +35,17 @@ const formatVolume = (v: number) => {
 
 // getMarketImage replaced by CategoryIcon component
 
-const CommentBadge = ({ marketId }: { marketId: string }) => {
+const CommentBadge = React.forwardRef<HTMLSpanElement, { marketId: string }>(({ marketId }, ref) => {
   const count = useCommentCount(marketId);
   if (count === 0) return null;
   return (
-    <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+    <span ref={ref} className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
       <MessageCircle className="w-3 h-3" />
       {count}
     </span>
   );
-};
+});
+CommentBadge.displayName = "CommentBadge";
 
 const LikeBadge = React.forwardRef<HTMLSpanElement, { marketId: string }>(({ marketId }, ref) => {
   const count = useLikeCount(marketId);
@@ -161,8 +162,8 @@ const Index = () => {
     queryKey: ["platform-stats"],
     queryFn: async () => {
       const [marketsRes, usersRes, volRes] = await Promise.all([
-        supabase.from("markets").select("*", { count: "exact", head: true }),
-        supabase.from("profiles").select("*", { count: "exact", head: true }),
+        supabase.from("markets").select("id", { count: "exact", head: true }),
+        supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.rpc("get_platform_volume"),
       ]);
       const volRow = volRes.data?.[0] as { prediction_volume: number; qt_volume: number } | undefined;

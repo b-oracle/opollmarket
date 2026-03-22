@@ -15,11 +15,13 @@ import useAnalytics from "@/hooks/useAnalytics";
 import CategoryIcon from "@/components/CategoryIcon";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
-
 import { useBookmarkedMarkets } from "@/hooks/useBookmarkedMarkets";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
 import { supabase } from "@/integrations/supabase/client";
+import { useCommentCount } from "@/hooks/useCommentCount";
+import { useLikeCount } from "@/hooks/useLikeCount";
+import BoostCountdown from "@/components/BoostCountdown";
 
 const useIsDesktop = () => {
   const [isDesktop, setIsDesktop] = useState(false);
@@ -32,10 +34,6 @@ const useIsDesktop = () => {
   }, []);
   return isDesktop;
 };
-import { useCommentCount } from "@/hooks/useCommentCount";
-import { useLikeCount } from "@/hooks/useLikeCount";
-import BoostCountdown from "@/components/BoostCountdown";
-
 
 
 const formatVolume = (v: number) => {
