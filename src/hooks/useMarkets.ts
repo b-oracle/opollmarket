@@ -3,23 +3,6 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Market, MarketOption } from "@/data/markets";
 
-const MARKETS_FETCH_TIMEOUT_MS = 10_000;
-
-const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> => {
-  let timeoutId: number | undefined;
-
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<T>((_, reject) => {
-        timeoutId = window.setTimeout(() => reject(new Error(errorMessage)), timeoutMs);
-      }),
-    ]);
-  } finally {
-    if (timeoutId) window.clearTimeout(timeoutId);
-  }
-};
-
 interface DbMarket {
   id: string;
   title: string;
@@ -122,19 +105,13 @@ export const useMarkets = () => {
   return useQuery({
     queryKey: ["markets"],
     queryFn: async (): Promise<Market[]> => {
-      const { data, error } = await withTimeout(
-        Promise.resolve(
-          supabase
-            .from("markets")
-            .select("id,title,description,category,market_type,yes_price,no_price,volume,liquidity,participants,end_date,creator_wallet,creator_name,image_url,video_url,details,trending,status,created_at,auto_resolve,auto_resolve_asset,auto_resolve_target_price,auto_resolve_operator,auto_resolve_deadline,sport_type,sport_match_id,sport_predicted_outcome,sport_league,polymarket_event_slug,twitter_metric_type,twitter_resource_id,twitter_current_count,simulated_volume,simulated_participants, market_options!market_options_market_id_fkey(id,label,price,sort_order)")
-            .in("status", ["active", "ended"])
-            .gt("participants", 0)
-            .order("created_at", { ascending: false })
-            .limit(100)
-        ),
-        MARKETS_FETCH_TIMEOUT_MS,
-        "markets_fetch_timeout"
-      );
+      const { data, error } = await supabase
+        .from("markets")
+        .select("id,title,description,category,market_type,yes_price,no_price,volume,liquidity,participants,end_date,creator_wallet,creator_name,image_url,video_url,details,trending,status,created_at,auto_resolve,auto_resolve_asset,auto_resolve_target_price,auto_resolve_operator,auto_resolve_deadline,sport_type,sport_match_id,sport_predicted_outcome,sport_league,polymarket_event_slug,twitter_metric_type,twitter_resource_id,twitter_current_count,simulated_volume,simulated_participants, market_options!market_options_market_id_fkey(id,label,price,sort_order)")
+        .in("status", ["active", "ended"])
+        .gt("participants", 0)
+        .order("created_at", { ascending: false })
+        .limit(100);
 
       if (error) throw error;
       return (data as unknown as DbMarket[]).map(mapDbToMarket);
@@ -142,6 +119,51 @@ export const useMarkets = () => {
     staleTime: 30_000,
     retry: 2,
     retryDelay: 1000,
+  });
+};
+
+export const useMarket = (id: string | undefined) => {
+  const queryClient = useQueryClient();
+
+  // Realtime: refresh this market when it's updated
+  useEffect(() => {
+    if (!id) return;
+    const channel = supabase
+      .channel(`market-detail-${id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "markets", filter: `id=eq.${id}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["market", id] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "market_options", filter: `market_id=eq.${id}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["market", id] });
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [id, queryClient]);
+
+    return useQuery({
+    queryKey: ["market", id],
+    queryFn: async (): Promise<Market | null> => {
+      if (!id) return null;
+      const { data, error } = await supabase
+        .from("markets")
+        .select("*, market_options!market_options_market_id_fkey(*)")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (error) throw error; // let react-query retry on network errors
+      if (!data) return null;
+      return mapDbToMarket(data as unknown as DbMarket);
+    },
+    enabled: !!id,
+    retry: 3,
   });
 };
 
