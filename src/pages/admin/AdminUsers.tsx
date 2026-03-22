@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Shield, ShieldOff, DollarSign, X, ShieldCheck, ShieldMinus, Search, Crown, Eye } from "lucide-react";
+import { Loader2, Shield, ShieldOff, DollarSign, X, ShieldCheck, ShieldMinus, Search, Crown, Eye, Ban, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { logAuditEvent } from "@/lib/auditLog";
 import { motion, AnimatePresence } from "framer-motion";
