@@ -178,21 +178,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         if (mounted.current) setLoading(false);
       })
-      .catch(async () => {
-        if (!mounted.current) return;
-        try {
-          await supabase.auth.signOut({ scope: "local" });
-        } catch {
-          // ignore
-        }
-        lastSessionRef.current = null;
-        setSession(null);
-        setUser(null);
-        setIsSuperAdmin(false);
-        setIsAdmin(false);
-        setIsModerator(false);
-        setProfileDisplayName(null);
-        setLoading(false);
+      .catch(() => {
+        // Network/parse error — don't sign out, just stop loading
+        if (mounted.current) setLoading(false);
       });
 
     // Re-validate session on foreground
