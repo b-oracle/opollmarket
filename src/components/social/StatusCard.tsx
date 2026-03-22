@@ -121,10 +121,39 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
   const [likeLoading, setLikeLoading] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [repostLoading, setRepostLoading] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const viewTracked = useRef(false);
   const liveUserIds = useLiveSpaceUsers();
   const liveSpace = useLiveSpaceForUser(liveUserIds.has(status.user_id) ? status.user_id : undefined);
   const { joinSpace } = useActiveSpace();
   const isUserLive = liveUserIds.has(status.user_id);
+
+  // Track view when post becomes visible
+  useEffect(() => {
+    if (!user || viewTracked.current) return;
+    const el = cardRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !viewTracked.current) {
+          viewTracked.current = true;
+          supabase
+            .from("status_views" as any)
+            .upsert(
+              { status_id: status.id, user_id: user.id },
+              { onConflict: "status_id,user_id" }
+            )
+            .then(() => {});
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [user, status.id]);
 
   const { data: isLiked = false } = useQuery({
     queryKey: ["status-liked", status.id, user?.id],
