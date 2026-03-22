@@ -162,8 +162,8 @@ const Index = () => {
     queryKey: ["platform-stats"],
     queryFn: async () => {
       const [marketsRes, usersRes, volRes] = await Promise.all([
-        supabase.from("markets").select("*", { count: "exact", head: true }),
-        supabase.from("profiles").select("*", { count: "exact", head: true }),
+        supabase.from("markets").select("id", { count: "exact", head: true }),
+        supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.rpc("get_platform_volume"),
       ]);
       const volRow = volRes.data?.[0] as { prediction_volume: number; qt_volume: number } | undefined;
