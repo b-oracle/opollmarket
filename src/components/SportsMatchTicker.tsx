@@ -59,6 +59,7 @@ export default function SportsMatchTicker({
   predictedOutcome,
   league,
   deadline,
+  marketStatus,
 }: SportsMatchTickerProps) {
   const [match, setMatch] = useState<MatchData | null>(null);
   const [loading, setLoading] = useState(true);
