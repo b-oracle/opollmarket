@@ -1,13 +1,17 @@
 import { ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { getInternalPathFromUrl } from "@/lib/internalLinks";
 
 const URL_REGEX = /(https?:\/\/[^\s]+)/g;
 
 interface StoryContentRendererProps {
   content: string;
   variant: "overlay" | "caption";
+  onInternalNavigate?: () => void;
 }
 
-const StoryContentRenderer = ({ content, variant }: StoryContentRendererProps) => {
+const StoryContentRenderer = ({ content, variant, onInternalNavigate }: StoryContentRendererProps) => {
+  const navigate = useNavigate();
   const parts = content.split(URL_REGEX);
   const textParts: string[] = [];
   const urls: string[] = [];
@@ -28,6 +32,12 @@ const StoryContentRenderer = ({ content, variant }: StoryContentRendererProps) =
 
   const handleLinkClick = (e: React.MouseEvent, url: string) => {
     e.stopPropagation();
+    const internalPath = getInternalPathFromUrl(url);
+    if (internalPath) {
+      onInternalNavigate?.();
+      navigate(internalPath);
+      return;
+    }
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
