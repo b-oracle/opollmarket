@@ -123,13 +123,15 @@ export const useMarkets = () => {
     queryKey: ["markets"],
     queryFn: async (): Promise<Market[]> => {
       const { data, error } = await withTimeout(
-        supabase
-          .from("markets")
-          .select("id,title,description,category,market_type,yes_price,no_price,volume,liquidity,participants,end_date,creator_wallet,creator_name,image_url,video_url,details,trending,status,created_at,auto_resolve,auto_resolve_asset,auto_resolve_target_price,auto_resolve_operator,auto_resolve_deadline,sport_type,sport_match_id,sport_predicted_outcome,sport_league,polymarket_event_slug,twitter_metric_type,twitter_resource_id,twitter_current_count,simulated_volume,simulated_participants, market_options!market_options_market_id_fkey(id,label,price,sort_order)")
-          .in("status", ["active", "ended"])
-          .gt("participants", 0)
-          .order("created_at", { ascending: false })
-          .limit(100),
+        Promise.resolve(
+          supabase
+            .from("markets")
+            .select("id,title,description,category,market_type,yes_price,no_price,volume,liquidity,participants,end_date,creator_wallet,creator_name,image_url,video_url,details,trending,status,created_at,auto_resolve,auto_resolve_asset,auto_resolve_target_price,auto_resolve_operator,auto_resolve_deadline,sport_type,sport_match_id,sport_predicted_outcome,sport_league,polymarket_event_slug,twitter_metric_type,twitter_resource_id,twitter_current_count,simulated_volume,simulated_participants, market_options!market_options_market_id_fkey(id,label,price,sort_order)")
+            .in("status", ["active", "ended"])
+            .gt("participants", 0)
+            .order("created_at", { ascending: false })
+            .limit(100)
+        ),
         MARKETS_FETCH_TIMEOUT_MS,
         "markets_fetch_timeout"
       );
