@@ -61,7 +61,7 @@ const LivePriceBadge = React.forwardRef<HTMLDivElement, LivePriceBadgeProps>(({ 
               description: `Target: ${targetLabel}`,
               duration: 10000,
             });
-            confetti({
+            loadConfetti().then(confetti => confetti({
               particleCount: 50,
               spread: 60,
               origin: { y: 0.7 },

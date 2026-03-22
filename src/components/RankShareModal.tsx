@@ -57,6 +57,7 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
       await new Promise((r) => setTimeout(r, 400));
       try {
         if (!cardRef.current) throw new Error("Card not ready");
+        const html2canvas = await loadHtml2Canvas();
         const canvas = await html2canvas(cardRef.current, {
           useCORS: true,
           allowTaint: true,

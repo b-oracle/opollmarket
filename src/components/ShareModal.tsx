@@ -45,7 +45,7 @@ const captureElement = async (target: HTMLElement): Promise<HTMLCanvasElement> =
 
   try {
     const canvas = await Promise.race([
-      html2canvas(target, {
+      (await loadHtml2Canvas())(target, {
         useCORS: true,
         allowTaint: true,
         scale: 2,
