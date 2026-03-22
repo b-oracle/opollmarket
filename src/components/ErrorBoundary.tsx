@@ -30,8 +30,24 @@ class ErrorBoundary extends Component<Props, State> {
     const reloadCount = parseInt(sessionStorage.getItem("chunk_reload") || "0", 10);
     if (isChunkError && reloadCount < 2) {
       sessionStorage.setItem("chunk_reload", String(reloadCount + 1));
-      // Hard reload to bypass any cached responses
-      window.location.href = window.location.href;
+      // Unregister all service workers and clear caches before reloading
+      const cleanup = async () => {
+        try {
+          if ("serviceWorker" in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(registrations.map((r) => r.unregister()));
+          }
+          if ("caches" in window) {
+            const keys = await caches.keys();
+            await Promise.all(keys.map((k) => caches.delete(k)));
+          }
+        } catch {
+          // ignore
+        }
+        // Force a true hard reload bypassing all caches
+        window.location.reload();
+      };
+      cleanup();
       return;
     }
   }
