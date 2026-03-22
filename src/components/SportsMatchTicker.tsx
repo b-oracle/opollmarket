@@ -50,6 +50,7 @@ interface SportsMatchTickerProps {
   predictedOutcome: string;
   league?: string;
   deadline?: string;
+  marketStatus?: string;
 }
 
 export default function SportsMatchTicker({
