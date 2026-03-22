@@ -62,19 +62,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check pending deposit spam (3+ pending in last 24h = blocked)
-    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    // Check pending deposit spam (3+ pending = blocked until they expire/complete)
     const { count: pendingCount } = await adminClient
       .from("transactions")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
       .eq("type", "deposit")
-      .eq("status", "pending")
-      .gte("created_at", cutoff);
+      .eq("status", "pending");
 
     if ((pendingCount ?? 0) >= 3) {
       return new Response(
-        JSON.stringify({ error: "You have too many pending deposits. Please wait for them to process or try again later." }),
+        JSON.stringify({ error: "You have 3 pending deposits. Please wait for them to expire or be processed before creating new ones." }),
         { status: 429, headers: corsHeaders }
       );
     }
