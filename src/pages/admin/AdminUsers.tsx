@@ -122,6 +122,32 @@ const AdminUsers = () => {
     fetchUsers();
   };
 
+  const toggleBlock = async (userId: string, name: string, currentlyBlocked: boolean) => {
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        is_blocked: !currentlyBlocked,
+        blocked_at: !currentlyBlocked ? new Date().toISOString() : null,
+        block_reason: !currentlyBlocked ? "Blocked by admin" : null,
+      } as any)
+      .eq("id", userId);
+
+    if (error) {
+      toast.error(`Failed to ${currentlyBlocked ? "unblock" : "block"} user`);
+      return;
+    }
+
+    logAuditEvent({
+      action: currentlyBlocked ? "user_unblocked" : "user_blocked",
+      targetId: userId,
+      targetType: "user",
+      details: { user_name: name },
+    });
+
+    toast.success(`${name} has been ${currentlyBlocked ? "unblocked" : "blocked"}`);
+    fetchUsers();
+  };
+
   const handleCreditBalance = async () => {
     if (!balanceModal || !creditAmount) return;
     const amount = parseFloat(creditAmount);
