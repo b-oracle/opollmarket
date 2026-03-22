@@ -68,7 +68,7 @@ const Index = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
   const { track } = useAnalytics();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => { track("page_view", { page: "home" }); }, []);
 
