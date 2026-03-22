@@ -322,102 +322,105 @@ const GlobalSpaceRoom = () => {
 const App = () => (
   <ErrorBoundary>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-      <LazyWagmiProvider>
-        <QueryClientProvider client={queryClient}>
-          <VerificationThresholdProvider>
-          <AuthProvider>
-            <ActiveSpaceProvider>
-            <SidebarStateProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <PWAUpdatePrompt />
-                <BrowserRouter>
-                <AimtellProvider />
+      <QueryClientProvider client={queryClient}>
+        <VerificationThresholdProvider>
+        <AuthProvider>
+          <ActiveSpaceProvider>
+          <SidebarStateProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <PWAUpdatePrompt />
+              <BrowserRouter>
+              <ConditionalWagmiProvider>
+              {/* Deferred: these components trigger network requests but aren't needed for first paint */}
+              <DeferredMount delay={2000}>
+                <Suspense fallback={null}><AimtellProvider /></Suspense>
                 <SocialTutorialTrigger />
-                <PendingCopyTrades />
-                <GlobalSpaceRoom />
-                <ConditionalSidebar />
-                <ConditionalLayout>
-                  <div className="flex-1">
-                    <Suspense fallback={<PageFallback />}>
-                      <MaintenanceGuard>
-                      <SecuritySetupGuard>
-                      <Routes>
-                        <Route path="/" element={<Index />} />
-                        <Route path="/index" element={<Navigate to="/" replace />} />
-                        <Route path="/market/:id" element={<MarketDetail />} />
-                        <Route path="/feed" element={<FeatureGate featureKey="feed"><Feed /></FeatureGate>} />
-                        <Route path="/create" element={<FeatureGate featureKey="create_market"><Create /></FeatureGate>} />
-                        <Route path="/rankings" element={<FeatureGate featureKey="rankings"><Rankings /></FeatureGate>} />
-                        <Route path="/portfolio" element={<FeatureGate featureKey="portfolio"><Portfolio /></FeatureGate>} />
-                        <Route path="/profile" element={<Profile />} />
-                        <Route path="/auth" element={<Auth />} />
-                        <Route path="/reset-password" element={<ResetPassword />} />
-                        <Route path="/forgot-password" element={<ForgotPassword />} />
-                        <Route path="/setup-security" element={<SetupSecurity />} />
-                        <Route path="/referrals" element={<FeatureGate featureKey="referrals"><Referrals /></FeatureGate>} />
-                        <Route path="/commissions" element={<Commissions />} />
-                        <Route path="/my-promotions" element={<MyPromotions />} />
-                        <Route path="/faq" element={<FeatureGate featureKey="faq"><FAQ /></FeatureGate>} />
-                        <Route path="/disclaimer" element={<Disclaimer />} />
-                        <Route path="/terms" element={<Terms />} />
-                        <Route path="/privacy" element={<Privacy />} />
-                        <Route path="/maintenance" element={<Maintenance />} />
-                        <Route path="/quick-trade" element={<FeatureGate featureKey="quick_trade"><QuickTrade /></FeatureGate>} />
-                        <Route path="/user/:id" element={<UserProfile />} />
-                        <Route path="/followers/:userId" element={<Followers />} />
-                        <Route path="/followers" element={<Followers />} />
-                        <Route path="/sales-deck" element={<FeatureGate featureKey="sales_deck"><SalesDeck /></FeatureGate>} />
-                        <Route path="/admin" element={<AdminLayout />}>
-                          <Route index element={<AdminDashboard />} />
-                          <Route path="markets" element={<AdminMarkets />} />
-                          <Route path="create-market" element={<AdminCreateMarket />} />
-                          <Route path="comments" element={<AdminComments />} />
-                          <Route path="transactions" element={<AdminTransactions />} />
-                          <Route path="withdrawals" element={<AdminWithdrawals />} />
-                          <Route path="deposits" element={<AdminDeposits />} />
-                          <Route path="reconciliation" element={<AdminReconciliation />} />
-                          <Route path="boosts" element={<AdminBoosts />} />
-                          <Route path="users" element={<AdminUsers />} />
-                          <Route path="commissions" element={<AdminCommissions />} />
-                          <Route path="settings" element={<AdminSettings />} />
-                          <Route path="analytics" element={<AdminAnalytics />} />
-                          <Route path="contracts" element={<AdminContracts />} />
-                          <Route path="moderation" element={<AdminModeration />} />
-                          <Route path="checklist" element={<AdminChecklist />} />
-                          <Route path="audit-log" element={<AdminAuditLog />} />
-                          <Route path="quick-trade" element={<AdminQuickTrade />} />
-                          <Route path="predictions" element={<AdminPredictions />} />
-                          <Route path="social" element={<AdminSocial />} />
-                          <Route path="fiat-settings" element={<AdminFiatSettings />} />
-                          <Route path="referrals" element={<AdminReferrals />} />
-                          <Route path="whatsapp" element={<AdminWhatsApp />} />
-                          <Route path="telegram" element={<AdminTelegram />} />
-                          <Route path="investor-deck" element={<InvestorDeck />} />
-                          <Route path="aimtell" element={<AdminAimtell />} />
-                          <Route path="api-keys" element={<AdminApiKeys />} />
-                        </Route>
-                        <Route path="/developers" element={<Developers />} />
-                        <Route path="/embed/market/:id" element={<EmbedMarket />} />
-                        <Route path="/embed/ticker" element={<EmbedTicker />} />
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                      </SecuritySetupGuard>
-                      </MaintenanceGuard>
-                    </Suspense>
-                  </div>
-                  
-                  <ConditionalFooter />
-                </ConditionalLayout>
-                </BrowserRouter>
-              </TooltipProvider>
-            </SidebarStateProvider>
-            </ActiveSpaceProvider>
-          </AuthProvider>
-          </VerificationThresholdProvider>
-        </QueryClientProvider>
-      </LazyWagmiProvider>
+                <Suspense fallback={null}><PendingCopyTrades /></Suspense>
+              </DeferredMount>
+              <GlobalSpaceRoom />
+              <ConditionalSidebar />
+              <ConditionalLayout>
+                <div className="flex-1">
+                  <Suspense fallback={<PageFallback />}>
+                    <MaintenanceGuard>
+                    <SecuritySetupGuard>
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/index" element={<Navigate to="/" replace />} />
+                      <Route path="/market/:id" element={<MarketDetail />} />
+                      <Route path="/feed" element={<FeatureGate featureKey="feed"><Feed /></FeatureGate>} />
+                      <Route path="/create" element={<FeatureGate featureKey="create_market"><Create /></FeatureGate>} />
+                      <Route path="/rankings" element={<FeatureGate featureKey="rankings"><Rankings /></FeatureGate>} />
+                      <Route path="/portfolio" element={<FeatureGate featureKey="portfolio"><Portfolio /></FeatureGate>} />
+                      <Route path="/profile" element={<Profile />} />
+                      <Route path="/auth" element={<Auth />} />
+                      <Route path="/reset-password" element={<ResetPassword />} />
+                      <Route path="/forgot-password" element={<ForgotPassword />} />
+                      <Route path="/setup-security" element={<SetupSecurity />} />
+                      <Route path="/referrals" element={<FeatureGate featureKey="referrals"><Referrals /></FeatureGate>} />
+                      <Route path="/commissions" element={<Commissions />} />
+                      <Route path="/my-promotions" element={<MyPromotions />} />
+                      <Route path="/faq" element={<FeatureGate featureKey="faq"><FAQ /></FeatureGate>} />
+                      <Route path="/disclaimer" element={<Disclaimer />} />
+                      <Route path="/terms" element={<Terms />} />
+                      <Route path="/privacy" element={<Privacy />} />
+                      <Route path="/maintenance" element={<Maintenance />} />
+                      <Route path="/quick-trade" element={<FeatureGate featureKey="quick_trade"><QuickTrade /></FeatureGate>} />
+                      <Route path="/user/:id" element={<UserProfile />} />
+                      <Route path="/followers/:userId" element={<Followers />} />
+                      <Route path="/followers" element={<Followers />} />
+                      <Route path="/sales-deck" element={<FeatureGate featureKey="sales_deck"><SalesDeck /></FeatureGate>} />
+                      <Route path="/admin" element={<AdminLayout />}>
+                        <Route index element={<AdminDashboard />} />
+                        <Route path="markets" element={<AdminMarkets />} />
+                        <Route path="create-market" element={<AdminCreateMarket />} />
+                        <Route path="comments" element={<AdminComments />} />
+                        <Route path="transactions" element={<AdminTransactions />} />
+                        <Route path="withdrawals" element={<AdminWithdrawals />} />
+                        <Route path="deposits" element={<AdminDeposits />} />
+                        <Route path="reconciliation" element={<AdminReconciliation />} />
+                        <Route path="boosts" element={<AdminBoosts />} />
+                        <Route path="users" element={<AdminUsers />} />
+                        <Route path="commissions" element={<AdminCommissions />} />
+                        <Route path="settings" element={<AdminSettings />} />
+                        <Route path="analytics" element={<AdminAnalytics />} />
+                        <Route path="contracts" element={<AdminContracts />} />
+                        <Route path="moderation" element={<AdminModeration />} />
+                        <Route path="checklist" element={<AdminChecklist />} />
+                        <Route path="audit-log" element={<AdminAuditLog />} />
+                        <Route path="quick-trade" element={<AdminQuickTrade />} />
+                        <Route path="predictions" element={<AdminPredictions />} />
+                        <Route path="social" element={<AdminSocial />} />
+                        <Route path="fiat-settings" element={<AdminFiatSettings />} />
+                        <Route path="referrals" element={<AdminReferrals />} />
+                        <Route path="whatsapp" element={<AdminWhatsApp />} />
+                        <Route path="telegram" element={<AdminTelegram />} />
+                        <Route path="investor-deck" element={<InvestorDeck />} />
+                        <Route path="aimtell" element={<AdminAimtell />} />
+                        <Route path="api-keys" element={<AdminApiKeys />} />
+                      </Route>
+                      <Route path="/developers" element={<Developers />} />
+                      <Route path="/embed/market/:id" element={<EmbedMarket />} />
+                      <Route path="/embed/ticker" element={<EmbedTicker />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                    </SecuritySetupGuard>
+                    </MaintenanceGuard>
+                  </Suspense>
+                </div>
+                
+                <ConditionalFooter />
+              </ConditionalLayout>
+              </ConditionalWagmiProvider>
+              </BrowserRouter>
+            </TooltipProvider>
+          </SidebarStateProvider>
+          </ActiveSpaceProvider>
+        </AuthProvider>
+        </VerificationThresholdProvider>
+      </QueryClientProvider>
     </ThemeProvider>
   </ErrorBoundary>
 );
