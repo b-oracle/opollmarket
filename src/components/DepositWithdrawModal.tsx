@@ -599,6 +599,8 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     } catch (err: any) {
       setErrorMsg(err.message || "Something went wrong");
       setStep("error");
+    } finally {
+      depositLockRef.current = false;
     }
   }, [numAmount, startPolling, depositProvider]);
 
