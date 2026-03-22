@@ -207,6 +207,6 @@ const LivePriceBadge = React.forwardRef<HTMLDivElement, LivePriceBadgeProps>(({ 
       )}
     </div>
   );
-};
+});
 
 export default LivePriceBadge;
