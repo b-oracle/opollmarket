@@ -28,7 +28,6 @@ import SocialTutorial, { checkTutorialSeenFromDB } from "./components/SocialTuto
 import { useFeatureToggles } from "./hooks/useFeatureToggles";
 import PendingCopyTrades from "./components/PendingCopyTrades";
 import { VerificationThresholdProvider } from "./components/NftBadge";
-import AimtellProvider from "./components/AimtellProvider";
 
 // Lazy-loaded pages
 const Index = lazy(() => import("./pages/Index"));
@@ -297,7 +296,6 @@ const App = () => (
                 <PWAUpdatePrompt />
                 <BrowserRouter>
                 <SocialTutorialTrigger />
-                <AimtellProvider />
                 <PendingCopyTrades />
                 <GlobalSpaceRoom />
                 <ConditionalSidebar />
