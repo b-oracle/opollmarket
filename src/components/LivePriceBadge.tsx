@@ -69,7 +69,7 @@ const LivePriceBadge = React.forwardRef<HTMLDivElement, LivePriceBadgeProps>(({ 
               zIndex: 9999,
               gravity: 1.2,
               scalar: 0.8,
-            });
+            }));
           } else if (prog != null && prog >= 95 && !met && !toastFiredRef.current) {
             toastFiredRef.current = true;
             toast.warning(`🔥 ${asset} is ${prog}% toward its target!`, {
