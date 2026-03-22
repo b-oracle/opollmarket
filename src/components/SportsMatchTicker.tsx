@@ -262,15 +262,35 @@ export default function SportsMatchTicker({
               )}
             </div>
 
-            {/* Predicted outcome */}
+            {/* Match Result + Predicted outcome */}
             <div className="bg-muted/20 rounded-xl p-3 mb-3">
+              {/* Show final match result when finished or resolved */}
+              {(match.isFinished || marketStatus === "resolved") && match.homeScore !== null && match.awayScore !== null && (
+                <div className="mb-3 pb-3 border-b border-border/50">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5">Match Result</p>
+                  <div className="flex items-center gap-2">
+                    <Trophy className="w-4 h-4 text-yellow-500" />
+                    <span className="text-sm font-black text-foreground">
+                      {match.homeScore > match.awayScore
+                        ? `${match.homeTeam} Win`
+                        : match.awayScore > match.homeScore
+                          ? `${match.awayTeam} Win`
+                          : "Draw"}
+                    </span>
+                    <span className="text-xs text-muted-foreground ml-auto tabular-nums font-bold">
+                      {match.homeScore} – {match.awayScore}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Market Condition</p>
               <p className="text-sm font-bold text-foreground">
                 Resolves YES if: <span className="text-primary">{outcomeLabel}</span>
               </p>
 
-              {/* Show result indicator if finished */}
-              {match.isFinished && match.homeScore !== null && match.awayScore !== null && (
+              {/* Show resolution indicator if finished */}
+              {(match.isFinished || marketStatus === "resolved") && match.homeScore !== null && match.awayScore !== null && (
                 <div className="mt-2 pt-2 border-t border-border/50">
                   {(() => {
                     const homeWin = match.homeScore > match.awayScore;
