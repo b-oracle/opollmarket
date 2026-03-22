@@ -182,20 +182,33 @@ export const useMarket = (id: string | undefined) => {
     queryKey: ["market", id],
     queryFn: async (): Promise<Market | null> => {
       if (!id) return null;
-      const { data, error } = await withTimeout(
-        async () =>
-          await supabase
-            .from("markets")
-            .select("*, market_options!market_options_market_id_fkey(*)")
-            .eq("id", id)
-            .maybeSingle(),
-        8_000,
-        "market detail query timeout"
-      );
+      console.log("[useMarket] queryFn called for id:", id);
+      try {
+        const { data, error } = await withTimeout(
+          async () =>
+            await supabase
+              .from("markets")
+              .select("*, market_options!market_options_market_id_fkey(*)")
+              .eq("id", id)
+              .maybeSingle(),
+          8_000,
+          "market detail query timeout"
+        );
 
-      if (error) throw error; // let react-query retry on network errors
-      if (!data) return null;
-      return mapDbToMarket(data as unknown as DbMarket);
+        if (error) {
+          console.error("[useMarket] supabase error:", error);
+          throw error;
+        }
+        if (!data) {
+          console.warn("[useMarket] no data for id:", id);
+          return null;
+        }
+        console.log("[useMarket] got market:", data.title);
+        return mapDbToMarket(data as unknown as DbMarket);
+      } catch (e) {
+        console.error("[useMarket] queryFn exception:", e);
+        throw e;
+      }
     },
     enabled: !!id,
     retry: (failureCount, error) => {
