@@ -123,27 +123,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
-        // Reset swipe hints on sign-in (but NOT the social tutorial — it should only replay manually)
-        if (event === "SIGNED_IN" && newSession?.user) {
-          // Check if user is banned
-          const { data: blockCheck } = await supabase
-            .from("profiles")
-            .select("is_blocked")
-            .eq("id", newSession.user.id)
-            .maybeSingle();
-          if (blockCheck?.is_blocked) {
-            await supabase.auth.signOut();
-            return;
-          }
-          localStorage.removeItem("social_swipe_used");
-          localStorage.removeItem("feed_swipe_hint_seen");
-          // Recheck verification level in background (catches stale badges)
-          supabase.functions.invoke("update-verification").catch(() => {});
-        }
-
+        // Set session state immediately so auth UI never blocks on follow-up queries
         lastSessionRef.current = newSession;
         setSession(newSession);
         setUser(newSession?.user ?? null);
+
+        // Reset swipe hints on sign-in (but NOT the social tutorial — it should only replay manually)
+        if (event === "SIGNED_IN" && newSession?.user) {
+          const signedInUserId = newSession.user.id;
+          localStorage.removeItem("social_swipe_used");
+          localStorage.removeItem("feed_swipe_hint_seen");
+
+          // Recheck verification level in background (catches stale badges)
+          supabase.functions.invoke("update-verification").catch(() => {});
+
+          // Non-blocking banned-user check (prevents sign-in promise stalls)
+          void (async () => {
+            const blockResult = await Promise.race([
+              supabase
+                .from("profiles")
+                .select("is_blocked")
+                .eq("id", signedInUserId)
+                .maybeSingle(),
+              new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000)),
+            ]);
+
+            if (!mounted.current || !blockResult || !("data" in blockResult)) return;
+            if (blockResult.data?.is_blocked) {
+              await supabase.auth.signOut();
+            }
+          })().catch(() => {});
+        }
 
         if (newSession?.user) {
           // Use setTimeout to avoid potential Supabase deadlock during auth callback
@@ -255,9 +265,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [checkRoles]);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (!error) localStorage.removeItem("social_swipe_used");
-    return { error };
+    const SIGN_IN_TIMEOUT_MS = 10000;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const signInAttempt = supabase.auth
+      .signInWithPassword({ email, password })
+      .then(({ error }) => ({ error }))
+      .catch((error) => ({
+        error: error instanceof Error ? error : new Error("Login failed"),
+      }));
+
+    const result = await Promise.race([
+      signInAttempt,
+      new Promise<{ error: any }>((resolve) => {
+        timeoutId = setTimeout(() => {
+          resolve({ error: new Error("Login request timed out. Please try again.") });
+        }, SIGN_IN_TIMEOUT_MS);
+      }),
+    ]);
+
+    if (timeoutId) clearTimeout(timeoutId);
+
+    if (result.error) {
+      // Recovery path: backend login may have succeeded while client lock was delayed
+      try {
+        const { data: { session: recoveredSession } } = await supabase.auth.getSession();
+        if (recoveredSession?.user?.email?.toLowerCase() === email.toLowerCase()) {
+          localStorage.removeItem("social_swipe_used");
+          return { error: null };
+        }
+      } catch {
+        // ignore and return original error
+      }
+    }
+
+    if (!result.error) localStorage.removeItem("social_swipe_used");
+    return result;
   }, []);
 
   const signUp = useCallback(async (email: string, password: string, displayName?: string) => {
