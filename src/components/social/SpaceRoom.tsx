@@ -420,11 +420,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     if (user) {
       const updates: Promise<any>[] = [
         supabase.from("space_participants").update({ left_at: new Date().toISOString() })
-          .eq("space_id", spaceId).eq("user_id", user.id).is("left_at", null),
+          .eq("space_id", spaceId).eq("user_id", user.id).is("left_at", null).then(),
       ];
       if (isHost) {
         updates.push(
-          supabase.from("spaces").update({ status: "ended", ended_at: new Date().toISOString() }).eq("id", spaceId)
+          supabase.from("spaces").update({ status: "ended", ended_at: new Date().toISOString() }).eq("id", spaceId).then()
         );
       }
       // Fire and forget — don't await
