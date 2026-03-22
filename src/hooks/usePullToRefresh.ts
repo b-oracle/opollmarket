@@ -74,9 +74,22 @@ export function usePullToRefresh({ onRefresh, scrollRef }: UsePullToRefreshOptio
       setRefreshing(true);
       setPullDistance(50);
       spinControls.start({ rotate: 360, transition: { repeat: Infinity, duration: 0.8, ease: "linear" } });
-      await onRefresh();
-      spinControls.stop();
-      setRefreshing(false);
+
+      let timeoutId: number | undefined;
+      try {
+        await Promise.race([
+          onRefresh(),
+          new Promise((_, reject) => {
+            timeoutId = window.setTimeout(() => reject(new Error("refresh_timeout")), 12000);
+          }),
+        ]);
+      } catch {
+        // Never leave UI stuck in refreshing state on transient fetch failures/timeouts
+      } finally {
+        if (timeoutId) window.clearTimeout(timeoutId);
+        spinControls.stop();
+        setRefreshing(false);
+      }
     }
 
     setPulling(false);
