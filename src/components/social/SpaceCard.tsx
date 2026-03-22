@@ -3,9 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Radio, Headphones, LogIn, LogOut, Loader2, Bell, BellOff, Calendar, Clock, Share2 } from "lucide-react";
+import { Radio, Headphones, LogIn, LogOut, Loader2, Bell, BellOff, Calendar, Share2, Play, Pause, Trash2 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import SpaceShareSheet from "./SpaceShareSheet";
 
 interface SpaceCardProps {
@@ -18,6 +18,8 @@ interface SpaceCardProps {
     started_at: string;
     scheduled_at?: string | null;
     reminder_count?: number;
+    is_recorded?: boolean;
+    recording_url?: string | null;
   };
   hostProfile?: { display_name?: string | null; avatar_url?: string | null } | null;
   index?: number;
@@ -30,6 +32,82 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
   const [joining, setJoining] = useState(false);
   const [togglingReminder, setTogglingReminder] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [deleting, setDeleting] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const isRecorded = space.status === "ended" && space.is_recorded && space.recording_url;
+
+  // Clean up audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  const handlePlayPause = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!space.recording_url) return;
+
+    if (!audioRef.current) {
+      audioRef.current = new Audio(space.recording_url);
+      audioRef.current.addEventListener("timeupdate", () => {
+        if (audioRef.current && audioRef.current.duration) {
+          setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100);
+        }
+      });
+      audioRef.current.addEventListener("ended", () => {
+        setIsPlaying(false);
+        setProgress(0);
+      });
+    }
+
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play().catch(() => toast.error("Failed to play recording"));
+      setIsPlaying(true);
+    }
+  };
+
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    if (!audioRef.current || !audioRef.current.duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    audioRef.current.currentTime = pct * audioRef.current.duration;
+    setProgress(pct * 100);
+  };
+
+  const handleDeleteRecording = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user || user.id !== space.host_id) return;
+    setDeleting(true);
+    try {
+      // Stop playback
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+        setIsPlaying(false);
+      }
+      // Remove recording fields from the space
+      await supabase
+        .from("spaces")
+        .update({ is_recorded: false, recording_url: null } as any)
+        .eq("id", space.id);
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      toast.success("Recording deleted");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const { data: isParticipant = false } = useQuery({
     queryKey: ["space-participant", space.id, user?.id],
@@ -43,7 +121,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
         .is("left_at", null);
       return (count || 0) > 0;
     },
-    enabled: !!user,
+    enabled: !!user && space.status === "live",
   });
 
   const { data: hasReminder = false } = useQuery({
@@ -126,6 +204,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
 
   const handleCardClick = () => {
     if (space.status === "scheduled") return;
+    if (isRecorded) return; // Recorded spaces use inline player
     if (!user) { toast.error("Sign in to join spaces"); return; }
     if (onJoinRoom) onJoinRoom(space.id);
   };
@@ -142,7 +221,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04 }}
       className={`glass rounded-xl p-3.5 space-y-2 transition-colors ${
-        isScheduled ? "cursor-default border border-primary/10" : "cursor-pointer hover:bg-accent/20"
+        isScheduled || isRecorded ? "cursor-default border border-primary/10" : "cursor-pointer hover:bg-accent/20"
       }`}
       onClick={handleCardClick}
     >
@@ -169,6 +248,12 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
                 SCHEDULED
               </span>
             )}
+            {isRecorded && (
+              <span className="flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-accent text-accent-foreground">
+                <Play className="w-2.5 h-2.5" />
+                REPLAY
+              </span>
+            )}
             <p className="text-[9px] text-muted-foreground">
               {isScheduled && space.scheduled_at
                 ? format(new Date(space.scheduled_at), "MMM d, h:mm a")
@@ -179,6 +264,39 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
           <p className="text-[10px] text-muted-foreground mt-0.5">Hosted by {hostName}</p>
         </div>
       </div>
+
+      {/* Replay audio player */}
+      {isRecorded && (
+        <div className="flex items-center gap-2 pt-1">
+          <button
+            onClick={handlePlayPause}
+            className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+              isPlaying ? "bg-primary text-primary-foreground" : "bg-primary/20 text-primary"
+            }`}
+          >
+            {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+          </button>
+          <div
+            className="flex-1 h-1.5 rounded-full bg-muted cursor-pointer"
+            onClick={handleSeek}
+          >
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-200"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          {isHost && (
+            <button
+              onClick={handleDeleteRecording}
+              disabled={deleting}
+              className="w-7 h-7 rounded-full flex items-center justify-center bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors shrink-0"
+              title="Delete recording"
+            >
+              {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Footer */}
       <div className="flex items-center justify-between">
@@ -227,7 +345,6 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
             <button
               onClick={async (e) => {
                 e.stopPropagation();
-                // Go live now
                 const { error } = await supabase
                   .from("spaces" as any)
                   .update({ status: "live", started_at: new Date().toISOString() })
