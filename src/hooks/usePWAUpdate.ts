@@ -1,11 +1,13 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
 export const usePWAUpdate = () => {
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
   const intervalRef = useRef<number | null>(null);
+  const [showUpdate, setShowUpdate] = useState(false);
+  const [waitingSW, setWaitingSW] = useState<ServiceWorker | null>(null);
 
-  useRegisterSW({
+  const { updateServiceWorker } = useRegisterSW({
     onRegisteredSW(_swUrl, registration) {
       registrationRef.current = registration ?? null;
 
@@ -14,8 +16,26 @@ export const usePWAUpdate = () => {
         intervalRef.current = null;
       }
 
-      // Check for updates every 2 minutes
       if (registration) {
+        // If a waiting SW is already present on registration, surface the prompt
+        if (registration.waiting) {
+          setWaitingSW(registration.waiting);
+          setShowUpdate(true);
+        }
+
+        // Listen for new service workers that finish installing
+        registration.addEventListener("updatefound", () => {
+          const newSW = registration.installing;
+          if (!newSW) return;
+          newSW.addEventListener("statechange", () => {
+            if (newSW.state === "installed" && navigator.serviceWorker.controller) {
+              setWaitingSW(newSW);
+              setShowUpdate(true);
+            }
+          });
+        });
+
+        // Check for updates every 2 minutes
         intervalRef.current = window.setInterval(() => {
           if (document.visibilityState === "visible") {
             registration.update();
@@ -28,7 +48,7 @@ export const usePWAUpdate = () => {
     },
   });
 
-  // Check on visibility change
+  // Also check on visibility change
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
@@ -46,6 +66,18 @@ export const usePWAUpdate = () => {
     };
   }, []);
 
-  // No longer needed with autoUpdate - SW activates immediately
-  return { showUpdate: false, update: () => {}, dismiss: () => {} };
+  const update = useCallback(() => {
+    setShowUpdate(false);
+    if (waitingSW) {
+      waitingSW.postMessage({ type: "SKIP_WAITING" });
+    }
+    // Also call the vite-pwa helper
+    updateServiceWorker(true);
+  }, [waitingSW, updateServiceWorker]);
+
+  const dismiss = useCallback(() => {
+    setShowUpdate(false);
+  }, []);
+
+  return { showUpdate, update, dismiss };
 };
