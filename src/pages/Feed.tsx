@@ -262,6 +262,12 @@ const Feed = () => {
   useEffect(() => {
     const spaceId = searchParams.get("space");
     if (!spaceId) return;
+
+    // CRITICAL: Wait for auth to finish loading before deciding whether to redirect.
+    // Without this check, user is null during initial load and the effect
+    // incorrectly redirects logged-in users to /auth, causing logout and misbehavior.
+    if (authLoading) return;
+
     const ref = searchParams.get("ref");
 
     if (!user) {
@@ -273,7 +279,7 @@ const Feed = () => {
       return;
     }
 
-    // User is logged in — fetch space details and join
+    // User is logged in — strip query params and handle space
     navigate("/feed", { replace: true });
     (async () => {
       const { data: space } = await supabase
@@ -305,7 +311,7 @@ const Feed = () => {
         toast("This space is no longer available", { duration: 3000 });
       }
     })();
-  }, [searchParams, user, navigate, joinSpace]);
+  }, [searchParams, user, authLoading, navigate, joinSpace]);
 
   // Pulse when bookmarks increase
   useEffect(() => {
