@@ -87,7 +87,16 @@ const EmbedTicker = lazy(() => import("./pages/EmbedTicker"));
 const Developers = lazy(() => import("./pages/Developers"));
 const MyPromotions = lazy(() => import("./pages/MyPromotions"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      networkMode: "always",
+    },
+    mutations: {
+      networkMode: "always",
+    },
+  },
+});
 
 const isAdminRoute = (pathname: string) => pathname.startsWith("/admin");
 const isEmbedRoute = (pathname: string) => pathname.startsWith("/embed/") || pathname === "/embed";
@@ -308,6 +317,7 @@ const App = () => (
                       <SecuritySetupGuard>
                       <Routes>
                         <Route path="/" element={<Index />} />
+                        <Route path="/index" element={<Navigate to="/" replace />} />
                         <Route path="/market/:id" element={<MarketDetail />} />
                         <Route path="/feed" element={<FeatureGate featureKey="feed"><Feed /></FeatureGate>} />
                         <Route path="/create" element={<FeatureGate featureKey="create_market"><Create /></FeatureGate>} />
