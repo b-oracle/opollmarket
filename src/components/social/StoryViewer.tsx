@@ -294,14 +294,14 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
               </div>
               {story.content && (
                 <div className="shrink-0 bg-background/95 border-t border-border/40 px-5 py-4">
-                  <StoryContentRenderer content={story.content} variant="caption" />
+                  <StoryContentRenderer content={story.content} variant="caption" onInternalNavigate={onClose} />
                 </div>
               )}
             </div>
           ) : (
             <div className="w-full h-full flex items-center justify-center px-8">
               {story.content && (
-                <StoryContentRenderer content={story.content} variant="overlay" />
+                <StoryContentRenderer content={story.content} variant="overlay" onInternalNavigate={onClose} />
               )}
             </div>
           )}

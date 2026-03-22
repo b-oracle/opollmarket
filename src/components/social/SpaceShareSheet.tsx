@@ -21,7 +21,8 @@ const SpaceShareSheet = ({ open, onClose, spaceId, spaceTitle, hostName, isLive 
   const [posting, setPosting] = useState(false);
   const [storyOpen, setStoryOpen] = useState(false);
 
-  const shareUrl = `https://opoll.org/feed?space=${spaceId}&ref=${encodeURIComponent(hostName)}`;
+  const shareOrigin = typeof window !== "undefined" ? window.location.origin : "https://opoll.org";
+  const shareUrl = `${shareOrigin}/feed?space=${spaceId}&ref=${encodeURIComponent(hostName)}`;
   const shareText = isLive
     ? `🎙️ Join me LIVE on "${spaceTitle}" — Let's discuss your OPinion, JOIN NOW 👇🏽`
     : `🗓️ "${spaceTitle}" is coming soon on OPoll Spaces — Let's discuss your OPinion, JOIN NOW 👇🏽`;
