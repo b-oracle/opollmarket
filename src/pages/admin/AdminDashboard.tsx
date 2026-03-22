@@ -81,7 +81,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const supabase = createStatelessReadClient();
+      // Use the main authenticated client for admin queries
       // Use count queries for all counts (avoids 1000-row limit)
       const [markets, comments, boosts, users, txns, referrals, qtRounds, qtBets, follows, likes] = await Promise.all([
         supabase.from("markets").select("*", { count: "exact", head: true }),
