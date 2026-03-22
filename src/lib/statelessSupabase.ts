@@ -3,12 +3,12 @@ import type { Database } from "@/integrations/supabase/types";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
 
 /**
- * Singleton stateless Supabase client for read-only queries.
- * Uses a global header function to inject the current access token
- * without competing for browser auth locks (no GoTrueClient session).
+ * Singleton stateless Supabase client for public/anon read-only queries.
+ * No session management = no extra GoTrueClient instance warnings.
+ * Only use for tables accessible via anon key (public RLS policies).
+ * For authenticated queries, use the main supabase client from @/integrations/supabase/client.
  */
 let _statelessClient: ReturnType<typeof createClient<Database>> | null = null;
 
@@ -20,22 +20,6 @@ export const createStatelessReadClient = () => {
       persistSession: false,
       autoRefreshToken: false,
       detectSessionInUrl: false,
-    },
-    global: {
-      headers: (() => {
-        // Read token lazily on each request from localStorage
-        if (typeof window === "undefined" || !SUPABASE_PROJECT_ID) return {};
-        try {
-          const raw = localStorage.getItem(`sb-${SUPABASE_PROJECT_ID}-auth-token`);
-          if (!raw) return {};
-          const parsed = JSON.parse(raw);
-          const token = parsed?.access_token;
-          if (typeof token === "string" && token.split(".").length === 3) {
-            return { Authorization: `Bearer ${token}` };
-          }
-        } catch { /* ignore */ }
-        return {};
-      })(),
     },
   });
   return _statelessClient;
