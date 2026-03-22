@@ -42,6 +42,43 @@ Deno.serve(async (req) => {
       );
     }
 
+    // --- Spam & block checks ---
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Check if user is blocked
+    const { data: profile } = await adminClient
+      .from("profiles")
+      .select("is_blocked")
+      .eq("id", userId)
+      .single();
+
+    if (profile?.is_blocked) {
+      return new Response(
+        JSON.stringify({ error: "Your account has been restricted. Please contact support." }),
+        { status: 403, headers: corsHeaders }
+      );
+    }
+
+    // Check pending deposit spam (3+ pending in last 24h = blocked)
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { count: pendingCount } = await adminClient
+      .from("transactions")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("type", "deposit")
+      .eq("status", "pending")
+      .gte("created_at", cutoff);
+
+    if ((pendingCount ?? 0) >= 3) {
+      return new Response(
+        JSON.stringify({ error: "You have too many pending deposits. Please wait for them to process or try again later." }),
+        { status: 429, headers: corsHeaders }
+      );
+    }
+
     const apiKey = Deno.env.get("NOWPAYMENTS_API_KEY");
     if (!apiKey) {
       return new Response(
