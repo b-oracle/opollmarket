@@ -344,7 +344,7 @@ const App = () => (
               <Sonner />
               <PWAUpdatePrompt />
               <BrowserRouter>
-              <ConditionalWagmiProvider>
+              <LazyWagmiProvider>
               {/* Deferred: these components trigger network requests but aren't needed for first paint */}
               <DeferredMount delay={2000}>
                 <Suspense fallback={null}><AimtellProvider /></Suspense>
