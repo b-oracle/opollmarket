@@ -2,61 +2,33 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const cache = new Map<string, number>();
+const pendingFetches = new Map<string, Promise<number | null>>();
 
-// Batch queue: collect market IDs and resolve them in one round-trip
-let batchQueue: string[] = [];
-let batchTimer: ReturnType<typeof setTimeout> | null = null;
-const batchListeners = new Map<string, Set<(count: number) => void>>();
+const fetchLikeCount = (marketId: string): Promise<number | null> => {
+  const existing = pendingFetches.get(marketId);
+  if (existing) return existing;
 
-const flushBatch = async () => {
-  const ids = [...new Set(batchQueue)];
-  batchQueue = [];
-  if (ids.length === 0) return;
+  const request = Promise.resolve(
+    supabase
+      .from("market_likes")
+      .select("id", { count: "exact", head: true })
+      .eq("market_id", marketId)
+  ).then(({ count, error }) => {
+    pendingFetches.delete(marketId);
+    if (error) return null;
+    const next = count ?? 0;
+    cache.set(marketId, next);
+    return next;
+  });
 
-  // Fetch all counts in parallel chunks of 50
-  const chunks: string[][] = [];
-  for (let i = 0; i < ids.length; i += 50) {
-    chunks.push(ids.slice(i, i + 50));
-  }
-
-  await Promise.all(
-    chunks.map(async (chunk) => {
-      const { data, error } = await supabase
-        .from("market_likes")
-        .select("market_id")
-        .in("market_id", chunk);
-
-      if (error) return;
-
-      // Count occurrences per market_id
-      const counts = new Map<string, number>();
-      chunk.forEach((id) => counts.set(id, 0));
-      (data || []).forEach((row: { market_id: string }) => {
-        counts.set(row.market_id, (counts.get(row.market_id) || 0) + 1);
-      });
-
-      counts.forEach((count, marketId) => {
-        cache.set(marketId, count);
-        batchListeners.get(marketId)?.forEach((cb) => cb(count));
-      });
-    })
-  );
-};
-
-const enqueue = (marketId: string, callback: (count: number) => void) => {
-  if (!batchListeners.has(marketId)) {
-    batchListeners.set(marketId, new Set());
-  }
-  batchListeners.get(marketId)!.add(callback);
-
-  batchQueue.push(marketId);
-  if (batchTimer) clearTimeout(batchTimer);
-  batchTimer = setTimeout(flushBatch, 50);
+  pendingFetches.set(marketId, request);
+  return request;
 };
 
 export const useLikeCount = (marketId: string) => {
   const [count, setCount] = useState(cache.get(marketId) ?? 0);
   const isMounted = useRef(true);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     isMounted.current = true;
@@ -65,14 +37,30 @@ export const useLikeCount = (marketId: string) => {
       setCount(cache.get(marketId)!);
     }
 
-    const cb = (c: number) => {
-      if (isMounted.current) setCount(c);
+    const loadCount = async (attempt = 0) => {
+      const next = await fetchLikeCount(marketId);
+
+      if (!isMounted.current) return;
+
+      if (next !== null) {
+        setCount(next);
+        return;
+      }
+
+      if (attempt < 2) {
+        retryTimerRef.current = setTimeout(() => {
+          void loadCount(attempt + 1);
+        }, 350 * (attempt + 1));
+      }
     };
-    enqueue(marketId, cb);
+
+    void loadCount();
 
     return () => {
       isMounted.current = false;
-      batchListeners.get(marketId)?.delete(cb);
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+      }
     };
   }, [marketId]);
 
