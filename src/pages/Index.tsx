@@ -46,16 +46,16 @@ const CommentBadge = ({ marketId }: { marketId: string }) => {
   );
 };
 
-const LikeBadge = ({ marketId }: { marketId: string }) => {
+const LikeBadge = React.forwardRef<HTMLSpanElement, { marketId: string }>(({ marketId }, ref) => {
   const count = useLikeCount(marketId);
   if (count === 0) return null;
   return (
-    <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+    <span ref={ref} className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
       <Heart className="w-3 h-3" />
       {count}
     </span>
   );
-};
+});
 
 const Index = () => {
   const navigate = useNavigate();
