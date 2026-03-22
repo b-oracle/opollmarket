@@ -418,13 +418,14 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     audioElementsRef.current.clear();
     // Update DB in background — don't block UI
     if (user) {
-      const updates: Promise<any>[] = [
-        supabase.from("space_participants").update({ left_at: new Date().toISOString() })
-          .eq("space_id", spaceId).eq("user_id", user.id).is("left_at", null).then(),
-      ];
+      const updates = [];
+      updates.push(
+        Promise.resolve(supabase.from("space_participants").update({ left_at: new Date().toISOString() })
+          .eq("space_id", spaceId).eq("user_id", user.id).is("left_at", null))
+      );
       if (isHost) {
         updates.push(
-          supabase.from("spaces").update({ status: "ended", ended_at: new Date().toISOString() }).eq("id", spaceId).then()
+          Promise.resolve(supabase.from("spaces").update({ status: "ended", ended_at: new Date().toISOString() }).eq("id", spaceId))
         );
       }
       // Fire and forget — don't await
