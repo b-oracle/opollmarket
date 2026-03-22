@@ -94,9 +94,9 @@ const Auth = () => {
           }
           return;
         }
-        // Remember display name for personalized greeting
-        const { data: { user: loggedInUser } } = await supabase.auth.getUser();
-        const userId = loggedInUser?.id;
+        // Use cached session (no network call) to avoid Web Lock deadlocks
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        const userId = currentSession?.user?.id;
         if (userId) {
           const { data: profile } = await supabase.from("profiles").select("display_name, is_blocked").eq("id", userId).single();
           if (profile?.is_blocked) {
