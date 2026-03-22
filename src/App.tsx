@@ -181,6 +181,14 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
     if (checkingRef.current) return; // prevent concurrent checks
     checkingRef.current = true;
 
+    // Safety timeout: if the query hangs for >5s, unblock the app
+    const safetyTimer = setTimeout(() => {
+      if (!checked) {
+        checkingRef.current = false;
+        setChecked(true);
+      }
+    }, 5000);
+
     import("@/integrations/supabase/client").then(({ supabase }) => {
       supabase
         .from("user_security_settings" as any)
@@ -188,6 +196,7 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
         .eq("user_id", userId)
         .maybeSingle()
         .then(({ data, error }) => {
+          clearTimeout(safetyTimer);
           checkingRef.current = false;
           if (error) {
             setChecked(true);
@@ -198,8 +207,19 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
           setNeedsSetup(needs);
           checkedUserRef.current = userId;
           setChecked(true);
+        })
+        .catch(() => {
+          clearTimeout(safetyTimer);
+          checkingRef.current = false;
+          setChecked(true);
         });
+    }).catch(() => {
+      clearTimeout(safetyTimer);
+      checkingRef.current = false;
+      setChecked(true);
     });
+
+    return () => clearTimeout(safetyTimer);
   }, [userId, loading, location.pathname]);
 
   if (!checked) return <PageFallback />;
