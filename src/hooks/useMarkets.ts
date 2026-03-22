@@ -39,9 +39,9 @@ interface DbMarket {
   twitter_current_count: number | null;
 }
 
-const withTimeout = async <T>(promise: Promise<T>, ms: number, timeoutMessage: string): Promise<T> => {
+const withTimeout = async <T>(operation: () => Promise<T>, ms: number, timeoutMessage: string): Promise<T> => {
   return Promise.race([
-    promise,
+    operation(),
     new Promise<T>((_, reject) => {
       setTimeout(() => reject(new Error(timeoutMessage)), ms);
     }),
@@ -115,13 +115,14 @@ export const useMarkets = () => {
     queryKey: ["markets"],
     queryFn: async (): Promise<Market[]> => {
       const { data, error } = await withTimeout(
-        supabase
-          .from("markets")
-          .select("id,title,description,category,market_type,yes_price,no_price,volume,liquidity,participants,end_date,creator_wallet,creator_name,image_url,video_url,details,trending,status,created_at,auto_resolve,auto_resolve_asset,auto_resolve_target_price,auto_resolve_operator,auto_resolve_deadline,sport_type,sport_match_id,sport_predicted_outcome,sport_league,polymarket_event_slug,twitter_metric_type,twitter_resource_id,twitter_current_count,simulated_volume,simulated_participants, market_options!market_options_market_id_fkey(id,label,price,sort_order)")
-          .in("status", ["active", "ended"])
-          .gt("participants", 0)
-          .order("created_at", { ascending: false })
-          .limit(100),
+        async () =>
+          await supabase
+            .from("markets")
+            .select("id,title,description,category,market_type,yes_price,no_price,volume,liquidity,participants,end_date,creator_wallet,creator_name,image_url,video_url,details,trending,status,created_at,auto_resolve,auto_resolve_asset,auto_resolve_target_price,auto_resolve_operator,auto_resolve_deadline,sport_type,sport_match_id,sport_predicted_outcome,sport_league,polymarket_event_slug,twitter_metric_type,twitter_resource_id,twitter_current_count,simulated_volume,simulated_participants, market_options!market_options_market_id_fkey(id,label,price,sort_order)")
+            .in("status", ["active", "ended"])
+            .gt("participants", 0)
+            .order("created_at", { ascending: false })
+            .limit(100),
         8_000,
         "markets query timeout"
       );
@@ -166,11 +167,12 @@ export const useMarket = (id: string | undefined) => {
     queryFn: async (): Promise<Market | null> => {
       if (!id) return null;
       const { data, error } = await withTimeout(
-        supabase
-          .from("markets")
-          .select("*, market_options!market_options_market_id_fkey(*)")
-          .eq("id", id)
-          .maybeSingle(),
+        async () =>
+          await supabase
+            .from("markets")
+            .select("*, market_options!market_options_market_id_fkey(*)")
+            .eq("id", id)
+            .maybeSingle(),
         8_000,
         "market detail query timeout"
       );
