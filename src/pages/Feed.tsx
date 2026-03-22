@@ -278,11 +278,29 @@ const Feed = () => {
     (async () => {
       const { data: space } = await supabase
         .from("spaces")
-        .select("id, title, host_id")
+        .select("id, title, host_id, status")
         .eq("id", spaceId)
         .maybeSingle();
-      if (space) {
+      if (!space) {
+        toast("This space is no longer available", { duration: 3000 });
+        return;
+      }
+
+      if (space.status === "live") {
         joinSpace({ id: space.id, title: space.title, hostId: space.host_id });
+      } else if (space.status === "scheduled") {
+        // Auto-set reminder for the user
+        try {
+          await supabase.from("space_reminders" as any).upsert(
+            { space_id: space.id, user_id: user.id },
+            { onConflict: "space_id,user_id" }
+          );
+        } catch {
+          // ignore duplicate
+        }
+        toast("🔔 This Space isn't live yet! We've set a reminder for you — you'll be notified when it starts.", { duration: 5000 });
+      } else if (space.status === "ended") {
+        toast("This Space has ended", { duration: 3000 });
       } else {
         toast("This space is no longer available", { duration: 3000 });
       }

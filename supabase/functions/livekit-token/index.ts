@@ -88,8 +88,11 @@ Deno.serve(async (req) => {
     }
 
     if (space.status !== "live") {
-      return new Response(JSON.stringify({ error: "Space has ended" }), {
-        status: 400,
+      const msg = space.status === "scheduled"
+        ? "This Space isn't live yet. You'll be notified when it starts."
+        : "This Space has ended.";
+      return new Response(JSON.stringify({ error: msg }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

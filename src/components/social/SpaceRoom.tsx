@@ -291,7 +291,14 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           body: { space_id: spaceId },
         });
         if (error || data?.error) {
-          toast.error(data?.error || "Failed to get voice token");
+          const errMsg = data?.error || "Failed to get voice token";
+          if (errMsg === "Space has ended") {
+            toast.info("This Space isn't live yet or has already ended");
+          } else if (errMsg === "LiveKit not configured") {
+            toast.error("Voice is not available right now");
+          } else {
+            toast.error(errMsg);
+          }
           onClose();
           return;
         }
