@@ -12,6 +12,7 @@ import StatusComments from "./StatusComments";
 import LiveAvatarBadge from "./LiveAvatarBadge";
 import { useLiveSpaceUsers, useLiveSpaceForUser } from "@/hooks/useLiveSpaceUsers";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
+import { getInternalPathFromUrl } from "@/lib/internalLinks";
 
 /** Detect URLs in text and return array of text/link segments */
 const URL_REGEX = /(https?:\/\/[^\s]+)/g;
@@ -27,25 +28,13 @@ const parseContentWithLinks = (text: string) => {
   });
 };
 
-const getInternalPath = (url: string): string | null => {
-  try {
-    const u = new URL(url);
-    const isInternal =
-      u.hostname === "opoll.org" ||
-      u.hostname.endsWith(".lovable.app") ||
-      u.hostname.endsWith(".lovableproject.com");
-    if (isInternal) return u.pathname + u.search;
-  } catch {}
-  return null;
-};
-
 const RichContent = ({ content }: { content: string }) => {
   const segments = useMemo(() => parseContentWithLinks(content), [content]);
   return (
     <p className="text-sm whitespace-pre-wrap break-words">
       {segments.map((seg) => {
         if (seg.type === "link") {
-          const internalPath = getInternalPath(seg.value);
+          const internalPath = getInternalPathFromUrl(seg.value);
           if (internalPath) {
             return (
               <Link
