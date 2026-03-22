@@ -536,6 +536,8 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   }, [numAmount, selectedCrypto, startPolling]);
 
   const handleFiatDeposit = useCallback(async () => {
+    if (depositLockRef.current) return;
+    depositLockRef.current = true;
     setStep("executing");
     setErrorMsg("");
     try {
