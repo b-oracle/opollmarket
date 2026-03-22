@@ -16,7 +16,7 @@ interface LivePriceBadgeProps {
   operator?: string;
 }
 
-const LivePriceBadge = ({ asset, targetPrice, operator }: LivePriceBadgeProps) => {
+const LivePriceBadge = React.forwardRef<HTMLDivElement, LivePriceBadgeProps>(({ asset, targetPrice, operator }, ref) => {
   const [price, setPrice] = useState<number | null>(null);
   const [prev, setPrev] = useState<number | null>(null);
   const [flash, setFlash] = useState<"up" | "down" | null>(null);
