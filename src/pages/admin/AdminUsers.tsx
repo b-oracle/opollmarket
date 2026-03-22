@@ -279,8 +279,15 @@ const AdminUsers = () => {
                 const isMod = u.roles.includes("moderator");
                 const isSelf = u.id === currentUser?.id;
                 return (
-                  <tr key={u.id} className="border-b border-border/50 hover:bg-muted/30">
-                    <td className="p-3 font-medium">{u.display_name || "—"}</td>
+                  <tr key={u.id} className={`border-b border-border/50 hover:bg-muted/30 ${u.is_blocked ? "opacity-60 bg-destructive/5" : ""}`}>
+                    <td className="p-3 font-medium">
+                      <div className="flex items-center gap-1.5">
+                        {u.display_name || "—"}
+                        {u.is_blocked && (
+                          <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-destructive/15 text-destructive">BLOCKED</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="p-3 text-muted-foreground text-xs">{u.email || "—"}</td>
                     <td className="p-3">
                       <span className="text-sm font-semibold">${u.balance.toLocaleString()}</span>
