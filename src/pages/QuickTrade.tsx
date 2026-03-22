@@ -1,29 +1,21 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
 import { isMarketOpen, getNextOpenTime } from "@/lib/marketHours";
 
 import {
   TrendingUp,
   TrendingDown,
-  Radio,
   Timer,
   Moon,
-  Users,
   ArrowUp,
   ArrowDown,
-  History,
-  ChevronDown,
-  Loader2,
   Share2,
   BarChart3,
   LineChart as LineChartIcon,
   Activity,
-  Info,
   Volume2,
   VolumeOff,
 } from "lucide-react";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, ReferenceLine, Tooltip as RechartsTooltip, ComposedChart, Bar, Cell, Line } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useConfetti } from "@/hooks/useConfetti";
@@ -33,25 +25,25 @@ import { useToast } from "@/hooks/use-toast";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import SEOHead from "@/components/SEOHead";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import StreakMilestoneModal from "@/components/StreakMilestoneModal";
-import ShareModal from "@/components/ShareModal";
-import ProfitShareCard from "@/components/ProfitShareCard";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
-import { playWinSound, playLoseSound } from "@/lib/sounds";
-import TradingViewChart from "@/components/TradingViewChart";
 import QuickTradeChart from "@/components/quick-trade/QuickTradeChart";
-import QuickTradeHistory from "@/components/quick-trade/QuickTradeHistory";
 import QuickTradeBetControls from "@/components/quick-trade/QuickTradeBetControls";
 import PriceToBeatHeader from "@/components/quick-trade/PriceToBeatHeader";
 
 import { useChartEngine } from "@/hooks/useChartEngine";
-import { getTimeframeMs } from "@/lib/chartEngine";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
+
+// Lazy load heavy / non-critical components
+const QuickTradeHistory = lazy(() => import("@/components/quick-trade/QuickTradeHistory"));
+const StreakMilestoneModal = lazy(() => import("@/components/StreakMilestoneModal"));
+const ShareModal = lazy(() => import("@/components/ShareModal"));
+const ProfitShareCard = lazy(() => import("@/components/ProfitShareCard"));
+
+// Lazy load sounds to avoid pulling them into the main bundle
+const playWinSound = () => import("@/lib/sounds").then(m => m.playWinSound());
+const playLoseSound = () => import("@/lib/sounds").then(m => m.playLoseSound());
 // ── Asset config ──
 type AssetClass = "crypto" | "commodity" | "forex";
 interface QuickTradeAsset {
@@ -1280,7 +1272,7 @@ export default function QuickTrade() {
             </div>
             {isMarketOpen(selectedAsset.assetClass) ? (
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/15 border border-green-500/30">
-                <Radio className="w-3 h-3 text-green-500 animate-pulse" />
+                <span className="relative flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span></span>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-green-500">Live</span>
               </div>
             ) : (
@@ -1612,54 +1604,70 @@ export default function QuickTrade() {
             asset={selectedAsset.symbol}
           />
 
-          <QuickTradeHistory
-            recentRounds={recentRounds as any}
-            userBets={userBets as any}
-            selectedAssetSymbol={selectedAsset.symbol}
-            historyPage={historyPage}
-            historyTotal={historyTotal}
-            historyPerPage={HISTORY_PER_PAGE}
-            onPageChange={setHistoryPage}
-          />
+          <Suspense fallback={<div className="h-40" />}>
+            <QuickTradeHistory
+              recentRounds={recentRounds as any}
+              userBets={userBets as any}
+              selectedAssetSymbol={selectedAsset.symbol}
+              historyPage={historyPage}
+              historyTotal={historyTotal}
+              historyPerPage={HISTORY_PER_PAGE}
+              onPageChange={setHistoryPage}
+            />
+          </Suspense>
 
         </div>
       </div>
       <BottomNav />
-      <StreakMilestoneModal
-        open={milestoneModal.open}
-        onClose={() => setMilestoneModal(m => ({ ...m, open: false }))}
-        streak={milestoneModal.streak}
-        multiplier={milestoneModal.multiplier}
-      />
-      <ShareModal
-        open={showShareModal}
-        onOpenChange={setShowShareModal}
-        title={`${selectedAsset.symbol} Quick Trade — ${currentPrice ? `${getPricePrefix(selectedAsset)}${formatPrice(currentPrice, selectedAsset)}` : ""}`}
-        description={`${selectedTimeframe.label} UP/DOWN prediction on ${selectedAsset.label}`}
-        marketUrl={`${window.location.origin}/quick-trade`}
-        captureRef={chartCardRef}
-      />
+      {milestoneModal.open && (
+        <Suspense fallback={null}>
+          <StreakMilestoneModal
+            open={milestoneModal.open}
+            onClose={() => setMilestoneModal(m => ({ ...m, open: false }))}
+            streak={milestoneModal.streak}
+            multiplier={milestoneModal.multiplier}
+          />
+        </Suspense>
+      )}
+      {showShareModal && (
+        <Suspense fallback={null}>
+          <ShareModal
+            open={showShareModal}
+            onOpenChange={setShowShareModal}
+            title={`${selectedAsset.symbol} Quick Trade — ${currentPrice ? `${getPricePrefix(selectedAsset)}${formatPrice(currentPrice, selectedAsset)}` : ""}`}
+            description={`${selectedTimeframe.label} UP/DOWN prediction on ${selectedAsset.label}`}
+            marketUrl={`${window.location.origin}/quick-trade`}
+            captureRef={chartCardRef}
+          />
+        </Suspense>
+      )}
 
       {/* Win profit share */}
       {winShareData && (
-        <ProfitShareCard
-          ref={profitCardRef}
-          market={`${winShareData.asset} Quick Trade — ${winShareData.side.toUpperCase()} prediction`}
-          side={winShareData.side === "up" ? "YES" : "NO"}
-          profit={winShareData.profit}
-          payout={winShareData.payout}
-          displayName={user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Trader"}
-          referralCode={user?.user_metadata?.display_name || user?.id || ""}
-        />
+        <Suspense fallback={null}>
+          <ProfitShareCard
+            ref={profitCardRef}
+            market={`${winShareData.asset} Quick Trade — ${winShareData.side.toUpperCase()} prediction`}
+            side={winShareData.side === "up" ? "YES" : "NO"}
+            profit={winShareData.profit}
+            payout={winShareData.payout}
+            displayName={user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Trader"}
+            referralCode={user?.user_metadata?.display_name || user?.id || ""}
+          />
+        </Suspense>
       )}
-      <ShareModal
-        open={showWinShare}
-        onOpenChange={(open) => { setShowWinShare(open); if (!open) setWinShareData(null); }}
-        title={winShareData ? `I just won +$${winShareData.profit.toFixed(2)} on oPoll Quick Trade! 🔥` : ""}
-        description={winShareData ? `${winShareData.asset} ${winShareData.side.toUpperCase()} prediction` : ""}
-        marketUrl={`${window.location.origin}/quick-trade${user ? `?ref=${user.user_metadata?.display_name || user.id}` : ""}`}
-        captureRef={profitCardRef}
-      />
+      {showWinShare && (
+        <Suspense fallback={null}>
+          <ShareModal
+            open={showWinShare}
+            onOpenChange={(open) => { setShowWinShare(open); if (!open) setWinShareData(null); }}
+            title={winShareData ? `I just won +$${winShareData.profit.toFixed(2)} on oPoll Quick Trade! 🔥` : ""}
+            description={winShareData ? `${winShareData.asset} ${winShareData.side.toUpperCase()} prediction` : ""}
+            marketUrl={`${window.location.origin}/quick-trade${user ? `?ref=${user.user_metadata?.display_name || user.id}` : ""}`}
+            captureRef={profitCardRef}
+          />
+        </Suspense>
+      )}
     </>
   );
 }
