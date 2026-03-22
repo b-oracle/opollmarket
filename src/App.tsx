@@ -15,9 +15,8 @@ import { useLocation } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { WagmiProvider } from "wagmi";
 import { ThemeProvider } from "next-themes";
-import { config } from "@/lib/wagmi";
+import LazyWagmiProvider from "./components/LazyWagmiProvider";
 import ErrorBoundary from "./components/ErrorBoundary";
 import DesktopSidebar from "./components/DesktopSidebar";
 import DesktopFooter from "./components/DesktopFooter";
@@ -265,7 +264,7 @@ const GlobalSpaceRoom = () => {
 const App = () => (
   <ErrorBoundary>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-      <WagmiProvider config={config}>
+      <LazyWagmiProvider>
         <QueryClientProvider client={queryClient}>
           <VerificationThresholdProvider>
           <AuthProvider>
@@ -359,7 +358,7 @@ const App = () => (
           </AuthProvider>
           </VerificationThresholdProvider>
         </QueryClientProvider>
-      </WagmiProvider>
+      </LazyWagmiProvider>
     </ThemeProvider>
   </ErrorBoundary>
 );
