@@ -2,6 +2,28 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
+// Break orphaned Web Locks left by supabase-js auth (known deadlock issue).
+// The auth client uses navigator.locks to serialize token refresh; if a lock
+// holder is killed (tab background, PWA process kill, React Strict Mode) the
+// lock is never released and every subsequent Supabase call hangs forever.
+// Stealing the lock with { steal: true } forcibly releases the orphan so the
+// client can proceed normally.
+try {
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+  if (projectId && typeof navigator !== "undefined" && navigator.locks) {
+    const lockName = `sb-${projectId}-auth-token`;
+    // steal: true forcibly takes the lock from any holder, then we release immediately
+    navigator.locks.request(lockName, { steal: true }, () => {
+      // Lock acquired — return immediately to release it
+      return Promise.resolve();
+    }).catch(() => {
+      // Locks API not supported or errored — ignore
+    });
+  }
+} catch {
+  // Ignore
+}
+
 // Recover from malformed persisted auth token that can break boot in production
 try {
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
