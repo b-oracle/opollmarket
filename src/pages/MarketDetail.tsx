@@ -724,6 +724,7 @@ const MarketDetail = () => {
             predictedOutcome={market.sportPredictedOutcome}
             league={market.sportLeague}
             deadline={market.autoResolveDeadline}
+            marketStatus={market.status}
           />
         )}
 

@@ -50,6 +50,7 @@ interface SportsMatchTickerProps {
   predictedOutcome: string;
   league?: string;
   deadline?: string;
+  marketStatus?: string;
 }
 
 export default function SportsMatchTicker({
@@ -58,6 +59,7 @@ export default function SportsMatchTicker({
   predictedOutcome,
   league,
   deadline,
+  marketStatus,
 }: SportsMatchTickerProps) {
   const [match, setMatch] = useState<MatchData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -129,18 +131,23 @@ export default function SportsMatchTicker({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {match?.isLive && (
+          {marketStatus === "resolved" && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted/50 border border-border">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Resolved</span>
+            </div>
+          )}
+          {marketStatus !== "resolved" && match?.isLive && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-destructive/15 border border-destructive/30">
               <Radio className="w-3 h-3 text-destructive animate-pulse" />
               <span className="text-[10px] font-bold uppercase tracking-wider text-destructive">Live</span>
             </div>
           )}
-          {match?.isFinished && (
+          {marketStatus !== "resolved" && match?.isFinished && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted/50 border border-border">
               <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Final</span>
             </div>
           )}
-          {!match?.isLive && !match?.isFinished && !loading && (
+          {marketStatus !== "resolved" && !match?.isLive && !match?.isFinished && !loading && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20">
               <Clock className="w-3 h-3 text-primary" />
               <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Upcoming</span>
