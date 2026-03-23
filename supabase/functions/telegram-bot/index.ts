@@ -309,6 +309,8 @@ async function handleHelp(token: string, chatId: number) {
       "📈 <b>Info</b>\n" +
       "  /faq — Ask the FAQ assistant\n" +
       "  /stats — Platform statistics\n" +
+      "  /notifications — Recent alerts\n" +
+      "  /settings — Notification preferences\n" +
       "  /help — Show this message",
     parse_mode: "HTML",
     reply_markup: {
@@ -318,11 +320,12 @@ async function handleHelp(token: string, chatId: number) {
           { text: "💰 Balance", callback_data: "cmd_balance" },
         ],
         [
-          { text: "❓ FAQ", callback_data: "cmd_faq" },
-          { text: "🌐 Open Web App", url: APP_URL },
+          { text: "🔔 Notifications", callback_data: "cmd_notifications" },
+          { text: "⚙️ Settings", callback_data: "cmd_settings" },
         ],
         [
-          { text: "🐦 Follow on X", url: "https://x.com/opollmarket" },
+          { text: "❓ FAQ", callback_data: "cmd_faq" },
+          { text: "🌐 Open Web App", url: APP_URL },
         ],
         [
           { text: "🏠 Home", callback_data: "cmd_home" },
