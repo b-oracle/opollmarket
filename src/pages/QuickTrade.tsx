@@ -508,6 +508,10 @@ export default function QuickTrade() {
   const wsActiveRef = useRef(false);
   const lastWsTickAtRef = useRef(0);
   const streamRunIdRef = useRef(0);
+  // Stable refs for streaming effect to avoid object-reference dependency
+  const selectedAssetRef = useRef(selectedAsset);
+  selectedAssetRef.current = selectedAsset;
+
   // Reset price state when asset changes
   useEffect(() => {
     const previousAsset = previousSelectedAssetRef.current;
@@ -539,6 +543,7 @@ export default function QuickTrade() {
     let mounted = true;
     const streamRunId = ++streamRunIdRef.current;
     const streamAssetSymbol = selectedAsset.symbol;
+    const asset = selectedAssetRef.current; // stable snapshot for async calls
     const isCurrentRun = () =>
       mounted &&
       streamRunIdRef.current === streamRunId &&
@@ -568,16 +573,16 @@ export default function QuickTrade() {
     let pollIv: ReturnType<typeof setInterval> | null = null;
 
     // Skip all price streaming when market is closed
-    const marketOpen = isMarketOpen(selectedAsset.assetClass);
+    const marketOpen = isMarketOpen(asset.assetClass);
     if (!marketOpen) {
       // Still fetch one price snapshot so we show "last close" price
       (async () => {
-        const p = await fetchPriceForAsset(selectedAsset);
+        const p = await fetchPriceForAsset(asset);
         if (p != null && isCurrentRun()) {
           applyDisplayPrice(p);
           applyStreamingPrice(p);
           // Seed synthetic history for non-crypto so chart renders at correct price level
-          if (selectedAsset.assetClass !== "crypto") {
+          if (asset.assetClass !== "crypto") {
             seedNonCryptoHistory(streamAssetSymbol, p);
             const seeded = getNonCryptoHistory(streamAssetSymbol);
             if (seeded.length > 0) {
@@ -585,9 +590,13 @@ export default function QuickTrade() {
               setPriceHistory(filterPriceData(seeded, chartMs));
             }
           } else {
+            // Seed 2 points so chart renders immediately (needs >= 2)
             const now = Date.now();
-            const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
-            setPriceHistory([{ time: timeLabel, price: p, ts: now }]);
+            const fmt = (t: number) => new Date(t).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
+            setPriceHistory([
+              { time: fmt(now - 1000), price: p, ts: now - 1000 },
+              { time: fmt(now), price: p, ts: now },
+            ]);
           }
         }
       })();
@@ -598,7 +607,7 @@ export default function QuickTrade() {
 
     // Immediate per-asset bootstrap fetch so switches never show stale prior-asset prices
     (async () => {
-      const p = await fetchPriceForAsset(selectedAsset);
+      const p = await fetchPriceForAsset(asset);
       if (p != null && isCurrentRun()) {
         consecutiveFailsRef.current = 0;
         applyDisplayPrice(p);
@@ -607,7 +616,7 @@ export default function QuickTrade() {
         feedRealPrice(streamAssetSymbol, p);
 
         // For non-crypto assets, seed synthetic history so chart populates instantly
-        if (selectedAsset.assetClass !== "crypto") {
+        if (asset.assetClass !== "crypto") {
           seedNonCryptoHistory(streamAssetSymbol, p);
           const seeded = getNonCryptoHistory(streamAssetSymbol);
           if (seeded.length > 0) {
@@ -615,10 +624,13 @@ export default function QuickTrade() {
             setPriceHistory(filterPriceData(seeded, chartMs));
           }
         } else {
-          // Seed priceHistory so chart renders immediately with first data point
+          // Seed 2 points so chart renders immediately (needs >= 2)
           const now = Date.now();
-          const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
-          setPriceHistory(prev => prev.length === 0 ? [{ time: timeLabel, price: p, ts: now }] : prev);
+          const fmt = (t: number) => new Date(t).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
+          setPriceHistory(prev => prev.length < 2 ? [
+            { time: fmt(now - 1000), price: p, ts: now - 1000 },
+            { time: fmt(now), price: p, ts: now },
+          ] : prev);
         }
       }
     })();
@@ -667,7 +679,7 @@ export default function QuickTrade() {
     };
 
     // Start smooth interpolation loop for crypto (~20fps for chart, ~2fps for price display)
-    if (selectedAsset.assetClass === "crypto") {
+    if (asset.assetClass === "crypto") {
       const LERP_RATE = 0.25; // 25% toward target per tick — fast, responsive movement
       const CRYPTO_TICK_MS = 40; // 25fps for chart
       let lastDisplayUpdate = 0;
@@ -703,7 +715,7 @@ export default function QuickTrade() {
     // When WS is stale/blocked, feedRealPrice from HTTP polls drives this
     // interpolation system to provide Brownian drift = vibrant chart.
     let unsubCryptoSmooth: (() => void) | null = null;
-    if (selectedAsset.assetClass === "crypto") {
+    if (asset.assetClass === "crypto") {
       let lastSmoothChartAppend = 0;
       let lastSmoothDisplayUpdate = 0;
       const SMOOTH_DISPLAY_THROTTLE = 500;
@@ -733,7 +745,7 @@ export default function QuickTrade() {
     let unsubPoller: (() => void) | null = null;
     let unsubSmooth: (() => void) | null = null;
 
-    if (selectedAsset.assetClass !== "crypto") {
+    if (asset.assetClass !== "crypto") {
       unsubPoller = startNonCryptoHistoryPoller(streamAssetSymbol);
 
       // Subscribe to smoothed price stream (~15fps interpolation for chart, ~2fps for display)
@@ -784,7 +796,7 @@ export default function QuickTrade() {
         if (now - lastFetchTimeRef.current < 8000) return;
         lastFetchTimeRef.current = now;
 
-        const p = await fetchPriceForAsset(selectedAsset);
+        const p = await fetchPriceForAsset(asset);
         if (p != null && isCurrentRun()) {
           consecutiveFailsRef.current = 0;
           feedRealPrice(streamAssetSymbol, p);
@@ -806,7 +818,7 @@ export default function QuickTrade() {
               queryClient.invalidateQueries({ queryKey: ["commission_settings"] });
               toast({
                 title: "Market Unavailable",
-                description: `${selectedAsset.label} has been temporarily disabled due to price feed errors.`,
+                description: `${asset.label} has been temporarily disabled due to price feed errors.`,
                 variant: "destructive",
               });
             } catch {}
@@ -833,7 +845,7 @@ export default function QuickTrade() {
           if (now - lastFetchTimeRef.current < 5000) return;
           lastFetchTimeRef.current = now;
 
-          const p = await fetchPriceForAsset(selectedAsset);
+          const p = await fetchPriceForAsset(asset);
           if (p != null && isCurrentRun()) {
             consecutiveFailsRef.current = 0;
             // Feed into the smooth interpolation system for Brownian drift
@@ -877,7 +889,7 @@ export default function QuickTrade() {
       if (pendingRaf) cancelAnimationFrame(pendingRaf);
       if (pollIv) clearInterval(pollIv);
     };
-  }, [selectedAsset]);
+  }, [selectedAsset.symbol]);
 
   // ── Fetch / create active round ──
   const latestRoundContextRef = useRef<{ asset: string; duration: number }>({
