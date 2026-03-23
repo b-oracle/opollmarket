@@ -135,10 +135,10 @@ const Auth = () => {
           }
           if (profile?.display_name) localStorage.setItem("remembered_display_name", profile.display_name);
 
-          // Check if login security is required
+          // Check if login security is required (must use authenticated client for RLS)
           const secResult = await withTimeout(
             Promise.resolve(
-              statelessRead
+              supabase
                 .from("user_security_settings" as any)
                 .select("pin_enabled, totp_enabled, require_pin_login, require_totp_login")
                 .eq("user_id", userId)
