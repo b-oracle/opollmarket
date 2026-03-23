@@ -141,9 +141,10 @@ Deno.serve(async (req) => {
 
     if (data.status !== "success" || !Array.isArray(data.data)) {
       console.error("Flutterwave banks error:", data.message);
+      // Fall through to hardcoded fallback below
       return new Response(
-        JSON.stringify({ error: "Failed to fetch banks" }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ banks: FALLBACK_BANKS, source: "fallback" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
