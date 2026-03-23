@@ -889,7 +889,7 @@ export default function QuickTrade() {
       if (pendingRaf) cancelAnimationFrame(pendingRaf);
       if (pollIv) clearInterval(pollIv);
     };
-  }, [selectedAsset]);
+  }, [selectedAsset.symbol]);
 
   // ── Fetch / create active round ──
   const latestRoundContextRef = useRef<{ asset: string; duration: number }>({
