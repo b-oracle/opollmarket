@@ -577,12 +577,12 @@ export default function QuickTrade() {
     if (!marketOpen) {
       // Still fetch one price snapshot so we show "last close" price
       (async () => {
-        const p = await fetchPriceForAsset(selectedAsset);
+        const p = await fetchPriceForAsset(asset);
         if (p != null && isCurrentRun()) {
           applyDisplayPrice(p);
           applyStreamingPrice(p);
           // Seed synthetic history for non-crypto so chart renders at correct price level
-          if (selectedAsset.assetClass !== "crypto") {
+          if (asset.assetClass !== "crypto") {
             seedNonCryptoHistory(streamAssetSymbol, p);
             const seeded = getNonCryptoHistory(streamAssetSymbol);
             if (seeded.length > 0) {
@@ -590,9 +590,13 @@ export default function QuickTrade() {
               setPriceHistory(filterPriceData(seeded, chartMs));
             }
           } else {
+            // Seed 2 points so chart renders immediately (needs >= 2)
             const now = Date.now();
-            const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
-            setPriceHistory([{ time: timeLabel, price: p, ts: now }]);
+            const fmt = (t: number) => new Date(t).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
+            setPriceHistory([
+              { time: fmt(now - 1000), price: p, ts: now - 1000 },
+              { time: fmt(now), price: p, ts: now },
+            ]);
           }
         }
       })();
@@ -603,7 +607,7 @@ export default function QuickTrade() {
 
     // Immediate per-asset bootstrap fetch so switches never show stale prior-asset prices
     (async () => {
-      const p = await fetchPriceForAsset(selectedAsset);
+      const p = await fetchPriceForAsset(asset);
       if (p != null && isCurrentRun()) {
         consecutiveFailsRef.current = 0;
         applyDisplayPrice(p);
@@ -612,7 +616,7 @@ export default function QuickTrade() {
         feedRealPrice(streamAssetSymbol, p);
 
         // For non-crypto assets, seed synthetic history so chart populates instantly
-        if (selectedAsset.assetClass !== "crypto") {
+        if (asset.assetClass !== "crypto") {
           seedNonCryptoHistory(streamAssetSymbol, p);
           const seeded = getNonCryptoHistory(streamAssetSymbol);
           if (seeded.length > 0) {
@@ -620,10 +624,13 @@ export default function QuickTrade() {
             setPriceHistory(filterPriceData(seeded, chartMs));
           }
         } else {
-          // Seed priceHistory so chart renders immediately with first data point
+          // Seed 2 points so chart renders immediately (needs >= 2)
           const now = Date.now();
-          const timeLabel = new Date(now).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
-          setPriceHistory(prev => prev.length === 0 ? [{ time: timeLabel, price: p, ts: now }] : prev);
+          const fmt = (t: number) => new Date(t).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
+          setPriceHistory(prev => prev.length < 2 ? [
+            { time: fmt(now - 1000), price: p, ts: now - 1000 },
+            { time: fmt(now), price: p, ts: now },
+          ] : prev);
         }
       }
     })();
