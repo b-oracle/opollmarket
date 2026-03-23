@@ -446,6 +446,13 @@ Deno.serve(async (req) => {
             .from("quick_bets")
             .update({ payout: 0, status: "lost" })
             .eq("id", bet.id);
+
+          await supabase.from("notifications").insert({
+            user_id: bet.user_id,
+            title: "Quick Trade Result 📉",
+            message: `You lost $${Number(bet.amount).toFixed(2)} on ${round.asset}. The price went ${result.toUpperCase()}. Try again!`,
+            type: "payout",
+          });
         }
       } else if (losers.length === 0) {
         for (const bet of winners) {
@@ -550,6 +557,14 @@ Deno.serve(async (req) => {
             .from("quick_bets")
             .update({ payout: 0, status: "lost" })
             .eq("id", bet.id);
+
+          // Notify losers so they get Telegram alerts via the trigger
+          await supabase.from("notifications").insert({
+            user_id: bet.user_id,
+            title: "Quick Trade Result 📉",
+            message: `You lost $${Number(bet.amount).toFixed(2)} on ${round.asset}. The price went ${result.toUpperCase()}. Try again!`,
+            type: "payout",
+          });
         }
       }
 

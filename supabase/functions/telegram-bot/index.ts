@@ -35,6 +35,15 @@ function categoryEmoji(cat: string): string {
   return map[cat?.toLowerCase()] || "🔮";
 }
 
+// ── Shared asset emoji map (single source of truth) ──
+const ASSET_EMOJIS: Record<string, string> = {
+  BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
+  ADA: "🔵", AVAX: "🔺", DOT: "⚪", LINK: "🔗", SHIB: "🐕",
+  XAU: "🥇", XAG: "🥈", XPT: "⚪", XPD: "🔘",
+  "EUR/USD": "🇪🇺", "GBP/USD": "🇬🇧", "USD/JPY": "🇯🇵", "AUD/USD": "🇦🇺",
+  "USD/CAD": "🇨🇦", "USD/CHF": "🇨🇭", "NZD/USD": "🇳🇿", "EUR/GBP": "💱",
+};
+
 // ── Crypto price helpers ──
 const GECKO_IDS: Record<string, string> = {
   BTC: "bitcoin", ETH: "ethereum", BNB: "binancecoin", SOL: "solana",
@@ -192,7 +201,6 @@ Deno.serve(async (req) => {
     } else if (text === "/link") {
       await handleLinkStart(token, chatId);
     } else if (text.startsWith("/link ")) {
-      // Legacy support: /link email password still works
       await handleLinkLegacy(token, supabase, chatId, text, username, message.message_id);
     } else if (text === "/markets") {
       await handleMarkets(token, supabase, chatId);
@@ -210,21 +218,21 @@ Deno.serve(async (req) => {
       await handleStats(token, supabase, chatId);
     } else if (text === "/faq") {
       await handleFaqStart(token, supabase, chatId);
+    } else if (text === "/notifications") {
+      await handleNotifications(token, supabase, chatId);
+    } else if (text === "/settings") {
+      await handleSettings(token, supabase, chatId);
     } else if (text === "/cancel") {
-      // Cancel any pending link session
       await supabase.from("telegram_link_sessions").delete().eq("chat_id", chatId);
       await tg(token, "sendMessage", {
         chat_id: chatId,
         text: "❌ Account linking cancelled.",
       });
     } else {
-      // Check if user is in a linking session
       const handled = await handleLinkSession(token, supabase, chatId, text, username, message.message_id);
       if (!handled) {
-        // Check if this is a custom QT amount (number input)
         const qtHandled = await handleQTCustomInput(token, supabase, chatId, text);
         if (!qtHandled) {
-          // Check if this is a FAQ question
           const faqHandled = await handleFaqSession(token, supabase, chatId, text);
           if (!faqHandled) {
             await tg(token, "sendMessage", {
@@ -301,6 +309,8 @@ async function handleHelp(token: string, chatId: number) {
       "📈 <b>Info</b>\n" +
       "  /faq — Ask the FAQ assistant\n" +
       "  /stats — Platform statistics\n" +
+      "  /notifications — Recent alerts\n" +
+      "  /settings — Notification preferences\n" +
       "  /help — Show this message",
     parse_mode: "HTML",
     reply_markup: {
@@ -310,11 +320,12 @@ async function handleHelp(token: string, chatId: number) {
           { text: "💰 Balance", callback_data: "cmd_balance" },
         ],
         [
-          { text: "❓ FAQ", callback_data: "cmd_faq" },
-          { text: "🌐 Open Web App", url: APP_URL },
+          { text: "🔔 Notifications", callback_data: "cmd_notifications" },
+          { text: "⚙️ Settings", callback_data: "cmd_settings" },
         ],
         [
-          { text: "🐦 Follow on X", url: "https://x.com/opollmarket" },
+          { text: "❓ FAQ", callback_data: "cmd_faq" },
+          { text: "🌐 Open Web App", url: APP_URL },
         ],
         [
           { text: "🏠 Home", callback_data: "cmd_home" },
@@ -916,12 +927,7 @@ async function handleQuickTrade(
   const minBet = settings?.qt_min_bet || 1;
   const maxBet = settings?.qt_max_bet || 500;
 
-  const assetEmojis: Record<string, string> = {
-    BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
-    XAU: "🥇", XAG: "🥈", XPT: "⚪", XPD: "🔘",
-    "EUR/USD": "🇪🇺", "GBP/USD": "🇬🇧", "USD/JPY": "🇯🇵", "AUD/USD": "🇦🇺",
-    "USD/CAD": "🇨🇦", "USD/CHF": "🇨🇭", "NZD/USD": "🇳🇿", "EUR/GBP": "💱",
-  };
+  const assetEmojis = ASSET_EMOJIS;
 
   // Separate crypto and non-crypto for price fetching
   const cryptoAssets = assets.filter((a: string) => !isForexAsset(a) && !isCommodityAsset(a));
@@ -1020,6 +1026,12 @@ async function handleCallback(
   } else if (data === "cmd_faq") {
     await handleFaqStart(token, supabase, chatId);
     return;
+  } else if (data === "cmd_notifications") {
+    await handleNotifications(token, supabase, chatId);
+    return;
+  } else if (data === "cmd_settings") {
+    await handleSettings(token, supabase, chatId);
+    return;
   }
 
   if (data.startsWith("mktpage_")) {
@@ -1037,6 +1049,8 @@ async function handleCallback(
     await handleQTCustomAmount(token, supabase, chatId, data);
   } else if (data.startsWith("qt_side_")) {
     await handleQTSideSelected(token, supabase, chatId, data);
+  } else if (data.startsWith("tg_pref_")) {
+    await handleSettingsToggle(token, supabase, chatId, data);
   }
 }
 
@@ -1446,12 +1460,7 @@ async function executeBetInline(
 async function handleQTAssetSelected(token: string, chatId: number, data: string) {
   const asset = data.replace("qt_asset_", "");
 
-  const assetEmojis: Record<string, string> = {
-    BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
-    XAU: "🥇", XAG: "🥈", XPT: "⚪", XPD: "🔘",
-    "EUR/USD": "🇪🇺", "GBP/USD": "🇬🇧", "USD/JPY": "🇯🇵", "AUD/USD": "🇦🇺",
-    "USD/CAD": "🇨🇦", "USD/CHF": "🇨🇭", "NZD/USD": "🇳🇿", "EUR/GBP": "💱",
-  };
+  const assetEmojis = ASSET_EMOJIS;
 
   const isForex = isForexAsset(asset);
   const isCommodity = isCommodityAsset(asset);
@@ -1636,12 +1645,7 @@ async function handleQTSideSelected(
     streak: 0,
   });
 
-  const assetEmojis: Record<string, string> = {
-    BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
-    XAU: "🥇", XAG: "🥈", XPT: "⚪", XPD: "🔘",
-    "EUR/USD": "🇪🇺", "GBP/USD": "🇬🇧", "USD/JPY": "🇯🇵", "AUD/USD": "🇦🇺",
-    "USD/CAD": "🇨🇦", "USD/CHF": "🇨🇭", "NZD/USD": "🇳🇿", "EUR/GBP": "💱",
-  };
+  const assetEmojis = ASSET_EMOJIS;
   const sideEmoji = side === "up" ? "📈" : "📉";
 
   await tg(token, "sendMessage", {
@@ -1691,10 +1695,7 @@ async function handleQTCustomAmount(
 ) {
   const asset = data.replace("qt_custom_", "");
 
-  const assetEmojis: Record<string, string> = {
-    BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
-    XAU: "🥇", XAG: "🥈", "EUR/USD": "🇪🇺", "GBP/USD": "🇬🇧", "USD/JPY": "🇯🇵",
-  };
+  const assetEmojis = ASSET_EMOJIS;
 
   // Get bet limits
   const { data: settings } = await supabase
@@ -1798,10 +1799,7 @@ async function handleQTCustomInput(
   if (isQT) {
     // Quick Trade: show UP/DOWN
     const asset = identifier;
-    const assetEmojis: Record<string, string> = {
-      BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
-      XAU: "🥇", XAG: "🥈", "EUR/USD": "🇪🇺", "GBP/USD": "🇬🇧", "USD/JPY": "🇯🇵",
-    };
+    const assetEmojis = ASSET_EMOJIS;
 
     await tg(token, "sendMessage", {
       chat_id: chatId,
@@ -2057,4 +2055,168 @@ async function handleFaqSession(
   }
 
   return true;
+}
+
+// ── /notifications handler ──
+const NOTIF_TYPE_EMOJI: Record<string, string> = {
+  payout: "💰", resolution: "⚖️", refund: "🔄", info: "ℹ️",
+  follow: "👤", referral: "🎁", first_prediction_required: "🚀",
+  copy_trade: "📋", score: "⚽",
+};
+
+async function handleNotifications(
+  token: string,
+  supabase: ReturnType<typeof createClient>,
+  chatId: number
+) {
+  const userId = await getUserId(supabase, chatId);
+  if (!userId) {
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text: "❌ Account not linked. Use /link to connect first.",
+      reply_markup: { inline_keyboard: [[{ text: "🔗 Link Account", callback_data: "cmd_link" }]] },
+    });
+    return;
+  }
+
+  const { data: notifs } = await supabase
+    .from("notifications")
+    .select("title, message, type, created_at, market_id")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (!notifs || notifs.length === 0) {
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text: "🔔 <b>Recent Notifications</b>\n━━━━━━━━━━━━━━━━━━━━\n\nNo notifications yet!",
+      parse_mode: "HTML",
+      reply_markup: { inline_keyboard: [[{ text: "🏠 Home", callback_data: "cmd_home" }]] },
+    });
+    return;
+  }
+
+  let text = "🔔 <b>Recent Notifications</b>\n━━━━━━━━━━━━━━━━━━━━\n\n";
+  for (const n of notifs) {
+    const emoji = NOTIF_TYPE_EMOJI[n.type] || "🔔";
+    const date = new Date(n.created_at);
+    const timeStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
+    text += `${emoji} <b>${escapeHtml(n.title)}</b>\n`;
+    text += `   ${escapeHtml(n.message.slice(0, 100))}\n`;
+    text += `   <i>${timeStr}</i>\n\n`;
+  }
+
+  await tg(token, "sendMessage", {
+    chat_id: chatId,
+    text,
+    parse_mode: "HTML",
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: "⚙️ Notification Settings", callback_data: "cmd_settings" },
+        ],
+        [
+          { text: "🏠 Home", callback_data: "cmd_home" },
+        ],
+      ],
+    },
+  });
+}
+
+// ── /settings handler ──
+const PREF_KEYS = [
+  { key: "payouts", label: "💰 Payouts & Refunds", desc: "Win/loss/refund alerts" },
+  { key: "resolutions", label: "⚖️ Market Resolutions", desc: "Market resolved alerts" },
+  { key: "quick_trades", label: "⚡ Quick Trades", desc: "QT win/loss results" },
+  { key: "followers", label: "👤 New Followers", desc: "When someone follows you" },
+  { key: "info", label: "ℹ️ General Info", desc: "Commissions, referrals, etc." },
+];
+
+async function handleSettings(
+  token: string,
+  supabase: ReturnType<typeof createClient>,
+  chatId: number
+) {
+  const userId = await getUserId(supabase, chatId);
+  if (!userId) {
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text: "❌ Account not linked. Use /link to connect first.",
+      reply_markup: { inline_keyboard: [[{ text: "🔗 Link Account", callback_data: "cmd_link" }]] },
+    });
+    return;
+  }
+
+  const { data: tgUser } = await supabase
+    .from("telegram_users")
+    .select("notification_preferences")
+    .eq("user_id", userId)
+    .single();
+
+  const prefs = (tgUser?.notification_preferences || {}) as Record<string, boolean>;
+
+  let text = "⚙️ <b>Notification Settings</b>\n━━━━━━━━━━━━━━━━━━━━\n\n";
+  text += "Toggle which notifications you receive on Telegram:\n\n";
+
+  const buttons: Array<Array<{ text: string; callback_data: string }>> = [];
+  for (const p of PREF_KEYS) {
+    const enabled = prefs[p.key] !== false; // default on
+    const statusIcon = enabled ? "✅" : "❌";
+    text += `${statusIcon} <b>${p.label}</b> — ${p.desc}\n`;
+    buttons.push([{
+      text: `${statusIcon} ${p.label}`,
+      callback_data: `tg_pref_${p.key}`,
+    }]);
+  }
+
+  buttons.push([{ text: "🔔 View Notifications", callback_data: "cmd_notifications" }]);
+  buttons.push([{ text: "🏠 Home", callback_data: "cmd_home" }]);
+
+  await tg(token, "sendMessage", {
+    chat_id: chatId,
+    text,
+    parse_mode: "HTML",
+    reply_markup: { inline_keyboard: buttons },
+  });
+}
+
+async function handleSettingsToggle(
+  token: string,
+  supabase: ReturnType<typeof createClient>,
+  chatId: number,
+  data: string
+) {
+  const prefKey = data.replace("tg_pref_", "");
+  const userId = await getUserId(supabase, chatId);
+  if (!userId) return;
+
+  const { data: tgUser } = await supabase
+    .from("telegram_users")
+    .select("notification_preferences")
+    .eq("user_id", userId)
+    .single();
+
+  const prefs = { ...((tgUser?.notification_preferences || {}) as Record<string, boolean>) };
+  const currentlyEnabled = prefs[prefKey] !== false;
+  prefs[prefKey] = !currentlyEnabled;
+
+  await supabase
+    .from("telegram_users")
+    .update({ notification_preferences: prefs })
+    .eq("user_id", userId);
+
+  const label = PREF_KEYS.find(p => p.key === prefKey)?.label || prefKey;
+  const newStatus = prefs[prefKey] ? "✅ ON" : "❌ OFF";
+
+  await tg(token, "sendMessage", {
+    chat_id: chatId,
+    text: `${label} is now <b>${newStatus}</b>`,
+    parse_mode: "HTML",
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "⚙️ Back to Settings", callback_data: "cmd_settings" }],
+        [{ text: "🏠 Home", callback_data: "cmd_home" }],
+      ],
+    },
+  });
 }

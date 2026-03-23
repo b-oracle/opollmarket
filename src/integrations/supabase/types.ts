@@ -2463,6 +2463,7 @@ export type Database = {
         Row: {
           id: string
           linked_at: string
+          notification_preferences: Json
           telegram_chat_id: number
           telegram_username: string | null
           user_id: string
@@ -2470,6 +2471,7 @@ export type Database = {
         Insert: {
           id?: string
           linked_at?: string
+          notification_preferences?: Json
           telegram_chat_id: number
           telegram_username?: string | null
           user_id: string
@@ -2477,6 +2479,7 @@ export type Database = {
         Update: {
           id?: string
           linked_at?: string
+          notification_preferences?: Json
           telegram_chat_id?: number
           telegram_username?: string | null
           user_id?: string
