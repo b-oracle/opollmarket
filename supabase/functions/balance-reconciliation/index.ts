@@ -180,26 +180,8 @@ Deno.serve(async (req) => {
       });
 
       // Only send notifications if discrepancies changed
-      if (shouldNotify) {
-        const summaryLines = topIssues.map(
-          (d) => `• ${d.user_id.slice(0, 8)}… diff: $${d.difference > 0 ? "+" : ""}${d.difference}`
-        );
+      console.log(`Reconciliation: ${discrepancies.length} discrepancies found (logged to audit)`);
 
-        const message = `Balance reconciliation found ${discrepancies.length} discrepanc${discrepancies.length === 1 ? "y" : "ies"} (>$${THRESHOLD}):\n${summaryLines.join("\n")}${discrepancies.length > 5 ? `\n…and ${discrepancies.length - 5} more` : ""}`;
-
-        for (const adminId of adminIds) {
-          await supabase.from("notifications").insert({
-            user_id: adminId,
-            title: "⚠️ Balance Reconciliation Alert",
-            message,
-            type: "info",
-          });
-        }
-
-        console.log(`Reconciliation: ${discrepancies.length} discrepancies found (notified)`);
-      } else {
-        console.log(`Reconciliation: ${discrepancies.length} discrepancies unchanged, skipping notification`);
-      }
     } else {
       console.log("Reconciliation: no discrepancies found");
     }
