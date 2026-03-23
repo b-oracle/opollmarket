@@ -1799,10 +1799,7 @@ async function handleQTCustomInput(
   if (isQT) {
     // Quick Trade: show UP/DOWN
     const asset = identifier;
-    const assetEmojis: Record<string, string> = {
-      BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
-      XAU: "🥇", XAG: "🥈", "EUR/USD": "🇪🇺", "GBP/USD": "🇬🇧", "USD/JPY": "🇯🇵",
-    };
+    const assetEmojis = ASSET_EMOJIS;
 
     await tg(token, "sendMessage", {
       chat_id: chatId,
