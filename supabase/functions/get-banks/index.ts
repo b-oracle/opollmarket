@@ -42,6 +42,34 @@ for (const [fw, pz] of Object.entries(FW_TO_PAYAZA_MAP)) {
   PAYAZA_TO_FW_MAP[pz] = fw;
 }
 
+/** Hardcoded fallback when both providers are down */
+const FALLBACK_BANKS = [
+  { code: "000014", name: "Access Bank", fw_code: "044" },
+  { code: "000005", name: "Access Bank (Diamond)", fw_code: "063" },
+  { code: "000010", name: "Ecobank Nigeria", fw_code: "050" },
+  { code: "000007", name: "Fidelity Bank", fw_code: "070" },
+  { code: "000016", name: "First Bank of Nigeria", fw_code: "011" },
+  { code: "000003", name: "First City Monument Bank", fw_code: "214" },
+  { code: "000013", name: "Guaranty Trust Bank", fw_code: "058" },
+  { code: "000020", name: "Heritage Bank", fw_code: "030" },
+  { code: "000006", name: "Jaiz Bank", fw_code: "301" },
+  { code: "000002", name: "Keystone Bank", fw_code: "082" },
+  { code: "090267", name: "Kuda Microfinance Bank", fw_code: "50211" },
+  { code: "090405", name: "Moniepoint MFB", fw_code: "50515" },
+  { code: "100004", name: "OPay", fw_code: "999992" },
+  { code: "100033", name: "PalmPay", fw_code: "999991" },
+  { code: "000008", name: "Polaris Bank", fw_code: "076" },
+  { code: "000023", name: "Providus Bank", fw_code: "101" },
+  { code: "000012", name: "Stanbic IBTC Bank", fw_code: "221" },
+  { code: "000021", name: "Standard Chartered Bank", fw_code: "068" },
+  { code: "000001", name: "Sterling Bank", fw_code: "232" },
+  { code: "000004", name: "United Bank for Africa", fw_code: "033" },
+  { code: "000018", name: "Union Bank of Nigeria", fw_code: "032" },
+  { code: "000011", name: "Unity Bank", fw_code: "215" },
+  { code: "000017", name: "Wema Bank", fw_code: "035" },
+  { code: "000015", name: "Zenith Bank", fw_code: "057" },
+].sort((a, b) => a.name.localeCompare(b.name));
+
 function encodePayazaKey(key: string): string {
   return btoa(key);
 }
@@ -128,8 +156,8 @@ Deno.serve(async (req) => {
     const flutterwaveKey = Deno.env.get("FLUTTERWAVE_SECRET_KEY");
     if (!flutterwaveKey) {
       return new Response(
-        JSON.stringify({ error: "Payment provider not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ banks: FALLBACK_BANKS, source: "fallback" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -141,9 +169,10 @@ Deno.serve(async (req) => {
 
     if (data.status !== "success" || !Array.isArray(data.data)) {
       console.error("Flutterwave banks error:", data.message);
+      // Fall through to hardcoded fallback below
       return new Response(
-        JSON.stringify({ error: "Failed to fetch banks" }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ banks: FALLBACK_BANKS, source: "fallback" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
