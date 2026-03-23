@@ -745,7 +745,7 @@ export default function QuickTrade() {
     let unsubPoller: (() => void) | null = null;
     let unsubSmooth: (() => void) | null = null;
 
-    if (selectedAsset.assetClass !== "crypto") {
+    if (asset.assetClass !== "crypto") {
       unsubPoller = startNonCryptoHistoryPoller(streamAssetSymbol);
 
       // Subscribe to smoothed price stream (~15fps interpolation for chart, ~2fps for display)
