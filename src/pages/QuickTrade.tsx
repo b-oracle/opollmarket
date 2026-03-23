@@ -573,7 +573,7 @@ export default function QuickTrade() {
     let pollIv: ReturnType<typeof setInterval> | null = null;
 
     // Skip all price streaming when market is closed
-    const marketOpen = isMarketOpen(selectedAsset.assetClass);
+    const marketOpen = isMarketOpen(asset.assetClass);
     if (!marketOpen) {
       // Still fetch one price snapshot so we show "last close" price
       (async () => {
