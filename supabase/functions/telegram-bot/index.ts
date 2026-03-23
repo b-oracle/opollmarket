@@ -1031,6 +1031,12 @@ async function handleCallback(
   } else if (data === "cmd_faq") {
     await handleFaqStart(token, supabase, chatId);
     return;
+  } else if (data === "cmd_notifications") {
+    await handleNotifications(token, supabase, chatId);
+    return;
+  } else if (data === "cmd_settings") {
+    await handleSettings(token, supabase, chatId);
+    return;
   }
 
   if (data.startsWith("mktpage_")) {
