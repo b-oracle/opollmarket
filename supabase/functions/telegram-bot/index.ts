@@ -1645,12 +1645,7 @@ async function handleQTSideSelected(
     streak: 0,
   });
 
-  const assetEmojis: Record<string, string> = {
-    BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
-    XAU: "🥇", XAG: "🥈", XPT: "⚪", XPD: "🔘",
-    "EUR/USD": "🇪🇺", "GBP/USD": "🇬🇧", "USD/JPY": "🇯🇵", "AUD/USD": "🇦🇺",
-    "USD/CAD": "🇨🇦", "USD/CHF": "🇨🇭", "NZD/USD": "🇳🇿", "EUR/GBP": "💱",
-  };
+  const assetEmojis = ASSET_EMOJIS;
   const sideEmoji = side === "up" ? "📈" : "📉";
 
   await tg(token, "sendMessage", {
