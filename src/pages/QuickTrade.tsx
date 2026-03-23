@@ -543,6 +543,7 @@ export default function QuickTrade() {
     let mounted = true;
     const streamRunId = ++streamRunIdRef.current;
     const streamAssetSymbol = selectedAsset.symbol;
+    const asset = selectedAssetRef.current; // stable snapshot for async calls
     const isCurrentRun = () =>
       mounted &&
       streamRunIdRef.current === streamRunId &&
