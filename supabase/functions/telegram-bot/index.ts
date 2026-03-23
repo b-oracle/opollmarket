@@ -2056,3 +2056,167 @@ async function handleFaqSession(
 
   return true;
 }
+
+// ── /notifications handler ──
+const NOTIF_TYPE_EMOJI: Record<string, string> = {
+  payout: "💰", resolution: "⚖️", refund: "🔄", info: "ℹ️",
+  follow: "👤", referral: "🎁", first_prediction_required: "🚀",
+  copy_trade: "📋", score: "⚽",
+};
+
+async function handleNotifications(
+  token: string,
+  supabase: ReturnType<typeof createClient>,
+  chatId: number
+) {
+  const userId = await getUserId(supabase, chatId);
+  if (!userId) {
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text: "❌ Account not linked. Use /link to connect first.",
+      reply_markup: { inline_keyboard: [[{ text: "🔗 Link Account", callback_data: "cmd_link" }]] },
+    });
+    return;
+  }
+
+  const { data: notifs } = await supabase
+    .from("notifications")
+    .select("title, message, type, created_at, market_id")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (!notifs || notifs.length === 0) {
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text: "🔔 <b>Recent Notifications</b>\n━━━━━━━━━━━━━━━━━━━━\n\nNo notifications yet!",
+      parse_mode: "HTML",
+      reply_markup: { inline_keyboard: [[{ text: "🏠 Home", callback_data: "cmd_home" }]] },
+    });
+    return;
+  }
+
+  let text = "🔔 <b>Recent Notifications</b>\n━━━━━━━━━━━━━━━━━━━━\n\n";
+  for (const n of notifs) {
+    const emoji = NOTIF_TYPE_EMOJI[n.type] || "🔔";
+    const date = new Date(n.created_at);
+    const timeStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
+    text += `${emoji} <b>${escapeHtml(n.title)}</b>\n`;
+    text += `   ${escapeHtml(n.message.slice(0, 100))}\n`;
+    text += `   <i>${timeStr}</i>\n\n`;
+  }
+
+  await tg(token, "sendMessage", {
+    chat_id: chatId,
+    text,
+    parse_mode: "HTML",
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: "⚙️ Notification Settings", callback_data: "cmd_settings" },
+        ],
+        [
+          { text: "🏠 Home", callback_data: "cmd_home" },
+        ],
+      ],
+    },
+  });
+}
+
+// ── /settings handler ──
+const PREF_KEYS = [
+  { key: "payouts", label: "💰 Payouts & Refunds", desc: "Win/loss/refund alerts" },
+  { key: "resolutions", label: "⚖️ Market Resolutions", desc: "Market resolved alerts" },
+  { key: "quick_trades", label: "⚡ Quick Trades", desc: "QT win/loss results" },
+  { key: "followers", label: "👤 New Followers", desc: "When someone follows you" },
+  { key: "info", label: "ℹ️ General Info", desc: "Commissions, referrals, etc." },
+];
+
+async function handleSettings(
+  token: string,
+  supabase: ReturnType<typeof createClient>,
+  chatId: number
+) {
+  const userId = await getUserId(supabase, chatId);
+  if (!userId) {
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text: "❌ Account not linked. Use /link to connect first.",
+      reply_markup: { inline_keyboard: [[{ text: "🔗 Link Account", callback_data: "cmd_link" }]] },
+    });
+    return;
+  }
+
+  const { data: tgUser } = await supabase
+    .from("telegram_users")
+    .select("notification_preferences")
+    .eq("user_id", userId)
+    .single();
+
+  const prefs = (tgUser?.notification_preferences || {}) as Record<string, boolean>;
+
+  let text = "⚙️ <b>Notification Settings</b>\n━━━━━━━━━━━━━━━━━━━━\n\n";
+  text += "Toggle which notifications you receive on Telegram:\n\n";
+
+  const buttons: Array<Array<{ text: string; callback_data: string }>> = [];
+  for (const p of PREF_KEYS) {
+    const enabled = prefs[p.key] !== false; // default on
+    const statusIcon = enabled ? "✅" : "❌";
+    text += `${statusIcon} <b>${p.label}</b> — ${p.desc}\n`;
+    buttons.push([{
+      text: `${statusIcon} ${p.label}`,
+      callback_data: `tg_pref_${p.key}`,
+    }]);
+  }
+
+  buttons.push([{ text: "🔔 View Notifications", callback_data: "cmd_notifications" }]);
+  buttons.push([{ text: "🏠 Home", callback_data: "cmd_home" }]);
+
+  await tg(token, "sendMessage", {
+    chat_id: chatId,
+    text,
+    parse_mode: "HTML",
+    reply_markup: { inline_keyboard: buttons },
+  });
+}
+
+async function handleSettingsToggle(
+  token: string,
+  supabase: ReturnType<typeof createClient>,
+  chatId: number,
+  data: string
+) {
+  const prefKey = data.replace("tg_pref_", "");
+  const userId = await getUserId(supabase, chatId);
+  if (!userId) return;
+
+  const { data: tgUser } = await supabase
+    .from("telegram_users")
+    .select("notification_preferences")
+    .eq("user_id", userId)
+    .single();
+
+  const prefs = { ...((tgUser?.notification_preferences || {}) as Record<string, boolean>) };
+  const currentlyEnabled = prefs[prefKey] !== false;
+  prefs[prefKey] = !currentlyEnabled;
+
+  await supabase
+    .from("telegram_users")
+    .update({ notification_preferences: prefs })
+    .eq("user_id", userId);
+
+  const label = PREF_KEYS.find(p => p.key === prefKey)?.label || prefKey;
+  const newStatus = prefs[prefKey] ? "✅ ON" : "❌ OFF";
+
+  await tg(token, "sendMessage", {
+    chat_id: chatId,
+    text: `${label} is now <b>${newStatus}</b>`,
+    parse_mode: "HTML",
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "⚙️ Back to Settings", callback_data: "cmd_settings" }],
+        [{ text: "🏠 Home", callback_data: "cmd_home" }],
+      ],
+    },
+  });
+}
