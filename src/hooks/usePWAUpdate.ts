@@ -3,6 +3,7 @@ import { useRegisterSW } from "virtual:pwa-register/react";
 
 const DISMISSED_SW_KEY = "opoll_sw_dismissed_version";
 const APPLIED_SW_KEY = "opoll_sw_applied_version";
+const RELOAD_GUARD_KEY = "opoll_sw_reloading";
 const UPDATE_POLL_MS = 10 * 60 * 1000;
 
 const getWorkerVersion = (worker: ServiceWorker | null | undefined): string | null => {
@@ -153,14 +154,23 @@ export const usePWAUpdate = () => {
   // Also check on visibility change + listen for controllerchange to auto-reload
   useEffect(() => {
     const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
+      if (document.visibilityState === "visible" && navigator.onLine) {
         registrationRef.current?.update();
       }
     };
 
     // When a new SW takes over (via skipWaiting), reload the page
     const handleControllerChange = () => {
-      window.location.reload();
+      // Guard against reload loops: only reload once per controller change
+      const reloadGuard = safeStorage.getSession(RELOAD_GUARD_KEY);
+      if (reloadGuard) {
+        // Already reloaded for this SW activation — clear and stop
+        safeStorage.removeSession(RELOAD_GUARD_KEY);
+        return;
+      }
+      safeStorage.setSession(RELOAD_GUARD_KEY, Date.now().toString());
+      // Small delay to let the new SW fully settle before reload
+      setTimeout(() => window.location.reload(), 300);
     };
 
     document.addEventListener("visibilitychange", handleVisibility);
