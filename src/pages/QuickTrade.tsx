@@ -818,7 +818,7 @@ export default function QuickTrade() {
               queryClient.invalidateQueries({ queryKey: ["commission_settings"] });
               toast({
                 title: "Market Unavailable",
-                description: `${selectedAsset.label} has been temporarily disabled due to price feed errors.`,
+                description: `${asset.label} has been temporarily disabled due to price feed errors.`,
                 variant: "destructive",
               });
             } catch {}
