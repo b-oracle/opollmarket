@@ -76,6 +76,25 @@ async function fetchFromBinanceSpot(sym: string): Promise<number | null> {
   return Number.isFinite(price) ? price : null;
 }
 
+async function fetchFromTwelveDataCrypto(sym: string): Promise<number | null> {
+  const tdSym = TWELVE_DATA_CRYPTO[sym];
+  if (!tdSym) return null;
+  const url = getEdgeFunctionUrl("commodity-price");
+  if (!url) return null;
+  try {
+    const resp = await fetchWithTimeout(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ asset: sym, type: "crypto" }),
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data?.price ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // ── Cache & backoff state ──
 const cache = new Map<string, { price: number; fetchedAt: number; provider: string }>();
 const CACHE_TTL = 5_000;
