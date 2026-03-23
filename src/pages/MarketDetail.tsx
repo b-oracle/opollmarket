@@ -31,7 +31,7 @@ import { useBookmark } from "@/hooks/useBookmark";
 import { toast } from "sonner";
 import useAnalytics from "@/hooks/useAnalytics";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
-import { createStatelessReadClient } from "@/lib/statelessSupabase";
+
 
 const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
@@ -458,8 +458,7 @@ const MarketDetail = () => {
   const { data: pageViewCount } = useQuery({
     queryKey: ["market-page-views", id],
     queryFn: async () => {
-      const readClient = createStatelessReadClient();
-      const { count, error } = await readClient
+      const { count, error } = await supabase
         .from("analytics_events")
         .select("id", { count: "exact", head: true })
         .eq("event_name", "page_view")
