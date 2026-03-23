@@ -458,8 +458,7 @@ const MarketDetail = () => {
   const { data: pageViewCount } = useQuery({
     queryKey: ["market-page-views", id],
     queryFn: async () => {
-      const readClient = createStatelessReadClient();
-      const { count, error } = await readClient
+      const { count, error } = await supabase
         .from("analytics_events")
         .select("id", { count: "exact", head: true })
         .eq("event_name", "page_view")
