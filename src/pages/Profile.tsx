@@ -1529,11 +1529,21 @@ const Profile = () => {
                 (t.side === "yes" || t.side === "no")
             );
             const sellTxns = transactions.filter((t: any) => t.type === "sell" && t.status === "confirmed");
-            const totalBought = predictionBuyTxns.reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
             const totalSold = sellTxns.reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
             const payoutTxns = transactions.filter((t: any) => t.type === "payout" && t.status === "confirmed");
             const totalPayouts = payoutTxns.reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
-            // Unrealized P&L from open positions
+
+            // Only count wagers for resolved/closed positions as costs (not open wagers)
+            const openPositionMarketIds = new Set(
+              positions
+                .filter((p: any) => p.shares > 0 && p.markets && p.markets.status === "active")
+                .map((p: any) => p.market_id)
+            );
+            const resolvedBought = predictionBuyTxns
+              .filter((t: any) => !openPositionMarketIds.has(t.market_id))
+              .reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
+
+            // Unrealized P&L from open positions (price movement only)
             const unrealizedPnl = positions
               .filter((p: any) => p.shares > 0 && p.markets && p.markets.status === "active")
               .reduce((sum: number, p: any) => {
@@ -1549,7 +1559,7 @@ const Profile = () => {
                 if (qb.status === "won") return sum + (Number(qb.payout || 0) - Number(qb.amount));
                 return sum - Number(qb.amount);
               }, 0);
-            const pnl = totalPayouts + totalSold - totalBought + unrealizedPnl + qtPnl;
+            const pnl = totalPayouts + totalSold - resolvedBought + unrealizedPnl + qtPnl;
             const totalPredictions = predictionBuyTxns.length;
             const refundTxns = transactions.filter((t: any) => t.type === "refund" && t.status === "confirmed");
             const resolvedCount = payoutTxns.length + Math.max(0, totalPredictions - payoutTxns.length - refundTxns.length);
