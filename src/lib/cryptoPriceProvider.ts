@@ -41,55 +41,72 @@ const CRYPTOCOMPARE_SYMS: Record<string, string> = {
 // ── Per-provider fetch functions ──
 
 async function fetchFromCoinGecko(geckoId: string): Promise<number | null> {
-  const r = await fetch(
-    `https://api.coingecko.com/api/v3/simple/price?ids=${geckoId}&vs_currencies=usd`
-  );
-  if (!r.ok) return null;
-  const d = await r.json();
-  return d[geckoId]?.usd ?? null;
+  try {
+    const r = await fetchWithTimeout(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${geckoId}&vs_currencies=usd`,
+      {},
+      2500,
+    );
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d[geckoId]?.usd ?? null;
+  } catch {
+    return null;
+  }
 }
 
 async function fetchFromCoinCap(coinCapId: string): Promise<number | null> {
-  const r = await fetch(`https://api.coincap.io/v2/assets/${coinCapId}`);
-  if (!r.ok) return null;
-  const d = await r.json();
-  const price = parseFloat(d?.data?.priceUsd);
-  return isNaN(price) ? null : price;
+  try {
+    const r = await fetchWithTimeout(`https://api.coincap.io/v2/assets/${coinCapId}`, {}, 2500);
+    if (!r.ok) return null;
+    const d = await r.json();
+    const price = parseFloat(d?.data?.priceUsd);
+    return isNaN(price) ? null : price;
+  } catch {
+    return null;
+  }
 }
 
 async function fetchFromCryptoCompare(sym: string): Promise<number | null> {
-  const r = await fetch(
-    `https://min-api.cryptocompare.com/data/price?fsym=${sym}&tsyms=USD`
-  );
-  if (!r.ok) return null;
-  const d = await r.json();
-  return d?.USD ?? null;
+  try {
+    const r = await fetchWithTimeout(
+      `https://min-api.cryptocompare.com/data/price?fsym=${sym}&tsyms=USD`,
+      {},
+      2500,
+    );
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d?.USD ?? null;
+  } catch {
+    return null;
+  }
 }
 
 async function fetchFromBinanceSpot(sym: string): Promise<number | null> {
   const binanceSym = BINANCE_SYMS[sym];
   if (!binanceSym) return null;
-  const r = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${binanceSym}`);
-  if (!r.ok) return null;
-  const d = await r.json();
-  const price = parseFloat(d?.price);
-  return Number.isFinite(price) ? price : null;
+  try {
+    const r = await fetchWithTimeout(`https://api.binance.com/api/v3/ticker/price?symbol=${binanceSym}`, {}, 2500);
+    if (!r.ok) return null;
+    const d = await r.json();
+    const price = parseFloat(d?.price);
+    return Number.isFinite(price) ? price : null;
+  } catch {
+    return null;
+  }
 }
 
 async function fetchFromTwelveDataCrypto(sym: string): Promise<number | null> {
   const tdSym = TWELVE_DATA_CRYPTO[sym];
   if (!tdSym) return null;
-  const url = getEdgeFunctionUrl("commodity-price");
-  if (!url) return null;
+
   try {
-    const resp = await fetchWithTimeout(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ asset: sym, type: "crypto" }),
+    const { data, error } = await supabase.functions.invoke("commodity-price", {
+      body: { asset: sym, type: "crypto" },
     });
-    if (!resp.ok) return null;
-    const data = await resp.json();
-    return data?.price ?? null;
+    if (error) return null;
+    const price = Number(data?.price);
+    return Number.isFinite(price) ? price : null;
   } catch {
     return null;
   }
@@ -127,11 +144,11 @@ export async function fetchCryptoPrice(
   const ccId = COINCAP_IDS[sym];
   const ccSym = CRYPTOCOMPARE_SYMS[sym];
 
-  // Binance first (most reliable from browser, no CORS issues), then fallbacks
+  // Backend/provider calls first to avoid browser CORS/network restrictions in preview iframes.
   const providers: Array<{ name: string; fn: () => Promise<number | null> }> = [];
+  if (TWELVE_DATA_CRYPTO[sym]) providers.push({ name: "twelvedata", fn: () => fetchFromTwelveDataCrypto(sym) });
   if (sym) providers.push({ name: "binance", fn: () => fetchFromBinanceSpot(sym) });
   if (ccSym) providers.push({ name: "cryptocompare", fn: () => fetchFromCryptoCompare(ccSym) });
-  if (TWELVE_DATA_CRYPTO[sym]) providers.push({ name: "twelvedata", fn: () => fetchFromTwelveDataCrypto(sym) });
   if (gId) providers.push({ name: "coingecko", fn: () => fetchFromCoinGecko(gId) });
   if (ccId) providers.push({ name: "coincap", fn: () => fetchFromCoinCap(ccId) });
 
