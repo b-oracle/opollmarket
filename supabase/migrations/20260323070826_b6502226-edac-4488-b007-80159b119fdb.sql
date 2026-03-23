@@ -1,0 +1,1 @@
+ALTER TABLE public.telegram_users ADD COLUMN IF NOT EXISTS notification_preferences jsonb NOT NULL DEFAULT '{}'::jsonb;
