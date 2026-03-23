@@ -851,6 +851,23 @@ export default function QuickTrade() {
             // Feed into the smooth interpolation system for Brownian drift
             feedRealPrice(streamAssetSymbol, p);
 
+            // Directly update display + streaming price so chart renders
+            // even when WS is completely blocked (e.g. preview iframe)
+            applyDisplayPrice(p);
+            applyStreamingPrice(p);
+
+            // Seed initial price history if chart has no data yet
+            const fmt = (t: number) => new Date(t).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
+            setPriceHistory(prev => {
+              if (prev.length < 2) {
+                return [
+                  { time: fmt(now - 1000), price: p, ts: now - 1000 },
+                  { time: fmt(now), price: p, ts: now },
+                ];
+              }
+              return prev;
+            });
+
             // Also update raw cache for timeframe filtering
             const maxCutoff = now - 4 * 60 * 60 * 1000;
             const rawCached = rawDataRef.current.get(streamAssetSymbol) || [];
