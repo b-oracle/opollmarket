@@ -35,6 +35,15 @@ function categoryEmoji(cat: string): string {
   return map[cat?.toLowerCase()] || "🔮";
 }
 
+// ── Shared asset emoji map (single source of truth) ──
+const ASSET_EMOJIS: Record<string, string> = {
+  BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
+  ADA: "🔵", AVAX: "🔺", DOT: "⚪", LINK: "🔗", SHIB: "🐕",
+  XAU: "🥇", XAG: "🥈", XPT: "⚪", XPD: "🔘",
+  "EUR/USD": "🇪🇺", "GBP/USD": "🇬🇧", "USD/JPY": "🇯🇵", "AUD/USD": "🇦🇺",
+  "USD/CAD": "🇨🇦", "USD/CHF": "🇨🇭", "NZD/USD": "🇳🇿", "EUR/GBP": "💱",
+};
+
 // ── Crypto price helpers ──
 const GECKO_IDS: Record<string, string> = {
   BTC: "bitcoin", ETH: "ethereum", BNB: "binancecoin", SOL: "solana",
