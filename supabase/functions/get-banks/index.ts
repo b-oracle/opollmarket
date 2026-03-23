@@ -156,8 +156,8 @@ Deno.serve(async (req) => {
     const flutterwaveKey = Deno.env.get("FLUTTERWAVE_SECRET_KEY");
     if (!flutterwaveKey) {
       return new Response(
-        JSON.stringify({ error: "Payment provider not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ banks: FALLBACK_BANKS, source: "fallback" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
