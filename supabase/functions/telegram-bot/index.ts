@@ -1460,12 +1460,7 @@ async function executeBetInline(
 async function handleQTAssetSelected(token: string, chatId: number, data: string) {
   const asset = data.replace("qt_asset_", "");
 
-  const assetEmojis: Record<string, string> = {
-    BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
-    XAU: "🥇", XAG: "🥈", XPT: "⚪", XPD: "🔘",
-    "EUR/USD": "🇪🇺", "GBP/USD": "🇬🇧", "USD/JPY": "🇯🇵", "AUD/USD": "🇦🇺",
-    "USD/CAD": "🇨🇦", "USD/CHF": "🇨🇭", "NZD/USD": "🇳🇿", "EUR/GBP": "💱",
-  };
+  const assetEmojis = ASSET_EMOJIS;
 
   const isForex = isForexAsset(asset);
   const isCommodity = isCommodityAsset(asset);
