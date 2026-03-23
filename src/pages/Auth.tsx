@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -57,16 +57,38 @@ const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isDapp = useIsDappBrowser();
+  const handledInitialRedirect = useRef(false);
 
   // Redirect already-authenticated users away from auth page
   // This prevents logged-in users from seeing the registration form
   // when they arrive via deep links (e.g. shared space links with ?ref=)
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || handledInitialRedirect.current) return;
+    handledInitialRedirect.current = true;
     if (!user) return;
     const redirectTo = searchParams.get("redirect");
     navigate(redirectTo || "/", { replace: true });
   }, [user, authLoading, navigate, searchParams]);
+
+  const readLoginSecuritySettings = async (userId: string) => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const secResult = await withTimeout(
+        Promise.resolve(
+          supabase
+            .from("user_security_settings" as any)
+            .select("pin_enabled, totp_enabled, require_pin_login, require_totp_login")
+            .eq("user_id", userId)
+            .maybeSingle()
+        ),
+        5000
+      );
+
+      if (secResult !== null) return secResult;
+      await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+    }
+
+    return null;
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem("remembered_display_name");
@@ -136,18 +158,16 @@ const Auth = () => {
           if (profile?.display_name) localStorage.setItem("remembered_display_name", profile.display_name);
 
           // Check if login security is required (must use authenticated client for RLS)
-          const secResult = await withTimeout(
-            Promise.resolve(
-              supabase
-                .from("user_security_settings" as any)
-                .select("pin_enabled, totp_enabled, require_pin_login, require_totp_login")
-                .eq("user_id", userId)
-                .maybeSingle()
-            ),
-            5000
-          );
+          const secResult = await readLoginSecuritySettings(userId);
 
-          const secData = secResult?.data ?? null;
+          // Fail closed on repeated timeout/query failures to prevent PIN/TOTP bypass
+          if (!secResult || secResult.error) {
+            await supabase.auth.signOut({ scope: "local" });
+            toast.error("Couldn't verify security settings. Please sign in again.");
+            return;
+          }
+
+          const secData = secResult.data ?? null;
           const sec = secData as unknown as {
             pin_enabled: boolean;
             totp_enabled: boolean;
