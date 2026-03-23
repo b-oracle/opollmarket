@@ -120,6 +120,12 @@ Deno.serve(async (req) => {
       ]);
     }
 
+    if (type === "deposit" || type === "withdrawal") {
+      buttons.push([
+        { text: "📊 My Portfolio", url: `${appUrl}/portfolio` },
+      ]);
+    }
+
     // Always add web app link at bottom
     buttons.push([
       { text: "🌐 Open OPoll", url: appUrl },
