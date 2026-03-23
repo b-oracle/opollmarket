@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import LazyWagmiProvider from "./LazyWagmiProvider";
 
 /** Routes that actually need the Web3/Wagmi provider */
-const WEB3_ROUTES = ["/profile", "/admin"];
+const WEB3_ROUTES = ["/profile", "/admin", "/portfolio"];
 
 const needsWeb3 = (pathname: string) =>
   WEB3_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"));
