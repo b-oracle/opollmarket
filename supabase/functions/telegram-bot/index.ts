@@ -2129,6 +2129,9 @@ const PREF_KEYS = [
   { key: "resolutions", label: "⚖️ Market Resolutions", desc: "Market resolved alerts" },
   { key: "quick_trades", label: "⚡ Quick Trades", desc: "QT win/loss results" },
   { key: "followers", label: "👤 New Followers", desc: "When someone follows you" },
+  { key: "deposits", label: "✅ Deposits", desc: "Deposit confirmation alerts" },
+  { key: "withdrawals", label: "🏦 Withdrawals", desc: "Withdrawal status alerts" },
+  { key: "daily_digest", label: "☀️ Daily Digest", desc: "Morning P&L & trending markets" },
   { key: "info", label: "ℹ️ General Info", desc: "Commissions, referrals, etc." },
 ];
 
