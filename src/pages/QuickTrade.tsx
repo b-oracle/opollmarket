@@ -508,6 +508,10 @@ export default function QuickTrade() {
   const wsActiveRef = useRef(false);
   const lastWsTickAtRef = useRef(0);
   const streamRunIdRef = useRef(0);
+  // Stable refs for streaming effect to avoid object-reference dependency
+  const selectedAssetRef = useRef(selectedAsset);
+  selectedAssetRef.current = selectedAsset;
+
   // Reset price state when asset changes
   useEffect(() => {
     const previousAsset = previousSelectedAssetRef.current;
