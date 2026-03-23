@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
       includeAssets: ["opoll-favicon.png", "logo.png", "icon-512.png", "robots.txt"],
       manifest: {
         name: "OPOLL — Social Prediction Market",
@@ -43,8 +43,7 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
-        skipWaiting: true,
-        clientsClaim: true,
+        clientsClaim: false,
         navigateFallbackDenylist: [/^\/~oauth/, /^\/auth/],
         globPatterns: ["**/*.{js,css,ico,png,svg,jpg,jpeg,webp}"],
         importScripts: ["/push-sw.js"],

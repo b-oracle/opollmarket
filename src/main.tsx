@@ -48,11 +48,15 @@ try {
 
 // Force a SW update check on boot to minimize stale published caches
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.getRegistrations()
-    .then((registrations) =>
-      Promise.all(registrations.map((registration) => registration.update().catch(() => undefined)))
-    )
-    .catch(() => undefined);
+  // Only check for SW updates if the page is visible and online;
+  // aggressive checks on every boot contributed to reload loops.
+  if (document.visibilityState === "visible" && navigator.onLine) {
+    navigator.serviceWorker.getRegistrations()
+      .then((registrations) =>
+        Promise.all(registrations.map((registration) => registration.update().catch(() => undefined)))
+      )
+      .catch(() => undefined);
+  }
 }
 
 // Prevent browser edge-swipe navigation (back/forward) while preserving vertical scroll
