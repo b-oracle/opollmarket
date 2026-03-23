@@ -131,6 +131,7 @@ export async function fetchCryptoPrice(
   const providers: Array<{ name: string; fn: () => Promise<number | null> }> = [];
   if (sym) providers.push({ name: "binance", fn: () => fetchFromBinanceSpot(sym) });
   if (ccSym) providers.push({ name: "cryptocompare", fn: () => fetchFromCryptoCompare(ccSym) });
+  if (TWELVE_DATA_CRYPTO[sym]) providers.push({ name: "twelvedata", fn: () => fetchFromTwelveDataCrypto(sym) });
   if (gId) providers.push({ name: "coingecko", fn: () => fetchFromCoinGecko(gId) });
   if (ccId) providers.push({ name: "coincap", fn: () => fetchFromCoinCap(ccId) });
 
