@@ -246,6 +246,34 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── CRYPTO HANDLING (via Twelve Data) ──
+    if (body?.type === "crypto") {
+      const twelveDataKey = Deno.env.get("TWELVE_DATA_API_KEY");
+      if (!twelveDataKey) {
+        return new Response(JSON.stringify({ error: "Twelve Data not configured" }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const tdSymbol = `${normalizedAsset}/USD`;
+      try {
+        const resp = await fetch(
+          `https://api.twelvedata.com/price?symbol=${tdSymbol}&apikey=${twelveDataKey}`
+        );
+        if (resp.ok) {
+          const data = await resp.json();
+          const price = parseFloat(data?.price);
+          if (Number.isFinite(price)) {
+            return new Response(JSON.stringify({ price, source: "twelve_data_crypto" }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+        }
+      } catch {}
+      return new Response(JSON.stringify({ error: "Crypto price unavailable" }), {
+        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // ── COMMODITY HANDLING ──
     if (!TWELVE_DATA_MAP[normalizedAsset] && !METAL_MAP[normalizedAsset]) {
       return new Response(JSON.stringify({ error: `Unsupported asset: ${asset}` }), {
