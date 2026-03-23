@@ -31,7 +31,7 @@ import { useBookmark } from "@/hooks/useBookmark";
 import { toast } from "sonner";
 import useAnalytics from "@/hooks/useAnalytics";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
-import { createStatelessReadClient } from "@/lib/statelessSupabase";
+
 
 const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
