@@ -715,7 +715,7 @@ export default function QuickTrade() {
     // When WS is stale/blocked, feedRealPrice from HTTP polls drives this
     // interpolation system to provide Brownian drift = vibrant chart.
     let unsubCryptoSmooth: (() => void) | null = null;
-    if (selectedAsset.assetClass === "crypto") {
+    if (asset.assetClass === "crypto") {
       let lastSmoothChartAppend = 0;
       let lastSmoothDisplayUpdate = 0;
       const SMOOTH_DISPLAY_THROTTLE = 500;
