@@ -21,6 +21,8 @@ const TYPE_META: Record<string, { emoji: string; prefKey: string }> = {
   score:                     { emoji: "⚽", prefKey: "info" },
   quick_trade_loss:          { emoji: "📉", prefKey: "quick_trades" },
   quick_trade_win:           { emoji: "🎉", prefKey: "quick_trades" },
+  deposit:                   { emoji: "✅", prefKey: "deposits" },
+  withdrawal:                { emoji: "🏦", prefKey: "withdrawals" },
 };
 
 function escapeHtml(text: string): string {
