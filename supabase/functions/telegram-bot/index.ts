@@ -1695,10 +1695,7 @@ async function handleQTCustomAmount(
 ) {
   const asset = data.replace("qt_custom_", "");
 
-  const assetEmojis: Record<string, string> = {
-    BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
-    XAU: "🥇", XAG: "🥈", "EUR/USD": "🇪🇺", "GBP/USD": "🇬🇧", "USD/JPY": "🇯🇵",
-  };
+  const assetEmojis = ASSET_EMOJIS;
 
   // Get bet limits
   const { data: settings } = await supabase
