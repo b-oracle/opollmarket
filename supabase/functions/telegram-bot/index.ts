@@ -927,12 +927,7 @@ async function handleQuickTrade(
   const minBet = settings?.qt_min_bet || 1;
   const maxBet = settings?.qt_max_bet || 500;
 
-  const assetEmojis: Record<string, string> = {
-    BTC: "₿", ETH: "Ξ", BNB: "🔶", SOL: "◎", XRP: "✕", DOGE: "🐕",
-    XAU: "🥇", XAG: "🥈", XPT: "⚪", XPD: "🔘",
-    "EUR/USD": "🇪🇺", "GBP/USD": "🇬🇧", "USD/JPY": "🇯🇵", "AUD/USD": "🇦🇺",
-    "USD/CAD": "🇨🇦", "USD/CHF": "🇨🇭", "NZD/USD": "🇳🇿", "EUR/GBP": "💱",
-  };
+  const assetEmojis = ASSET_EMOJIS;
 
   // Separate crypto and non-crypto for price fetching
   const cryptoAssets = assets.filter((a: string) => !isForexAsset(a) && !isCommodityAsset(a));
