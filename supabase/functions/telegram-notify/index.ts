@@ -8,6 +8,28 @@ const corsHeaders = {
 
 const TELEGRAM_API = "https://api.telegram.org/bot";
 
+// ── Type → emoji & preference key mapping ──
+const TYPE_META: Record<string, { emoji: string; prefKey: string }> = {
+  payout:                    { emoji: "💰", prefKey: "payouts" },
+  resolution:                { emoji: "⚖️", prefKey: "resolutions" },
+  refund:                    { emoji: "🔄", prefKey: "payouts" },
+  info:                      { emoji: "ℹ️", prefKey: "info" },
+  follow:                    { emoji: "👤", prefKey: "followers" },
+  referral:                  { emoji: "🎁", prefKey: "info" },
+  first_prediction_required: { emoji: "🚀", prefKey: "info" },
+  copy_trade:                { emoji: "📋", prefKey: "info" },
+  score:                     { emoji: "⚽", prefKey: "info" },
+  quick_trade_loss:          { emoji: "📉", prefKey: "quick_trades" },
+  quick_trade_win:           { emoji: "🎉", prefKey: "quick_trades" },
+};
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -22,7 +44,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { user_id, title, message, market_id } = await req.json();
+    const { user_id, title, message, market_id, type, actor_id } = await req.json();
 
     if (!user_id || !message) {
       return new Response(JSON.stringify({ error: "Missing user_id or message" }), {
@@ -36,10 +58,10 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Find linked Telegram chat
+    // Find linked Telegram chat + preferences
     const { data: tgUser } = await supabase
       .from("telegram_users")
-      .select("telegram_chat_id")
+      .select("telegram_chat_id, notification_preferences")
       .eq("user_id", user_id)
       .single();
 
@@ -49,17 +71,57 @@ Deno.serve(async (req) => {
       });
     }
 
-    let text = "";
-    if (title) {
-      text += `<b>${title.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</b>\n\n`;
+    // ── Preference check ──
+    const prefs = (tgUser.notification_preferences || {}) as Record<string, boolean>;
+    const meta = TYPE_META[type] || TYPE_META.info;
+    if (prefs[meta.prefKey] === false) {
+      return new Response(JSON.stringify({ skipped: true, reason: "User disabled this notification type" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
-    text += message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-    // Add link to market if available
-    if (market_id) {
-      const appUrl = Deno.env.get("APP_URL") || "https://opoll.org";
-      text += `\n\n<a href="${appUrl}/market/${market_id}">View Market →</a>`;
+    // ── Build rich text ──
+    const appUrl = Deno.env.get("APP_URL") || "https://opoll.org";
+    let text = "";
+
+    // Emoji prefix + bold title
+    if (title) {
+      text += `${meta.emoji} <b>${escapeHtml(title)}</b>\n━━━━━━━━━━━━━━━━━━━━\n\n`;
     }
+    text += escapeHtml(message);
+
+    // ── Inline keyboard buttons ──
+    const buttons: Array<Array<{ text: string; url?: string; callback_data?: string }>> = [];
+
+    if (market_id) {
+      buttons.push([
+        { text: "🔮 View Market", url: `${appUrl}/market/${market_id}` },
+      ]);
+    }
+
+    if (type === "payout" || type === "refund") {
+      buttons.push([
+        { text: "📊 My Portfolio", url: `${appUrl}/portfolio` },
+      ]);
+    }
+
+    if (type === "follow" && actor_id) {
+      buttons.push([
+        { text: "👤 View Profile", url: `${appUrl}/user/${actor_id}` },
+      ]);
+    }
+
+    if ((type === "quick_trade_win" || type === "quick_trade_loss")) {
+      buttons.push([
+        { text: "⚡ Trade Again", url: `${appUrl}/quick-trade` },
+        { text: "📊 Portfolio", url: `${appUrl}/portfolio` },
+      ]);
+    }
+
+    // Always add web app link at bottom
+    buttons.push([
+      { text: "🌐 Open OPoll", url: appUrl },
+    ]);
 
     const res = await fetch(`${TELEGRAM_API}${token}/sendMessage`, {
       method: "POST",
@@ -69,6 +131,7 @@ Deno.serve(async (req) => {
         text,
         parse_mode: "HTML",
         disable_web_page_preview: true,
+        reply_markup: { inline_keyboard: buttons },
       }),
     });
 
