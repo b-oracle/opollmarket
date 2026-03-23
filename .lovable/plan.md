@@ -1,5 +1,3 @@
-
-
 ## Speed Optimization Plan
 
 ### Problem
@@ -84,3 +82,11 @@ The platform has multiple performance bottlenecks causing slow initial load and 
 - `sessionStorage` for security check: key = `security_setup_${userId}`, value = `"ok"`, cleared on sign-out
 - Chunk splitting: move `recharts` to its own `manualChunks` entry, keep `framer-motion` separate from Radix
 
+## Telegram Bot Upgrade — COMPLETED
+
+### Changes Made
+
+1. **Database**: Added `notification_preferences` JSONB column to `telegram_users` table
+2. **telegram-notify**: Rich type-aware formatting with emojis, inline keyboard buttons (View Market, Portfolio, Profile, Trade Again), and preference checking
+3. **resolve-quick-round**: Added loss notifications for all losing Quick Trade bets (both all-losers and mixed scenarios)
+4. **telegram-bot**: Added `/notifications` (recent 10 alerts) and `/settings` (toggle preferences) commands, deduplicated 5 `assetEmojis` maps into single `ASSET_EMOJIS` constant, updated `/help` listing
