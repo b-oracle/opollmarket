@@ -146,6 +146,13 @@ const TWELVE_DATA_SYMBOLS: Record<string, string> = {
   XAU: "XAU/USD", XAG: "XAG/USD", XPT: "XPT/USD", XPD: "XPD/USD",
 };
 
+// Twelve Data crypto symbol mappings
+const TWELVE_DATA_CRYPTO: Record<string, string> = {
+  BTC: "BTC/USD", ETH: "ETH/USD", BNB: "BNB/USD", SOL: "SOL/USD",
+  XRP: "XRP/USD", ADA: "ADA/USD", DOGE: "DOGE/USD", MATIC: "MATIC/USD",
+  AVAX: "AVAX/USD", DOT: "DOT/USD", LINK: "LINK/USD", SHIB: "SHIB/USD",
+};
+
 function getEdgeFunctionUrl(fnName: string): string | null {
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
   if (!projectId) return null;
