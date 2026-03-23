@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { createStatelessReadClient } from "@/lib/statelessSupabase";
 import type { Market } from "@/data/markets";
 
 interface DbMarket {
@@ -52,17 +52,7 @@ const withTimeout = async <T>(operation: () => Promise<T>, ms: number, timeoutMe
 const isTimeoutError = (error: unknown) =>
   error instanceof Error && error.message.toLowerCase().includes("timeout");
 
-const publicReadClient = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-  {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
-    },
-  }
-);
+const publicReadClient = createStatelessReadClient();
 
 const mapDbToMarket = (db: DbMarket): Market => ({
   id: db.id,
