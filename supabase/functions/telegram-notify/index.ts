@@ -21,6 +21,8 @@ const TYPE_META: Record<string, { emoji: string; prefKey: string }> = {
   score:                     { emoji: "⚽", prefKey: "info" },
   quick_trade_loss:          { emoji: "📉", prefKey: "quick_trades" },
   quick_trade_win:           { emoji: "🎉", prefKey: "quick_trades" },
+  deposit:                   { emoji: "✅", prefKey: "deposits" },
+  withdrawal:                { emoji: "🏦", prefKey: "withdrawals" },
 };
 
 function escapeHtml(text: string): string {
@@ -115,6 +117,12 @@ Deno.serve(async (req) => {
       buttons.push([
         { text: "⚡ Trade Again", url: `${appUrl}/quick-trade` },
         { text: "📊 Portfolio", url: `${appUrl}/portfolio` },
+      ]);
+    }
+
+    if (type === "deposit" || type === "withdrawal") {
+      buttons.push([
+        { text: "📊 My Portfolio", url: `${appUrl}/portfolio` },
       ]);
     }
 
