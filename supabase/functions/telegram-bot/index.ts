@@ -201,7 +201,6 @@ Deno.serve(async (req) => {
     } else if (text === "/link") {
       await handleLinkStart(token, chatId);
     } else if (text.startsWith("/link ")) {
-      // Legacy support: /link email password still works
       await handleLinkLegacy(token, supabase, chatId, text, username, message.message_id);
     } else if (text === "/markets") {
       await handleMarkets(token, supabase, chatId);
@@ -219,21 +218,21 @@ Deno.serve(async (req) => {
       await handleStats(token, supabase, chatId);
     } else if (text === "/faq") {
       await handleFaqStart(token, supabase, chatId);
+    } else if (text === "/notifications") {
+      await handleNotifications(token, supabase, chatId);
+    } else if (text === "/settings") {
+      await handleSettings(token, supabase, chatId);
     } else if (text === "/cancel") {
-      // Cancel any pending link session
       await supabase.from("telegram_link_sessions").delete().eq("chat_id", chatId);
       await tg(token, "sendMessage", {
         chat_id: chatId,
         text: "❌ Account linking cancelled.",
       });
     } else {
-      // Check if user is in a linking session
       const handled = await handleLinkSession(token, supabase, chatId, text, username, message.message_id);
       if (!handled) {
-        // Check if this is a custom QT amount (number input)
         const qtHandled = await handleQTCustomInput(token, supabase, chatId, text);
         if (!qtHandled) {
-          // Check if this is a FAQ question
           const faqHandled = await handleFaqSession(token, supabase, chatId, text);
           if (!faqHandled) {
             await tg(token, "sendMessage", {
