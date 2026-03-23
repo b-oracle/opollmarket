@@ -1054,6 +1054,8 @@ async function handleCallback(
     await handleQTCustomAmount(token, supabase, chatId, data);
   } else if (data.startsWith("qt_side_")) {
     await handleQTSideSelected(token, supabase, chatId, data);
+  } else if (data.startsWith("tg_pref_")) {
+    await handleSettingsToggle(token, supabase, chatId, data);
   }
 }
 
