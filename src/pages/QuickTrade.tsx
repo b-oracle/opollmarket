@@ -845,7 +845,7 @@ export default function QuickTrade() {
           if (now - lastFetchTimeRef.current < 5000) return;
           lastFetchTimeRef.current = now;
 
-          const p = await fetchPriceForAsset(selectedAsset);
+          const p = await fetchPriceForAsset(asset);
           if (p != null && isCurrentRun()) {
             consecutiveFailsRef.current = 0;
             // Feed into the smooth interpolation system for Brownian drift
