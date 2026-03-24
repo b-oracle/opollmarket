@@ -508,6 +508,7 @@ const App = () => (
                   <Suspense fallback={<PageFallback />}>
                     <MaintenanceGuard>
                     <SecuritySetupGuard>
+                    <LoginSecurityGuard>
                     <Routes>
                       <Route path="/" element={<Index />} />
                       <Route path="/index" element={<Navigate to="/" replace />} />
