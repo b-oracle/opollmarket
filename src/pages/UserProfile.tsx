@@ -556,7 +556,7 @@ const UserProfile = () => {
 
         {/* Social Section (collapsible) */}
         {(isOwnProfile || profile?.is_public) && (
-          <SocialSection userId={id!} isOwnProfile={isOwnProfile} isPublic={!!profile?.is_public} />
+          <SocialSection userId={id!} isOwnProfile={isOwnProfile} isPublic={!!profile?.is_public} initialTab={searchParams.get("tab") === "spaces" ? "spaces" : undefined} />
         )}
 
         {/* Content Tabs */}
