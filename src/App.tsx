@@ -307,7 +307,7 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
 
   const markSessionVerified = useCallback((uid: string) => {
     try {
-      sessionStorage.setItem(`${LOGIN_SECURITY_VERIFIED_KEY}${uid}`, "1");
+      localStorage.setItem(`${LOGIN_SECURITY_VERIFIED_KEY}${uid}`, "1");
     } catch {}
   }, []);
 
