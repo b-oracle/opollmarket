@@ -270,11 +270,18 @@ const Portfolio = () => {
     return true;
   });
 
+  const activePositions = enriched.filter((p) => p.status === "active");
+  const resolvedPositions = enriched.filter((p) => p.status !== "active");
+
   const totalInvested = enriched.reduce((s, p) => s + p.invested, 0);
   const totalValue = enriched.reduce((s, p) => s + p.currentValue, 0);
   const totalPnl = totalValue - totalInvested;
   const totalPnlPercent = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : 0;
   const totalMaxPayout = enriched.reduce((s, p) => s + p.maxPayout, 0);
+
+  // Separate realized (resolved/ended markets) vs unrealized (active markets)
+  const unrealizedPnlTotal = activePositions.reduce((s, p) => s + p.unrealizedPnl, 0);
+  const realizedPnlTotal = resolvedPositions.reduce((s, p) => s + p.unrealizedPnl, 0);
 
   const getTimeRemaining = (endDate: string) => {
     if (!endDate) return "—";
@@ -483,10 +490,28 @@ const Portfolio = () => {
               <p className="text-2xl font-bold">${totalValue.toFixed(2)}</p>
             </div>
             <div className="text-right">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Unrealized P&L</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Total P&L</p>
               <p className={`text-2xl font-bold flex items-center justify-end gap-1 ${totalPnl >= 0 ? "neon-yes" : "neon-no"}`}>
                 {totalPnl >= 0 ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
                 ${Math.abs(totalPnl).toFixed(2)}
+              </p>
+            </div>
+          </div>
+
+          {/* Realized vs Unrealized P&L breakdown */}
+          <div className="grid grid-cols-2 gap-3 pt-2.5 mt-2.5 border-t border-border/50">
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Realized P&L</p>
+              <p className={`text-sm font-bold flex items-center gap-0.5 ${realizedPnlTotal >= 0 ? "neon-yes" : "neon-no"}`}>
+                {realizedPnlTotal >= 0 ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+                ${Math.abs(realizedPnlTotal).toFixed(2)}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Unrealized P&L</p>
+              <p className={`text-sm font-bold flex items-center justify-end gap-0.5 ${unrealizedPnlTotal >= 0 ? "neon-yes" : "neon-no"}`}>
+                {unrealizedPnlTotal >= 0 ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+                ${Math.abs(unrealizedPnlTotal).toFixed(2)}
               </p>
             </div>
           </div>
@@ -743,8 +768,13 @@ const Portfolio = () => {
                       <div>
                         <p className="text-[9px] text-muted-foreground uppercase">Expires</p>
                         <p className="text-xs font-bold flex items-center gap-0.5">
-                          <Clock className="w-2.5 h-2.5" />
-                          {getTimeRemaining(pos.endDate)}
+                          {pos.status === "resolved" ? (
+                            <><CheckCircle2 className="w-2.5 h-2.5 text-primary" /> Resolved</>
+                          ) : pos.status === "ended" ? (
+                            <><Clock className="w-2.5 h-2.5 text-yellow-500" /> Ended</>
+                          ) : (
+                            <><Clock className="w-2.5 h-2.5" /> {getTimeRemaining(pos.endDate)}</>
+                          )}
                         </p>
                       </div>
                     </div>
