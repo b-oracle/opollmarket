@@ -1,24 +1,27 @@
 
 
-# Blank White Page Diagnosis
+# Only Prompt Security Verification on Actual Sign-In
 
-## Finding
+## Problem
+The `LoginSecurityGuard` uses `sessionStorage` to track verification. Since `sessionStorage` is cleared when the browser/tab is closed, every app reopen or refresh (after tab close) triggers the PIN modal again — even though the user already has a valid session.
 
-After thoroughly reviewing the codebase — `App.tsx`, `main.tsx`, `useAuth.ts`, `index.html`, and all recently edited files (`Feed.tsx`, `UserProfile.tsx`, `SocialSection.tsx`, `Profile.tsx`) — there are **no syntax errors, missing imports, or broken logic** that would cause a blank page.
+## Solution
+Switch the verification cache from `sessionStorage` to `localStorage`. This persists across browser restarts. Clear it explicitly on sign-out only.
 
-The complete absence of console logs (not even React mounting errors) strongly indicates the JavaScript bundle itself is not executing, which points to a **stale service worker or cached asset issue** rather than a code bug.
+### Changes
 
-## Recommended Actions
+**`src/App.tsx`** — `LoginSecurityGuard`
+- Change `sessionStorage.getItem(...)` → `localStorage.getItem(...)`
+- Change `sessionStorage.setItem(...)` → `localStorage.setItem(...)`
 
-### 1. Hard-refresh the preview
-In the preview panel, try a hard refresh (Ctrl+Shift+R / Cmd+Shift+R) to bypass cached assets.
+**`src/hooks/useAuth.ts`** — `signOut` callback
+- Add `localStorage.removeItem(login_sec_verified_${userId})` before clearing state, so signing out forces re-verification on next login
 
-### 2. Clear service worker cache
-If hard-refresh doesn't work, open DevTools in the preview → Application → Service Workers → "Unregister" all workers, then reload.
+**`src/pages/Auth.tsx`** — login handler
+- Update the existing `sessionStorage.setItem` call to use `localStorage` instead
 
-### 3. If the issue persists after clearing cache
-I can add a temporary `console.log("App mounting...")` at the top of `main.tsx` and inside `App` to pinpoint exactly where execution stops — this would confirm whether it's a build issue or a runtime hang (e.g., the `LoginSecurityGuard` or `SecuritySetupGuard` getting stuck in a loading state).
-
-## No code changes needed right now
-The codebase appears correct. This looks like a transient preview/caching issue. If clearing cache doesn't resolve it, approve the plan and I'll add diagnostic logging to isolate the exact hang point.
+This way:
+- **Sign-in** → PIN prompted → verified → stored in `localStorage`
+- **Refresh / reopen app** → `localStorage` still has the flag → no prompt
+- **Sign-out** → flag cleared → next sign-in will prompt again
 
