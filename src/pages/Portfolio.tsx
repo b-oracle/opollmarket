@@ -490,10 +490,28 @@ const Portfolio = () => {
               <p className="text-2xl font-bold">${totalValue.toFixed(2)}</p>
             </div>
             <div className="text-right">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Unrealized P&L</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Total P&L</p>
               <p className={`text-2xl font-bold flex items-center justify-end gap-1 ${totalPnl >= 0 ? "neon-yes" : "neon-no"}`}>
                 {totalPnl >= 0 ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
                 ${Math.abs(totalPnl).toFixed(2)}
+              </p>
+            </div>
+          </div>
+
+          {/* Realized vs Unrealized P&L breakdown */}
+          <div className="grid grid-cols-2 gap-3 pt-2.5 mt-2.5 border-t border-border/50">
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Realized P&L</p>
+              <p className={`text-sm font-bold flex items-center gap-0.5 ${realizedPnlTotal >= 0 ? "neon-yes" : "neon-no"}`}>
+                {realizedPnlTotal >= 0 ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+                ${Math.abs(realizedPnlTotal).toFixed(2)}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Unrealized P&L</p>
+              <p className={`text-sm font-bold flex items-center justify-end gap-0.5 ${unrealizedPnlTotal >= 0 ? "neon-yes" : "neon-no"}`}>
+                {unrealizedPnlTotal >= 0 ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+                ${Math.abs(unrealizedPnlTotal).toFixed(2)}
               </p>
             </div>
           </div>
