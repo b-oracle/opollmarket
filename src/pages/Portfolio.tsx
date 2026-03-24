@@ -270,11 +270,18 @@ const Portfolio = () => {
     return true;
   });
 
+  const activePositions = enriched.filter((p) => p.status === "active");
+  const resolvedPositions = enriched.filter((p) => p.status !== "active");
+
   const totalInvested = enriched.reduce((s, p) => s + p.invested, 0);
   const totalValue = enriched.reduce((s, p) => s + p.currentValue, 0);
   const totalPnl = totalValue - totalInvested;
   const totalPnlPercent = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : 0;
   const totalMaxPayout = enriched.reduce((s, p) => s + p.maxPayout, 0);
+
+  // Separate realized (resolved/ended markets) vs unrealized (active markets)
+  const unrealizedPnlTotal = activePositions.reduce((s, p) => s + p.unrealizedPnl, 0);
+  const realizedPnlTotal = resolvedPositions.reduce((s, p) => s + p.unrealizedPnl, 0);
 
   const getTimeRemaining = (endDate: string) => {
     if (!endDate) return "—";
