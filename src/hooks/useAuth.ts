@@ -331,6 +331,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signOut = useCallback(async () => {
+    // Clear security verification so next login re-prompts PIN/TOTP
+    if (user?.id) {
+      try { localStorage.removeItem(`login_sec_verified_${user.id}`); } catch {}
+    }
     // Immediately clear all state so UI updates instantly
     signingOutRef.current = true;
     lastSessionRef.current = null;
