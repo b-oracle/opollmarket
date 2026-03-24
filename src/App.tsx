@@ -569,6 +569,7 @@ const App = () => (
                       <Route path="/embed/ticker" element={<EmbedTicker />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
+                    </LoginSecurityGuard>
                     </SecuritySetupGuard>
                     </MaintenanceGuard>
                   </Suspense>
