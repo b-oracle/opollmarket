@@ -1,28 +1,24 @@
 
 
-# Redirect Shared Space Links to Profile Spaces Tab
+# Blank White Page Diagnosis
 
-## Problem
-When a user clicks a shared link for a scheduled space (`/feed?space={id}`), the deep-link handler in `Feed.tsx` navigates to `/feed` (the market feed) after showing the toast. The user expects to land on the Spaces tab instead.
+## Finding
 
-## Solution
+After thoroughly reviewing the codebase — `App.tsx`, `main.tsx`, `useAuth.ts`, `index.html`, and all recently edited files (`Feed.tsx`, `UserProfile.tsx`, `SocialSection.tsx`, `Profile.tsx`) — there are **no syntax errors, missing imports, or broken logic** that would cause a blank page.
 
-### 1. Change navigation target in `Feed.tsx` deep-link handler (~lines 280-311)
-- For **scheduled** spaces: navigate to `/profile?tab=spaces` instead of `/feed`, then show the reminder toast
-- For **ended** spaces: also navigate to `/profile?tab=spaces`
-- For **live** spaces: keep current behavior (joins the space directly)
-- Strip the `?space=` param as before
+The complete absence of console logs (not even React mounting errors) strongly indicates the JavaScript bundle itself is not executing, which points to a **stale service worker or cached asset issue** rather than a code bug.
 
-### 2. Handle `?tab=spaces` query param in Profile page (`src/pages/Profile.tsx`)
-- On mount, read `searchParams.get("tab")` — if it equals `"spaces"`, scroll to the SocialSection and pre-select the spaces tab
+## Recommended Actions
 
-### 3. Accept initial tab prop in `SocialSection.tsx`
-- Add an optional `initialTab` prop to `SocialSection`
-- Use it to set the default `activeTab` state instead of always defaulting to `"posts"`
-- Profile.tsx passes `initialTab="spaces"` when the query param is present
+### 1. Hard-refresh the preview
+In the preview panel, try a hard refresh (Ctrl+Shift+R / Cmd+Shift+R) to bypass cached assets.
 
-### Files to modify
-- `src/pages/Feed.tsx` — change navigate target for scheduled/ended spaces
-- `src/pages/Profile.tsx` — read `?tab` param, pass to SocialSection
-- `src/components/SocialSection.tsx` — accept `initialTab` prop
+### 2. Clear service worker cache
+If hard-refresh doesn't work, open DevTools in the preview → Application → Service Workers → "Unregister" all workers, then reload.
+
+### 3. If the issue persists after clearing cache
+I can add a temporary `console.log("App mounting...")` at the top of `main.tsx` and inside `App` to pinpoint exactly where execution stops — this would confirm whether it's a build issue or a runtime hang (e.g., the `LoginSecurityGuard` or `SecuritySetupGuard` getting stuck in a loading state).
+
+## No code changes needed right now
+The codebase appears correct. This looks like a transient preview/caching issue. If clearing cache doesn't resolve it, approve the plan and I'll add diagnostic logging to isolate the exact hang point.
 
