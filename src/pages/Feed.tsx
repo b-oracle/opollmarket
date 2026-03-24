@@ -277,8 +277,7 @@ const Feed = () => {
       return;
     }
 
-    // User is logged in — strip query params and handle space
-    navigate("/feed", { replace: true });
+    // User is logged in — handle space deep link
     (async () => {
       const { data: space } = await supabase
         .from("spaces")
@@ -286,11 +285,13 @@ const Feed = () => {
         .eq("id", spaceId)
         .maybeSingle();
       if (!space) {
+        navigate("/feed", { replace: true });
         toast("This space is no longer available", { duration: 3000 });
         return;
       }
 
       if (space.status === "live") {
+        navigate("/feed", { replace: true });
         joinSpace({ id: space.id, title: space.title, hostId: space.host_id });
       } else if (space.status === "scheduled") {
         // Auto-set reminder for the user
@@ -302,10 +303,13 @@ const Feed = () => {
         } catch {
           // ignore duplicate
         }
+        navigate(`/user/${user.id}?tab=spaces`, { replace: true });
         toast("🔔 This Space isn't live yet! We've set a reminder for you — you'll be notified when it starts.", { duration: 5000 });
       } else if (space.status === "ended") {
+        navigate(`/user/${user.id}?tab=spaces`, { replace: true });
         toast("This Space has ended", { duration: 3000 });
       } else {
+        navigate("/feed", { replace: true });
         toast("This space is no longer available", { duration: 3000 });
       }
     })();
