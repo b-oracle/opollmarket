@@ -1,7 +1,8 @@
-// App root – v4 (performance optimized)
-import { lazy, Suspense, useState, useEffect, useRef } from "react";
+// App root – v5 (login security gate)
+import { lazy, Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { ActiveSpaceProvider, useActiveSpace } from "./hooks/useActiveSpace";
 import SpaceRoom from "./components/social/SpaceRoom";
+const SecurityVerificationModal = lazy(() => import("./components/SecurityVerificationModal"));
 
 // Clear chunk reload counter on successful load
 if (typeof sessionStorage !== "undefined") {
