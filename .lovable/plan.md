@@ -1,24 +1,28 @@
 
 
-# Profile PnL Card Fixes
+# Redirect Shared Space Links to Profile Spaces Tab
 
-## Changes in `src/pages/Profile.tsx`
+## Problem
+When a user clicks a shared link for a scheduled space (`/feed?space={id}`), the deep-link handler in `Feed.tsx` navigates to `/feed` (the market feed) after showing the toast. The user expects to land on the Spaces tab instead.
 
-### 1. Remove Quick Trade from main PnL, show it separately in popover
-- **Lines 1555-1562**: Keep `qtPnl` computation but remove it from the main `pnl` formula
-- New formula: `pnl = totalPayouts + totalSold - resolvedBought + unrealizedPnl`
-- Show `qtPnl` inside the popover breakdown so users can still see it
+## Solution
 
-### 2. Change positive PnL color from blue to green
-- **Line 1575**: Replace `text-primary` with `text-green-500` for `pnl > 0`
+### 1. Change navigation target in `Feed.tsx` deep-link handler (~lines 280-311)
+- For **scheduled** spaces: navigate to `/profile?tab=spaces` instead of `/feed`, then show the reminder toast
+- For **ended** spaces: also navigate to `/profile?tab=spaces`
+- For **live** spaces: keep current behavior (joins the space directly)
+- Strip the `?space=` param as before
 
-### 3. Replace Tooltip with Popover (tap-friendly)
-- **Lines 1579-1586**: Swap `Tooltip`/`TooltipTrigger`/`TooltipContent` → `Popover`/`PopoverTrigger`/`PopoverContent`
-- Popover content shows breakdown:
-  - "Settled payouts + sells − resolved wagers + unrealized P&L from open positions"
-  - Quick Trade P&L shown as a separate line item
+### 2. Handle `?tab=spaces` query param in Profile page (`src/pages/Profile.tsx`)
+- On mount, read `searchParams.get("tab")` — if it equals `"spaces"`, scroll to the SocialSection and pre-select the spaces tab
 
-### Technical notes
-- `Popover` is already imported (line 27)
-- No new dependencies needed
+### 3. Accept initial tab prop in `SocialSection.tsx`
+- Add an optional `initialTab` prop to `SocialSection`
+- Use it to set the default `activeTab` state instead of always defaulting to `"posts"`
+- Profile.tsx passes `initialTab="spaces"` when the query param is present
+
+### Files to modify
+- `src/pages/Feed.tsx` — change navigate target for scheduled/ended spaces
+- `src/pages/Profile.tsx` — read `?tab` param, pass to SocialSection
+- `src/components/SocialSection.tsx` — accept `initialTab` prop
 
