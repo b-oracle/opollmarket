@@ -265,7 +265,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [checkRoles]);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const SIGN_IN_TIMEOUT_MS = 10000;
+    const SIGN_IN_TIMEOUT_MS = 20000;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     const signInAttempt = supabase.auth
@@ -279,7 +279,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signInAttempt,
       new Promise<{ error: any }>((resolve) => {
         timeoutId = setTimeout(() => {
-          resolve({ error: new Error("Login request timed out. Please try again.") });
+          resolve({ error: new Error("__TIMEOUT__") });
         }, SIGN_IN_TIMEOUT_MS);
       }),
     ]);
@@ -288,14 +288,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (result.error) {
       // Recovery path: backend login may have succeeded while client lock was delayed
-      try {
-        const { data: { session: recoveredSession } } = await supabase.auth.getSession();
-        if (recoveredSession?.user?.email?.toLowerCase() === email.toLowerCase()) {
-          localStorage.removeItem("social_swipe_used");
-          return { error: null };
+      for (let i = 0; i < 3; i++) {
+        try {
+          const { data: { session: recoveredSession } } = await supabase.auth.getSession();
+          if (recoveredSession?.user?.email?.toLowerCase() === email.toLowerCase()) {
+            localStorage.removeItem("social_swipe_used");
+            return { error: null };
+          }
+          break; // getSession succeeded but no matching session — stop retrying
+        } catch {
+          if (i < 2) await new Promise((r) => setTimeout(r, 500 * (i + 1)));
         }
-      } catch {
-        // ignore and return original error
+      }
+
+      // Replace internal marker with user-friendly message
+      if (result.error?.message === "__TIMEOUT__") {
+        return { error: new Error("Login request timed out. Please try again.") };
       }
     }
 
