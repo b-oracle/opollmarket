@@ -228,12 +228,14 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
 
     let active = true;
 
-    // Safety timeout: if the query hangs for >5s, unblock the app
+    // Safety timeout: if the query hangs for >8s, fail CLOSED (sign out) for security
     const safetyTimer = window.setTimeout(() => {
       if (!active) return;
       checkingRef.current = false;
+      // Fail closed: redirect to setup rather than letting through
+      setNeedsSetup(true);
       setChecked(true);
-    }, 5000);
+    }, 8000);
 
     import("@/integrations/supabase/client")
       .then(({ supabase }) =>
