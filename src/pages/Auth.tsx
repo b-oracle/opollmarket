@@ -407,6 +407,9 @@ const Auth = () => {
         }}
         onVerified={() => {
           setShowLoginSecurity(false);
+          // Mark session as verified so App-level LoginSecurityGuard doesn't re-prompt
+          const uid = supabase.auth.getSession().then(({ data }) => data?.session?.user?.id);
+          uid.then(id => { if (id) try { sessionStorage.setItem(`login_sec_verified_${id}`, "1"); } catch {} });
           toast.success("Logged in successfully!");
           navigate("/");
         }}
