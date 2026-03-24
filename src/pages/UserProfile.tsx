@@ -49,6 +49,7 @@ const formatDollar = (v: number) => {
 
 const UserProfile = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
