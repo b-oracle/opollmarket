@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useCallback } from "react";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import PullToRefreshIndicator from "@/components/PullToRefreshIndicator";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import ActivityFeed from "@/components/ActivityFeed";
 import SocialSection from "@/components/SocialSection";
@@ -49,6 +49,7 @@ const formatDollar = (v: number) => {
 
 const UserProfile = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
@@ -556,7 +557,7 @@ const UserProfile = () => {
 
         {/* Social Section (collapsible) */}
         {(isOwnProfile || profile?.is_public) && (
-          <SocialSection userId={id!} isOwnProfile={isOwnProfile} isPublic={!!profile?.is_public} />
+          <SocialSection userId={id!} isOwnProfile={isOwnProfile} isPublic={!!profile?.is_public} initialTab={searchParams.get("tab") === "spaces" ? "spaces" : undefined} />
         )}
 
         {/* Content Tabs */}

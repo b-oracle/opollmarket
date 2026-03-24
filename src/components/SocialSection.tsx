@@ -18,13 +18,14 @@ interface SocialSectionProps {
   userId: string;
   isOwnProfile: boolean;
   isPublic: boolean;
+  initialTab?: "posts" | "activity" | "spaces" | "followers" | "following" | "suggestions";
 }
 
-const SocialSection = ({ userId, isOwnProfile, isPublic }: SocialSectionProps) => {
+const SocialSection = ({ userId, isOwnProfile, isPublic, initialTab }: SocialSectionProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [expanded, setExpanded] = useState(true);
-  const [activeTab, setActiveTab] = useState<"posts" | "activity" | "spaces" | "followers" | "following" | "suggestions">("posts");
+  const [activeTab, setActiveTab] = useState<"posts" | "activity" | "spaces" | "followers" | "following" | "suggestions">(initialTab || "posts");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
