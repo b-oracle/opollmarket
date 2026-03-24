@@ -1559,7 +1559,7 @@ const Profile = () => {
                 if (qb.status === "won") return sum + (Number(qb.payout || 0) - Number(qb.amount));
                 return sum - Number(qb.amount);
               }, 0);
-            const pnl = totalPayouts + totalSold - resolvedBought + unrealizedPnl + qtPnl;
+            const pnl = totalPayouts + totalSold - resolvedBought + unrealizedPnl;
             const totalPredictions = predictionBuyTxns.length;
             const refundTxns = transactions.filter((t: any) => t.type === "refund" && t.status === "confirmed");
             const resolvedCount = payoutTxns.length + Math.max(0, totalPredictions - payoutTxns.length - refundTxns.length);
@@ -1572,18 +1572,24 @@ const Profile = () => {
               { label: "PnL", value: pnl !== 0 ? `${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}` : "—" },
             ].map(({ label, value }) => (
               <div key={label} className="glass rounded-xl p-3 text-center relative">
-                <p className={`text-lg font-bold ${label === "PnL" && pnl > 0 ? "text-primary" : label === "PnL" && pnl < 0 ? "text-destructive" : ""}`}>{value}</p>
+                <p className={`text-lg font-bold ${label === "PnL" && pnl > 0 ? "text-green-500" : label === "PnL" && pnl < 0 ? "text-destructive" : ""}`}>{value}</p>
                 <p className="text-[10px] text-muted-foreground inline-flex items-center gap-0.5">
                   {label}
                   {label === "PnL" && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
+                    <Popover>
+                      <PopoverTrigger asChild>
                         <HelpCircle className="w-3 h-3 text-muted-foreground cursor-help inline-block" />
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="max-w-[220px] text-xs">
-                        Payouts + Sells − Wagers + Unrealized P&L from open positions + Quick Trade wins/losses.
-                      </TooltipContent>
-                    </Tooltip>
+                      </PopoverTrigger>
+                      <PopoverContent side="bottom" className="max-w-[240px] text-xs p-3 space-y-1.5">
+                        <p className="font-medium">Prediction PnL Breakdown</p>
+                        <p className="text-muted-foreground">Settled payouts + sells − resolved wagers + unrealized P&L from open positions.</p>
+                        {qtPnl !== 0 && (
+                          <p className={`pt-1 border-t border-border ${qtPnl > 0 ? "text-green-500" : "text-destructive"}`}>
+                            Quick Trade P&L: {qtPnl >= 0 ? "+" : ""}${qtPnl.toFixed(2)}
+                          </p>
+                        )}
+                      </PopoverContent>
+                    </Popover>
                   )}
                 </p>
               </div>
