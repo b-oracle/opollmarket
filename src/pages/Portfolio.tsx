@@ -768,8 +768,13 @@ const Portfolio = () => {
                       <div>
                         <p className="text-[9px] text-muted-foreground uppercase">Expires</p>
                         <p className="text-xs font-bold flex items-center gap-0.5">
-                          <Clock className="w-2.5 h-2.5" />
-                          {getTimeRemaining(pos.endDate)}
+                          {pos.status === "resolved" ? (
+                            <><CheckCircle2 className="w-2.5 h-2.5 text-primary" /> Resolved</>
+                          ) : pos.status === "ended" ? (
+                            <><Clock className="w-2.5 h-2.5 text-yellow-500" /> Ended</>
+                          ) : (
+                            <><Clock className="w-2.5 h-2.5" /> {getTimeRemaining(pos.endDate)}</>
+                          )}
                         </p>
                       </div>
                     </div>
