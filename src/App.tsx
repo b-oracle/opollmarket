@@ -280,6 +280,153 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+// Gate that requires PIN/TOTP verification on login for ALL auth methods (OAuth, session restore, email/password)
+const LOGIN_SECURITY_VERIFIED_KEY = "login_sec_verified_";
+
+const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+  const userId = user?.id ?? null;
+
+  const [checked, setChecked] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [secReqs, setSecReqs] = useState({ require_pin: false, require_totp: false });
+  const checkingRef = useRef(false);
+  const checkedUserRef = useRef<string | null>(null);
+
+  const loginAllowedPaths = ["/auth", "/reset-password", "/forgot-password", "/setup-security", "/terms", "/privacy", "/disclaimer"];
+  const isLoginAllowed = loginAllowedPaths.some(p => location.pathname.startsWith(p));
+
+  const isSessionVerified = useCallback((uid: string) => {
+    try {
+      return sessionStorage.getItem(`${LOGIN_SECURITY_VERIFIED_KEY}${uid}`) === "1";
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const markSessionVerified = useCallback((uid: string) => {
+    try {
+      sessionStorage.setItem(`${LOGIN_SECURITY_VERIFIED_KEY}${uid}`, "1");
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (!userId || loading) {
+      checkingRef.current = false;
+      setChecked(true);
+      setShowModal(false);
+      return;
+    }
+
+    if (checkedUserRef.current === userId) {
+      setChecked(true);
+      return;
+    }
+
+    if (isSessionVerified(userId)) {
+      checkedUserRef.current = userId;
+      setChecked(true);
+      return;
+    }
+
+    if (checkingRef.current) return;
+    checkingRef.current = true;
+    setChecked(false);
+
+    let active = true;
+
+    const checkLoginSecurity = async () => {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+
+        let result: any = undefined;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const { data, error } = await supabase
+            .from("user_security_settings" as any)
+            .select("pin_enabled, totp_enabled, require_pin_login, require_totp_login")
+            .eq("user_id", userId)
+            .maybeSingle();
+
+          if (!error) {
+            result = data;
+            break;
+          }
+          if (attempt < 2) await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+        }
+
+        if (!active) return;
+
+        if (result === undefined) {
+          await supabase.auth.signOut({ scope: "local" });
+          return;
+        }
+
+        const sec = result as { pin_enabled: boolean; totp_enabled: boolean; require_pin_login: boolean; require_totp_login: boolean } | null;
+        const needPin = sec?.pin_enabled && sec?.require_pin_login;
+        const needTotp = sec?.totp_enabled && sec?.require_totp_login;
+
+        if (needPin || needTotp) {
+          setSecReqs({ require_pin: !!needPin, require_totp: !!needTotp });
+          setShowModal(true);
+          checkedUserRef.current = userId;
+          setChecked(true);
+        } else {
+          markSessionVerified(userId);
+          checkedUserRef.current = userId;
+          setChecked(true);
+        }
+      } catch {
+        if (!active) return;
+        try {
+          const { supabase } = await import("@/integrations/supabase/client");
+          await supabase.auth.signOut({ scope: "local" });
+        } catch {}
+      } finally {
+        if (active) checkingRef.current = false;
+      }
+    };
+
+    checkLoginSecurity();
+
+    return () => { active = false; checkingRef.current = false; };
+  }, [userId, loading, isSessionVerified, markSessionVerified]);
+
+  const handleVerified = useCallback(() => {
+    setShowModal(false);
+    if (userId) markSessionVerified(userId);
+  }, [userId, markSessionVerified]);
+
+  const handleClose = useCallback(async () => {
+    setShowModal(false);
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      await supabase.auth.signOut({ scope: "local" });
+    } catch {}
+    checkedUserRef.current = null;
+    setChecked(true);
+  }, []);
+
+  if (!checked && !isLoginAllowed) return <PageFallback />;
+
+  return (
+    <>
+      {children}
+      {showModal && (
+        <Suspense fallback={null}>
+          <SecurityVerificationModal
+            open={showModal}
+            onClose={handleClose}
+            onVerified={handleVerified}
+            requirePin={secReqs.require_pin}
+            requireTotp={secReqs.require_totp}
+          />
+        </Suspense>
+      )}
+    </>
+  );
+};
+
 const SocialTutorialTrigger = () => {
   const { user } = useAuth();
   const { isFeatureEnabled } = useFeatureToggles();
