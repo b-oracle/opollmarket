@@ -963,7 +963,14 @@ const MarketDetail = () => {
         optionColor={selectedOptionColor}
       />
 
-      <BoostMarketModal open={boostOpen} onClose={() => setBoostOpen(false)} marketId={market.id} marketTitle={market.title} />
+      <AddLiquidityModal
+        open={addLiquidityOpen}
+        onClose={() => setAddLiquidityOpen(false)}
+        marketId={market.id}
+        marketTitle={market.title}
+        currentLiquidity={market.liquidity}
+      />
+      
       <ShareModal
         open={shareOpen}
         onOpenChange={setShareOpen}
