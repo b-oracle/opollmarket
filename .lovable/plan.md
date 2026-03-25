@@ -1,20 +1,36 @@
 
 
-# Fix Commissions Page Bottom Spacing and Pagination
+# Update Developer Documentation to Align with Platform
 
-## Problem
-The commission history list items at the bottom are hidden behind the bottom navigation bar. The pagination controls also get cut off. The page has `pb-24` but needs more bottom padding to account for the safe area inset.
+## Current State
+The documentation page at `/developers` is largely accurate. After reviewing the API (`api-public`), SDK (`sdk-js`), webhook dispatcher, WordPress plugin, and embed routes, there is one undocumented API endpoint and a few minor improvements needed.
 
-## Changes
+## Changes to `src/pages/Developers.tsx`
 
-### `src/pages/Commissions.tsx`
+### 1. Add missing `embed-data` endpoint to API Endpoints section
+The `embed-data` action is a public endpoint (no API key required) that returns market data for embed widgets. It should be documented between the `positions` and `place-bet` endpoints:
+- **Method**: GET
+- **Action**: `embed-data`
+- **Params**: `id (required)`
+- **Note**: Public — no API key needed
+- **Response**: `{ "market": { ... } }`
 
-1. **Fix bottom padding on container** (line 361): Change `pb-24` to use `calc()` with safe-area-inset like other pages do:
-   - `style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}`
+### 2. Add `embed-data` to the SDK section note
+Add a note under the Embed Widgets section that the embed data endpoint is publicly accessible without an API key, making it suitable for server-side rendering of market previews.
 
-2. **Add bottom margin to pagination** (line 526): Add `mb-6` to the pagination wrapper so there's breathing room between the last pagination control and the bottom nav.
+### 3. Update version reference in header
+Add a version badge or note (e.g., "API v1.0") to the header area for clarity.
 
-3. **Add bottom margin to the history list** when there's no pagination: Add `mb-4` to the records container.
+### 4. Add error response documentation
+Add a small section or callout under Authentication showing the standard error response format:
+```json
+{ "error": "Error message here" }
+```
+With common HTTP status codes: 400, 401, 403, 404, 429, 500, 503.
 
-These are minimal CSS spacing fixes — no logic changes needed. The pagination already exists and works; it's just getting clipped by the bottom nav.
+### 5. Add feature toggle note
+Document that the public API can be disabled via a feature toggle (`public_api`), which returns `503 Service Unavailable`.
+
+## Files Modified
+- `src/pages/Developers.tsx` — Add missing endpoint, error docs, and feature toggle note
 
