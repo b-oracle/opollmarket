@@ -518,7 +518,7 @@ const Commissions = () => {
                 </div>
               );
             })}
-          </div>
+          </div><div className="mb-4" />
           {(() => {
             const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
             if (totalPages <= 1) return null;
