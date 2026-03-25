@@ -2877,6 +2877,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_market_liquidity: {
+        Args: { _amount: number; _market_id: string; _user_id: string }
+        Returns: Json
+      }
       adjust_balance:
         | {
             Args: { _bonus_delta?: number; _delta: number; _user_id: string }
