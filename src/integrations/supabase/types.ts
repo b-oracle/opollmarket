@@ -2490,6 +2490,7 @@ export type Database = {
         Row: {
           amount: number
           api_key_id: string | null
+          bonus_amount: number
           created_at: string
           id: string
           is_copy_trade: boolean
@@ -2508,6 +2509,7 @@ export type Database = {
         Insert: {
           amount: number
           api_key_id?: string | null
+          bonus_amount?: number
           created_at?: string
           id?: string
           is_copy_trade?: boolean
@@ -2526,6 +2528,7 @@ export type Database = {
         Update: {
           amount?: number
           api_key_id?: string | null
+          bonus_amount?: number
           created_at?: string
           id?: string
           is_copy_trade?: boolean
