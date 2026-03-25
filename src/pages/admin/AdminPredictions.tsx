@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, TrendingUp, TrendingDown, Users, DollarSign, BarChart3, Trophy, ShoppingBag, Wallet, Percent, Landmark, Info, Zap, Sparkles } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, Users, DollarSign, BarChart3, Trophy, ShoppingBag, Wallet, Percent, Landmark, Info, Zap, Sparkles, Gift } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import AdminPagination from "@/components/admin/AdminPagination";
 
@@ -306,6 +306,11 @@ const AdminPredictions = () => {
               <c.icon className={`w-4 h-4 ${c.color}`} />
             </div>
             <span className="text-lg font-bold">{c.value}</span>
+            {c.bonus > 0 && (
+              <div className="text-[10px] text-orange-400 font-medium mt-0.5">
+                ({fmt(c.bonus)} from bonus)
+              </div>
+            )}
             {c.tooltip && (
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-popover border border-border rounded-lg text-[10px] text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
                 {c.tooltip}
