@@ -19,7 +19,7 @@ const CopyBlock = ({ code, label }: { code: string; label?: string }) => {
   return (
     <div className="relative group">
       {label && <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1 block">{label}</span>}
-      <pre className="bg-muted/50 border border-border rounded-lg p-3 overflow-x-auto text-[11px] leading-relaxed font-mono text-foreground/90">
+      <pre className="bg-muted/50 border border-border rounded-lg p-2 sm:p-3 overflow-x-auto text-[10px] sm:text-[11px] leading-relaxed font-mono text-foreground/90 max-w-full">
         {code}
       </pre>
       <button
@@ -33,8 +33,8 @@ const CopyBlock = ({ code, label }: { code: string; label?: string }) => {
 };
 
 const Section = ({ icon: Icon, title, id, children }: { icon: any; title: string; id: string; children: React.ReactNode }) => (
-  <section id={id} className="scroll-mt-20">
-    <h2 className="text-lg font-bold flex items-center gap-2 mb-4 pt-6 border-t border-border">
+  <section id={id} className="scroll-mt-16 sm:scroll-mt-20">
+    <h2 className="text-base sm:text-lg font-bold flex items-center gap-2 mb-3 sm:mb-4 pt-4 sm:pt-6 border-t border-border">
       <Icon className="w-5 h-5 text-primary" />
       {title}
     </h2>
@@ -57,34 +57,34 @@ const Developers = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
       <SEOHead
         title="Developer Docs — OPOLL API & SDK"
         description="Integrate OPOLL prediction markets into your app with our REST API, JavaScript SDK, embeddable widgets, and WordPress plugin."
       />
       <TopBar />
 
-      <div className="max-w-3xl mx-auto px-4 pt-20 lg:pt-24">
+      <div className="max-w-3xl mx-auto px-3 sm:px-4 pt-16 sm:pt-20 lg:pt-24">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => navigate(-1)} className="p-2 rounded-xl glass hover:bg-muted/50 transition-colors">
-            <ArrowLeft className="w-5 h-5" />
+        <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+          <button onClick={() => navigate(-1)} className="p-1.5 sm:p-2 rounded-xl glass hover:bg-muted/50 transition-colors shrink-0">
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
-          <div>
-            <h1 className="text-2xl font-black tracking-tight">Developer Documentation</h1>
-            <p className="text-sm text-muted-foreground">Integrate OPOLL prediction markets into your platform</p>
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl font-black tracking-tight truncate">Developer Documentation</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">Integrate OPOLL prediction markets into your platform</p>
           </div>
         </div>
 
         {/* Nav pills */}
-        <div className="flex flex-wrap gap-1.5 mb-8 sticky top-[3.5rem] z-10 bg-background/95 backdrop-blur-sm py-3 -mx-4 px-4">
+        <div className="flex flex-wrap gap-1 sm:gap-1.5 mb-6 sm:mb-8 sticky top-[3.5rem] z-10 bg-background/95 backdrop-blur-sm py-2 sm:py-3 -mx-3 sm:-mx-4 px-3 sm:px-4">
           {navItems.map((n) => (
             <a
               key={n.id}
               href={`#${n.id}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/50 border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-medium bg-muted/50 border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
-              <n.icon className="w-3 h-3" />
+              <n.icon className="w-3 h-3 hidden sm:block" />
               {n.label}
             </a>
           ))}
@@ -218,8 +218,8 @@ const Developers = () => {
                 { method: "deposit({ amount, currency? })", desc: "Initiate a deposit (requires user token)." },
                 { method: "embedMarket(marketId, targetEl)", desc: "Render an embedded market widget into a DOM element." },
               ].map((m) => (
-                <div key={m.method} className="flex gap-3 items-start">
-                  <code className="text-[11px] font-mono text-primary bg-primary/5 px-2 py-0.5 rounded shrink-0">{m.method}</code>
+              <div key={m.method} className="flex flex-col sm:flex-row gap-1 sm:gap-3 items-start">
+                  <code className="text-[10px] sm:text-[11px] font-mono text-primary bg-primary/5 px-2 py-0.5 rounded shrink-0 break-all">{m.method}</code>
                   <span className="text-xs text-muted-foreground">{m.desc}</span>
                 </div>
               ))}
