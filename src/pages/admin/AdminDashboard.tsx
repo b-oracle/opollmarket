@@ -466,6 +466,11 @@ const AdminDashboard = () => {
         <p className="text-3xl font-bold text-primary">
           {platformPoolBalance >= 1000 ? `$${(platformPoolBalance / 1000).toFixed(1)}K` : `$${platformPoolBalance.toFixed(2)}`}
         </p>
+        {promoBonusTotal > 0 && (
+          <p className="text-xs text-orange-400 font-medium mt-1">
+            {promoBonusTotal >= 1000 ? `$${(promoBonusTotal / 1000).toFixed(1)}K` : `$${promoBonusTotal.toFixed(2)}`} from bonus balance (paper money)
+          </p>
+        )}
         <p className="text-[10px] text-muted-foreground mt-1">
           Accumulated platform fees (prediction fees, withdrawal fees). Creator & referral commissions are paid out from this pool.
         </p>
