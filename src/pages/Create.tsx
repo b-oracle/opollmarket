@@ -1,5 +1,6 @@
 import LogoLoader from "@/components/LogoLoader";
 import { useUserBalance } from "@/hooks/useUserBalance";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogAction,
