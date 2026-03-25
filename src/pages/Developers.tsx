@@ -71,7 +71,10 @@ const Developers = () => {
             <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
           <div className="min-w-0">
-            <h1 className="text-lg sm:text-2xl font-black tracking-tight truncate">Developer Documentation</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg sm:text-2xl font-black tracking-tight truncate">Developer Documentation</h1>
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 shrink-0">API v1.0</span>
+            </div>
             <p className="text-xs sm:text-sm text-muted-foreground truncate">Integrate OPOLL prediction markets into your platform</p>
           </div>
         </div>
@@ -125,6 +128,30 @@ const Developers = () => {
             <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-xs">
               <strong className="text-primary">Rate Limiting:</strong> Each API key has a configurable rate limit (default 60 requests/minute). Exceeding this returns <code>429 Too Many Requests</code>.
             </div>
+
+            <h3 className="text-sm font-semibold text-foreground mt-4">Error Responses</h3>
+            <p>All errors return a JSON body with a single <code className="text-foreground bg-muted px-1.5 py-0.5 rounded text-xs">error</code> field:</p>
+            <CopyBlock code={`{ "error": "Invalid or missing API key" }`} />
+            <div className="bg-card border border-border rounded-xl divide-y divide-border overflow-hidden mt-2">
+              {[
+                { code: "400", desc: "Bad Request — missing or invalid parameters" },
+                { code: "401", desc: "Unauthorized — missing or invalid API key" },
+                { code: "403", desc: "Forbidden — API key lacks required permission" },
+                { code: "404", desc: "Not Found — resource does not exist" },
+                { code: "429", desc: "Too Many Requests — rate limit exceeded" },
+                { code: "500", desc: "Internal Server Error" },
+                { code: "503", desc: "Service Unavailable — API disabled via feature toggle" },
+              ].map((s) => (
+                <div key={s.code} className="p-2 sm:p-3 flex items-start gap-3">
+                  <code className="text-[11px] font-mono text-primary bg-primary/5 px-2 py-0.5 rounded shrink-0">{s.code}</code>
+                  <span className="text-xs text-muted-foreground">{s.desc}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 text-xs mt-3">
+              <strong className="text-amber-500">Availability:</strong> The public API can be globally disabled by the platform admin. When disabled, all endpoints return <code>503 Service Unavailable</code>.
+            </div>
           </Section>
 
           {/* API Endpoints */}
@@ -155,6 +182,12 @@ const Developers = () => {
                 desc: "Get a user's open positions with market data.",
                 params: "user_id (required)",
                 response: `{ "positions": [{ "market_id": "...", "side": "yes", "shares": 10, ... }] }`,
+              },
+              {
+                method: "GET", action: "embed-data",
+                desc: "Get market data for embed widgets. Public — no API key required.",
+                params: "id (required)",
+                response: `{ "market": { "id": "...", "title": "...", "yes_price": 0.65, "options": [...] } }`,
               },
               {
                 method: "POST", action: "place-bet",
@@ -278,6 +311,10 @@ console.log('Trade placed:', result);`}
   loading="lazy"
 ></iframe>`}
             />
+
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-xs mt-3">
+              <strong className="text-primary">Public Data:</strong> The embed data endpoint (<code>?action=embed-data</code>) is publicly accessible without an API key, making it suitable for server-side rendering of market previews.
+            </div>
 
             <h3 className="text-sm font-semibold text-foreground mt-6">SDK Embed Helper</h3>
             <p>Use the SDK to programmatically render a market widget into any DOM element.</p>
