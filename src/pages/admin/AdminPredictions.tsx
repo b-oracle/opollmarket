@@ -131,6 +131,11 @@ const AdminPredictions = () => {
     const creationFeeTx = buys.filter(t => t.side === "market_creation_fee");
     const aiFeeTx = buys.filter(t => t.side === "ai_generation");
 
+    // Promotion transactions (boosts, broadcasts, social ads)
+    const boostTx = buys.filter(t => t.side?.startsWith("boost_"));
+    const broadcastTx = buys.filter(t => t.side === "broadcast_alert");
+    const socialAdTx = buys.filter(t => t.side === "social_ad");
+
     const totalMarkets = filteredMarkets.length;
     const totalPredictions = predictions.length;
     const uniqueTraders = new Set(predictions.map(b => b.user_id)).size;
@@ -144,13 +149,17 @@ const AdminPredictions = () => {
     const totalForfeitures = forfeitures.reduce((s, b) => s + Number(b.amount), 0);
     const totalBoosts = filteredBoosts.reduce((s, b) => s + Number(b.amount), 0);
 
+    // Bonus amounts from promotions (paper money)
+    const boostBonusTotal = boostTx.reduce((s, t) => s + Number(t.bonus_amount || 0), 0);
+    const broadcastBonusTotal = broadcastTx.reduce((s, t) => s + Number(t.bonus_amount || 0), 0);
+    const socialAdBonusTotal = socialAdTx.reduce((s, t) => s + Number(t.bonus_amount || 0), 0);
+    const totalBonusRevenue = boostBonusTotal + broadcastBonusTotal + socialAdBonusTotal;
+    // Also include bonus from creation fees and AI fees
+    const creationFeeBonusTotal = creationFeeTx.reduce((s, t) => s + Number(t.bonus_amount || 0), 0);
+    const aiFeeBonusTotal = aiFeeTx.reduce((s, t) => s + Number(t.bonus_amount || 0), 0);
+    const totalBonusAll = totalBonusRevenue + creationFeeBonusTotal + aiFeeBonusTotal;
+
     // Platform profit = admin commissions + creation fees + AI fees + boosts + forfeitures
-    // Note: commissions include both admin + creator commissions as recorded
-    // For a more accurate split we'd need to know which user_id is admin, 
-    // but total commissions are platform revenue (admin keeps admin%, creator keeps creator%)
-    // Actually admin commission goes to platform, creator commission goes to creator
-    // We approximate: admin_fee / (admin_fee + creator_fee) ratio from commission_settings
-    // For now, show total commissions and note it includes both
     const platformProfit = totalCommissions + totalCreationFees + totalAiFees + totalBoosts + totalForfeitures;
 
     // Category breakdown
