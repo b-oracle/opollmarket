@@ -871,7 +871,24 @@ const MarketDetail = () => {
         {/* Stats */}
         <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4">
           <div className="glass rounded-xl p-2.5 sm:p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><TrendingUp className="w-3.5 h-3.5" /><span className="text-[11px] sm:text-xs">Volume</span></div><span className="text-base sm:text-lg font-bold">{formatVolume(market.volume)}</span></div>
-          <div className="glass rounded-xl p-2.5 sm:p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Droplets className="w-3.5 h-3.5" /><span className="text-[11px] sm:text-xs">Liquidity</span></div><span className="text-base sm:text-lg font-bold">{formatVolume(market.liquidity)}</span></div>
+          <div className="glass rounded-xl p-2.5 sm:p-3">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Droplets className="w-3.5 h-3.5" />
+                <span className="text-[11px] sm:text-xs">Liquidity</span>
+              </div>
+              {isCreator && !isEnded && (
+                <button
+                  onClick={() => setAddLiquidityOpen(true)}
+                  className="w-6 h-6 rounded-full bg-primary/15 hover:bg-primary/25 flex items-center justify-center text-primary transition-colors"
+                  title="Add Liquidity"
+                >
+                  <span className="text-sm font-bold leading-none">+</span>
+                </button>
+              )}
+            </div>
+            <span className="text-base sm:text-lg font-bold">{formatVolume(market.liquidity)}</span>
+          </div>
           <div className="glass rounded-xl p-2.5 sm:p-3">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               {showPageViews ? <BarChart3 className="w-3.5 h-3.5" /> : <Users className="w-3.5 h-3.5" />}
