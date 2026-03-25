@@ -13,6 +13,7 @@ import CategoryIcon from "@/components/CategoryIcon";
 import BottomNav from "@/components/BottomNav";
 
 import BetModal from "@/components/BetModal";
+import AddLiquidityModal from "@/components/AddLiquidityModal";
 import BoostMarketModal from "@/components/BoostMarketModal";
 import ShareModal from "@/components/ShareModal";
 import OrderBook from "@/components/OrderBook";
