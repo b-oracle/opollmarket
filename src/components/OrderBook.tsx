@@ -175,7 +175,9 @@ const OrderBook = ({ yesPrice, noPrice, liquidity, marketId }: OrderBookProps) =
     return `${Math.floor(mins / 60)}h`;
   };
 
-  const spread = Math.abs(100 - yesPrice - noPrice);
+  const bestBid = bids[0]?.price || 0;
+  const bestAsk = asks[asks.length - 1]?.price || 100;
+  const spread = bestAsk - bestBid;
 
   return (
     <div className="glass rounded-xl p-4 mb-4">
