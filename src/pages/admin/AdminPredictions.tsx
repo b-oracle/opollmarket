@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, TrendingUp, TrendingDown, Users, DollarSign, BarChart3, Trophy, ShoppingBag, Wallet, Percent, Landmark, Info, Zap, Sparkles } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, Users, DollarSign, BarChart3, Trophy, ShoppingBag, Wallet, Percent, Landmark, Info, Zap, Sparkles, Gift } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import AdminPagination from "@/components/admin/AdminPagination";
 
@@ -20,6 +20,7 @@ interface TxRow {
   market_id: string | null;
   type: string;
   amount: number;
+  bonus_amount: number;
   side: string | null;
   shares: number | null;
   price: number | null;
@@ -78,7 +79,7 @@ const AdminPredictions = () => {
       };
 
       const [txData, marketData, boostData] = await Promise.all([
-        fetchPaginated("transactions", "id, user_id, market_id, type, amount, side, shares, price, status, created_at, is_copy_trade", (q: any) => q.in("type", ["buy", "sell", "payout", "refund", "commission", "fee_forfeiture"]).eq("status", "confirmed")),
+        fetchPaginated("transactions", "id, user_id, market_id, type, amount, bonus_amount, side, shares, price, status, created_at, is_copy_trade", (q: any) => q.in("type", ["buy", "sell", "payout", "refund", "commission", "fee_forfeiture"]).eq("status", "confirmed")),
         fetchPaginated("markets", "id, title, category, status, volume, participants, created_at"),
         fetchPaginated("market_boosts", "id, amount, status, created_at", (q: any) => q.eq("status", "confirmed")),
       ]);
@@ -130,6 +131,11 @@ const AdminPredictions = () => {
     const creationFeeTx = buys.filter(t => t.side === "market_creation_fee");
     const aiFeeTx = buys.filter(t => t.side === "ai_generation");
 
+    // Promotion transactions (boosts, broadcasts, social ads)
+    const boostTx = buys.filter(t => t.side?.startsWith("boost_"));
+    const broadcastTx = buys.filter(t => t.side === "broadcast_alert");
+    const socialAdTx = buys.filter(t => t.side === "social_ad");
+
     const totalMarkets = filteredMarkets.length;
     const totalPredictions = predictions.length;
     const uniqueTraders = new Set(predictions.map(b => b.user_id)).size;
@@ -143,13 +149,17 @@ const AdminPredictions = () => {
     const totalForfeitures = forfeitures.reduce((s, b) => s + Number(b.amount), 0);
     const totalBoosts = filteredBoosts.reduce((s, b) => s + Number(b.amount), 0);
 
+    // Bonus amounts from promotions (paper money)
+    const boostBonusTotal = boostTx.reduce((s, t) => s + Number(t.bonus_amount || 0), 0);
+    const broadcastBonusTotal = broadcastTx.reduce((s, t) => s + Number(t.bonus_amount || 0), 0);
+    const socialAdBonusTotal = socialAdTx.reduce((s, t) => s + Number(t.bonus_amount || 0), 0);
+    const totalBonusRevenue = boostBonusTotal + broadcastBonusTotal + socialAdBonusTotal;
+    // Also include bonus from creation fees and AI fees
+    const creationFeeBonusTotal = creationFeeTx.reduce((s, t) => s + Number(t.bonus_amount || 0), 0);
+    const aiFeeBonusTotal = aiFeeTx.reduce((s, t) => s + Number(t.bonus_amount || 0), 0);
+    const totalBonusAll = totalBonusRevenue + creationFeeBonusTotal + aiFeeBonusTotal;
+
     // Platform profit = admin commissions + creation fees + AI fees + boosts + forfeitures
-    // Note: commissions include both admin + creator commissions as recorded
-    // For a more accurate split we'd need to know which user_id is admin, 
-    // but total commissions are platform revenue (admin keeps admin%, creator keeps creator%)
-    // Actually admin commission goes to platform, creator commission goes to creator
-    // We approximate: admin_fee / (admin_fee + creator_fee) ratio from commission_settings
-    // For now, show total commissions and note it includes both
     const platformProfit = totalCommissions + totalCreationFees + totalAiFees + totalBoosts + totalForfeitures;
 
     // Category breakdown
@@ -216,6 +226,7 @@ const AdminPredictions = () => {
       totalMarkets, totalPredictions, uniqueTraders, totalWagered, totalLiquidity, netLiquidity,
       totalCreationFees, totalAiFees, totalCommissions, totalPayouts, totalRefunds,
       totalForfeitures, totalBoosts, platformProfit,
+      totalBonusRevenue, totalBonusAll, boostBonusTotal, creationFeeBonusTotal, aiFeeBonusTotal,
       categoryData, chartData, topTraders, resolvedMarkets, cancelledMarkets, activeMarkets,
     };
   }, [transactions, markets, boosts, range, profileMap]);
@@ -247,15 +258,16 @@ const AdminPredictions = () => {
   ];
 
   const financialCards = [
-    { label: "Total Wagered", value: fmt(stats.totalWagered), icon: DollarSign, color: "text-amber-500", tooltip: "Sum of all prediction amounts (escrowed until resolution)" },
-    { label: "Total Liquidity", value: fmt(stats.netLiquidity), icon: Wallet, color: "text-blue-500", tooltip: "Initial liquidity + wagered − payouts − sells − refunds" },
-    { label: "Commissions", value: fmt(stats.totalCommissions), icon: Percent, color: "text-purple-500", tooltip: "Admin + Creator fees collected per prediction" },
-    { label: "Creation Fees", value: fmt(stats.totalCreationFees), icon: Landmark, color: "text-orange-500", tooltip: "Fees paid by creators to list markets" },
-    { label: "AI Fees", value: fmt(stats.totalAiFees), icon: Sparkles, color: "text-cyan-500", tooltip: "Fees for AI-generated market content" },
-    { label: "Boosts", value: fmt(stats.totalBoosts), icon: Zap, color: "text-yellow-500", tooltip: "Revenue from market boost payments" },
-    { label: "Total Payouts", value: fmt(stats.totalPayouts), icon: TrendingUp, color: "text-emerald-500", tooltip: "Winnings paid to prediction winners" },
-    { label: "Total Refunds", value: fmt(stats.totalRefunds), icon: TrendingDown, color: "text-destructive", tooltip: "Refunds from cancelled markets" },
-    { label: "Platform Profit", value: fmt(stats.platformProfit), icon: BarChart3, color: stats.platformProfit >= 0 ? "text-emerald-500" : "text-destructive", tooltip: "Commissions + Creation Fees + AI Fees + Boosts + Forfeitures" },
+    { label: "Total Wagered", value: fmt(stats.totalWagered), icon: DollarSign, color: "text-amber-500", tooltip: "Sum of all prediction amounts (escrowed until resolution)", bonus: 0 },
+    { label: "Total Liquidity", value: fmt(stats.netLiquidity), icon: Wallet, color: "text-blue-500", tooltip: "Initial liquidity + wagered − payouts − sells − refunds", bonus: 0 },
+    { label: "Commissions", value: fmt(stats.totalCommissions), icon: Percent, color: "text-purple-500", tooltip: "Admin + Creator fees collected per prediction", bonus: 0 },
+    { label: "Creation Fees", value: fmt(stats.totalCreationFees), icon: Landmark, color: "text-orange-500", tooltip: "Fees paid by creators to list markets", bonus: stats.creationFeeBonusTotal },
+    { label: "AI Fees", value: fmt(stats.totalAiFees), icon: Sparkles, color: "text-cyan-500", tooltip: "Fees for AI-generated market content", bonus: stats.aiFeeBonusTotal },
+    { label: "Boosts", value: fmt(stats.totalBoosts), icon: Zap, color: "text-yellow-500", tooltip: "Revenue from market boost payments", bonus: stats.boostBonusTotal },
+    { label: "Total Payouts", value: fmt(stats.totalPayouts), icon: TrendingUp, color: "text-emerald-500", tooltip: "Winnings paid to prediction winners", bonus: 0 },
+    { label: "Total Refunds", value: fmt(stats.totalRefunds), icon: TrendingDown, color: "text-destructive", tooltip: "Refunds from cancelled markets", bonus: 0 },
+    { label: "Platform Profit", value: fmt(stats.platformProfit), icon: BarChart3, color: stats.platformProfit >= 0 ? "text-emerald-500" : "text-destructive", tooltip: "Commissions + Creation Fees + AI Fees + Boosts + Forfeitures", bonus: stats.totalBonusAll },
+    { label: "Bonus Revenue", value: fmt(stats.totalBonusAll), icon: Gift, color: "text-orange-400", tooltip: "Total revenue paid from bonus balance (paper money — not real revenue)", bonus: 0 },
   ];
 
   return (
@@ -294,6 +306,11 @@ const AdminPredictions = () => {
               <c.icon className={`w-4 h-4 ${c.color}`} />
             </div>
             <span className="text-lg font-bold">{c.value}</span>
+            {c.bonus > 0 && (
+              <div className="text-[10px] text-orange-400 font-medium mt-0.5">
+                ({fmt(c.bonus)} from bonus)
+              </div>
+            )}
             {c.tooltip && (
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-popover border border-border rounded-lg text-[10px] text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
                 {c.tooltip}

@@ -78,6 +78,7 @@ const AdminDashboard = () => {
   const [depositRange, setDepositRange] = useState<DepositRangeKey>("all");
   const [platformPoolBalance, setPlatformPoolBalance] = useState<number>(0);
   const [qtRevenuePool, setQtRevenuePool] = useState<number>(0);
+  const [promoBonusTotal, setPromoBonusTotal] = useState<number>(0);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -328,6 +329,22 @@ const AdminDashboard = () => {
         .single();
       setPlatformPoolBalance(Number(poolData?.balance || 0));
 
+      // Fetch total bonus amounts from promotion transactions
+      const fetchPromoBonusTotals = async () => {
+        const rows: { bonus_amount: number }[] = [];
+        let from = 0;
+        const batchSize = 1000;
+        while (true) {
+          const { data, error } = await supabase.from("transactions").select("bonus_amount").eq("type", "buy").eq("status", "confirmed").gt("bonus_amount", 0).range(from, from + batchSize - 1);
+          if (error || !data || data.length === 0) break;
+          rows.push(...data);
+          if (data.length < batchSize) break;
+          from += batchSize;
+        }
+        return rows.reduce((s, r) => s + Number(r.bonus_amount || 0), 0);
+      };
+      setPromoBonusTotal(await fetchPromoBonusTotals());
+
       // Calculate QT revenue pool (Wagered - Payouts - Refunded - Bonus)
       const fetchAllQtBets = async () => {
         const rows: { amount: number; payout: number | null; status: string }[] = [];
@@ -449,6 +466,11 @@ const AdminDashboard = () => {
         <p className="text-3xl font-bold text-primary">
           {platformPoolBalance >= 1000 ? `$${(platformPoolBalance / 1000).toFixed(1)}K` : `$${platformPoolBalance.toFixed(2)}`}
         </p>
+        {promoBonusTotal > 0 && (
+          <p className="text-xs text-orange-400 font-medium mt-1">
+            {promoBonusTotal >= 1000 ? `$${(promoBonusTotal / 1000).toFixed(1)}K` : `$${promoBonusTotal.toFixed(2)}`} from bonus balance (paper money)
+          </p>
+        )}
         <p className="text-[10px] text-muted-foreground mt-1">
           Accumulated platform fees (prediction fees, withdrawal fees). Creator & referral commissions are paid out from this pool.
         </p>
