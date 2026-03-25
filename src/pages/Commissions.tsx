@@ -523,7 +523,7 @@ const Commissions = () => {
             const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
             if (totalPages <= 1) return null;
             return (
-              <div className="flex items-center justify-center gap-1.5 mt-4">
+              <div className="flex items-center justify-center gap-1.5 mt-4 mb-6">
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
