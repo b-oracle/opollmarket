@@ -20,6 +20,7 @@ interface TxRow {
   market_id: string | null;
   type: string;
   amount: number;
+  bonus_amount: number;
   side: string | null;
   shares: number | null;
   price: number | null;
@@ -78,7 +79,7 @@ const AdminPredictions = () => {
       };
 
       const [txData, marketData, boostData] = await Promise.all([
-        fetchPaginated("transactions", "id, user_id, market_id, type, amount, side, shares, price, status, created_at, is_copy_trade", (q: any) => q.in("type", ["buy", "sell", "payout", "refund", "commission", "fee_forfeiture"]).eq("status", "confirmed")),
+        fetchPaginated("transactions", "id, user_id, market_id, type, amount, bonus_amount, side, shares, price, status, created_at, is_copy_trade", (q: any) => q.in("type", ["buy", "sell", "payout", "refund", "commission", "fee_forfeiture"]).eq("status", "confirmed")),
         fetchPaginated("markets", "id, title, category, status, volume, participants, created_at"),
         fetchPaginated("market_boosts", "id, amount, status, created_at", (q: any) => q.eq("status", "confirmed")),
       ]);
