@@ -78,6 +78,7 @@ const AdminDashboard = () => {
   const [depositRange, setDepositRange] = useState<DepositRangeKey>("all");
   const [platformPoolBalance, setPlatformPoolBalance] = useState<number>(0);
   const [qtRevenuePool, setQtRevenuePool] = useState<number>(0);
+  const [promoBonusTotal, setPromoBonusTotal] = useState<number>(0);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -327,6 +328,22 @@ const AdminDashboard = () => {
         .limit(1)
         .single();
       setPlatformPoolBalance(Number(poolData?.balance || 0));
+
+      // Fetch total bonus amounts from promotion transactions
+      const fetchPromoBonusTotals = async () => {
+        const rows: { bonus_amount: number }[] = [];
+        let from = 0;
+        const batchSize = 1000;
+        while (true) {
+          const { data, error } = await supabase.from("transactions").select("bonus_amount").eq("type", "buy").eq("status", "confirmed").gt("bonus_amount", 0).range(from, from + batchSize - 1);
+          if (error || !data || data.length === 0) break;
+          rows.push(...data);
+          if (data.length < batchSize) break;
+          from += batchSize;
+        }
+        return rows.reduce((s, r) => s + Number(r.bonus_amount || 0), 0);
+      };
+      setPromoBonusTotal(await fetchPromoBonusTotals());
 
       // Calculate QT revenue pool (Wagered - Payouts - Refunded - Bonus)
       const fetchAllQtBets = async () => {
