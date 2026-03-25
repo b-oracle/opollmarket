@@ -316,37 +316,16 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
 
     setSubmitting(true);
     try {
-      // AI moderation check
-      const { data: modData } = await supabase.functions.invoke("moderate-comment", {
-        body: { content: cleanText },
-      });
-      if (modData?.flagged) {
-        // Log to moderation_logs
-        await supabase.from("moderation_logs").insert({
-          content_type: "comment",
-          content_id: marketId,
-          user_id: user.id,
-          flagged_content: cleanText,
-          reason: modData.reason || "Flagged by AI",
-          category: "profanity",
-        });
-        toast.error("Comment blocked", {
-          description: modData.reason || "Your comment contains inappropriate content. Please revise it.",
-          duration: 6000,
-        });
-        setSubmitting(false);
-        return;
-      }
-
       const authorName = displayName || "Anonymous";
 
-      const { error } = await supabase.from("comments").insert({
+      // Insert comment immediately for instant feedback
+      const { data: inserted, error } = await supabase.from("comments").insert({
         market_id: marketId,
         parent_id: replyTo?.id || null,
         author_name: authorName,
         author_wallet: user.id,
         content: cleanText,
-      });
+      }).select("id").single();
 
       if (error) throw error;
 
@@ -356,6 +335,32 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
       if (!replyTo && scrollRef.current) {
         scrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
       }
+
+      // Run AI moderation asynchronously — delete if flagged
+      const commentId = inserted.id;
+      supabase.functions.invoke("moderate-comment", {
+        body: { content: cleanText },
+      }).then(({ data: modData }) => {
+        if (modData?.flagged) {
+          supabase.from("comments").delete().eq("id", commentId).then(() => {
+            supabase.from("moderation_logs").insert({
+              content_type: "comment",
+              content_id: marketId,
+              user_id: user!.id,
+              flagged_content: cleanText,
+              reason: modData.reason || "Flagged by AI",
+              category: "profanity",
+            });
+            toast.error("Comment removed", {
+              description: modData.reason || "Your comment contained inappropriate content.",
+              duration: 6000,
+            });
+            fetchComments();
+          });
+        }
+      }).catch(() => {
+        // Moderation failed silently — comment stays
+      });
     } catch (err) {
       console.error("Failed to post comment:", err);
       toast.error("Failed to post comment. Try again.");
