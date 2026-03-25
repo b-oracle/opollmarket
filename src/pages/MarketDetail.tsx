@@ -503,6 +503,7 @@ const MarketDetail = () => {
   const [betSide, setBetSide] = useState<"yes" | "no">("yes");
   const [betOpen, setBetOpen] = useState(false);
   const [boostOpen, setBoostOpen] = useState(false);
+  const [addLiquidityOpen, setAddLiquidityOpen] = useState(false);
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
