@@ -1,5 +1,6 @@
 import LogoLoader from "@/components/LogoLoader";
 import { useUserBalance } from "@/hooks/useUserBalance";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -197,6 +198,7 @@ const Create = () => {
   const { isFeatureEnabled } = useFeatureToggles();
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const { balance, totalBalance, isLoading: balanceLoading } = useUserBalance();
 
   // Gate thresholds & settings from DB
@@ -1671,7 +1673,7 @@ const Create = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-        <DepositWithdrawModal open={depositModalOpen} onClose={() => setDepositModalOpen(false)} initialTab="deposit" />
+        <DepositWithdrawModal open={depositModalOpen} onClose={() => { setDepositModalOpen(false); queryClient.invalidateQueries({ queryKey: ["balance"] }); }} initialTab="deposit" />
       </div>
     );
   }
@@ -3064,7 +3066,7 @@ const Create = () => {
       </div>
       
       <BottomNav />
-      <DepositWithdrawModal open={depositModalOpen} onClose={() => setDepositModalOpen(false)} initialTab="deposit" />
+      <DepositWithdrawModal open={depositModalOpen} onClose={() => { setDepositModalOpen(false); queryClient.invalidateQueries({ queryKey: ["balance"] }); }} initialTab="deposit" />
 
       {/* Fee bypass confirmation dialog */}
       <AlertDialog open={showFeeConfirm} onOpenChange={setShowFeeConfirm}>
