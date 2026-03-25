@@ -172,6 +172,8 @@ Deno.serve(async (req) => {
       });
     }
 
+    const bonusRatio = totalCost > 0 ? bonusDeduct / totalCost : 0;
+
     const result: Record<string, unknown> = {
       success: true,
       total_charged: totalCost,
@@ -215,6 +217,7 @@ Deno.serve(async (req) => {
         user_id: userId,
         type: "buy",
         amount: tierConfig.price,
+        bonus_amount: tierConfig.price * bonusRatio,
         market_id,
         status: "confirmed",
         side: `boost_${boost_tier}`,
@@ -245,6 +248,7 @@ Deno.serve(async (req) => {
           user_id: userId,
           type: "buy",
           amount: BROADCAST_PRICE,
+          bonus_amount: BROADCAST_PRICE * bonusRatio,
           market_id,
           status: "confirmed",
           side: "broadcast_alert",
@@ -290,6 +294,7 @@ Deno.serve(async (req) => {
           user_id: userId,
           type: "buy",
           amount: SOCIAL_AD_PRICE,
+          bonus_amount: SOCIAL_AD_PRICE * bonusRatio,
           market_id,
           status: "confirmed",
           side: "social_ad",
