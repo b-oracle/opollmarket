@@ -226,6 +226,7 @@ const AdminPredictions = () => {
       totalMarkets, totalPredictions, uniqueTraders, totalWagered, totalLiquidity, netLiquidity,
       totalCreationFees, totalAiFees, totalCommissions, totalPayouts, totalRefunds,
       totalForfeitures, totalBoosts, platformProfit,
+      totalBonusRevenue, totalBonusAll, boostBonusTotal, creationFeeBonusTotal, aiFeeBonusTotal,
       categoryData, chartData, topTraders, resolvedMarkets, cancelledMarkets, activeMarkets,
     };
   }, [transactions, markets, boosts, range, profileMap]);
@@ -257,15 +258,16 @@ const AdminPredictions = () => {
   ];
 
   const financialCards = [
-    { label: "Total Wagered", value: fmt(stats.totalWagered), icon: DollarSign, color: "text-amber-500", tooltip: "Sum of all prediction amounts (escrowed until resolution)" },
-    { label: "Total Liquidity", value: fmt(stats.netLiquidity), icon: Wallet, color: "text-blue-500", tooltip: "Initial liquidity + wagered − payouts − sells − refunds" },
-    { label: "Commissions", value: fmt(stats.totalCommissions), icon: Percent, color: "text-purple-500", tooltip: "Admin + Creator fees collected per prediction" },
-    { label: "Creation Fees", value: fmt(stats.totalCreationFees), icon: Landmark, color: "text-orange-500", tooltip: "Fees paid by creators to list markets" },
-    { label: "AI Fees", value: fmt(stats.totalAiFees), icon: Sparkles, color: "text-cyan-500", tooltip: "Fees for AI-generated market content" },
-    { label: "Boosts", value: fmt(stats.totalBoosts), icon: Zap, color: "text-yellow-500", tooltip: "Revenue from market boost payments" },
-    { label: "Total Payouts", value: fmt(stats.totalPayouts), icon: TrendingUp, color: "text-emerald-500", tooltip: "Winnings paid to prediction winners" },
-    { label: "Total Refunds", value: fmt(stats.totalRefunds), icon: TrendingDown, color: "text-destructive", tooltip: "Refunds from cancelled markets" },
-    { label: "Platform Profit", value: fmt(stats.platformProfit), icon: BarChart3, color: stats.platformProfit >= 0 ? "text-emerald-500" : "text-destructive", tooltip: "Commissions + Creation Fees + AI Fees + Boosts + Forfeitures" },
+    { label: "Total Wagered", value: fmt(stats.totalWagered), icon: DollarSign, color: "text-amber-500", tooltip: "Sum of all prediction amounts (escrowed until resolution)", bonus: 0 },
+    { label: "Total Liquidity", value: fmt(stats.netLiquidity), icon: Wallet, color: "text-blue-500", tooltip: "Initial liquidity + wagered − payouts − sells − refunds", bonus: 0 },
+    { label: "Commissions", value: fmt(stats.totalCommissions), icon: Percent, color: "text-purple-500", tooltip: "Admin + Creator fees collected per prediction", bonus: 0 },
+    { label: "Creation Fees", value: fmt(stats.totalCreationFees), icon: Landmark, color: "text-orange-500", tooltip: "Fees paid by creators to list markets", bonus: stats.creationFeeBonusTotal },
+    { label: "AI Fees", value: fmt(stats.totalAiFees), icon: Sparkles, color: "text-cyan-500", tooltip: "Fees for AI-generated market content", bonus: stats.aiFeeBonusTotal },
+    { label: "Boosts", value: fmt(stats.totalBoosts), icon: Zap, color: "text-yellow-500", tooltip: "Revenue from market boost payments", bonus: stats.boostBonusTotal },
+    { label: "Total Payouts", value: fmt(stats.totalPayouts), icon: TrendingUp, color: "text-emerald-500", tooltip: "Winnings paid to prediction winners", bonus: 0 },
+    { label: "Total Refunds", value: fmt(stats.totalRefunds), icon: TrendingDown, color: "text-destructive", tooltip: "Refunds from cancelled markets", bonus: 0 },
+    { label: "Platform Profit", value: fmt(stats.platformProfit), icon: BarChart3, color: stats.platformProfit >= 0 ? "text-emerald-500" : "text-destructive", tooltip: "Commissions + Creation Fees + AI Fees + Boosts + Forfeitures", bonus: stats.totalBonusAll },
+    { label: "Bonus Revenue", value: fmt(stats.totalBonusAll), icon: Gift, color: "text-orange-400", tooltip: "Total revenue paid from bonus balance (paper money — not real revenue)", bonus: 0 },
   ];
 
   return (
