@@ -466,6 +466,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         action === "demote" ? "Moved to listeners" :
         action === "mute" ? "Participant muted" :
         action === "kick" ? "Participant removed" :
+        action === "make_cohost" ? "Made co-host 👑" :
+        action === "remove_cohost" ? "Co-host removed" :
         action === "start_recording" ? "Recording started 🔴" :
         action === "stop_recording" ? "Recording stopped" : "Done"
       );
@@ -782,14 +784,14 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   {speakers.map((p) => (
                     <motion.div key={p.identity} layout className="flex flex-col items-center gap-1"
                       onClick={() => {
-                        if (isHost && p.identity !== hostId && p.identity !== user?.id) {
+                        if (hasModPowers && p.identity !== hostId && p.identity !== user?.id) {
                           setActionTarget(p);
                           setActionType("speaker");
                         }
                       }}>
                       {renderAvatar(p, "lg")}
                       <p className="text-[10px] font-medium truncate max-w-[80px] text-center">
-                        {p.name}{p.identity === hostId && " 🎙️"}
+                        {p.name}{p.identity === hostId && " 🎙️"}{coHostIds.includes(p.identity) && " 👑"}
                       </p>
                       <div className="flex items-center gap-0.5">
                         {p.isMuted && <MicOff className="w-3 h-3 text-muted-foreground" />}
@@ -809,7 +811,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     {listeners.map((p) => (
                       <div key={p.identity} className="flex flex-col items-center gap-1 cursor-pointer"
                         onClick={() => {
-                          if (isHost) {
+                          if (hasModPowers) {
                             setActionTarget(p);
                             setActionType("listener");
                           }
