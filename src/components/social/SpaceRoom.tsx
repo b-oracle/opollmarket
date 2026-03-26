@@ -875,23 +875,12 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
               </button>
             )}
 
-            {!isHost && !canPublish && (
-              <button onClick={toggleHand}
-                className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors ${
-                  handRaised ? "bg-yellow-500/20 text-yellow-500" : "bg-muted text-muted-foreground"
-                }`}>
-                <Hand className="w-5 h-5" />
-              </button>
-            )}
-
-            {(isHost || canPublish) && (
-              <button onClick={toggleHand}
-                className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors ${
-                  handRaised ? "bg-yellow-500/20 text-yellow-500" : "bg-muted text-muted-foreground"
-                }`}>
-                <Hand className="w-5 h-5" />
-              </button>
-            )}
+            <button onClick={toggleHand}
+              className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors ${
+                handRaised ? "bg-yellow-500/20 text-yellow-500" : "bg-muted text-muted-foreground"
+              }`}>
+              <Hand className="w-5 h-5" />
+            </button>
 
             {/* Recording toggle for host */}
             {isHost && (
