@@ -362,8 +362,6 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             toast.success("You've been promoted to speaker! 🎙️");
           }
         });
-          }
-        });
         room.on(RoomEvent.DataReceived, handleDataReceived);
         room.on(RoomEvent.Disconnected, () => {
           if (!cancelled) {
