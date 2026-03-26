@@ -233,6 +233,17 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             });
           }
         }
+      } else if (data.type === "speak_request") {
+        const identity = participant?.identity;
+        if (identity) {
+          setSpeakRequests((prev) => new Set(prev).add(identity));
+          toast.info(`${data.senderName || "Someone"} wants to speak 🎙️`);
+        }
+      } else if (data.type === "speak_request_accepted") {
+        setRequestPending(false);
+      } else if (data.type === "speak_request_declined") {
+        setRequestPending(false);
+        toast.info("Your speak request was declined");
       }
     } catch {
       // ignore malformed
