@@ -97,6 +97,13 @@ const NotificationBell = () => {
       return;
     }
 
+    // Draft reminder → go to create page
+    if (n.title?.includes("Unfinished Draft")) {
+      setOpen(false);
+      navigate("/portfolio");
+      return;
+    }
+
     if (n.market_id) {
       setOpen(false);
       navigate(`/market/${n.market_id}`);
