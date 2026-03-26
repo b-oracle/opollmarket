@@ -399,6 +399,8 @@ const Create = () => {
     if (draft.sport_match_id) setSportMatchId(draft.sport_match_id);
     if (draft.sport_predicted_outcome) setSportPredictedOutcome(draft.sport_predicted_outcome);
     if (draft.sport_league) setSportLeague(draft.sport_league);
+    if (draft.twitter_resource_id) setTwitterResourceId(draft.twitter_resource_id);
+    if (draft.twitter_metric_type) setTwitterMetricType(draft.twitter_metric_type);
 
     // Load options
     const opts = draft.market_options as any[];
@@ -446,6 +448,10 @@ const Create = () => {
   const [sportPredictedOutcome, setSportPredictedOutcome] = useState("");
   const [sportLeague, setSportLeague] = useState("");
   const [selectedFixtureData, setSelectedFixtureData] = useState<{ homeTeam: string; awayTeam: string; date: string; league: string; venue: string } | null>(null);
+
+  // Twitter/X auto-resolve state
+  const [twitterResourceId, setTwitterResourceId] = useState("");
+  const [twitterMetricType, setTwitterMetricType] = useState<"likes" | "retweets" | "replies" | "impressions">("likes");
 
   const priceAssets = getAssetsForCategory(category);
 
