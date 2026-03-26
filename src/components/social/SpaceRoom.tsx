@@ -426,6 +426,12 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   };
 
   const handleLeave = async () => {
+    // If recording is active, stop and upload BEFORE disconnecting
+    if (recording && mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      toast.info("Saving recording before ending...");
+      await stopClientRecording();
+    }
+
     try { roomRef.current?.disconnect(); } catch { /* ignore */ }
     roomRef.current = null;
     // Clean up audio elements immediately
