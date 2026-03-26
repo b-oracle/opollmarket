@@ -127,6 +127,24 @@ const fetchMarketDetail = async (client: typeof supabase, id: string) => {
   );
 };
 
+const SELECT_COLS = "id,title,description,category,market_type,yes_price,no_price,volume,liquidity,participants,end_date,creator_wallet,creator_name,image_url,video_url,details,trending,status,created_at,auto_resolve,auto_resolve_asset,auto_resolve_target_price,auto_resolve_operator,auto_resolve_deadline,sport_type,sport_match_id,sport_predicted_outcome,sport_league,polymarket_event_slug,twitter_metric_type,twitter_resource_id,twitter_current_count,simulated_volume,simulated_participants, market_options!market_options_market_id_fkey(id,label,price,sort_order)";
+
+const fetchCreatorMarkets = async (client: typeof supabase, userId: string) => {
+  return withTimeout(
+    async () =>
+      await client
+        .from("markets")
+        .select(SELECT_COLS)
+        .eq("creator_wallet", userId)
+        .in("status", ["active", "ended"])
+        .eq("participants", 0)
+        .order("created_at", { ascending: false })
+        .limit(20),
+    8_000,
+    "creator markets query timeout"
+  );
+};
+
 export const useMarkets = () => {
   const queryClient = useQueryClient();
 
@@ -158,7 +176,26 @@ export const useMarkets = () => {
       try {
         const { data, error } = await fetchMarkets(supabase);
         if (error) throw error;
-        return (data as unknown as DbMarket[]).map(mapDbToMarket);
+        const publicMarkets = (data as unknown as DbMarket[]).map(mapDbToMarket);
+
+        // Also fetch creator's own 0-participant markets so they can see them
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          try {
+            const { data: creatorData } = await fetchCreatorMarkets(supabase, session.user.id);
+            if (creatorData && creatorData.length > 0) {
+              const existingIds = new Set(publicMarkets.map((m) => m.id));
+              const creatorOnly = (creatorData as unknown as DbMarket[])
+                .map(mapDbToMarket)
+                .filter((m) => !existingIds.has(m.id));
+              return [...creatorOnly, ...publicMarkets];
+            }
+          } catch {
+            // Non-critical — just return public markets
+          }
+        }
+
+        return publicMarkets;
       } catch (primaryError) {
         if (!isTimeoutError(primaryError)) {
           console.error("[useMarkets] primary client error:", primaryError);
