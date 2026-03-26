@@ -487,6 +487,46 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     }
   };
 
+  const requestToSpeak = () => {
+    if (!roomRef.current || requestPending) return;
+    setRequestPending(true);
+    const data = JSON.stringify({
+      type: "speak_request",
+      senderName: roomRef.current.localParticipant.name || "Someone",
+    });
+    roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
+    toast.success("Speak request sent!");
+  };
+
+  const acceptSpeakRequest = async (targetIdentity: string) => {
+    await invokeAction("promote", targetIdentity);
+    setSpeakRequests((prev) => {
+      const next = new Set(prev);
+      next.delete(targetIdentity);
+      return next;
+    });
+    // Notify the requester
+    if (roomRef.current) {
+      const data = JSON.stringify({ type: "speak_request_accepted" });
+      roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
+    }
+  };
+
+  const declineSpeakRequest = (targetIdentity: string) => {
+    setSpeakRequests((prev) => {
+      const next = new Set(prev);
+      next.delete(targetIdentity);
+      return next;
+    });
+    if (roomRef.current) {
+      const data = JSON.stringify({ type: "speak_request_declined" });
+      roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
+    }
+    setActionTarget(null);
+    setActionType(null);
+    toast.info("Request declined");
+  };
+
   const invokeAction = async (action: string, target_user_id?: string) => {
     setPromoting(target_user_id || action);
     try {
