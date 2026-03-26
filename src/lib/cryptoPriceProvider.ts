@@ -237,7 +237,11 @@ function ensureRealtimeSubscription() {
         // Feed into interpolation system for smooth chart streaming
         // Determine the original symbol (strip forex: prefix if present)
         const originalSymbol = asset.startsWith("forex:") ? asset.slice(6) : asset;
-        feedRealPrice(originalSymbol, price);
+        // Only feed if there are active listeners for this asset
+        const interpState = interpolationStates.get(originalSymbol);
+        if (interpState && interpState.listeners.size > 0) {
+          feedRealPrice(originalSymbol, price);
+        }
 
         // Also update the main cache
         cache.set(originalSymbol.toUpperCase(), { price, fetchedAt: Date.now(), provider: "realtime" });
@@ -565,9 +569,11 @@ export function feedRealPrice(asset: string, price: number) {
 export function resetInterpolationState(asset: string) {
   const state = interpolationStates.get(asset);
   if (state) {
+    stopInterpolation(state);
     state.lastRealPrice = 0;
     state.prevRealPrice = 0;
     state.lastRealTime = 0;
+    // Don't delete the entry — listeners may still be attached during transition
   }
 }
 
