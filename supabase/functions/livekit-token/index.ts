@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
 
     const { data: space, error: spaceErr } = await supabaseAdmin
       .from("spaces")
-      .select("id, host_id, status")
+      .select("id, host_id, status, co_host_ids")
       .eq("id", space_id)
       .single();
 
@@ -108,15 +108,76 @@ Deno.serve(async (req) => {
 
     const roomName = `space-${space_id}`;
     const isHost = space.host_id === userId;
+    const coHostIds: string[] = space.co_host_ids || [];
+    const isCoHost = coHostIds.includes(userId);
+    const hasModPowers = isHost || isCoHost;
 
-    // Helper to ensure host
+    // Helper to ensure host or co-host for moderation actions
+    const requireMod = () => {
+      if (!hasModPowers) throw new Error("Only the host or co-host can perform this action");
+    };
+
+    // Helper to ensure only host for admin-only actions
     const requireHost = () => {
       if (!isHost) throw new Error("Only the host can perform this action");
     };
 
+    // --- MAKE CO-HOST ---
+    if (action === "make_cohost" && target_user_id) {
+      requireHost();
+      if (coHostIds.includes(target_user_id)) {
+        return new Response(JSON.stringify({ success: true, action: "already_cohost" }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const newCoHosts = [...coHostIds, target_user_id];
+      await supabaseAdmin
+        .from("spaces")
+        .update({ co_host_ids: newCoHosts })
+        .eq("id", space_id);
+      // Also promote them to speaker permissions in LiveKit
+      const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
+      try {
+        await svc.updateParticipant(roomName, target_user_id, undefined, {
+          canPublish: true,
+          canSubscribe: true,
+          canPublishData: true,
+        });
+      } catch { /* participant may not be connected yet */ }
+      await supabaseAdmin
+        .from("space_participants")
+        .update({ role: "co_host" })
+        .eq("space_id", space_id)
+        .eq("user_id", target_user_id);
+      return new Response(JSON.stringify({ success: true, action: "made_cohost" }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // --- REMOVE CO-HOST ---
+    if (action === "remove_cohost" && target_user_id) {
+      requireHost();
+      const newCoHosts = coHostIds.filter((id: string) => id !== target_user_id);
+      await supabaseAdmin
+        .from("spaces")
+        .update({ co_host_ids: newCoHosts })
+        .eq("id", space_id);
+      await supabaseAdmin
+        .from("space_participants")
+        .update({ role: "speaker" })
+        .eq("space_id", space_id)
+        .eq("user_id", target_user_id);
+      return new Response(JSON.stringify({ success: true, action: "removed_cohost" }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // --- PROMOTE ---
     if (action === "promote" && target_user_id) {
-      requireHost();
+      requireMod();
       const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
       await svc.updateParticipant(roomName, target_user_id, undefined, {
         canPublish: true,
@@ -136,7 +197,7 @@ Deno.serve(async (req) => {
 
     // --- DEMOTE ---
     if (action === "demote" && target_user_id) {
-      requireHost();
+      requireMod();
       const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
       await svc.updateParticipant(roomName, target_user_id, undefined, {
         canPublish: false,
@@ -156,13 +217,12 @@ Deno.serve(async (req) => {
 
     // --- FORCE MUTE ---
     if (action === "mute" && target_user_id) {
-      requireHost();
+      requireMod();
       const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
-      // Mute all audio tracks for this participant
       const participant = await svc.getParticipant(roomName, target_user_id);
       if (participant.tracks) {
         for (const track of participant.tracks) {
-          if (track.type === 1) { // AUDIO type
+          if (track.type === 1) {
             await svc.mutePublishedTrack(roomName, target_user_id, track.sid!, true);
           }
         }
@@ -175,10 +235,15 @@ Deno.serve(async (req) => {
 
     // --- KICK ---
     if (action === "kick" && target_user_id) {
-      requireHost();
+      requireMod();
+      // Co-hosts cannot kick other co-hosts or the host
+      if (isCoHost && !isHost) {
+        if (target_user_id === space.host_id || coHostIds.includes(target_user_id)) {
+          throw new Error("Co-hosts cannot remove the host or other co-hosts");
+        }
+      }
       const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
       await svc.removeParticipant(roomName, target_user_id);
-      // Mark them as left in DB
       await supabaseAdmin
         .from("space_participants")
         .update({ left_at: new Date().toISOString(), role: "kicked" })
@@ -198,6 +263,7 @@ Deno.serve(async (req) => {
       .single();
 
     const displayName = profile?.display_name || "Anonymous";
+    const canPublish = isHost || isCoHost;
 
     const at = new AccessToken(apiKey, apiSecret, {
       identity: userId,
@@ -208,7 +274,7 @@ Deno.serve(async (req) => {
     at.addGrant({
       room: roomName,
       roomJoin: true,
-      canPublish: isHost,
+      canPublish,
       canSubscribe: true,
       canPublishData: true,
     });
@@ -216,7 +282,7 @@ Deno.serve(async (req) => {
     const accessToken = await at.toJwt();
 
     return new Response(
-      JSON.stringify({ token: accessToken, url: livekitUrl, room: roomName, isHost }),
+      JSON.stringify({ token: accessToken, url: livekitUrl, room: roomName, isHost, isCoHost }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: any) {

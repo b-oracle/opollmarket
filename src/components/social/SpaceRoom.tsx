@@ -81,6 +81,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [participants, setParticipants] = useState<ParticipantInfo[]>([]);
   const [profiles, setProfiles] = useState<Record<string, ProfileInfo>>({});
   const [isHost, setIsHost] = useState(false);
+  const [isCoHost, setIsCoHost] = useState(false);
+  const [spaceCoHostIds, setSpaceCoHostIds] = useState<string[]>([]);
   const [handRaised, setHandRaised] = useState(false);
   const [canPublish, setCanPublish] = useState(false);
   const [promoting, setPromoting] = useState<string | null>(null);
@@ -310,7 +312,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         if (cancelled) return;
 
         setIsHost(data.isHost);
-        setCanPublish(data.isHost);
+        setIsCoHost(data.isCoHost || false);
+        setCanPublish(data.isHost || data.isCoHost);
 
         // Audio handling
         room.on(RoomEvent.TrackSubscribed, (track) => {
@@ -367,7 +370,17 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         setConnected(true);
         setConnecting(false);
 
-        if (data.isHost) {
+        // Fetch co_host_ids from space
+        const { data: spaceData } = await supabase
+          .from("spaces")
+          .select("co_host_ids")
+          .eq("id", spaceId)
+          .single();
+        if (spaceData?.co_host_ids) {
+          setSpaceCoHostIds(spaceData.co_host_ids as string[]);
+        }
+
+        if (data.isHost || data.isCoHost) {
           try {
             await room.localParticipant.setMicrophoneEnabled(true);
             setMuted(false);
@@ -377,7 +390,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         updateParticipants(room);
 
         await supabase.from("space_participants").upsert(
-          { space_id: spaceId, user_id: user.id, role: data.isHost ? "host" : "listener", left_at: null },
+          { space_id: spaceId, user_id: user.id, role: (data.isHost ? "host" : data.isCoHost ? "co_host" : "listener") as any, left_at: null },
           { onConflict: "space_id,user_id" }
         );
         queryClient.invalidateQueries({ queryKey: ["spaces"] });
@@ -464,6 +477,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         action === "demote" ? "Moved to listeners" :
         action === "mute" ? "Participant muted" :
         action === "kick" ? "Participant removed" :
+        action === "make_cohost" ? "Made co-host 👑" :
+        action === "remove_cohost" ? "Co-host removed" :
         action === "start_recording" ? "Recording started 🔴" :
         action === "stop_recording" ? "Recording stopped" : "Done"
       );
@@ -475,6 +490,17 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           next.delete(target_user_id);
           return next;
         });
+      }
+      // Refresh co_host_ids after co-host changes
+      if (action === "make_cohost" || action === "remove_cohost") {
+        const { data: spaceData } = await supabase
+          .from("spaces")
+          .select("co_host_ids")
+          .eq("id", spaceId)
+          .single();
+        if (spaceData?.co_host_ids) {
+          setSpaceCoHostIds(spaceData.co_host_ids as string[]);
+        }
       }
     } catch { toast.error(`Failed to ${action}`); }
     finally { setPromoting(null); setRecordingLoading(false); setActionTarget(null); setActionType(null); }
@@ -611,6 +637,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     else startClientRecording();
   };
 
+  const hasModPowers = isHost || isCoHost;
+  const coHostIds = spaceCoHostIds;
   const speakers = participants.filter((p) => p.audioTrack || p.canPublish || p.identity === hostId);
   const listeners = participants.filter((p) => !p.audioTrack && !p.canPublish && p.identity !== hostId);
 
@@ -780,14 +808,14 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   {speakers.map((p) => (
                     <motion.div key={p.identity} layout className="flex flex-col items-center gap-1"
                       onClick={() => {
-                        if (isHost && p.identity !== hostId && p.identity !== user?.id) {
+                        if (hasModPowers && p.identity !== hostId && p.identity !== user?.id) {
                           setActionTarget(p);
                           setActionType("speaker");
                         }
                       }}>
                       {renderAvatar(p, "lg")}
                       <p className="text-[10px] font-medium truncate max-w-[80px] text-center">
-                        {p.name}{p.identity === hostId && " 🎙️"}
+                        {p.name}{p.identity === hostId && " 🎙️"}{coHostIds.includes(p.identity) && " 👑"}
                       </p>
                       <div className="flex items-center gap-0.5">
                         {p.isMuted && <MicOff className="w-3 h-3 text-muted-foreground" />}
@@ -807,7 +835,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     {listeners.map((p) => (
                       <div key={p.identity} className="flex flex-col items-center gap-1 cursor-pointer"
                         onClick={() => {
-                          if (isHost) {
+                          if (hasModPowers) {
                             setActionTarget(p);
                             setActionType("listener");
                           }
@@ -901,7 +929,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   <div>
                     <p className="font-semibold text-sm">{actionTarget.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {actionType === "speaker" ? "Speaker" : "Listener"}
+                      {coHostIds.includes(actionTarget.identity) ? "Co-Host 👑" : actionType === "speaker" ? "Speaker" : "Listener"}
                       {remoteHandRaises.has(actionTarget.identity) && " · ✋ Hand raised"}
                     </p>
                   </div>
@@ -938,6 +966,28 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                         <span className="text-sm font-medium">Move to Listeners</span>
                       </button>
                     </>
+                  )}
+                  {/* Make / Remove Co-Host — host only */}
+                  {isHost && actionTarget.identity !== hostId && (
+                    coHostIds.includes(actionTarget.identity) ? (
+                      <button
+                        onClick={() => invokeAction("remove_cohost", actionTarget.identity)}
+                        disabled={promoting === actionTarget.identity}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-muted hover:bg-muted/80 text-foreground transition-colors"
+                      >
+                        <UserMinus className="w-5 h-5" />
+                        <span className="text-sm font-medium">Remove Co-Host</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => invokeAction("make_cohost", actionTarget.identity)}
+                        disabled={promoting === actionTarget.identity}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-accent hover:bg-accent/80 text-accent-foreground transition-colors"
+                      >
+                        <UserPlus className="w-5 h-5" />
+                        <span className="text-sm font-medium">Make Co-Host 👑</span>
+                      </button>
+                    )
                   )}
                   <button
                     onClick={() => invokeAction("kick", actionTarget.identity)}
