@@ -888,6 +888,8 @@ export default function QuickTrade() {
         lastWsTickAtRef.current = 0;
         unsubWs();
         unsubCryptoSmooth?.();
+        unsubPoller?.();
+        unsubSmooth?.();
         if (cryptoInterpId) clearInterval(cryptoInterpId);
         if (pendingRaf) cancelAnimationFrame(pendingRaf);
         clearTimeout(fallbackTimer);
