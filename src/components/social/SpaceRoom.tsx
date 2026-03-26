@@ -370,7 +370,17 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         setConnected(true);
         setConnecting(false);
 
-        if (data.isHost) {
+        // Fetch co_host_ids from space
+        const { data: spaceData } = await supabase
+          .from("spaces")
+          .select("co_host_ids")
+          .eq("id", spaceId)
+          .single();
+        if (spaceData?.co_host_ids) {
+          setSpaceCoHostIds(spaceData.co_host_ids as string[]);
+        }
+
+        if (data.isHost || data.isCoHost) {
           try {
             await room.localParticipant.setMicrophoneEnabled(true);
             setMuted(false);
