@@ -61,10 +61,10 @@ Deno.serve(async (req) => {
       if (userDraftList.length === 1) {
         const d = userDraftList[0];
         title = "📝 Unfinished Draft";
-        message = `You have an unfinished market draft: "${d.title || "Untitled"}". Tap to continue editing.`;
+        message = `You have an unfinished market draft: "${d.title || "Untitled"}". Tap here to continue editing →`;
       } else {
         title = "📝 Unfinished Drafts";
-        message = `You have ${userDraftList.length} unfinished market drafts. Tap to continue editing.`;
+        message = `You have ${userDraftList.length} unfinished market drafts. Tap here to continue editing →`;
       }
 
       // Insert in-app notification (trigger dispatches to Telegram/push/WhatsApp)
