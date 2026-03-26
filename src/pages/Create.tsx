@@ -323,20 +323,20 @@ const Create = () => {
   const [options, setOptions] = useState<string[]>(() => getStoredJson("options", ["", ""]));
   const [videoUrl, setVideoUrl] = useState(() => getStored("videoUrl", ""));
 
-  // Persist form state to sessionStorage
+  // Persist form state to localStorage
   useEffect(() => {
     const fields: Record<string, string> = {
       title, description, details, category, endDate, resolutionSource, initialLiquidity, videoUrl,
     };
-    Object.entries(fields).forEach(([k, v]) => { try { sessionStorage.setItem(`create_${k}`, v); } catch {} });
-    try { sessionStorage.setItem("create_step", JSON.stringify(step)); } catch {}
-    try { sessionStorage.setItem("create_marketType", JSON.stringify(marketType)); } catch {}
-    try { sessionStorage.setItem("create_options", JSON.stringify(options)); } catch {}
+    Object.entries(fields).forEach(([k, v]) => { try { localStorage.setItem(`create_${k}`, v); } catch {} });
+    try { localStorage.setItem("create_step", JSON.stringify(step)); } catch {}
+    try { localStorage.setItem("create_marketType", JSON.stringify(marketType)); } catch {}
+    try { localStorage.setItem("create_options", JSON.stringify(options)); } catch {}
   }, [title, description, details, category, endDate, resolutionSource, initialLiquidity, step, marketType, options, videoUrl]);
 
   const clearFormStorage = () => {
     ["title", "description", "details", "category", "endDate", "resolutionSource", "initialLiquidity", "videoUrl", "step", "marketType", "options"]
-      .forEach((k) => { try { sessionStorage.removeItem(`create_${k}`); } catch {} });
+      .forEach((k) => { try { localStorage.removeItem(`create_${k}`); } catch {} });
   };
 
   // Check for existing drafts on mount (or auto-resume from Portfolio navigation)
