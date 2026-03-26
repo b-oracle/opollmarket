@@ -29,6 +29,8 @@ import {
   CircleStop,
   Bell,
   Minimize2,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import NftBadge, { VerificationLevel } from "@/components/NftBadge";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
@@ -110,6 +112,10 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
   // Speaker request state
   const [speakRequests, setSpeakRequests] = useState<Set<string>>(new Set());
+  // Force-mute state
+  const [forceMuted, setForceMuted] = useState(false);
+  const [forceMutedUsers, setForceMutedUsers] = useState<Set<string>>(new Set());
+  const [allForceMuted, setAllForceMuted] = useState(false);
   const [requestPending, setRequestPending] = useState(false);
 
   // Cleanup audio on unmount
@@ -250,6 +256,59 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         if (user) {
           const wasCoHost = newCoHostIds.includes(user.id);
           setIsCoHost(wasCoHost);
+        }
+      } else if (data.type === "force_mute") {
+        if (user) {
+          const targets = data.targets;
+          const isTargeted = targets === "all" || (Array.isArray(targets) && targets.includes(user.id));
+          // Hosts and co-hosts are immune
+          const isMod = user.id === hostId || spaceCoHostIds.includes(user.id);
+          if (isTargeted && !isMod) {
+            setForceMuted(true);
+            setMuted(true);
+            // Actually mute the mic
+            if (roomRef.current) {
+              try { roomRef.current.localParticipant.setMicrophoneEnabled(false); } catch {}
+            }
+            toast.info("You've been muted by the host 🔇");
+          }
+          // Track force-muted users for moderator UI
+          if (targets === "all") {
+            setAllForceMuted(true);
+            // Add all non-mod speakers to force-muted set
+            const allIds = new Set<string>();
+            participants.forEach(p => {
+              if (p.identity !== hostId && !spaceCoHostIds.includes(p.identity)) {
+                allIds.add(p.identity);
+              }
+            });
+            setForceMutedUsers(allIds);
+          } else if (Array.isArray(targets)) {
+            setForceMutedUsers(prev => {
+              const next = new Set(prev);
+              targets.forEach((id: string) => next.add(id));
+              return next;
+            });
+          }
+        }
+      } else if (data.type === "force_unmute") {
+        if (user) {
+          const targets = data.targets;
+          const isTargeted = targets === "all" || (Array.isArray(targets) && targets.includes(user.id));
+          if (isTargeted) {
+            setForceMuted(false);
+            toast.success("You can now unmute 🎙️");
+          }
+          if (targets === "all") {
+            setAllForceMuted(false);
+            setForceMutedUsers(new Set());
+          } else if (Array.isArray(targets)) {
+            setForceMutedUsers(prev => {
+              const next = new Set(prev);
+              targets.forEach((id: string) => next.delete(id));
+              return next;
+            });
+          }
         }
       }
     } catch {
@@ -442,10 +501,57 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   // --- Actions ---
   const toggleMute = async () => {
     if (!roomRef.current) return;
+    if (forceMuted && muted) {
+      toast.error("You've been muted by the host. Wait for permission to unmute.");
+      return;
+    }
     try {
       await roomRef.current.localParticipant.setMicrophoneEnabled(muted);
       setMuted(!muted);
     } catch { toast.error("Microphone access denied"); }
+  };
+
+  const handleMuteAll = async () => {
+    await invokeAction("mute_all");
+    // Broadcast force-mute to all via data channel
+    if (roomRef.current) {
+      const msg = JSON.stringify({ type: "force_mute", targets: "all" });
+      roomRef.current.localParticipant.publishData(new TextEncoder().encode(msg), { reliable: true });
+    }
+    setAllForceMuted(true);
+    // Track all non-mod speakers as force-muted
+    const allIds = new Set<string>();
+    participants.forEach(p => {
+      if (p.identity !== hostId && !spaceCoHostIds.includes(p.identity) && (p.canPublish || p.audioTrack)) {
+        allIds.add(p.identity);
+      }
+    });
+    setForceMutedUsers(allIds);
+  };
+
+  const handleUnmuteAll = () => {
+    if (roomRef.current) {
+      const msg = JSON.stringify({ type: "force_unmute", targets: "all" });
+      roomRef.current.localParticipant.publishData(new TextEncoder().encode(msg), { reliable: true });
+    }
+    setAllForceMuted(false);
+    setForceMutedUsers(new Set());
+    toast.success("All speakers can now unmute");
+  };
+
+  const handleForceUnmuteSingle = (targetId: string) => {
+    if (roomRef.current) {
+      const msg = JSON.stringify({ type: "force_unmute", targets: [targetId] });
+      roomRef.current.localParticipant.publishData(new TextEncoder().encode(msg), { reliable: true });
+    }
+    setForceMutedUsers(prev => {
+      const next = new Set(prev);
+      next.delete(targetId);
+      return next;
+    });
+    setActionTarget(null);
+    setActionType(null);
+    toast.success("Allowed to unmute");
   };
 
   const handleLeave = async () => {
@@ -559,6 +665,14 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           next.delete(target_user_id);
           return next;
         });
+      }
+      // After individual mute, broadcast force-mute lock
+      if (action === "mute" && target_user_id) {
+        if (roomRef.current) {
+          const msg = JSON.stringify({ type: "force_mute", targets: [target_user_id] });
+          roomRef.current.localParticipant.publishData(new TextEncoder().encode(msg), { reliable: true });
+        }
+        setForceMutedUsers(prev => new Set(prev).add(target_user_id));
       }
       // Refresh co_host_ids after co-host changes and broadcast to all participants
       if (action === "make_cohost" || action === "remove_cohost") {
@@ -745,6 +859,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         {speakRequests.has(p.identity) && !hasHandUp && (
           <div className="absolute -top-1 -right-1 text-base animate-pulse drop-shadow-md">
             🎙️
+          </div>
+        )}
+        {forceMutedUsers.has(p.identity) && !hasHandUp && !speakRequests.has(p.identity) && (
+          <div className="absolute -top-1 -right-1 text-base drop-shadow-md">
+            🔇
           </div>
         )}
       </div>
@@ -951,11 +1070,30 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           <div className="border-t border-border px-5 py-3 flex items-center justify-center gap-3">
             {(isHost || canPublish) && (
               <button onClick={toggleMute}
-                className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors ${
+                className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors relative ${
+                  forceMuted ? "bg-destructive/20 text-destructive" :
                   muted ? "bg-muted text-muted-foreground" : "bg-primary/20 text-primary"
-                }`}>
-                {muted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                }`}
+                title={forceMuted ? "Muted by host" : undefined}>
+                {forceMuted ? <Lock className="w-5 h-5" /> : muted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
               </button>
+            )}
+
+            {/* Mute All / Unmute All — for moderators */}
+            {hasModPowers && (
+              allForceMuted ? (
+                <button onClick={handleUnmuteAll}
+                  className="h-11 px-4 rounded-full flex items-center justify-center gap-2 text-sm font-medium bg-primary/20 text-primary transition-colors">
+                  <Unlock className="w-4 h-4" />
+                  Unmute All
+                </button>
+              ) : (
+                <button onClick={handleMuteAll}
+                  className="h-11 px-4 rounded-full flex items-center justify-center gap-2 text-sm font-medium bg-muted text-muted-foreground transition-colors">
+                  <VolumeX className="w-4 h-4" />
+                  Mute All
+                </button>
+              )
             )}
 
             {/* Request to Speak — for listeners without publish permission */}
@@ -1069,6 +1207,15 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                         <VolumeX className="w-5 h-5" />
                         <span className="text-sm font-medium">Force Mute</span>
                       </button>
+                      {forceMutedUsers.has(actionTarget.identity) && (
+                        <button
+                          onClick={() => handleForceUnmuteSingle(actionTarget.identity)}
+                          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+                        >
+                          <Unlock className="w-5 h-5" />
+                          <span className="text-sm font-medium">Allow to Unmute</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => invokeAction("demote", actionTarget.identity)}
                         disabled={promoting === actionTarget.identity}
