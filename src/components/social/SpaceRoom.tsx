@@ -1012,13 +1012,33 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     <p className="text-xs text-muted-foreground">
                       {coHostIds.includes(actionTarget.identity) ? "Co-Host 👑" : actionType === "speaker" ? "Speaker" : "Listener"}
                       {remoteHandRaises.has(actionTarget.identity) && " · ✋ Hand raised"}
+                      {speakRequests.has(actionTarget.identity) && " · 🎙️ Wants to speak"}
                     </p>
                   </div>
                 </div>
 
                 {/* Action buttons */}
                 <div className="space-y-2">
-                  {actionType === "listener" && (
+                  {actionType === "listener" && speakRequests.has(actionTarget.identity) && (
+                    <>
+                      <button
+                        onClick={() => acceptSpeakRequest(actionTarget.identity)}
+                        disabled={promoting === actionTarget.identity}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+                      >
+                        {promoting === actionTarget.identity ? <Loader2 className="w-5 h-5 animate-spin" /> : <UserPlus className="w-5 h-5" />}
+                        <span className="text-sm font-medium">Accept — Promote to Speaker</span>
+                      </button>
+                      <button
+                        onClick={() => declineSpeakRequest(actionTarget.identity)}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-muted hover:bg-muted/80 text-foreground transition-colors"
+                      >
+                        <X className="w-5 h-5" />
+                        <span className="text-sm font-medium">Decline Request</span>
+                      </button>
+                    </>
+                  )}
+                  {actionType === "listener" && !speakRequests.has(actionTarget.identity) && (
                     <button
                       onClick={() => invokeAction("promote", actionTarget.identity)}
                       disabled={promoting === actionTarget.identity}
