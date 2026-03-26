@@ -2270,7 +2270,116 @@ const Create = () => {
                 </div>
               )}
 
-              <div className={`glass rounded-xl p-4 ${shakeClass("endDate")} ${touched.endDate && errors.endDate ? "border-destructive/50" : ""}`}>
+              {/* Auto-Resolve Toggle (Twitter/X only) */}
+              {category === "Twitter/X" && (
+                <div className="glass rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-semibold">
+                        <Zap className="w-4 h-4 text-primary" />
+                        Auto-Resolve by Engagement
+                      </label>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        Automatically resolves based on tweet engagement metrics
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const next = !autoResolve;
+                        setAutoResolve(next);
+                        if (next) {
+                          setMarketType("range");
+                          setResolutionSource(`Auto-resolved via live X/Twitter ${twitterMetricType} count`);
+                        }
+                      }}
+                      className={`w-11 h-6 rounded-full transition-colors relative ${autoResolve ? "bg-primary" : "bg-muted"}`}
+                    >
+                      <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${autoResolve ? "translate-x-[22px]" : "translate-x-0.5"}`} />
+                    </button>
+                  </div>
+
+                  {autoResolve && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="space-y-3 pt-2 border-t border-border/50"
+                    >
+                      {/* Tweet URL / ID */}
+                      <div>
+                        <label className="text-xs font-semibold mb-1.5 block">Tweet URL or ID</label>
+                        <input
+                          type="text"
+                          value={twitterResourceId}
+                          onChange={(e) => {
+                            // Extract tweet ID from URL if pasted
+                            const val = e.target.value.trim();
+                            const match = val.match(/(?:twitter\.com|x\.com)\/\w+\/status\/(\d+)/);
+                            setTwitterResourceId(match ? match[1] : val);
+                          }}
+                          placeholder="e.g. https://x.com/user/status/123456789 or 123456789"
+                          className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1">Paste the full tweet URL or just the numeric tweet ID.</p>
+                      </div>
+
+                      {/* Metric Type */}
+                      <div>
+                        <label className="text-xs font-semibold mb-1.5 block">Engagement Metric</label>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {([
+                            { value: "likes" as const, label: "❤️ Likes" },
+                            { value: "retweets" as const, label: "🔁 Reposts" },
+                            { value: "replies" as const, label: "💬 Replies" },
+                            { value: "impressions" as const, label: "👁️ Views" },
+                          ]).map((m) => (
+                            <button
+                              key={m.value}
+                              onClick={() => {
+                                setTwitterMetricType(m.value);
+                                setResolutionSource(`Auto-resolved via live X/Twitter ${m.value} count`);
+                              }}
+                              className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                twitterMetricType === m.value
+                                  ? "bg-primary/15 border border-primary/40 text-primary"
+                                  : "bg-muted/50 border border-border text-muted-foreground hover:text-foreground"
+                              }`}
+                            >
+                              {m.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Resolution Time */}
+                      <div>
+                        <label className="text-xs font-semibold mb-1.5 block">Resolution Deadline Time (UTC)</label>
+                        <input
+                          type="time"
+                          value={autoResolveTime}
+                          onChange={(e) => setAutoResolveTime(e.target.value)}
+                          className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          The final count at this time will determine the winning bracket.
+                        </p>
+                      </div>
+
+                      <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 space-y-1">
+                        <p className="text-xs font-medium text-primary">
+                          📊 Create range brackets (e.g. "0-100", "101-500", ">500") as your market options above to define the outcome buckets.
+                        </p>
+                        {twitterResourceId && endDate && (
+                          <p className="text-[10px] text-muted-foreground">
+                            Tweet #{twitterResourceId} • {twitterMetricType} count checked at {endDate} {autoResolveTime} UTC
+                          </p>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+              )}
+
                 <label className="flex items-center gap-2 text-sm font-semibold mb-2">
                   <Calendar className="w-4 h-4 text-primary" />
                   Resolution Date
