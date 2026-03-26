@@ -379,7 +379,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         updateParticipants(room);
 
         await supabase.from("space_participants").upsert(
-          { space_id: spaceId, user_id: user.id, role: data.isHost ? "host" : data.isCoHost ? "co_host" : "listener", left_at: null },
+          { space_id: spaceId, user_id: user.id, role: (data.isHost ? "host" : data.isCoHost ? "co_host" : "listener") as any, left_at: null },
           { onConflict: "space_id,user_id" }
         );
         queryClient.invalidateQueries({ queryKey: ["spaces"] });
