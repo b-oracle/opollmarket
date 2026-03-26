@@ -108,6 +108,10 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [actionTarget, setActionTarget] = useState<ParticipantInfo | null>(null);
   const [actionType, setActionType] = useState<"speaker" | "listener" | null>(null);
 
+  // Speaker request state
+  const [speakRequests, setSpeakRequests] = useState<Set<string>>(new Set());
+  const [requestPending, setRequestPending] = useState(false);
+
   // Cleanup audio on unmount
   useEffect(() => {
     return () => {
@@ -229,6 +233,17 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             });
           }
         }
+      } else if (data.type === "speak_request") {
+        const identity = participant?.identity;
+        if (identity) {
+          setSpeakRequests((prev) => new Set(prev).add(identity));
+          toast.info(`${data.senderName || "Someone"} wants to speak 🎙️`);
+        }
+      } else if (data.type === "speak_request_accepted") {
+        setRequestPending(false);
+      } else if (data.type === "speak_request_declined") {
+        setRequestPending(false);
+        toast.info("Your speak request was declined");
       }
     } catch {
       // ignore malformed
@@ -343,6 +358,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           const perms = room.localParticipant.permissions;
           if (perms?.canPublish) {
             setCanPublish(true);
+            setRequestPending(false);
             toast.success("You've been promoted to speaker! 🎙️");
           }
         });
@@ -469,6 +485,46 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       });
       roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
     }
+  };
+
+  const requestToSpeak = () => {
+    if (!roomRef.current || requestPending) return;
+    setRequestPending(true);
+    const data = JSON.stringify({
+      type: "speak_request",
+      senderName: roomRef.current.localParticipant.name || "Someone",
+    });
+    roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
+    toast.success("Speak request sent!");
+  };
+
+  const acceptSpeakRequest = async (targetIdentity: string) => {
+    await invokeAction("promote", targetIdentity);
+    setSpeakRequests((prev) => {
+      const next = new Set(prev);
+      next.delete(targetIdentity);
+      return next;
+    });
+    // Notify the requester
+    if (roomRef.current) {
+      const data = JSON.stringify({ type: "speak_request_accepted" });
+      roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
+    }
+  };
+
+  const declineSpeakRequest = (targetIdentity: string) => {
+    setSpeakRequests((prev) => {
+      const next = new Set(prev);
+      next.delete(targetIdentity);
+      return next;
+    });
+    if (roomRef.current) {
+      const data = JSON.stringify({ type: "speak_request_declined" });
+      roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
+    }
+    setActionTarget(null);
+    setActionType(null);
+    toast.info("Request declined");
   };
 
   const invokeAction = async (action: string, target_user_id?: string) => {
@@ -675,6 +731,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             ✋
           </div>
         )}
+        {speakRequests.has(p.identity) && !hasHandUp && (
+          <div className="absolute -top-1 -right-1 text-base animate-pulse drop-shadow-md">
+            🎙️
+          </div>
+        )}
       </div>
     );
   };
@@ -836,6 +897,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
                     <Users className="w-3 h-3" /> Listeners
+                    {hasModPowers && speakRequests.size > 0 && (
+                      <span className="ml-1 min-w-[18px] h-[18px] rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center px-1">
+                        {speakRequests.size}
+                      </span>
+                    )}
                   </p>
                   <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                     {listeners.map((p) => (
@@ -878,6 +944,17 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   muted ? "bg-muted text-muted-foreground" : "bg-primary/20 text-primary"
                 }`}>
                 {muted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              </button>
+            )}
+
+            {/* Request to Speak — for listeners without publish permission */}
+            {!isHost && !canPublish && (
+              <button onClick={requestToSpeak} disabled={requestPending}
+                className={`h-11 px-4 rounded-full flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
+                  requestPending ? "bg-primary/20 text-primary animate-pulse" : "bg-accent text-accent-foreground"
+                }`}>
+                <Mic className="w-4 h-4" />
+                {requestPending ? "Request Sent" : "Request to Speak"}
               </button>
             )}
 
@@ -935,13 +1012,33 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     <p className="text-xs text-muted-foreground">
                       {coHostIds.includes(actionTarget.identity) ? "Co-Host 👑" : actionType === "speaker" ? "Speaker" : "Listener"}
                       {remoteHandRaises.has(actionTarget.identity) && " · ✋ Hand raised"}
+                      {speakRequests.has(actionTarget.identity) && " · 🎙️ Wants to speak"}
                     </p>
                   </div>
                 </div>
 
                 {/* Action buttons */}
                 <div className="space-y-2">
-                  {actionType === "listener" && (
+                  {actionType === "listener" && speakRequests.has(actionTarget.identity) && (
+                    <>
+                      <button
+                        onClick={() => acceptSpeakRequest(actionTarget.identity)}
+                        disabled={promoting === actionTarget.identity}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+                      >
+                        {promoting === actionTarget.identity ? <Loader2 className="w-5 h-5 animate-spin" /> : <UserPlus className="w-5 h-5" />}
+                        <span className="text-sm font-medium">Accept — Promote to Speaker</span>
+                      </button>
+                      <button
+                        onClick={() => declineSpeakRequest(actionTarget.identity)}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-muted hover:bg-muted/80 text-foreground transition-colors"
+                      >
+                        <X className="w-5 h-5" />
+                        <span className="text-sm font-medium">Decline Request</span>
+                      </button>
+                    </>
+                  )}
+                  {actionType === "listener" && !speakRequests.has(actionTarget.identity) && (
                     <button
                       onClick={() => invokeAction("promote", actionTarget.identity)}
                       disabled={promoting === actionTarget.identity}
