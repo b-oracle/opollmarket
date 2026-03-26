@@ -255,7 +255,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     } catch {
       // ignore malformed
     }
-  }, []);
+  }, [user]);
 
   // Fetch profiles
   useEffect(() => {
