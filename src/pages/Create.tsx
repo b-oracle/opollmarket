@@ -2367,7 +2367,7 @@ const Create = () => {
 
                       <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 space-y-1">
                         <p className="text-xs font-medium text-primary">
-                          📊 Create range brackets (e.g. "0-100", "101-500", ">500") as your market options above to define the outcome buckets.
+                          📊 Create range brackets (e.g. &quot;0-100&quot;, &quot;101-500&quot;, &quot;&gt;500&quot;) as your market options above to define the outcome buckets.
                         </p>
                         {twitterResourceId && endDate && (
                           <p className="text-[10px] text-muted-foreground">
