@@ -361,7 +361,7 @@ const Create = () => {
       }
       const { data } = await supabase
         .from("markets")
-        .select("id, title, description, details, category, end_date, resolution_source, initial_liquidity, market_type, video_url, image_url, auto_resolve, auto_resolve_asset, auto_resolve_operator, auto_resolve_target_price, auto_resolve_deadline, sport_type, sport_match_id, sport_predicted_outcome, sport_league, market_options!market_options_market_id_fkey(id, label, sort_order)")
+        .select("id, title, description, details, category, end_date, resolution_source, initial_liquidity, market_type, video_url, image_url, auto_resolve, auto_resolve_asset, auto_resolve_operator, auto_resolve_target_price, auto_resolve_deadline, sport_type, sport_match_id, sport_predicted_outcome, sport_league, twitter_resource_id, twitter_metric_type, market_options!market_options_market_id_fkey(id, label, sort_order)")
         .eq("creator_wallet", user.id)
         .eq("status", "draft")
         .order("created_at", { ascending: false })
@@ -676,7 +676,7 @@ const Create = () => {
   const lastAutoSaveDataRef = useRef<string>("");
 
   // Build fingerprint from current form data for change detection
-  const formFingerprint = JSON.stringify({ title, description, details, category, endDate, resolutionSource, initialLiquidity, marketType, options, videoUrl, autoResolve, autoResolveAsset, autoResolveOperator, autoResolveTargetPrice, autoResolveTime, sportType, sportMatchId, sportPredictedOutcome, sportLeague });
+  const formFingerprint = JSON.stringify({ title, description, details, category, endDate, resolutionSource, initialLiquidity, marketType, options, videoUrl, autoResolve, autoResolveAsset, autoResolveOperator, autoResolveTargetPrice, autoResolveTime, sportType, sportMatchId, sportPredictedOutcome, sportLeague, twitterResourceId, twitterMetricType });
   const formFingerprintRef = useRef(formFingerprint);
   formFingerprintRef.current = formFingerprint;
 
