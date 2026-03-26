@@ -451,7 +451,7 @@ const Create = () => {
 
   // Twitter/X auto-resolve state
   const [twitterResourceId, setTwitterResourceId] = useState("");
-  const [twitterMetricType, setTwitterMetricType] = useState<"likes" | "retweets" | "replies" | "impressions">("likes");
+  const [twitterMetricType, setTwitterMetricType] = useState<"likes" | "retweets" | "replies" | "impressions" | "posts">("likes");
 
   const priceAssets = getAssetsForCategory(category);
 
@@ -2332,6 +2332,7 @@ const Create = () => {
                             { value: "retweets" as const, label: "🔁 Reposts" },
                             { value: "replies" as const, label: "💬 Replies" },
                             { value: "impressions" as const, label: "👁️ Views" },
+                            { value: "posts" as const, label: "📝 Posts" },
                           ]).map((m) => (
                             <button
                               key={m.value}
