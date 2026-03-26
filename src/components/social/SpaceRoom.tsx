@@ -108,6 +108,10 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [actionTarget, setActionTarget] = useState<ParticipantInfo | null>(null);
   const [actionType, setActionType] = useState<"speaker" | "listener" | null>(null);
 
+  // Speaker request state
+  const [speakRequests, setSpeakRequests] = useState<Set<string>>(new Set());
+  const [requestPending, setRequestPending] = useState(false);
+
   // Cleanup audio on unmount
   useEffect(() => {
     return () => {
