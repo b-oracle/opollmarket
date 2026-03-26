@@ -666,6 +666,14 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           return next;
         });
       }
+      // After individual mute, broadcast force-mute lock
+      if (action === "mute" && target_user_id) {
+        if (roomRef.current) {
+          const msg = JSON.stringify({ type: "force_mute", targets: [target_user_id] });
+          roomRef.current.localParticipant.publishData(new TextEncoder().encode(msg), { reliable: true });
+        }
+        setForceMutedUsers(prev => new Set(prev).add(target_user_id));
+      }
       // Refresh co_host_ids after co-host changes and broadcast to all participants
       if (action === "make_cohost" || action === "remove_cohost") {
         const { data: spaceData } = await supabase
@@ -851,6 +859,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         {speakRequests.has(p.identity) && !hasHandUp && (
           <div className="absolute -top-1 -right-1 text-base animate-pulse drop-shadow-md">
             🎙️
+          </div>
+        )}
+        {forceMutedUsers.has(p.identity) && !hasHandUp && !speakRequests.has(p.identity) && (
+          <div className="absolute -top-1 -right-1 text-base drop-shadow-md">
+            🔇
           </div>
         )}
       </div>
@@ -1057,11 +1070,30 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           <div className="border-t border-border px-5 py-3 flex items-center justify-center gap-3">
             {(isHost || canPublish) && (
               <button onClick={toggleMute}
-                className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors ${
+                className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors relative ${
+                  forceMuted ? "bg-destructive/20 text-destructive" :
                   muted ? "bg-muted text-muted-foreground" : "bg-primary/20 text-primary"
-                }`}>
-                {muted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                }`}
+                title={forceMuted ? "Muted by host" : undefined}>
+                {forceMuted ? <Lock className="w-5 h-5" /> : muted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
               </button>
+            )}
+
+            {/* Mute All / Unmute All — for moderators */}
+            {hasModPowers && (
+              allForceMuted ? (
+                <button onClick={handleUnmuteAll}
+                  className="h-11 px-4 rounded-full flex items-center justify-center gap-2 text-sm font-medium bg-primary/20 text-primary transition-colors">
+                  <Unlock className="w-4 h-4" />
+                  Unmute All
+                </button>
+              ) : (
+                <button onClick={handleMuteAll}
+                  className="h-11 px-4 rounded-full flex items-center justify-center gap-2 text-sm font-medium bg-muted text-muted-foreground transition-colors">
+                  <VolumeX className="w-4 h-4" />
+                  Mute All
+                </button>
+              )
             )}
 
             {/* Request to Speak — for listeners without publish permission */}
@@ -1175,6 +1207,15 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                         <VolumeX className="w-5 h-5" />
                         <span className="text-sm font-medium">Force Mute</span>
                       </button>
+                      {forceMutedUsers.has(actionTarget.identity) && (
+                        <button
+                          onClick={() => handleForceUnmuteSingle(actionTarget.identity)}
+                          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+                        >
+                          <Unlock className="w-5 h-5" />
+                          <span className="text-sm font-medium">Allow to Unmute</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => invokeAction("demote", actionTarget.identity)}
                         disabled={promoting === actionTarget.identity}
