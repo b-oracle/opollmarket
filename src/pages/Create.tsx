@@ -979,6 +979,8 @@ const Create = () => {
         sport_match_id: autoResolve && category === "Sports" ? sportMatchId : null,
         sport_predicted_outcome: autoResolve && category === "Sports" ? sportPredictedOutcome : null,
         sport_league: autoResolve && category === "Sports" ? sportLeague || null : null,
+        twitter_resource_id: autoResolve && category === "Twitter/X" ? twitterResourceId || null : null,
+        twitter_metric_type: autoResolve && category === "Twitter/X" ? twitterMetricType : null,
       };
 
     let data: { id: string } | null = null;
