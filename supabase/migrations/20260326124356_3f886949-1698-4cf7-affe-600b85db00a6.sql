@@ -1,0 +1,1 @@
+ALTER TABLE public.spaces ADD COLUMN co_host_ids uuid[] NOT NULL DEFAULT '{}';

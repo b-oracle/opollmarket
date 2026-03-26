@@ -2041,6 +2041,7 @@ export type Database = {
       }
       spaces: {
         Row: {
+          co_host_ids: string[]
           created_at: string
           ended_at: string | null
           host_id: string
@@ -2057,6 +2058,7 @@ export type Database = {
           visibility_scope: string
         }
         Insert: {
+          co_host_ids?: string[]
           created_at?: string
           ended_at?: string | null
           host_id: string
@@ -2073,6 +2075,7 @@ export type Database = {
           visibility_scope?: string
         }
         Update: {
+          co_host_ids?: string[]
           created_at?: string
           ended_at?: string | null
           host_id?: string
@@ -3028,6 +3031,7 @@ export type Database = {
       get_visible_spaces: {
         Args: { _user_id: string }
         Returns: {
+          co_host_ids: string[]
           created_at: string
           ended_at: string | null
           host_id: string
