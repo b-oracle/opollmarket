@@ -1,65 +1,42 @@
 
 
-# Fix Quick Trade Asset Switching Bugs
+# Draft Reminder System (12-Hour Cadence)
 
-## Problem
-When users switch between non-crypto markets (Gold, Oil, Silver, Forex), several issues occur: stale price data leaks across assets, interpolation loops persist after switching, and chart data can flash or show incorrect prices momentarily.
+## Overview
+Remind users who have incomplete market drafts every 12 hours via in-app notification, Telegram, and a persistent banner on their Portfolio page.
 
-## Root Causes
-
-1. **Interpolation interval leak**: `resetInterpolationState()` zeros prices but doesn't stop the running `setInterval`. The timer keeps ticking with zeroed state, causing delays when re-selecting an asset.
-2. **Cleanup path split**: The streaming effect has two separate `return` cleanup functions (one for crypto, one for non-crypto). The non-crypto path doesn't clean up crypto-specific resources and vice versa — causes issues when switching between asset classes (e.g., BTC → Gold).
-3. **Race condition on fast switches**: HTTP fetches for the previous asset can resolve after switching, and while `isCurrentRun()` guards most paths, the `feedRealPrice` from the global Realtime subscription bypasses this guard entirely.
+## How It Works
+Drafts are already stored in the `markets` table with `status = 'draft'`. A scheduled edge function runs every 12 hours, finds users with stale drafts, and sends reminders. The Portfolio page shows a banner when drafts exist.
 
 ## Changes
 
-### 1. Fix `resetInterpolationState` in `src/lib/cryptoPriceProvider.ts`
-- Stop the running interval and clear the state entry entirely instead of just zeroing prices
-- This prevents phantom ticks from a previous asset's interpolation loop
+### 1. Database: Track last reminder time
+Add a `last_draft_reminder_at` column to `markets` so we don't spam users for the same draft.
 
-### 2. Unify cleanup in `src/pages/QuickTrade.tsx` streaming effect
-- Merge the two separate `return` cleanup blocks into a single unified cleanup function
-- Currently lines ~885-895 handle the crypto early-return path, and lines ~898-908 handle the non-crypto path — both need to clean up ALL resources (WS, pollers, interpolation, intervals)
-- Use a shared cleanup pattern: declare all unsub/interval variables at the top, clean them all in one return
-
-### 3. Guard `feedRealPrice` in Realtime subscription
-- In `ensureRealtimeSubscription`, only call `feedRealPrice` if there are active listeners for that asset
-- This prevents the global Realtime stream from feeding stale interpolation states for assets the user isn't viewing
-
-### 4. Add asset guard to price display updates
-- In the price display rendering, verify `currentPriceAsset === selectedAsset.symbol` before showing the price
-- This prevents a brief flash of the wrong price during async transitions
-
-## Technical Details
-
-**`src/lib/cryptoPriceProvider.ts`** — `resetInterpolationState`:
-```typescript
-export function resetInterpolationState(asset: string) {
-  const state = interpolationStates.get(asset);
-  if (state) {
-    stopInterpolation(state);
-    state.lastRealPrice = 0;
-    state.prevRealPrice = 0;
-    state.lastRealTime = 0;
-    // Don't delete — listeners may still be attached during transition
-  }
-}
+```sql
+ALTER TABLE public.markets ADD COLUMN last_draft_reminder_at timestamptz;
 ```
 
-**`src/pages/QuickTrade.tsx`** — Unified streaming effect cleanup:
-- Move all cleanup variable declarations (`unsubWs`, `unsubPoller`, `unsubSmooth`, `unsubCryptoSmooth`, `cryptoInterpId`, `pollIv`, `pendingRaf`) to the top of the effect
-- Single `return () => { ... }` at the bottom that cleans up everything unconditionally
+### 2. New Edge Function: `remind-draft-completion`
+Scheduled every 12 hours via pg_cron. Logic:
+- Query drafts where `status = 'draft'` and (`last_draft_reminder_at` is null OR older than 12 hours)
+- For each draft, insert an in-app notification: "You have an unfinished market draft: '{title}'. Tap to continue."
+- The existing `send_push_on_notification` trigger automatically dispatches to Telegram, push, and WhatsApp
+- Update `last_draft_reminder_at = now()` on each reminded draft
+- Group by user so one user with multiple drafts gets a single summary notification rather than one per draft
 
-**`src/lib/cryptoPriceProvider.ts`** — Guard `feedRealPrice` in Realtime:
-```typescript
-// Only feed if there are active listeners
-const state = interpolationStates.get(originalSymbol);
-if (state && state.listeners.size > 0) {
-  feedRealPrice(originalSymbol, price);
-}
-```
+### 3. Portfolio Page: Draft Reminder Banner (`src/pages/Portfolio.tsx`)
+- When the user has drafts and is NOT on the drafts tab, show a small amber banner at the top:
+  "You have {count} unfinished draft(s) — Continue editing"
+- Clicking it switches to the drafts tab
+- Dismissible for the session (sessionStorage flag)
+
+### 4. Schedule the cron job
+Use pg_cron to invoke the edge function every 12 hours (at 7 AM and 7 PM UTC).
 
 ## Files Modified
-- `src/lib/cryptoPriceProvider.ts` — Fix interpolation cleanup and Realtime guard
-- `src/pages/QuickTrade.tsx` — Unify streaming effect cleanup paths, add price display guard
+- Database migration — add `last_draft_reminder_at` column
+- `supabase/functions/remind-draft-completion/index.ts` — new edge function
+- `src/pages/Portfolio.tsx` — add draft reminder banner
+- pg_cron schedule (via insert tool)
 
