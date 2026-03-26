@@ -241,14 +241,21 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         }
       } else if (data.type === "speak_request_accepted") {
         setRequestPending(false);
-      } else if (data.type === "speak_request_declined") {
+    } else if (data.type === "speak_request_declined") {
         setRequestPending(false);
         toast.info("Your speak request was declined");
+      } else if (data.type === "cohost_update") {
+        const newCoHostIds: string[] = data.coHostIds || [];
+        setSpaceCoHostIds(newCoHostIds);
+        if (user) {
+          const wasCoHost = newCoHostIds.includes(user.id);
+          setIsCoHost(wasCoHost);
+        }
       }
     } catch {
       // ignore malformed
     }
-  }, []);
+  }, [user]);
 
   // Fetch profiles
   useEffect(() => {
@@ -553,15 +560,19 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           return next;
         });
       }
-      // Refresh co_host_ids after co-host changes
+      // Refresh co_host_ids after co-host changes and broadcast to all participants
       if (action === "make_cohost" || action === "remove_cohost") {
         const { data: spaceData } = await supabase
           .from("spaces")
           .select("co_host_ids")
           .eq("id", spaceId)
           .single();
-        if (spaceData?.co_host_ids) {
-          setSpaceCoHostIds(spaceData.co_host_ids as string[]);
+        const updatedIds = (spaceData?.co_host_ids as string[]) || [];
+        setSpaceCoHostIds(updatedIds);
+        // Broadcast co-host update so all participants sync their local state
+        if (roomRef.current) {
+          const msg = JSON.stringify({ type: "cohost_update", coHostIds: updatedIds });
+          roomRef.current.localParticipant.publishData(new TextEncoder().encode(msg), { reliable: true });
         }
       }
     } catch { toast.error(`Failed to ${action}`); }
