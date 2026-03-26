@@ -303,12 +303,12 @@ const Create = () => {
   const [savingDraft, setSavingDraft] = useState(false);
   const [lastAutoSaveTime, setLastAutoSaveTime] = useState<number | null>(null);
 
-  // Form state — restore from sessionStorage on mount
+  // Form state — restore from localStorage on mount (persists across tab close / browser crash)
   const getStored = (key: string, fallback: string) => {
-    try { return sessionStorage.getItem(`create_${key}`) ?? fallback; } catch { return fallback; }
+    try { return localStorage.getItem(`create_${key}`) ?? fallback; } catch { return fallback; }
   };
   const getStoredJson = <T,>(key: string, fallback: T): T => {
-    try { const v = sessionStorage.getItem(`create_${key}`); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+    try { const v = localStorage.getItem(`create_${key}`); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
   };
 
   const [title, setTitle] = useState(() => getStored("title", ""));
@@ -323,20 +323,20 @@ const Create = () => {
   const [options, setOptions] = useState<string[]>(() => getStoredJson("options", ["", ""]));
   const [videoUrl, setVideoUrl] = useState(() => getStored("videoUrl", ""));
 
-  // Persist form state to sessionStorage
+  // Persist form state to localStorage
   useEffect(() => {
     const fields: Record<string, string> = {
       title, description, details, category, endDate, resolutionSource, initialLiquidity, videoUrl,
     };
-    Object.entries(fields).forEach(([k, v]) => { try { sessionStorage.setItem(`create_${k}`, v); } catch {} });
-    try { sessionStorage.setItem("create_step", JSON.stringify(step)); } catch {}
-    try { sessionStorage.setItem("create_marketType", JSON.stringify(marketType)); } catch {}
-    try { sessionStorage.setItem("create_options", JSON.stringify(options)); } catch {}
+    Object.entries(fields).forEach(([k, v]) => { try { localStorage.setItem(`create_${k}`, v); } catch {} });
+    try { localStorage.setItem("create_step", JSON.stringify(step)); } catch {}
+    try { localStorage.setItem("create_marketType", JSON.stringify(marketType)); } catch {}
+    try { localStorage.setItem("create_options", JSON.stringify(options)); } catch {}
   }, [title, description, details, category, endDate, resolutionSource, initialLiquidity, step, marketType, options, videoUrl]);
 
   const clearFormStorage = () => {
     ["title", "description", "details", "category", "endDate", "resolutionSource", "initialLiquidity", "videoUrl", "step", "marketType", "options"]
-      .forEach((k) => { try { sessionStorage.removeItem(`create_${k}`); } catch {} });
+      .forEach((k) => { try { localStorage.removeItem(`create_${k}`); } catch {} });
   };
 
   // Check for existing drafts on mount (or auto-resume from Portfolio navigation)
