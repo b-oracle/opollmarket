@@ -947,6 +947,17 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
               </button>
             )}
 
+            {/* Request to Speak — for listeners without publish permission */}
+            {!isHost && !canPublish && (
+              <button onClick={requestToSpeak} disabled={requestPending}
+                className={`h-11 px-4 rounded-full flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
+                  requestPending ? "bg-primary/20 text-primary animate-pulse" : "bg-accent text-accent-foreground"
+                }`}>
+                <Mic className="w-4 h-4" />
+                {requestPending ? "Request Sent" : "Request to Speak"}
+              </button>
+            )}
+
             <button onClick={toggleHand}
               className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors ${
                 handRaised ? "bg-yellow-500/20 text-yellow-500" : "bg-muted text-muted-foreground"
