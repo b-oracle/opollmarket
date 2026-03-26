@@ -731,6 +731,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             ✋
           </div>
         )}
+        {speakRequests.has(p.identity) && !hasHandUp && (
+          <div className="absolute -top-1 -right-1 text-base animate-pulse drop-shadow-md">
+            🎙️
+          </div>
+        )}
       </div>
     );
   };
