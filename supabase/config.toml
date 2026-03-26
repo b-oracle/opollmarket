@@ -115,3 +115,5 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.place-bet]
     verify_jwt = false
+  [functions.remind-draft-completion]
+    verify_jwt = false
