@@ -615,6 +615,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     else startClientRecording();
   };
 
+  const hasModPowers = isHost || isCoHost;
+  const coHostIds: string[] = []; // populated from space data via participants with co_host role
+  // We track co-hosts by checking participant metadata - for now we use a query
   const speakers = participants.filter((p) => p.audioTrack || p.canPublish || p.identity === hostId);
   const listeners = participants.filter((p) => !p.audioTrack && !p.canPublish && p.identity !== hostId);
 
