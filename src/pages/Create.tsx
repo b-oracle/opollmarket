@@ -103,7 +103,7 @@ const SubmitProgressBar = ({ completedSteps, startTime, estimatedTotalSec }: {
 
 const CATEGORIES = [
   "Crypto", "Commodities", "Forex", "AI & Tech", "Science", "Economy",
-  "Entertainment", "Sports", "Politics", "Other",
+  "Entertainment", "Sports", "Politics", "Twitter/X", "Other",
 ];
 
 type GateStatus = "idle" | "checking" | "passed" | "failed";
