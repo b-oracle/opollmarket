@@ -628,6 +628,8 @@ const Create = () => {
         sport_match_id: autoResolve && category === "Sports" ? sportMatchId : null,
         sport_predicted_outcome: autoResolve && category === "Sports" ? sportPredictedOutcome : null,
         sport_league: autoResolve && category === "Sports" ? sportLeague || null : null,
+        twitter_resource_id: autoResolve && category === "Twitter/X" ? twitterResourceId || null : null,
+        twitter_metric_type: autoResolve && category === "Twitter/X" ? twitterMetricType : null,
       };
 
       let savedId = draftId;
@@ -665,7 +667,7 @@ const Create = () => {
     } finally {
       if (!silent) setSavingDraft(false);
     }
-  }, [user, draftId, title, description, details, category, endDate, resolutionSource, initialLiquidity, marketType, options, videoUrl, imageFile, imagePreview, autoResolve, autoResolveAsset, autoResolveOperator, autoResolveTargetPrice, autoResolveTime, sportType, sportMatchId, sportPredictedOutcome, sportLeague, displayName]);
+  }, [user, draftId, title, description, details, category, endDate, resolutionSource, initialLiquidity, marketType, options, videoUrl, imageFile, imagePreview, autoResolve, autoResolveAsset, autoResolveOperator, autoResolveTargetPrice, autoResolveTime, sportType, sportMatchId, sportPredictedOutcome, sportLeague, twitterResourceId, twitterMetricType, displayName]);
 
   // Auto-save draft every 30 seconds
   const saveDraftRef = useRef(saveDraft);
