@@ -1,0 +1,1 @@
+ALTER TABLE public.markets ADD COLUMN last_draft_reminder_at timestamptz;

@@ -162,6 +162,10 @@ const Portfolio = () => {
 
   useEffect(() => { track("page_view", { page: "portfolio" }); }, []);
 
+  const [draftBannerDismissed, setDraftBannerDismissed] = useState(() => {
+    try { return sessionStorage.getItem("draft_banner_dismissed") === "1"; } catch { return false; }
+  });
+
   // Fetch user drafts
   const { data: drafts = [], isLoading: draftsLoading, refetch: refetchDrafts } = useQuery({
     queryKey: ["user-drafts", user?.id],
@@ -664,6 +668,33 @@ const Portfolio = () => {
           </button>
           </div>
         </div>
+
+        {/* Draft Reminder Banner */}
+        {activeTab !== "drafts" && drafts.length > 0 && !draftBannerDismissed && (
+          <div className="flex items-center justify-between gap-2 p-3 mb-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+            <div className="flex items-center gap-2 min-w-0">
+              <FileEdit className="w-4 h-4 text-amber-500 shrink-0" />
+              <span className="text-xs text-amber-200 truncate">
+                You have {drafts.length} unfinished draft{drafts.length > 1 ? "s" : ""} —{" "}
+                <button
+                  onClick={() => setActiveTab("drafts")}
+                  className="underline font-semibold text-amber-400 hover:text-amber-300"
+                >
+                  Continue editing
+                </button>
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                setDraftBannerDismissed(true);
+                try { sessionStorage.setItem("draft_banner_dismissed", "1"); } catch {}
+              }}
+              className="text-amber-500/60 hover:text-amber-400"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {activeTab === "positions" && (
           <>
