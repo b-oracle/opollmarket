@@ -977,7 +977,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                         <span className="text-sm font-medium">Make Co-Host 👑</span>
                       </button>
                     )
-                  )
+                  )}
                   <button
                     onClick={() => invokeAction("kick", actionTarget.identity)}
                     disabled={promoting === actionTarget.identity}
