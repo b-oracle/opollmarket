@@ -897,6 +897,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
                     <Users className="w-3 h-3" /> Listeners
+                    {hasModPowers && speakRequests.size > 0 && (
+                      <span className="ml-1 min-w-[18px] h-[18px] rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center px-1">
+                        {speakRequests.size}
+                      </span>
+                    )}
                   </p>
                   <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                     {listeners.map((p) => (
