@@ -89,6 +89,11 @@ const SDK_JS = `
     return this._request('deposit', null, 'POST', data);
   };
 
+  // Create a market (requires user token)
+  OPOLL.prototype.createMarket = function(data) {
+    return this._request('create-market', null, 'POST', data);
+  };
+
   // Embed helper - renders a market widget in a target element
   OPOLL.prototype.embedMarket = function(marketId, targetElement) {
     var iframe = document.createElement('iframe');

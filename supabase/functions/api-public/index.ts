@@ -321,6 +321,115 @@ Deno.serve(async (req) => {
       return json(result, resp.status);
     }
 
+    // ==================== CREATE MARKET ====================
+    if (action === "create-market" && req.method === "POST") {
+      if (!hasPermission("trade")) return err("Permission denied: trade not allowed", 403);
+
+      const userId = await getAuthUser();
+      if (!userId) return err("User authentication required", 401);
+
+      const body = await req.json();
+      const { title, description, category, endDate, marketType, options, imageUrl, resolutionSource, initialLiquidity } = body;
+
+      if (!title || title.trim().length < 5) return err("Title is required (min 5 chars)");
+      if (!description) return err("Description is required");
+      if (!category) return err("Category is required");
+      if (!endDate) return err("endDate is required (ISO string)");
+      if (marketType === "multi" && (!options || !Array.isArray(options) || options.length < 2)) {
+        return err("Multi-option markets require at least 2 options");
+      }
+
+      const liquidity = Math.max(0, Number(initialLiquidity) || 0);
+
+      // Check balance if liquidity > 0
+      if (liquidity > 0) {
+        const { data: bal } = await admin
+          .from("balances")
+          .select("amount")
+          .eq("user_id", userId)
+          .eq("currency", "USDT")
+          .maybeSingle();
+
+        if (!bal || bal.amount < liquidity) {
+          return err("Insufficient balance for initial liquidity");
+        }
+      }
+
+      // Run AI moderation
+      try {
+        const modUrl = `${supabaseUrl}/functions/v1/moderate-market-content`;
+        const modResp = await fetch(modUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: anonKey },
+          body: JSON.stringify({ title, description, options: options?.map((o: any) => o.label || o) }),
+        });
+        if (modResp.ok) {
+          const modResult = await modResp.json();
+          if (modResult.flagged) {
+            return err(`Content flagged: ${modResult.reason}`, 422);
+          }
+        }
+      } catch (modErr) {
+        console.warn("Moderation check failed (non-critical):", modErr);
+      }
+
+      // Insert market
+      const { data: market, error: marketErr } = await admin
+        .from("markets")
+        .insert({
+          title: title.trim(),
+          description: description.trim(),
+          category,
+          end_date: endDate,
+          market_type: marketType || "binary",
+          image_url: imageUrl || null,
+          resolution_source: resolutionSource || "manual",
+          creator_wallet: userId,
+          creator_name: "API User",
+          initial_liquidity: liquidity,
+          liquidity,
+          status: "active",
+          yes_price: 50,
+          no_price: 50,
+        })
+        .select("id, title, status, category, market_type, end_date, created_at")
+        .single();
+
+      if (marketErr) return err(marketErr.message, 500);
+
+      // Insert options for multi markets
+      if (marketType === "multi" && options?.length) {
+        const optionRows = options.map((o: any, i: number) => ({
+          market_id: market.id,
+          label: typeof o === "string" ? o : o.label,
+          sort_order: i,
+          price: Math.round(100 / options.length),
+        }));
+        await admin.from("market_options").insert(optionRows);
+      }
+
+      // Deduct liquidity from balance
+      if (liquidity > 0) {
+        await admin.rpc("adjust_balance", { p_user_id: userId, p_amount: -liquidity });
+        await admin.from("transactions").insert({
+          user_id: userId,
+          type: "buy",
+          amount: liquidity,
+          market_id: market.id,
+          status: "confirmed",
+          side: "initial_liquidity",
+        });
+      }
+
+      // Fetch creator display name
+      const { data: profile } = await admin.from("profiles").select("display_name").eq("id", userId).maybeSingle();
+      if (profile?.display_name) {
+        await admin.from("markets").update({ creator_name: profile.display_name }).eq("id", market.id);
+      }
+
+      return json({ market }, 201);
+    }
+
     return err(`Unknown action: ${action}`, 404);
   } catch (e) {
     console.error("api-public error:", e);

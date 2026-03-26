@@ -202,6 +202,12 @@ const Developers = () => {
                 response: `{ "user": { "id": "...", "email": "..." } }`,
               },
               {
+                method: "POST", action: "create-market",
+                desc: "Create a new prediction market. Requires user Bearer token + trade permission.",
+                params: "Body: { title, description, category, endDate, marketType?, options?, imageUrl?, resolutionSource?, initialLiquidity? }",
+                response: `{ "market": { "id": "...", "title": "...", "status": "active" } }`,
+              },
+              {
                 method: "POST", action: "deposit",
                 desc: "Initiate a crypto deposit. Requires user Bearer token.",
                 params: "Body: { amount, currency? }",
