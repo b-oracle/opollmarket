@@ -2380,6 +2380,7 @@ const Create = () => {
                 </div>
               )}
 
+              <div className={`glass rounded-xl p-4 ${shakeClass("endDate")} ${touched.endDate && errors.endDate ? "border-destructive/50" : ""}`}>
                 <label className="flex items-center gap-2 text-sm font-semibold mb-2">
                   <Calendar className="w-4 h-4 text-primary" />
                   Resolution Date
