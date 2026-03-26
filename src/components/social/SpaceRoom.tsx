@@ -82,6 +82,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [profiles, setProfiles] = useState<Record<string, ProfileInfo>>({});
   const [isHost, setIsHost] = useState(false);
   const [isCoHost, setIsCoHost] = useState(false);
+  const [spaceCoHostIds, setSpaceCoHostIds] = useState<string[]>([]);
   const [handRaised, setHandRaised] = useState(false);
   const [canPublish, setCanPublish] = useState(false);
   const [promoting, setPromoting] = useState<string | null>(null);
@@ -616,8 +617,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   };
 
   const hasModPowers = isHost || isCoHost;
-  const coHostIds: string[] = []; // populated from space data via participants with co_host role
-  // We track co-hosts by checking participant metadata - for now we use a query
+  const coHostIds = spaceCoHostIds;
   const speakers = participants.filter((p) => p.audioTrack || p.canPublish || p.identity === hostId);
   const listeners = participants.filter((p) => !p.audioTrack && !p.canPublish && p.identity !== hostId);
 
