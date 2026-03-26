@@ -358,7 +358,10 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           const perms = room.localParticipant.permissions;
           if (perms?.canPublish) {
             setCanPublish(true);
+            setRequestPending(false);
             toast.success("You've been promoted to speaker! 🎙️");
+          }
+        });
           }
         });
         room.on(RoomEvent.DataReceived, handleDataReceived);
