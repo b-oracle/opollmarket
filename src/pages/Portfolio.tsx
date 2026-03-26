@@ -162,6 +162,10 @@ const Portfolio = () => {
 
   useEffect(() => { track("page_view", { page: "portfolio" }); }, []);
 
+  const [draftBannerDismissed, setDraftBannerDismissed] = useState(() => {
+    try { return sessionStorage.getItem("draft_banner_dismissed") === "1"; } catch { return false; }
+  });
+
   // Fetch user drafts
   const { data: drafts = [], isLoading: draftsLoading, refetch: refetchDrafts } = useQuery({
     queryKey: ["user-drafts", user?.id],
