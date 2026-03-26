@@ -233,6 +233,31 @@ Deno.serve(async (req) => {
       });
     }
 
+    // --- MUTE ALL ---
+    if (action === "mute_all") {
+      requireMod();
+      const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
+      const participants = await svc.listParticipants(roomName);
+      let mutedCount = 0;
+      for (const p of participants) {
+        if (p.identity === userId) continue;
+        if (p.tracks) {
+          for (const track of p.tracks) {
+            if (track.type === 1 && track.sid) {
+              try {
+                await svc.mutePublishedTrack(roomName, p.identity!, track.sid, true);
+                mutedCount++;
+              } catch { /* participant may have left */ }
+            }
+          }
+        }
+      }
+      return new Response(JSON.stringify({ success: true, action: "muted_all", count: mutedCount }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // --- KICK ---
     if (action === "kick" && target_user_id) {
       requireMod();
