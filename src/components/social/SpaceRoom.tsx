@@ -29,6 +29,8 @@ import {
   CircleStop,
   Bell,
   Minimize2,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import NftBadge, { VerificationLevel } from "@/components/NftBadge";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
@@ -110,6 +112,10 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
   // Speaker request state
   const [speakRequests, setSpeakRequests] = useState<Set<string>>(new Set());
+  // Force-mute state
+  const [forceMuted, setForceMuted] = useState(false);
+  const [forceMutedUsers, setForceMutedUsers] = useState<Set<string>>(new Set());
+  const [allForceMuted, setAllForceMuted] = useState(false);
   const [requestPending, setRequestPending] = useState(false);
 
   // Cleanup audio on unmount
@@ -250,6 +256,59 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         if (user) {
           const wasCoHost = newCoHostIds.includes(user.id);
           setIsCoHost(wasCoHost);
+        }
+      } else if (data.type === "force_mute") {
+        if (user) {
+          const targets = data.targets;
+          const isTargeted = targets === "all" || (Array.isArray(targets) && targets.includes(user.id));
+          // Hosts and co-hosts are immune
+          const isMod = user.id === hostId || spaceCoHostIds.includes(user.id);
+          if (isTargeted && !isMod) {
+            setForceMuted(true);
+            setMuted(true);
+            // Actually mute the mic
+            if (roomRef.current) {
+              try { roomRef.current.localParticipant.setMicrophoneEnabled(false); } catch {}
+            }
+            toast.info("You've been muted by the host 🔇");
+          }
+          // Track force-muted users for moderator UI
+          if (targets === "all") {
+            setAllForceMuted(true);
+            // Add all non-mod speakers to force-muted set
+            const allIds = new Set<string>();
+            participants.forEach(p => {
+              if (p.identity !== hostId && !spaceCoHostIds.includes(p.identity)) {
+                allIds.add(p.identity);
+              }
+            });
+            setForceMutedUsers(allIds);
+          } else if (Array.isArray(targets)) {
+            setForceMutedUsers(prev => {
+              const next = new Set(prev);
+              targets.forEach((id: string) => next.add(id));
+              return next;
+            });
+          }
+        }
+      } else if (data.type === "force_unmute") {
+        if (user) {
+          const targets = data.targets;
+          const isTargeted = targets === "all" || (Array.isArray(targets) && targets.includes(user.id));
+          if (isTargeted) {
+            setForceMuted(false);
+            toast.success("You can now unmute 🎙️");
+          }
+          if (targets === "all") {
+            setAllForceMuted(false);
+            setForceMutedUsers(new Set());
+          } else if (Array.isArray(targets)) {
+            setForceMutedUsers(prev => {
+              const next = new Set(prev);
+              targets.forEach((id: string) => next.delete(id));
+              return next;
+            });
+          }
         }
       }
     } catch {
@@ -442,10 +501,57 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   // --- Actions ---
   const toggleMute = async () => {
     if (!roomRef.current) return;
+    if (forceMuted && muted) {
+      toast.error("You've been muted by the host. Wait for permission to unmute.");
+      return;
+    }
     try {
       await roomRef.current.localParticipant.setMicrophoneEnabled(muted);
       setMuted(!muted);
     } catch { toast.error("Microphone access denied"); }
+  };
+
+  const handleMuteAll = async () => {
+    await invokeAction("mute_all");
+    // Broadcast force-mute to all via data channel
+    if (roomRef.current) {
+      const msg = JSON.stringify({ type: "force_mute", targets: "all" });
+      roomRef.current.localParticipant.publishData(new TextEncoder().encode(msg), { reliable: true });
+    }
+    setAllForceMuted(true);
+    // Track all non-mod speakers as force-muted
+    const allIds = new Set<string>();
+    participants.forEach(p => {
+      if (p.identity !== hostId && !spaceCoHostIds.includes(p.identity) && (p.canPublish || p.audioTrack)) {
+        allIds.add(p.identity);
+      }
+    });
+    setForceMutedUsers(allIds);
+  };
+
+  const handleUnmuteAll = () => {
+    if (roomRef.current) {
+      const msg = JSON.stringify({ type: "force_unmute", targets: "all" });
+      roomRef.current.localParticipant.publishData(new TextEncoder().encode(msg), { reliable: true });
+    }
+    setAllForceMuted(false);
+    setForceMutedUsers(new Set());
+    toast.success("All speakers can now unmute");
+  };
+
+  const handleForceUnmuteSingle = (targetId: string) => {
+    if (roomRef.current) {
+      const msg = JSON.stringify({ type: "force_unmute", targets: [targetId] });
+      roomRef.current.localParticipant.publishData(new TextEncoder().encode(msg), { reliable: true });
+    }
+    setForceMutedUsers(prev => {
+      const next = new Set(prev);
+      next.delete(targetId);
+      return next;
+    });
+    setActionTarget(null);
+    setActionType(null);
+    toast.success("Allowed to unmute");
   };
 
   const handleLeave = async () => {
