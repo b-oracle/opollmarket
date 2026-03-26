@@ -1,44 +1,48 @@
 
 
-# Separate Bonus vs Real Revenue in Admin Analytics
+# Add Co-Host Feature to Spaces
 
-## Problem
-Users can pay for promotions (boosts, broadcasts, social ads) using bonus balance. Currently, the admin panel counts all promotion revenue equally, making it impossible to distinguish real money from "paper money" (bonus balance). This inflates perceived revenue.
+## Overview
+Allow the host to designate one or more participants as co-hosts. Co-hosts get the same moderation powers as the host (promote, demote, mute, kick) but cannot end the space or manage other co-hosts.
 
-## Changes
+## Database Changes
 
-### 1. Database: Add `bonus_amount` column to `transactions` table
-A new nullable numeric column `bonus_amount` (default 0) on the `transactions` table. This records how much of each transaction was paid from bonus balance vs real balance.
-
-### 2. Update `pay-promotion-balance` Edge Function
-When inserting transaction records for boosts, broadcasts, and social ads, calculate and store the proportional `bonus_amount` for each line item based on the overall bonus/main split ratio.
-
-### 3. Update `AdminPredictions.tsx` — Revenue Breakdown
-- Add a "Bonus Revenue" card showing total revenue from bonus balance across all promotion types
-- Update the "Boosts", "Platform Profit" cards to show a small sub-label: "($X from bonus)"
-- Color-code bonus amounts differently (e.g., muted/orange) so admins can instantly see what's real
-
-### 4. Update `AdminDashboard.tsx` — Platform Revenue Pool
-- Add a note or sub-metric under the Platform Revenue Pool card showing how much of the pool came from bonus-funded promotions
-- This helps admins understand that portion of the pool is "paper money"
-
-## Technical Details
-
-**Migration:**
+### Migration: Add `co_host_ids` array to `spaces` table
 ```sql
-ALTER TABLE public.transactions 
-ADD COLUMN bonus_amount numeric NOT NULL DEFAULT 0;
+ALTER TABLE public.spaces ADD COLUMN co_host_ids uuid[] NOT NULL DEFAULT '{}';
 ```
+Alternatively, a separate `space_co_hosts` table, but an array column is simpler since co-host count will be small (1-3).
 
-**Edge Function change** (`pay-promotion-balance`): For each transaction insert, compute the bonus portion proportionally:
-```typescript
-const bonusRatio = bonusDeduct / totalCost;
-// For boost transaction:
-const boostBonusAmount = tierConfig.price * bonusRatio;
-await adminClient.from("transactions").insert({
-  ..., bonus_amount: boostBonusAmount
-});
-```
+## Backend Changes
 
-**Admin UI**: Query `bonus_amount` alongside existing transaction data. Sum separately for boost/broadcast/ad sides and display as "(${bonusTotal} bonus)" beneath each revenue metric.
+### `supabase/functions/livekit-token/index.ts`
+1. Update the space query to include `co_host_ids`
+2. Create `isCoHost = (space.co_host_ids || []).includes(userId)`
+3. Update `requireHost()` to `requireHostOrCoHost()` — allows host OR co-host for: promote, demote, mute, kick
+4. Keep `isHost`-only gating for ending the space
+5. On JOIN: if user is a co-host, grant `canPublish: true` (same as host)
+6. Return `isCoHost` flag in the response alongside `isHost`
+
+### New action: `make_cohost` / `remove_cohost`
+- Host-only action (not co-host)
+- Updates `spaces.co_host_ids` array (append/remove)
+- Updates participant role to `"co_host"` in `space_participants`
+
+## Frontend Changes
+
+### `src/components/social/SpaceRoom.tsx`
+1. Add `isCoHost` state from token response
+2. Allow co-hosts to see and use the participant action sheet (promote/demote/mute/kick) — same as host
+3. Co-hosts get mic access and mute toggle (like speakers but with mod powers)
+4. Add "Make Co-Host" option in the host's action sheet for speakers
+5. Show a crown/star badge next to co-host names
+6. Co-hosts do NOT see: end space button, recording controls, or "Make Co-Host" for others
+
+### `src/components/social/SpaceCard.tsx`
+- Show co-host names alongside host name if desired (optional, minor)
+
+## Files to modify
+- `supabase/functions/livekit-token/index.ts` — auth and action logic
+- `src/components/social/SpaceRoom.tsx` — UI for co-host powers and badge
+- Database migration — add `co_host_ids` column
 
