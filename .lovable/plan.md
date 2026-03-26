@@ -1,42 +1,50 @@
 
 
-# Draft Reminder System (12-Hour Cadence)
+# Speaker Request System for Spaces
 
 ## Overview
-Remind users who have incomplete market drafts every 12 hours via in-app notification, Telegram, and a persistent banner on their Portfolio page.
+Add a "Request to Speak" flow where listeners can send a formal request (via LiveKit data channel), and hosts/co-hosts see those requests with Accept/Decline buttons. Currently, hand raise is just a visual indicator with no actionable flow for listeners.
 
 ## How It Works
-Drafts are already stored in the `markets` table with `status = 'draft'`. A scheduled edge function runs every 12 hours, finds users with stale drafts, and sends reminders. The Portfolio page shows a banner when drafts exist.
+
+1. **Listener** sees a "Request to Speak" button (replaces or supplements the hand raise for listeners who can't publish)
+2. When tapped, a data message of type `"speak_request"` is broadcast via LiveKit
+3. **Hosts/Co-hosts** see a notification toast and a badge count on a new "Requests" indicator
+4. When host/co-host taps a listener with a pending request, the action sheet shows "Accept Request" (promotes them) and "Decline Request" (clears the request)
+5. Accepting calls the existing `promote` action via the edge function
+6. Declining sends a `"speak_request_declined"` data message back; the requester sees a toast
 
 ## Changes
 
-### 1. Database: Track last reminder time
-Add a `last_draft_reminder_at` column to `markets` so we don't spam users for the same draft.
+### `src/components/social/SpaceRoom.tsx`
 
-```sql
-ALTER TABLE public.markets ADD COLUMN last_draft_reminder_at timestamptz;
-```
+**New state:**
+- `speakRequests: Set<string>` — tracks identities that have requested to speak (seen by host/co-host)
+- `requestPending: boolean` — tracks whether the current listener has a pending request
 
-### 2. New Edge Function: `remind-draft-completion`
-Scheduled every 12 hours via pg_cron. Logic:
-- Query drafts where `status = 'draft'` and (`last_draft_reminder_at` is null OR older than 12 hours)
-- For each draft, insert an in-app notification: "You have an unfinished market draft: '{title}'. Tap to continue."
-- The existing `send_push_on_notification` trigger automatically dispatches to Telegram, push, and WhatsApp
-- Update `last_draft_reminder_at = now()` on each reminded draft
-- Group by user so one user with multiple drafts gets a single summary notification rather than one per draft
+**Data channel handling (`handleDataReceived`):**
+- New type `"speak_request"` — adds identity to `speakRequests`, shows toast to host/co-host: "{name} wants to speak"
+- New type `"speak_request_declined"` — shows toast to the requester: "Your request was declined"
+- New type `"speak_request_accepted"` — clears `requestPending` (promotion toast already fires via permissions change)
 
-### 3. Portfolio Page: Draft Reminder Banner (`src/pages/Portfolio.tsx`)
-- When the user has drafts and is NOT on the drafts tab, show a small amber banner at the top:
-  "You have {count} unfinished draft(s) — Continue editing"
-- Clicking it switches to the drafts tab
-- Dismissible for the session (sessionStorage flag)
+**Listener controls bar:**
+- When user is a listener (no `canPublish` and not host): show "Request to Speak" button instead of just the hand raise
+- If `requestPending`, show pulsing/disabled state: "Request Sent"
+- On permission change to `canPublish`, auto-clear `requestPending`
 
-### 4. Schedule the cron job
-Use pg_cron to invoke the edge function every 12 hours (at 7 AM and 7 PM UTC).
+**Action sheet for listeners (host/co-host view):**
+- If the tapped listener has a pending speak request, show:
+  - "Accept — Promote to Speaker" (calls `invokeAction("promote", ...)` and broadcasts `speak_request_accepted`)
+  - "Decline Request" (broadcasts `speak_request_declined` and removes from `speakRequests`)
+- Existing "Promote to Speaker" button remains for listeners without a request
+
+**Visual indicator:**
+- Listeners with pending speak requests show a 🎙️ badge on their avatar (similar to ✋ hand raise)
+- Request count badge shown near the Listeners section header when there are pending requests
+
+### No backend changes needed
+All communication uses the existing LiveKit data channel. Promotion still uses the existing `livekit-token` edge function `promote` action.
 
 ## Files Modified
-- Database migration — add `last_draft_reminder_at` column
-- `supabase/functions/remind-draft-completion/index.ts` — new edge function
-- `src/pages/Portfolio.tsx` — add draft reminder banner
-- pg_cron schedule (via insert tool)
+- `src/components/social/SpaceRoom.tsx` — add speak request flow, UI buttons, data message handling
 
