@@ -81,6 +81,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [participants, setParticipants] = useState<ParticipantInfo[]>([]);
   const [profiles, setProfiles] = useState<Record<string, ProfileInfo>>({});
   const [isHost, setIsHost] = useState(false);
+  const [isCoHost, setIsCoHost] = useState(false);
   const [handRaised, setHandRaised] = useState(false);
   const [canPublish, setCanPublish] = useState(false);
   const [promoting, setPromoting] = useState<string | null>(null);
@@ -310,7 +311,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         if (cancelled) return;
 
         setIsHost(data.isHost);
-        setCanPublish(data.isHost);
+        setIsCoHost(data.isCoHost || false);
+        setCanPublish(data.isHost || data.isCoHost);
 
         // Audio handling
         room.on(RoomEvent.TrackSubscribed, (track) => {
@@ -377,7 +379,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         updateParticipants(room);
 
         await supabase.from("space_participants").upsert(
-          { space_id: spaceId, user_id: user.id, role: data.isHost ? "host" : "listener", left_at: null },
+          { space_id: spaceId, user_id: user.id, role: data.isHost ? "host" : data.isCoHost ? "co_host" : "listener", left_at: null },
           { onConflict: "space_id,user_id" }
         );
         queryClient.invalidateQueries({ queryKey: ["spaces"] });
