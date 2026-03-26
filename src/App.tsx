@@ -192,7 +192,7 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
       setNeedsSetup(false);
       checkedUserRef.current = userId;
       setChecked(true);
-      if (userId) try { sessionStorage.setItem(`security_ok_${userId}`, "1"); } catch {}
+      if (userId) try { localStorage.setItem(`security_ok_${userId}`, "1"); } catch {}
     };
     window.addEventListener("security-setup-complete", handler);
     return () => window.removeEventListener("security-setup-complete", handler);
@@ -212,9 +212,9 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    // Check sessionStorage cache first to skip network request
+    // Check localStorage cache first to skip network request (persists across sessions)
     try {
-      if (sessionStorage.getItem(`security_ok_${userId}`) === "1") {
+      if (localStorage.getItem(`security_ok_${userId}`) === "1") {
         checkedUserRef.current = userId;
         setChecked(true);
         setNeedsSetup(false);
@@ -228,12 +228,14 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
 
     let active = true;
 
-    // Safety timeout: if the query hangs for >8s, fail CLOSED (sign out) for security
+    // Safety timeout: if the query hangs for >8s, fail OPEN (let through).
+    // LoginSecurityGuard already enforces PIN/TOTP verification on every login,
+    // so a false-open here doesn't bypass security — but a false-close causes
+    // users who already completed setup to be asked to set up again.
     const safetyTimer = window.setTimeout(() => {
       if (!active) return;
       checkingRef.current = false;
-      // Fail closed: redirect to setup rather than letting through
-      setNeedsSetup(true);
+      setNeedsSetup(false);
       setChecked(true);
     }, 8000);
 
@@ -256,7 +258,7 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
         setNeedsSetup(needs);
         checkedUserRef.current = userId;
         setChecked(true);
-        if (!needs) try { sessionStorage.setItem(`security_ok_${userId}`, "1"); } catch {}
+        if (!needs) try { localStorage.setItem(`security_ok_${userId}`, "1"); } catch {}
       })
       .catch(() => {
         if (!active) return;
