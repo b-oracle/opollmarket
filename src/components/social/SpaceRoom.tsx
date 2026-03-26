@@ -918,7 +918,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   <div>
                     <p className="font-semibold text-sm">{actionTarget.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {actionType === "speaker" ? "Speaker" : "Listener"}
+                      {coHostIds.includes(actionTarget.identity) ? "Co-Host 👑" : actionType === "speaker" ? "Speaker" : "Listener"}
                       {remoteHandRaises.has(actionTarget.identity) && " · ✋ Hand raised"}
                     </p>
                   </div>
@@ -956,6 +956,28 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                       </button>
                     </>
                   )}
+                  {/* Make / Remove Co-Host — host only */}
+                  {isHost && actionTarget.identity !== hostId && (
+                    coHostIds.includes(actionTarget.identity) ? (
+                      <button
+                        onClick={() => invokeAction("remove_cohost", actionTarget.identity)}
+                        disabled={promoting === actionTarget.identity}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-muted hover:bg-muted/80 text-foreground transition-colors"
+                      >
+                        <UserMinus className="w-5 h-5" />
+                        <span className="text-sm font-medium">Remove Co-Host</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => invokeAction("make_cohost", actionTarget.identity)}
+                        disabled={promoting === actionTarget.identity}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-accent hover:bg-accent/80 text-accent-foreground transition-colors"
+                      >
+                        <UserPlus className="w-5 h-5" />
+                        <span className="text-sm font-medium">Make Co-Host 👑</span>
+                      </button>
+                    )
+                  )
                   <button
                     onClick={() => invokeAction("kick", actionTarget.identity)}
                     disabled={promoting === actionTarget.identity}
