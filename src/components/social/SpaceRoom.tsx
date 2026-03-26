@@ -491,6 +491,17 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           return next;
         });
       }
+      // Refresh co_host_ids after co-host changes
+      if (action === "make_cohost" || action === "remove_cohost") {
+        const { data: spaceData } = await supabase
+          .from("spaces")
+          .select("co_host_ids")
+          .eq("id", spaceId)
+          .single();
+        if (spaceData?.co_host_ids) {
+          setSpaceCoHostIds(spaceData.co_host_ids as string[]);
+        }
+      }
     } catch { toast.error(`Failed to ${action}`); }
     finally { setPromoting(null); setRecordingLoading(false); setActionTarget(null); setActionType(null); }
   };
