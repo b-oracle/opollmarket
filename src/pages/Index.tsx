@@ -497,7 +497,24 @@ const Index = () => {
                   border: `1px solid ${getBoostTierConfig(boost.tier).ringClass}`,
                   background: getBoostTierConfig(boost.tier).bgTint,
                 } : undefined}
+
               >
+                {market.participants === 0 && user?.id === market.creatorAddress && (
+                  <div className="absolute inset-0 z-20 rounded-xl md:rounded-2xl bg-background/80 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 p-3">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                      <Zap className="w-3.5 h-3.5" /> First Prediction Needed
+                    </span>
+                    <p className="text-[11px] text-muted-foreground text-center max-w-[200px]">
+                      Place your first prediction to make this market visible to everyone.
+                    </p>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); navigate(`/market/${market.id}`); }}
+                      className="px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-all active:scale-95"
+                    >
+                      Predict Now →
+                    </button>
+                  </div>
+                )}
                 {(market.status === 'ended' || market.status === 'resolved') && (
                   <div className="absolute inset-0 z-10 rounded-xl md:rounded-2xl bg-background/60 backdrop-blur-[2px] flex items-center justify-center">
                     <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-wider ${
