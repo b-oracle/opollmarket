@@ -968,7 +968,7 @@ const Create = () => {
         liquidity: liquidityAmount,
         tx_hash: mockTxHash,
         contract_address: mockContractAddr,
-        market_type: autoResolve ? "binary" : marketType,
+        market_type: marketType,
         status: marketStatus,
         auto_resolve: autoResolve,
         auto_resolve_asset: autoResolve && isPriceAutoResolveCategory(category) ? autoResolveAsset : null,
