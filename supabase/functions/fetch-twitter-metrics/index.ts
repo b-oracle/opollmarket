@@ -153,7 +153,19 @@ Deno.serve(async (req) => {
     // Single metric fetch for frontend live counter
     if (body.metric_type && body.resource_id) {
       let count: number | null = null;
-      if (body.metric_type === "tweets" || body.metric_type === "posts") {
+      if ((body.metric_type === "tweets" || body.metric_type === "posts") && body.market_id) {
+        // Look up market dates for range-based counting
+        const { data: mkt } = await adminClient
+          .from("markets")
+          .select("created_at, end_date")
+          .eq("id", body.market_id)
+          .single();
+        if (mkt) {
+          const startTime = new Date(mkt.created_at).toISOString();
+          const endTime = new Date(mkt.end_date + "T23:59:59Z").toISOString();
+          count = await fetchUserTweetCountInRange(body.resource_id, bearerToken, startTime, endTime);
+        }
+      } else if (body.metric_type === "tweets" || body.metric_type === "posts") {
         const userMetrics = await fetchUserMetrics(body.resource_id, bearerToken);
         count = extractCount(body.metric_type, null, userMetrics);
       } else {
