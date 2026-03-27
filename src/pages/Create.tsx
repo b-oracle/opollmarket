@@ -2305,22 +2305,34 @@ const Create = () => {
                       exit={{ opacity: 0, height: 0 }}
                       className="space-y-3 pt-2 border-t border-border/50"
                     >
-                      {/* Tweet URL / ID */}
+                      {/* Tweet URL / ID or Username */}
                       <div>
-                        <label className="text-xs font-semibold mb-1.5 block">Tweet URL or ID</label>
+                        <label className="text-xs font-semibold mb-1.5 block">
+                          {twitterMetricType === "posts" ? "X (Twitter) Username" : "Tweet URL or ID"}
+                        </label>
                         <input
                           type="text"
                           value={twitterResourceId}
                           onChange={(e) => {
-                            // Extract tweet ID from URL if pasted
                             const val = e.target.value.trim();
-                            const match = val.match(/(?:twitter\.com|x\.com)\/\w+\/status\/(\d+)/);
-                            setTwitterResourceId(match ? match[1] : val);
+                            if (twitterMetricType === "posts") {
+                              // Strip @ and URL prefixes, keep just the username
+                              const urlMatch = val.match(/(?:twitter\.com|x\.com)\/(@?(\w+))/i);
+                              setTwitterResourceId(urlMatch ? urlMatch[2] : val.replace(/^@/, ""));
+                            } else {
+                              // Extract tweet ID from URL if pasted
+                              const match = val.match(/(?:twitter\.com|x\.com)\/\w+\/status\/(\d+)/);
+                              setTwitterResourceId(match ? match[1] : val);
+                            }
                           }}
-                          placeholder="e.g. https://x.com/user/status/123456789 or 123456789"
+                          placeholder={twitterMetricType === "posts" ? "e.g. elonmusk" : "e.g. https://x.com/user/status/123456789 or 123456789"}
                           className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                         />
-                        <p className="text-[10px] text-muted-foreground mt-1">Paste the full tweet URL or just the numeric tweet ID.</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          {twitterMetricType === "posts"
+                            ? "Enter the X username (without @) whose post count you want to track."
+                            : "Paste the full tweet URL or just the numeric tweet ID."}
+                        </p>
                       </div>
 
                       {/* Metric Type */}
