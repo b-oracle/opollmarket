@@ -111,7 +111,9 @@ function extractCount(metricType: string, tweetMetrics: TwitterMetrics | null, u
   if (metricType === "likes" && tweetMetrics) return tweetMetrics.like_count ?? null;
   if (metricType === "replies" && tweetMetrics) return tweetMetrics.reply_count ?? null;
   if (metricType === "retweets" && tweetMetrics) return (tweetMetrics.retweet_count ?? 0) + (tweetMetrics.quote_count ?? 0);
+  if (metricType === "views" && tweetMetrics) return tweetMetrics.impression_count ?? null;
   if (metricType === "tweets" && userMetrics) return userMetrics.tweet_count ?? null;
+  if (metricType === "posts" && userMetrics) return userMetrics.tweet_count ?? null;
   return null;
 }
 
@@ -142,7 +144,7 @@ Deno.serve(async (req) => {
     // Single metric fetch for frontend live counter
     if (body.metric_type && body.resource_id) {
       let count: number | null = null;
-      if (body.metric_type === "tweets") {
+      if (body.metric_type === "tweets" || body.metric_type === "posts") {
         const userMetrics = await fetchUserMetrics(body.resource_id, bearerToken);
         count = extractCount(body.metric_type, null, userMetrics);
       } else {
@@ -183,7 +185,7 @@ Deno.serve(async (req) => {
       const resourceId = market.twitter_resource_id as string;
 
       let count: number | null = null;
-      if (metricType === "tweets") {
+      if (metricType === "tweets" || metricType === "posts") {
         const userMetrics = await fetchUserMetrics(resourceId, bearerToken);
         count = extractCount(metricType, null, userMetrics);
       } else {
