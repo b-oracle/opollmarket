@@ -742,6 +742,7 @@ const MarketDetail = () => {
             metricType={market.twitterMetricType}
             resourceId={market.twitterResourceId}
             currentCount={market.twitterCurrentCount ?? 0}
+            marketId={market.id}
             options={market.options}
             deadline={market.autoResolveDeadline}
           />

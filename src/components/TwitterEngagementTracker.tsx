@@ -7,6 +7,7 @@ interface TwitterEngagementTrackerProps {
   metricType: string;
   resourceId: string;
   currentCount: number;
+  marketId?: string;
   options?: { id: string; label: string; price: number }[];
   deadline?: string;
 }
@@ -55,6 +56,7 @@ const TwitterEngagementTracker = ({
   metricType,
   resourceId,
   currentCount,
+  marketId,
   options,
   deadline,
 }: TwitterEngagementTrackerProps) => {
@@ -66,7 +68,7 @@ const TwitterEngagementTracker = ({
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("fetch-twitter-metrics", {
-        body: { metric_type: metricType, resource_id: resourceId },
+        body: { metric_type: metricType, resource_id: resourceId, market_id: marketId },
       });
       if (!error && data?.count !== null && data?.count !== undefined) {
         setLiveCount(data.count);
