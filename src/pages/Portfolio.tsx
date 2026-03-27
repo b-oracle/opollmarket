@@ -72,6 +72,7 @@ interface EnrichedPosition {
   side: "yes" | "no";
   optionId: string | null;
   optionLabel: string | null;
+  optionSortOrder: number | null;
   shares: number;
   avgPrice: number;
   currentPrice: number;
@@ -224,7 +225,7 @@ const Portfolio = () => {
       if (!user?.id) return [];
       const { data, error } = await supabase
         .from("positions")
-        .select("id, market_id, side, option_id, shares, avg_price, markets(title, yes_price, no_price, category, end_date, status, market_type), market_options(label)")
+        .select("id, market_id, side, option_id, shares, avg_price, markets(title, yes_price, no_price, category, end_date, status, market_type), market_options(label, sort_order)")
         .eq("user_id", user.id)
         .gt("shares", 0)
         .order("created_at", { ascending: false });
@@ -251,6 +252,7 @@ const Portfolio = () => {
     const maxPayout = p.shares; // $1 per share if correct
 
     const optionLabel = (p as any).market_options?.label || null;
+    const optionSortOrder: number | null = (p as any).market_options?.sort_order ?? null;
 
     return {
       id: p.id,
