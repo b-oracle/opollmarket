@@ -323,6 +323,11 @@ const Create = () => {
   const [options, setOptions] = useState<string[]>(() => getStoredJson("options", ["", ""]));
   const [videoUrl, setVideoUrl] = useState(() => getStored("videoUrl", ""));
 
+  // Scroll to top on step change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  }, [step]);
+
   // Persist form state to localStorage
   useEffect(() => {
     const fields: Record<string, string> = {
