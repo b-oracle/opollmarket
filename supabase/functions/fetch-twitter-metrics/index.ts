@@ -180,7 +180,7 @@ Deno.serve(async (req) => {
     // Bulk update: fetch all active Twitter markets and update their counts
     const { data: markets, error: fetchErr } = await adminClient
       .from("markets")
-      .select("id, twitter_metric_type, twitter_resource_id")
+      .select("id, twitter_metric_type, twitter_resource_id, created_at, end_date")
       .eq("status", "active")
       .not("twitter_metric_type", "is", null)
       .not("twitter_resource_id", "is", null);
@@ -207,8 +207,9 @@ Deno.serve(async (req) => {
 
       let count: number | null = null;
       if (metricType === "tweets" || metricType === "posts") {
-        const userMetrics = await fetchUserMetrics(resourceId, bearerToken);
-        count = extractCount(metricType, null, userMetrics);
+        const startTime = new Date(market.created_at).toISOString();
+        const endTime = new Date(market.end_date + "T23:59:59Z").toISOString();
+        count = await fetchUserTweetCountInRange(resourceId, bearerToken, startTime, endTime);
       } else {
         const tweetMetrics = await fetchTweetMetrics(resourceId, bearerToken);
         count = extractCount(metricType, tweetMetrics, null);
