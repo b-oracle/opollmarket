@@ -2384,7 +2384,7 @@ const Create = () => {
                         </p>
                         {twitterResourceId && endDate && (
                           <p className="text-[10px] text-muted-foreground">
-                            Tweet #{twitterResourceId} • {twitterMetricType} count checked at {endDate} {autoResolveTime} UTC
+                            {twitterMetricType === "posts" ? `@${twitterResourceId}` : `Tweet #${twitterResourceId}`} • {twitterMetricType} count checked at {endDate} {autoResolveTime} UTC
                           </p>
                         )}
                       </div>
