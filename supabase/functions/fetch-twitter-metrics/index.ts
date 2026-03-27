@@ -39,13 +39,32 @@ async function fetchTweetMetrics(tweetId: string, bearerToken: string): Promise<
   }
 }
 
+// Extract username from URL or return as-is if already a username/ID
+function resolveResourceId(resourceId: string): { type: "username" | "id"; value: string } {
+  // Handle full URLs like https://x.com/elonmusk?s=21&t=...
+  const urlMatch = resourceId.match(/(?:twitter\.com|x\.com)\/(@?(\w+))/i);
+  if (urlMatch) {
+    const username = urlMatch[2];
+    return { type: "username", value: username };
+  }
+  // If it's purely numeric, treat as user ID
+  if (/^\d+$/.test(resourceId.trim())) {
+    return { type: "id", value: resourceId.trim() };
+  }
+  // Otherwise treat as username
+  return { type: "username", value: resourceId.replace(/^@/, "").trim() };
+}
+
 // Fetch user public metrics (tweet count)
-async function fetchUserMetrics(userId: string, bearerToken: string): Promise<UserPublicMetrics | null> {
+async function fetchUserMetrics(resourceId: string, bearerToken: string): Promise<UserPublicMetrics | null> {
   try {
-    const resp = await fetch(
-      `https://api.x.com/2/users/${userId}?user.fields=public_metrics`,
-      { headers: { Authorization: `Bearer ${bearerToken}` } }
-    );
+    const resolved = resolveResourceId(resourceId);
+    const endpoint = resolved.type === "username"
+      ? `https://api.x.com/2/users/by/username/${resolved.value}?user.fields=public_metrics`
+      : `https://api.x.com/2/users/${resolved.value}?user.fields=public_metrics`;
+    const resp = await fetch(endpoint, {
+      headers: { Authorization: `Bearer ${bearerToken}` },
+    });
     if (!resp.ok) {
       console.error(`Twitter User API error [${resp.status}]:`, await resp.text());
       return null;
