@@ -71,6 +71,7 @@ interface EnrichedPosition {
   marketTitle: string;
   side: "yes" | "no";
   optionId: string | null;
+  optionLabel: string | null;
   shares: number;
   avgPrice: number;
   currentPrice: number;
@@ -82,6 +83,7 @@ interface EnrichedPosition {
   category: string;
   endDate: string;
   status: string;
+  marketType: string;
 }
 
 type FilterType = "all" | "profit" | "loss";
@@ -222,7 +224,7 @@ const Portfolio = () => {
       if (!user?.id) return [];
       const { data, error } = await supabase
         .from("positions")
-        .select("id, market_id, side, option_id, shares, avg_price, markets(title, yes_price, no_price, category, end_date, status, market_type)")
+        .select("id, market_id, side, option_id, shares, avg_price, markets(title, yes_price, no_price, category, end_date, status, market_type), market_options(label)")
         .eq("user_id", user.id)
         .gt("shares", 0)
         .order("created_at", { ascending: false });
@@ -248,12 +250,15 @@ const Portfolio = () => {
     const pnlPercent = invested > 0 ? (unrealizedPnl / invested) * 100 : 0;
     const maxPayout = p.shares; // $1 per share if correct
 
+    const optionLabel = (p as any).market_options?.label || null;
+
     return {
       id: p.id,
       marketId: p.market_id,
       marketTitle: market?.title || "Unknown Market",
       side: p.side as "yes" | "no",
       optionId: p.option_id,
+      optionLabel,
       shares: p.shares,
       avgPrice: avgPriceCents,
       currentPrice: currentPriceCents,
@@ -265,6 +270,7 @@ const Portfolio = () => {
       category: market?.category || "",
       endDate: market?.end_date || "",
       status: market?.status || "active",
+      marketType: market?.market_type || "binary",
     };
   });
 
@@ -417,7 +423,7 @@ const Portfolio = () => {
     setSharePositionData(pos);
     const ref = positionCardRefs.current.get(pos.id);
     activeCaptureRef.current = ref || null;
-    setShareTitle(`${pos.marketTitle} - ${pos.side.toUpperCase()}`);
+    setShareTitle(`${pos.marketTitle} - ${pos.optionLabel || pos.side.toUpperCase()}`);
     setShareUrl(`${window.location.origin}/market/${pos.marketId}`);
     setShareModalOpen(true);
   };
@@ -772,12 +778,14 @@ const Portfolio = () => {
                       <p className="text-sm font-semibold leading-tight flex-1 line-clamp-2">{pos.marketTitle}</p>
                       <span
                         className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
-                          pos.side === "yes"
+                          pos.optionLabel
+                            ? "bg-accent/15 text-accent-foreground border border-accent/30"
+                            : pos.side === "yes"
                             ? "bg-primary/15 text-primary border border-primary/30"
                             : "bg-destructive/15 text-destructive border border-destructive/30"
                         }`}
                       >
-                        {pos.side}
+                        {pos.optionLabel || pos.side}
                       </span>
                     </div>
 
