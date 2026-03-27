@@ -423,7 +423,7 @@ const Portfolio = () => {
     setSharePositionData(pos);
     const ref = positionCardRefs.current.get(pos.id);
     activeCaptureRef.current = ref || null;
-    setShareTitle(`${pos.marketTitle} - ${pos.side.toUpperCase()}`);
+    setShareTitle(`${pos.marketTitle} - ${pos.optionLabel || pos.side.toUpperCase()}`);
     setShareUrl(`${window.location.origin}/market/${pos.marketId}`);
     setShareModalOpen(true);
   };
