@@ -178,17 +178,19 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
 
   const handleCopy = async () => {
     try {
-      const blob = await getBlob();
-      if (blob) {
-        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-        toast.success("Screenshot copied!");
-      } else {
-        await navigator.clipboard.writeText(salesMessage);
-        toast.success("Message copied!");
-      }
-    } catch {
       await navigator.clipboard.writeText(salesMessage);
-      toast.success("Message copied!");
+      toast.success("Share message copied!");
+    } catch {
+      // Fallback for older browsers
+      const ta = document.createElement("textarea");
+      ta.value = salesMessage;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      toast.success("Share message copied!");
     }
   };
 
