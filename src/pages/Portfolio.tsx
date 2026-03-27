@@ -46,6 +46,7 @@ import { useUserLimitOrders, useCancelLimitOrder } from "@/hooks/useLimitOrders"
 import CopySubscriptions from "@/components/CopySubscriptions";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import { useUserBalance } from "@/hooks/useUserBalance";
+import { optionColors } from "@/lib/optionColors";
 
 interface PositionRow {
   id: string;
@@ -779,18 +780,29 @@ const Portfolio = () => {
                   >
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <p className="text-sm font-semibold leading-tight flex-1 line-clamp-2">{pos.marketTitle}</p>
-                      <span
-                        className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
-                          pos.optionLabel
-                            ? "bg-accent/15 text-accent-foreground border border-accent/30"
-                            : pos.side === "yes"
-                            ? "bg-primary/15 text-primary border border-primary/30"
-                            : "bg-destructive/15 text-destructive border border-destructive/30"
-                        }`}
-                      >
-                        {pos.optionLabel || pos.side}
-                      </span>
-                    </div>
+                      {pos.optionLabel ? (
+                        <span
+                          className="shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase"
+                          style={{
+                            backgroundColor: optionColors[(pos.optionSortOrder ?? 0) % optionColors.length] + '22',
+                            color: optionColors[(pos.optionSortOrder ?? 0) % optionColors.length],
+                            borderWidth: 1,
+                            borderColor: optionColors[(pos.optionSortOrder ?? 0) % optionColors.length] + '55',
+                          }}
+                        >
+                          {pos.optionLabel}
+                        </span>
+                      ) : (
+                        <span
+                          className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
+                            pos.side === "yes"
+                              ? "bg-green-500/15 text-green-500 border border-green-500/30"
+                              : "bg-red-500/15 text-red-500 border border-red-500/30"
+                          }`}
+                        >
+                          {pos.side}
+                        </span>
+                      )}
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
                       <div>
