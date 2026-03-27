@@ -183,9 +183,10 @@ const AimtellScheduler = () => {
                 </Select>
               ) : (
                 <Input
+                  type="number"
                   value={segmentId}
-                  onChange={(e) => setSegmentId(e.target.value)}
-                  placeholder="Segment ID (numeric)"
+                  onChange={(e) => setSegmentId(e.target.value.replace(/\D/g, ""))}
+                  placeholder="Segment ID (numeric, e.g. 12345)"
                   disabled={!canEdit}
                 />
               )}
