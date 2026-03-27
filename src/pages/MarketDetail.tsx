@@ -481,7 +481,7 @@ const MarketDetail = () => {
   const noPercent = market ? Math.round(market.noPrice * 100) : 0;
 
   const [timePeriod, setTimePeriod] = useState<"1D" | "1W" | "1M" | "All">("1M");
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const { bookmarked, toggleBookmark } = useBookmark(id);
   const [shareOpen, setShareOpen] = useState(false);
   const pageRef = useRef<HTMLDivElement>(null);
@@ -533,8 +533,13 @@ const MarketDetail = () => {
   );
   if (!market) return <div className="h-dvh flex items-center justify-center text-muted-foreground">Market not found</div>;
 
-  const selectedOptionIdx = selectedOption ? market.options?.findIndex(o => o.label === selectedOption) ?? -1 : -1;
-  const selectedOptionObj = selectedOptionIdx >= 0 ? market.options?.[selectedOptionIdx] : null;
+  const selectedOptionObj = selectedOptionId
+    ? market.options?.find((o) => o.id === selectedOptionId) ?? null
+    : null;
+  const selectedOptionIdx = selectedOptionObj
+    ? market.options?.findIndex((o) => o.id === selectedOptionId) ?? -1
+    : -1;
+  const selectedOptionLabel = selectedOptionObj?.label ?? null;
   const selectedOptionColor = selectedOptionIdx >= 0 ? optionColors[selectedOptionIdx % optionColors.length] : undefined;
 
   return (
@@ -817,8 +822,8 @@ const MarketDetail = () => {
                 {isMulti && market.options ? (
                   market.options.map((opt, i) => (
                     <Area key={opt.id} type="monotone" dataKey={opt.label} stroke={optionColors[i % optionColors.length]}
-                      strokeWidth={selectedOption === opt.id || !selectedOption ? 2 : 0.5}
-                      fill={`url(#grad-${opt.id})`} fillOpacity={selectedOption === opt.id || !selectedOption ? 1 : 0.1}
+                      strokeWidth={selectedOptionId === opt.id || !selectedOptionId ? 2 : 0.5}
+                      fill={`url(#grad-${opt.id})`} fillOpacity={selectedOptionId === opt.id || !selectedOptionId ? 1 : 0.1}
                       animationDuration={1500 + i * 200} animationEasing="ease-in-out" />
                   ))
                 ) : (
@@ -835,8 +840,8 @@ const MarketDetail = () => {
           {isMulti && market.options && (
             <div className="flex flex-wrap gap-2 mt-3">
               {market.options.map((opt, i) => (
-                <button key={opt.id} onClick={() => setSelectedOption(selectedOption === opt.id ? null : opt.id)}
-                  className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-semibold transition-all ${selectedOption === opt.id ? "bg-secondary ring-1 ring-primary/30" : "hover:bg-muted/50"}`}>
+                <button key={opt.id} onClick={() => setSelectedOptionId(selectedOptionId === opt.id ? null : opt.id)}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-semibold transition-all ${selectedOptionId === opt.id ? "bg-secondary ring-1 ring-primary/30" : "hover:bg-muted/50"}`}>
                   <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: optionColors[i % optionColors.length] }} />
                   {opt.label}
                 </button>
@@ -854,7 +859,7 @@ const MarketDetail = () => {
               const color = optionColors[i % optionColors.length];
               return (
                 <motion.button key={opt.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                  onClick={() => { if (!isEnded) { setSelectedOption(opt.label); setBetSide("yes"); setBetOpen(true); } }}
+                  onClick={() => { if (!isEnded) { setSelectedOptionId(opt.id); setBetSide("yes"); setBetOpen(true); } }}
                   className={`w-full relative rounded-xl px-4 py-3.5 flex items-center justify-between transition-all overflow-hidden ${isEnded ? "opacity-50 cursor-not-allowed" : "active:scale-[0.98] cursor-pointer"}`}
                   style={{ background: colorAlpha(color, 0.1) }}>
                   <div className="absolute inset-0 rounded-xl" style={{ background: `linear-gradient(90deg, ${colorAlpha(color, 0.12)} 0%, ${colorAlpha(color, 0.04)} ${pct}%, transparent ${pct}%)` }} />
@@ -954,13 +959,13 @@ const MarketDetail = () => {
 
       <BetModal
         open={betOpen}
-        onClose={() => { setBetOpen(false); setSelectedOption(null); }}
+        onClose={() => { setBetOpen(false); setSelectedOptionId(null); }}
         side={betSide}
         price={selectedOptionObj ? Math.round(selectedOptionObj.price * 100) : (betSide === "yes" ? yesPercent : noPercent)}
-        marketTitle={selectedOption ? `${market.title} — ${selectedOption}` : market.title}
+        marketTitle={selectedOptionLabel ? `${market.title} — ${selectedOptionLabel}` : market.title}
         marketId={market.id}
         optionId={selectedOptionObj?.id}
-        optionLabel={selectedOption ?? undefined}
+        optionLabel={selectedOptionLabel ?? undefined}
         optionColor={selectedOptionColor}
       />
 

@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     // Validate market is active and not expired
     const { data: marketCheck, error: marketCheckErr } = await supabase
       .from("markets")
-      .select("status, end_date, creator_wallet")
+      .select("status, end_date, creator_wallet, market_type")
       .eq("id", marketId)
       .single();
 
@@ -84,6 +84,37 @@ Deno.serve(async (req) => {
         status: 400, headers: corsHeaders,
       });
     }
+
+    const isMultiOrRangeMarket = marketCheck.market_type === "multi" || marketCheck.market_type === "range";
+
+    if (!isMultiOrRangeMarket && side !== "yes" && side !== "no") {
+      return new Response(JSON.stringify({ error: "Invalid side" }), {
+        status: 400, headers: corsHeaders,
+      });
+    }
+
+    if (isMultiOrRangeMarket) {
+      if (!optionId) {
+        return new Response(JSON.stringify({ error: "Option selection is required for this market" }), {
+          status: 400, headers: corsHeaders,
+        });
+      }
+
+      const { data: selectedOption, error: selectedOptionError } = await supabase
+        .from("market_options")
+        .select("id")
+        .eq("id", optionId)
+        .eq("market_id", marketId)
+        .maybeSingle();
+
+      if (selectedOptionError || !selectedOption) {
+        return new Response(JSON.stringify({ error: "Invalid market option" }), {
+          status: 400, headers: corsHeaders,
+        });
+      }
+    }
+
+    const normalizedSide = isMultiOrRangeMarket ? "yes" : side;
 
     // Fetch commission settings
     const { data: commData } = await supabase
@@ -273,7 +304,7 @@ Deno.serve(async (req) => {
       user_id: userId,
       market_id: marketId,
       option_id: optionId || null,
-      side,
+      side: normalizedSide,
       shares: actualShares,
       avg_price: price / 100,
     };
@@ -328,6 +359,7 @@ Deno.serve(async (req) => {
       market_id: marketId,
       option_id: optionId || null,
       side,
+      side: normalizedSide,
       shares: actualShares,
       price: price / 100,
       status: "confirmed",
@@ -364,7 +396,7 @@ Deno.serve(async (req) => {
         const impact = Math.min(poolAmount / totalLiq, 0.15);
 
         let newYes: number;
-        if (side === "yes") {
+        if (normalizedSide === "yes") {
           newYes = Math.min(0.99, currentYes + impact);
         } else {
           newYes = Math.max(0.01, currentYes - impact);
@@ -443,7 +475,7 @@ Deno.serve(async (req) => {
           trader_user_id: userId,
           market_id: marketId,
           option_id: optionId || null,
-          side,
+          side: normalizedSide,
           amount: netAmount,
           price,
           shares: actualShares,
