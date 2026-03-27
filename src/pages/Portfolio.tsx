@@ -46,6 +46,7 @@ import { useUserLimitOrders, useCancelLimitOrder } from "@/hooks/useLimitOrders"
 import CopySubscriptions from "@/components/CopySubscriptions";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import { useUserBalance } from "@/hooks/useUserBalance";
+import { optionColors } from "@/lib/optionColors";
 
 interface PositionRow {
   id: string;
@@ -72,6 +73,7 @@ interface EnrichedPosition {
   side: "yes" | "no";
   optionId: string | null;
   optionLabel: string | null;
+  optionSortOrder: number | null;
   shares: number;
   avgPrice: number;
   currentPrice: number;
@@ -224,7 +226,7 @@ const Portfolio = () => {
       if (!user?.id) return [];
       const { data, error } = await supabase
         .from("positions")
-        .select("id, market_id, side, option_id, shares, avg_price, markets(title, yes_price, no_price, category, end_date, status, market_type), market_options(label)")
+        .select("id, market_id, side, option_id, shares, avg_price, markets(title, yes_price, no_price, category, end_date, status, market_type), market_options(label, sort_order)")
         .eq("user_id", user.id)
         .gt("shares", 0)
         .order("created_at", { ascending: false });
@@ -251,6 +253,7 @@ const Portfolio = () => {
     const maxPayout = p.shares; // $1 per share if correct
 
     const optionLabel = (p as any).market_options?.label || null;
+    const optionSortOrder: number | null = (p as any).market_options?.sort_order ?? null;
 
     return {
       id: p.id,
@@ -259,6 +262,7 @@ const Portfolio = () => {
       side: p.side as "yes" | "no",
       optionId: p.option_id,
       optionLabel,
+      optionSortOrder,
       shares: p.shares,
       avgPrice: avgPriceCents,
       currentPrice: currentPriceCents,
@@ -776,17 +780,29 @@ const Portfolio = () => {
                   >
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <p className="text-sm font-semibold leading-tight flex-1 line-clamp-2">{pos.marketTitle}</p>
-                      <span
-                        className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
-                          pos.optionLabel
-                            ? "bg-accent/15 text-accent-foreground border border-accent/30"
-                            : pos.side === "yes"
-                            ? "bg-primary/15 text-primary border border-primary/30"
-                            : "bg-destructive/15 text-destructive border border-destructive/30"
-                        }`}
-                      >
-                        {pos.optionLabel || pos.side}
-                      </span>
+                      {pos.optionLabel ? (
+                        <span
+                          className="shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase"
+                          style={{
+                            backgroundColor: optionColors[(pos.optionSortOrder ?? 0) % optionColors.length] + '22',
+                            color: optionColors[(pos.optionSortOrder ?? 0) % optionColors.length],
+                            borderWidth: 1,
+                            borderColor: optionColors[(pos.optionSortOrder ?? 0) % optionColors.length] + '55',
+                          }}
+                        >
+                          {pos.optionLabel}
+                        </span>
+                      ) : (
+                        <span
+                          className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
+                            pos.side === "yes"
+                              ? "bg-green-500/15 text-green-500 border border-green-500/30"
+                              : "bg-red-500/15 text-red-500 border border-red-500/30"
+                          }`}
+                        >
+                          {pos.side}
+                        </span>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">

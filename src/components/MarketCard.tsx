@@ -51,14 +51,7 @@ const getTimeRemaining = (endDate: string) => {
   return `< 1h left`;
 };
 
-const optionColors = [
-  "#02C7FC",
-  "#EF4444",
-  "#EAB308",
-  "#A855F7",
-  "#F97316",
-  "#9CA3AF",
-];
+import { optionColors } from "@/lib/optionColors";
 
 const colorAlpha = (hex: string, alpha: number) => {
   const r = parseInt(hex.slice(1, 3), 16);
