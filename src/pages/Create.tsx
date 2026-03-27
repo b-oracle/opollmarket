@@ -3012,6 +3012,7 @@ const Create = () => {
                             amount,
                             price,
                             shares,
+                            ...(firstPredOptionId ? { optionId: firstPredOptionId } : {}),
                           },
                         });
 
@@ -3030,11 +3031,11 @@ const Create = () => {
                         setSubmitStep("first_prediction");
                       }
                     }}
-                    disabled={parseFloat(firstPredAmount) < 5 || !firstPredAmount}
+                    disabled={parseFloat(firstPredAmount) < 5 || !firstPredAmount || (marketType !== "binary" && !firstPredOptionId)}
                     className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm transition-all active:scale-95 disabled:opacity-40 flex items-center justify-center gap-2"
                   >
                     <Sparkles className="w-4 h-4" />
-                    Place ${firstPredAmount || "0"} {marketType === "binary" ? firstPredSide.toUpperCase() : ""} Prediction
+                    Place ${firstPredAmount || "0"} {marketType === "binary" ? firstPredSide.toUpperCase() : (newMarketOptions.find(o => o.id === firstPredOptionId)?.label || "")} Prediction
                   </button>
                 </motion.div>
               )}
