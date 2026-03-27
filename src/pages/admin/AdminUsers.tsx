@@ -362,12 +362,18 @@ const AdminUsers = () => {
                             </button>
                             <button
                               onClick={() => toggleBlock(u.id, u.display_name || u.email || "User", u.is_blocked)}
-                              className={`p-1.5 rounded-lg transition-colors ${
-                                u.is_blocked ? "hover:bg-destructive/20 text-destructive" : "hover:bg-destructive/10 text-muted-foreground"
+                              className={`p-1.5 rounded-lg transition-all duration-200 ${
+                                u.is_blocked
+                                  ? "bg-destructive/20 text-destructive ring-1 ring-destructive/40 hover:bg-destructive/30"
+                                  : "hover:bg-destructive/10 text-muted-foreground"
                               }`}
                               title={u.is_blocked ? "Unban User" : "Ban User"}
                             >
-                              <Ban className={`w-4 h-4 ${u.is_blocked ? "fill-destructive/20" : ""}`} />
+                              {u.is_blocked ? (
+                                <ShieldCheck className="w-4 h-4" />
+                              ) : (
+                                <Ban className="w-4 h-4" />
+                              )}
                             </button>
                           </>
                         ) : isSelf ? (
