@@ -761,10 +761,12 @@ const Create = () => {
   }, [submitStep]);
   const [txHash, setTxHash] = useState("");
   const [newMarketId, setNewMarketId] = useState("");
+  const [newMarketOptions, setNewMarketOptions] = useState<{ id: string; label: string; sort_order: number }[]>([]);
   const [similarMarkets, setSimilarMarkets] = useState<Array<{ id: string; title: string; category: string }>>([]);
   const [createdAsPending, setCreatedAsPending] = useState(false);
   const [moderationReason, setModerationReason] = useState("");
   const [firstPredSide, setFirstPredSide] = useState<"yes" | "no">("yes");
+  const [firstPredOptionId, setFirstPredOptionId] = useState<string | null>(null);
   const [firstPredAmount, setFirstPredAmount] = useState("5");
 
   // Progress tracking for submit flow
@@ -1067,7 +1069,7 @@ const Create = () => {
     if (marketType !== "binary" && data?.id) {
       const validOptions = options.filter(o => o.trim());
       const equalPrice = Math.round((1 / validOptions.length) * 100) / 100;
-      const { error: optError } = await supabase
+      const { data: savedOpts, error: optError } = await supabase
         .from("market_options")
         .insert(
           validOptions.map((label, i) => ({
@@ -1076,9 +1078,13 @@ const Create = () => {
             price: equalPrice,
             sort_order: i,
           }))
-        );
+        )
+        .select("id, label, sort_order");
       if (optError) {
         console.error("Failed to save options:", optError);
+      }
+      if (savedOpts) {
+        setNewMarketOptions(savedOpts);
       }
     }
 
@@ -2900,8 +2906,8 @@ const Create = () => {
                     To make your market official, place a minimum $5 prediction. This records the first volume and shows other traders you believe in your market.
                   </p>
 
-                  {/* Side selection */}
-                  {marketType === "binary" && (
+                   {/* Side/Option selection */}
+                   {marketType === "binary" ? (
                     <div className="grid grid-cols-2 gap-3 w-full mb-4">
                       <button
                         onClick={() => setFirstPredSide("yes")}
@@ -2926,7 +2932,31 @@ const Create = () => {
                         No
                       </button>
                     </div>
-                  )}
+                   ) : newMarketOptions.length > 0 ? (
+                    <div className="w-full mb-4 space-y-2">
+                      <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Select Your Prediction</label>
+                      {newMarketOptions
+                        .sort((a, b) => a.sort_order - b.sort_order)
+                        .map((opt) => (
+                        <button
+                          key={opt.id}
+                          onClick={() => { setFirstPredOptionId(opt.id); setFirstPredSide("yes"); }}
+                          className={`w-full p-3 rounded-xl border-2 text-left text-sm font-semibold transition-all flex items-center gap-2 ${
+                            firstPredOptionId === opt.id
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border hover:border-primary/30 text-muted-foreground"
+                          }`}
+                        >
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                            firstPredOptionId === opt.id ? "border-primary" : "border-muted-foreground/40"
+                          }`}>
+                            {firstPredOptionId === opt.id && <div className="w-2 h-2 rounded-full bg-primary" />}
+                          </div>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                   ) : null}
 
                   {/* Amount input */}
                   <div className="w-full mb-4">
@@ -2982,6 +3012,7 @@ const Create = () => {
                             amount,
                             price,
                             shares,
+                            ...(firstPredOptionId ? { optionId: firstPredOptionId } : {}),
                           },
                         });
 
@@ -3000,11 +3031,11 @@ const Create = () => {
                         setSubmitStep("first_prediction");
                       }
                     }}
-                    disabled={parseFloat(firstPredAmount) < 5 || !firstPredAmount}
+                    disabled={parseFloat(firstPredAmount) < 5 || !firstPredAmount || (marketType !== "binary" && !firstPredOptionId)}
                     className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm transition-all active:scale-95 disabled:opacity-40 flex items-center justify-center gap-2"
                   >
                     <Sparkles className="w-4 h-4" />
-                    Place ${firstPredAmount || "0"} {marketType === "binary" ? firstPredSide.toUpperCase() : ""} Prediction
+                    Place ${firstPredAmount || "0"} {marketType === "binary" ? firstPredSide.toUpperCase() : (newMarketOptions.find(o => o.id === firstPredOptionId)?.label || "")} Prediction
                   </button>
                 </motion.div>
               )}
