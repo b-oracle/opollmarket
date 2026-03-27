@@ -59,14 +59,17 @@ function resolveResourceId(resourceId: string): { type: "username" | "id"; value
 async function fetchUserMetrics(resourceId: string, bearerToken: string): Promise<UserPublicMetrics | null> {
   try {
     const resolved = resolveResourceId(resourceId);
+    console.log("Resolved resource:", JSON.stringify(resolved), "from:", resourceId);
     const endpoint = resolved.type === "username"
       ? `https://api.x.com/2/users/by/username/${resolved.value}?user.fields=public_metrics`
       : `https://api.x.com/2/users/${resolved.value}?user.fields=public_metrics`;
+    console.log("Fetching:", endpoint);
     const resp = await fetch(endpoint, {
       headers: { Authorization: `Bearer ${bearerToken}` },
     });
     if (!resp.ok) {
-      console.error(`Twitter User API error [${resp.status}]:`, await resp.text());
+      const errText = await resp.text();
+      console.error(`Twitter User API error [${resp.status}]:`, errText);
       return null;
     }
     const data = await resp.json();
