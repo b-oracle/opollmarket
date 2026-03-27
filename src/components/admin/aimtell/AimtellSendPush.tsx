@@ -132,9 +132,10 @@ const AimtellSendPush = ({ externalTitle, externalBody, externalUrl }: AimtellSe
               </Select>
             ) : (
               <Input
+                type="number"
                 value={pushSegment}
-                onChange={(e) => setPushSegment(e.target.value)}
-                placeholder="Segment ID (numeric)"
+                onChange={(e) => setPushSegment(e.target.value.replace(/\D/g, ""))}
+                placeholder="Segment ID (numeric, e.g. 12345)"
                 disabled={!canEdit}
               />
             )}
