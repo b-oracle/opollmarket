@@ -778,12 +778,14 @@ const Portfolio = () => {
                       <p className="text-sm font-semibold leading-tight flex-1 line-clamp-2">{pos.marketTitle}</p>
                       <span
                         className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
-                          pos.side === "yes"
+                          pos.optionLabel
+                            ? "bg-accent/15 text-accent-foreground border border-accent/30"
+                            : pos.side === "yes"
                             ? "bg-primary/15 text-primary border border-primary/30"
                             : "bg-destructive/15 text-destructive border border-destructive/30"
                         }`}
                       >
-                        {pos.side}
+                        {pos.optionLabel || pos.side}
                       </span>
                     </div>
 
