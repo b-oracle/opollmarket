@@ -2906,8 +2906,8 @@ const Create = () => {
                     To make your market official, place a minimum $5 prediction. This records the first volume and shows other traders you believe in your market.
                   </p>
 
-                  {/* Side selection */}
-                  {marketType === "binary" && (
+                   {/* Side/Option selection */}
+                   {marketType === "binary" ? (
                     <div className="grid grid-cols-2 gap-3 w-full mb-4">
                       <button
                         onClick={() => setFirstPredSide("yes")}
@@ -2932,7 +2932,31 @@ const Create = () => {
                         No
                       </button>
                     </div>
-                  )}
+                   ) : newMarketOptions.length > 0 ? (
+                    <div className="w-full mb-4 space-y-2">
+                      <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Select Your Prediction</label>
+                      {newMarketOptions
+                        .sort((a, b) => a.sort_order - b.sort_order)
+                        .map((opt) => (
+                        <button
+                          key={opt.id}
+                          onClick={() => { setFirstPredOptionId(opt.id); setFirstPredSide("yes"); }}
+                          className={`w-full p-3 rounded-xl border-2 text-left text-sm font-semibold transition-all flex items-center gap-2 ${
+                            firstPredOptionId === opt.id
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border hover:border-primary/30 text-muted-foreground"
+                          }`}
+                        >
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                            firstPredOptionId === opt.id ? "border-primary" : "border-muted-foreground/40"
+                          }`}>
+                            {firstPredOptionId === opt.id && <div className="w-2 h-2 rounded-full bg-primary" />}
+                          </div>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                   ) : null}
 
                   {/* Amount input */}
                   <div className="w-full mb-4">
