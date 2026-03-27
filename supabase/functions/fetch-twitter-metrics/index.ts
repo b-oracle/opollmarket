@@ -41,68 +41,77 @@ async function fetchTweetMetrics(tweetId: string, bearerToken: string): Promise<
 
 // Extract username from URL or return as-is if already a username/ID
 function resolveResourceId(resourceId: string): { type: "username" | "id"; value: string } {
-  // Handle full URLs like https://x.com/elonmusk?s=21&t=...
   const urlMatch = resourceId.match(/(?:twitter\.com|x\.com)\/(@?(\w+))/i);
-  if (urlMatch) {
-    const username = urlMatch[2];
-    return { type: "username", value: username };
-  }
-  // If it's purely numeric, treat as user ID
-  if (/^\d+$/.test(resourceId.trim())) {
-    return { type: "id", value: resourceId.trim() };
-  }
-  // Otherwise treat as username
+  if (urlMatch) return { type: "username", value: urlMatch[2] };
+  if (/^\d+$/.test(resourceId.trim())) return { type: "id", value: resourceId.trim() };
   return { type: "username", value: resourceId.replace(/^@/, "").trim() };
 }
 
-// Fetch user public metrics (tweet count)
+// Resolve a resource ID to a numeric Twitter user ID
+async function resolveUserId(resourceId: string, bearerToken: string): Promise<string | null> {
+  const resolved = resolveResourceId(resourceId);
+  if (resolved.type === "id") return resolved.value;
+  try {
+    const resp = await fetch(
+      `https://api.x.com/2/users/by/username/${resolved.value}`,
+      { headers: { Authorization: `Bearer ${bearerToken}` } }
+    );
+    if (!resp.ok) { console.error("resolveUserId error:", await resp.text()); return null; }
+    const data = await resp.json();
+    return data?.data?.id ?? null;
+  } catch (e) { console.error("resolveUserId error:", e); return null; }
+}
+
+// Fetch user public metrics (all-time tweet count)
 async function fetchUserMetrics(resourceId: string, bearerToken: string): Promise<UserPublicMetrics | null> {
   try {
     const resolved = resolveResourceId(resourceId);
-    console.log("Resolved resource:", JSON.stringify(resolved), "from:", resourceId);
     const endpoint = resolved.type === "username"
       ? `https://api.x.com/2/users/by/username/${resolved.value}?user.fields=public_metrics`
       : `https://api.x.com/2/users/${resolved.value}?user.fields=public_metrics`;
-    console.log("Fetching:", endpoint);
-    const resp = await fetch(endpoint, {
-      headers: { Authorization: `Bearer ${bearerToken}` },
-    });
-    if (!resp.ok) {
-      const errText = await resp.text();
-      console.error(`Twitter User API error [${resp.status}]:`, errText);
-      return null;
-    }
+    const resp = await fetch(endpoint, { headers: { Authorization: `Bearer ${bearerToken}` } });
+    if (!resp.ok) { console.error(`Twitter User API error [${resp.status}]:`, await resp.text()); return null; }
     const data = await resp.json();
     return data?.data?.public_metrics || null;
-  } catch (e) {
-    console.error("fetchUserMetrics error:", e);
-    return null;
-  }
+  } catch (e) { console.error("fetchUserMetrics error:", e); return null; }
 }
 
-// Fetch user tweet count in a date range using tweets/counts endpoint
-async function fetchUserTweetCount(
-  userId: string,
+// Count tweets in a date range by paginating the user timeline
+async function fetchUserTweetCountInRange(
+  resourceId: string,
   bearerToken: string,
-  startTime?: string,
-  endTime?: string
+  startTime: string,
+  endTime: string
 ): Promise<number | null> {
   try {
-    let url = `https://api.x.com/2/users/${userId}/tweets?max_results=100`;
-    if (startTime) url += `&start_time=${startTime}`;
-    if (endTime) url += `&end_time=${endTime}`;
+    const userId = await resolveUserId(resourceId, bearerToken);
+    if (!userId) return null;
 
-    const resp = await fetch(url, {
-      headers: { Authorization: `Bearer ${bearerToken}` },
-    });
-    if (!resp.ok) {
-      console.error(`Twitter tweets count error [${resp.status}]:`, await resp.text());
-      return null;
-    }
-    const data = await resp.json();
-    return data?.meta?.result_count ?? null;
+    let total = 0;
+    let paginationToken: string | undefined;
+    let pages = 0;
+    const maxPages = 20; // safety limit (20 * 100 = 2000 tweets max)
+
+    do {
+      let url = `https://api.x.com/2/users/${userId}/tweets?max_results=100&start_time=${startTime}&end_time=${endTime}`;
+      if (paginationToken) url += `&pagination_token=${paginationToken}`;
+
+      console.log(`Fetching timeline page ${pages + 1}:`, url);
+      const resp = await fetch(url, { headers: { Authorization: `Bearer ${bearerToken}` } });
+      if (!resp.ok) {
+        console.error(`Timeline API error [${resp.status}]:`, await resp.text());
+        return total > 0 ? total : null;
+      }
+      const data = await resp.json();
+      total += data?.meta?.result_count ?? 0;
+      paginationToken = data?.meta?.next_token;
+      pages++;
+    } while (paginationToken && pages < maxPages);
+
+    console.log(`Total tweets in range: ${total} (${pages} pages)`);
+    return total;
   } catch (e) {
-    console.error("fetchUserTweetCount error:", e);
+    console.error("fetchUserTweetCountInRange error:", e);
     return null;
   }
 }
@@ -144,7 +153,19 @@ Deno.serve(async (req) => {
     // Single metric fetch for frontend live counter
     if (body.metric_type && body.resource_id) {
       let count: number | null = null;
-      if (body.metric_type === "tweets" || body.metric_type === "posts") {
+      if ((body.metric_type === "tweets" || body.metric_type === "posts") && body.market_id) {
+        // Look up market dates for range-based counting
+        const { data: mkt } = await adminClient
+          .from("markets")
+          .select("created_at, end_date")
+          .eq("id", body.market_id)
+          .single();
+        if (mkt) {
+          const startTime = new Date(mkt.created_at).toISOString();
+          const endTime = new Date(mkt.end_date + "T23:59:59Z").toISOString();
+          count = await fetchUserTweetCountInRange(body.resource_id, bearerToken, startTime, endTime);
+        }
+      } else if (body.metric_type === "tweets" || body.metric_type === "posts") {
         const userMetrics = await fetchUserMetrics(body.resource_id, bearerToken);
         count = extractCount(body.metric_type, null, userMetrics);
       } else {
@@ -159,7 +180,7 @@ Deno.serve(async (req) => {
     // Bulk update: fetch all active Twitter markets and update their counts
     const { data: markets, error: fetchErr } = await adminClient
       .from("markets")
-      .select("id, twitter_metric_type, twitter_resource_id")
+      .select("id, twitter_metric_type, twitter_resource_id, created_at, end_date")
       .eq("status", "active")
       .not("twitter_metric_type", "is", null)
       .not("twitter_resource_id", "is", null);
@@ -186,8 +207,9 @@ Deno.serve(async (req) => {
 
       let count: number | null = null;
       if (metricType === "tweets" || metricType === "posts") {
-        const userMetrics = await fetchUserMetrics(resourceId, bearerToken);
-        count = extractCount(metricType, null, userMetrics);
+        const startTime = new Date(market.created_at).toISOString();
+        const endTime = new Date(market.end_date + "T23:59:59Z").toISOString();
+        count = await fetchUserTweetCountInRange(resourceId, bearerToken, startTime, endTime);
       } else {
         const tweetMetrics = await fetchTweetMetrics(resourceId, bearerToken);
         count = extractCount(metricType, tweetMetrics, null);
