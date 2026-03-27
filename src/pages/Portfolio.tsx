@@ -250,12 +250,15 @@ const Portfolio = () => {
     const pnlPercent = invested > 0 ? (unrealizedPnl / invested) * 100 : 0;
     const maxPayout = p.shares; // $1 per share if correct
 
+    const optionLabel = (p as any).market_options?.label || null;
+
     return {
       id: p.id,
       marketId: p.market_id,
       marketTitle: market?.title || "Unknown Market",
       side: p.side as "yes" | "no",
       optionId: p.option_id,
+      optionLabel,
       shares: p.shares,
       avgPrice: avgPriceCents,
       currentPrice: currentPriceCents,
@@ -267,6 +270,7 @@ const Portfolio = () => {
       category: market?.category || "",
       endDate: market?.end_date || "",
       status: market?.status || "active",
+      marketType: market?.market_type || "binary",
     };
   });
 
