@@ -707,6 +707,11 @@ const AdminMarkets = () => {
                               💰
                             </span>
                           )}
+                          {m.is_hidden && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-500/15 text-yellow-500 border border-yellow-500/30">
+                              👁️‍🗨️ Hidden
+                            </span>
+                          )}
                           {m.resolution_source === "Polymarket" && (
                             <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-500/15 text-purple-500 border border-purple-500/30">
                               🔮 Polymarket
