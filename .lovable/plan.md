@@ -1,39 +1,26 @@
 
 
-# Color-Coded Range Badge in Portfolio
+# Fix: Scroll to Top on Market Creation Step Change
 
 ## Problem
-The portfolio shows range/multi-option labels (e.g., "20 - 100") with a generic accent color instead of matching the color assigned to that option on the market detail page.
+When the creator advances between steps (1→2, 2→3, or navigates back), the page retains its scroll position, leaving the user at the bottom of the new step content.
 
 ## Solution
-Use the same `optionColors` palette from MarketDetail, mapping each option's `sort_order` to its color index.
+Add a `useEffect` that watches the `step` state and scrolls to the top whenever it changes.
 
 ## Changes
 
-### 1. Shared option colors constant
-Extract `optionColors` array to a shared file (e.g., `src/lib/optionColors.ts`) so both MarketDetail and Portfolio use the same palette:
+### `src/pages/Create.tsx`
+Add a single `useEffect` after the existing step state declaration (~line 321):
+
 ```ts
-export const optionColors = ["#02C7FC", "#EF4444", "#EAB308", "#A855F7", "#F97316", "#9CA3AF"];
+useEffect(() => {
+  window.scrollTo({ top: 0, behavior: "instant" });
+}, [step]);
 ```
 
-### 2. Portfolio data — fetch `sort_order`
-- Update the Supabase select to include `market_options(label, sort_order)`
-- Add `optionSortOrder: number | null` to `EnrichedPosition`
-- Pass `sort_order` through enrichment
-
-### 3. Portfolio badge rendering (~line 779)
-Replace the generic accent styling with inline `style` using the color from `optionColors[sortOrder % length]`:
-```tsx
-pos.optionLabel
-  ? { backgroundColor: optionColors[pos.optionSortOrder ?? 0] + '22', color: optionColors[pos.optionSortOrder ?? 0], borderColor: optionColors[pos.optionSortOrder ?? 0] + '55' }
-  : // existing yes/no classes
-```
-
-### 4. MarketDetail — import shared constant
-Replace the local `optionColors` declaration with the import from the shared file.
+This covers all transitions: Next buttons (`setStep(2)`, `setStep(3)`) and Back buttons (`setStep(1)`, `setStep(2)`).
 
 ## Files Modified
-- `src/lib/optionColors.ts` (new)
-- `src/pages/Portfolio.tsx`
-- `src/pages/MarketDetail.tsx`
+- `src/pages/Create.tsx` — add scroll-to-top effect on step change
 
