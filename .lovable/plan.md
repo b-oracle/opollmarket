@@ -1,67 +1,30 @@
 
 
-# Mute All Speakers + Force-Mute Lock
+# Hide/Unhide Markets — Admin Toggle
 
-## Problem
-Currently, hosts/co-hosts can only mute speakers one at a time via the edge function. Muted speakers can immediately unmute themselves. There's no "Mute All" button and no mechanism to prevent speakers from re-enabling their mic.
+## Overview
+Add an `is_hidden` boolean column to the `markets` table. Hidden markets are excluded from public feeds but remain visible in the admin panel. Super Admins and Admins can toggle visibility via an eye icon in the actions column.
 
-## How It Works
+## Changes
 
-### Server Side — `livekit-token` edge function
-1. **New `mute_all` action**: Iterates all participants in the room via `RoomServiceClient.listParticipants`, mutes every audio track except the caller's (host/co-host).
-2. **Force-mute flag via data channel**: After muting server-side, the edge function doesn't need to track state — the client broadcasts the lock state.
+### 1. Database migration
+- Add `is_hidden boolean NOT NULL DEFAULT false` to `markets` table.
 
-### Client Side — `SpaceRoom.tsx`
+### 2. Frontend — `useMarkets.ts`
+- Add `.eq("is_hidden", false)` filter to the `fetchMarkets` query (public feed). Creator's own markets query stays unfiltered so creators still see their own hidden markets.
+- Add `is_hidden` to `SELECT_COLS` and `DbMarket` interface; map to `Market.isHidden`.
 
-1. **New state**: `forceMuted` (boolean) — when true, the local user's mic toggle is disabled and shows a lock icon with "Muted by host" label.
+### 3. Frontend — `src/data/markets.ts`
+- Add `isHidden?: boolean` to the `Market` type.
 
-2. **"Mute All" button**: Visible to host/co-hosts in the control bar area. When tapped:
-   - Calls `invokeAction("mute_all")` which server-side mutes all speakers' audio tracks
-   - Broadcasts `{ type: "force_mute", targets: "all" }` via data channel
-   - All non-host/non-cohost speakers set `forceMuted = true` and `muted = true`
+### 4. Frontend — `AdminMarkets.tsx`
+- Add `is_hidden` to the `MarketRow` interface and fetch query.
+- Add an `Eye`/`EyeOff` toggle button in the actions column (line ~821, next to delete). Clicking updates `is_hidden` via Supabase and logs an audit event.
+- Hidden markets show a dimmed row or a small "Hidden" badge on the status column.
 
-3. **Individual force-mute**: When host/co-host mutes a specific speaker via the existing action sheet:
-   - After successful `invokeAction("mute", targetId)`, broadcast `{ type: "force_mute", targets: [targetId] }`
-   - Target speaker sets `forceMuted = true`
-
-4. **"Unmute All" button**: Replaces "Mute All" when active. When tapped:
-   - Broadcasts `{ type: "force_unmute", targets: "all" }` via data channel
-   - All speakers set `forceMuted = false` (mic stays muted, but they can now toggle it)
-
-5. **Individual unmute**: New action sheet button "Allow to unmute" for force-muted speakers:
-   - Broadcasts `{ type: "force_unmute", targets: [targetId] }`
-   - Target sets `forceMuted = false`
-
-6. **Data channel handling** in `handleDataReceived`:
-   - `force_mute`: If current user is in targets (or targets === "all") and not host/co-host, set `forceMuted = true`, disable mic, show toast "You've been muted by the host"
-   - `force_unmute`: If current user matches, set `forceMuted = false`, show toast "You can now unmute"
-
-7. **Mic toggle guard**: In `toggleMute`, if `forceMuted` is true, show toast "You've been muted by the host" and return early — do not allow unmuting.
-
-8. **Visual indicator**: Force-muted speakers show a 🔇 badge on their avatar. The mic button shows a lock icon when force-muted.
-
-### Edge Function Changes — `livekit-token`
-Add `mute_all` action:
-```
-if (action === "mute_all") {
-  requireMod();
-  const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
-  const participants = await svc.listParticipants(roomName);
-  for (const p of participants) {
-    if (p.identity === userId) continue; // skip self
-    if (p.tracks) {
-      for (const track of p.tracks) {
-        if (track.type === 1) {
-          await svc.mutePublishedTrack(roomName, p.identity, track.sid, true);
-        }
-      }
-    }
-  }
-  return success response;
-}
-```
-
-## Files Modified
-- `supabase/functions/livekit-token/index.ts` — add `mute_all` action
-- `src/components/social/SpaceRoom.tsx` — add force-mute state, Mute All/Unmute All buttons, data channel handling, mic toggle guard, visual indicators
+### 5. Files modified
+- Database migration (new column)
+- `src/data/markets.ts`
+- `src/hooks/useMarkets.ts`
+- `src/pages/admin/AdminMarkets.tsx`
 
