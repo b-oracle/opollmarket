@@ -16,6 +16,8 @@ Deno.serve(async (req) => {
     if (!AIMTELL_API_KEY) throw new Error("AIMTELL_API_KEY is not configured");
     if (!AIMTELL_SITE_ID || isNaN(Number(AIMTELL_SITE_ID))) throw new Error("AIMTELL_SITE_ID is not configured or invalid");
 
+    console.log("Fetching segments for site:", AIMTELL_SITE_ID);
+
     const response = await fetch(`https://api.aimtell.com/prod/segments/${AIMTELL_SITE_ID}`, {
       method: "GET",
       headers: {
@@ -25,6 +27,8 @@ Deno.serve(async (req) => {
     });
 
     const raw = await response.text();
+    console.log("Aimtell segments raw response:", raw.substring(0, 500));
+
     let data: unknown = raw;
     try { data = JSON.parse(raw); } catch { /* keep raw */ }
 
@@ -36,7 +40,34 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ segments: data }), {
+    // Normalize: Aimtell may return an object keyed by segment ID, or an array
+    let segments: unknown[] = [];
+    if (Array.isArray(data)) {
+      segments = data;
+    } else if (data && typeof data === "object" && !Array.isArray(data)) {
+      // Could be { "123": { name: "...", ... }, "456": { ... } }
+      // or { result: "success", data: [...] }
+      const obj = data as Record<string, unknown>;
+      if (Array.isArray(obj.data)) {
+        segments = obj.data;
+      } else if (Array.isArray(obj.segments)) {
+        segments = obj.segments;
+      } else {
+        // Try treating keys as segment IDs
+        segments = Object.entries(obj)
+          .filter(([key]) => !["result", "message", "error"].includes(key))
+          .map(([key, val]) => {
+            if (val && typeof val === "object") {
+              return { id: key, ...(val as Record<string, unknown>) };
+            }
+            return { id: key, name: String(val) };
+          });
+      }
+    }
+
+    console.log("Normalized segments count:", segments.length);
+
+    return new Response(JSON.stringify({ segments }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
