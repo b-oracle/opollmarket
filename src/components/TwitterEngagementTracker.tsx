@@ -15,14 +15,18 @@ const METRIC_LABELS: Record<string, string> = {
   likes: "Likes",
   replies: "Replies",
   retweets: "Retweets",
+  views: "Views",
   tweets: "Tweets",
+  posts: "Posts",
 };
 
 const METRIC_ICONS: Record<string, string> = {
   likes: "❤️",
   replies: "💬",
   retweets: "🔁",
+  views: "👁️",
   tweets: "🐦",
+  posts: "📝",
 };
 
 function parseBracketRange(label: string): { min: number; max: number } | null {
