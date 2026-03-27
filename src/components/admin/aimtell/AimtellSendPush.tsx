@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminContext } from "@/pages/admin/AdminLayout";
+import { useAimtellSegments } from "@/hooks/useAimtellSegments";
 
 interface AimtellSendPushProps {
   externalTitle?: string;
@@ -17,15 +19,14 @@ interface AimtellSendPushProps {
 
 const AimtellSendPush = ({ externalTitle, externalBody, externalUrl }: AimtellSendPushProps) => {
   const { canEdit } = useAdminContext();
+  const { segments, loading: segmentsLoading } = useAimtellSegments();
   const [pushTitle, setPushTitle] = useState("");
   const [pushBody, setPushBody] = useState("");
   const [pushUrl, setPushUrl] = useState("https://opoll.org");
   const [pushSegment, setPushSegment] = useState("");
-  const [broadcastAll, setBroadcastAll] = useState(false);
   const [sending, setSending] = useState(false);
   const [lastApplied, setLastApplied] = useState("");
 
-  // Sync external props when template is applied
   useEffect(() => {
     if (externalTitle && externalTitle !== lastApplied) {
       setPushTitle(externalTitle);
@@ -52,14 +53,12 @@ const AimtellSendPush = ({ externalTitle, externalBody, externalUrl }: AimtellSe
           body: pushBody.trim(),
           url: pushUrl.trim() || undefined,
           segment_id: pushSegment.trim(),
-          broadcast_all: broadcastAll,
         },
       });
       if (error) throw error;
       toast.success("Push notification sent successfully");
       setPushTitle("");
       setPushBody("");
-      setPushSegment("");
     } catch (err: any) {
       toast.error(err.message || "Failed to send push");
     } finally {
@@ -112,34 +111,39 @@ const AimtellSendPush = ({ externalTitle, externalBody, externalUrl }: AimtellSe
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="push-segment">
-              Target
-            </Label>
-            <div className="flex items-center gap-2">
-               <Button
-                 variant="default"
-                 size="sm"
-                 onClick={() => setBroadcastAll(false)}
-                 disabled={!canEdit}
-                 className="text-xs"
-               >
-                 Segment
-               </Button>
-            </div>
-            <Input
-              id="push-segment"
-              value={pushSegment}
-              onChange={(e) => setPushSegment(e.target.value)}
-              placeholder="Segment ID (required)"
-              disabled={!canEdit}
-              className="mt-1"
-            />
+            <Label>Target Segment *</Label>
+            {segmentsLoading ? (
+              <div className="flex items-center gap-2 h-10 text-sm text-muted-foreground">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Loading segments...
+              </div>
+            ) : segments.length > 0 ? (
+              <Select value={pushSegment} onValueChange={setPushSegment} disabled={!canEdit}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a segment" />
+                </SelectTrigger>
+                <SelectContent>
+                  {segments.map((seg) => (
+                    <SelectItem key={seg.id} value={String(seg.id)}>
+                      {seg.name} {seg.subscriberCount != null ? `(${seg.subscriberCount})` : ""} — ID: {seg.id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                value={pushSegment}
+                onChange={(e) => setPushSegment(e.target.value)}
+                placeholder="Segment ID (numeric)"
+                disabled={!canEdit}
+              />
+            )}
           </div>
         </div>
 
         <Button
           onClick={handleSendPush}
-          disabled={!canEdit || sending || !pushTitle.trim()}
+          disabled={!canEdit || sending || !pushTitle.trim() || !pushSegment.trim()}
           className="w-full sm:w-auto"
         >
           {sending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}

@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Send, Clock, Trash2 } from "lucide-react";
+import { Loader2, Clock, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminContext } from "@/pages/admin/AdminLayout";
+import { useAimtellSegments } from "@/hooks/useAimtellSegments";
 import { format } from "date-fns";
 
 interface ScheduledPush {
@@ -27,10 +29,10 @@ interface ScheduledPush {
 
 const AimtellScheduler = () => {
   const { canEdit } = useAdminContext();
+  const { segments, loading: segmentsLoading } = useAimtellSegments();
   const [pushes, setPushes] = useState<ScheduledPush[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Form state
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [url, setUrl] = useState("https://opoll.org");
@@ -55,12 +57,11 @@ const AimtellScheduler = () => {
       toast.error("Title and scheduled time are required");
       return;
     }
-    setScheduling(true);
     if (!segmentId.trim()) {
       toast.error("Segment ID is required by Aimtell");
-      setScheduling(false);
       return;
     }
+    setScheduling(true);
 
     const { error } = await supabase
       .from("scheduled_aimtell_pushes" as any)
@@ -118,7 +119,6 @@ const AimtellScheduler = () => {
         <CardDescription>Schedule notifications to be sent at a specific time</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Schedule Form */}
         <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
@@ -162,13 +162,33 @@ const AimtellScheduler = () => {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Segment ID *</Label>
-              <Input
-                value={segmentId}
-                onChange={(e) => setSegmentId(e.target.value)}
-                placeholder="Required"
-                disabled={!canEdit}
-              />
+              <Label className="text-xs">Target Segment *</Label>
+              {segmentsLoading ? (
+                <div className="flex items-center gap-2 h-10 text-xs text-muted-foreground">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Loading segments...
+                </div>
+              ) : segments.length > 0 ? (
+                <Select value={segmentId} onValueChange={setSegmentId} disabled={!canEdit}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a segment" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {segments.map((seg) => (
+                      <SelectItem key={seg.id} value={String(seg.id)}>
+                        {seg.name} {seg.subscriberCount != null ? `(${seg.subscriberCount})` : ""} — ID: {seg.id}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  value={segmentId}
+                  onChange={(e) => setSegmentId(e.target.value)}
+                  placeholder="Segment ID (numeric)"
+                  disabled={!canEdit}
+                />
+              )}
             </div>
           </div>
 
@@ -182,7 +202,6 @@ const AimtellScheduler = () => {
           </Button>
         </div>
 
-        {/* Scheduled List */}
         {loading ? (
           <div className="flex justify-center py-4">
             <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
