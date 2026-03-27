@@ -21,7 +21,7 @@ const AimtellSendPush = ({ externalTitle, externalBody, externalUrl }: AimtellSe
   const [pushBody, setPushBody] = useState("");
   const [pushUrl, setPushUrl] = useState("https://opoll.org");
   const [pushSegment, setPushSegment] = useState("");
-  const [broadcastAll, setBroadcastAll] = useState(true);
+  const [broadcastAll, setBroadcastAll] = useState(false);
   const [sending, setSending] = useState(false);
   const [lastApplied, setLastApplied] = useState("");
 
@@ -40,8 +40,8 @@ const AimtellSendPush = ({ externalTitle, externalBody, externalUrl }: AimtellSe
       toast.error("Title is required");
       return;
     }
-    if (!broadcastAll && !pushSegment.trim()) {
-      toast.error("Either broadcast to all or provide a segment ID");
+    if (!pushSegment.trim()) {
+      toast.error("Segment ID is required by Aimtell");
       return;
     }
     setSending(true);
@@ -51,7 +51,7 @@ const AimtellSendPush = ({ externalTitle, externalBody, externalUrl }: AimtellSe
           title: pushTitle.trim(),
           body: pushBody.trim(),
           url: pushUrl.trim() || undefined,
-          segment_id: !broadcastAll ? pushSegment.trim() : undefined,
+          segment_id: pushSegment.trim(),
           broadcast_all: broadcastAll,
         },
       });
@@ -116,35 +116,24 @@ const AimtellSendPush = ({ externalTitle, externalBody, externalUrl }: AimtellSe
               Target
             </Label>
             <div className="flex items-center gap-2">
-              <Button
-                variant={broadcastAll ? "default" : "outline"}
-                size="sm"
-                onClick={() => { setBroadcastAll(true); setPushSegment(""); }}
-                disabled={!canEdit}
-                className="text-xs"
-              >
-                All Subscribers
-              </Button>
-              <Button
-                variant={!broadcastAll ? "default" : "outline"}
-                size="sm"
-                onClick={() => setBroadcastAll(false)}
-                disabled={!canEdit}
-                className="text-xs"
-              >
-                Segment
-              </Button>
+               <Button
+                 variant="default"
+                 size="sm"
+                 onClick={() => setBroadcastAll(false)}
+                 disabled={!canEdit}
+                 className="text-xs"
+               >
+                 Segment
+               </Button>
             </div>
-            {!broadcastAll && (
-              <Input
-                id="push-segment"
-                value={pushSegment}
-                onChange={(e) => setPushSegment(e.target.value)}
-                placeholder="Segment ID"
-                disabled={!canEdit}
-                className="mt-1"
-              />
-            )}
+            <Input
+              id="push-segment"
+              value={pushSegment}
+              onChange={(e) => setPushSegment(e.target.value)}
+              placeholder="Segment ID (required)"
+              disabled={!canEdit}
+              className="mt-1"
+            />
           </div>
         </div>
 
