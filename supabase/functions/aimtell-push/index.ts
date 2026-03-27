@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     }
 
     const pushPayload: Record<string, unknown> = {
-      idSite: Number(AIMTELL_SITE_ID),
+      idSite: siteIdNum,
       title,
       body: body || "",
       link: url || "https://opoll.org",
