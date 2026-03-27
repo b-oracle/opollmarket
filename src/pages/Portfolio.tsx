@@ -71,6 +71,7 @@ interface EnrichedPosition {
   marketTitle: string;
   side: "yes" | "no";
   optionId: string | null;
+  optionLabel: string | null;
   shares: number;
   avgPrice: number;
   currentPrice: number;
@@ -82,6 +83,7 @@ interface EnrichedPosition {
   category: string;
   endDate: string;
   status: string;
+  marketType: string;
 }
 
 type FilterType = "all" | "profit" | "loss";
@@ -222,7 +224,7 @@ const Portfolio = () => {
       if (!user?.id) return [];
       const { data, error } = await supabase
         .from("positions")
-        .select("id, market_id, side, option_id, shares, avg_price, markets(title, yes_price, no_price, category, end_date, status, market_type)")
+        .select("id, market_id, side, option_id, shares, avg_price, markets(title, yes_price, no_price, category, end_date, status, market_type), market_options(label)")
         .eq("user_id", user.id)
         .gt("shares", 0)
         .order("created_at", { ascending: false });
