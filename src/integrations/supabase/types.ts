@@ -1110,6 +1110,7 @@ export type Database = {
           id: string
           image_url: string | null
           initial_liquidity: number
+          is_hidden: boolean
           last_draft_reminder_at: string | null
           liquidity: number
           liquidity_verified: boolean
@@ -1160,6 +1161,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           initial_liquidity?: number
+          is_hidden?: boolean
           last_draft_reminder_at?: string | null
           liquidity?: number
           liquidity_verified?: boolean
@@ -1210,6 +1212,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           initial_liquidity?: number
+          is_hidden?: boolean
           last_draft_reminder_at?: string | null
           liquidity?: number
           liquidity_verified?: boolean
