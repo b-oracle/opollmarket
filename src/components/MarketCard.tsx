@@ -52,11 +52,6 @@ const getTimeRemaining = (endDate: string) => {
 };
 
 import { optionColors } from "@/lib/optionColors";
-  "#EAB308",
-  "#A855F7",
-  "#F97316",
-  "#9CA3AF",
-];
 
 const colorAlpha = (hex: string, alpha: number) => {
   const r = parseInt(hex.slice(1, 3), 16);
