@@ -64,14 +64,22 @@ Deno.serve(async (req) => {
     const body = applyTemplate(setting.body_template);
     const url = applyTemplate(setting.url_template || "https://opoll.org");
 
+    if (!setting.segment_id) {
+      return new Response(JSON.stringify({
+        skipped: true,
+        reason: "Auto-broadcast requires a valid Aimtell segment_id",
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Fire the push via aimtell-push
     const { error: invokeError } = await supabase.functions.invoke("aimtell-push", {
       body: {
         title,
         body,
         url,
-        segment_id: setting.segment_id || undefined,
-        broadcast_all: !setting.segment_id, // broadcast to all if no segment specified
+        segment_id: setting.segment_id,
       },
     });
 

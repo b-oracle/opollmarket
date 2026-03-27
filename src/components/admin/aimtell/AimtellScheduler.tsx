@@ -56,14 +56,20 @@ const AimtellScheduler = () => {
       return;
     }
     setScheduling(true);
+    if (!segmentId.trim()) {
+      toast.error("Segment ID is required by Aimtell");
+      setScheduling(false);
+      return;
+    }
+
     const { error } = await supabase
       .from("scheduled_aimtell_pushes" as any)
       .insert({
         title: title.trim(),
         body: body.trim(),
         url: url.trim() || "https://opoll.org",
-        segment_id: segmentId.trim() || null,
-        broadcast_all: !segmentId.trim(),
+        segment_id: segmentId.trim(),
+        broadcast_all: false,
         scheduled_at: new Date(scheduledAt).toISOString(),
       } as any);
     if (error) {
@@ -156,11 +162,11 @@ const AimtellScheduler = () => {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Segment ID (optional)</Label>
+              <Label className="text-xs">Segment ID *</Label>
               <Input
                 value={segmentId}
                 onChange={(e) => setSegmentId(e.target.value)}
-                placeholder="Leave blank = all subscribers"
+                placeholder="Required"
                 disabled={!canEdit}
               />
             </div>
@@ -168,7 +174,7 @@ const AimtellScheduler = () => {
 
           <Button
             onClick={handleSchedule}
-            disabled={!canEdit || scheduling || !title.trim() || !scheduledAt}
+            disabled={!canEdit || scheduling || !title.trim() || !scheduledAt || !segmentId.trim()}
             className="w-full sm:w-auto"
           >
             {scheduling ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Clock className="w-4 h-4 mr-2" />}
@@ -196,7 +202,7 @@ const AimtellScheduler = () => {
                   </div>
                   <p className="text-[10px] text-muted-foreground">
                     {format(new Date(push.scheduled_at), "MMM d, yyyy h:mm a")}
-                    {push.segment_id ? ` • Segment: ${push.segment_id}` : " • All subscribers"}
+                    {push.segment_id ? ` • Segment: ${push.segment_id}` : " • No segment"}
                   </p>
                   {push.error_message && (
                     <p className="text-[10px] text-destructive">{push.error_message}</p>
