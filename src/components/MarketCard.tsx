@@ -51,9 +51,7 @@ const getTimeRemaining = (endDate: string) => {
   return `< 1h left`;
 };
 
-const optionColors = [
-  "#02C7FC",
-  "#EF4444",
+import { optionColors } from "@/lib/optionColors";
   "#EAB308",
   "#A855F7",
   "#F97316",
