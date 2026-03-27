@@ -89,7 +89,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const { liked, likeCount, toggleLike } = useMarketLike(market.id);
   const { bookmarked, toggleBookmark } = useBookmark(market.id);
   const bookmarkCount = useBookmarkCount(market.id);
-  const [betModal, setBetModal] = useState<{ open: boolean; side: "yes" | "no"; optionLabel?: string; optionPrice?: number; optionColor?: string }>({ open: false, side: "yes" });
+  const [betModal, setBetModal] = useState<{ open: boolean; side: "yes" | "no"; optionId?: string; optionLabel?: string; optionPrice?: number; optionColor?: string }>({ open: false, side: "yes" });
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const commentCount = useCommentCount(market.id);
@@ -584,7 +584,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                       return (
                         <button
                           key={opt.id}
-                          onClick={() => setBetModal({ open: true, side: "yes", optionLabel: opt.label, optionPrice: pct, optionColor: color })}
+                          onClick={() => setBetModal({ open: true, side: "yes", optionId: opt.id, optionLabel: opt.label, optionPrice: pct, optionColor: color })}
                           className="w-full relative rounded-xl px-4 py-3 flex items-center justify-between transition-all active:scale-[0.98] overflow-hidden"
                           style={{
                             background: colorAlpha(color, 0.1),
@@ -664,6 +664,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         price={betModal.optionPrice ?? (betModal.side === "yes" ? yesPercent : noPercent)}
         marketTitle={betModal.optionLabel ? `${market.title} — ${betModal.optionLabel}` : market.title}
         marketId={market.id}
+        optionId={betModal.optionId}
         optionLabel={betModal.optionLabel}
         optionColor={betModal.optionColor}
       />
