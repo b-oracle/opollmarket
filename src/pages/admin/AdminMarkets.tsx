@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin, ShieldAlert, ShieldCheck, Ban, BarChart3, Users, DollarSign, Layers, Clock, Archive, Flame } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin, ShieldAlert, ShieldCheck, Ban, BarChart3, Users, DollarSign, Layers, Clock, Archive, Flame, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { logAuditEvent } from "@/lib/auditLog";
 import { motion, AnimatePresence } from "framer-motion";
@@ -31,6 +31,7 @@ interface MarketRow {
   moderator_decision: string | null;
   moderator_id: string | null;
   moderator_reviewed_at: string | null;
+  is_hidden: boolean;
 }
 
 interface MarketOption {
@@ -166,7 +167,7 @@ const AdminMarkets = () => {
   const fetchMarkets = async () => {
     let query = supabase
       .from("markets")
-      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending, creator_wallet, moderator_decision, moderator_id, moderator_reviewed_at, polymarket_id")
+      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending, creator_wallet, moderator_decision, moderator_id, moderator_reviewed_at, polymarket_id, is_hidden")
       .order("created_at", { ascending: false });
     if (filter === "polymarket") {
       query = query.not("polymarket_id", "is", null);
@@ -819,6 +820,20 @@ const AdminMarkets = () => {
                                   <CheckCircle className="w-4 h-4" />
                                 </button>
                               )}
+                              <button
+                                onClick={async () => {
+                                  const newVal = !m.is_hidden;
+                                  const { error } = await supabase.from("markets").update({ is_hidden: newVal } as any).eq("id", m.id);
+                                  if (error) { toast.error("Failed to toggle visibility"); return; }
+                                  toast.success(newVal ? "Market hidden from public" : "Market visible to public");
+                                  logAuditEvent({ action: "settings_updated", targetId: m.id, targetType: "market", details: { is_hidden: newVal } });
+                                  fetchMarkets();
+                                }}
+                                className={`p-1.5 rounded-lg transition-colors ${m.is_hidden ? "hover:bg-green-500/10 text-yellow-500" : "hover:bg-yellow-500/10 text-muted-foreground"}`}
+                                title={m.is_hidden ? "Unhide Market" : "Hide Market"}
+                              >
+                                {m.is_hidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
                               <button
                                 onClick={() => handleDelete(m.id)}
                                 className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
