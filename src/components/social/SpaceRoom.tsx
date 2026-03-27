@@ -1012,8 +1012,14 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                       }}>
                       {renderAvatar(p, "lg")}
                       <p className="text-[10px] font-medium truncate max-w-[80px] text-center">
-                        {p.name}{p.identity === hostId && " 🎙️"}{coHostIds.includes(p.identity) && " 👑"}
+                        {p.name}
                       </p>
+                      {p.identity === hostId && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30">Host</span>
+                      )}
+                      {p.identity !== hostId && coHostIds.includes(p.identity) && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-accent/15 text-accent-foreground border border-accent/30">Co-host</span>
+                      )}
                       <div className="flex items-center gap-0.5">
                         {p.isMuted && <MicOff className="w-3 h-3 text-muted-foreground" />}
                       </div>
