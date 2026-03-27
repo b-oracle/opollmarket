@@ -761,10 +761,12 @@ const Create = () => {
   }, [submitStep]);
   const [txHash, setTxHash] = useState("");
   const [newMarketId, setNewMarketId] = useState("");
+  const [newMarketOptions, setNewMarketOptions] = useState<{ id: string; label: string; sort_order: number }[]>([]);
   const [similarMarkets, setSimilarMarkets] = useState<Array<{ id: string; title: string; category: string }>>([]);
   const [createdAsPending, setCreatedAsPending] = useState(false);
   const [moderationReason, setModerationReason] = useState("");
   const [firstPredSide, setFirstPredSide] = useState<"yes" | "no">("yes");
+  const [firstPredOptionId, setFirstPredOptionId] = useState<string | null>(null);
   const [firstPredAmount, setFirstPredAmount] = useState("5");
 
   // Progress tracking for submit flow
@@ -1067,7 +1069,7 @@ const Create = () => {
     if (marketType !== "binary" && data?.id) {
       const validOptions = options.filter(o => o.trim());
       const equalPrice = Math.round((1 / validOptions.length) * 100) / 100;
-      const { error: optError } = await supabase
+      const { data: savedOpts, error: optError } = await supabase
         .from("market_options")
         .insert(
           validOptions.map((label, i) => ({
@@ -1076,9 +1078,13 @@ const Create = () => {
             price: equalPrice,
             sort_order: i,
           }))
-        );
+        )
+        .select("id, label, sort_order");
       if (optError) {
         console.error("Failed to save options:", optError);
+      }
+      if (savedOpts) {
+        setNewMarketOptions(savedOpts);
       }
     }
 
