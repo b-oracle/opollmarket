@@ -10,8 +10,17 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const AIMTELL_API_KEY = Deno.env.get("AIMTELL_API_KEY");
+    const AIMTELL_API_KEY_RAW = Deno.env.get("AIMTELL_API_KEY");
     const AIMTELL_SITE_ID_RAW = Deno.env.get("AIMTELL_SITE_ID");
+
+    if (!AIMTELL_API_KEY_RAW) {
+      throw new Error("AIMTELL_API_KEY is not configured");
+    }
+
+    const AIMTELL_API_KEY = AIMTELL_API_KEY_RAW.trim().replace(/['"]/g, "");
+    if (!AIMTELL_API_KEY) {
+      throw new Error("AIMTELL_API_KEY is empty");
+    }
 
     if (!AIMTELL_SITE_ID_RAW) {
       throw new Error("AIMTELL_SITE_ID is not configured");
@@ -25,7 +34,30 @@ Deno.serve(async (req) => {
 
     console.log("Using Aimtell site ID:", siteIdNum);
 
-    const { title, body, url, segment_id, subscriber_uids, alias, broadcast_all } = await req.json();
+    const payload = await req.json();
+
+    const title = typeof payload?.title === "string" ? payload.title.trim() : "";
+    const body = typeof payload?.body === "string" ? payload.body.trim() : "";
+    const url = typeof payload?.url === "string" ? payload.url.trim() : "";
+    const alias = typeof payload?.alias === "string" ? payload.alias.trim() : "";
+    const broadcastAll = payload?.broadcast_all === true;
+    const rawSegmentId = payload?.segment_id ?? payload?.segmentId;
+
+    let subscriberUids: string | undefined;
+    if (Array.isArray(payload?.subscriber_uids)) {
+      const cleaned = payload.subscriber_uids
+        .map((uid: unknown) => String(uid).trim())
+        .filter(Boolean);
+      if (cleaned.length > 0) subscriberUids = cleaned.join(",");
+    } else if (typeof payload?.subscriber_uids === "string") {
+      const cleaned = payload.subscriber_uids.trim();
+      if (cleaned) subscriberUids = cleaned;
+    }
+
+    const hasSegment =
+      rawSegmentId !== undefined && rawSegmentId !== null && String(rawSegmentId).trim() !== "";
+    const hasAlias = alias.length > 0;
+    const hasUids = Boolean(subscriberUids);
 
     if (!title) {
       return new Response(JSON.stringify({ error: "title is required" }), {
@@ -34,25 +66,51 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Allow broadcast_all to skip targeting requirement
-    if (!broadcast_all && !segment_id && !subscriber_uids && !alias) {
-      return new Response(JSON.stringify({ error: "One of segment_id, subscriber_uids, alias, or broadcast_all is required." }), {
+    if (broadcastAll && !hasSegment && !hasAlias && !hasUids) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Aimtell requires a target. Provide a segment_id (recommended), alias, or subscriber_uids.",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    if (!hasSegment && !hasAlias && !hasUids) {
+      return new Response(
+        JSON.stringify({
+          error: "One of segment_id, subscriber_uids, or alias is required.",
+        }),
+        {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+        },
+      );
     }
 
     const pushPayload: Record<string, unknown> = {
       idSite: siteIdNum,
       title,
-      body: body || "",
+      body,
       link: url || "https://opoll.org",
     };
 
-    if (segment_id) pushPayload.segmentId = segment_id;
-    if (subscriber_uids) pushPayload.subscriber_uids = subscriber_uids;
-    if (alias) pushPayload.alias = alias;
-    // For broadcast_all, we send without targeting — Aimtell sends to all site subscribers
+    if (hasSegment) {
+      const segmentIdNum = Number(rawSegmentId);
+      if (!Number.isFinite(segmentIdNum)) {
+        return new Response(JSON.stringify({ error: "segment_id must be a valid number" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      pushPayload.segmentId = segmentIdNum;
+    }
+
+    if (subscriberUids) pushPayload.subscriber_uids = subscriberUids;
+    if (hasAlias) pushPayload.alias = alias;
 
     const response = await fetch("https://api.aimtell.com/prod/push", {
       method: "POST",
@@ -63,14 +121,34 @@ Deno.serve(async (req) => {
       body: JSON.stringify(pushPayload),
     });
 
-    const data = await response.json();
+    const rawResponse = await response.text();
+    let data: unknown = rawResponse;
+    try {
+      data = JSON.parse(rawResponse);
+    } catch {
+      // keep raw text when response isn't JSON
+    }
 
-    if (!response.ok) {
-      console.error("Aimtell API error:", response.status, JSON.stringify(data));
-      return new Response(JSON.stringify({ error: "Aimtell push failed", details: data }), {
-        status: response.status,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const apiResultIsError =
+      typeof data === "object" &&
+      data !== null &&
+      "result" in data &&
+      (data as { result?: string }).result === "error";
+
+    if (!response.ok || apiResultIsError) {
+      console.error("Aimtell API error:", response.status, rawResponse);
+      const apiMessage =
+        typeof data === "object" && data !== null && "message" in data
+          ? String((data as { message?: string }).message)
+          : "Aimtell push failed";
+
+      return new Response(
+        JSON.stringify({ error: apiMessage, details: data }),
+        {
+          status: response.ok ? 400 : response.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     console.log("Aimtell push sent:", JSON.stringify(data));
