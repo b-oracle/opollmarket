@@ -39,6 +39,7 @@ export interface Market {
   twitterResourceId?: string;
   twitterCurrentCount?: number;
   status?: string;
+  isHidden?: boolean;
 }
 
 export const mockMarkets: Market[] = [
