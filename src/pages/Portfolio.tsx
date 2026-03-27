@@ -261,6 +261,7 @@ const Portfolio = () => {
       side: p.side as "yes" | "no",
       optionId: p.option_id,
       optionLabel,
+      optionSortOrder,
       shares: p.shares,
       avgPrice: avgPriceCents,
       currentPrice: currentPriceCents,
