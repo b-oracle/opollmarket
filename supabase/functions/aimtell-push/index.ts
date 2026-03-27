@@ -11,14 +11,19 @@ Deno.serve(async (req) => {
 
   try {
     const AIMTELL_API_KEY = Deno.env.get("AIMTELL_API_KEY");
-    const AIMTELL_SITE_ID = Deno.env.get("AIMTELL_SITE_ID");
+    const AIMTELL_SITE_ID_RAW = Deno.env.get("AIMTELL_SITE_ID");
 
-    if (!AIMTELL_API_KEY) {
-      throw new Error("AIMTELL_API_KEY is not configured");
-    }
-    if (!AIMTELL_SITE_ID) {
+    if (!AIMTELL_SITE_ID_RAW) {
       throw new Error("AIMTELL_SITE_ID is not configured");
     }
+
+    const AIMTELL_SITE_ID = AIMTELL_SITE_ID_RAW.trim().replace(/['"]/g, "");
+    const siteIdNum = Number(AIMTELL_SITE_ID);
+    if (isNaN(siteIdNum)) {
+      throw new Error(`AIMTELL_SITE_ID is not a valid number: "${AIMTELL_SITE_ID}"`);
+    }
+
+    console.log("Using Aimtell site ID:", siteIdNum);
 
     const { title, body, url, segment_id, subscriber_uids, alias, broadcast_all } = await req.json();
 
@@ -38,7 +43,7 @@ Deno.serve(async (req) => {
     }
 
     const pushPayload: Record<string, unknown> = {
-      idSite: Number(AIMTELL_SITE_ID),
+      idSite: siteIdNum,
       title,
       body: body || "",
       link: url || "https://opoll.org",
