@@ -1,35 +1,76 @@
 
 
-# Fix: Space Persistence on Host/Co-Host Leave & Reconnection
+# Record Resolution on Blockchain (Event-Only Contract)
 
-## Problem
-1. When the host taps the leave button (PhoneOff), `handleLeave` calls `end_space`, deleting the LiveKit room and ending the space for everyone. The user wants: leave = leave personally, only an explicit "End Space" button should terminate for all.
-2. When the `Disconnected` event fires (e.g. network drop), `onClose()` is called immediately, removing the UI. Host/co-host should be able to rejoin and resume their role.
-3. Minimizing works correctly (no disconnect), so no changes needed there.
+## Overview
+After a market is resolved, super admins get a "Record on Chain" button next to resolved markets. Clicking it connects their wallet, sends a transaction to a minimal smart contract on BSC that emits an event with the resolution data, and stores the transaction hash in the database.
+
+## Architecture
+
+```text
+AdminMarkets (resolved row)
+  → "Record on Chain" button (super_admin only)
+  → Connect wallet via AppKit
+  → Call recordResolution(marketId, winningSide, totalPaid) on BSC contract
+  → Contract emits ResolutionRecorded event
+  → Store tx hash in markets.blockchain_tx_hash
+```
 
 ## Changes
 
-### 1. `src/components/social/SpaceRoom.tsx` — Separate "Leave" from "End Space"
+### 1. Database Migration
+Add a `blockchain_tx_hash` column to the `markets` table to store the on-chain transaction hash once recorded.
 
-**`handleLeave`**: Remove the `isHost` branch that calls `end_space`. Host leaving should just mark themselves as left in DB and disconnect from LiveKit — the space stays live.
+```sql
+ALTER TABLE public.markets ADD COLUMN IF NOT EXISTS blockchain_tx_hash text;
+```
 
-**Add `handleEndSpace`**: New function (host-only) that calls the `end_space` action, deleting the room for everyone.
+### 2. Smart Contract (Pre-deployed)
+A minimal Solidity contract that only emits events — no storage, cheapest gas cost:
 
-**`Disconnected` event handler**: Instead of calling `onClose()` immediately, show a "Reconnecting…" state and attempt to re-invoke `livekit-token` to get a fresh token and reconnect. Only call `onClose()` after a failed reconnect attempt (e.g. space has ended).
+```solidity
+contract PollmarketResolver {
+    event ResolutionRecorded(
+        string marketId,
+        string winningSide,
+        uint256 totalPaidOut,
+        uint256 timestamp
+    );
 
-**UI changes in the controls bar**:
-- The red PhoneOff button always does `handleLeave` (personal leave, space stays live).
-- Add a separate "End Space" button visible only to the host — styled distinctly (e.g. red text button with label) — that calls `handleEndSpace`.
+    function recordResolution(
+        string calldata marketId,
+        string calldata winningSide,
+        uint256 totalPaidOut
+    ) external {
+        emit ResolutionRecorded(marketId, winningSide, totalPaidOut, block.timestamp);
+    }
+}
+```
 
-### 2. `supabase/functions/livekit-token/index.ts` — No changes needed
-The `end_space` action already handles global termination correctly. The default JOIN action already restores host/co-host roles based on DB state, so reconnecting hosts will get their permissions back automatically.
+Since deploying a contract from the app isn't feasible here, we'll use a **raw transaction approach**: encode the resolution data as hex in the transaction's `data` field sent to a designated recorder address (e.g., a self-owned address). This achieves the same immutable on-chain record without needing a deployed contract. The data is permanently visible on BSCScan.
 
-### 3. Reconnection logic detail
-On `RoomEvent.Disconnected`:
-- If the user is host or co-host, attempt automatic reconnect by fetching a new token and calling `room.connect()` again (up to 3 retries with backoff).
-- If the space has ended (token response says "ended"), then call `onClose()`.
-- For regular listeners, show a toast and call `onClose()` as before.
+### 3. `src/lib/blockchainRecord.ts` (New File)
+- Export a helper that encodes market resolution data (market ID, winning side/option, total paid) into hex bytes.
+- Export the designated recorder address constant.
+
+### 4. `src/components/admin/RecordOnChainButton.tsx` (New Component)
+- Visible only to super admins, shown next to resolved markets that don't yet have a `blockchain_tx_hash`.
+- On click: uses wagmi's `useSendTransaction` to send a 0 BNB transaction with encoded resolution data.
+- On success: updates `markets.blockchain_tx_hash` with the tx hash and shows a BSCScan link.
+- Shows a chain-link icon with loading/success states.
+
+### 5. `src/pages/admin/AdminMarkets.tsx`
+- Import and render `RecordOnChainButton` in the resolved market row (after the existing disabled reactivate button, line ~818).
+- Only render when `isSuperAdmin` is true.
+- Pass market ID, resolved_side, winning_option_id, and existing `blockchain_tx_hash`.
+
+### 6. `src/pages/admin/AdminLayout.tsx`
+- Wrap admin layout children with `LazyWagmiProvider` so wagmi hooks are available in admin pages.
 
 ## Files Modified
-- `src/components/social/SpaceRoom.tsx`
+- **Migration**: Add `blockchain_tx_hash` column to `markets`
+- `src/lib/blockchainRecord.ts` — new encoding helper
+- `src/components/admin/RecordOnChainButton.tsx` — new component
+- `src/pages/admin/AdminMarkets.tsx` — render the button for resolved markets
+- `src/pages/admin/AdminLayout.tsx` — wrap with wagmi provider
 
