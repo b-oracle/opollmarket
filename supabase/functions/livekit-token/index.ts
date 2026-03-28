@@ -280,6 +280,29 @@ Deno.serve(async (req) => {
       });
     }
 
+    // --- END SPACE (host deletes room so everyone disconnects) ---
+    if (action === "end_space") {
+      requireHost();
+      const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
+      try {
+        await svc.deleteRoom(roomName);
+      } catch { /* room may already be gone */ }
+      await supabaseAdmin
+        .from("spaces")
+        .update({ status: "ended", ended_at: new Date().toISOString() })
+        .eq("id", space_id);
+      // Mark all remaining participants as left
+      await supabaseAdmin
+        .from("space_participants")
+        .update({ left_at: new Date().toISOString() })
+        .eq("space_id", space_id)
+        .is("left_at", null);
+      return new Response(JSON.stringify({ success: true, action: "ended" }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // --- Default: JOIN ---
     const { data: profile } = await supabaseAdmin
       .from("profiles")

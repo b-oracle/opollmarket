@@ -568,20 +568,21 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     audioElementsRef.current.clear();
     // Update DB in background — don't block UI
     if (user) {
-      const updates = [];
-      updates.push(
-        Promise.resolve(supabase.from("space_participants").update({ left_at: new Date().toISOString() })
-          .eq("space_id", spaceId).eq("user_id", user.id).is("left_at", null))
-      );
       if (isHost) {
-        updates.push(
-          Promise.resolve(supabase.from("spaces").update({ status: "ended", ended_at: new Date().toISOString() }).eq("id", spaceId))
-        );
+        // Host ending: call edge function to delete LiveKit room (disconnects everyone)
+        supabase.functions.invoke("livekit-token", {
+          body: { space_id: spaceId, action: "end_space" },
+        }).then(() => {
+          queryClient.invalidateQueries({ queryKey: ["spaces"] });
+        });
+      } else {
+        // Non-host leaving: just mark self as left
+        supabase.from("space_participants").update({ left_at: new Date().toISOString() })
+          .eq("space_id", spaceId).eq("user_id", user.id).is("left_at", null)
+          .then(() => {
+            queryClient.invalidateQueries({ queryKey: ["spaces"] });
+          });
       }
-      // Fire and forget — don't await
-      Promise.allSettled(updates).then(() => {
-        queryClient.invalidateQueries({ queryKey: ["spaces"] });
-      });
     }
     onClose();
   };

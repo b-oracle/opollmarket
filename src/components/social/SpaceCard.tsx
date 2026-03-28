@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Radio, Headphones, LogIn, LogOut, Loader2, Bell, BellOff, Calendar, Share2, Play, Pause, Trash2 } from "lucide-react";
+import { Radio, Headphones, LogIn, LogOut, Loader2, Bell, BellOff, Calendar, Share2, Play, Pause, Trash2, RotateCcw, RotateCw } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { useState, useRef, useEffect } from "react";
 import SpaceShareSheet from "./SpaceShareSheet";
@@ -26,6 +26,12 @@ interface SpaceCardProps {
   onJoinRoom?: (spaceId: string) => void;
 }
 
+const formatTime = (s: number) => {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, "0")}`;
+};
+
 const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -34,6 +40,8 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
   const [shareOpen, setShareOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [deleting, setDeleting] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -58,11 +66,16 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
       audioRef.current.addEventListener("timeupdate", () => {
         if (audioRef.current && audioRef.current.duration) {
           setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100);
+          setCurrentTime(audioRef.current.currentTime);
         }
+      });
+      audioRef.current.addEventListener("loadedmetadata", () => {
+        if (audioRef.current) setDuration(audioRef.current.duration);
       });
       audioRef.current.addEventListener("ended", () => {
         setIsPlaying(false);
         setProgress(0);
+        setCurrentTime(0);
       });
     }
 
@@ -270,33 +283,55 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
 
       {/* Replay audio player */}
       {isRecorded && (
-        <div className="flex items-center gap-2 pt-1">
-          <button
-            onClick={handlePlayPause}
-            className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-              isPlaying ? "bg-primary text-primary-foreground" : "bg-primary/20 text-primary"
-            }`}
-          >
-            {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
-          </button>
-          <div
-            className="flex-1 h-1.5 rounded-full bg-muted cursor-pointer"
-            onClick={handleSeek}
-          >
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-200"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          {isHost && (
+        <div className="pt-1 space-y-1">
+          <div className="flex items-center gap-1.5">
             <button
-              onClick={handleDeleteRecording}
-              disabled={deleting}
-              className="w-7 h-7 rounded-full flex items-center justify-center bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors shrink-0"
-              title="Delete recording"
+              onClick={handlePlayPause}
+              className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                isPlaying ? "bg-primary text-primary-foreground" : "bg-primary/20 text-primary"
+              }`}
             >
-              {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+              {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
             </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); if (audioRef.current) { audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - 10); } }}
+              className="w-7 h-7 rounded-full flex items-center justify-center bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
+              title="Rewind 10s"
+            >
+              <RotateCcw className="w-3 h-3" />
+            </button>
+            <div
+              className="flex-1 h-1.5 rounded-full bg-muted cursor-pointer relative"
+              onClick={handleSeek}
+            >
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-200"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); if (audioRef.current) { audioRef.current.currentTime = Math.min(audioRef.current.duration || 0, audioRef.current.currentTime + 10); } }}
+              className="w-7 h-7 rounded-full flex items-center justify-center bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
+              title="Forward 10s"
+            >
+              <RotateCw className="w-3 h-3" />
+            </button>
+            {isHost && (
+              <button
+                onClick={handleDeleteRecording}
+                disabled={deleting}
+                className="w-7 h-7 rounded-full flex items-center justify-center bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors shrink-0"
+                title="Delete recording"
+              >
+                {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+              </button>
+            )}
+          </div>
+          {duration > 0 && (
+            <div className="flex justify-between text-[9px] text-muted-foreground px-1">
+              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(duration)}</span>
+            </div>
           )}
         </div>
       )}
