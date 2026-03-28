@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin, ShieldAlert, ShieldCheck, Ban, BarChart3, Users, DollarSign, Layers, Clock, Archive, Flame, Eye, EyeOff } from "lucide-react";
+import RecordOnChainButton from "@/components/admin/RecordOnChainButton";
 import { toast } from "sonner";
 import { logAuditEvent } from "@/lib/auditLog";
 import { motion, AnimatePresence } from "framer-motion";
@@ -32,6 +33,8 @@ interface MarketRow {
   moderator_id: string | null;
   moderator_reviewed_at: string | null;
   is_hidden: boolean;
+  resolved_side: string | null;
+  blockchain_tx_hash: string | null;
 }
 
 interface MarketOption {
@@ -167,7 +170,7 @@ const AdminMarkets = () => {
   const fetchMarkets = async () => {
     let query = supabase
       .from("markets")
-      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending, creator_wallet, moderator_decision, moderator_id, moderator_reviewed_at, polymarket_id, is_hidden")
+      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending, creator_wallet, moderator_decision, moderator_id, moderator_reviewed_at, polymarket_id, is_hidden, resolved_side, blockchain_tx_hash")
       .order("created_at", { ascending: false });
     if (filter === "polymarket") {
       query = query.not("polymarket_id", "is", null);
@@ -816,14 +819,25 @@ const AdminMarkets = () => {
                                 </>
                               )}
                               {(m.status === "resolved" || m.status === "cancelled") && (
-                                <button
-                                  onClick={() => m.status !== "resolved" && handleReactivate(m.id)}
-                                  disabled={m.status === "resolved"}
-                                  className={`p-1.5 rounded-lg transition-colors ${m.status === "resolved" ? "opacity-30 cursor-not-allowed text-muted-foreground" : "hover:bg-blue-500/10 text-blue-500"}`}
-                                  title={m.status === "resolved" ? "Resolved markets cannot be reactivated" : "Reactivate"}
-                                >
-                                  <CheckCircle className="w-4 h-4" />
-                                </button>
+                                <>
+                                  <button
+                                    onClick={() => m.status !== "resolved" && handleReactivate(m.id)}
+                                    disabled={m.status === "resolved"}
+                                    className={`p-1.5 rounded-lg transition-colors ${m.status === "resolved" ? "opacity-30 cursor-not-allowed text-muted-foreground" : "hover:bg-blue-500/10 text-blue-500"}`}
+                                    title={m.status === "resolved" ? "Resolved markets cannot be reactivated" : "Reactivate"}
+                                  >
+                                    <CheckCircle className="w-4 h-4" />
+                                  </button>
+                                  {m.status === "resolved" && isSuperAdmin && (
+                                    <RecordOnChainButton
+                                      marketId={m.id}
+                                      resolvedSide={m.resolved_side || "unknown"}
+                                      totalPaid={m.volume}
+                                      existingTxHash={m.blockchain_tx_hash}
+                                      onRecorded={() => fetchMarkets()}
+                                    />
+                                  )}
+                                </>
                               )}
                               <button
                                 onClick={async () => {
