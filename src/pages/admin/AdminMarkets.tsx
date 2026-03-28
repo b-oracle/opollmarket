@@ -450,6 +450,7 @@ const AdminMarkets = () => {
     w.document.write(`<!DOCTYPE html><html><head><title>Resolved Markets</title><style>body{font-family:Arial,sans-serif;padding:20px}table{border-collapse:collapse;width:100%;font-size:11px}th,td{border:1px solid #ccc;padding:6px 8px;text-align:left}th{background:#f5f5f5;font-weight:600}h1{font-size:16px;margin-bottom:12px}a{color:#2563eb}</style></head><body><h1>Pollmarket — Resolved Markets (${resolvedMarkets.length})</h1><table><tr>${HEADERS.map(h => `<th>${h}</th>`).join("")}</tr>${tableRows.map(r => `<tr>${r.map((c, i) => i === 7 && c ? `<td><a href="${c}">${c.slice(0, 30)}…</a></td>` : `<td>${c}</td>`).join("")}</tr>`).join("")}</table><script>setTimeout(()=>window.print(),300)</script></body></html>`);
     w.document.close();
   };
+  if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>;
 
 
 
