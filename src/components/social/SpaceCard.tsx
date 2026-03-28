@@ -34,6 +34,8 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
   const [shareOpen, setShareOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [deleting, setDeleting] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -58,11 +60,16 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
       audioRef.current.addEventListener("timeupdate", () => {
         if (audioRef.current && audioRef.current.duration) {
           setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100);
+          setCurrentTime(audioRef.current.currentTime);
         }
+      });
+      audioRef.current.addEventListener("loadedmetadata", () => {
+        if (audioRef.current) setDuration(audioRef.current.duration);
       });
       audioRef.current.addEventListener("ended", () => {
         setIsPlaying(false);
         setProgress(0);
+        setCurrentTime(0);
       });
     }
 
