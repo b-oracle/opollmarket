@@ -1011,7 +1011,12 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
         {/* Content */}
         <div className="flex-1 overflow-hidden flex flex-col">
-          {connecting ? (
+          {reconnecting ? (
+            <div className="flex flex-col items-center justify-center py-20 flex-1">
+              <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
+              <p className="text-sm text-muted-foreground">Reconnecting…</p>
+            </div>
+          ) : connecting ? (
             <div className="flex flex-col items-center justify-center py-20 flex-1">
               <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
               <p className="text-sm text-muted-foreground">Connecting to voice room…</p>
