@@ -26,6 +26,12 @@ interface SpaceCardProps {
   onJoinRoom?: (spaceId: string) => void;
 }
 
+const formatTime = (s: number) => {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, "0")}`;
+};
+
 const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
