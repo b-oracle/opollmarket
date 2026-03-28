@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin, ShieldAlert, ShieldCheck, Ban, BarChart3, Users, DollarSign, Layers, Clock, Archive, Flame, Eye, EyeOff } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin, ShieldAlert, ShieldCheck, Ban, BarChart3, Users, DollarSign, Layers, Clock, Archive, Flame, Eye, EyeOff, Download } from "lucide-react";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import RecordOnChainButton from "@/components/admin/RecordOnChainButton";
 import { toast } from "sonner";
 import { logAuditEvent } from "@/lib/auditLog";
@@ -412,13 +413,67 @@ const AdminMarkets = () => {
     }
   };
 
+  const resolvedMarkets = useMemo(() => markets.filter(m => m.status === "resolved"), [markets]);
+
+  const escCsv = (val: string) => `"${String(val ?? "").replace(/"/g, '""')}"`;
+
+  const exportColumns = (m: MarketRow) => [
+    m.title, m.category, m.market_type, String(m.volume), String(m.participants),
+    new Date(m.end_date).toLocaleDateString(), m.resolved_side ?? "",
+    m.blockchain_tx_hash ? `https://bscscan.com/tx/${m.blockchain_tx_hash}` : "",
+  ];
+  const HEADERS = ["Title", "Category", "Type", "Volume", "Participants", "End Date", "Resolved Side", "Blockchain TX"];
+
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportCSV = () => {
+    const rows = [HEADERS, ...resolvedMarkets.map(exportColumns)];
+    const csv = rows.map(r => r.map(escCsv).join(",")).join("\n");
+    downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8;" }), "resolved_markets.csv");
+  };
+
+  const handleExportExcel = () => {
+    const tableRows = resolvedMarkets.map(exportColumns);
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body><table><tr>${HEADERS.map(h => `<th>${h}</th>`).join("")}</tr>${tableRows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("")}</table></body></html>`;
+    downloadBlob(new Blob([html], { type: "application/vnd.ms-excel" }), "resolved_markets.xls");
+  };
+
+  const handleExportPDF = () => {
+    const tableRows = resolvedMarkets.map(exportColumns);
+    const w = window.open("", "_blank");
+    if (!w) { toast.error("Popup blocked"); return; }
+    w.document.write(`<!DOCTYPE html><html><head><title>Resolved Markets</title><style>body{font-family:Arial,sans-serif;padding:20px}table{border-collapse:collapse;width:100%;font-size:11px}th,td{border:1px solid #ccc;padding:6px 8px;text-align:left}th{background:#f5f5f5;font-weight:600}h1{font-size:16px;margin-bottom:12px}a{color:#2563eb}</style></head><body><h1>Pollmarket — Resolved Markets (${resolvedMarkets.length})</h1><table><tr>${HEADERS.map(h => `<th>${h}</th>`).join("")}</tr>${tableRows.map(r => `<tr>${r.map((c, i) => i === 7 && c ? `<td><a href="${c}">${c.slice(0, 30)}…</a></td>` : `<td>${c}</td>`).join("")}</tr>`).join("")}</table><script>setTimeout(()=>window.print(),300)</script></body></html>`);
+    w.document.close();
+  };
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>;
+
+
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h2 className="text-xl sm:text-2xl font-bold">Markets ({markets.length})</h2>
         <div className="flex items-center gap-2 flex-wrap">
+          {isSuperAdmin && resolvedMarkets.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs font-semibold hover:bg-secondary/80 transition-all active:scale-95">
+                  <Download className="w-3.5 h-3.5" />
+                  Export
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={handleExportCSV}>CSV</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportExcel}>Excel (.xls)</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportPDF}>PDF (Print)</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           {canEdit && <BulkCSVImport onComplete={fetchMarkets} />}
           {canEdit && (
           <button
