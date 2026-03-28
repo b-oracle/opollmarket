@@ -1099,6 +1099,7 @@ export type Database = {
           auto_resolve_deadline: string | null
           auto_resolve_operator: string | null
           auto_resolve_target_price: number | null
+          blockchain_tx_hash: string | null
           category: string
           contract_address: string | null
           created_at: string
@@ -1150,6 +1151,7 @@ export type Database = {
           auto_resolve_deadline?: string | null
           auto_resolve_operator?: string | null
           auto_resolve_target_price?: number | null
+          blockchain_tx_hash?: string | null
           category: string
           contract_address?: string | null
           created_at?: string
@@ -1201,6 +1203,7 @@ export type Database = {
           auto_resolve_deadline?: string | null
           auto_resolve_operator?: string | null
           auto_resolve_target_price?: number | null
+          blockchain_tx_hash?: string | null
           category?: string
           contract_address?: string | null
           created_at?: string
