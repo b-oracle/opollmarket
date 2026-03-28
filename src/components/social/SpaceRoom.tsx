@@ -79,6 +79,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
   const [connecting, setConnecting] = useState(true);
   const [connected, setConnected] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
+  const intentionalLeaveRef = useRef(false);
   const [muted, setMuted] = useState(true);
   const [participants, setParticipants] = useState<ParticipantInfo[]>([]);
   const [profiles, setProfiles] = useState<Record<string, ProfileInfo>>({});
