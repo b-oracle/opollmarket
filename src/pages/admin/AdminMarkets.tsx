@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin, ShieldAlert, ShieldCheck, Ban, BarChart3, Users, DollarSign, Layers, Clock, Archive, Flame, Eye, EyeOff } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin, ShieldAlert, ShieldCheck, Ban, BarChart3, Users, DollarSign, Layers, Clock, Archive, Flame, Eye, EyeOff, Download } from "lucide-react";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import RecordOnChainButton from "@/components/admin/RecordOnChainButton";
 import { toast } from "sonner";
 import { logAuditEvent } from "@/lib/auditLog";
