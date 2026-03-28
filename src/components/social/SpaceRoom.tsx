@@ -431,12 +431,54 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           }
         });
         room.on(RoomEvent.DataReceived, handleDataReceived);
-        room.on(RoomEvent.Disconnected, () => {
-          if (!cancelled) {
-            setConnected(false);
-            toast.info("Disconnected from space");
-            onClose();
+        room.on(RoomEvent.Disconnected, async () => {
+          if (cancelled || intentionalLeaveRef.current) {
+            if (!cancelled) {
+              setConnected(false);
+              onClose();
+            }
+            return;
           }
+          // For host/co-host: attempt reconnection
+          const shouldReconnect = isHost || spaceCoHostIds.includes(user!.id);
+          if (shouldReconnect) {
+            setReconnecting(true);
+            toast.info("Connection lost — reconnecting…", { id: "space-reconnect" });
+            for (let attempt = 0; attempt < 3; attempt++) {
+              await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+              try {
+                const { data: reconData } = await supabase.functions.invoke("livekit-token", {
+                  body: { space_id: spaceId },
+                });
+                if (reconData?.error) {
+                  // Space ended or not live
+                  if (typeof reconData.error === "string" && (reconData.error.includes("ended") || reconData.error.includes("isn't live"))) {
+                    toast.info("This Space has ended");
+                    setReconnecting(false);
+                    onClose();
+                    return;
+                  }
+                  continue;
+                }
+                if (reconData?.token && reconData?.url) {
+                  await room.connect(normUrl(reconData.url), reconData.token);
+                  setConnected(true);
+                  setReconnecting(false);
+                  toast.success("Reconnected! ✅", { id: "space-reconnect" });
+                  updateParticipants(room);
+                  return;
+                }
+              } catch {
+                // retry
+              }
+            }
+            setReconnecting(false);
+            toast.error("Could not reconnect to space");
+          } else {
+            toast.info("Disconnected from space");
+          }
+          setConnected(false);
+          onClose();
         });
 
         // Auto-reconnect on transient failures
@@ -563,28 +605,42 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       await stopClientRecording();
     }
 
+    intentionalLeaveRef.current = true;
     try { roomRef.current?.disconnect(); } catch { /* ignore */ }
     roomRef.current = null;
     // Clean up audio elements immediately
     audioElementsRef.current.forEach((el) => { try { el.remove(); } catch {} });
     audioElementsRef.current.clear();
-    // Update DB in background — don't block UI
+    // Mark self as left in DB — don't end space
     if (user) {
-      if (isHost) {
-        // Host ending: call edge function to delete LiveKit room (disconnects everyone)
-        supabase.functions.invoke("livekit-token", {
-          body: { space_id: spaceId, action: "end_space" },
-        }).then(() => {
+      supabase.from("space_participants").update({ left_at: new Date().toISOString() })
+        .eq("space_id", spaceId).eq("user_id", user.id).is("left_at", null)
+        .then(() => {
           queryClient.invalidateQueries({ queryKey: ["spaces"] });
         });
-      } else {
-        // Non-host leaving: just mark self as left
-        supabase.from("space_participants").update({ left_at: new Date().toISOString() })
-          .eq("space_id", spaceId).eq("user_id", user.id).is("left_at", null)
-          .then(() => {
-            queryClient.invalidateQueries({ queryKey: ["spaces"] });
-          });
-      }
+    }
+    onClose();
+  };
+
+  const handleEndSpace = async () => {
+    if (!isHost) return;
+    // If recording is active, stop and upload BEFORE ending
+    if (recording && mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      toast.info("Saving recording before ending...");
+      await stopClientRecording();
+    }
+
+    intentionalLeaveRef.current = true;
+    try { roomRef.current?.disconnect(); } catch { /* ignore */ }
+    roomRef.current = null;
+    audioElementsRef.current.forEach((el) => { try { el.remove(); } catch {} });
+    audioElementsRef.current.clear();
+    if (user) {
+      supabase.functions.invoke("livekit-token", {
+        body: { space_id: spaceId, action: "end_space" },
+      }).then(() => {
+        queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      });
     }
     onClose();
   };
@@ -1136,9 +1192,17 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             )}
 
             <button onClick={handleLeave}
-              className="w-11 h-11 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center">
+              className="w-11 h-11 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
+              title="Leave Space">
               <PhoneOff className="w-5 h-5" />
             </button>
+
+            {isHost && (
+              <button onClick={handleEndSpace}
+                className="h-11 px-4 rounded-full flex items-center justify-center gap-2 text-sm font-medium bg-destructive text-destructive-foreground transition-colors">
+                End Space
+              </button>
+            )}
           </div>
         )}
 
