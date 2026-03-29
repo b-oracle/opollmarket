@@ -82,6 +82,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const roomRef = useRef<Room | null>(null);
   const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const avatarRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const gridContainerRef = useRef<HTMLDivElement>(null);
 
   const [connecting, setConnecting] = useState(true);
   const [connected, setConnected] = useState(false);
@@ -101,7 +103,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [floatingReactions, setFloatingReactions] = useState<{ id: string; emoji: string }[]>([]);
+  const [floatingReactions, setFloatingReactions] = useState<{ id: string; emoji: string; identity: string }[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const loadedMsgIdsRef = useRef<Set<string>>(new Set());
 
@@ -376,11 +378,13 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         playSoundById(data.soundId);
         const id = `${Date.now()}-${Math.random()}`;
         const emoji = SOUND_REACTIONS.find(s => s.id === data.soundId)?.emoji || "🔊";
-        setFloatingReactions((prev) => [...prev, { id, emoji }]);
+        const senderIdentity = participant?.identity || "unknown";
+        setFloatingReactions((prev) => [...prev, { id, emoji, identity: senderIdentity }]);
         setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
       } else if (data.type === "reaction") {
         const id = `${Date.now()}-${Math.random()}`;
-        setFloatingReactions((prev) => [...prev, { id, emoji: data.emoji }]);
+        const senderIdentity = participant?.identity || "unknown";
+        setFloatingReactions((prev) => [...prev, { id, emoji: data.emoji, identity: senderIdentity }]);
         setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
       } else if (data.type === "message") {
         // Skip own messages — sender already added optimistically
@@ -1022,16 +1026,16 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   };
 
   const sendReaction = (emoji: string) => {
-    if (!roomRef.current) return;
+    if (!roomRef.current || !user) return;
     const data = JSON.stringify({ type: "reaction", emoji });
     roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: false });
     const id = `${Date.now()}-${Math.random()}`;
-    setFloatingReactions((prev) => [...prev, { id, emoji }]);
+    setFloatingReactions((prev) => [...prev, { id, emoji, identity: user.id }]);
     setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
   };
 
   const sendSoundReaction = (soundId: string) => {
-    if (!roomRef.current) return;
+    if (!roomRef.current || !user) return;
     // Play locally
     playSoundById(soundId);
     // Broadcast to peers
@@ -1040,7 +1044,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     // Show floating emoji
     const emoji = SOUND_REACTIONS.find(s => s.id === soundId)?.emoji || "🔊";
     const id = `${Date.now()}-${Math.random()}`;
-    setFloatingReactions((prev) => [...prev, { id, emoji }]);
+    setFloatingReactions((prev) => [...prev, { id, emoji, identity: user.id }]);
     setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
   };
 
