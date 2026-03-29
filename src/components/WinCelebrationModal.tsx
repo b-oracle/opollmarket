@@ -10,7 +10,7 @@ interface WinCelebrationModalProps {
   open: boolean;
   onClose: () => void;
   market: string;
-  side: "YES" | "NO";
+  side: string;
   payout: number;
   profit: number;
 }
@@ -87,7 +87,7 @@ const WinCelebrationModal = ({ open, onClose, market, side, payout, profit }: Wi
               >
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Your Position</span>
-                  <span className={`font-bold ${side === "YES" ? "text-primary" : "text-destructive"}`}>{side}</span>
+                  <span className={`font-bold ${side === "YES" ? "text-primary" : side === "NO" ? "text-destructive" : "text-primary"}`}>{side}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Payout</span>

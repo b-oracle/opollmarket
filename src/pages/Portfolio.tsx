@@ -147,7 +147,7 @@ const Portfolio = () => {
   const [activeTab, setActiveTab] = useState<PortfolioTab>("positions");
   const [sellTarget, setSellTarget] = useState<EnrichedPosition | null>(null);
   const [sellStep, setSellStep] = useState<"confirm" | "executing" | "success" | "error">("confirm");
-  const [winModal, setWinModal] = useState<{ open: boolean; market: string; side: "YES" | "NO"; payout: number; profit: number }>({
+  const [winModal, setWinModal] = useState<{ open: boolean; market: string; side: string; payout: number; profit: number }>({
     open: false, market: "", side: "YES", payout: 0, profit: 0,
   });
   const { track } = useAnalytics();
@@ -405,7 +405,7 @@ const Portfolio = () => {
           setWinModal({
             open: true,
             market: sellTarget.marketTitle,
-            side: sellTarget.side.toUpperCase() as "YES" | "NO",
+            side: sellTarget.optionLabel || sellTarget.side.toUpperCase(),
             payout: sellTarget.currentValue,
             profit: sellTarget.unrealizedPnl,
           });
@@ -935,12 +935,14 @@ const Portfolio = () => {
                     <div className="flex items-center gap-1.5">
                       <span
                         className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
-                          order.side === "yes"
+                          (order as any).market_options?.label
                             ? "bg-primary/15 text-primary border border-primary/30"
-                            : "bg-destructive/15 text-destructive border border-destructive/30"
+                            : order.side === "yes"
+                              ? "bg-primary/15 text-primary border border-primary/30"
+                              : "bg-destructive/15 text-destructive border border-destructive/30"
                         }`}
                       >
-                        {order.side}
+                        {(order as any).market_options?.label || order.side}
                       </span>
                       <span
                         className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
@@ -1151,7 +1153,9 @@ const Portfolio = () => {
                 <div className="glass rounded-xl p-4 mb-4 space-y-2.5">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Side</span>
-                    <span className={`font-bold uppercase ${sellTarget.side === "yes" ? "neon-yes" : "neon-no"}`}>{sellTarget.side}</span>
+                    <span className={`font-bold uppercase ${sellTarget.optionLabel ? "text-primary" : sellTarget.side === "yes" ? "neon-yes" : "neon-no"}`}>
+                      {sellTarget.optionLabel || sellTarget.side}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Shares</span>
@@ -1316,7 +1320,7 @@ const Portfolio = () => {
           key={`share-${pos.id}`}
           ref={(el) => { positionCardRefs.current.set(pos.id, el); }}
           marketTitle={pos.marketTitle}
-          side={pos.side}
+          side={pos.optionLabel || pos.side}
           shares={pos.shares}
           avgPrice={pos.avgPrice}
           currentPrice={pos.currentPrice}

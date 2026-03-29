@@ -908,7 +908,7 @@ const Profile = () => {
       if (!user) return [];
       const { data } = await supabase
         .from("transactions")
-        .select("*, markets(title)")
+        .select("*, markets(title), market_options(label)")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       return data || [];
@@ -937,7 +937,7 @@ const Profile = () => {
       if (!user) return [];
       const { data } = await supabase
         .from("positions")
-        .select("*, markets(yes_price, no_price, status)")
+        .select("*, markets(yes_price, no_price, status), market_options(price, label)")
         .eq("user_id", user.id);
       return data || [];
     },
@@ -1549,7 +1549,8 @@ const Profile = () => {
             const unrealizedPnl = positions
               .filter((p: any) => p.shares > 0 && p.markets && p.markets.status === "active")
               .reduce((sum: number, p: any) => {
-                const currentPrice = p.side === "yes" ? p.markets.yes_price : p.markets.no_price;
+                const optPrice = p.market_options?.price;
+                const currentPrice = optPrice != null ? Number(optPrice) : (p.side === "yes" ? p.markets.yes_price : p.markets.no_price);
                 const invested = p.shares * p.avg_price;
                 const currentValue = p.shares * currentPrice;
                 return sum + (currentValue - invested);
@@ -1826,8 +1827,10 @@ const Profile = () => {
                             </span>
                           )}
                           {tx.side && tx.side !== "initial_liquidity" && (tx.type === "buy" || tx.type === "sell") && (
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${tx.side === "yes" ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive"}`}>
-                              {tx.side.toUpperCase()}
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                              (tx as any).market_options?.label ? "bg-primary/15 text-primary" : tx.side === "yes" ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive"
+                            }`}>
+                              {(tx as any).market_options?.label || tx.side.toUpperCase()}
                             </span>
                           )}
                           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
