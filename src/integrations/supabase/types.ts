@@ -1998,6 +1998,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          reactions: Json
           space_id: string
           user_id: string
           user_name: string
@@ -2006,6 +2007,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          reactions?: Json
           space_id: string
           user_id: string
           user_name?: string
@@ -2014,6 +2016,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          reactions?: Json
           space_id?: string
           user_id?: string
           user_name?: string
