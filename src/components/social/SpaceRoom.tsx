@@ -218,6 +218,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [deviceMusicPlaying, setDeviceMusicPlaying] = useState(false);
   const [deviceMusicPaused, setDeviceMusicPaused] = useState(false);
   const [deviceMusicName, setDeviceMusicName] = useState<string | null>(null);
+  const [deviceMusicVolume, setDeviceMusicVolume] = useState(0.5);
+  const [deviceMusicLoop, setDeviceMusicLoop] = useState(false);
   const deviceMusicCtxRef = useRef<AudioContext | null>(null);
   const deviceMusicSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const deviceMusicGainRef = useRef<GainNode | null>(null);
