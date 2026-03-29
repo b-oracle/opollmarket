@@ -32,7 +32,7 @@ import { useBookmark } from "@/hooks/useBookmark";
 import { toast } from "sonner";
 import useAnalytics from "@/hooks/useAnalytics";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
-
+import ResolutionSummary from "@/components/ResolutionSummary";
 
 const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
@@ -698,6 +698,17 @@ const MarketDetail = () => {
       <div className={`${(market.imageUrl || market.videoUrl) ? 'pt-4' : 'pt-4'}`}>
         {!market.imageUrl && !market.videoUrl && <h1 className="text-2xl font-bold leading-tight mb-2">{market.title}</h1>}
         {!market.imageUrl && !market.videoUrl && <p className="text-sm text-muted-foreground mb-6">{market.description}</p>}
+
+        {/* Resolution Summary for resolved markets */}
+        {market.status === "resolved" && (
+          <ResolutionSummary
+            marketId={market.id}
+            resolvedSide={market.resolvedSide || null}
+            winningOptionId={market.winningOptionId || null}
+            options={market.options}
+            marketType={market.marketType}
+          />
+        )}
 
         {market.details && <MarketDetailsCollapsible details={market.details} />}
 
