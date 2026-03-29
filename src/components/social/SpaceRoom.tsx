@@ -1159,15 +1159,16 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       deviceMusicDestRef.current = destination;
 
       const gain = ctx.createGain();
-      gain.gain.value = 0.5;
+      gain.gain.value = deviceMusicVolume;
       gain.connect(destination);
       deviceMusicGainRef.current = gain;
 
       const source = ctx.createBufferSource();
       source.buffer = audioBuffer;
+      source.loop = deviceMusicLoop;
       source.connect(gain);
       source.onended = () => {
-        if (!deviceMusicPaused) stopDeviceMusic();
+        if (!deviceMusicPaused && !source.loop) stopDeviceMusic();
       };
       source.start(0);
       deviceMusicSourceRef.current = source;
@@ -1214,9 +1215,10 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
     const source = ctx.createBufferSource();
     source.buffer = buffer;
+    source.loop = deviceMusicLoop;
     source.connect(gain);
     source.onended = () => {
-      if (!deviceMusicPaused) stopDeviceMusic();
+      if (!deviceMusicPaused && !source.loop) stopDeviceMusic();
     };
     source.start(0, deviceMusicOffsetRef.current);
     deviceMusicSourceRef.current = source;
@@ -1769,7 +1771,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                           <span>Play from device</span>
                         </button>
                       ) : (
-                        <div className="px-3 py-1.5 space-y-1">
+                        <div className="px-3 py-1.5 space-y-1.5">
                           <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">🎵 {deviceMusicName}</p>
                           <div className="flex items-center gap-1">
                             {deviceMusicPaused ? (
@@ -1788,6 +1790,29 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                               <Square className="w-3 h-3" /> Stop
                             </button>
                           </div>
+                          {/* Volume slider */}
+                          <div className="flex items-center gap-1.5">
+                            <VolumeX className="w-3 h-3 text-muted-foreground" />
+                            <input type="range" min="0" max="1" step="0.05" value={deviceMusicVolume}
+                              onChange={(e) => {
+                                const v = parseFloat(e.target.value);
+                                setDeviceMusicVolume(v);
+                                if (deviceMusicGainRef.current) deviceMusicGainRef.current.gain.value = v;
+                              }}
+                              className="w-full h-1 accent-primary" />
+                            <Volume2 className="w-3 h-3 text-muted-foreground" />
+                          </div>
+                          {/* Loop toggle */}
+                          <button onClick={() => {
+                            const next = !deviceMusicLoop;
+                            setDeviceMusicLoop(next);
+                            if (deviceMusicSourceRef.current) deviceMusicSourceRef.current.loop = next;
+                            toast.success(next ? "Loop enabled 🔁" : "Loop disabled");
+                          }}
+                            className={`w-full flex items-center gap-2 px-2 py-1 rounded-md text-xs transition-colors ${deviceMusicLoop ? "bg-primary/15 text-primary" : "hover:bg-muted text-foreground"}`}>
+                            <span>🔁</span>
+                            <span>Loop {deviceMusicLoop ? "On" : "Off"}</span>
+                          </button>
                         </div>
                       )}
                       <div className="border-t border-border my-1" />
