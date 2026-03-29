@@ -45,6 +45,7 @@ const OrderBook = ({ yesPrice, noPrice, liquidity, marketId }: OrderBookProps) =
         .eq("market_id", marketId)
         .in("type", ["buy", "sell"])
         .eq("status", "confirmed")
+        .in("side", ["yes", "no"])
         .order("created_at", { ascending: false })
         .limit(100);
       return (data || []) as RecentTrade[];
