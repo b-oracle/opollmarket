@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN unlimited_markets boolean NOT NULL DEFAULT false;

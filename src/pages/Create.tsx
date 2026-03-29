@@ -212,6 +212,7 @@ const Create = () => {
   const [blueMaxFreeMarkets, setBlueMaxFreeMarkets] = useState(5);
   const [goldMaxFreeMarkets, setGoldMaxFreeMarkets] = useState(20);
   const [verificationLevel, setVerificationLevel] = useState("none");
+  const [unlimitedMarkets, setUnlimitedMarkets] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [activeMarketCount, setActiveMarketCount] = useState(0);
   const [exceededFreeLimit, setExceededFreeLimit] = useState(false);
@@ -272,11 +273,12 @@ const Create = () => {
     if (!user) return;
     (async () => {
       const [{ data: profile }, { count }] = await Promise.all([
-        supabase.from("profiles").select("verification_level").eq("id", user.id).maybeSingle(),
+        supabase.from("profiles").select("verification_level, unlimited_markets").eq("id", user.id).maybeSingle(),
         supabase.from("markets").select("id", { count: "exact", head: true }).eq("creator_wallet", user.id).in("status", ["active", "pending"]),
       ]);
-      const vLevel = profile?.verification_level || "none";
+      const vLevel = (profile as any)?.verification_level || "none";
       setVerificationLevel(vLevel);
+      setUnlimitedMarkets(!!(profile as any)?.unlimited_markets);
       setActiveMarketCount(count || 0);
     })();
   }, [user]);
@@ -1280,8 +1282,8 @@ const Create = () => {
 
     const passed = tokenPassed || nftPassed;
     
-    // Check if verified user exceeded free market limit
-    if (passed) {
+    // Check if verified user exceeded free market limit (skip for whitelisted creators)
+    if (passed && !unlimitedMarkets) {
       const limit = verificationLevel === "gold" ? goldMaxFreeMarkets : verificationLevel === "blue" ? blueMaxFreeMarkets : 0;
       if (limit > 0 && activeMarketCount >= limit) {
         setExceededFreeLimit(true);

@@ -1605,6 +1605,7 @@ export type Database = {
           twitter_id: string | null
           twitter_linked_at: string | null
           twitter_username: string | null
+          unlimited_markets: boolean
           updated_at: string
           verification_level: string
           wallet_address: string | null
@@ -1631,6 +1632,7 @@ export type Database = {
           twitter_id?: string | null
           twitter_linked_at?: string | null
           twitter_username?: string | null
+          unlimited_markets?: boolean
           updated_at?: string
           verification_level?: string
           wallet_address?: string | null
@@ -1657,6 +1659,7 @@ export type Database = {
           twitter_id?: string | null
           twitter_linked_at?: string | null
           twitter_username?: string | null
+          unlimited_markets?: boolean
           updated_at?: string
           verification_level?: string
           wallet_address?: string | null
