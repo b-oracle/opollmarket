@@ -105,6 +105,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
+  const recordingDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
 
   // Remote hand raises tracked by identity
   const [remoteHandRaises, setRemoteHandRaises] = useState<Set<string>>(new Set());
@@ -455,6 +456,15 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             el.style.display = "none";
             document.body.appendChild(el);
             audioElementsRef.current.set(track.sid, el);
+            // Dynamically connect new audio to active recording
+            const ctx = audioContextRef.current;
+            const dest = recordingDestRef.current;
+            if (ctx && dest && ctx.state !== "closed" && el.srcObject instanceof MediaStream) {
+              try {
+                const src = ctx.createMediaStreamSource(el.srcObject);
+                src.connect(dest);
+              } catch { /* stream may not be active yet */ }
+            }
           }
           updateParticipants(room);
         });
@@ -846,6 +856,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       const ctx = new AudioContext();
       audioContextRef.current = ctx;
       const destination = ctx.createMediaStreamDestination();
+      recordingDestRef.current = destination;
 
       // Mix local mic if unmuted
       room.localParticipant.audioTrackPublications.forEach((pub) => {
