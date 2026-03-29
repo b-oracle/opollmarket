@@ -134,26 +134,70 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     if (chatOpen) setUnreadCount(0);
   }, [chatOpen]);
 
+  // Wake lock ref
+  const wakeLockRef = useRef<any>(null);
+  // Track whether mic was on before backgrounding
+  const wasMicOnRef = useRef(false);
+
   // ============ Session persistence on background / calls ============
   useEffect(() => {
-    const handleVisibility = () => {
+    const acquireWakeLock = async () => {
+      try {
+        if ("wakeLock" in navigator && !wakeLockRef.current) {
+          wakeLockRef.current = await (navigator as any).wakeLock.request("screen");
+          wakeLockRef.current.addEventListener("release", () => {
+            wakeLockRef.current = null;
+          });
+        }
+      } catch {
+        // Wake Lock not supported or failed — ignore
+      }
+    };
+
+    const handleVisibility = async () => {
       const room = roomRef.current;
       if (!room) return;
 
       if (document.visibilityState === "visible") {
+        // Re-acquire wake lock (it's released on hide by some browsers)
+        acquireWakeLock();
+
+        // Resume AudioContext if suspended
+        try {
+          const ctx = audioContextRef.current;
+          if (ctx && ctx.state === "suspended") {
+            await ctx.resume();
+          }
+        } catch {}
+
         // Re-enable audio tracks that may have been suspended
         room.localParticipant.audioTrackPublications.forEach((pub) => {
           if (pub.track) {
             pub.track.mediaStreamTrack.enabled = !muted;
           }
         });
+
+        // If the user had mic on before backgrounding, re-enable it
+        if (wasMicOnRef.current && canPublish && !forceMuted) {
+          try {
+            await room.localParticipant.setMicrophoneEnabled(true);
+            setMuted(false);
+          } catch {}
+        }
+      } else {
+        // Going to background — track mic state
+        wasMicOnRef.current = !muted;
       }
     };
 
     // Prevent the page from being frozen on mobile
-    const handleFreeze = (e: Event) => {
-      // Request a wake lock if available to keep the connection alive
+    const handleFreeze = () => {
+      // Acquire wake lock to keep connection alive
+      acquireWakeLock();
     };
+
+    // Acquire wake lock on mount if connected
+    if (connected) acquireWakeLock();
 
     document.addEventListener("visibilitychange", handleVisibility);
     document.addEventListener("freeze", handleFreeze);
@@ -161,8 +205,13 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);
       document.removeEventListener("freeze", handleFreeze);
+      // Release wake lock on cleanup
+      if (wakeLockRef.current) {
+        try { wakeLockRef.current.release(); } catch {}
+        wakeLockRef.current = null;
+      }
     };
-  }, [muted]);
+  }, [muted, connected, canPublish, forceMuted]);
 
   // Keep-alive ping to prevent WebSocket timeout when backgrounded
   useEffect(() => {
@@ -178,7 +227,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           // ignore
         }
       }
-    }, 15000); // every 15 seconds
+    }, 8000); // every 8 seconds — aggressive to prevent mobile timeout
     return () => clearInterval(interval);
   }, [connected]);
 
@@ -440,9 +489,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             }
             return;
           }
-          // For host/co-host: attempt reconnection
-          const shouldReconnect = isHost || spaceCoHostIds.includes(user!.id);
-          if (shouldReconnect) {
+          // Attempt reconnection for ALL participants (speakers + listeners)
+          {
             setReconnecting(true);
             toast.info("Connection lost — reconnecting…", { id: "space-reconnect" });
             for (let attempt = 0; attempt < 3; attempt++) {
@@ -475,8 +523,6 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             }
             setReconnecting(false);
             toast.error("Could not reconnect to space");
-          } else {
-            toast.info("Disconnected from space");
           }
           setConnected(false);
           onClose();
@@ -486,9 +532,16 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         room.on(RoomEvent.Reconnecting, () => {
           toast.info("Reconnecting to space…", { id: "space-reconnect" });
         });
-        room.on(RoomEvent.Reconnected, () => {
+        room.on(RoomEvent.Reconnected, async () => {
           toast.success("Reconnected! ✅", { id: "space-reconnect" });
           updateParticipants(room);
+          // Re-acquire mic if user was unmuted before disconnect
+          if (wasMicOnRef.current && room.localParticipant.permissions?.canPublish) {
+            try {
+              await room.localParticipant.setMicrophoneEnabled(true);
+              setMuted(false);
+            } catch {}
+          }
         });
 
         await room.connect(normUrl(data.url), data.token);
