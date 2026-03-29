@@ -1,0 +1,1 @@
+ALTER TABLE public.spaces ADD COLUMN IF NOT EXISTS tagged_market_ids UUID[] NOT NULL DEFAULT '{}';

@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { X, Radio, Loader2, Calendar, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import MarketTagSelector, { type MarketTag } from "./MarketTagSelector";
 
 interface CreateSpaceModalProps {
   open: boolean;
@@ -19,6 +20,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
   const [mode, setMode] = useState<"live" | "scheduled">("live");
   const [scheduledDate, setScheduledDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState("");
+  const [taggedMarkets, setTaggedMarkets] = useState<MarketTag[]>([]);
 
   if (!user) return null;
 
@@ -43,6 +45,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
       const insertData: any = {
         host_id: user.id,
         title: trimmed,
+        tagged_market_ids: taggedMarkets.map((m) => m.id),
       };
 
       if (mode === "scheduled") {
@@ -73,6 +76,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
       setTitle("");
       setScheduledDate("");
       setScheduledTime("");
+      setTaggedMarkets([]);
       setMode("live");
       onClose();
     } catch (err: any) {
@@ -147,6 +151,8 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
                 maxLength={100}
                 className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground"
               />
+
+              <MarketTagSelector selected={taggedMarkets} onChange={setTaggedMarkets} max={5} />
 
               {mode === "scheduled" && (
                 <div className="space-y-3">

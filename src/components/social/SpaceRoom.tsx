@@ -36,6 +36,7 @@ import {
 import NftBadge, { VerificationLevel } from "@/components/NftBadge";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
 import SpaceMiniPlayer from "./SpaceMiniPlayer";
+import TaggedMarketsCarousel from "./TaggedMarketsCarousel";
 
 interface SpaceRoomProps {
   spaceId: string;
@@ -189,8 +190,21 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [forceMutedUsers, setForceMutedUsers] = useState<Set<string>>(new Set());
   const [allForceMuted, setAllForceMuted] = useState(false);
   const [requestPending, setRequestPending] = useState(false);
+  const [taggedMarketIds, setTaggedMarketIds] = useState<string[]>([]);
 
-  // Cleanup audio on unmount
+  // Fetch tagged market IDs for this space
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("spaces" as any)
+        .select("tagged_market_ids")
+        .eq("id", spaceId)
+        .single();
+      if (data && (data as any).tagged_market_ids) {
+        setTaggedMarketIds((data as any).tagged_market_ids);
+      }
+    })();
+  }, [spaceId]);
   useEffect(() => {
     return () => {
       audioElementsRef.current.forEach((el) => el.remove());
@@ -1217,6 +1231,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             </button>
           </div>
         </div>
+
+        {/* Tagged Markets Carousel */}
+        <TaggedMarketsCarousel spaceId={spaceId} taggedMarketIds={taggedMarketIds} isHost={isHost} />
 
         {/* Content */}
         <div className="flex-1 overflow-hidden flex flex-col">
