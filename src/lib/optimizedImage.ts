@@ -1,0 +1,62 @@
+/**
+ * Generate an optimized Supabase Storage URL with image transforms.
+ * Only applies transforms to URLs from our own Supabase storage.
+ * For external URLs, returns them unchanged.
+ */
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
+
+type ImageSize = "avatar-sm" | "avatar-md" | "avatar-lg" | "card" | "banner" | "thumb" | "story";
+
+const SIZE_PRESETS: Record<ImageSize, { width: number; quality?: number }> = {
+  "avatar-sm": { width: 48, quality: 60 },
+  "avatar-md": { width: 80, quality: 65 },
+  "avatar-lg": { width: 200, quality: 70 },
+  card: { width: 400, quality: 70 },
+  banner: { width: 800, quality: 75 },
+  thumb: { width: 100, quality: 60 },
+  story: { width: 600, quality: 75 },
+};
+
+/**
+ * Transform a Supabase storage public URL to use image transforms.
+ * @param url - The original public URL
+ * @param size - A preset size name
+ * @returns Transformed URL with width/quality params, or original URL if not from our storage
+ */
+export function optimizedImageUrl(url: string | null | undefined, size: ImageSize): string {
+  if (!url) return "";
+  
+  // Only transform our own Supabase storage URLs
+  if (!SUPABASE_URL || !url.includes(SUPABASE_URL)) return url;
+  
+  // Replace /object/public/ with /render/image/public/ for transforms
+  const preset = SIZE_PRESETS[size];
+  const transformedUrl = url.replace(
+    "/storage/v1/object/public/",
+    "/storage/v1/render/image/public/"
+  );
+  
+  const separator = transformedUrl.includes("?") ? "&" : "?";
+  return `${transformedUrl}${separator}width=${preset.width}&quality=${preset.quality || 75}`;
+}
+
+/**
+ * Custom width/quality transform (for non-preset sizes).
+ */
+export function optimizedImageUrlCustom(
+  url: string | null | undefined,
+  width: number,
+  quality = 75
+): string {
+  if (!url) return "";
+  if (!SUPABASE_URL || !url.includes(SUPABASE_URL)) return url;
+  
+  const transformedUrl = url.replace(
+    "/storage/v1/object/public/",
+    "/storage/v1/render/image/public/"
+  );
+  
+  const separator = transformedUrl.includes("?") ? "&" : "?";
+  return `${transformedUrl}${separator}width=${width}&quality=${quality}`;
+}
