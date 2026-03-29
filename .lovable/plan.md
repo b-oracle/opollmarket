@@ -1,32 +1,23 @@
 
 
-# Repurpose Revenue Sharing as "Creator Revenue Share Bonus"
+# Fix: Display Correct Labels for Non-Trade Transactions in Order Book
 
-## Overview
-Relabel the Revenue Sharing section in the Verified Benefits card to make it clear this is a **bonus on top of** the standard creator fee split, not a duplicate of it. Update the UI label, description, and helper text. Also update the `distribute-revenue-shares` edge function description and the FAQ/legal references.
+## Problem
+Fee and liquidity transactions are stored with `type = 'buy'` but use the `side` column for their purpose label (e.g. `initial_liquidity`, `broadcast_fee`, `auto_resolve_fee`, `liquidity_return`). The OrderBook query fetches all `type IN ('buy', 'sell')` rows, and the UI checks `side === "yes"` — anything else renders as "NO" with a red icon, which is misleading.
 
-## Changes
+## Solution
+Two options — I recommend **Option A** (filter them out) since these aren't real trades:
 
-### 1. `src/pages/admin/AdminSettings.tsx` (lines 862–880)
-- Change section title from "Revenue Sharing" → **"Creator Revenue Share Bonus"**
-- Change description from "Distributed every 24h from resolved markets." → **"Extra bonus percentage on top of the standard creator fee split. Paid from platform revenue to verified creators when their markets resolve."**
-- Add clarifying helper text: "This is in addition to the Blue (X%) / Gold (X%) creator fee already shown in the Fees tab."
+**Option A: Filter out non-trade transactions from Recent Trades**
+Add a filter to exclude rows where `side` is not `yes` or `no`. These operational transactions aren't predictions and shouldn't appear in the trade tape.
 
-### 2. `src/pages/FAQ.tsx`
-- Update the verified benefits answer to say "Revenue Share Bonus" instead of "Revenue Sharing" and clarify it's an additional bonus.
+**Option B: Show them with proper labels**
+Keep them visible but render `initial_liquidity` as "Liquidity", `broadcast_fee` as "Broadcast Fee", etc.
 
-### 3. `src/pages/Terms.tsx`
-- Update "Revenue Sharing" reference to "Revenue Share Bonus" with clarifying language.
+## Recommended Approach (Option A + partial B)
+- Filter the query to only return actual trades: add `.in("side", ["yes", "no"])` to the Supabase query
+- This removes liquidity deposits, fee charges, and refunds from the trade tape — they belong in the full transaction history, not the order book
 
-### 4. `src/components/NftBadge.tsx`
-- Update tooltip text from "revenue sharing" → "revenue share bonus".
-
-### 5. `src/pages/Disclaimer.tsx`
-- Update "revenue sharing" reference to "revenue share bonus".
-
-### 6. `supabase/functions/distribute-revenue-shares/index.ts`
-- Update notification message to say "Revenue Share Bonus" instead of "revenue share".
-
-## No database or logic changes needed
-The existing `blue_revenue_share_percent` / `gold_revenue_share_percent` columns and the distribution logic remain the same — this is purely a labeling/clarity fix.
+## File Modified
+- `src/components/OrderBook.tsx` — add `.in("side", ["yes", "no"])` filter to the recent trades query (line ~47)
 
