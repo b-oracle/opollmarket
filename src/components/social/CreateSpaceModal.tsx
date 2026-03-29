@@ -152,6 +152,8 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
                 className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground"
               />
 
+              <MarketTagSelector selected={taggedMarkets} onChange={setTaggedMarkets} max={5} />
+
               {mode === "scheduled" && (
                 <div className="space-y-3">
                   <div className="space-y-1">
