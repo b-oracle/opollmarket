@@ -1463,6 +1463,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                       {p.identity !== hostId && coHostIds.includes(p.identity) && (
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-accent/15 text-accent-foreground border border-accent/30">Co-host</span>
                       )}
+                      {p.identity !== hostId && !coHostIds.includes(p.identity) && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-secondary/15 text-secondary-foreground border border-secondary/30">Speaker</span>
+                      )}
                       <div className="flex items-center gap-0.5">
                         {p.isMuted && <MicOff className="w-3 h-3 text-muted-foreground" />}
                       </div>
