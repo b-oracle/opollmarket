@@ -865,6 +865,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const handleLeave = async () => {
     // Stop ambient music if playing
     stopAmbient();
+    // Stop device music if playing
+    if (deviceMusicPlaying) await stopDeviceMusic();
 
     // If recording is active, pause the recorder but KEEP chunks for later
     if (recording && mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
