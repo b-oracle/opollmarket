@@ -443,6 +443,8 @@ export const AMBIENT_TRACKS: AmbientTrack[] = [
   { id: "lofi_chill", label: "Lo-fi Chill", emoji: "🎵" },
   { id: "soft_pad", label: "Soft Pad", emoji: "🌊" },
   { id: "warm_keys", label: "Warm Keys", emoji: "🎹" },
+  { id: "funky_groove", label: "Funky Groove", emoji: "🕺" },
+  { id: "afrobeats", label: "Afrobeats", emoji: "🪘" },
 ];
 
 let ambientOscillators: OscillatorNode[] = [];
@@ -546,6 +548,155 @@ export const startAmbient = (trackId: string) => {
       osc2.start();
       ambientOscillators.push(osc2);
       ambientGains.push(g2);
+    });
+  } else if (trackId === "funky_groove") {
+    // Funky bass line with wah-wah and rhythmic pulse
+    const bassNotes = [110, 130.81, 146.83, 130.81]; // A2 C3 D3 C3
+    const now = ctx.currentTime;
+
+    // Rhythmic kick-like pulse using oscillator
+    const kickOsc = ctx.createOscillator();
+    kickOsc.type = "sine";
+    kickOsc.frequency.value = 2.5; // pulse rate
+    const kickGain = ctx.createGain();
+    kickGain.gain.value = 0.04;
+    kickOsc.connect(kickGain).connect(masterGain.gain);
+    kickOsc.start();
+    ambientOscillators.push(kickOsc);
+    ambientGains.push(kickGain);
+
+    bassNotes.forEach((f, i) => {
+      // Funky bass with slight detuning
+      const osc = ctx.createOscillator();
+      osc.type = "sawtooth";
+      osc.frequency.value = f;
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = 600;
+      lp.Q.value = 4;
+      // Wah-wah LFO on filter
+      const wahLfo = ctx.createOscillator();
+      wahLfo.type = "sine";
+      wahLfo.frequency.value = 1.5 + i * 0.3;
+      const wahDepth = ctx.createGain();
+      wahDepth.gain.value = 400;
+      wahLfo.connect(wahDepth).connect(lp.frequency);
+      wahLfo.start();
+      ambientOscillators.push(wahLfo);
+      ambientGains.push(wahDepth);
+
+      const g = ctx.createGain();
+      g.gain.value = 0.07;
+      osc.connect(lp).connect(g).connect(masterGain);
+      osc.start();
+      ambientOscillators.push(osc);
+      ambientGains.push(g);
+    });
+
+    // Clav / rhythm guitar stabs
+    [523.25, 659.25, 783.99].forEach((f) => {
+      const osc = ctx.createOscillator();
+      osc.type = "square";
+      osc.frequency.value = f;
+      const g = ctx.createGain();
+      g.gain.value = 0.02;
+      const bp = ctx.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.value = 1200;
+      bp.Q.value = 2;
+      osc.connect(bp).connect(g).connect(masterGain);
+      osc.start();
+      ambientOscillators.push(osc);
+      ambientGains.push(g);
+    });
+
+  } else if (trackId === "afrobeats") {
+    // Afrobeats: percussive polyrhythm feel with warm chords and shaker texture
+    const now = ctx.currentTime;
+
+    // Warm Afro chord (minor pentatonic flavor) — Dm7 voicing
+    const chordFreqs = [293.66, 349.23, 440, 523.25]; // D4 F4 A4 C5
+    chordFreqs.forEach((f, i) => {
+      const osc = ctx.createOscillator();
+      osc.type = "triangle";
+      osc.frequency.value = f;
+      const g = ctx.createGain();
+      g.gain.value = 0.05;
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = 1200 - i * 100;
+      osc.connect(lp).connect(g).connect(masterGain);
+      osc.start();
+      ambientOscillators.push(osc);
+      ambientGains.push(g);
+
+      // Slight chorus
+      const osc2 = ctx.createOscillator();
+      osc2.type = "triangle";
+      osc2.frequency.value = f * 1.004;
+      const g2 = ctx.createGain();
+      g2.gain.value = 0.03;
+      osc2.connect(lp).connect(g2).connect(masterGain);
+      osc2.start();
+      ambientOscillators.push(osc2);
+      ambientGains.push(g2);
+    });
+
+    // Deep sub bass pulse (Afro log drum feel)
+    const subOsc = ctx.createOscillator();
+    subOsc.type = "sine";
+    subOsc.frequency.value = 73.42; // D2
+    const subG = ctx.createGain();
+    subG.gain.value = 0.1;
+    subOsc.connect(subG).connect(masterGain);
+    subOsc.start();
+    ambientOscillators.push(subOsc);
+    ambientGains.push(subG);
+
+    // Rhythmic shaker / hi-hat pulse via filtered noise LFO
+    const shakerLfo = ctx.createOscillator();
+    shakerLfo.type = "square";
+    shakerLfo.frequency.value = 4; // 16th-note feel at ~120bpm
+    const shakerDepth = ctx.createGain();
+    shakerDepth.gain.value = 0.03;
+    shakerLfo.connect(shakerDepth).connect(masterGain.gain);
+    shakerLfo.start();
+    ambientOscillators.push(shakerLfo);
+    ambientGains.push(shakerDepth);
+
+    // Polyrhythmic cross-rhythm (3 against 4)
+    const crossLfo = ctx.createOscillator();
+    crossLfo.type = "sine";
+    crossLfo.frequency.value = 3; // triplet feel
+    const crossGain = ctx.createGain();
+    crossGain.gain.value = 0.02;
+    crossLfo.connect(crossGain).connect(masterGain.gain);
+    crossLfo.start();
+    ambientOscillators.push(crossLfo);
+    ambientGains.push(crossGain);
+
+    // Melodic riff — pentatonic lead
+    const leadNotes = [587.33, 659.25, 783.99]; // D5 E5 G5
+    leadNotes.forEach((f, i) => {
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.value = f;
+      const vibrato = ctx.createOscillator();
+      vibrato.type = "sine";
+      vibrato.frequency.value = 5 + i;
+      const vibDepth = ctx.createGain();
+      vibDepth.gain.value = 3;
+      vibrato.connect(vibDepth).connect(osc.frequency);
+      vibrato.start();
+      ambientOscillators.push(vibrato);
+      ambientGains.push(vibDepth);
+
+      const g = ctx.createGain();
+      g.gain.value = 0.025;
+      osc.connect(g).connect(masterGain);
+      osc.start();
+      ambientOscillators.push(osc);
+      ambientGains.push(g);
     });
   }
 };
