@@ -908,7 +908,7 @@ const Profile = () => {
       if (!user) return [];
       const { data } = await supabase
         .from("transactions")
-        .select("*, markets(title)")
+        .select("*, markets(title), market_options(label)")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       return data || [];
@@ -1827,8 +1827,10 @@ const Profile = () => {
                             </span>
                           )}
                           {tx.side && tx.side !== "initial_liquidity" && (tx.type === "buy" || tx.type === "sell") && (
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${tx.side === "yes" ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive"}`}>
-                              {tx.side.toUpperCase()}
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                              (tx as any).market_options?.label ? "bg-primary/15 text-primary" : tx.side === "yes" ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive"
+                            }`}>
+                              {(tx as any).market_options?.label || tx.side.toUpperCase()}
                             </span>
                           )}
                           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
