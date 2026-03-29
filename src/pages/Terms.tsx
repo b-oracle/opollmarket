@@ -88,7 +88,7 @@ const Terms = () => {
             <li><strong>Quick Trade</strong> on short-term price prediction rounds for assets including cryptocurrencies, commodities, and forex pairs with configurable timeframes.</li>
             <li><strong>Create markets</strong> by proposing prediction questions, providing initial liquidity, and defining clear resolution criteria.</li>
             <li><strong>Copy trade</strong> by following successful traders and automatically replicating their predictions and Quick Trades.</li>
-            <li><strong>Earn verification badges</strong> (Blue Tick, Gold Tick) by holding qualifying BC400 tokens and/or NFTs, unlocking benefits such as trending boosts and revenue sharing.</li>
+            <li><strong>Earn verification badges</strong> (Blue Tick, Gold Tick) by holding qualifying BC400 tokens and/or NFTs, unlocking benefits such as trending boosts and revenue share bonus.</li>
             <li><strong>Boost markets</strong> to increase visibility through paid promotional tiers.</li>
             <li><strong>Engage socially</strong> by commenting on markets, liking content, bookmarking markets, following users, and sharing via integrated social channels (X/Twitter, Telegram, WhatsApp).</li>
             <li><strong>Participate in a referral program</strong> to earn bonus rewards for introducing new users.</li>
@@ -180,7 +180,7 @@ const Terms = () => {
           <p className="font-medium text-foreground mt-2">Verification Benefits</p>
           <ul className="list-disc pl-5 space-y-1">
             <li><strong>Trending Boost:</strong> Markets created by verified users receive a trending score multiplier (higher for Gold than Blue), increasing their visibility in trending rankings.</li>
-            <li><strong>Revenue Sharing:</strong> Verified creators may receive a percentage of creator fees from their own resolved markets, distributed as bonus balance. Percentages differ by tier and are configurable by the System-Mod Engine.</li>
+            <li><strong>Revenue Share Bonus:</strong> Verified creators may receive an additional bonus percentage on top of their standard creator fee from their own resolved markets, distributed as bonus balance. Percentages differ by tier and are configurable by the System-Mod Engine.</li>
             <li><strong>Creator Badge:</strong> A "CREATOR" badge is displayed on verified users' profiles.</li>
             <li><strong>Visual Badge:</strong> Blue and Gold verification ticks are displayed across profiles, rankings, followers lists, comments, and social feeds.</li>
           </ul>

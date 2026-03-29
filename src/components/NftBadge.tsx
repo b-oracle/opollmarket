@@ -172,7 +172,7 @@ const NftBadge = ({ className = "", size = 16, level }: NftBadgeProps) => {
         )}
         <div className="mt-2 pt-2 border-t border-border">
           <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-            <CheckCircle className="w-3 h-3" /> Verified holders get trending boosts & revenue sharing
+            <CheckCircle className="w-3 h-3" /> Verified holders get trending boosts & revenue share bonus
           </p>
         </div>
       </PopoverContent>

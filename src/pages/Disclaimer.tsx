@@ -100,7 +100,7 @@ const Disclaimer = () => {
           <ul className="list-disc pl-5 space-y-1">
             <li>Verification badges are <strong>not endorsements</strong> of a user's trading ability, trustworthiness, or the quality of their market predictions.</li>
             <li>Badge status is based on wallet holdings at the time of verification and may change if a user's holdings change.</li>
-            <li>Trending boosts and revenue sharing benefits associated with verification do not guarantee increased market success or returns.</li>
+            <li>Trending boosts and revenue share bonus benefits associated with verification do not guarantee increased market success or returns.</li>
             <li>Token and NFT requirements for each tier are set by the System-Mod Engine and may be adjusted at any time.</li>
           </ul>
         </section>
