@@ -1549,7 +1549,8 @@ const Profile = () => {
             const unrealizedPnl = positions
               .filter((p: any) => p.shares > 0 && p.markets && p.markets.status === "active")
               .reduce((sum: number, p: any) => {
-                const currentPrice = p.side === "yes" ? p.markets.yes_price : p.markets.no_price;
+                const optPrice = p.market_options?.price;
+                const currentPrice = optPrice != null ? Number(optPrice) : (p.side === "yes" ? p.markets.yes_price : p.markets.no_price);
                 const invested = p.shares * p.avg_price;
                 const currentValue = p.shares * currentPrice;
                 return sum + (currentValue - invested);
