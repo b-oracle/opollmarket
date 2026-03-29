@@ -125,14 +125,12 @@ const AdminUsers = () => {
   };
 
   const toggleBlock = async (userId: string, name: string, currentlyBlocked: boolean) => {
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        is_blocked: !currentlyBlocked,
-        blocked_at: !currentlyBlocked ? new Date().toISOString() : null,
-        block_reason: !currentlyBlocked ? "Blocked by admin" : null,
-      } as any)
-      .eq("id", userId);
+    const { error } = await supabase.rpc("admin_update_profile", {
+      _target_user_id: userId,
+      _is_blocked: !currentlyBlocked,
+      _blocked_at: !currentlyBlocked ? new Date().toISOString() : null,
+      _block_reason: !currentlyBlocked ? "Blocked by admin" : null,
+    } as any);
 
     if (error) {
       toast.error(`Failed to ${currentlyBlocked ? "unblock" : "block"} user`);
@@ -368,10 +366,10 @@ const AdminUsers = () => {
                             <button
                               onClick={async () => {
                                 const newVal = !u.unlimited_markets;
-                                const { error } = await supabase
-                                  .from("profiles")
-                                  .update({ unlimited_markets: newVal } as any)
-                                  .eq("id", u.id);
+                                const { error } = await supabase.rpc("admin_update_profile", {
+                                  _target_user_id: u.id,
+                                  _unlimited_markets: newVal,
+                                } as any);
                                 if (error) { toast.error("Failed to update"); return; }
                                 logAuditEvent({
                                   action: "settings_updated",
