@@ -2917,6 +2917,16 @@ export type Database = {
             Returns: undefined
           }
       adjust_platform_pool: { Args: { _delta: number }; Returns: undefined }
+      admin_update_profile: {
+        Args: {
+          _block_reason?: string
+          _blocked_at?: string
+          _is_blocked?: boolean
+          _target_user_id: string
+          _unlimited_markets?: boolean
+        }
+        Returns: undefined
+      }
       count_visible_live_spaces: { Args: { _user_id: string }; Returns: number }
       debit_balance_atomic: {
         Args: { _bonus_deduct?: number; _main_deduct: number; _user_id: string }
