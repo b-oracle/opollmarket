@@ -4,9 +4,13 @@ import { ActiveSpaceProvider, useActiveSpace } from "./hooks/useActiveSpace";
 import SpaceRoom from "./components/social/SpaceRoom";
 const SecurityVerificationModal = lazy(() => import("./components/SecurityVerificationModal"));
 
-// Clear chunk reload counter on successful load
-if (typeof sessionStorage !== "undefined") {
-  sessionStorage.removeItem("chunk_reload");
+// Clear chunk reload counter on successful load (storage-safe)
+try {
+  if (typeof window !== "undefined") {
+    window.sessionStorage?.removeItem("chunk_reload");
+  }
+} catch {
+  // ignore storage access errors
 }
 import { Navigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";

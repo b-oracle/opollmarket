@@ -11,6 +11,32 @@ interface State {
   isAutoReloading: boolean;
 }
 
+const getChunkReloadCount = () => {
+  try {
+    const raw = window.sessionStorage?.getItem("chunk_reload") ?? "0";
+    const parsed = parseInt(raw, 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+  } catch {
+    return 0;
+  }
+};
+
+const setChunkReloadCount = (count: number) => {
+  try {
+    window.sessionStorage?.setItem("chunk_reload", String(count));
+  } catch {
+    // ignore storage access errors
+  }
+};
+
+const clearChunkReloadCount = () => {
+  try {
+    window.sessionStorage?.removeItem("chunk_reload");
+  } catch {
+    // ignore storage access errors
+  }
+};
+
 class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
@@ -22,8 +48,8 @@ class ErrorBoundary extends Component<Props, State> {
       error.message?.includes("Failed to fetch dynamically imported module") ||
       error.message?.includes("Importing a module script failed") ||
       error.message?.includes("error loading dynamically imported module");
-    const reloadCount = parseInt(sessionStorage.getItem("chunk_reload") || "0", 10);
-    // If it's a chunk error and we haven't exceeded retries, mark as auto-reloading
+    const reloadCount = getChunkReloadCount();
+
     if (isChunkError && reloadCount < 2) {
       return { hasError: true, error, isAutoReloading: true };
     }
@@ -35,8 +61,8 @@ class ErrorBoundary extends Component<Props, State> {
 
     if (!this.state.isAutoReloading) return;
 
-    const reloadCount = parseInt(sessionStorage.getItem("chunk_reload") || "0", 10);
-    sessionStorage.setItem("chunk_reload", String(reloadCount + 1));
+    const reloadCount = getChunkReloadCount();
+    setChunkReloadCount(reloadCount + 1);
 
     const cleanup = async () => {
       try {
@@ -57,15 +83,13 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   handleReset = () => {
-    // Clear chunk reload counter so the user gets fresh retries
-    sessionStorage.removeItem("chunk_reload");
+    clearChunkReloadCount();
     this.setState({ hasError: false, error: undefined, isAutoReloading: false });
     window.location.href = "/";
   };
 
   render() {
     if (this.state.hasError) {
-      // Show a subtle loading screen during auto-reload instead of scary error
       if (this.state.isAutoReloading) {
         return (
           <div className="min-h-screen flex items-center justify-center bg-background p-6">
