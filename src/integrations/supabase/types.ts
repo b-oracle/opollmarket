@@ -2101,6 +2101,7 @@ export type Database = {
           id: string
           is_recorded: boolean
           listener_count: number
+          peak_listeners: number
           recording_egress_id: string | null
           recording_url: string | null
           reminder_count: number
@@ -2118,6 +2119,7 @@ export type Database = {
           id?: string
           is_recorded?: boolean
           listener_count?: number
+          peak_listeners?: number
           recording_egress_id?: string | null
           recording_url?: string | null
           reminder_count?: number
@@ -2135,6 +2137,7 @@ export type Database = {
           id?: string
           is_recorded?: boolean
           listener_count?: number
+          peak_listeners?: number
           recording_egress_id?: string | null
           recording_url?: string | null
           reminder_count?: number
@@ -3061,6 +3064,15 @@ export type Database = {
               wins: number
             }[]
           }
+      get_space_analytics: {
+        Args: { _space_id: string }
+        Returns: {
+          duration_minutes: number
+          peak_listeners: number
+          total_messages: number
+          total_unique_listeners: number
+        }[]
+      }
       get_streak_leaderboard: {
         Args: { _limit?: number }
         Returns: {
@@ -3101,6 +3113,7 @@ export type Database = {
           id: string
           is_recorded: boolean
           listener_count: number
+          peak_listeners: number
           recording_egress_id: string | null
           recording_url: string | null
           reminder_count: number
