@@ -39,6 +39,8 @@ interface DbMarket {
   twitter_resource_id: string | null;
   twitter_current_count: number | null;
   is_hidden: boolean;
+  resolved_side: string | null;
+  winning_option_id: string | null;
 }
 
 const withTimeout = async <T>(operation: () => Promise<T>, ms: number, timeoutMessage: string): Promise<T> => {
@@ -89,6 +91,8 @@ const mapDbToMarket = (db: DbMarket): Market => ({
   twitterCurrentCount: db.twitter_current_count ?? 0,
   status: db.status,
   isHidden: db.is_hidden,
+  resolvedSide: db.resolved_side || undefined,
+  winningOptionId: db.winning_option_id || undefined,
   options: db.market_options?.length
     ? db.market_options
         .sort((a, b) => a.sort_order - b.sort_order)
@@ -130,7 +134,7 @@ const fetchMarketDetail = async (client: typeof supabase, id: string) => {
   );
 };
 
-const SELECT_COLS = "id,title,description,category,market_type,yes_price,no_price,volume,liquidity,participants,end_date,creator_wallet,creator_name,image_url,video_url,details,trending,status,created_at,auto_resolve,auto_resolve_asset,auto_resolve_target_price,auto_resolve_operator,auto_resolve_deadline,sport_type,sport_match_id,sport_predicted_outcome,sport_league,polymarket_event_slug,twitter_metric_type,twitter_resource_id,twitter_current_count,simulated_volume,simulated_participants,is_hidden, market_options!market_options_market_id_fkey(id,label,price,sort_order)";
+const SELECT_COLS = "id,title,description,category,market_type,yes_price,no_price,volume,liquidity,participants,end_date,creator_wallet,creator_name,image_url,video_url,details,trending,status,created_at,auto_resolve,auto_resolve_asset,auto_resolve_target_price,auto_resolve_operator,auto_resolve_deadline,sport_type,sport_match_id,sport_predicted_outcome,sport_league,polymarket_event_slug,twitter_metric_type,twitter_resource_id,twitter_current_count,simulated_volume,simulated_participants,is_hidden,resolved_side,winning_option_id, market_options!market_options_market_id_fkey(id,label,price,sort_order)";
 
 const fetchCreatorMarkets = async (client: typeof supabase, userId: string) => {
   return withTimeout(
