@@ -38,7 +38,7 @@ import { useActiveSpace } from "@/hooks/useActiveSpace";
 import SpaceMiniPlayer from "./SpaceMiniPlayer";
 import TaggedMarketsCarousel from "./TaggedMarketsCarousel";
 import { SOUND_REACTIONS, playSoundById, AMBIENT_TRACKS, startAmbient, stopAmbient, isAmbientPlaying, warmAudioContext } from "@/lib/spaceSounds";
-import { Music, ChevronDown } from "lucide-react";
+import { Music, ChevronDown, Upload, Square, Play, Pause } from "lucide-react";
 
 interface SpaceRoomProps {
   spaceId: string;
@@ -213,6 +213,20 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [taggedMarketIds, setTaggedMarketIds] = useState<string[]>([]);
   const [ambientTrack, setAmbientTrack] = useState<string | null>(null);
   const [showMusicMenu, setShowMusicMenu] = useState(false);
+
+  // Device music state
+  const [deviceMusicPlaying, setDeviceMusicPlaying] = useState(false);
+  const [deviceMusicPaused, setDeviceMusicPaused] = useState(false);
+  const [deviceMusicName, setDeviceMusicName] = useState<string | null>(null);
+  const deviceMusicCtxRef = useRef<AudioContext | null>(null);
+  const deviceMusicSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const deviceMusicGainRef = useRef<GainNode | null>(null);
+  const deviceMusicDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
+  const deviceMusicTrackRef = useRef<any>(null); // published LiveKit track
+  const deviceMusicBufferRef = useRef<AudioBuffer | null>(null);
+  const deviceMusicOffsetRef = useRef<number>(0);
+  const deviceMusicStartTimeRef = useRef<number>(0);
+  const deviceFileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch tagged market IDs for this space
   useEffect(() => {
