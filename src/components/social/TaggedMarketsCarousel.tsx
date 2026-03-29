@@ -36,7 +36,6 @@ const TaggedMarketsCarousel = ({ spaceId, taggedMarketIds, isHost, isCoHost = fa
     })();
   }, [taggedMarketIds]);
 
-  if (markets.length === 0 && !editing && !canEdit) return null;
   if (markets.length === 0 && !editing) return null;
 
   const handleSave = async () => {
