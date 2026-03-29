@@ -792,6 +792,10 @@ const Portfolio = () => {
                         >
                           {pos.optionLabel}
                         </span>
+                      ) : pos.marketType !== "binary" ? (
+                        <span className="shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-muted text-muted-foreground border border-border">
+                          {pos.side}
+                        </span>
                       ) : (
                         <span
                           className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
