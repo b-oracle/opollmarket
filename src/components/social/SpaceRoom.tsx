@@ -1085,13 +1085,17 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           user_name: senderName === "You" ? (user.email?.split("@")[0] || "Anonymous") : senderName,
           content: text,
         })
+        .select("id")
         .then(({ data: inserted }) => {
-          // Track the DB id so realtime subscription skips it
+          // Replace local id with real DB id so reactions can be persisted
           if (inserted && (inserted as any)[0]?.id) {
-            loadedMsgIdsRef.current.add((inserted as any)[0].id);
+            const dbId = (inserted as any)[0].id;
+            loadedMsgIdsRef.current.add(dbId);
+            setMessages((prev) =>
+              prev.map((m) => m.id === localId ? { ...m, id: dbId } : m)
+            );
           }
-        })
-        .then(() => {}); // fire-and-forget
+        });
     }
 
     setChatInput("");
