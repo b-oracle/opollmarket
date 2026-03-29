@@ -1,12 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { X, Radio, Loader2, Calendar, Clock } from "lucide-react";
+import { X, Radio, Loader2, Calendar, Clock, ShieldAlert } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MarketTagSelector, { type MarketTag } from "./MarketTagSelector";
-
 interface CreateSpaceModalProps {
   open: boolean;
   onClose: () => void;
@@ -21,8 +20,21 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
   const [scheduledDate, setScheduledDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState("");
   const [taggedMarkets, setTaggedMarkets] = useState<MarketTag[]>([]);
+  const [verificationLevel, setVerificationLevel] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("verification_level")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }) => setVerificationLevel(data?.verification_level ?? "none"));
+  }, [user]);
 
   if (!user) return null;
+
+  const isVerified = verificationLevel === "blue" || verificationLevel === "gold";
 
   const handleCreate = async () => {
     const trimmed = title.trim();
@@ -154,6 +166,13 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
 
               <MarketTagSelector selected={taggedMarkets} onChange={setTaggedMarkets} max={6} />
 
+              {!isVerified && verificationLevel !== null && (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs">
+                  <ShieldAlert className="w-4 h-4 shrink-0" />
+                  <span>Only verified members (Blue or Gold tick) can host Spaces.</span>
+                </div>
+              )}
+
               {mode === "scheduled" && (
                 <div className="space-y-3">
                   <div className="space-y-1">
@@ -186,7 +205,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={handleCreate}
-                disabled={creating || !title.trim() || (mode === "scheduled" && (!scheduledDate || !scheduledTime))}
+                disabled={creating || !title.trim() || !isVerified || (mode === "scheduled" && (!scheduledDate || !scheduledTime))}
                 className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm disabled:opacity-40 flex items-center justify-center gap-2"
               >
                 {creating ? (
