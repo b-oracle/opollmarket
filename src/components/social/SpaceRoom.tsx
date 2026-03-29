@@ -98,6 +98,72 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [floatingReactions, setFloatingReactions] = useState<{ id: string; emoji: string }[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const loadedMsgIdsRef = useRef<Set<string>>(new Set());
+
+  // Load persisted chat history + subscribe to realtime new messages
+  useEffect(() => {
+    if (!spaceId || !user) return;
+    let cancelled = false;
+
+    // Load existing messages
+    (async () => {
+      const { data } = await supabase
+        .from("space_messages")
+        .select("id, user_id, user_name, content, created_at")
+        .eq("space_id", spaceId)
+        .order("created_at", { ascending: true })
+        .limit(200);
+      if (cancelled || !data) return;
+      const loaded: ChatMessage[] = data.map((m: any) => {
+        loadedMsgIdsRef.current.add(m.id);
+        return {
+          id: m.id,
+          sender: m.user_id,
+          senderName: m.user_id === user?.id ? "You" : m.user_name,
+          text: m.content,
+          type: "message" as const,
+          timestamp: new Date(m.created_at).getTime(),
+        };
+      });
+      setMessages(loaded);
+    })();
+
+    // Subscribe to new messages via realtime
+    const channel = supabase
+      .channel(`space-chat-${spaceId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "space_messages", filter: `space_id=eq.${spaceId}` },
+        (payload: any) => {
+          const m = payload.new;
+          if (!m || loadedMsgIdsRef.current.has(m.id)) return;
+          // Skip own messages (already added optimistically)
+          if (m.user_id === user?.id) return;
+          loadedMsgIdsRef.current.add(m.id);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: m.id,
+              sender: m.user_id,
+              senderName: m.user_name || "Unknown",
+              text: m.content,
+              type: "message" as const,
+              timestamp: new Date(m.created_at).getTime(),
+            },
+          ]);
+          setChatOpen((open) => {
+            if (!open) setUnreadCount((c) => c + 1);
+            return open;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [spaceId, user]);
 
   // Recording state (client-side)
   const [recording, setRecording] = useState(false);
@@ -262,22 +328,28 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         setFloatingReactions((prev) => [...prev, { id, emoji: data.emoji }]);
         setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
       } else if (data.type === "message") {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `${Date.now()}-${Math.random()}`,
-            sender: participant?.identity || "unknown",
-            senderName: data.senderName || participant?.name || "Unknown",
-            text: data.text,
-            type: "message",
-            timestamp: Date.now(),
-          },
-        ]);
-        // Increment unread if chat is closed
-        setChatOpen((open) => {
-          if (!open) setUnreadCount((c) => c + 1);
-          return open;
-        });
+        // Messages are now persisted in DB and delivered via realtime subscription.
+        // Data channel still provides instant delivery for connected peers.
+        // Use a dedup key to avoid showing the same message twice (from both data channel and realtime).
+        const dedupKey = `dc-${participant?.identity}-${data.text}-${Math.floor(Date.now() / 2000)}`;
+        if (!loadedMsgIdsRef.current.has(dedupKey)) {
+          loadedMsgIdsRef.current.add(dedupKey);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: dedupKey,
+              sender: participant?.identity || "unknown",
+              senderName: data.senderName || participant?.name || "Unknown",
+              text: data.text,
+              type: "message",
+              timestamp: Date.now(),
+            },
+          ]);
+          setChatOpen((open) => {
+            if (!open) setUnreadCount((c) => c + 1);
+            return open;
+          });
+        }
       } else if (data.type === "hand_raise") {
         const identity = participant?.identity;
         if (identity) {
@@ -818,23 +890,49 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
   const sendChat = () => {
     if (!chatInput.trim() || !roomRef.current) return;
+    const text = chatInput.trim();
+    const senderName = roomRef.current.localParticipant.name || "You";
+
+    // Still broadcast via data channel for instant delivery to connected peers
     const data = JSON.stringify({
       type: "message",
-      text: chatInput.trim(),
-      senderName: roomRef.current.localParticipant.name || "You",
+      text,
+      senderName,
     });
     roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
+
+    // Persist to DB (optimistic local add)
+    const localId = `${Date.now()}-local`;
     setMessages((prev) => [
       ...prev,
       {
-        id: `${Date.now()}-local`,
+        id: localId,
         sender: user?.id || "",
         senderName: "You",
-        text: chatInput.trim(),
+        text,
         type: "message",
         timestamp: Date.now(),
       },
     ]);
+
+    if (user?.id) {
+      supabase
+        .from("space_messages")
+        .insert({
+          space_id: spaceId,
+          user_id: user.id,
+          user_name: senderName === "You" ? (user.email?.split("@")[0] || "Anonymous") : senderName,
+          content: text,
+        })
+        .then(({ data: inserted }) => {
+          // Track the DB id so realtime subscription skips it
+          if (inserted && (inserted as any)[0]?.id) {
+            loadedMsgIdsRef.current.add((inserted as any)[0].id);
+          }
+        })
+        .then(() => {}); // fire-and-forget
+    }
+
     setChatInput("");
   };
 
