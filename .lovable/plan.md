@@ -1,37 +1,43 @@
 
 
-# Space Analytics for Hosts
+# Tagged Markets Carousel in Space Header
 
 ## Overview
-Add analytics visible to space hosts showing key metrics: total unique listeners, peak concurrent listeners, total messages, total reactions, and space duration. Analytics are computed from existing `space_participants` and `space_messages` tables and displayed on the SpaceCard for ended spaces (and live spaces for the host).
+Allow space hosts to tag up to 5 markets to their space. Tagged markets appear as a scrollable carousel/jumbotron between the space header and the speakers section, visible to all participants.
 
 ## Changes
 
-### 1. Add `peak_listeners` column to `spaces` table
-- Migration: `ALTER TABLE public.spaces ADD COLUMN peak_listeners INTEGER NOT NULL DEFAULT 0;`
-- Update the existing `update_space_listener_count()` trigger function to also track the peak: after updating `listener_count`, set `peak_listeners = GREATEST(peak_listeners, listener_count)`.
+### 1. Database: Add `tagged_market_ids` column to `spaces` table
+- Migration: `ALTER TABLE public.spaces ADD COLUMN tagged_market_ids UUID[] NOT NULL DEFAULT '{}';`
+- No new table needed — a simple array column on spaces suffices for up to 5 IDs.
 
-### 2. Create `get_space_analytics` database function
-- A `SECURITY DEFINER` SQL function that takes `_space_id UUID` and returns:
-  - `total_unique_listeners`: `COUNT(DISTINCT user_id)` from `space_participants`
-  - `peak_listeners`: from `spaces.peak_listeners`
-  - `total_messages`: `COUNT(*)` from `space_messages`
-  - `duration_minutes`: `EXTRACT(EPOCH FROM (ended_at - started_at)) / 60` (or time since `started_at` if still live)
-- Only callable by the host (check `auth.uid() = host_id`).
+### 2. Update `CreateSpaceModal` — Add market tagging UI
+- **File**: `src/components/social/CreateSpaceModal.tsx`
+- Add a "Tag Markets" section below the title input (host-only, shown during creation).
+- Fetch active markets via a search-as-you-type input (query `markets` table by title, limit 10).
+- Display selected markets as removable chips (max 5). Enforce the limit in UI.
+- Save `tagged_market_ids` array in the insert payload.
 
-### 3. Show analytics on SpaceCard for hosts
-- **File**: `src/components/social/SpaceCard.tsx`
-- For ended and live spaces where `isHost` is true, query `get_space_analytics` via `useQuery`.
-- Render a compact stats row below the footer showing: Unique Listeners, Peak Concurrent, Messages, Duration.
-- Use small icons (Users, TrendingUp, MessageCircle, Clock) with counts.
-- Only visible to the host — other users see the card as before.
+### 3. Update `SpaceRoom` — Market carousel in header area
+- **File**: `src/components/social/SpaceRoom.tsx`
+- On mount, fetch the space's `tagged_market_ids`. If non-empty, query `markets` table for those IDs to get title, image, yes_price/options, and category.
+- Render a horizontally scrollable carousel between the header (line ~1219) and the content area (line ~1222).
+- Each card: compact design (~60px tall) showing market image thumbnail, title (truncated), and current probability. Tapping navigates to `/market/:id`.
+- Host gets an "Edit Markets" button (pencil icon) that opens an inline editor to add/remove tagged markets (same search UI as creation modal). Updates are saved via `supabase.from('spaces').update({ tagged_market_ids })`.
+- Non-hosts see the carousel read-only.
 
-### Technical Details
-- The trigger update ensures `peak_listeners` is tracked in real-time without needing a separate cron or batch job.
-- `space_messages` table already exists from a prior migration, so message count is free to compute.
-- The RPC enforces host-only access server-side.
+### 4. Card design
+- Horizontal scroll with `snap-x`, cards are ~200px wide with market thumbnail (40x40), title, and probability badge.
+- Glass/muted background consistent with SpaceRoom styling.
+- Dot indicators if more than 2 markets.
 
-### Files Modified
-- **New migration**: adds `peak_listeners` column, updates trigger, creates `get_space_analytics` function
-- `src/components/social/SpaceCard.tsx`: analytics display for hosts
+## Technical Details
+- Array column keeps it simple — no join table needed for ≤5 items.
+- Market data is fetched once on mount and cached in local state (no realtime needed for tagged markets).
+- The `tagged_market_ids` column is included in existing RLS policies (host can update own spaces, public can read).
+
+## Files Modified
+- **New migration**: adds `tagged_market_ids` column
+- `src/components/social/CreateSpaceModal.tsx`: market tagging during creation
+- `src/components/social/SpaceRoom.tsx`: carousel display + host edit capability
 
