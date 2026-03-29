@@ -947,6 +947,28 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
   };
 
+  const reactToMessage = (messageId: string, emoji: string) => {
+    if (!user?.id) return;
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id !== messageId) return m;
+        const reactions = { ...(m.reactions || {}) };
+        const users = reactions[emoji] ? [...reactions[emoji]] : [];
+        const idx = users.indexOf(user.id);
+        if (idx >= 0) users.splice(idx, 1);
+        else users.push(user.id);
+        if (users.length === 0) delete reactions[emoji];
+        else reactions[emoji] = users;
+        return { ...m, reactions };
+      })
+    );
+    // Broadcast reaction to peers
+    if (roomRef.current) {
+      const data = JSON.stringify({ type: "msg_reaction", messageId, emoji, userId: user.id });
+      roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
+    }
+  };
+
   const startClientRecording = async () => {
     try {
       setRecordingLoading(true);
