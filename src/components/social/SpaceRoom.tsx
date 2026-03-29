@@ -924,7 +924,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             loadedMsgIdsRef.current.add((inserted as any)[0].id);
           }
         })
-        .catch(() => {}); // fire-and-forget
+        .then(() => {}); // fire-and-forget
     }
 
     setChatInput("");
