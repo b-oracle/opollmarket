@@ -36,7 +36,20 @@ const TaggedMarketsCarousel = ({ spaceId, taggedMarketIds, isHost, isCoHost = fa
     })();
   }, [taggedMarketIds]);
 
-  if (markets.length === 0 && !editing) return null;
+  if (markets.length === 0 && !editing && !canEdit) return null;
+
+  if (markets.length === 0 && !editing && canEdit) {
+    return (
+      <div className="px-5 py-2 border-b border-border">
+        <button
+          onClick={() => { setEditMarkets([]); setEditing(true); }}
+          className="flex items-center gap-1.5 text-[10px] text-primary font-semibold hover:text-primary/80 transition-colors"
+        >
+          <TrendingUp className="w-3 h-3" /> + Tag Markets
+        </button>
+      </div>
+    );
+  }
 
   const handleSave = async () => {
     setSaving(true);
