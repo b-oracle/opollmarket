@@ -1301,7 +1301,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     <AnimatePresence>
       <motion.div key="space-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         className="fixed inset-0 bg-background/80 backdrop-blur-md z-[80]" />
-      <motion.div key="space-panel" initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+      <motion.div key="space-panel" ref={gridContainerRef} initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 28, stiffness: 300 }}
         className="fixed inset-x-0 bottom-0 top-16 z-[81] bg-background rounded-t-3xl border-t border-border flex flex-col overflow-hidden">
 
