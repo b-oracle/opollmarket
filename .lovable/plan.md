@@ -1,23 +1,33 @@
 
 
-# Fix: Display Correct Labels for Non-Trade Transactions in Order Book
+# Whitelist Creators for Unlimited Markets
 
-## Problem
-Fee and liquidity transactions are stored with `type = 'buy'` but use the `side` column for their purpose label (e.g. `initial_liquidity`, `broadcast_fee`, `auto_resolve_fee`, `liquidity_return`). The OrderBook query fetches all `type IN ('buy', 'sell')` rows, and the UI checks `side === "yes"` — anything else renders as "NO" with a red icon, which is misleading.
+## Overview
+Add a `unlimited_markets` boolean to the `profiles` table. Super admins toggle it per-user from the Admin Users page. The Create page and Profile page skip the free-market-limit check when this flag is true.
 
-## Solution
-Two options — I recommend **Option A** (filter them out) since these aren't real trades:
+## Changes
 
-**Option A: Filter out non-trade transactions from Recent Trades**
-Add a filter to exclude rows where `side` is not `yes` or `no`. These operational transactions aren't predictions and shouldn't appear in the trade tape.
+### 1. Database Migration
+Add column to `profiles`:
+```sql
+ALTER TABLE public.profiles ADD COLUMN unlimited_markets boolean NOT NULL DEFAULT false;
+```
 
-**Option B: Show them with proper labels**
-Keep them visible but render `initial_liquidity` as "Liquidity", `broadcast_fee` as "Broadcast Fee", etc.
+### 2. `src/pages/admin/AdminUsers.tsx`
+- Add an "Unlimited Markets" toggle button (infinity icon) next to each user row, visible only to super admins.
+- Clicking it updates `profiles.unlimited_markets` via Supabase and logs an audit event.
+- Show an infinity badge on whitelisted users.
 
-## Recommended Approach (Option A + partial B)
-- Filter the query to only return actual trades: add `.in("side", ["yes", "no"])` to the Supabase query
-- This removes liquidity deposits, fee charges, and refunds from the trade tape — they belong in the full transaction history, not the order book
+### 3. `src/pages/Create.tsx`
+- Fetch `unlimited_markets` from the user's profile alongside verification level.
+- In the free market limit check (~line 1284), skip the limit when `unlimited_markets === true` — don't set `exceededFreeLimit` or `feeBypass`.
 
-## File Modified
-- `src/components/OrderBook.tsx` — add `.in("side", ["yes", "no"])` filter to the recent trades query (line ~47)
+### 4. `src/pages/Profile.tsx`
+- When displaying the "Free markets remaining" progress bar (~line 1607), show "Unlimited" instead of the count/limit if the user has `unlimited_markets === true`.
+
+## Files Modified
+- **Migration**: Add `unlimited_markets` column to `profiles`
+- `src/pages/admin/AdminUsers.tsx` — toggle button for super admins
+- `src/pages/Create.tsx` — skip limit check for whitelisted creators
+- `src/pages/Profile.tsx` — show "Unlimited" label
 
