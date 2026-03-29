@@ -1320,7 +1320,7 @@ const Portfolio = () => {
           key={`share-${pos.id}`}
           ref={(el) => { positionCardRefs.current.set(pos.id, el); }}
           marketTitle={pos.marketTitle}
-          side={pos.side}
+          side={pos.optionLabel || pos.side}
           shares={pos.shares}
           avgPrice={pos.avgPrice}
           currentPrice={pos.currentPrice}
