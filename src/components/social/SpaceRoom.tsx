@@ -839,6 +839,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
   const handleEndSpace = async () => {
     if (!isHost) return;
+    stopAmbient();
     // If recording is active, stop and upload BEFORE ending
     if (recording && mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       toast.info("Saving recording before ending...");
