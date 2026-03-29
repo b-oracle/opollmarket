@@ -1859,14 +1859,14 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
         {/* Controls bar */}
         {connected && (
-          <div className="border-t border-border px-5 py-3 flex items-center justify-center gap-3">
+          <div className="border-t border-border px-3 sm:px-5 py-3 flex items-center justify-center flex-wrap gap-2">
             {(isHost || canPublish) && (
               <button onClick={toggleMute}
-                className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors relative ${
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors relative ${
                   forceMuted ? "bg-destructive/20 text-destructive" :
                   muted ? "bg-muted text-muted-foreground" : "bg-primary/20 text-primary"
                 }`}
-                title={forceMuted ? "Muted by host" : undefined}>
+                title={forceMuted ? "Muted by host" : muted ? "Unmute" : "Mute"}>
                 {forceMuted ? <Lock className="w-5 h-5" /> : muted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
               </button>
             )}
@@ -1875,15 +1875,17 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             {hasModPowers && (
               allForceMuted ? (
                 <button onClick={handleUnmuteAll}
-                  className="h-11 px-4 rounded-full flex items-center justify-center gap-2 text-sm font-medium bg-primary/20 text-primary transition-colors">
+                  className="h-10 px-3 sm:px-4 rounded-full flex items-center justify-center gap-2 text-sm font-medium bg-primary/20 text-primary transition-colors"
+                  title="Unmute All">
                   <Unlock className="w-4 h-4" />
-                  Unmute All
+                  <span className="hidden sm:inline">Unmute All</span>
                 </button>
               ) : (
                 <button onClick={handleMuteAll}
-                  className="h-11 px-4 rounded-full flex items-center justify-center gap-2 text-sm font-medium bg-muted text-muted-foreground transition-colors">
+                  className="h-10 px-3 sm:px-4 rounded-full flex items-center justify-center gap-2 text-sm font-medium bg-muted text-muted-foreground transition-colors"
+                  title="Mute All">
                   <VolumeX className="w-4 h-4" />
-                  Mute All
+                  <span className="hidden sm:inline">Mute All</span>
                 </button>
               )
             )}
@@ -1891,25 +1893,27 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             {/* Request to Speak — for listeners without publish permission */}
             {!isHost && !canPublish && (
               <button onClick={requestToSpeak} disabled={requestPending}
-                className={`h-11 px-4 rounded-full flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
+                className={`h-10 px-3 sm:px-4 rounded-full flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
                   requestPending ? "bg-primary/20 text-primary animate-pulse" : "bg-accent text-accent-foreground"
-                }`}>
+                }`}
+                title={requestPending ? "Request Sent" : "Request to Speak"}>
                 <Mic className="w-4 h-4" />
-                {requestPending ? "Request Sent" : "Request to Speak"}
+                <span className="hidden sm:inline">{requestPending ? "Request Sent" : "Request to Speak"}</span>
               </button>
             )}
 
             <button onClick={toggleHand}
-              className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors ${
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
                 handRaised ? "bg-yellow-500/20 text-yellow-500" : "bg-muted text-muted-foreground"
-              }`}>
+              }`}
+              title={handRaised ? "Lower hand" : "Raise hand"}>
               <Hand className="w-5 h-5" />
             </button>
 
             {/* Recording toggle for host */}
             {isHost && (
               <button onClick={toggleRecording} disabled={recordingLoading}
-                className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors ${
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
                   recording ? "bg-red-500/20 text-red-500" : "bg-muted text-muted-foreground"
                 }`}
                 title={recording ? "Stop recording" : "Start recording"}>
@@ -1919,15 +1923,17 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             )}
 
             <button onClick={handleLeave}
-              className="w-11 h-11 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
+              className="w-10 h-10 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
               title="Leave Space">
               <PhoneOff className="w-5 h-5" />
             </button>
 
             {isHost && (
               <button onClick={handleEndSpace}
-                className="h-11 px-4 rounded-full flex items-center justify-center gap-2 text-sm font-medium bg-destructive text-destructive-foreground transition-colors">
-                End Space
+                className="h-10 px-3 sm:px-4 rounded-full flex items-center justify-center gap-2 text-sm font-medium bg-destructive text-destructive-foreground transition-colors"
+                title="End Space">
+                <X className="w-4 h-4" />
+                <span className="hidden sm:inline">End Space</span>
               </button>
             )}
           </div>
