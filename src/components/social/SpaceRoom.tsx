@@ -66,9 +66,11 @@ interface ChatMessage {
   text: string;
   type: "message" | "reaction";
   timestamp: number;
+  reactions?: Record<string, string[]>; // emoji -> array of user ids
 }
 
-const REACTIONS = ["🔥", "👏", "❤️", "😂", "💯", "🎯"];
+const REACTIONS = ["🔥", "👏", "👍", "❤️", "😂", "💯", "🎯"];
+const CHAT_REACTIONS = ["👍", "❤️", "😂", "🔥", "👏"];
 
 const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => {
   const { user } = useAuth();
