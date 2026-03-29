@@ -330,6 +330,9 @@ const Create = () => {
   // Scroll to top on step change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+    document.getElementById("root")?.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
   }, [step]);
 
   // Persist form state to localStorage
