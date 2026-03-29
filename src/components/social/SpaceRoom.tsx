@@ -1375,7 +1375,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         </div>
 
         {/* Tagged Markets Carousel */}
-        <TaggedMarketsCarousel spaceId={spaceId} taggedMarketIds={taggedMarketIds} isHost={isHost} isCoHost={isCoHost} />
+        <TaggedMarketsCarousel spaceId={spaceId} taggedMarketIds={taggedMarketIds} isHost={isHost} isCoHost={isCoHost} onMinimize={toggleMinimize} />
 
         {/* Content */}
         <div className="flex-1 overflow-hidden flex flex-col">
