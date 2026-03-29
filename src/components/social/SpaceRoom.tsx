@@ -130,7 +130,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           text: m.content,
           type: "message" as const,
           timestamp: new Date(m.created_at).getTime(),
-          reactions: m.reactions && typeof m.reactions === "object" ? m.reactions : undefined,
+          reactions: m.reactions && typeof m.reactions === "object" && Object.keys(m.reactions as Record<string, unknown>).length > 0 ? (m.reactions as Record<string, string[]>) : undefined,
         };
       });
       setMessages(loaded);
@@ -163,6 +163,21 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             if (!open) setUnreadCount((c) => c + 1);
             return open;
           });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "space_messages", filter: `space_id=eq.${spaceId}` },
+        (payload: any) => {
+          const m = payload.new;
+          if (!m) return;
+          // Sync reaction updates from DB to local state
+          const dbReactions = m.reactions && typeof m.reactions === "object" && Object.keys(m.reactions).length > 0
+            ? (m.reactions as Record<string, string[]>)
+            : undefined;
+          setMessages((prev) =>
+            prev.map((msg) => msg.id === m.id ? { ...msg, reactions: dbReactions } : msg)
+          );
         }
       )
       .subscribe();
