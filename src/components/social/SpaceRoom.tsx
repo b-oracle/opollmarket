@@ -1032,9 +1032,19 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     if (ambientTrack === trackId) {
       stopAmbient();
       setAmbientTrack(null);
+      // Broadcast stop to all participants
+      if (roomRef.current) {
+        const data = JSON.stringify({ type: "ambient_music", action: "stop" });
+        roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
+      }
     } else {
       startAmbient(trackId);
       setAmbientTrack(trackId);
+      // Broadcast play to all participants
+      if (roomRef.current) {
+        const data = JSON.stringify({ type: "ambient_music", action: "play", trackId });
+        roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
+      }
     }
     setShowMusicMenu(false);
   };
