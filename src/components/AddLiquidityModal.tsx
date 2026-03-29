@@ -95,10 +95,10 @@ const AddLiquidityModal = ({ open, onClose, marketId, marketTitle, currentLiquid
             <Input
               id="liq-amount"
               type="number"
-              min="0.01"
+              min={minLiquidity}
               step="0.01"
               max={balance}
-              placeholder="e.g. 10.00"
+              placeholder={`e.g. ${minLiquidity}.00`}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
