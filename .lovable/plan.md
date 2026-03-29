@@ -1,26 +1,73 @@
 
 
-# Make Twitter/X Handle a Required Field with Clear "Handle Only" Guidance
+# Image Optimization: Compress, Lazy Load, and Reduce Costs
 
-## Problem
-When creating a Twitter/X auto-resolve market, the X handle/tweet ID field is optional — creators can skip it. Also, the label doesn't clearly state that only the handle (not a link) should be entered for username-based metrics.
+## Overview
+Implement client-side image compression before upload across all upload points, and add `loading="lazy"` to all feed/card images that are missing it. This will reduce storage costs, bandwidth usage, and improve page load speed.
 
 ## Changes
 
-### 1. `src/pages/Create.tsx` — Add validation rule
-Add a `twitterResource` entry to the `errors` object (~line 743):
-- When `autoResolve` is true and `category === "Twitter/X"`, require `twitterResourceId` to be non-empty
-- For `posts`/`impressions` metrics (username-based), validate it contains no slashes or "http" (reject URLs)
+### 1. Create shared image compression utility — `src/lib/imageCompression.ts`
+- Install `browser-image-compression` (lightweight, ~15KB gzipped)
+- Export a `compressImage(file, options)` function with presets:
+  - **market-banner**: max 1200px width, quality 0.75, convert to WebP
+  - **avatar**: max 300px width, quality 0.7, convert to WebP
+  - **social/story**: max 800px width, quality 0.75, convert to WebP
+- Returns the compressed `File` object with updated extension
+- Gracefully falls back to original file if compression fails
 
-### 2. `src/pages/Create.tsx` — Block step advancement
-In `tryAdvanceStep2` (~line 757), add a check: if category is Twitter/X and autoResolve is on, shake and block if `twitterResource` error exists.
+### 2. Apply compression at all 4 upload points
 
-### 3. `src/pages/Create.tsx` — Update label and helper text
-Change the label from "X (Twitter) Username" to **"X Handle (username only, not a link)"** for the `posts`/`impressions` metric types. Update placeholder to `"e.g. elonmusk (no @ or links)"`. Update the helper text below to reinforce "Enter the X handle only — do not paste a profile link."
+**`src/pages/Create.tsx`** (~line 590) — market banner upload
+- Import and call `compressImage(imageFile, 'market-banner')` before uploading
+- Update file extension to `.webp` in the storage path
 
-### 4. `src/pages/Create.tsx` — Show validation error
-Display the error message below the input when touched and invalid, matching the existing error styling pattern.
+**`src/pages/admin/AdminCreateMarket.tsx`** (~line 264) — admin market banner upload
+- Same compression call before upload
+
+**`src/pages/Profile.tsx`** (~line 820) — avatar upload
+- Call `compressImage(avatarFile, 'avatar')` before uploading
+- Update storage path extension
+
+**`src/components/social/StatusComposer.tsx`** (~line 92) — status image upload
+- Call `compressImage(imageFile, 'social')` before uploading
+
+**`src/components/social/StoryCreator.tsx`** (~line 117) — story image upload
+- Call `compressImage(imageFile, 'social')` before uploading
+
+### 3. Add `loading="lazy"` to all feed/card images missing it
+
+Add `loading="lazy"` to `<img>` tags in:
+- `src/components/MarketCard.tsx` — market banner images (2 locations)
+- `src/components/social/StoriesCarousel.tsx` — avatar images
+- `src/components/social/StatusCard.tsx` — avatar and market preview images (the ones without it)
+- `src/components/social/SocialAdCard.tsx` — market preview image
+- `src/components/social/SpaceRoom.tsx` — participant avatars
+- `src/components/social/StoryViewer.tsx` — story images and avatars
+- `src/components/social/StatusComposer.tsx` — market search result images and preview image
+
+### 4. Install dependency
+- Add `browser-image-compression` to `package.json`
+
+## Technical Details
+- WebP format saves 30-50% vs JPEG at equivalent quality
+- Compression from e.g. 4MB originals down to ~50-150KB typical
+- `loading="lazy"` defers off-screen image loading, improving initial paint
+- All compression happens client-side before upload — no server changes needed
+- Fallback to original file ensures uploads never break
 
 ## Files Modified
-- `src/pages/Create.tsx` — validation rule, step gate, label/placeholder/helper updates, error display
+- **New**: `src/lib/imageCompression.ts`
+- `src/pages/Create.tsx`
+- `src/pages/admin/AdminCreateMarket.tsx`
+- `src/pages/Profile.tsx`
+- `src/components/social/StatusComposer.tsx`
+- `src/components/social/StoryCreator.tsx`
+- `src/components/MarketCard.tsx`
+- `src/components/social/StoriesCarousel.tsx`
+- `src/components/social/StatusCard.tsx`
+- `src/components/social/SocialAdCard.tsx`
+- `src/components/social/SpaceRoom.tsx`
+- `src/components/social/StoryViewer.tsx`
+- `package.json`
 
