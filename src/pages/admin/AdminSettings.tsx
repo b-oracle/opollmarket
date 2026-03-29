@@ -278,6 +278,7 @@ const AdminSettings = () => {
           withdrawal_multiplier: withdrawalMultiplierNum,
           withdrawal_limit_enabled: withdrawalLimitEnabled,
            exit_fee_percent: exitFeeNum,
+           liquidity_return_fee_percent: liquidityReturnFeeNum,
            withdrawal_fee_percent: withdrawalFeeNum,
           copy_trade_commission_percent: copyTradeCommissionNum,
           quick_trade_fee_percent: quickTradeFeeNum,
@@ -329,6 +330,7 @@ const AdminSettings = () => {
           creator_fee_gold_percent: creatorGoldNum,
           referrer_commission_percent: referrerCommissionNum,
            exit_fee_percent: exitFeeNum,
+           liquidity_return_fee_percent: liquidityReturnFeeNum,
            withdrawal_fee_percent: withdrawalFeeNum,
           copy_trade_commission_percent: copyTradeCommissionNum,
           min_withdrawal_amount: minWithdrawNum,
@@ -524,7 +526,11 @@ const AdminSettings = () => {
                 <div className="border-t border-border pt-2 space-y-1.5">
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">Early Exit Fee</span>
-                    <span className="font-medium">{exitFeeNum}%</span>
+                     <span className="font-medium">{exitFeeNum}%</span>
+                   </div>
+                   <div className="flex justify-between text-xs">
+                     <span className="text-muted-foreground">Liquidity Return Fee</span>
+                     <span className="font-medium">{liquidityReturnFeeNum}%</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">Copy Trade Commission</span>
@@ -540,6 +546,28 @@ const AdminSettings = () => {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2"><LogOut className="w-4 h-4" /> Early Exit Fee</CardTitle>
+                <CardDescription className="text-[10px]">Fee when users sell positions early.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-1.5">
+                  <Label htmlFor="exitFee" className="text-xs">Exit Fee (%)</Label>
+                  <Input id="exitFee" type="number" min={0} max={100} step={0.5} value={exitFee} onChange={(e) => setExitFee(e.target.value)} placeholder="5" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2"><LogOut className="w-4 h-4" /> Liquidity Return Fee</CardTitle>
+                <CardDescription className="text-[10px]">Fee deducted from creator's liquidity before it is returned upon market resolution.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-1.5">
+                  <Label htmlFor="liquidityReturnFee" className="text-xs">Liquidity Return Fee (%)</Label>
+                  <Input id="liquidityReturnFee" type="number" min={0} max={100} step={0.5} value={liquidityReturnFee} onChange={(e) => setLiquidityReturnFee(e.target.value)} placeholder="5" />
+                </div>
+              </CardContent>
+            </Card>
                 <CardDescription className="text-[10px]">Fee when users sell positions early.</CardDescription>
               </CardHeader>
               <CardContent>
