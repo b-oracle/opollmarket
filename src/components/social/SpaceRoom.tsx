@@ -1022,6 +1022,31 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
   };
 
+  const sendSoundReaction = (soundId: string) => {
+    if (!roomRef.current) return;
+    // Play locally
+    playSoundById(soundId);
+    // Broadcast to peers
+    const data = JSON.stringify({ type: "sound_reaction", soundId });
+    roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
+    // Show floating emoji
+    const emoji = SOUND_REACTIONS.find(s => s.id === soundId)?.emoji || "🔊";
+    const id = `${Date.now()}-${Math.random()}`;
+    setFloatingReactions((prev) => [...prev, { id, emoji }]);
+    setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
+  };
+
+  const toggleAmbientMusic = (trackId: string) => {
+    if (ambientTrack === trackId) {
+      stopAmbient();
+      setAmbientTrack(null);
+    } else {
+      startAmbient(trackId);
+      setAmbientTrack(trackId);
+    }
+    setShowMusicMenu(false);
+  };
+
   const reactToMessage = (messageId: string, emoji: string) => {
     if (!user?.id) return;
     let updatedReactions: Record<string, string[]> | undefined;
