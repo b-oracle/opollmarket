@@ -908,6 +908,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       audioContextRef.current?.close();
       audioContextRef.current = null;
       mediaRecorderRef.current = null;
+      recordingDestRef.current = null;
 
       const blob = new Blob(recordedChunksRef.current, { type: "audio/webm" });
       recordedChunksRef.current = [];
