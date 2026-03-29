@@ -20,6 +20,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
   const [mode, setMode] = useState<"live" | "scheduled">("live");
   const [scheduledDate, setScheduledDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState("");
+  const [taggedMarkets, setTaggedMarkets] = useState<MarketTag[]>([]);
 
   if (!user) return null;
 
@@ -44,6 +45,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
       const insertData: any = {
         host_id: user.id,
         title: trimmed,
+        tagged_market_ids: taggedMarkets.map((m) => m.id),
       };
 
       if (mode === "scheduled") {
@@ -74,6 +76,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
       setTitle("");
       setScheduledDate("");
       setScheduledTime("");
+      setTaggedMarkets([]);
       setMode("live");
       onClose();
     } catch (err: any) {
