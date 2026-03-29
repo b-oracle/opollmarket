@@ -1,33 +1,20 @@
 
 
-# Whitelist Creators for Unlimited Markets
+# Update Twitter Resource ID for Instablog9ja Market
 
-## Overview
-Add a `unlimited_markets` boolean to the `profiles` table. Super admins toggle it per-user from the Admin Users page. The Create page and Profile page skip the free-market-limit check when this flag is true.
+## What needs to happen
+The market "Instablog9ja X/Twitter impressions count by November 2026?" (ID: `3f2baea2-7704-4cdf-acda-130660470837`) currently has `twitter_resource_id` set to `null`. It needs to be updated to `instablog9ja` so the auto-resolve system can track the view count.
 
-## Changes
-
-### 1. Database Migration
-Add column to `profiles`:
+## Change
+Single data update on the `markets` table:
 ```sql
-ALTER TABLE public.profiles ADD COLUMN unlimited_markets boolean NOT NULL DEFAULT false;
+UPDATE markets 
+SET twitter_resource_id = 'instablog9ja' 
+WHERE id = '3f2baea2-7704-4cdf-acda-130660470837';
 ```
 
-### 2. `src/pages/admin/AdminUsers.tsx`
-- Add an "Unlimited Markets" toggle button (infinity icon) next to each user row, visible only to super admins.
-- Clicking it updates `profiles.unlimited_markets` via Supabase and logs an audit event.
-- Show an infinity badge on whitelisted users.
+This will enable the `fetch-twitter-metrics` edge function to start polling @instablog9ja's impressions for auto-resolution.
 
-### 3. `src/pages/Create.tsx`
-- Fetch `unlimited_markets` from the user's profile alongside verification level.
-- In the free market limit check (~line 1284), skip the limit when `unlimited_markets === true` — don't set `exceededFreeLimit` or `feeBypass`.
-
-### 4. `src/pages/Profile.tsx`
-- When displaying the "Free markets remaining" progress bar (~line 1607), show "Unlimited" instead of the count/limit if the user has `unlimited_markets === true`.
-
-## Files Modified
-- **Migration**: Add `unlimited_markets` column to `profiles`
-- `src/pages/admin/AdminUsers.tsx` — toggle button for super admins
-- `src/pages/Create.tsx` — skip limit check for whitelisted creators
-- `src/pages/Profile.tsx` — show "Unlimited" label
+## No code changes needed
+This is purely a database data fix.
 
