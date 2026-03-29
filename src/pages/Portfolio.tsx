@@ -797,7 +797,7 @@ const Portfolio = () => {
                         </span>
                       ) : pos.marketType !== "binary" ? (
                         <span className="shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-muted text-muted-foreground border border-border">
-                          {pos.side}
+                          Option
                         </span>
                       ) : (
                         <span
@@ -815,7 +815,7 @@ const Portfolio = () => {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
                       <div>
                         <p className="text-[9px] text-muted-foreground uppercase">Shares</p>
-                        <p className="text-xs font-bold">{pos.shares}</p>
+                        <p className="text-xs font-bold">{Number(pos.shares.toFixed(4))}</p>
                       </div>
                       <div>
                         <p className="text-[9px] text-muted-foreground uppercase">Avg Price</p>
