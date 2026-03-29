@@ -112,7 +112,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     (async () => {
       const { data } = await supabase
         .from("space_messages")
-        .select("id, user_id, user_name, content, created_at")
+        .select("id, user_id, user_name, content, created_at, reactions")
         .eq("space_id", spaceId)
         .order("created_at", { ascending: true })
         .limit(200);
@@ -126,6 +126,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           text: m.content,
           type: "message" as const,
           timestamp: new Date(m.created_at).getTime(),
+          reactions: m.reactions && typeof m.reactions === "object" ? m.reactions : undefined,
         };
       });
       setMessages(loaded);
@@ -267,6 +268,33 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             setMuted(false);
           } catch {}
         }
+
+        // Restart MediaRecorder if it was interrupted while recording
+        if (recording && mediaRecorderRef.current?.state === "inactive") {
+          try {
+            // Save existing chunks first
+            if (recordedChunksRef.current.length > 0) {
+              const partialBlob = new Blob(recordedChunksRef.current, { type: "audio/webm" });
+              if (partialBlob.size > 1000) {
+                // Keep chunks for final upload
+              }
+            }
+            // Restart the recorder on the existing destination stream
+            const dest = recordingDestRef.current;
+            if (dest) {
+              const recorder = new MediaRecorder(dest.stream, {
+                mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+                  ? "audio/webm;codecs=opus"
+                  : "audio/webm",
+              });
+              recorder.ondataavailable = (e) => {
+                if (e.data.size > 0) recordedChunksRef.current.push(e.data);
+              };
+              recorder.start(1000);
+              mediaRecorderRef.current = recorder;
+            }
+          } catch {}
+        }
       } else {
         // Going to background — track mic state
         wasMicOnRef.current = !muted;
@@ -344,9 +372,10 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         setFloatingReactions((prev) => [...prev, { id, emoji: data.emoji }]);
         setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
       } else if (data.type === "message") {
+        // Skip own messages — sender already added optimistically
+        if (participant?.identity === user?.id) return;
         // Messages are now persisted in DB and delivered via realtime subscription.
         // Data channel still provides instant delivery for connected peers.
-        // Use a dedup key to avoid showing the same message twice (from both data channel and realtime).
         const dedupKey = `dc-${participant?.identity}-${data.text}-${Math.floor(Date.now() / 2000)}`;
         if (!loadedMsgIdsRef.current.has(dedupKey)) {
           loadedMsgIdsRef.current.add(dedupKey);
@@ -984,6 +1013,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
   const reactToMessage = (messageId: string, emoji: string) => {
     if (!user?.id) return;
+    let updatedReactions: Record<string, string[]> | undefined;
     setMessages((prev) =>
       prev.map((m) => {
         if (m.id !== messageId) return m;
@@ -994,6 +1024,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         else users.push(user.id);
         if (users.length === 0) delete reactions[emoji];
         else reactions[emoji] = users;
+        updatedReactions = reactions;
         return { ...m, reactions };
       })
     );
@@ -1001,6 +1032,14 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     if (roomRef.current) {
       const data = JSON.stringify({ type: "msg_reaction", messageId, emoji, userId: user.id });
       roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
+    }
+    // Persist reaction to DB (only for DB-persisted messages, not data-channel dedup keys)
+    if (updatedReactions && !messageId.startsWith("dc-") && !messageId.endsWith("-local")) {
+      supabase
+        .from("space_messages")
+        .update({ reactions: updatedReactions } as any)
+        .eq("id", messageId)
+        .then(() => {});
     }
   };
 
@@ -1055,7 +1094,41 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     try {
       setRecordingLoading(true);
       const recorder = mediaRecorderRef.current;
-      if (!recorder || recorder.state === "inactive") return;
+      if (!recorder) return;
+      // If recorder is already inactive but has chunks, skip to upload
+      if (recorder.state === "inactive" && recordedChunksRef.current.length > 0) {
+        // Fall through to upload logic below
+        audioContextRef.current?.close();
+        audioContextRef.current = null;
+        mediaRecorderRef.current = null;
+        recordingDestRef.current = null;
+
+        const blob = new Blob(recordedChunksRef.current, { type: "audio/webm" });
+        recordedChunksRef.current = [];
+
+        if (blob.size < 1000) {
+          toast.error("Recording too short");
+          setRecording(false);
+          setRecordingLoading(false);
+          return;
+        }
+
+        const fileName = `${user!.id}/space-${spaceId}-${Date.now()}.webm`;
+        const { error: uploadErr } = await supabase.storage
+          .from("space-recordings")
+          .upload(fileName, blob, { contentType: "audio/webm" });
+        if (uploadErr) throw uploadErr;
+        const { data: urlData } = supabase.storage.from("space-recordings").getPublicUrl(fileName);
+        await supabase.from("spaces").update({
+          is_recorded: true,
+          recording_url: urlData.publicUrl,
+        } as any).eq("id", spaceId);
+        toast.success("Recording saved ✅");
+        setRecording(false);
+        setRecordingLoading(false);
+        return;
+      }
+      if (recorder.state === "inactive") return;
 
       await new Promise<void>((resolve) => {
         recorder.onstop = () => resolve();
@@ -1108,7 +1181,17 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
   const hasModPowers = isHost || isCoHost;
   const coHostIds = spaceCoHostIds;
-  const speakers = participants.filter((p) => p.audioTrack || p.canPublish || p.identity === hostId);
+  const speakers = participants
+    .filter((p) => p.audioTrack || p.canPublish || p.identity === hostId)
+    .sort((a, b) => {
+      if (a.identity === hostId) return -1;
+      if (b.identity === hostId) return 1;
+      const aCoHost = coHostIds.includes(a.identity);
+      const bCoHost = coHostIds.includes(b.identity);
+      if (aCoHost && !bCoHost) return -1;
+      if (!aCoHost && bCoHost) return 1;
+      return a.name.localeCompare(b.name);
+    });
   const listeners = participants.filter((p) => !p.audioTrack && !p.canPublish && p.identity !== hostId);
 
   const renderAvatar = (p: ParticipantInfo, size: "lg" | "sm") => {
@@ -1265,17 +1348,25 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                         <p className="font-semibold text-[10px] opacity-70 mb-0.5">{m.senderName}</p>
                       )}
                       <p>{m.text}</p>
+                      <p className={`text-[9px] mt-0.5 ${m.sender === user?.id ? "text-primary-foreground/60" : "text-muted-foreground/60"}`}>
+                        {new Date(m.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </p>
                     </div>
-                    {/* Existing reactions */}
+                    {/* Existing reactions with tooltip showing who reacted */}
                     {m.reactions && Object.keys(m.reactions).length > 0 && (
                       <div className="flex gap-1 mt-0.5 px-1">
-                        {Object.entries(m.reactions).map(([emoji, users]) => (
+                        {Object.entries(m.reactions).map(([emoji, userIds]) => (
                           <button key={emoji} onClick={() => reactToMessage(m.id, emoji)}
+                            title={userIds.map((uid: string) => {
+                              if (uid === user?.id) return "You";
+                              const p = participants.find(pp => pp.identity === uid);
+                              return p?.name || uid.slice(0, 8);
+                            }).join(", ")}
                             className={`flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full border transition-colors ${
-                              users.includes(user?.id || "") ? "border-primary/50 bg-primary/10" : "border-border bg-muted/50"
+                              userIds.includes(user?.id || "") ? "border-primary/50 bg-primary/10" : "border-border bg-muted/50"
                             }`}>
                             <span>{emoji}</span>
-                            <span className="font-medium">{users.length}</span>
+                            <span className="font-medium">{userIds.length}</span>
                           </button>
                         ))}
                       </div>
