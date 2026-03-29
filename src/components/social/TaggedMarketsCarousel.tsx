@@ -98,7 +98,7 @@ const TaggedMarketsCarousel = ({ spaceId, taggedMarketIds, isHost, isCoHost = fa
         {markets.map((m) => (
           <button
             key={m.id}
-            onClick={() => navigate(`/market/${m.id}`)}
+            onClick={() => { onMinimize?.(); navigate(`/market/${m.id}`); }}
             className="snap-start shrink-0 w-[200px] flex items-center gap-2 bg-muted/50 border border-border rounded-xl p-2 hover:bg-muted/80 transition-colors"
           >
             {m.image_url ? (
