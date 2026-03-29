@@ -40,6 +40,8 @@ export interface Market {
   twitterCurrentCount?: number;
   status?: string;
   isHidden?: boolean;
+  resolvedSide?: string;
+  winningOptionId?: string;
 }
 
 export const mockMarkets: Market[] = [
