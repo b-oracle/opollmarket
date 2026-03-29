@@ -1501,13 +1501,65 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
         {/* Reaction bar */}
         {connected && !chatOpen && (
-          <div className="px-5 py-2 flex items-center justify-center gap-2">
-            {REACTIONS.map((emoji) => (
-              <button key={emoji} onClick={() => sendReaction(emoji)}
-                className="w-9 h-9 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center text-base transition-transform active:scale-125">
-                {emoji}
-              </button>
-            ))}
+          <div className="px-5 py-2 space-y-1.5">
+            {/* Regular reactions — everyone */}
+            <div className="flex items-center justify-center gap-2">
+              {REACTIONS.map((emoji) => (
+                <button key={emoji} onClick={() => sendReaction(emoji)}
+                  className="w-9 h-9 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center text-base transition-transform active:scale-125">
+                  {emoji}
+                </button>
+              ))}
+            </div>
+            {/* Sound reactions — host & co-host only */}
+            {hasModPowers && (
+              <div className="flex items-center justify-center gap-1.5">
+                {SOUND_REACTIONS.map((sr) => (
+                  <button key={sr.id} onClick={() => sendSoundReaction(sr.id)}
+                    title={sr.label}
+                    className="h-7 px-2 rounded-full bg-accent/20 hover:bg-accent/40 flex items-center justify-center gap-1 text-xs transition-transform active:scale-110 border border-accent/30">
+                    <span>{sr.emoji}</span>
+                    <span className="text-[9px] text-accent-foreground/70 hidden sm:inline">{sr.label}</span>
+                  </button>
+                ))}
+                {/* Ambient music toggle */}
+                <div className="relative">
+                  <button onClick={() => setShowMusicMenu(!showMusicMenu)}
+                    className={`h-7 px-2 rounded-full flex items-center justify-center gap-1 text-xs transition-colors border ${
+                      ambientTrack
+                        ? "bg-primary/20 text-primary border-primary/40"
+                        : "bg-muted hover:bg-muted/80 text-muted-foreground border-border"
+                    }`}
+                    title="Background Music">
+                    <Music className="w-3 h-3" />
+                    <ChevronDown className="w-2.5 h-2.5" />
+                  </button>
+                  {showMusicMenu && (
+                    <div className="absolute bottom-full right-0 mb-1 bg-card border border-border rounded-lg shadow-lg p-1.5 min-w-[140px] z-[95]">
+                      {AMBIENT_TRACKS.map((t) => (
+                        <button key={t.id} onClick={() => toggleAmbientMusic(t.id)}
+                          className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors ${
+                            ambientTrack === t.id
+                              ? "bg-primary/15 text-primary"
+                              : "hover:bg-muted text-foreground"
+                          }`}>
+                          <span>{t.emoji}</span>
+                          <span>{t.label}</span>
+                          {ambientTrack === t.id && <span className="ml-auto text-[9px]">▶</span>}
+                        </button>
+                      ))}
+                      {ambientTrack && (
+                        <button onClick={() => { stopAmbient(); setAmbientTrack(null); setShowMusicMenu(false); }}
+                          className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-destructive hover:bg-destructive/10 transition-colors mt-0.5">
+                          <span>⏹</span>
+                          <span>Stop Music</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
