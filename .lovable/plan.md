@@ -1,73 +1,38 @@
 
 
-# Image Optimization: Compress, Lazy Load, and Reduce Costs
+# Fix: Persist Speaker Presence & Mic When Backgrounded
 
-## Overview
-Implement client-side image compression before upload across all upload points, and add `loading="lazy"` to all feed/card images that are missing it. This will reduce storage costs, bandwidth usage, and improve page load speed.
+## Problem
+When a speaker navigates away or their screen turns off, the browser suspends the WebSocket connection. The current code only attempts reconnection for hosts/co-hosts (line 444), leaving regular speakers disconnected. Additionally, the Wake Lock API (which prevents OS-level suspension) is referenced in a comment but never implemented.
 
-## Changes
+## Root Causes
+1. **Reconnection is host/co-host only** — line 444: `const shouldReconnect = isHost || spaceCoHostIds.includes(user!.id)` excludes promoted speakers
+2. **No Wake Lock** — the `handleFreeze` handler (line 154) is empty; no `navigator.wakeLock` usage
+3. **Audio context suspension** — mobile browsers suspend `AudioContext` on background; no resume logic
+4. **Keep-alive ping interval too long** — 15s may not prevent timeout on aggressive mobile browsers
 
-### 1. Create shared image compression utility — `src/lib/imageCompression.ts`
-- Install `browser-image-compression` (lightweight, ~15KB gzipped)
-- Export a `compressImage(file, options)` function with presets:
-  - **market-banner**: max 1200px width, quality 0.75, convert to WebP
-  - **avatar**: max 300px width, quality 0.7, convert to WebP
-  - **social/story**: max 800px width, quality 0.75, convert to WebP
-- Returns the compressed `File` object with updated extension
-- Gracefully falls back to original file if compression fails
+## Changes — `src/components/social/SpaceRoom.tsx`
 
-### 2. Apply compression at all 4 upload points
+### 1. Enable reconnection for ALL participants (not just host/co-host)
+Change the `Disconnected` handler (~line 444) to attempt reconnection for any connected user who has `canPublish` (speakers), not just hosts/co-hosts. Listeners who disconnect can also auto-rejoin since it's lightweight.
 
-**`src/pages/Create.tsx`** (~line 590) — market banner upload
-- Import and call `compressImage(imageFile, 'market-banner')` before uploading
-- Update file extension to `.webp` in the storage path
+### 2. Implement Wake Lock API
+In the visibility change handler (~line 138), acquire a `navigator.wakeLock.request('screen')` when connected, and release it on disconnect/leave. This prevents the OS from suspending the page while in a space. Falls back gracefully on unsupported browsers.
 
-**`src/pages/admin/AdminCreateMarket.tsx`** (~line 264) — admin market banner upload
-- Same compression call before upload
+### 3. Resume AudioContext on visibility restore
+When the page becomes visible again, call `AudioContext.resume()` on any suspended audio context, and re-enable local mic tracks to recover from browser suspension.
 
-**`src/pages/Profile.tsx`** (~line 820) — avatar upload
-- Call `compressImage(avatarFile, 'avatar')` before uploading
-- Update storage path extension
+### 4. Reduce keep-alive interval
+Change the ping interval from 15s to 8s (~line 181) to stay within aggressive mobile timeout windows.
 
-**`src/components/social/StatusComposer.tsx`** (~line 92) — status image upload
-- Call `compressImage(imageFile, 'social')` before uploading
-
-**`src/components/social/StoryCreator.tsx`** (~line 117) — story image upload
-- Call `compressImage(imageFile, 'social')` before uploading
-
-### 3. Add `loading="lazy"` to all feed/card images missing it
-
-Add `loading="lazy"` to `<img>` tags in:
-- `src/components/MarketCard.tsx` — market banner images (2 locations)
-- `src/components/social/StoriesCarousel.tsx` — avatar images
-- `src/components/social/StatusCard.tsx` — avatar and market preview images (the ones without it)
-- `src/components/social/SocialAdCard.tsx` — market preview image
-- `src/components/social/SpaceRoom.tsx` — participant avatars
-- `src/components/social/StoryViewer.tsx` — story images and avatars
-- `src/components/social/StatusComposer.tsx` — market search result images and preview image
-
-### 4. Install dependency
-- Add `browser-image-compression` to `package.json`
+### 5. Re-acquire mic on reconnect
+After the `Reconnected` event (~line 489), if the user had `canPublish` and was unmuted before backgrounding, re-enable the microphone automatically.
 
 ## Technical Details
-- WebP format saves 30-50% vs JPEG at equivalent quality
-- Compression from e.g. 4MB originals down to ~50-150KB typical
-- `loading="lazy"` defers off-screen image loading, improving initial paint
-- All compression happens client-side before upload — no server changes needed
-- Fallback to original file ensures uploads never break
+- Wake Lock API is supported on Chrome/Edge Android 84+, Safari iOS 16.4+ — covers most mobile users
+- `disconnectOnPageLeave: false` is already set — good foundation
+- LiveKit's built-in reconnect handles transient network blips; this fix addresses OS-level suspension and the manual reconnect fallback
 
-## Files Modified
-- **New**: `src/lib/imageCompression.ts`
-- `src/pages/Create.tsx`
-- `src/pages/admin/AdminCreateMarket.tsx`
-- `src/pages/Profile.tsx`
-- `src/components/social/StatusComposer.tsx`
-- `src/components/social/StoryCreator.tsx`
-- `src/components/MarketCard.tsx`
-- `src/components/social/StoriesCarousel.tsx`
-- `src/components/social/StatusCard.tsx`
-- `src/components/social/SocialAdCard.tsx`
+## File Modified
 - `src/components/social/SpaceRoom.tsx`
-- `src/components/social/StoryViewer.tsx`
-- `package.json`
 
