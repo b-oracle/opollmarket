@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Image, Loader2, Send, X, BarChart3, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
+import { optimizedImageUrl } from "@/lib/optimizedImage";
 
 const MAX_CHARS = 280;
 
@@ -150,7 +151,7 @@ const StatusComposer = () => {
           >
             <div className="flex items-center gap-2 p-2 bg-muted/30">
               {selectedMarket.image_url && (
-                <img src={selectedMarket.image_url} alt="" className="w-10 h-10 rounded object-cover shrink-0" loading="lazy" />
+                <img src={optimizedImageUrl(selectedMarket.image_url, "thumb")} alt="" className="w-10 h-10 rounded object-cover shrink-0" loading="lazy" />
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold truncate">{selectedMarket.title}</p>
@@ -199,7 +200,7 @@ const StatusComposer = () => {
                     className="w-full flex items-center gap-2 p-2 hover:bg-muted/50 transition-colors text-left"
                   >
                     {m.image_url && (
-                      <img src={m.image_url} alt="" className="w-8 h-8 rounded object-cover shrink-0" loading="lazy" />
+                      <img src={optimizedImageUrl(m.image_url, "thumb")} alt="" className="w-8 h-8 rounded object-cover shrink-0" loading="lazy" />
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium truncate">{m.title}</p>

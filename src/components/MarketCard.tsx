@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import watermarkLogo from "@/assets/watermark-logo.png";
+import { optimizedImageUrl } from "@/lib/optimizedImage";
 import blueLogo from "@/assets/blue-opoll-logo.png";
 import { Heart, MessageCircle, Share2, TrendingUp, Users, Clock, BarChart3, Zap, Bookmark, ThumbsUp, ThumbsDown, ExternalLink, Flame, Radio, CheckCircle2, XCircle, Crown } from "lucide-react";
 import { getBoostTierConfig } from "@/lib/boostTiers";
@@ -287,7 +288,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         <div className="absolute inset-0 overflow-hidden">
           {market.imageUrl ? (
             <div className="absolute inset-[-30px_0] will-change-transform" style={{ transform: `translateY(${parallaxY}px)` }}>
-              <img src={market.imageUrl} alt="" className="w-full h-full object-cover opacity-40" loading="lazy" />
+              <img src={optimizedImageUrl(market.imageUrl, "card")} alt="" className="w-full h-full object-cover opacity-40" loading="lazy" />
             </div>
           ) : null}
           {/* Strong bottom-heavy gradient for text readability */}
@@ -464,7 +465,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             >
               <div className="w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0 group-hover/creator:border-primary/60 transition-colors overflow-hidden">
                 {creatorProfile?.avatar_url ? (
-                  <img src={creatorProfile.avatar_url} alt={market.creatorName} className="w-full h-full object-cover" />
+                  <img src={optimizedImageUrl(creatorProfile.avatar_url, "avatar-sm")} alt={market.creatorName} className="w-full h-full object-cover" loading="lazy" />
                 ) : (
                   <span className="text-[10px] font-bold text-primary">{market.creatorName.charAt(0)}</span>
                 )}

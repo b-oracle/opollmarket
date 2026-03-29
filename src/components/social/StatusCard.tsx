@@ -9,6 +9,7 @@ import { formatDistanceToNow } from "date-fns";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { toast } from "sonner";
 import StatusComments from "./StatusComments";
+import { optimizedImageUrl } from "@/lib/optimizedImage";
 import LiveAvatarBadge from "./LiveAvatarBadge";
 import { useLiveSpaceUsers, useLiveSpaceForUser } from "@/hooks/useLiveSpaceUsers";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
@@ -267,7 +268,7 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
             }}
           >
             {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt={name} className="w-full h-full object-cover" loading="lazy" />
+              <img src={optimizedImageUrl(profile.avatar_url, "avatar-md")} alt={name} className="w-full h-full object-cover" loading="lazy" />
             ) : (
               <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
             )}
@@ -302,7 +303,7 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
         >
           <div className="flex items-center gap-2 p-2">
             {market.image_url && (
-              <img src={market.image_url} alt="" className="w-12 h-12 rounded object-cover shrink-0" loading="lazy" />
+              <img src={optimizedImageUrl(market.image_url, "thumb")} alt="" className="w-12 h-12 rounded object-cover shrink-0" loading="lazy" />
             )}
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold line-clamp-2">{market.title}</p>
@@ -317,7 +318,7 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
 
       {/* Legacy image display */}
       {!market && status.image_url && (
-        <img src={status.image_url} alt="" className="rounded-lg max-h-60 w-full object-cover" loading="lazy" />
+        <img src={optimizedImageUrl(status.image_url, "card")} alt="" className="rounded-lg max-h-60 w-full object-cover" loading="lazy" />
       )}
 
       {/* Actions */}

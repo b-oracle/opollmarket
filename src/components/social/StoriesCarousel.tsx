@@ -9,6 +9,7 @@ import StoryViewer from "./StoryViewer";
 import LiveAvatarBadge from "./LiveAvatarBadge";
 import { useLiveSpaceUsers, useLiveSpaceForUser } from "@/hooks/useLiveSpaceUsers";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
+import { optimizedImageUrl } from "@/lib/optimizedImage";
 
 interface StoryGroup {
   userId: string;
@@ -45,7 +46,7 @@ const StoryBubble = ({ group, name, isLive, onView, onJoinSpace }: {
         <LiveAvatarBadge isLive={isLive} size="md" />
         <div className="w-full h-full rounded-full overflow-hidden">
           {group.profile?.avatar_url ? (
-            <img src={group.profile.avatar_url} alt={name} className="w-full h-full object-cover" loading="lazy" />
+            <img src={optimizedImageUrl(group.profile.avatar_url, "avatar-md")} alt={name} className="w-full h-full object-cover" loading="lazy" />
           ) : (
             <div className="w-full h-full bg-primary/20 flex items-center justify-center">
               <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
@@ -168,7 +169,7 @@ const StoriesCarousel = () => {
             <LiveAvatarBadge isLive={liveUserIds.has(user?.id || "")} size="md" />
             <div className="w-full h-full rounded-full overflow-hidden">
               {hasOwnStories && ownGroup?.profile?.avatar_url ? (
-                <img src={ownGroup.profile.avatar_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                <img src={optimizedImageUrl(ownGroup.profile.avatar_url, "avatar-md")} alt="" className="w-full h-full object-cover" loading="lazy" />
               ) : (
                 <div className="w-full h-full bg-muted flex items-center justify-center">
                   <Plus className="w-5 h-5 text-muted-foreground" />
