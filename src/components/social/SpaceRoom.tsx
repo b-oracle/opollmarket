@@ -1165,6 +1165,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       const gain = ctx.createGain();
       gain.gain.value = deviceMusicVolume;
       gain.connect(destination);
+      gain.connect(ctx.destination); // local playback so host can hear it too
       deviceMusicGainRef.current = gain;
 
       const source = ctx.createBufferSource();
