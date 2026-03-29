@@ -267,7 +267,7 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
             }}
           >
             {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt={name} className="w-full h-full object-cover" />
+              <img src={profile.avatar_url} alt={name} className="w-full h-full object-cover" loading="lazy" />
             ) : (
               <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
             )}
@@ -302,7 +302,7 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
         >
           <div className="flex items-center gap-2 p-2">
             {market.image_url && (
-              <img src={market.image_url} alt="" className="w-12 h-12 rounded object-cover shrink-0" />
+              <img src={market.image_url} alt="" className="w-12 h-12 rounded object-cover shrink-0" loading="lazy" />
             )}
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold line-clamp-2">{market.title}</p>

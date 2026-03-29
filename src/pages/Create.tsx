@@ -588,11 +588,13 @@ const Create = () => {
 
   const uploadImage = async (): Promise<string | null> => {
     if (!imageFile) return null;
-    const ext = imageFile.name.split(".").pop();
+    const { compressImage, webpExtension } = await import("@/lib/imageCompression");
+    const compressed = await compressImage(imageFile, "market-banner");
+    const ext = webpExtension();
     const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
     const { error } = await supabase.storage
       .from("market-images")
-      .upload(fileName, imageFile, { contentType: imageFile.type });
+      .upload(fileName, compressed, { contentType: compressed.type });
     if (error) {
       console.error("Image upload error:", error);
       toast.error("Failed to upload image");

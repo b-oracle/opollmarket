@@ -817,9 +817,11 @@ const Profile = () => {
 
   const uploadAvatar = async (): Promise<string | null> => {
     if (!avatarFile || !user) return null;
-    const ext = avatarFile.name.split(".").pop();
+    const { compressImage, webpExtension } = await import("@/lib/imageCompression");
+    const compressed = await compressImage(avatarFile, "avatar");
+    const ext = webpExtension();
     const path = `${user.id}/avatar.${ext}`;
-    const { error } = await supabase.storage.from("avatars").upload(path, avatarFile, { upsert: true });
+    const { error } = await supabase.storage.from("avatars").upload(path, compressed, { upsert: true });
     if (error) { toast.error("Avatar upload failed"); return null; }
     const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
     return `${urlData.publicUrl}?t=${Date.now()}`;

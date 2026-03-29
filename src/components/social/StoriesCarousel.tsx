@@ -45,7 +45,7 @@ const StoryBubble = ({ group, name, isLive, onView, onJoinSpace }: {
         <LiveAvatarBadge isLive={isLive} size="md" />
         <div className="w-full h-full rounded-full overflow-hidden">
           {group.profile?.avatar_url ? (
-            <img src={group.profile.avatar_url} alt={name} className="w-full h-full object-cover" />
+            <img src={group.profile.avatar_url} alt={name} className="w-full h-full object-cover" loading="lazy" />
           ) : (
             <div className="w-full h-full bg-primary/20 flex items-center justify-center">
               <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
@@ -168,7 +168,7 @@ const StoriesCarousel = () => {
             <LiveAvatarBadge isLive={liveUserIds.has(user?.id || "")} size="md" />
             <div className="w-full h-full rounded-full overflow-hidden">
               {hasOwnStories && ownGroup?.profile?.avatar_url ? (
-                <img src={ownGroup.profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                <img src={ownGroup.profile.avatar_url} alt="" className="w-full h-full object-cover" loading="lazy" />
               ) : (
                 <div className="w-full h-full bg-muted flex items-center justify-center">
                   <Plus className="w-5 h-5 text-muted-foreground" />
