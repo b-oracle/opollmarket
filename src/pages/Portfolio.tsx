@@ -226,7 +226,7 @@ const Portfolio = () => {
       if (!user?.id) return [];
       const { data, error } = await supabase
         .from("positions")
-        .select("id, market_id, side, option_id, shares, avg_price, markets(title, yes_price, no_price, category, end_date, status, market_type), market_options(label, sort_order)")
+        .select("id, market_id, side, option_id, shares, avg_price, markets(title, yes_price, no_price, category, end_date, status, market_type), market_options(label, sort_order, price)")
         .eq("user_id", user.id)
         .gt("shares", 0)
         .order("created_at", { ascending: false });
@@ -243,8 +243,11 @@ const Portfolio = () => {
   const enriched: EnrichedPosition[] = rawPositions.map((p) => {
     const market = p.markets;
     const avgPriceCents = Math.round(p.avg_price * 100);
+    const optionPrice = (p as any).market_options?.price;
     const currentPriceCents = market
-      ? Math.round((p.side === "yes" ? market.yes_price : market.no_price) * 100)
+      ? optionPrice != null
+        ? Math.round(Number(optionPrice) * 100)
+        : Math.round((p.side === "yes" ? market.yes_price : market.no_price) * 100)
       : avgPriceCents;
     const invested = p.shares * p.avg_price;
     const currentValue = p.shares * (currentPriceCents / 100);
