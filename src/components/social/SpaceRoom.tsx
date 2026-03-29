@@ -1763,7 +1763,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   {showMusicMenu && (
                     <div className="absolute bottom-full right-0 mb-1 bg-card border border-border rounded-lg shadow-lg p-1.5 min-w-[160px] z-[95]">
                       {/* Device music section */}
-                      <input ref={deviceFileInputRef} type="file" <input ref={deviceFileInputRef} type="file" accept=".mp3,.m4a,.wav,.ogg,.flac,.aac,.wma,.opus,audio/mpeg,audio/mp4,audio/wav,audio/ogg,audio/flac,audio/aac" className="hidden" onChange={handleDeviceMusicFile} /> className="hidden" onChange={handleDeviceMusicFile} />
+                      <input ref={deviceFileInputRef} type="file" accept=".mp3,.m4a,.wav,.ogg,.flac,.aac,.wma,.opus,audio/mpeg,audio/mp4,audio/wav,audio/ogg,audio/flac,audio/aac" className="hidden" onChange={handleDeviceMusicFile} />".mp3,.m4a,.wav,.ogg,.flac,.aac,.wma,.opus,audio/mpeg,audio/mp4,audio/wav,audio/ogg,audio/flac,audio/aac" className="hidden" onChange={handleDeviceMusicFile} /> className="hidden" onChange={handleDeviceMusicFile} />
                       {!deviceMusicPlaying ? (
                         <button onClick={() => deviceFileInputRef.current?.click()}
                           className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs hover:bg-muted text-foreground transition-colors">
