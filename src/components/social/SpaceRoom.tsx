@@ -38,7 +38,7 @@ import { useActiveSpace } from "@/hooks/useActiveSpace";
 import SpaceMiniPlayer from "./SpaceMiniPlayer";
 import TaggedMarketsCarousel from "./TaggedMarketsCarousel";
 import { SOUND_REACTIONS, playSoundById, AMBIENT_TRACKS, startAmbient, stopAmbient, isAmbientPlaying, warmAudioContext } from "@/lib/spaceSounds";
-import { Music, ChevronDown } from "lucide-react";
+import { Music, ChevronDown, Upload, Square, Play, Pause } from "lucide-react";
 
 interface SpaceRoomProps {
   spaceId: string;
@@ -213,6 +213,20 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [taggedMarketIds, setTaggedMarketIds] = useState<string[]>([]);
   const [ambientTrack, setAmbientTrack] = useState<string | null>(null);
   const [showMusicMenu, setShowMusicMenu] = useState(false);
+
+  // Device music state
+  const [deviceMusicPlaying, setDeviceMusicPlaying] = useState(false);
+  const [deviceMusicPaused, setDeviceMusicPaused] = useState(false);
+  const [deviceMusicName, setDeviceMusicName] = useState<string | null>(null);
+  const deviceMusicCtxRef = useRef<AudioContext | null>(null);
+  const deviceMusicSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const deviceMusicGainRef = useRef<GainNode | null>(null);
+  const deviceMusicDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
+  const deviceMusicTrackRef = useRef<any>(null); // published LiveKit track
+  const deviceMusicBufferRef = useRef<AudioBuffer | null>(null);
+  const deviceMusicOffsetRef = useRef<number>(0);
+  const deviceMusicStartTimeRef = useRef<number>(0);
+  const deviceFileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch tagged market IDs for this space
   useEffect(() => {
@@ -851,6 +865,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const handleLeave = async () => {
     // Stop ambient music if playing
     stopAmbient();
+    // Stop device music if playing
+    if (deviceMusicPlaying) await stopDeviceMusic();
 
     // If recording is active, pause the recorder but KEEP chunks for later
     if (recording && mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
@@ -888,6 +904,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const handleEndSpace = async () => {
     if (!isHost) return;
     stopAmbient();
+    if (deviceMusicPlaying) await stopDeviceMusic();
     // If recording is active, stop and upload BEFORE ending
     if (recording && mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       toast.info("Saving recording before ending...");
@@ -1120,6 +1137,118 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       }
     }
     setShowMusicMenu(false);
+  };
+
+  // === Device Music ===
+  const handleDeviceMusicFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !roomRef.current) return;
+    e.target.value = ""; // reset input
+
+    try {
+      const ctx = new AudioContext();
+      deviceMusicCtxRef.current = ctx;
+
+      const arrayBuffer = await file.arrayBuffer();
+      const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+      deviceMusicBufferRef.current = audioBuffer;
+
+      const destination = ctx.createMediaStreamDestination();
+      deviceMusicDestRef.current = destination;
+
+      const gain = ctx.createGain();
+      gain.gain.value = 0.5;
+      gain.connect(destination);
+      deviceMusicGainRef.current = gain;
+
+      const source = ctx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(gain);
+      source.onended = () => {
+        if (!deviceMusicPaused) stopDeviceMusic();
+      };
+      source.start(0);
+      deviceMusicSourceRef.current = source;
+      deviceMusicOffsetRef.current = 0;
+      deviceMusicStartTimeRef.current = ctx.currentTime;
+
+      // Publish the stream as a secondary audio track via LiveKit
+      const mediaTrack = destination.stream.getAudioTracks()[0];
+      const pub = await roomRef.current.localParticipant.publishTrack(mediaTrack, {
+        name: "device-music",
+        source: Track.Source.ScreenShareAudio,
+      });
+      deviceMusicTrackRef.current = pub;
+
+      setDeviceMusicPlaying(true);
+      setDeviceMusicPaused(false);
+      setDeviceMusicName(file.name);
+      setShowMusicMenu(false);
+      toast.success(`Now playing: ${file.name} 🎵`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to play audio file");
+      cleanupDeviceMusic();
+    }
+  };
+
+  const pauseDeviceMusic = () => {
+    const source = deviceMusicSourceRef.current;
+    const ctx = deviceMusicCtxRef.current;
+    if (!source || !ctx) return;
+
+    const elapsed = ctx.currentTime - deviceMusicStartTimeRef.current;
+    deviceMusicOffsetRef.current += elapsed;
+
+    try { source.stop(); } catch {}
+    deviceMusicSourceRef.current = null;
+    setDeviceMusicPaused(true);
+  };
+
+  const resumeDeviceMusic = () => {
+    const ctx = deviceMusicCtxRef.current;
+    const buffer = deviceMusicBufferRef.current;
+    const gain = deviceMusicGainRef.current;
+    if (!ctx || !buffer || !gain) return;
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(gain);
+    source.onended = () => {
+      if (!deviceMusicPaused) stopDeviceMusic();
+    };
+    source.start(0, deviceMusicOffsetRef.current);
+    deviceMusicSourceRef.current = source;
+    deviceMusicStartTimeRef.current = ctx.currentTime;
+    setDeviceMusicPaused(false);
+  };
+
+  const cleanupDeviceMusic = () => {
+    try { deviceMusicSourceRef.current?.stop(); } catch {}
+    deviceMusicSourceRef.current = null;
+    deviceMusicBufferRef.current = null;
+    deviceMusicGainRef.current = null;
+    deviceMusicDestRef.current = null;
+    deviceMusicOffsetRef.current = 0;
+    if (deviceMusicCtxRef.current && deviceMusicCtxRef.current.state !== "closed") {
+      try { deviceMusicCtxRef.current.close(); } catch {}
+    }
+    deviceMusicCtxRef.current = null;
+  };
+
+  const stopDeviceMusic = async () => {
+    // Unpublish from LiveKit
+    const room = roomRef.current;
+    const pub = deviceMusicTrackRef.current;
+    if (room && pub) {
+      try {
+        await room.localParticipant.unpublishTrack(pub.track || pub);
+      } catch {}
+    }
+    deviceMusicTrackRef.current = null;
+    cleanupDeviceMusic();
+    setDeviceMusicPlaying(false);
+    setDeviceMusicPaused(false);
+    setDeviceMusicName(null);
   };
 
   const reactToMessage = (messageId: string, emoji: string) => {
@@ -1619,7 +1748,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 <div className="relative">
                   <button onClick={() => setShowMusicMenu(!showMusicMenu)}
                     className={`h-7 px-2 rounded-full flex items-center justify-center gap-1 text-xs transition-colors border ${
-                      ambientTrack
+                      ambientTrack || deviceMusicPlaying
                         ? "bg-primary/20 text-primary border-primary/40"
                         : "bg-muted hover:bg-muted/80 text-muted-foreground border-border"
                     }`}
@@ -1628,7 +1757,39 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     <ChevronDown className="w-2.5 h-2.5" />
                   </button>
                   {showMusicMenu && (
-                    <div className="absolute bottom-full right-0 mb-1 bg-card border border-border rounded-lg shadow-lg p-1.5 min-w-[140px] z-[95]">
+                    <div className="absolute bottom-full right-0 mb-1 bg-card border border-border rounded-lg shadow-lg p-1.5 min-w-[160px] z-[95]">
+                      {/* Device music section */}
+                      <input ref={deviceFileInputRef} type="file" accept="audio/*" className="hidden" onChange={handleDeviceMusicFile} />
+                      {!deviceMusicPlaying ? (
+                        <button onClick={() => deviceFileInputRef.current?.click()}
+                          className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs hover:bg-muted text-foreground transition-colors">
+                          <Upload className="w-3 h-3" />
+                          <span>Play from device</span>
+                        </button>
+                      ) : (
+                        <div className="px-3 py-1.5 space-y-1">
+                          <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">🎵 {deviceMusicName}</p>
+                          <div className="flex items-center gap-1">
+                            {deviceMusicPaused ? (
+                              <button onClick={resumeDeviceMusic}
+                                className="flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-primary/15 text-primary hover:bg-primary/25 transition-colors">
+                                <Play className="w-3 h-3" /> Resume
+                              </button>
+                            ) : (
+                              <button onClick={pauseDeviceMusic}
+                                className="flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-muted hover:bg-muted/80 text-foreground transition-colors">
+                                <Pause className="w-3 h-3" /> Pause
+                              </button>
+                            )}
+                            <button onClick={() => { stopDeviceMusic(); setShowMusicMenu(false); }}
+                              className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-destructive hover:bg-destructive/10 transition-colors">
+                              <Square className="w-3 h-3" /> Stop
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      <div className="border-t border-border my-1" />
+                      {/* Ambient tracks */}
                       {AMBIENT_TRACKS.map((t) => (
                         <button key={t.id} onClick={() => toggleAmbientMusic(t.id)}
                           className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors ${
