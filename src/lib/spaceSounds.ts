@@ -15,37 +15,63 @@ const getCtx = (): AudioContext => {
 
 /* ─── Individual sound synthesizers ─── */
 
-/** Applause: burst of filtered noise pulses */
+/** Applause: crowd ovation with murmuring voices and layered claps */
 export const playApplause = () => {
   const ctx = getCtx();
-  const duration = 1.8;
-  const bufferSize = ctx.sampleRate * duration;
-  const buffer = ctx.createBuffer(2, bufferSize, ctx.sampleRate);
+  const duration = 2.5;
+  const sampleRate = ctx.sampleRate;
+  const bufferSize = sampleRate * duration;
+  const buffer = ctx.createBuffer(2, bufferSize, sampleRate);
 
   for (let ch = 0; ch < 2; ch++) {
     const data = buffer.getChannelData(ch);
     for (let i = 0; i < bufferSize; i++) {
-      // Random noise shaped with an envelope to mimic clap bursts
-      const t = i / ctx.sampleRate;
-      const env = Math.sin(t / duration * Math.PI) * (1 + 0.3 * Math.sin(t * 12));
-      data[i] = (Math.random() * 2 - 1) * env * 0.35;
+      const t = i / sampleRate;
+      // Main envelope: swell up then slowly fade
+      const env = Math.pow(Math.sin(t / duration * Math.PI), 0.6);
+      // Layered clap bursts at different rates for crowd effect
+      const clap1 = 0.5 + 0.5 * Math.sin(t * 8.3 + ch * 0.5);
+      const clap2 = 0.5 + 0.5 * Math.sin(t * 13.7 + ch * 1.2);
+      const clap3 = 0.5 + 0.5 * Math.sin(t * 5.1);
+      const clapMod = (clap1 * 0.4 + clap2 * 0.35 + clap3 * 0.25);
+      // Base crowd noise
+      const noise = (Math.random() * 2 - 1);
+      // Voice-like murmur: modulated low-frequency rumble
+      const voiceMod = Math.sin(t * 120 + Math.sin(t * 3.5) * 2) * 0.15;
+      const voiceMod2 = Math.sin(t * 180 + Math.sin(t * 2.1) * 3) * 0.1;
+      const voiceMod3 = Math.sin(t * 95 + Math.sin(t * 4.8) * 1.5) * 0.08;
+      
+      data[i] = env * (noise * clapMod * 0.3 + voiceMod + voiceMod2 + voiceMod3) * 0.5;
     }
   }
 
   const src = ctx.createBufferSource();
   src.buffer = buffer;
 
+  // Clap band – mid-high frequencies
   const bandpass = ctx.createBiquadFilter();
   bandpass.type = "bandpass";
-  bandpass.frequency.value = 3000;
-  bandpass.Q.value = 0.7;
+  bandpass.frequency.value = 2500;
+  bandpass.Q.value = 0.5;
 
-  const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.5, ctx.currentTime);
-  gain.gain.linearRampToValueAtTime(0, ctx.currentTime + duration);
+  // Separate voice/rumble path – low frequencies
+  const src2 = ctx.createBufferSource();
+  src2.buffer = buffer;
+  const lowpass = ctx.createBiquadFilter();
+  lowpass.type = "lowpass";
+  lowpass.frequency.value = 600;
+  const voiceGain = ctx.createGain();
+  voiceGain.gain.value = 0.7;
 
-  src.connect(bandpass).connect(gain).connect(ctx.destination);
+  const masterGain = ctx.createGain();
+  masterGain.gain.setValueAtTime(0.6, ctx.currentTime);
+  masterGain.gain.setValueAtTime(0.6, ctx.currentTime + duration * 0.7);
+  masterGain.gain.linearRampToValueAtTime(0, ctx.currentTime + duration);
+
+  src.connect(bandpass).connect(masterGain).connect(ctx.destination);
+  src2.connect(lowpass).connect(voiceGain).connect(masterGain);
   src.start();
+  src2.start();
 };
 
 /** Drum roll: rapid snare-like hits */
