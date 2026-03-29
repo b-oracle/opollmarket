@@ -1,12 +1,16 @@
+import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { CheckCircle2, XCircle, Trophy, TrendingDown, ArrowUp, ArrowDown, Minus } from "lucide-react";
+import { CheckCircle2, Trophy, TrendingDown, ArrowUp, ArrowDown, Minus, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { optionColors } from "@/lib/optionColors";
+import ShareModal from "@/components/ShareModal";
+import ProfitShareCard from "@/components/ProfitShareCard";
 
 interface ResolutionSummaryProps {
   marketId: string;
+  marketTitle?: string;
   resolvedSide: string | null;
   winningOptionId: string | null;
   options?: { id: string; label: string; price: number; sortOrder: number }[];
@@ -34,11 +38,12 @@ const colorAlpha = (hex: string, alpha: number) => {
   return `rgba(${r},${g},${b},${alpha})`;
 };
 
-export default function ResolutionSummary({ marketId, resolvedSide, winningOptionId, options, marketType }: ResolutionSummaryProps) {
+export default function ResolutionSummary({ marketId, marketTitle, resolvedSide, winningOptionId, options, marketType }: ResolutionSummaryProps) {
   const { user } = useAuth();
   const isMulti = marketType === "multi" || marketType === "range";
+  const [shareOpen, setShareOpen] = useState(false);
+  const profitCardRef = useRef<HTMLDivElement>(null);
 
-  // Get winning label
   const winningOption = options?.find(o => o.id === winningOptionId);
   const winningLabel = isMulti && winningOption
     ? winningOption.label
@@ -53,7 +58,6 @@ export default function ResolutionSummary({ marketId, resolvedSide, winningOptio
     ? optionColors[winningOptionIdx % optionColors.length]
     : resolvedSide === "yes" ? "#22c55e" : resolvedSide === "no" ? "#ef4444" : "#888";
 
-  // Query user positions for this market
   const { data: userPositions } = useQuery({
     queryKey: ["resolution-positions", marketId, user?.id],
     queryFn: async () => {
@@ -69,7 +73,6 @@ export default function ResolutionSummary({ marketId, resolvedSide, winningOptio
     enabled: !!user?.id,
   });
 
-  // Query user payout transactions
   const { data: payoutTxs } = useQuery({
     queryKey: ["resolution-payouts", marketId, user?.id],
     queryFn: async () => {
@@ -87,11 +90,13 @@ export default function ResolutionSummary({ marketId, resolvedSide, winningOptio
 
   const totalPayout = payoutTxs?.reduce((sum, tx) => sum + Number(tx.amount), 0) ?? 0;
   const hasPositions = userPositions && userPositions.length > 0;
-
-  // Determine if user won or lost
   const didWin = totalPayout > 0;
   const totalWagered = userPositions?.reduce((sum, p) => sum + (Number(p.shares) * Number(p.avg_price)), 0) ?? 0;
   const netPnl = totalPayout - totalWagered;
+
+  const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Trader";
+  const referralCode = user?.user_metadata?.display_name || user?.id || "";
+  const referralLink = `https://opoll.org/market/${marketId}${referralCode ? `?ref=${referralCode}` : ""}`;
 
   return (
     <div className="space-y-3 mb-4">
@@ -116,7 +121,6 @@ export default function ResolutionSummary({ marketId, resolvedSide, winningOptio
           </div>
         </div>
 
-        {/* Show all option results for multi-option */}
         {isMulti && options && options.length > 0 && (
           <div className="mt-3 space-y-1.5">
             {options
@@ -164,7 +168,7 @@ export default function ResolutionSummary({ marketId, resolvedSide, winningOptio
                 <TrendingDown className="w-5 h-5 text-destructive" />
               )}
             </div>
-            <div>
+            <div className="flex-1 min-w-0">
               <p className={`text-lg font-bold ${didWin ? "text-green-500" : "text-destructive"}`}>
                 {didWin ? "You Won! 🎉" : "You Lost"}
               </p>
@@ -174,6 +178,14 @@ export default function ResolutionSummary({ marketId, resolvedSide, winningOptio
                   : `Lost: $${totalWagered.toFixed(2)}`}
               </p>
             </div>
+            {didWin && (
+              <button
+                onClick={() => setShareOpen(true)}
+                className="shrink-0 w-9 h-9 rounded-full bg-green-500/15 hover:bg-green-500/25 flex items-center justify-center transition-colors"
+              >
+                <Share2 className="w-4 h-4 text-green-500" />
+              </button>
+            )}
           </div>
 
           {/* Position breakdown */}
@@ -241,6 +253,29 @@ export default function ResolutionSummary({ marketId, resolvedSide, winningOptio
           )}
         </motion.div>
       )}
+
+      {/* Off-screen profit share card for screenshot */}
+      {didWin && user && (
+        <ProfitShareCard
+          ref={profitCardRef}
+          market={marketTitle || "Prediction Market"}
+          side={winningLabel}
+          profit={netPnl}
+          payout={totalPayout}
+          displayName={displayName}
+          referralCode={referralCode}
+        />
+      )}
+
+      <ShareModal
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        title={`I just won +$${netPnl.toFixed(2)} on oPoll! 🔥`}
+        description={marketTitle || "Prediction Market"}
+        marketUrl={referralLink}
+        marketId={marketId}
+        captureRef={profitCardRef}
+      />
     </div>
   );
 }
