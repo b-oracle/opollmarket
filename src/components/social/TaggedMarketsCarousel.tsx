@@ -9,9 +9,11 @@ interface TaggedMarketsCarouselProps {
   spaceId: string;
   taggedMarketIds: string[];
   isHost: boolean;
+  isCoHost?: boolean;
 }
 
-const TaggedMarketsCarousel = ({ spaceId, taggedMarketIds, isHost }: TaggedMarketsCarouselProps) => {
+const TaggedMarketsCarousel = ({ spaceId, taggedMarketIds, isHost, isCoHost = false }: TaggedMarketsCarouselProps) => {
+  const canEdit = isHost || isCoHost;
   const navigate = useNavigate();
   const [markets, setMarkets] = useState<MarketTag[]>([]);
   const [editing, setEditing] = useState(false);
@@ -34,6 +36,7 @@ const TaggedMarketsCarousel = ({ spaceId, taggedMarketIds, isHost }: TaggedMarke
     })();
   }, [taggedMarketIds]);
 
+  if (markets.length === 0 && !editing && !canEdit) return null;
   if (markets.length === 0 && !editing) return null;
 
   const handleSave = async () => {
@@ -71,7 +74,7 @@ const TaggedMarketsCarousel = ({ spaceId, taggedMarketIds, isHost }: TaggedMarke
         <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
           <TrendingUp className="w-3 h-3" /> Tagged Markets
         </span>
-        {isHost && (
+        {canEdit && (
           <button onClick={() => { setEditMarkets(markets); setEditing(true); }}
             className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-0.5">
             <Pencil className="w-3 h-3" /> Edit
