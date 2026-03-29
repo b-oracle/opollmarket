@@ -118,7 +118,7 @@ PortfolioSummaryShareCard.displayName = "PortfolioSummaryShareCard";
 
 interface PositionShareCardProps {
   marketTitle: string;
-  side: "yes" | "no";
+  side: string;
   shares: number;
   avgPrice: number;
   currentPrice: number;
@@ -160,9 +160,9 @@ export const PositionShareCard = forwardRef<HTMLDivElement, PositionShareCardPro
                 letterSpacing: 1,
                 padding: "3px 8px",
                 borderRadius: 6,
-                background: side === "yes" ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
-                color: side === "yes" ? "#22c55e" : "#ef4444",
-                border: `1px solid ${side === "yes" ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}`,
+                background: side === "yes" ? "rgba(34,197,94,0.15)" : side === "no" ? "rgba(239,68,68,0.15)" : "rgba(2,199,252,0.15)",
+                color: side === "yes" ? "#22c55e" : side === "no" ? "#ef4444" : "#02C7FC",
+                border: `1px solid ${side === "yes" ? "rgba(34,197,94,0.3)" : side === "no" ? "rgba(239,68,68,0.3)" : "rgba(2,199,252,0.3)"}`,
               }}
             >
               {side}
