@@ -2108,6 +2108,7 @@ export type Database = {
           scheduled_at: string | null
           started_at: string
           status: Database["public"]["Enums"]["space_status"]
+          tagged_market_ids: string[]
           title: string
           visibility_scope: string
         }
@@ -2126,6 +2127,7 @@ export type Database = {
           scheduled_at?: string | null
           started_at?: string
           status?: Database["public"]["Enums"]["space_status"]
+          tagged_market_ids?: string[]
           title: string
           visibility_scope?: string
         }
@@ -2144,6 +2146,7 @@ export type Database = {
           scheduled_at?: string | null
           started_at?: string
           status?: Database["public"]["Enums"]["space_status"]
+          tagged_market_ids?: string[]
           title?: string
           visibility_scope?: string
         }
@@ -3120,6 +3123,7 @@ export type Database = {
           scheduled_at: string | null
           started_at: string
           status: Database["public"]["Enums"]["space_status"]
+          tagged_market_ids: string[]
           title: string
           visibility_scope: string
         }[]
