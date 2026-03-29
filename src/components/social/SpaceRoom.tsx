@@ -725,6 +725,43 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           { onConflict: "space_id,user_id" }
         );
         queryClient.invalidateQueries({ queryKey: ["spaces"] });
+
+        // Auto-restart recording if it was active before host left/reconnected
+        if (recording && !mediaRecorderRef.current && data.isHost) {
+          try {
+            const ctx = new AudioContext();
+            audioContextRef.current = ctx;
+            const destination = ctx.createMediaStreamDestination();
+            recordingDestRef.current = destination;
+
+            // Mix local mic
+            const localStream = room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track?.mediaStream;
+            if (localStream) {
+              ctx.createMediaStreamSource(localStream).connect(destination);
+            }
+            // Mix remote audio
+            room.remoteParticipants.forEach((rp) => {
+              rp.getTrackPublications().forEach((pub) => {
+                if (pub.track?.kind === "audio") {
+                  const els = pub.track.attachedElements;
+                  if (els.length > 0 && els[0].srcObject instanceof MediaStream) {
+                    try { ctx.createMediaStreamSource(els[0].srcObject).connect(destination); } catch {}
+                  }
+                }
+              });
+            });
+
+            const recorder = new MediaRecorder(destination.stream, {
+              mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm",
+            });
+            recorder.ondataavailable = (e) => {
+              if (e.data.size > 0) recordedChunksRef.current.push(e.data);
+            };
+            recorder.start(1000);
+            mediaRecorderRef.current = recorder;
+            toast.success("Recording resumed 🔴");
+          } catch {}
+        }
       } catch (err: any) {
         if (!cancelled) {
           toast.error(err?.message || "Failed to connect");
@@ -806,10 +843,21 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const handleLeave = async () => {
     // Stop ambient music if playing
     stopAmbient();
-    // If recording is active, stop and upload BEFORE disconnecting
+
+    // If recording is active, pause the recorder but KEEP chunks for later
     if (recording && mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      toast.info("Saving recording before ending...");
-      await stopClientRecording();
+      try {
+        mediaRecorderRef.current.stop();
+      } catch {}
+      // Close audio context but keep chunks and recording flag
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+        try { audioContextRef.current.close(); } catch {}
+      }
+      audioContextRef.current = null;
+      mediaRecorderRef.current = null;
+      recordingDestRef.current = null;
+      // Do NOT clear recordedChunksRef — keep them for when host rejoins
+      // Do NOT set recording to false — it will auto-restart on reconnect
     }
 
     intentionalLeaveRef.current = true;
