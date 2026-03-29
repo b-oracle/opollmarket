@@ -87,7 +87,7 @@ const TaggedMarketsCarousel = ({ spaceId, taggedMarketIds, isHost }: TaggedMarke
           >
             {m.image_url ? (
               <img
-                src={optimizedImageUrl(m.image_url, 40)}
+                src={optimizedImageUrl(m.image_url, "thumb")}
                 alt=""
                 className="w-10 h-10 rounded-lg object-cover shrink-0"
               />
