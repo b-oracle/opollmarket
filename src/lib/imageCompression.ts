@@ -3,9 +3,9 @@ import imageCompression from "browser-image-compression";
 type ImagePreset = "market-banner" | "avatar" | "social";
 
 const PRESETS: Record<ImagePreset, { maxWidthOrHeight: number; initialQuality: number }> = {
-  "market-banner": { maxWidthOrHeight: 1200, initialQuality: 0.75 },
-  avatar: { maxWidthOrHeight: 300, initialQuality: 0.7 },
-  social: { maxWidthOrHeight: 800, initialQuality: 0.75 },
+  "market-banner": { maxWidthOrHeight: 800, initialQuality: 0.7 },
+  avatar: { maxWidthOrHeight: 200, initialQuality: 0.7 },
+  social: { maxWidthOrHeight: 600, initialQuality: 0.7 },
 };
 
 /**
