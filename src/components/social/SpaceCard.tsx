@@ -59,23 +59,41 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
 
   const handlePlayPause = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!space.recording_url) return;
+    if (!space.recording_url) {
+      toast.error("Recording URL not available");
+      return;
+    }
 
     if (!audioRef.current) {
-      audioRef.current = new Audio(space.recording_url);
-      audioRef.current.addEventListener("timeupdate", () => {
-        if (audioRef.current && audioRef.current.duration) {
-          setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100);
-          setCurrentTime(audioRef.current.currentTime);
+      const audio = new Audio();
+      audio.crossOrigin = "anonymous";
+      audio.preload = "metadata";
+      audio.src = space.recording_url;
+      audioRef.current = audio;
+      audio.addEventListener("timeupdate", () => {
+        if (audio.duration && isFinite(audio.duration)) {
+          setProgress((audio.currentTime / audio.duration) * 100);
+          setCurrentTime(audio.currentTime);
         }
       });
-      audioRef.current.addEventListener("loadedmetadata", () => {
-        if (audioRef.current) setDuration(audioRef.current.duration);
+      audio.addEventListener("loadedmetadata", () => {
+        if (isFinite(audio.duration)) setDuration(audio.duration);
       });
-      audioRef.current.addEventListener("ended", () => {
+      audio.addEventListener("ended", () => {
         setIsPlaying(false);
         setProgress(0);
         setCurrentTime(0);
+      });
+      audio.addEventListener("error", () => {
+        const code = audio.error?.code;
+        const msg = audio.error?.message || "Unknown error";
+        console.error("Recording playback error:", code, msg, space.recording_url);
+        if (code === 4) {
+          toast.error("This recording format is not supported on your browser");
+        } else {
+          toast.error("Failed to load recording");
+        }
+        setIsPlaying(false);
       });
     }
 
@@ -84,7 +102,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
       setIsPlaying(false);
     } else {
       audioRef.current.play().catch((err) => {
-        console.error("Recording playback error:", err);
+        console.error("Recording play() error:", err);
         toast.error("Failed to play recording");
       });
       setIsPlaying(true);
