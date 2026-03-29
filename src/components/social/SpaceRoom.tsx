@@ -971,6 +971,15 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   };
 
   const invokeAction = async (action: string, target_user_id?: string) => {
+    // Client-side guard: only verified users can be made co-host
+    if (action === "make_cohost" && target_user_id) {
+      const targetProfile = profiles[target_user_id];
+      const targetVerification = targetProfile?.verification_level || "none";
+      if (targetVerification === "none") {
+        toast.error("Only verified members (Blue or Gold tick) can be co-hosts");
+        return;
+      }
+    }
     setPromoting(target_user_id || action);
     try {
       const { data, error } = await supabase.functions.invoke("livekit-token", {
