@@ -90,4 +90,49 @@ document.addEventListener('touchstart', (e) => {
   }
 }, { passive: true });
 
-createRoot(document.getElementById("root")!).render(<App />);
+const rootElement = document.getElementById("root");
+
+if (!rootElement) {
+  throw new Error("Root element not found");
+}
+
+createRoot(rootElement).render(<App />);
+
+// One-time blank-screen recovery: if app failed to mount any UI, clear stale SW/cache and reload.
+window.setTimeout(async () => {
+  const hasMountedContent =
+    rootElement.childElementCount > 0 ||
+    (rootElement.textContent?.trim().length ?? 0) > 0;
+
+  if (hasMountedContent) return;
+
+  let attempts = 0;
+  try {
+    attempts = Number(window.sessionStorage?.getItem("boot_recovery") || "0");
+  } catch {
+    attempts = 0;
+  }
+
+  if (attempts >= 1) return;
+
+  try {
+    window.sessionStorage?.setItem("boot_recovery", String(attempts + 1));
+  } catch {
+    // ignore storage errors
+  }
+
+  try {
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
+    }
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+  } catch {
+    // ignore cleanup failures
+  }
+
+  window.location.reload();
+}, 5000);
