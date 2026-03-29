@@ -8,13 +8,13 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 
 type ImageSize = "avatar-sm" | "avatar-md" | "avatar-lg" | "card" | "banner" | "thumb" | "story";
 
-const SIZE_PRESETS: Record<ImageSize, { width: number; quality?: number }> = {
-  "avatar-sm": { width: 48, quality: 60 },
-  "avatar-md": { width: 80, quality: 65 },
-  "avatar-lg": { width: 200, quality: 70 },
+const SIZE_PRESETS: Record<ImageSize, { width: number; height?: number; quality?: number; resize?: string }> = {
+  "avatar-sm": { width: 48, height: 48, quality: 70, resize: "cover" },
+  "avatar-md": { width: 80, height: 80, quality: 70, resize: "cover" },
+  "avatar-lg": { width: 200, height: 200, quality: 75, resize: "cover" },
   card: { width: 400, quality: 70 },
   banner: { width: 800, quality: 75 },
-  thumb: { width: 100, quality: 60 },
+  thumb: { width: 100, height: 100, quality: 65, resize: "cover" },
   story: { width: 600, quality: 75 },
 };
 
@@ -37,8 +37,14 @@ export function optimizedImageUrl(url: string | null | undefined, size: ImageSiz
     "/storage/v1/render/image/public/"
   );
   
+  const params = new URLSearchParams();
+  params.set("width", String(preset.width));
+  if (preset.height) params.set("height", String(preset.height));
+  params.set("quality", String(preset.quality || 75));
+  if (preset.resize) params.set("resize", preset.resize);
+  
   const separator = transformedUrl.includes("?") ? "&" : "?";
-  return `${transformedUrl}${separator}width=${preset.width}&quality=${preset.quality || 75}`;
+  return `${transformedUrl}${separator}${params.toString()}`;
 }
 
 /**
