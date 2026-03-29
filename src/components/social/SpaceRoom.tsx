@@ -37,6 +37,8 @@ import NftBadge, { VerificationLevel } from "@/components/NftBadge";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
 import SpaceMiniPlayer from "./SpaceMiniPlayer";
 import TaggedMarketsCarousel from "./TaggedMarketsCarousel";
+import { SOUND_REACTIONS, playSoundById, AMBIENT_TRACKS, startAmbient, stopAmbient, isAmbientPlaying } from "@/lib/spaceSounds";
+import { Music, ChevronDown } from "lucide-react";
 
 interface SpaceRoomProps {
   spaceId: string;
@@ -192,6 +194,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [allForceMuted, setAllForceMuted] = useState(false);
   const [requestPending, setRequestPending] = useState(false);
   const [taggedMarketIds, setTaggedMarketIds] = useState<string[]>([]);
+  const [ambientTrack, setAmbientTrack] = useState<string | null>(null);
+  const [showMusicMenu, setShowMusicMenu] = useState(false);
 
   // Fetch tagged market IDs for this space
   useEffect(() => {
