@@ -1456,6 +1456,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                   {speakers.map((p) => (
                     <motion.div key={p.identity} layout className="flex flex-col items-center gap-1"
+                      ref={(el: HTMLDivElement | null) => { if (el) avatarRefs.current.set(p.identity, el); else avatarRefs.current.delete(p.identity); }}
                       onClick={() => {
                         if (hasModPowers && p.identity !== hostId && p.identity !== user?.id) {
                           setActionTarget(p);
@@ -1497,6 +1498,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                     {listeners.map((p) => (
                       <div key={p.identity} className="flex flex-col items-center gap-1 cursor-pointer"
+                        ref={(el: HTMLDivElement | null) => { if (el) avatarRefs.current.set(p.identity, el); else avatarRefs.current.delete(p.identity); }}
                         onClick={() => {
                           if (hasModPowers) {
                             setActionTarget(p);
