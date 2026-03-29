@@ -387,29 +387,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         setFloatingReactions((prev) => [...prev, { id, emoji: data.emoji, identity: senderIdentity }]);
         setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
       } else if (data.type === "message") {
-        // Skip own messages — sender already added optimistically
-        if (participant?.identity === user?.id) return;
-        // Messages are now persisted in DB and delivered via realtime subscription.
-        // Data channel still provides instant delivery for connected peers.
-        const dedupKey = `dc-${participant?.identity}-${data.text}-${Math.floor(Date.now() / 2000)}`;
-        if (!loadedMsgIdsRef.current.has(dedupKey)) {
-          loadedMsgIdsRef.current.add(dedupKey);
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: dedupKey,
-              sender: participant?.identity || "unknown",
-              senderName: data.senderName || participant?.name || "Unknown",
-              text: data.text,
-              type: "message",
-              timestamp: Date.now(),
-            },
-          ]);
-          setChatOpen((open) => {
-            if (!open) setUnreadCount((c) => c + 1);
-            return open;
-          });
-        }
+        // Messages are delivered via Postgres realtime subscription.
+        // Data channel delivery is intentionally ignored to prevent duplicates.
+        // The realtime INSERT handler (line ~140) is the single source of truth.
       } else if (data.type === "msg_reaction") {
         // Someone reacted to a chat message
         setMessages((prev) =>
