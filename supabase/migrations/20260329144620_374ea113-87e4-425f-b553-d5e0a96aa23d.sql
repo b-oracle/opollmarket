@@ -1,0 +1,1 @@
+UPDATE markets SET twitter_resource_id = 'instablog9ja' WHERE id = '3f2baea2-7704-4cdf-acda-130660470837';
