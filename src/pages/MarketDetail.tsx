@@ -703,6 +703,7 @@ const MarketDetail = () => {
         {market.status === "resolved" && (
           <ResolutionSummary
             marketId={market.id}
+            marketTitle={market.title}
             resolvedSide={market.resolvedSide || null}
             winningOptionId={market.winningOptionId || null}
             options={market.options}
