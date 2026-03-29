@@ -806,10 +806,21 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const handleLeave = async () => {
     // Stop ambient music if playing
     stopAmbient();
-    // If recording is active, stop and upload BEFORE disconnecting
+
+    // If recording is active, pause the recorder but KEEP chunks for later
     if (recording && mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      toast.info("Saving recording before ending...");
-      await stopClientRecording();
+      try {
+        mediaRecorderRef.current.stop();
+      } catch {}
+      // Close audio context but keep chunks and recording flag
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+        try { audioContextRef.current.close(); } catch {}
+      }
+      audioContextRef.current = null;
+      mediaRecorderRef.current = null;
+      recordingDestRef.current = null;
+      // Do NOT clear recordedChunksRef — keep them for when host rejoins
+      // Do NOT set recording to false — it will auto-restart on reconnect
     }
 
     intentionalLeaveRef.current = true;
