@@ -63,6 +63,7 @@ const AdminSettings = () => {
   const [withdrawalLimitEnabled, setWithdrawalLimitEnabled] = useState(true);
   const [exitFee, setExitFee] = useState("");
   const [liquidityReturnFee, setLiquidityReturnFee] = useState("");
+  const [minLiquidity, setMinLiquidity] = useState("");
   const [withdrawalFee, setWithdrawalFee] = useState("");
   const [copyTradeCommission, setCopyTradeCommission] = useState("");
   const [quickTradeFee, setQuickTradeFee] = useState("");
@@ -123,6 +124,7 @@ const AdminSettings = () => {
         setWithdrawalLimitEnabled(d.withdrawal_limit_enabled !== false);
         setExitFee(String(d.exit_fee_percent ?? 5));
         setLiquidityReturnFee(String((d as any).liquidity_return_fee_percent ?? 5));
+        setMinLiquidity(String((d as any).min_liquidity ?? 10));
         setWithdrawalFee(String(d.withdrawal_fee_percent ?? 0));
         setCopyTradeCommission(String(d.copy_trade_commission_percent ?? 10));
         setQuickTradeFee(String(d.quick_trade_fee_percent ?? 5));
@@ -180,6 +182,7 @@ const AdminSettings = () => {
   const withdrawalMultiplierNum = parseFloat(withdrawalMultiplier) || 2;
   const exitFeeNum = parseFloat(exitFee) || 0;
   const liquidityReturnFeeNum = parseFloat(liquidityReturnFee) || 5;
+  const minLiquidityNum = parseFloat(minLiquidity) || 10;
   const withdrawalFeeNum = parseFloat(withdrawalFee) || 0;
   const copyTradeCommissionNum = parseFloat(copyTradeCommission) || 0;
   const quickTradeFeeNum = parseFloat(quickTradeFee) || 0;
@@ -279,6 +282,7 @@ const AdminSettings = () => {
           withdrawal_limit_enabled: withdrawalLimitEnabled,
            exit_fee_percent: exitFeeNum,
            liquidity_return_fee_percent: liquidityReturnFeeNum,
+           min_liquidity: minLiquidityNum,
            withdrawal_fee_percent: withdrawalFeeNum,
           copy_trade_commission_percent: copyTradeCommissionNum,
           quick_trade_fee_percent: quickTradeFeeNum,
@@ -331,6 +335,7 @@ const AdminSettings = () => {
           referrer_commission_percent: referrerCommissionNum,
            exit_fee_percent: exitFeeNum,
            liquidity_return_fee_percent: liquidityReturnFeeNum,
+           min_liquidity: minLiquidityNum,
            withdrawal_fee_percent: withdrawalFeeNum,
           copy_trade_commission_percent: copyTradeCommissionNum,
           min_withdrawal_amount: minWithdrawNum,
