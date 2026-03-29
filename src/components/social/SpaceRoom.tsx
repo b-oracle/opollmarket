@@ -36,6 +36,7 @@ import {
 import NftBadge, { VerificationLevel } from "@/components/NftBadge";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
 import SpaceMiniPlayer from "./SpaceMiniPlayer";
+import TaggedMarketsCarousel from "./TaggedMarketsCarousel";
 
 interface SpaceRoomProps {
   spaceId: string;
