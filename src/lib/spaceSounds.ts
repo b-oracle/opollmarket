@@ -9,8 +9,23 @@ const getCtx = (): AudioContext => {
   if (!sharedCtx || sharedCtx.state === "closed") {
     sharedCtx = new AudioContext();
   }
-  if (sharedCtx.state === "suspended") sharedCtx.resume();
+  if (sharedCtx.state === "suspended") sharedCtx.resume().catch(() => {});
   return sharedCtx;
+};
+
+/**
+ * Pre-warm the AudioContext during a user gesture (e.g. joining a space).
+ * This ensures later programmatic playback (from data channel events)
+ * won't be blocked by browser autoplay policies.
+ */
+export const warmAudioContext = () => {
+  const ctx = getCtx();
+  // Create a silent buffer and play it to "unlock" the context
+  const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.connect(ctx.destination);
+  src.start();
 };
 
 /* ─── Helper: white noise buffer ─── */
