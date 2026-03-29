@@ -701,13 +701,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         room.on(RoomEvent.Reconnected, async () => {
           toast.success("Reconnected! ✅", { id: "space-reconnect" });
           updateParticipants(room);
-          // Re-acquire mic if user was unmuted before disconnect
-          if (wasMicOnRef.current && room.localParticipant.permissions?.canPublish) {
-            try {
-              await room.localParticipant.setMicrophoneEnabled(true);
-              setMuted(false);
-            } catch {}
-          }
+          // Stay muted on reconnect — user must unmute manually
         });
 
         await room.connect(normUrl(data.url), data.token);
@@ -726,12 +720,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           setSpaceCoHostIds(spaceData.co_host_ids as string[]);
         }
 
-        if (data.isHost || data.isCoHost) {
-          try {
-            await room.localParticipant.setMicrophoneEnabled(true);
-            setMuted(false);
-          } catch { setMuted(true); }
-        }
+        // Host/co-host join muted — they must unmute manually
+        setMuted(true);
 
         updateParticipants(room);
 
