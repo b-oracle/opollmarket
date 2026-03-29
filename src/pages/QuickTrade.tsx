@@ -1633,6 +1633,8 @@ export default function QuickTrade() {
             onPlaceBet={placeBet}
             amountPresets={AMOUNT_PRESETS}
             asset={selectedAsset.symbol}
+            currentPrice={currentPrice}
+            timeframeLabel={selectedTimeframe.label}
           />
 
           <Suspense fallback={<div className="h-40" />}>
