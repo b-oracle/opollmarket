@@ -383,7 +383,7 @@ const AdminUsers = () => {
                                 fetchUsers();
                               }}
                               className={`p-1.5 rounded-lg transition-colors ${
-                                u.unlimited_markets ? "bg-primary/15 text-primary hover:bg-primary/25" : "hover:bg-muted text-muted-foreground"
+                                u.unlimited_markets ? "bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/25" : "hover:bg-muted text-muted-foreground"
                               }`}
                               title={u.unlimited_markets ? "Remove Unlimited Markets" : "Grant Unlimited Markets"}
                             >
