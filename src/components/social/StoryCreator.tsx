@@ -114,9 +114,11 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle, 
       let image_url: string | null = null;
 
       if (imageFile) {
-        const ext = imageFile.name.split(".").pop() || "jpg";
+        const { compressImage, webpExtension } = await import("@/lib/imageCompression");
+        const compressed = await compressImage(imageFile, "social");
+        const ext = webpExtension();
         const path = `${user.id}/story-${Date.now()}.${ext}`;
-        const { error: uploadError } = await supabase.storage.from("social-media").upload(path, imageFile, { upsert: true });
+        const { error: uploadError } = await supabase.storage.from("social-media").upload(path, compressed, { upsert: true });
         if (uploadError) throw uploadError;
         const { data: urlData } = supabase.storage.from("social-media").getPublicUrl(path);
         image_url = urlData.publicUrl;

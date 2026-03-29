@@ -90,11 +90,13 @@ const StatusComposer = () => {
       let image_url: string | null = null;
 
       if (imageFile) {
-        const ext = imageFile.name.split(".").pop() || "jpg";
+        const { compressImage, webpExtension } = await import("@/lib/imageCompression");
+        const compressed = await compressImage(imageFile, "social");
+        const ext = webpExtension();
         const path = `${user.id}/status-${Date.now()}.${ext}`;
         const { error: uploadError } = await supabase.storage
           .from("social-media")
-          .upload(path, imageFile, { upsert: true });
+          .upload(path, compressed, { upsert: true });
         if (uploadError) throw uploadError;
         const { data: urlData } = supabase.storage.from("social-media").getPublicUrl(path);
         image_url = urlData.publicUrl;
@@ -148,7 +150,7 @@ const StatusComposer = () => {
           >
             <div className="flex items-center gap-2 p-2 bg-muted/30">
               {selectedMarket.image_url && (
-                <img src={selectedMarket.image_url} alt="" className="w-10 h-10 rounded object-cover shrink-0" />
+                <img src={selectedMarket.image_url} alt="" className="w-10 h-10 rounded object-cover shrink-0" loading="lazy" />
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold truncate">{selectedMarket.title}</p>
@@ -197,7 +199,7 @@ const StatusComposer = () => {
                     className="w-full flex items-center gap-2 p-2 hover:bg-muted/50 transition-colors text-left"
                   >
                     {m.image_url && (
-                      <img src={m.image_url} alt="" className="w-8 h-8 rounded object-cover shrink-0" />
+                      <img src={m.image_url} alt="" className="w-8 h-8 rounded object-cover shrink-0" loading="lazy" />
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium truncate">{m.title}</p>

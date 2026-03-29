@@ -900,7 +900,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           p.isSpeaking ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "border border-border"
         } ${!prof?.avatar_url ? (p.isSpeaking ? "bg-primary/30" : "bg-muted/50") : ""}`}>
           {prof?.avatar_url ? (
-            <img src={prof.avatar_url} alt={p.name} className="w-full h-full object-cover" />
+            <img src={prof.avatar_url} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
           ) : (
             <span className={size === "lg" ? "text-lg" : "text-sm"}>{p.name.charAt(0).toUpperCase()}</span>
           )}
