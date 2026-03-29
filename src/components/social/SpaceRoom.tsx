@@ -1305,20 +1305,33 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         transition={{ type: "spring", damping: 28, stiffness: 300 }}
         className="fixed inset-x-0 bottom-0 top-16 z-[81] bg-background rounded-t-3xl border-t border-border flex flex-col overflow-hidden">
 
-        {/* Floating reactions */}
-        <div className="absolute top-20 right-4 z-[90] pointer-events-none">
+        {/* Floating reactions positioned over avatars */}
+        <div className="absolute inset-0 z-[90] pointer-events-none overflow-hidden">
           <AnimatePresence>
-            {floatingReactions.map((r) => (
-              <motion.div key={r.id}
-                initial={{ opacity: 1, y: 0, scale: 1 }}
-                animate={{ opacity: 0, y: -120, scale: 1.5 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 2 }}
-                className="text-2xl absolute right-0"
-              >
-                {r.emoji}
-              </motion.div>
-            ))}
+            {floatingReactions.map((r) => {
+              const avatarEl = avatarRefs.current.get(r.identity);
+              const containerEl = gridContainerRef.current;
+              let left = "50%";
+              let top = "50%";
+              if (avatarEl && containerEl) {
+                const avatarRect = avatarEl.getBoundingClientRect();
+                const containerRect = containerEl.getBoundingClientRect();
+                left = `${avatarRect.left - containerRect.left + avatarRect.width / 2}px`;
+                top = `${avatarRect.top - containerRect.top}px`;
+              }
+              return (
+                <motion.div key={r.id}
+                  initial={{ opacity: 1, y: 0, scale: 1, x: "-50%" }}
+                  animate={{ opacity: 0, y: -80, scale: 1.6, x: "-50%" }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 2 }}
+                  className="text-2xl absolute"
+                  style={{ left, top }}
+                >
+                  {r.emoji}
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
         </div>
 
