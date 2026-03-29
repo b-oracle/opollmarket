@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer, Globe, Plus, Trash2, RefreshCw, ToggleLeft, Copy, ShieldCheck, Sparkles, Banknote, Shield } from "lucide-react";
+import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer, Globe, Plus, Trash2, RefreshCw, ToggleLeft, Copy, ShieldCheck, Sparkles, Banknote, Shield, Droplets } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -63,6 +63,7 @@ const AdminSettings = () => {
   const [withdrawalLimitEnabled, setWithdrawalLimitEnabled] = useState(true);
   const [exitFee, setExitFee] = useState("");
   const [liquidityReturnFee, setLiquidityReturnFee] = useState("");
+  const [minLiquidity, setMinLiquidity] = useState("");
   const [withdrawalFee, setWithdrawalFee] = useState("");
   const [copyTradeCommission, setCopyTradeCommission] = useState("");
   const [quickTradeFee, setQuickTradeFee] = useState("");
@@ -123,6 +124,7 @@ const AdminSettings = () => {
         setWithdrawalLimitEnabled(d.withdrawal_limit_enabled !== false);
         setExitFee(String(d.exit_fee_percent ?? 5));
         setLiquidityReturnFee(String((d as any).liquidity_return_fee_percent ?? 5));
+        setMinLiquidity(String((d as any).min_liquidity ?? 10));
         setWithdrawalFee(String(d.withdrawal_fee_percent ?? 0));
         setCopyTradeCommission(String(d.copy_trade_commission_percent ?? 10));
         setQuickTradeFee(String(d.quick_trade_fee_percent ?? 5));
@@ -180,6 +182,7 @@ const AdminSettings = () => {
   const withdrawalMultiplierNum = parseFloat(withdrawalMultiplier) || 2;
   const exitFeeNum = parseFloat(exitFee) || 0;
   const liquidityReturnFeeNum = parseFloat(liquidityReturnFee) || 5;
+  const minLiquidityNum = parseFloat(minLiquidity) || 10;
   const withdrawalFeeNum = parseFloat(withdrawalFee) || 0;
   const copyTradeCommissionNum = parseFloat(copyTradeCommission) || 0;
   const quickTradeFeeNum = parseFloat(quickTradeFee) || 0;
@@ -279,6 +282,7 @@ const AdminSettings = () => {
           withdrawal_limit_enabled: withdrawalLimitEnabled,
            exit_fee_percent: exitFeeNum,
            liquidity_return_fee_percent: liquidityReturnFeeNum,
+           min_liquidity: minLiquidityNum,
            withdrawal_fee_percent: withdrawalFeeNum,
           copy_trade_commission_percent: copyTradeCommissionNum,
           quick_trade_fee_percent: quickTradeFeeNum,
@@ -331,6 +335,7 @@ const AdminSettings = () => {
           referrer_commission_percent: referrerCommissionNum,
            exit_fee_percent: exitFeeNum,
            liquidity_return_fee_percent: liquidityReturnFeeNum,
+           min_liquidity: minLiquidityNum,
            withdrawal_fee_percent: withdrawalFeeNum,
           copy_trade_commission_percent: copyTradeCommissionNum,
           min_withdrawal_amount: minWithdrawNum,
@@ -565,6 +570,19 @@ const AdminSettings = () => {
                 <div className="space-y-1.5">
                   <Label htmlFor="liquidityReturnFee" className="text-xs">Liquidity Return Fee (%)</Label>
                   <Input id="liquidityReturnFee" type="number" min={0} max={100} step={0.5} value={liquidityReturnFee} onChange={(e) => setLiquidityReturnFee(e.target.value)} placeholder="5" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2"><Droplets className="w-4 h-4" /> Minimum Liquidity</CardTitle>
+                <CardDescription className="text-[10px]">Minimum amount of USDT a creator must add as initial liquidity when creating a market.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-1.5">
+                  <Label htmlFor="minLiquidity" className="text-xs">Minimum Liquidity (USDT)</Label>
+                  <Input id="minLiquidity" type="number" min={1} step={1} value={minLiquidity} onChange={(e) => setMinLiquidity(e.target.value)} placeholder="10" />
                 </div>
               </CardContent>
             </Card>

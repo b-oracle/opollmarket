@@ -233,6 +233,7 @@ const Create = () => {
   const [boostTierPrices, setBoostTierPrices] = useState<Record<string, number>>({ flash: 20, standard: 50, whale: 150 });
   const BOOST_TIER_HOURS: Record<string, number> = { flash: 12, standard: 24, whale: 168 };
   const [broadcastPriceVal, setBroadcastPriceVal] = useState(5);
+  const [minLiquidity, setMinLiquidity] = useState(10);
 
   useEffect(() => {
     (async () => {
@@ -263,6 +264,7 @@ const Create = () => {
           whale: Number((data as any).boost_whale_price ?? 150),
         });
         setBroadcastPriceVal(Number((data as any).broadcast_price ?? 5));
+        setMinLiquidity(Number((data as any).min_liquidity ?? 10));
       }
       setSettingsLoaded(true);
     })();
@@ -734,7 +736,7 @@ const Create = () => {
     category: !category ? "Select a category" : null,
     endDate: !endDate ? "Resolution date is required" : null,
     resolutionSource: resolutionSource.trim().length === 0 ? "Resolution source is required" : resolutionSource.trim().length < 10 ? "Must be at least 10 characters" : null,
-    initialLiquidity: !initialLiquidity ? "Initial liquidity is required" : parseFloat(initialLiquidity) < 10 ? "Minimum 10 USDT" : null,
+    initialLiquidity: !initialLiquidity ? "Initial liquidity is required" : parseFloat(initialLiquidity) < minLiquidity ? `Minimum ${minLiquidity} USDT` : null,
     options: marketType !== "binary" && options.filter(o => o.trim()).length < 2 ? "At least 2 options required" : null,
   };
 
@@ -2580,7 +2582,7 @@ const Create = () => {
                   <p className="text-[10px] text-destructive mt-1.5">{errors.initialLiquidity}</p>
                 ) : (
                   <p className="text-[10px] text-muted-foreground mt-1.5">
-                    Minimum 10 USDT. Higher liquidity attracts more traders.
+                    Minimum {minLiquidity} USDT. Higher liquidity attracts more traders.
                   </p>
                 )}
                 <div className="flex gap-2 mt-2">

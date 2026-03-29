@@ -1,0 +1,1 @@
+ALTER TABLE public.commission_settings ADD COLUMN min_liquidity numeric NOT NULL DEFAULT 10;
