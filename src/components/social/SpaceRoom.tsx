@@ -37,7 +37,7 @@ import NftBadge, { VerificationLevel } from "@/components/NftBadge";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
 import SpaceMiniPlayer from "./SpaceMiniPlayer";
 import TaggedMarketsCarousel from "./TaggedMarketsCarousel";
-import { SOUND_REACTIONS, playSoundById, AMBIENT_TRACKS, startAmbient, stopAmbient, isAmbientPlaying } from "@/lib/spaceSounds";
+import { SOUND_REACTIONS, playSoundById, AMBIENT_TRACKS, startAmbient, stopAmbient, isAmbientPlaying, warmAudioContext } from "@/lib/spaceSounds";
 import { Music, ChevronDown } from "lucide-react";
 
 interface SpaceRoomProps {
@@ -705,6 +705,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         });
 
         await room.connect(normUrl(data.url), data.token);
+        // Pre-warm AudioContext during this user-gesture-initiated flow
+        // so that ambient music from data channel events won't be blocked
+        warmAudioContext();
         if (cancelled) { room.disconnect(); return; }
 
         setConnected(true);
