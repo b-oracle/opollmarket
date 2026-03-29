@@ -443,6 +443,8 @@ export const AMBIENT_TRACKS: AmbientTrack[] = [
   { id: "lofi_chill", label: "Lo-fi Chill", emoji: "🎵" },
   { id: "soft_pad", label: "Soft Pad", emoji: "🌊" },
   { id: "warm_keys", label: "Warm Keys", emoji: "🎹" },
+  { id: "funky_groove", label: "Funky Groove", emoji: "🕺" },
+  { id: "afrobeats", label: "Afrobeats", emoji: "🪘" },
 ];
 
 let ambientOscillators: OscillatorNode[] = [];
