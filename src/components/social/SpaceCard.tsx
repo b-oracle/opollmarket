@@ -229,6 +229,18 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
   const isHost = user?.id === space.host_id;
   const isLive = space.status === "live";
   const isScheduled = space.status === "scheduled";
+  const isEnded = space.status === "ended";
+
+  const { data: analytics } = useQuery({
+    queryKey: ["space-analytics", space.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_space_analytics", { _space_id: space.id });
+      if (error) throw error;
+      return data?.[0] || null;
+    },
+    enabled: isHost && (isLive || isEnded),
+    staleTime: 30000,
+  });
 
   return (
     <>
