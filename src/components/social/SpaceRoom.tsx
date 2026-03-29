@@ -352,6 +352,21 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             return open;
           });
         }
+      } else if (data.type === "msg_reaction") {
+        // Someone reacted to a chat message
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.id !== data.messageId) return m;
+            const reactions = { ...(m.reactions || {}) };
+            const users = reactions[data.emoji] ? [...reactions[data.emoji]] : [];
+            const idx = users.indexOf(data.userId);
+            if (idx >= 0) users.splice(idx, 1);
+            else users.push(data.userId);
+            if (users.length === 0) delete reactions[data.emoji];
+            else reactions[data.emoji] = users;
+            return { ...m, reactions };
+          })
+        );
       } else if (data.type === "hand_raise") {
         const identity = participant?.identity;
         if (identity) {
