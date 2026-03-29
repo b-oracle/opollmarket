@@ -568,15 +568,6 @@ const AdminSettings = () => {
                 </div>
               </CardContent>
             </Card>
-                <CardDescription className="text-[10px]">Fee when users sell positions early.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-1.5">
-                  <Label htmlFor="exitFee" className="text-xs">Exit Fee (%)</Label>
-                  <Input id="exitFee" type="number" min={0} max={100} step={0.5} value={exitFee} onChange={(e) => setExitFee(e.target.value)} placeholder="5" />
-                </div>
-              </CardContent>
-            </Card>
 
             <Card>
               <CardHeader className="pb-3">
