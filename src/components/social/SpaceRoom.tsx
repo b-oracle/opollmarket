@@ -1757,7 +1757,39 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     <ChevronDown className="w-2.5 h-2.5" />
                   </button>
                   {showMusicMenu && (
-                    <div className="absolute bottom-full right-0 mb-1 bg-card border border-border rounded-lg shadow-lg p-1.5 min-w-[140px] z-[95]">
+                    <div className="absolute bottom-full right-0 mb-1 bg-card border border-border rounded-lg shadow-lg p-1.5 min-w-[160px] z-[95]">
+                      {/* Device music section */}
+                      <input ref={deviceFileInputRef} type="file" accept="audio/*" className="hidden" onChange={handleDeviceMusicFile} />
+                      {!deviceMusicPlaying ? (
+                        <button onClick={() => deviceFileInputRef.current?.click()}
+                          className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs hover:bg-muted text-foreground transition-colors">
+                          <Upload className="w-3 h-3" />
+                          <span>Play from device</span>
+                        </button>
+                      ) : (
+                        <div className="px-3 py-1.5 space-y-1">
+                          <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">🎵 {deviceMusicName}</p>
+                          <div className="flex items-center gap-1">
+                            {deviceMusicPaused ? (
+                              <button onClick={resumeDeviceMusic}
+                                className="flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-primary/15 text-primary hover:bg-primary/25 transition-colors">
+                                <Play className="w-3 h-3" /> Resume
+                              </button>
+                            ) : (
+                              <button onClick={pauseDeviceMusic}
+                                className="flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-muted hover:bg-muted/80 text-foreground transition-colors">
+                                <Pause className="w-3 h-3" /> Pause
+                              </button>
+                            )}
+                            <button onClick={() => { stopDeviceMusic(); setShowMusicMenu(false); }}
+                              className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-destructive hover:bg-destructive/10 transition-colors">
+                              <Square className="w-3 h-3" /> Stop
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      <div className="border-t border-border my-1" />
+                      {/* Ambient tracks */}
                       {AMBIENT_TRACKS.map((t) => (
                         <button key={t.id} onClick={() => toggleAmbientMusic(t.id)}
                           className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors ${
