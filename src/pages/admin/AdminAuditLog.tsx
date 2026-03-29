@@ -171,6 +171,7 @@ const AdminAuditLog = () => {
       if (d.admin_fee_percent !== undefined) changes.push(`Admin Fee: ${d.admin_fee_percent}%`);
       if (d.creator_fee_percent !== undefined) changes.push(`Creator Fee: ${d.creator_fee_percent}%`);
       if (d.exit_fee_percent !== undefined) changes.push(`Exit Fee: ${d.exit_fee_percent}%`);
+      if (d.liquidity_return_fee_percent !== undefined) changes.push(`Liquidity Return Fee: ${d.liquidity_return_fee_percent}%`);
       if (d.min_withdrawal_amount !== undefined) changes.push(`Min Withdrawal: $${d.min_withdrawal_amount}`);
       if (d.withdrawal_cooldown_minutes !== undefined) changes.push(`Cooldown: ${d.withdrawal_cooldown_minutes}m`);
       if (d.withdrawal_multiplier !== undefined) changes.push(`Multiplier: ${d.withdrawal_multiplier}×`);
