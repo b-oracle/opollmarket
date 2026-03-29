@@ -141,7 +141,7 @@ const UserProfile = () => {
       if (!id) return [];
       const { data } = await supabase
         .from("positions")
-        .select("id, market_id, side, shares, avg_price, option_id")
+        .select("id, market_id, side, shares, avg_price, option_id, market_options(label, price)")
         .eq("user_id", id)
         .gt("shares", 0)
         .limit(20);
@@ -642,8 +642,12 @@ const UserProfile = () => {
               userPositions.map((pos: any) => {
                 const market = positionMarketMap.get(pos.market_id) as any;
                 if (!market) return null;
-                const currentPrice = pos.side === "yes" ? market.yes_price : market.no_price;
+                const optLabel = pos.market_options?.label || null;
+                const optPrice = pos.market_options?.price;
+                const isMulti = market.market_type === "multi" || market.market_type === "range";
+                const currentPrice = optPrice != null ? Number(optPrice) : (pos.side === "yes" ? market.yes_price : market.no_price);
                 const pnl = pos.shares * (currentPrice - pos.avg_price);
+                const displayLabel = isMulti && optLabel ? optLabel : pos.side.toUpperCase();
                 return (
                   <div
                     key={pos.id}
@@ -651,14 +655,14 @@ const UserProfile = () => {
                     className="glass rounded-xl p-3.5 flex items-center gap-3 cursor-pointer hover:bg-accent/30 transition-colors"
                   >
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                      pos.side === "yes" ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
+                      isMulti ? "bg-primary/10 text-primary" : pos.side === "yes" ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
                     }`}>
-                      {pos.side === "yes" ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+                      {pos.side === "yes" || isMulti ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate">{market.title}</p>
                       <p className="text-[10px] text-muted-foreground">
-                        {pos.shares.toFixed(1)} shares @ {(pos.avg_price * 100).toFixed(0)}¢ · {pos.side.toUpperCase()}
+                        {pos.shares.toFixed(1)} shares @ {(pos.avg_price * 100).toFixed(0)}¢ · {displayLabel}
                       </p>
                     </div>
                     <p className={`text-sm font-bold ${pnl >= 0 ? "text-primary" : "text-destructive"}`}>
