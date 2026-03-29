@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { X, Radio, Loader2, Calendar, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import MarketTagSelector, { type MarketTag } from "./MarketTagSelector";
 
 interface CreateSpaceModalProps {
   open: boolean;
