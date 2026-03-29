@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,9 +24,16 @@ const AddLiquidityModal = ({ open, onClose, marketId, marketTitle, currentLiquid
   const queryClient = useQueryClient();
   const [amount, setAmount] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [minLiquidity, setMinLiquidity] = useState(10);
+
+  useEffect(() => {
+    supabase.from("commission_settings").select("min_liquidity").limit(1).single().then(({ data }) => {
+      if (data) setMinLiquidity(Number((data as any).min_liquidity) || 10);
+    });
+  }, []);
 
   const numAmount = parseFloat(amount) || 0;
-  const isValid = numAmount > 0 && numAmount <= balance;
+  const isValid = numAmount >= minLiquidity && numAmount <= balance;
 
   const handleSubmit = async () => {
     if (!isValid || !userId || submitting) return;
