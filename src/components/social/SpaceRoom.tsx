@@ -940,6 +940,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           next.delete(target_user_id);
           return next;
         });
+        setSpeakRequests((prev) => {
+          const next = new Set(prev);
+          next.delete(target_user_id);
+          return next;
+        });
       }
       // After individual mute, broadcast force-mute lock
       if (action === "mute" && target_user_id) {
