@@ -1748,7 +1748,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 <div className="relative">
                   <button onClick={() => setShowMusicMenu(!showMusicMenu)}
                     className={`h-7 px-2 rounded-full flex items-center justify-center gap-1 text-xs transition-colors border ${
-                      ambientTrack
+                      ambientTrack || deviceMusicPlaying
                         ? "bg-primary/20 text-primary border-primary/40"
                         : "bg-muted hover:bg-muted/80 text-muted-foreground border-border"
                     }`}
