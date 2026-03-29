@@ -10,9 +10,10 @@ interface TaggedMarketsCarouselProps {
   taggedMarketIds: string[];
   isHost: boolean;
   isCoHost?: boolean;
+  onMinimize?: () => void;
 }
 
-const TaggedMarketsCarousel = ({ spaceId, taggedMarketIds, isHost, isCoHost = false }: TaggedMarketsCarouselProps) => {
+const TaggedMarketsCarousel = ({ spaceId, taggedMarketIds, isHost, isCoHost = false, onMinimize }: TaggedMarketsCarouselProps) => {
   const canEdit = isHost || isCoHost;
   const navigate = useNavigate();
   const [markets, setMarkets] = useState<MarketTag[]>([]);
