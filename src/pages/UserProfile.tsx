@@ -616,14 +616,22 @@ const UserProfile = () => {
                   }`}>
                     {market.status === "active" ? "Live" : market.status === "resolved" ? "Resolved" : "Ended"}
                   </div>
-                  {/* Yes/No prices */}
+                  {/* Price badges */}
                   <div className="absolute bottom-1.5 left-1.5 flex gap-1">
-                    <span className="px-1.5 py-0.5 rounded bg-primary/80 text-primary-foreground text-[8px] font-bold">
-                      Y {(market.yes_price * 100).toFixed(0)}¢
-                    </span>
-                    <span className="px-1.5 py-0.5 rounded bg-destructive/80 text-white text-[8px] font-bold">
-                      N {(market.no_price * 100).toFixed(0)}¢
-                    </span>
+                    {(market.market_type === "multi" || market.market_type === "range") ? (
+                      <span className="px-1.5 py-0.5 rounded bg-primary/80 text-primary-foreground text-[8px] font-bold">
+                        Multi
+                      </span>
+                    ) : (
+                      <>
+                        <span className="px-1.5 py-0.5 rounded bg-primary/80 text-primary-foreground text-[8px] font-bold">
+                          Y {(market.yes_price * 100).toFixed(0)}¢
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded bg-destructive/80 text-white text-[8px] font-bold">
+                          N {(market.no_price * 100).toFixed(0)}¢
+                        </span>
+                      </>
+                    )}
                   </div>
                 </motion.div>
               ))
