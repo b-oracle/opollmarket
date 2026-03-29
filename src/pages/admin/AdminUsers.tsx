@@ -282,9 +282,9 @@ const AdminUsers = () => {
                 const isSelf = u.id === currentUser?.id;
                 return (
                   <tr key={u.id} className={`border-b border-border/50 hover:bg-muted/30 ${u.is_blocked ? "opacity-60 bg-destructive/5" : ""}`}>
-                    <td className="p-3 font-medium" spellCheck={false}>
-                      <div className="flex items-center gap-1.5">
-                        {u.display_name || "—"}
+                    <td className="p-3 font-medium">
+                      <div className="flex items-center gap-1.5 [text-decoration:none]">
+                        <span className="no-underline [text-decoration:none]">{u.display_name || "—"}</span>
                         {u.unlimited_markets && (
                           <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-primary/15 text-primary" title="Unlimited Markets">∞</span>
                         )}
