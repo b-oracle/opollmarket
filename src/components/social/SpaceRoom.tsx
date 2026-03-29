@@ -10,6 +10,7 @@ import {
   DataPacket_Kind,
 } from "livekit-client";
 import { motion, AnimatePresence } from "framer-motion";
+import { optimizedImageUrl } from "@/lib/optimizedImage";
 import {
   Mic,
   MicOff,
@@ -900,7 +901,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           p.isSpeaking ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "border border-border"
         } ${!prof?.avatar_url ? (p.isSpeaking ? "bg-primary/30" : "bg-muted/50") : ""}`}>
           {prof?.avatar_url ? (
-            <img src={prof.avatar_url} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
+            <img src={optimizedImageUrl(prof.avatar_url, "avatar-md")} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
           ) : (
             <span className={size === "lg" ? "text-lg" : "text-sm"}>{p.name.charAt(0).toUpperCase()}</span>
           )}

@@ -9,6 +9,7 @@ import { X, Trash2, Eye, Heart } from "lucide-react";
 import StoryContentRenderer from "./StoryContentRenderer";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import { optimizedImageUrl } from "@/lib/optimizedImage";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -237,7 +238,7 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
             onClick={() => { onClose(); navigate(`/user/${story.user_id}`); }}
           >
             {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt={name} className="w-full h-full object-cover" loading="lazy" />
+              <img src={optimizedImageUrl(profile.avatar_url, "avatar-sm")} alt={name} className="w-full h-full object-cover" loading="lazy" />
             ) : (
               <span className="text-xs font-bold text-white">{name.charAt(0).toUpperCase()}</span>
             )}
@@ -290,7 +291,7 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
           {story.image_url ? (
             <div className="h-full w-full flex flex-col">
               <div className="flex-1 min-h-0 bg-black flex items-center justify-center">
-                <img src={story.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                <img src={optimizedImageUrl(story.image_url, "story")} alt="" className="w-full h-full object-cover" loading="lazy" />
               </div>
               {story.content && (
                 <div className="shrink-0 bg-background/95 border-t border-border/40 px-5 py-4">
@@ -314,7 +315,7 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
             className="absolute bottom-16 left-4 right-4 z-20 bg-black/60 backdrop-blur-md rounded-xl p-3 flex items-center gap-3 border border-white/10"
           >
             {market.image_url && (
-              <img src={market.image_url} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" loading="lazy" />
+              <img src={optimizedImageUrl(market.image_url, "thumb")} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" loading="lazy" />
             )}
             <div className="flex-1 min-w-0 text-left">
               <p className="text-white text-xs font-semibold truncate">{market.title}</p>

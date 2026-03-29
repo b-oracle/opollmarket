@@ -4,6 +4,7 @@ import { Megaphone, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useRef } from "react";
 import YouTubeEmbed, { isYouTubeUrl } from "@/components/YouTubeEmbed";
+import { optimizedImageUrl } from "@/lib/optimizedImage";
 
 interface SocialAdCardProps {
   ad: {
@@ -85,7 +86,7 @@ const SocialAdCard = ({ ad, market, index = 0 }: SocialAdCardProps) => {
         >
           <div className="flex items-center gap-2 p-2">
             {market.image_url && !hasVideo && (
-              <img src={market.image_url} alt="" className="w-12 h-12 rounded object-cover shrink-0" loading="lazy" />
+              <img src={optimizedImageUrl(market.image_url, "thumb")} alt="" className="w-12 h-12 rounded object-cover shrink-0" loading="lazy" />
             )}
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold line-clamp-2">{market.title}</p>
