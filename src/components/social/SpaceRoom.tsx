@@ -386,6 +386,14 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         const senderIdentity = participant?.identity || "unknown";
         setFloatingReactions((prev) => [...prev, { id, emoji: data.emoji, identity: senderIdentity }]);
         setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
+      } else if (data.type === "ambient_music") {
+        if (data.action === "play" && data.trackId) {
+          startAmbient(data.trackId);
+          setAmbientTrack(data.trackId);
+        } else if (data.action === "stop") {
+          stopAmbient();
+          setAmbientTrack(null);
+        }
       } else if (data.type === "message") {
         // Messages are delivered via Postgres realtime subscription.
         // Data channel delivery is intentionally ignored to prevent duplicates.
@@ -1032,9 +1040,19 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     if (ambientTrack === trackId) {
       stopAmbient();
       setAmbientTrack(null);
+      // Broadcast stop to all participants
+      if (roomRef.current) {
+        const data = JSON.stringify({ type: "ambient_music", action: "stop" });
+        roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
+      }
     } else {
       startAmbient(trackId);
       setAmbientTrack(trackId);
+      // Broadcast play to all participants
+      if (roomRef.current) {
+        const data = JSON.stringify({ type: "ambient_music", action: "play", trackId });
+        roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
+      }
     }
     setShowMusicMenu(false);
   };
