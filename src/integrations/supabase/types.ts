@@ -465,6 +465,7 @@ export type Database = {
           liquidity_return_fee_percent: number
           market_creation_fee: number | null
           min_gold_token_balance: number
+          min_liquidity: number
           min_nft_balance: number
           min_token_balance: number
           min_withdrawal_amount: number
@@ -530,6 +531,7 @@ export type Database = {
           liquidity_return_fee_percent?: number
           market_creation_fee?: number | null
           min_gold_token_balance?: number
+          min_liquidity?: number
           min_nft_balance?: number
           min_token_balance?: number
           min_withdrawal_amount?: number
@@ -595,6 +597,7 @@ export type Database = {
           liquidity_return_fee_percent?: number
           market_creation_fee?: number | null
           min_gold_token_balance?: number
+          min_liquidity?: number
           min_nft_balance?: number
           min_token_balance?: number
           min_withdrawal_amount?: number
