@@ -371,7 +371,14 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       const data = JSON.parse(decoded);
       // Ignore keep-alive pings
       if (data.type === "ping") return;
-      if (data.type === "reaction") {
+      if (data.type === "sound_reaction") {
+        // Play the sound effect for all participants
+        playSoundById(data.soundId);
+        const id = `${Date.now()}-${Math.random()}`;
+        const emoji = SOUND_REACTIONS.find(s => s.id === data.soundId)?.emoji || "🔊";
+        setFloatingReactions((prev) => [...prev, { id, emoji }]);
+        setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
+      } else if (data.type === "reaction") {
         const id = `${Date.now()}-${Math.random()}`;
         setFloatingReactions((prev) => [...prev, { id, emoji: data.emoji }]);
         setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
