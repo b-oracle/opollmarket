@@ -431,7 +431,7 @@ export const playSoundById = (id: string) => {
   sound?.play();
 };
 
-/* ─── Ambient background music generator ─── */
+/* ─── Ambient background music generator (Step Sequencer) ─── */
 
 export interface AmbientTrack {
   id: string;
@@ -447,269 +447,445 @@ export const AMBIENT_TRACKS: AmbientTrack[] = [
   { id: "afrobeats", label: "Afrobeats", emoji: "🪘" },
 ];
 
-let ambientOscillators: OscillatorNode[] = [];
-let ambientGains: GainNode[] = [];
-let ambientLfo: OscillatorNode | null = null;
 let ambientPlaying = false;
+let ambientTimerId: ReturnType<typeof setInterval> | null = null;
+let ambientNodes: (AudioNode | OscillatorNode | AudioBufferSourceNode)[] = [];
+let ambientMasterGain: GainNode | null = null;
 
 export const isAmbientPlaying = () => ambientPlaying;
 
+/* ─── Instrument helpers ─── */
+
+const scheduleKick = (ctx: AudioContext, dest: AudioNode, time: number, muffled = false) => {
+  const osc = ctx.createOscillator();
+  osc.frequency.setValueAtTime(150, time);
+  osc.frequency.exponentialRampToValueAtTime(40, time + 0.12);
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.45, time);
+  env.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
+  if (muffled) {
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = 400;
+    osc.connect(lp).connect(env).connect(dest);
+  } else {
+    osc.connect(env).connect(dest);
+  }
+  osc.start(time);
+  osc.stop(time + 0.3);
+};
+
+const scheduleSnare = (ctx: AudioContext, dest: AudioNode, time: number, soft = false) => {
+  const dur = soft ? 0.1 : 0.15;
+  const vol = soft ? 0.15 : 0.25;
+  // Noise burst
+  const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const hp = ctx.createBiquadFilter();
+  hp.type = "highpass";
+  hp.frequency.value = soft ? 2000 : 1500;
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(vol, time);
+  env.gain.exponentialRampToValueAtTime(0.001, time + dur);
+  src.connect(hp).connect(env).connect(dest);
+  src.start(time);
+  src.stop(time + dur);
+  // Tonal body
+  const osc = ctx.createOscillator();
+  osc.frequency.setValueAtTime(180, time);
+  osc.frequency.exponentialRampToValueAtTime(100, time + 0.04);
+  const oEnv = ctx.createGain();
+  oEnv.gain.setValueAtTime(vol * 0.4, time);
+  oEnv.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+  osc.connect(oEnv).connect(dest);
+  osc.start(time);
+  osc.stop(time + 0.06);
+};
+
+const scheduleHiHat = (ctx: AudioContext, dest: AudioNode, time: number, open = false) => {
+  const dur = open ? 0.12 : 0.04;
+  const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const bp = ctx.createBiquadFilter();
+  bp.type = "highpass";
+  bp.frequency.value = 7000;
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(open ? 0.12 : 0.08, time);
+  env.gain.exponentialRampToValueAtTime(0.001, time + dur);
+  src.connect(bp).connect(env).connect(dest);
+  src.start(time);
+  src.stop(time + dur + 0.01);
+};
+
+const scheduleBass = (ctx: AudioContext, dest: AudioNode, time: number, freq: number, type: OscillatorType = "sawtooth") => {
+  const osc = ctx.createOscillator();
+  osc.type = type;
+  osc.frequency.value = freq;
+  const lp = ctx.createBiquadFilter();
+  lp.type = "lowpass";
+  lp.frequency.value = 800;
+  lp.Q.value = 2;
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.2, time);
+  env.gain.exponentialRampToValueAtTime(0.001, time + 0.18);
+  osc.connect(lp).connect(env).connect(dest);
+  osc.start(time);
+  osc.stop(time + 0.2);
+};
+
+const scheduleChord = (ctx: AudioContext, dest: AudioNode, time: number, freqs: number[], dur = 0.3, vol = 0.06) => {
+  freqs.forEach((f) => {
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.value = f;
+    const osc2 = ctx.createOscillator();
+    osc2.type = "sine";
+    osc2.frequency.value = f * 1.003; // slight chorus
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(vol, time);
+    env.gain.setValueAtTime(vol, time + dur * 0.6);
+    env.gain.exponentialRampToValueAtTime(0.001, time + dur);
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = 2000;
+    osc.connect(env);
+    osc2.connect(env);
+    env.connect(lp).connect(dest);
+    osc.start(time);
+    osc2.start(time);
+    osc.stop(time + dur + 0.01);
+    osc2.stop(time + dur + 0.01);
+  });
+};
+
+const scheduleMelody = (ctx: AudioContext, dest: AudioNode, time: number, freq: number, dur = 0.2, type: OscillatorType = "sine") => {
+  const osc = ctx.createOscillator();
+  osc.type = type;
+  osc.frequency.value = freq;
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.1, time);
+  env.gain.setValueAtTime(0.1, time + dur * 0.5);
+  env.gain.exponentialRampToValueAtTime(0.001, time + dur);
+  osc.connect(env).connect(dest);
+  osc.start(time);
+  osc.stop(time + dur + 0.01);
+};
+
+const scheduleTom = (ctx: AudioContext, dest: AudioNode, time: number, freq: number) => {
+  const osc = ctx.createOscillator();
+  osc.frequency.setValueAtTime(freq, time);
+  osc.frequency.exponentialRampToValueAtTime(freq * 0.5, time + 0.12);
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.2, time);
+  env.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
+  osc.connect(env).connect(dest);
+  osc.start(time);
+  osc.stop(time + 0.16);
+};
+
+const scheduleBell = (ctx: AudioContext, dest: AudioNode, time: number, freq: number) => {
+  const osc = ctx.createOscillator();
+  osc.type = "sine";
+  osc.frequency.value = freq;
+  const osc2 = ctx.createOscillator();
+  osc2.type = "sine";
+  osc2.frequency.value = freq * 2.76;
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.08, time);
+  env.gain.exponentialRampToValueAtTime(0.001, time + 0.6);
+  const env2 = ctx.createGain();
+  env2.gain.setValueAtTime(0.03, time);
+  env2.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
+  osc.connect(env).connect(dest);
+  osc2.connect(env2).connect(dest);
+  osc.start(time);
+  osc2.start(time);
+  osc.stop(time + 0.65);
+  osc2.stop(time + 0.35);
+};
+
+/* ─── Track pattern definitions ─── */
+
+interface TrackPattern {
+  bpm: number;
+  stepsPerBar: number;
+  totalSteps: number;
+  schedule: (ctx: AudioContext, dest: AudioNode, step: number, time: number) => void;
+}
+
+const lofiPattern: TrackPattern = {
+  bpm: 85, stepsPerBar: 16, totalSteps: 64,
+  schedule: (ctx, dest, step, t) => {
+    const s = step % 16;
+    // Kick: 1 and 3 (steps 0, 8)
+    if (s === 0 || s === 8) scheduleKick(ctx, dest, t, true);
+    // Snare: 2 and 4 (steps 4, 12)
+    if (s === 4 || s === 12) scheduleSnare(ctx, dest, t, true);
+    // Hi-hat with swing
+    if (s % 2 === 0) scheduleHiHat(ctx, dest, t);
+    if (s % 4 === 1) scheduleHiHat(ctx, dest, t + 0.02); // swing offset
+
+    // Chord changes every bar (every 16 steps)
+    const bar = Math.floor(step / 16) % 4;
+    const chords = [
+      [261.63, 329.63, 392, 493.88], // Cmaj7
+      [220, 261.63, 329.63, 392],     // Am7
+      [174.61, 220, 261.63, 329.63],  // Fmaj7
+      [196, 246.94, 293.66, 349.23],  // G7
+    ];
+    if (s === 0) scheduleChord(ctx, dest, t, chords[bar], 0.4, 0.04);
+
+    // Bass on 1 and 3
+    const bassNotes = [65.41, 55, 43.65, 49];
+    if (s === 0 || s === 8) scheduleBass(ctx, dest, t, bassNotes[bar], "sine");
+
+    // Melody: pentatonic — sparse
+    const melodySteps: Record<number, number[]> = {
+      0: [523.25], 2: [587.33], 5: [659.25], 10: [783.99], 13: [698.46],
+    };
+    const melBar = step % 32;
+    if (melodySteps[melBar]) scheduleMelody(ctx, dest, t, melodySteps[melBar][0], 0.25);
+  },
+};
+
+const softPadPattern: TrackPattern = {
+  bpm: 70, stepsPerBar: 16, totalSteps: 64,
+  schedule: (ctx, dest, step, t) => {
+    const s = step % 16;
+    // Sub-bass pulse on 1
+    if (s === 0) {
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.value = 55;
+      const env = ctx.createGain();
+      env.gain.setValueAtTime(0.15, t);
+      env.gain.setValueAtTime(0.15, t + 0.3);
+      env.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+      osc.connect(env).connect(dest);
+      osc.start(t);
+      osc.stop(t + 0.85);
+    }
+    // Pad chord — long, every 2 bars
+    const bar = Math.floor(step / 16) % 4;
+    const padChords = [
+      [220, 261.63, 329.63],    // Am
+      [233.08, 277.18, 349.23], // Bbmaj
+      [196, 246.94, 293.66],    // G
+      [174.61, 220, 261.63],    // Fm
+    ];
+    if (s === 0 && bar % 2 === 0) scheduleChord(ctx, dest, t, padChords[bar], 1.2, 0.04);
+    // Bell pings — sparse
+    const bellSteps: Record<number, number> = { 3: 1318.5, 11: 1046.5, 19: 1567.98, 27: 880 };
+    if (bellSteps[step % 32]) scheduleBell(ctx, dest, t, bellSteps[step % 32]);
+    // Soft breath noise swell every 8 steps
+    if (s === 0 && bar % 2 === 1) {
+      const dur = 0.8;
+      const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = 500;
+      const env = ctx.createGain();
+      env.gain.setValueAtTime(0.001, t);
+      env.gain.linearRampToValueAtTime(0.05, t + dur * 0.4);
+      env.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      src.connect(lp).connect(env).connect(dest);
+      src.start(t);
+      src.stop(t + dur + 0.01);
+    }
+  },
+};
+
+const warmKeysPattern: TrackPattern = {
+  bpm: 90, stepsPerBar: 16, totalSteps: 64,
+  schedule: (ctx, dest, step, t) => {
+    const s = step % 16;
+    const bar = Math.floor(step / 16) % 4;
+    // Brushed snare pattern: ghost notes + accents
+    if (s === 4 || s === 12) scheduleSnare(ctx, dest, t, true);
+    if (s % 4 === 2) scheduleHiHat(ctx, dest, t); // brushes
+
+    // Walking bass line
+    const bassLines = [
+      [130.81, 146.83, 164.81, 174.61], // C3 D3 E3 F3
+      [110, 123.47, 130.81, 146.83],     // A2 B2 C3 D3
+      [87.31, 98, 110, 123.47],           // F2 G2 A2 B2
+      [98, 110, 123.47, 130.81],          // G2 A2 B2 C3
+    ];
+    const bassStep = s % 4;
+    if (s % 4 === 0) scheduleBass(ctx, dest, t, bassLines[bar][Math.floor(s / 4) % 4], "triangle");
+
+    // Rhodes-style chords with tremolo
+    const chords = [
+      [261.63, 329.63, 392, 493.88], // Cmaj7
+      [220, 261.63, 329.63, 440],     // Am7
+      [174.61, 220, 261.63, 349.23],  // Fmaj7
+      [196, 246.94, 293.66, 392],     // G7
+    ];
+    if (s === 0 || s === 6) scheduleChord(ctx, dest, t, chords[bar], 0.35, 0.035);
+
+    // Jazz melody
+    const melMap: Record<number, number> = {
+      1: 523.25, 5: 587.33, 9: 659.25, 11: 698.46, 14: 783.99,
+    };
+    const melStep = step % 32;
+    if (melMap[melStep]) scheduleMelody(ctx, dest, t, melMap[melStep], 0.2, "triangle");
+  },
+};
+
+const funkyPattern: TrackPattern = {
+  bpm: 110, stepsPerBar: 16, totalSteps: 64,
+  schedule: (ctx, dest, step, t) => {
+    const s = step % 16;
+    const bar = Math.floor(step / 16) % 4;
+    // Syncopated kick: 0, 3, 6, 10
+    if ([0, 3, 6, 10].includes(s)) scheduleKick(ctx, dest, t);
+    // Snare: 4, 12 with ghost on 7
+    if (s === 4 || s === 12) scheduleSnare(ctx, dest, t);
+    if (s === 7) scheduleSnare(ctx, dest, t, true);
+    // 16th hi-hats, open on offbeats
+    scheduleHiHat(ctx, dest, t, s % 4 === 2);
+
+    // Slap bass with octave jumps
+    const bassFreqs = [
+      [82.41, 164.81, 82.41, 110],   // E2, E3, E2, A2
+      [73.42, 146.83, 73.42, 98],    // D2, D3, D2, G2
+      [65.41, 130.81, 65.41, 87.31], // C2, C3, C2, F2
+      [73.42, 146.83, 98, 110],      // D2, D3, G2, A2
+    ];
+    if ([0, 4, 8, 12].includes(s)) {
+      scheduleBass(ctx, dest, t, bassFreqs[bar][s / 4], "sawtooth");
+    }
+
+    // Wah-wah chord stabs on offbeats
+    if (s === 2 || s === 5 || s === 10 || s === 14) {
+      const chords = [
+        [329.63, 415.3, 523.25],  // E4 Ab4 C5
+        [293.66, 369.99, 466.16], // D4 F#4 Bb4
+        [261.63, 329.63, 415.3],  // C4 E4 Ab4
+        [293.66, 369.99, 440],    // D4 F#4 A4
+      ];
+      scheduleChord(ctx, dest, t, chords[bar], 0.08, 0.05);
+    }
+
+    // Clav hits
+    if (s === 1 || s === 9) {
+      scheduleMelody(ctx, dest, t, 1046.5, 0.05, "square");
+    }
+  },
+};
+
+const afroPattern: TrackPattern = {
+  bpm: 105, stepsPerBar: 16, totalSteps: 64,
+  schedule: (ctx, dest, step, t) => {
+    const s = step % 16;
+    const bar = Math.floor(step / 16) % 4;
+    // Afrobeats kick: kick-snare-kick-kick-snare pattern
+    if ([0, 5, 8, 10].includes(s)) scheduleKick(ctx, dest, t);
+    if (s === 4 || s === 12) scheduleSnare(ctx, dest, t);
+    // Shaker 16ths
+    scheduleHiHat(ctx, dest, t);
+    // Conga / tom fills on triplet feel
+    if ([3, 7, 11, 15].includes(s)) {
+      const tomFreqs = [200, 250, 180, 220];
+      scheduleTom(ctx, dest, t, tomFreqs[s === 3 ? 0 : s === 7 ? 1 : s === 11 ? 2 : 3]);
+    }
+
+    // Log drum sub-bass
+    if (s === 0 || s === 8) {
+      const subFreqs = [73.42, 82.41, 65.41, 73.42]; // D2 E2 C2 D2
+      scheduleBass(ctx, dest, t, subFreqs[bar], "sine");
+    }
+
+    // Guitar-style arpeggio — major key
+    const arpNotes = [
+      [293.66, 349.23, 440, 523.25, 440, 349.23], // D4 F4 A4 C5 A4 F4
+      [329.63, 392, 493.88, 587.33, 493.88, 392],  // E4 G4 B4 D5 B4 G4
+      [261.63, 329.63, 392, 523.25, 392, 329.63],  // C4 E4 G4 C5 G4 E4
+      [293.66, 369.99, 440, 587.33, 440, 369.99],  // D4 F#4 A4 D5 A4 F#4
+    ];
+    const arpStep = s % 6;
+    if (s < 12 && s % 2 === 0) {
+      scheduleMelody(ctx, dest, t, arpNotes[bar][arpStep], 0.12, "triangle");
+    }
+
+    // Call-and-response melody
+    const melMap: Record<number, number> = {
+      0: 587.33, 2: 659.25, 4: 783.99, 6: 659.25,  // call
+      24: 783.99, 26: 880, 28: 783.99, 30: 659.25,  // response
+    };
+    const melStep = step % 32;
+    if (melMap[melStep]) scheduleMelody(ctx, dest, t, melMap[melStep], 0.18);
+  },
+};
+
+const PATTERNS: Record<string, TrackPattern> = {
+  lofi_chill: lofiPattern,
+  soft_pad: softPadPattern,
+  warm_keys: warmKeysPattern,
+  funky_groove: funkyPattern,
+  afrobeats: afroPattern,
+};
+
+/* ─── Sequencer engine ─── */
+
 export const startAmbient = (trackId: string) => {
   stopAmbient();
+  const pattern = PATTERNS[trackId];
+  if (!pattern) return;
+
   const ctx = getCtx();
   ambientPlaying = true;
 
   const masterGain = ctx.createGain();
   masterGain.gain.setValueAtTime(0, ctx.currentTime);
-  masterGain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 2);
+  masterGain.gain.linearRampToValueAtTime(0.35, ctx.currentTime + 1.5);
   masterGain.connect(ctx.destination);
-  ambientGains.push(masterGain);
+  ambientMasterGain = masterGain;
 
-  if (trackId === "lofi_chill") {
-    const chordFreqs = [261.63, 329.63, 392.0, 493.88];
-    chordFreqs.forEach((f) => {
-      const osc = ctx.createOscillator();
-      osc.type = "sine";
-      osc.frequency.value = f;
-      const g = ctx.createGain();
-      g.gain.value = 0.06;
-      osc.connect(g).connect(masterGain);
-      osc.start();
-      ambientOscillators.push(osc);
-      ambientGains.push(g);
+  const stepDur = 60 / pattern.bpm / 4; // 16th note duration
+  let nextNoteTime = ctx.currentTime + 0.1;
+  let currentStep = 0;
+  const lookahead = 0.2;
 
-      const osc2 = ctx.createOscillator();
-      osc2.type = "sine";
-      osc2.frequency.value = f * 1.003;
-      const g2 = ctx.createGain();
-      g2.gain.value = 0.04;
-      osc2.connect(g2).connect(masterGain);
-      osc2.start();
-      ambientOscillators.push(osc2);
-      ambientGains.push(g2);
-    });
-
-    const lfo = ctx.createOscillator();
-    lfo.type = "sine";
-    lfo.frequency.value = 0.15;
-    const lfoGain = ctx.createGain();
-    lfoGain.gain.value = 0.03;
-    lfo.connect(lfoGain).connect(masterGain.gain);
-    lfo.start();
-    ambientLfo = lfo;
-    ambientGains.push(lfoGain);
-  } else if (trackId === "soft_pad") {
-    const freqs = [220, 277.18, 329.63, 440];
-    freqs.forEach((f, i) => {
-      const osc = ctx.createOscillator();
-      osc.type = "triangle";
-      osc.frequency.value = f;
-      const g = ctx.createGain();
-      g.gain.value = 0.05;
-      const lp = ctx.createBiquadFilter();
-      lp.type = "lowpass";
-      lp.frequency.value = 800 + i * 100;
-      osc.connect(lp).connect(g).connect(masterGain);
-      osc.start();
-      ambientOscillators.push(osc);
-      ambientGains.push(g);
-    });
-
-    const lfo = ctx.createOscillator();
-    lfo.type = "sine";
-    lfo.frequency.value = 0.08;
-    const lfoG = ctx.createGain();
-    lfoG.gain.value = 0.02;
-    lfo.connect(lfoG).connect(masterGain.gain);
-    lfo.start();
-    ambientLfo = lfo;
-    ambientGains.push(lfoG);
-  } else if (trackId === "warm_keys") {
-    const notes = [261.63, 329.63, 392.0, 523.25];
-    notes.forEach((f, i) => {
-      const osc = ctx.createOscillator();
-      osc.type = "sine";
-      osc.frequency.value = f;
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0, ctx.currentTime);
-      g.gain.linearRampToValueAtTime(0.06, ctx.currentTime + 1 + i * 0.8);
-      osc.connect(g).connect(masterGain);
-      osc.start();
-      ambientOscillators.push(osc);
-      ambientGains.push(g);
-
-      const osc2 = ctx.createOscillator();
-      osc2.type = "sine";
-      osc2.frequency.value = f * 2;
-      const g2 = ctx.createGain();
-      g2.gain.setValueAtTime(0, ctx.currentTime);
-      g2.gain.linearRampToValueAtTime(0.02, ctx.currentTime + 1.5 + i * 0.8);
-      osc2.connect(g2).connect(masterGain);
-      osc2.start();
-      ambientOscillators.push(osc2);
-      ambientGains.push(g2);
-    });
-  } else if (trackId === "funky_groove") {
-    // Funky bass line with wah-wah and rhythmic pulse
-    const bassNotes = [110, 130.81, 146.83, 130.81]; // A2 C3 D3 C3
-    const now = ctx.currentTime;
-
-    // Rhythmic kick-like pulse using oscillator
-    const kickOsc = ctx.createOscillator();
-    kickOsc.type = "sine";
-    kickOsc.frequency.value = 2.5; // pulse rate
-    const kickGain = ctx.createGain();
-    kickGain.gain.value = 0.04;
-    kickOsc.connect(kickGain).connect(masterGain.gain);
-    kickOsc.start();
-    ambientOscillators.push(kickOsc);
-    ambientGains.push(kickGain);
-
-    bassNotes.forEach((f, i) => {
-      // Funky bass with slight detuning
-      const osc = ctx.createOscillator();
-      osc.type = "sawtooth";
-      osc.frequency.value = f;
-      const lp = ctx.createBiquadFilter();
-      lp.type = "lowpass";
-      lp.frequency.value = 600;
-      lp.Q.value = 4;
-      // Wah-wah LFO on filter
-      const wahLfo = ctx.createOscillator();
-      wahLfo.type = "sine";
-      wahLfo.frequency.value = 1.5 + i * 0.3;
-      const wahDepth = ctx.createGain();
-      wahDepth.gain.value = 400;
-      wahLfo.connect(wahDepth).connect(lp.frequency);
-      wahLfo.start();
-      ambientOscillators.push(wahLfo);
-      ambientGains.push(wahDepth);
-
-      const g = ctx.createGain();
-      g.gain.value = 0.07;
-      osc.connect(lp).connect(g).connect(masterGain);
-      osc.start();
-      ambientOscillators.push(osc);
-      ambientGains.push(g);
-    });
-
-    // Clav / rhythm guitar stabs
-    [523.25, 659.25, 783.99].forEach((f) => {
-      const osc = ctx.createOscillator();
-      osc.type = "square";
-      osc.frequency.value = f;
-      const g = ctx.createGain();
-      g.gain.value = 0.02;
-      const bp = ctx.createBiquadFilter();
-      bp.type = "bandpass";
-      bp.frequency.value = 1200;
-      bp.Q.value = 2;
-      osc.connect(bp).connect(g).connect(masterGain);
-      osc.start();
-      ambientOscillators.push(osc);
-      ambientGains.push(g);
-    });
-
-  } else if (trackId === "afrobeats") {
-    // Afrobeats: percussive polyrhythm feel with warm chords and shaker texture
-    const now = ctx.currentTime;
-
-    // Warm Afro chord (minor pentatonic flavor) — Dm7 voicing
-    const chordFreqs = [293.66, 349.23, 440, 523.25]; // D4 F4 A4 C5
-    chordFreqs.forEach((f, i) => {
-      const osc = ctx.createOscillator();
-      osc.type = "triangle";
-      osc.frequency.value = f;
-      const g = ctx.createGain();
-      g.gain.value = 0.05;
-      const lp = ctx.createBiquadFilter();
-      lp.type = "lowpass";
-      lp.frequency.value = 1200 - i * 100;
-      osc.connect(lp).connect(g).connect(masterGain);
-      osc.start();
-      ambientOscillators.push(osc);
-      ambientGains.push(g);
-
-      // Slight chorus
-      const osc2 = ctx.createOscillator();
-      osc2.type = "triangle";
-      osc2.frequency.value = f * 1.004;
-      const g2 = ctx.createGain();
-      g2.gain.value = 0.03;
-      osc2.connect(lp).connect(g2).connect(masterGain);
-      osc2.start();
-      ambientOscillators.push(osc2);
-      ambientGains.push(g2);
-    });
-
-    // Deep sub bass pulse (Afro log drum feel)
-    const subOsc = ctx.createOscillator();
-    subOsc.type = "sine";
-    subOsc.frequency.value = 73.42; // D2
-    const subG = ctx.createGain();
-    subG.gain.value = 0.1;
-    subOsc.connect(subG).connect(masterGain);
-    subOsc.start();
-    ambientOscillators.push(subOsc);
-    ambientGains.push(subG);
-
-    // Rhythmic shaker / hi-hat pulse via filtered noise LFO
-    const shakerLfo = ctx.createOscillator();
-    shakerLfo.type = "square";
-    shakerLfo.frequency.value = 4; // 16th-note feel at ~120bpm
-    const shakerDepth = ctx.createGain();
-    shakerDepth.gain.value = 0.03;
-    shakerLfo.connect(shakerDepth).connect(masterGain.gain);
-    shakerLfo.start();
-    ambientOscillators.push(shakerLfo);
-    ambientGains.push(shakerDepth);
-
-    // Polyrhythmic cross-rhythm (3 against 4)
-    const crossLfo = ctx.createOscillator();
-    crossLfo.type = "sine";
-    crossLfo.frequency.value = 3; // triplet feel
-    const crossGain = ctx.createGain();
-    crossGain.gain.value = 0.02;
-    crossLfo.connect(crossGain).connect(masterGain.gain);
-    crossLfo.start();
-    ambientOscillators.push(crossLfo);
-    ambientGains.push(crossGain);
-
-    // Melodic riff — pentatonic lead
-    const leadNotes = [587.33, 659.25, 783.99]; // D5 E5 G5
-    leadNotes.forEach((f, i) => {
-      const osc = ctx.createOscillator();
-      osc.type = "sine";
-      osc.frequency.value = f;
-      const vibrato = ctx.createOscillator();
-      vibrato.type = "sine";
-      vibrato.frequency.value = 5 + i;
-      const vibDepth = ctx.createGain();
-      vibDepth.gain.value = 3;
-      vibrato.connect(vibDepth).connect(osc.frequency);
-      vibrato.start();
-      ambientOscillators.push(vibrato);
-      ambientGains.push(vibDepth);
-
-      const g = ctx.createGain();
-      g.gain.value = 0.025;
-      osc.connect(g).connect(masterGain);
-      osc.start();
-      ambientOscillators.push(osc);
-      ambientGains.push(g);
-    });
-  }
+  ambientTimerId = setInterval(() => {
+    if (!ambientPlaying) return;
+    while (nextNoteTime < ctx.currentTime + lookahead) {
+      const step = currentStep % pattern.totalSteps;
+      pattern.schedule(ctx, masterGain, step, nextNoteTime);
+      nextNoteTime += stepDur;
+      currentStep++;
+    }
+  }, 80);
 };
 
 export const stopAmbient = () => {
   ambientPlaying = false;
-  ambientOscillators.forEach((osc) => {
-    try { osc.stop(); } catch {}
-  });
-  ambientOscillators = [];
-  if (ambientLfo) {
-    try { ambientLfo.stop(); } catch {}
-    ambientLfo = null;
+  if (ambientTimerId !== null) {
+    clearInterval(ambientTimerId);
+    ambientTimerId = null;
   }
-  ambientGains = [];
+  if (ambientMasterGain) {
+    try {
+      const ctx = ambientMasterGain.context as AudioContext;
+      ambientMasterGain.gain.setValueAtTime(ambientMasterGain.gain.value, ctx.currentTime);
+      ambientMasterGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
+      setTimeout(() => {
+        try { ambientMasterGain?.disconnect(); } catch {}
+        ambientMasterGain = null;
+      }, 400);
+    } catch {
+      ambientMasterGain = null;
+    }
+  }
+  ambientNodes = [];
 };
