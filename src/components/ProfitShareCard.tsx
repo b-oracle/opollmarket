@@ -4,7 +4,7 @@ import logoDark from "@/assets/watermark-logo.png";
 
 interface ProfitShareCardProps {
   market: string;
-  side: "YES" | "NO";
+  side: string;
   profit: number;
   payout: number;
   displayName: string;
