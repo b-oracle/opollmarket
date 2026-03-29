@@ -1232,7 +1232,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   <p className="text-xs text-muted-foreground text-center py-8">No messages yet. Say something!</p>
                 )}
                 {messages.map((m) => (
-                  <div key={m.id} className={`flex gap-2 ${m.sender === user?.id ? "justify-end" : ""}`}>
+                  <div key={m.id} className={`group flex flex-col ${m.sender === user?.id ? "items-end" : "items-start"}`}>
                     <div className={`max-w-[80%] rounded-xl px-3 py-1.5 text-xs ${
                       m.sender === user?.id
                         ? "bg-primary text-primary-foreground"
@@ -1242,6 +1242,29 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                         <p className="font-semibold text-[10px] opacity-70 mb-0.5">{m.senderName}</p>
                       )}
                       <p>{m.text}</p>
+                    </div>
+                    {/* Existing reactions */}
+                    {m.reactions && Object.keys(m.reactions).length > 0 && (
+                      <div className="flex gap-1 mt-0.5 px-1">
+                        {Object.entries(m.reactions).map(([emoji, users]) => (
+                          <button key={emoji} onClick={() => reactToMessage(m.id, emoji)}
+                            className={`flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full border transition-colors ${
+                              users.includes(user?.id || "") ? "border-primary/50 bg-primary/10" : "border-border bg-muted/50"
+                            }`}>
+                            <span>{emoji}</span>
+                            <span className="font-medium">{users.length}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {/* Quick reaction buttons on hover/tap */}
+                    <div className="flex gap-0.5 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {CHAT_REACTIONS.map((emoji) => (
+                        <button key={emoji} onClick={() => reactToMessage(m.id, emoji)}
+                          className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] hover:bg-muted/80 active:scale-125 transition-transform">
+                          {emoji}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 ))}
