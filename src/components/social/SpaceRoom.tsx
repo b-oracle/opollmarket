@@ -66,9 +66,11 @@ interface ChatMessage {
   text: string;
   type: "message" | "reaction";
   timestamp: number;
+  reactions?: Record<string, string[]>; // emoji -> array of user ids
 }
 
-const REACTIONS = ["🔥", "👏", "❤️", "😂", "💯", "🎯"];
+const REACTIONS = ["🔥", "👏", "👍", "❤️", "😂", "💯", "🎯"];
+const CHAT_REACTIONS = ["👍", "❤️", "😂", "🔥", "👏"];
 
 const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => {
   const { user } = useAuth();
@@ -350,6 +352,21 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             return open;
           });
         }
+      } else if (data.type === "msg_reaction") {
+        // Someone reacted to a chat message
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.id !== data.messageId) return m;
+            const reactions = { ...(m.reactions || {}) };
+            const users = reactions[data.emoji] ? [...reactions[data.emoji]] : [];
+            const idx = users.indexOf(data.userId);
+            if (idx >= 0) users.splice(idx, 1);
+            else users.push(data.userId);
+            if (users.length === 0) delete reactions[data.emoji];
+            else reactions[data.emoji] = users;
+            return { ...m, reactions };
+          })
+        );
       } else if (data.type === "hand_raise") {
         const identity = participant?.identity;
         if (identity) {
@@ -945,6 +962,28 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
   };
 
+  const reactToMessage = (messageId: string, emoji: string) => {
+    if (!user?.id) return;
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id !== messageId) return m;
+        const reactions = { ...(m.reactions || {}) };
+        const users = reactions[emoji] ? [...reactions[emoji]] : [];
+        const idx = users.indexOf(user.id);
+        if (idx >= 0) users.splice(idx, 1);
+        else users.push(user.id);
+        if (users.length === 0) delete reactions[emoji];
+        else reactions[emoji] = users;
+        return { ...m, reactions };
+      })
+    );
+    // Broadcast reaction to peers
+    if (roomRef.current) {
+      const data = JSON.stringify({ type: "msg_reaction", messageId, emoji, userId: user.id });
+      roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
+    }
+  };
+
   const startClientRecording = async () => {
     try {
       setRecordingLoading(true);
@@ -1193,7 +1232,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   <p className="text-xs text-muted-foreground text-center py-8">No messages yet. Say something!</p>
                 )}
                 {messages.map((m) => (
-                  <div key={m.id} className={`flex gap-2 ${m.sender === user?.id ? "justify-end" : ""}`}>
+                  <div key={m.id} className={`group flex flex-col ${m.sender === user?.id ? "items-end" : "items-start"}`}>
                     <div className={`max-w-[80%] rounded-xl px-3 py-1.5 text-xs ${
                       m.sender === user?.id
                         ? "bg-primary text-primary-foreground"
@@ -1203,6 +1242,29 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                         <p className="font-semibold text-[10px] opacity-70 mb-0.5">{m.senderName}</p>
                       )}
                       <p>{m.text}</p>
+                    </div>
+                    {/* Existing reactions */}
+                    {m.reactions && Object.keys(m.reactions).length > 0 && (
+                      <div className="flex gap-1 mt-0.5 px-1">
+                        {Object.entries(m.reactions).map(([emoji, users]) => (
+                          <button key={emoji} onClick={() => reactToMessage(m.id, emoji)}
+                            className={`flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full border transition-colors ${
+                              users.includes(user?.id || "") ? "border-primary/50 bg-primary/10" : "border-border bg-muted/50"
+                            }`}>
+                            <span>{emoji}</span>
+                            <span className="font-medium">{users.length}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {/* Quick reaction buttons on hover/tap */}
+                    <div className="flex gap-0.5 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {CHAT_REACTIONS.map((emoji) => (
+                        <button key={emoji} onClick={() => reactToMessage(m.id, emoji)}
+                          className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] hover:bg-muted/80 active:scale-125 transition-transform">
+                          {emoji}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 ))}
