@@ -1319,11 +1319,15 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       });
 
       recordedChunksRef.current = [];
-      const recorder = new MediaRecorder(destination.stream, {
-        mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-          ? "audio/webm;codecs=opus"
-          : "audio/webm",
-      });
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/webm")
+          ? "audio/webm"
+          : MediaRecorder.isTypeSupported("audio/mp4")
+            ? "audio/mp4"
+            : "";
+      const recorderOptions: MediaRecorderOptions = mimeType ? { mimeType } : {};
+      const recorder = new MediaRecorder(destination.stream, recorderOptions);
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) recordedChunksRef.current.push(e.data);
       };
@@ -1351,7 +1355,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         mediaRecorderRef.current = null;
         recordingDestRef.current = null;
 
-        const blob = new Blob(recordedChunksRef.current, { type: "audio/webm" });
+        const recMime = recorder.mimeType || "audio/webm";
+        const ext = recMime.includes("mp4") ? "mp4" : "webm";
+        const blob = new Blob(recordedChunksRef.current, { type: recMime });
         recordedChunksRef.current = [];
 
         if (blob.size < 1000) {
@@ -1361,10 +1367,10 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           return;
         }
 
-        const fileName = `${user!.id}/space-${spaceId}-${Date.now()}.webm`;
+        const fileName = `${user!.id}/space-${spaceId}-${Date.now()}.${ext}`;
         const { error: uploadErr } = await supabase.storage
           .from("space-recordings")
-          .upload(fileName, blob, { contentType: "audio/webm" });
+          .upload(fileName, blob, { contentType: recMime });
         if (uploadErr) throw uploadErr;
         const { data: urlData } = supabase.storage.from("space-recordings").getPublicUrl(fileName);
         await supabase.from("spaces").update({
@@ -1388,7 +1394,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       mediaRecorderRef.current = null;
       recordingDestRef.current = null;
 
-      const blob = new Blob(recordedChunksRef.current, { type: "audio/webm" });
+      const recMime = recorder.mimeType || "audio/webm";
+      const ext = recMime.includes("mp4") ? "mp4" : "webm";
+      const blob = new Blob(recordedChunksRef.current, { type: recMime });
       recordedChunksRef.current = [];
 
       if (blob.size < 1000) {
@@ -1399,10 +1407,10 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       }
 
       // Upload to storage
-      const fileName = `${user!.id}/space-${spaceId}-${Date.now()}.webm`;
+      const fileName = `${user!.id}/space-${spaceId}-${Date.now()}.${ext}`;
       const { error: uploadErr } = await supabase.storage
         .from("space-recordings")
-        .upload(fileName, blob, { contentType: "audio/webm" });
+        .upload(fileName, blob, { contentType: recMime });
 
       if (uploadErr) throw uploadErr;
 

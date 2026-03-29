@@ -1,0 +1,1 @@
+UPDATE spaces SET is_recorded = false WHERE is_recorded = true AND recording_url IS NULL;
