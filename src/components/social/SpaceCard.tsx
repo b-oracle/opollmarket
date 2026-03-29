@@ -437,6 +437,30 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
           )}
         </div>
       </div>
+
+      {/* Host Analytics */}
+      {isHost && (isLive || isEnded) && analytics && (
+        <div className="flex items-center gap-3 pt-1 border-t border-border/50 text-[9px] text-muted-foreground">
+          <span className="flex items-center gap-1" title="Unique listeners">
+            <Users className="w-3 h-3" />
+            {analytics.total_unique_listeners}
+          </span>
+          <span className="flex items-center gap-1" title="Peak concurrent">
+            <TrendingUp className="w-3 h-3" />
+            {analytics.peak_listeners}
+          </span>
+          <span className="flex items-center gap-1" title="Messages">
+            <MessageCircle className="w-3 h-3" />
+            {analytics.total_messages}
+          </span>
+          <span className="flex items-center gap-1" title="Duration">
+            <Clock className="w-3 h-3" />
+            {Number(analytics.duration_minutes) >= 60
+              ? `${Math.floor(Number(analytics.duration_minutes) / 60)}h ${Math.round(Number(analytics.duration_minutes) % 60)}m`
+              : `${Math.round(Number(analytics.duration_minutes))}m`}
+          </span>
+        </div>
+      )}
     </motion.div>
 
     <SpaceShareSheet
