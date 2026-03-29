@@ -88,7 +88,7 @@ const Privacy = () => {
             <li><strong>Legal Compliance:</strong> To comply with applicable laws, regulations, legal processes, or governmental requests.</li>
             <li><strong>Referral Program:</strong> To track referral relationships, verify eligibility, distribute referral bonus rewards, and apply bonus balance as fee credits.</li>
             <li><strong>Limit Order Processing:</strong> To manage, match, and execute limit orders based on market price movements.</li>
-            <li><strong>Verification System:</strong> To assess and assign verification badge levels (Blue/Gold) based on token holdings and NFT ownership, and to calculate associated benefits such as trending multipliers and revenue sharing.</li>
+            <li><strong>Verification System:</strong> To assess and assign verification badge levels (Blue/Gold) based on token holdings and NFT ownership, and to calculate associated benefits such as trending multipliers and revenue share bonus.</li>
           </ul>
         </section>
 

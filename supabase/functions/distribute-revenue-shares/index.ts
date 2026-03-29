@@ -131,8 +131,8 @@ Deno.serve(async (req) => {
       // Notify the user
       await adminClient.from("notifications").insert({
         user_id: creatorProfile.id,
-        title: "Revenue Share Earned! 💰",
-        message: `You earned $${shareAmount.toFixed(2)} revenue share (${sharePercent}%) from your market as a ${level === "gold" ? "Gold" : "Blue"} verified creator.`,
+        title: "Revenue Share Bonus Earned! 💰",
+        message: `You earned a $${shareAmount.toFixed(2)} revenue share bonus (${sharePercent}%) from your market as a ${level === "gold" ? "Gold" : "Blue"} verified creator. This is an additional reward on top of your standard creator fee.`,
         type: "referral",
         market_id: market.id,
       });

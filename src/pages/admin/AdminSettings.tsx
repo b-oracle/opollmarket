@@ -840,7 +840,7 @@ const AdminSettings = () => {
                 <CardTitle className="text-base flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-primary" /> Verified Benefits
                 </CardTitle>
-                <CardDescription className="text-xs">Trending multipliers and revenue sharing for verified creators.</CardDescription>
+                <CardDescription className="text-xs">Trending multipliers and revenue share bonus for verified creators.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <BulkVerificationRefresh />
@@ -860,7 +860,7 @@ const AdminSettings = () => {
                 </div>
 
                 <div className="border-t border-border pt-3">
-                  <p className="text-xs font-semibold text-muted-foreground mb-2">Revenue Sharing</p>
+                  <p className="text-xs font-semibold text-muted-foreground mb-2">Creator Revenue Share Bonus</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label className="text-xs">Blue (%)</Label>
@@ -876,7 +876,7 @@ const AdminSettings = () => {
                       <span className="px-1.5 py-0.5 rounded bg-background border border-primary/30 text-primary">Blue: {blueRevenueShareNum}%</span>
                       <span className="px-1.5 py-0.5 rounded bg-background border border-accent/50 text-accent-foreground">Gold: {goldRevenueShareNum}%</span>
                     </div>
-                    <p className="text-[10px] text-muted-foreground mt-1">Distributed every 24h from resolved markets.</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">Extra bonus on top of the standard creator fee split. Paid from platform revenue when verified creators' markets resolve.</p>
                   </div>
                 </div>
               </CardContent>
