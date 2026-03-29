@@ -1136,6 +1136,118 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     setShowMusicMenu(false);
   };
 
+  // === Device Music ===
+  const handleDeviceMusicFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !roomRef.current) return;
+    e.target.value = ""; // reset input
+
+    try {
+      const ctx = new AudioContext();
+      deviceMusicCtxRef.current = ctx;
+
+      const arrayBuffer = await file.arrayBuffer();
+      const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+      deviceMusicBufferRef.current = audioBuffer;
+
+      const destination = ctx.createMediaStreamDestination();
+      deviceMusicDestRef.current = destination;
+
+      const gain = ctx.createGain();
+      gain.gain.value = 0.5;
+      gain.connect(destination);
+      deviceMusicGainRef.current = gain;
+
+      const source = ctx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(gain);
+      source.onended = () => {
+        if (!deviceMusicPaused) stopDeviceMusic();
+      };
+      source.start(0);
+      deviceMusicSourceRef.current = source;
+      deviceMusicOffsetRef.current = 0;
+      deviceMusicStartTimeRef.current = ctx.currentTime;
+
+      // Publish the stream as a secondary audio track via LiveKit
+      const mediaTrack = destination.stream.getAudioTracks()[0];
+      const pub = await roomRef.current.localParticipant.publishTrack(mediaTrack, {
+        name: "device-music",
+        source: Track.Source.ScreenShareAudio,
+      });
+      deviceMusicTrackRef.current = pub;
+
+      setDeviceMusicPlaying(true);
+      setDeviceMusicPaused(false);
+      setDeviceMusicName(file.name);
+      setShowMusicMenu(false);
+      toast.success(`Now playing: ${file.name} 🎵`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to play audio file");
+      cleanupDeviceMusic();
+    }
+  };
+
+  const pauseDeviceMusic = () => {
+    const source = deviceMusicSourceRef.current;
+    const ctx = deviceMusicCtxRef.current;
+    if (!source || !ctx) return;
+
+    const elapsed = ctx.currentTime - deviceMusicStartTimeRef.current;
+    deviceMusicOffsetRef.current += elapsed;
+
+    try { source.stop(); } catch {}
+    deviceMusicSourceRef.current = null;
+    setDeviceMusicPaused(true);
+  };
+
+  const resumeDeviceMusic = () => {
+    const ctx = deviceMusicCtxRef.current;
+    const buffer = deviceMusicBufferRef.current;
+    const gain = deviceMusicGainRef.current;
+    if (!ctx || !buffer || !gain) return;
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(gain);
+    source.onended = () => {
+      if (!deviceMusicPaused) stopDeviceMusic();
+    };
+    source.start(0, deviceMusicOffsetRef.current);
+    deviceMusicSourceRef.current = source;
+    deviceMusicStartTimeRef.current = ctx.currentTime;
+    setDeviceMusicPaused(false);
+  };
+
+  const cleanupDeviceMusic = () => {
+    try { deviceMusicSourceRef.current?.stop(); } catch {}
+    deviceMusicSourceRef.current = null;
+    deviceMusicBufferRef.current = null;
+    deviceMusicGainRef.current = null;
+    deviceMusicDestRef.current = null;
+    deviceMusicOffsetRef.current = 0;
+    if (deviceMusicCtxRef.current && deviceMusicCtxRef.current.state !== "closed") {
+      try { deviceMusicCtxRef.current.close(); } catch {}
+    }
+    deviceMusicCtxRef.current = null;
+  };
+
+  const stopDeviceMusic = async () => {
+    // Unpublish from LiveKit
+    const room = roomRef.current;
+    const pub = deviceMusicTrackRef.current;
+    if (room && pub) {
+      try {
+        await room.localParticipant.unpublishTrack(pub.track || pub);
+      } catch {}
+    }
+    deviceMusicTrackRef.current = null;
+    cleanupDeviceMusic();
+    setDeviceMusicPlaying(false);
+    setDeviceMusicPaused(false);
+    setDeviceMusicName(null);
+  };
+
   const reactToMessage = (messageId: string, emoji: string) => {
     if (!user?.id) return;
     let updatedReactions: Record<string, string[]> | undefined;
