@@ -576,6 +576,19 @@ const AdminSettings = () => {
 
             <Card>
               <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2"><Droplets className="w-4 h-4" /> Minimum Liquidity</CardTitle>
+                <CardDescription className="text-[10px]">Minimum amount of USDT a creator must add as initial liquidity when creating a market.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-1.5">
+                  <Label htmlFor="minLiquidity" className="text-xs">Minimum Liquidity (USDT)</Label>
+                  <Input id="minLiquidity" type="number" min={1} step={1} value={minLiquidity} onChange={(e) => setMinLiquidity(e.target.value)} placeholder="10" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2"><Copy className="w-4 h-4" /> Copy Trade Commission</CardTitle>
                 <CardDescription className="text-[10px]">% of profit from copiers to original trader.</CardDescription>
               </CardHeader>

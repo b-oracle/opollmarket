@@ -263,6 +263,7 @@ const Create = () => {
           whale: Number((data as any).boost_whale_price ?? 150),
         });
         setBroadcastPriceVal(Number((data as any).broadcast_price ?? 5));
+        setMinLiquidity(Number((data as any).min_liquidity ?? 10));
       }
       setSettingsLoaded(true);
     })();
