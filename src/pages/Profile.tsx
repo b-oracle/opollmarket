@@ -1606,22 +1606,30 @@ const Profile = () => {
                 <span className="text-xs font-semibold">Active Markets</span>
               </div>
               <span className="text-sm font-bold">
-                {activeMarketCount} / {profile.verification_level === "gold" ? (commissionSettings as any)?.gold_max_free_markets ?? 20 : (commissionSettings as any)?.blue_max_free_markets ?? 5}
+                {(profile as any)?.unlimited_markets
+                  ? <>{activeMarketCount} / <span className="text-primary">∞</span></>
+                  : <>{activeMarketCount} / {profile.verification_level === "gold" ? (commissionSettings as any)?.gold_max_free_markets ?? 20 : (commissionSettings as any)?.blue_max_free_markets ?? 5}</>
+                }
               </span>
             </div>
-            <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full rounded-full bg-primary transition-all"
-                style={{
-                  width: `${Math.min(
-                    (activeMarketCount / (profile.verification_level === "gold" ? (commissionSettings as any)?.gold_max_free_markets ?? 20 : (commissionSettings as any)?.blue_max_free_markets ?? 5)) * 100,
-                    100
-                  )}%`,
-                }}
-              />
-            </div>
+            {!(profile as any)?.unlimited_markets && (
+              <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{
+                    width: `${Math.min(
+                      (activeMarketCount / (profile.verification_level === "gold" ? (commissionSettings as any)?.gold_max_free_markets ?? 20 : (commissionSettings as any)?.blue_max_free_markets ?? 5)) * 100,
+                      100
+                    )}%`,
+                  }}
+                />
+              </div>
+            )}
             <p className="text-[10px] text-muted-foreground mt-1">
-              Free markets remaining: {Math.max(0, (profile.verification_level === "gold" ? (commissionSettings as any)?.gold_max_free_markets ?? 20 : (commissionSettings as any)?.blue_max_free_markets ?? 5) - activeMarketCount)}
+              {(profile as any)?.unlimited_markets
+                ? "Unlimited — no free market cap applies"
+                : `Free markets remaining: ${Math.max(0, (profile.verification_level === "gold" ? (commissionSettings as any)?.gold_max_free_markets ?? 20 : (commissionSettings as any)?.blue_max_free_markets ?? 5) - activeMarketCount)}`
+              }
             </p>
           </div>
         )}

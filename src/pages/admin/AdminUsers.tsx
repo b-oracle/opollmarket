@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Shield, ShieldOff, DollarSign, X, ShieldCheck, ShieldMinus, Search, Crown, Eye, Ban, CheckCircle } from "lucide-react";
+import { Loader2, Shield, ShieldOff, DollarSign, X, ShieldCheck, ShieldMinus, Search, Crown, Eye, Ban, CheckCircle, Infinity } from "lucide-react";
 import { toast } from "sonner";
 import { logAuditEvent } from "@/lib/auditLog";
 import { motion, AnimatePresence } from "framer-motion";
@@ -18,6 +18,7 @@ interface ProfileRow {
   roles: string[];
   balance: number;
   is_blocked: boolean;
+  unlimited_markets: boolean;
 }
 
 const PAGE_SIZE = 20;
@@ -96,6 +97,7 @@ const AdminUsers = () => {
         roles: roleMap.get(p.id) || [],
         balance: balanceMap.get(p.id) ?? 0,
         is_blocked: !!(p as any).is_blocked,
+        unlimited_markets: !!(p as any).unlimited_markets,
       }))
     );
     setLoading(false);
@@ -283,6 +285,9 @@ const AdminUsers = () => {
                     <td className="p-3 font-medium">
                       <div className="flex items-center gap-1.5">
                         {u.display_name || "—"}
+                        {u.unlimited_markets && (
+                          <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-primary/15 text-primary" title="Unlimited Markets">∞</span>
+                        )}
                         {u.is_blocked && (
                           <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-destructive/15 text-destructive">BLOCKED</span>
                         )}
@@ -358,7 +363,31 @@ const AdminUsers = () => {
                               }`}
                               title={isSA ? "Remove Super Admin" : "Make Super Admin"}
                             >
-                            <Crown className="w-4 h-4" />
+                              <Crown className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={async () => {
+                                const newVal = !u.unlimited_markets;
+                                const { error } = await supabase
+                                  .from("profiles")
+                                  .update({ unlimited_markets: newVal } as any)
+                                  .eq("id", u.id);
+                                if (error) { toast.error("Failed to update"); return; }
+                                logAuditEvent({
+                                  action: "settings_updated",
+                                  targetId: u.id,
+                                  targetType: "user",
+                                  details: { unlimited_markets: newVal, user_name: u.display_name || u.email },
+                                });
+                                toast.success(`${u.display_name || "User"} ${newVal ? "whitelisted for unlimited markets" : "removed from unlimited markets whitelist"}`);
+                                fetchUsers();
+                              }}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                u.unlimited_markets ? "bg-primary/15 text-primary hover:bg-primary/25" : "hover:bg-muted text-muted-foreground"
+                              }`}
+                              title={u.unlimited_markets ? "Remove Unlimited Markets" : "Grant Unlimited Markets"}
+                            >
+                              <Infinity className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => toggleBlock(u.id, u.display_name || u.email || "User", u.is_blocked)}
