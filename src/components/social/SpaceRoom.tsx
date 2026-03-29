@@ -37,6 +37,8 @@ import NftBadge, { VerificationLevel } from "@/components/NftBadge";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
 import SpaceMiniPlayer from "./SpaceMiniPlayer";
 import TaggedMarketsCarousel from "./TaggedMarketsCarousel";
+import { SOUND_REACTIONS, playSoundById, AMBIENT_TRACKS, startAmbient, stopAmbient, isAmbientPlaying } from "@/lib/spaceSounds";
+import { Music, ChevronDown } from "lucide-react";
 
 interface SpaceRoomProps {
   spaceId: string;
@@ -192,6 +194,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [allForceMuted, setAllForceMuted] = useState(false);
   const [requestPending, setRequestPending] = useState(false);
   const [taggedMarketIds, setTaggedMarketIds] = useState<string[]>([]);
+  const [ambientTrack, setAmbientTrack] = useState<string | null>(null);
+  const [showMusicMenu, setShowMusicMenu] = useState(false);
 
   // Fetch tagged market IDs for this space
   useEffect(() => {
@@ -367,7 +371,14 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       const data = JSON.parse(decoded);
       // Ignore keep-alive pings
       if (data.type === "ping") return;
-      if (data.type === "reaction") {
+      if (data.type === "sound_reaction") {
+        // Play the sound effect for all participants
+        playSoundById(data.soundId);
+        const id = `${Date.now()}-${Math.random()}`;
+        const emoji = SOUND_REACTIONS.find(s => s.id === data.soundId)?.emoji || "🔊";
+        setFloatingReactions((prev) => [...prev, { id, emoji }]);
+        setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
+      } else if (data.type === "reaction") {
         const id = `${Date.now()}-${Math.random()}`;
         setFloatingReactions((prev) => [...prev, { id, emoji: data.emoji }]);
         setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
@@ -801,6 +812,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   };
 
   const handleLeave = async () => {
+    // Stop ambient music if playing
+    stopAmbient();
     // If recording is active, stop and upload BEFORE disconnecting
     if (recording && mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       toast.info("Saving recording before ending...");
@@ -826,6 +839,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
   const handleEndSpace = async () => {
     if (!isHost) return;
+    stopAmbient();
     // If recording is active, stop and upload BEFORE ending
     if (recording && mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       toast.info("Saving recording before ending...");
@@ -1009,6 +1023,31 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     const id = `${Date.now()}-${Math.random()}`;
     setFloatingReactions((prev) => [...prev, { id, emoji }]);
     setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
+  };
+
+  const sendSoundReaction = (soundId: string) => {
+    if (!roomRef.current) return;
+    // Play locally
+    playSoundById(soundId);
+    // Broadcast to peers
+    const data = JSON.stringify({ type: "sound_reaction", soundId });
+    roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
+    // Show floating emoji
+    const emoji = SOUND_REACTIONS.find(s => s.id === soundId)?.emoji || "🔊";
+    const id = `${Date.now()}-${Math.random()}`;
+    setFloatingReactions((prev) => [...prev, { id, emoji }]);
+    setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
+  };
+
+  const toggleAmbientMusic = (trackId: string) => {
+    if (ambientTrack === trackId) {
+      stopAmbient();
+      setAmbientTrack(null);
+    } else {
+      startAmbient(trackId);
+      setAmbientTrack(trackId);
+    }
+    setShowMusicMenu(false);
   };
 
   const reactToMessage = (messageId: string, emoji: string) => {
@@ -1465,13 +1504,65 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
         {/* Reaction bar */}
         {connected && !chatOpen && (
-          <div className="px-5 py-2 flex items-center justify-center gap-2">
-            {REACTIONS.map((emoji) => (
-              <button key={emoji} onClick={() => sendReaction(emoji)}
-                className="w-9 h-9 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center text-base transition-transform active:scale-125">
-                {emoji}
-              </button>
-            ))}
+          <div className="px-5 py-2 space-y-1.5">
+            {/* Regular reactions — everyone */}
+            <div className="flex items-center justify-center gap-2">
+              {REACTIONS.map((emoji) => (
+                <button key={emoji} onClick={() => sendReaction(emoji)}
+                  className="w-9 h-9 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center text-base transition-transform active:scale-125">
+                  {emoji}
+                </button>
+              ))}
+            </div>
+            {/* Sound reactions — host & co-host only */}
+            {hasModPowers && (
+              <div className="flex items-center justify-center gap-1.5">
+                {SOUND_REACTIONS.map((sr) => (
+                  <button key={sr.id} onClick={() => sendSoundReaction(sr.id)}
+                    title={sr.label}
+                    className="h-7 px-2 rounded-full bg-accent/20 hover:bg-accent/40 flex items-center justify-center gap-1 text-xs transition-transform active:scale-110 border border-accent/30">
+                    <span>{sr.emoji}</span>
+                    <span className="text-[9px] text-accent-foreground/70 hidden sm:inline">{sr.label}</span>
+                  </button>
+                ))}
+                {/* Ambient music toggle */}
+                <div className="relative">
+                  <button onClick={() => setShowMusicMenu(!showMusicMenu)}
+                    className={`h-7 px-2 rounded-full flex items-center justify-center gap-1 text-xs transition-colors border ${
+                      ambientTrack
+                        ? "bg-primary/20 text-primary border-primary/40"
+                        : "bg-muted hover:bg-muted/80 text-muted-foreground border-border"
+                    }`}
+                    title="Background Music">
+                    <Music className="w-3 h-3" />
+                    <ChevronDown className="w-2.5 h-2.5" />
+                  </button>
+                  {showMusicMenu && (
+                    <div className="absolute bottom-full right-0 mb-1 bg-card border border-border rounded-lg shadow-lg p-1.5 min-w-[140px] z-[95]">
+                      {AMBIENT_TRACKS.map((t) => (
+                        <button key={t.id} onClick={() => toggleAmbientMusic(t.id)}
+                          className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors ${
+                            ambientTrack === t.id
+                              ? "bg-primary/15 text-primary"
+                              : "hover:bg-muted text-foreground"
+                          }`}>
+                          <span>{t.emoji}</span>
+                          <span>{t.label}</span>
+                          {ambientTrack === t.id && <span className="ml-auto text-[9px]">▶</span>}
+                        </button>
+                      ))}
+                      {ambientTrack && (
+                        <button onClick={() => { stopAmbient(); setAmbientTrack(null); setShowMusicMenu(false); }}
+                          className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-destructive hover:bg-destructive/10 transition-colors mt-0.5">
+                          <span>⏹</span>
+                          <span>Stop Music</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
