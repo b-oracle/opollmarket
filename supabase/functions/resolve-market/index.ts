@@ -349,12 +349,12 @@ async function handleResolve(
     // Get exit fee from commission_settings
     const { data: settings } = await adminClient
       .from("commission_settings")
-      .select("exit_fee_percent")
+      .select("liquidity_return_fee_percent")
       .limit(1)
       .single();
 
-    const exitFeePercent = settings?.exit_fee_percent ?? 5;
-    const feeAmount = market.initial_liquidity * (exitFeePercent / 100);
+    const liquidityReturnFeePercent = Number((settings as any)?.liquidity_return_fee_percent) || 5;
+    const feeAmount = market.initial_liquidity * (liquidityReturnFeePercent / 100);
     const liquidityRefund = market.initial_liquidity - feeAmount;
 
     if (liquidityRefund > 0) {
@@ -373,7 +373,7 @@ async function handleResolve(
       await adminClient.from("notifications").insert({
         user_id: creatorUserId,
         title: "Liquidity Returned 💰",
-        message: `Your $${market.initial_liquidity.toFixed(2)} initial liquidity for "${market.title}" has been returned ($${liquidityRefund.toFixed(2)} after ${exitFeePercent}% fee).`,
+        message: `Your $${market.initial_liquidity.toFixed(2)} initial liquidity for "${market.title}" has been returned ($${liquidityRefund.toFixed(2)} after ${liquidityReturnFeePercent}% liquidity return fee).`,
         type: "refund",
         market_id: market_id,
       });

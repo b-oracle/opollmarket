@@ -62,6 +62,7 @@ const AdminSettings = () => {
   const [withdrawalMultiplier, setWithdrawalMultiplier] = useState("");
   const [withdrawalLimitEnabled, setWithdrawalLimitEnabled] = useState(true);
   const [exitFee, setExitFee] = useState("");
+  const [liquidityReturnFee, setLiquidityReturnFee] = useState("");
   const [withdrawalFee, setWithdrawalFee] = useState("");
   const [copyTradeCommission, setCopyTradeCommission] = useState("");
   const [quickTradeFee, setQuickTradeFee] = useState("");
@@ -121,6 +122,7 @@ const AdminSettings = () => {
         setWithdrawalMultiplier(String(d.withdrawal_multiplier ?? 2));
         setWithdrawalLimitEnabled(d.withdrawal_limit_enabled !== false);
         setExitFee(String(d.exit_fee_percent ?? 5));
+        setLiquidityReturnFee(String((d as any).liquidity_return_fee_percent ?? 5));
         setWithdrawalFee(String(d.withdrawal_fee_percent ?? 0));
         setCopyTradeCommission(String(d.copy_trade_commission_percent ?? 10));
         setQuickTradeFee(String(d.quick_trade_fee_percent ?? 5));
@@ -177,6 +179,7 @@ const AdminSettings = () => {
   const withdrawalCooldownNum = parseInt(withdrawalCooldown) || 5;
   const withdrawalMultiplierNum = parseFloat(withdrawalMultiplier) || 2;
   const exitFeeNum = parseFloat(exitFee) || 0;
+  const liquidityReturnFeeNum = parseFloat(liquidityReturnFee) || 5;
   const withdrawalFeeNum = parseFloat(withdrawalFee) || 0;
   const copyTradeCommissionNum = parseFloat(copyTradeCommission) || 0;
   const quickTradeFeeNum = parseFloat(quickTradeFee) || 0;
@@ -217,7 +220,7 @@ const AdminSettings = () => {
     creatorNum >= 0 && creatorBlueNum >= 0 && creatorGoldNum >= 0 &&
     splitsValid &&
     referralNum >= 0 && tokenNum >= 0 && nftNum >= 0 &&
-    minWithdrawNum >= 0 && withdrawalCooldownNum >= 0 && withdrawalMultiplierNum >= 1 && exitFeeNum >= 0 && exitFeeNum <= 100 && withdrawalFeeNum >= 0 && withdrawalFeeNum <= 100 && copyTradeCommissionNum >= 0 && copyTradeCommissionNum <= 100 &&
+    minWithdrawNum >= 0 && withdrawalCooldownNum >= 0 && withdrawalMultiplierNum >= 1 && exitFeeNum >= 0 && exitFeeNum <= 100 && liquidityReturnFeeNum >= 0 && liquidityReturnFeeNum <= 100 && withdrawalFeeNum >= 0 && withdrawalFeeNum <= 100 && copyTradeCommissionNum >= 0 && copyTradeCommissionNum <= 100 &&
     quickTradeFeeNum >= 0 && quickTradeFeeNum <= 100 &&
     qtMinBetNum >= 0 && qtMaxBetNum > 0 && qtMaxBetNum >= qtMinBetNum &&
     qtStreak2Num >= 1 && qtStreak3Num >= 1 && qtStreak4Num >= 1 && qtStreak5Num >= 1 &&
@@ -275,6 +278,7 @@ const AdminSettings = () => {
           withdrawal_multiplier: withdrawalMultiplierNum,
           withdrawal_limit_enabled: withdrawalLimitEnabled,
            exit_fee_percent: exitFeeNum,
+           liquidity_return_fee_percent: liquidityReturnFeeNum,
            withdrawal_fee_percent: withdrawalFeeNum,
           copy_trade_commission_percent: copyTradeCommissionNum,
           quick_trade_fee_percent: quickTradeFeeNum,
@@ -326,6 +330,7 @@ const AdminSettings = () => {
           creator_fee_gold_percent: creatorGoldNum,
           referrer_commission_percent: referrerCommissionNum,
            exit_fee_percent: exitFeeNum,
+           liquidity_return_fee_percent: liquidityReturnFeeNum,
            withdrawal_fee_percent: withdrawalFeeNum,
           copy_trade_commission_percent: copyTradeCommissionNum,
           min_withdrawal_amount: minWithdrawNum,
@@ -521,7 +526,11 @@ const AdminSettings = () => {
                 <div className="border-t border-border pt-2 space-y-1.5">
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">Early Exit Fee</span>
-                    <span className="font-medium">{exitFeeNum}%</span>
+                     <span className="font-medium">{exitFeeNum}%</span>
+                   </div>
+                   <div className="flex justify-between text-xs">
+                     <span className="text-muted-foreground">Liquidity Return Fee</span>
+                     <span className="font-medium">{liquidityReturnFeeNum}%</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">Copy Trade Commission</span>
@@ -543,6 +552,19 @@ const AdminSettings = () => {
                 <div className="space-y-1.5">
                   <Label htmlFor="exitFee" className="text-xs">Exit Fee (%)</Label>
                   <Input id="exitFee" type="number" min={0} max={100} step={0.5} value={exitFee} onChange={(e) => setExitFee(e.target.value)} placeholder="5" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2"><LogOut className="w-4 h-4" /> Liquidity Return Fee</CardTitle>
+                <CardDescription className="text-[10px]">Fee deducted from creator's liquidity before it is returned upon market resolution.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-1.5">
+                  <Label htmlFor="liquidityReturnFee" className="text-xs">Liquidity Return Fee (%)</Label>
+                  <Input id="liquidityReturnFee" type="number" min={0} max={100} step={0.5} value={liquidityReturnFee} onChange={(e) => setLiquidityReturnFee(e.target.value)} placeholder="5" />
                 </div>
               </CardContent>
             </Card>

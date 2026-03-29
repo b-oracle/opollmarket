@@ -462,6 +462,7 @@ export type Database = {
           gold_revenue_share_percent: number
           gold_trending_multiplier: number
           id: string
+          liquidity_return_fee_percent: number
           market_creation_fee: number | null
           min_gold_token_balance: number
           min_nft_balance: number
@@ -526,6 +527,7 @@ export type Database = {
           gold_revenue_share_percent?: number
           gold_trending_multiplier?: number
           id?: string
+          liquidity_return_fee_percent?: number
           market_creation_fee?: number | null
           min_gold_token_balance?: number
           min_nft_balance?: number
@@ -590,6 +592,7 @@ export type Database = {
           gold_revenue_share_percent?: number
           gold_trending_multiplier?: number
           id?: string
+          liquidity_return_fee_percent?: number
           market_creation_fee?: number | null
           min_gold_token_balance?: number
           min_nft_balance?: number
