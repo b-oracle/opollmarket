@@ -386,6 +386,14 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         const senderIdentity = participant?.identity || "unknown";
         setFloatingReactions((prev) => [...prev, { id, emoji: data.emoji, identity: senderIdentity }]);
         setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
+      } else if (data.type === "ambient_music") {
+        if (data.action === "play" && data.trackId) {
+          startAmbient(data.trackId);
+          setAmbientTrack(data.trackId);
+        } else if (data.action === "stop") {
+          stopAmbient();
+          setAmbientTrack(null);
+        }
       } else if (data.type === "message") {
         // Messages are delivered via Postgres realtime subscription.
         // Data channel delivery is intentionally ignored to prevent duplicates.
