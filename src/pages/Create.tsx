@@ -741,6 +741,14 @@ const Create = () => {
     resolutionSource: resolutionSource.trim().length === 0 ? "Resolution source is required" : resolutionSource.trim().length < 10 ? "Must be at least 10 characters" : null,
     initialLiquidity: !initialLiquidity ? "Initial liquidity is required" : parseFloat(initialLiquidity) < minLiquidity ? `Minimum ${minLiquidity} USDT` : null,
     options: marketType !== "binary" && options.filter(o => o.trim()).length < 2 ? "At least 2 options required" : null,
+    twitterResource: (() => {
+      if (!autoResolve || category !== "Twitter/X") return null;
+      if (!twitterResourceId.trim()) return "X handle or Tweet ID is required";
+      const isUsernameBased = twitterMetricType === "posts" || twitterMetricType === "impressions";
+      if (isUsernameBased && (twitterResourceId.includes("/") || twitterResourceId.includes("http")))
+        return "Enter the X handle only, not a link";
+      return null;
+    })(),
   };
 
   const shakeClass = (field: string) => shakeField === field ? "animate-[shake_0.4s_ease-in-out]" : "";
@@ -759,6 +767,7 @@ const Create = () => {
     if (errors.category) { shake("category"); return; }
     if (errors.endDate) { shake("endDate"); return; }
     if (errors.resolutionSource) { shake("resolutionSource"); return; }
+    if (errors.twitterResource) { setTouched((t) => ({ ...t, twitterResource: true })); shake("twitterResource"); return; }
     setStep(3);
   };
 
@@ -2324,16 +2333,19 @@ const Create = () => {
                       className="space-y-3 pt-2 border-t border-border/50"
                     >
                       {/* Tweet URL / ID or Username */}
-                      <div>
+                      <div className={shakeClass("twitterResource")}>
                         <label className="text-xs font-semibold mb-1.5 block">
-                          {twitterMetricType === "posts" ? "X (Twitter) Username" : "Tweet URL or ID"}
+                          {(twitterMetricType === "posts" || twitterMetricType === "impressions")
+                            ? "X Handle (username only, not a link) *"
+                            : "Tweet URL or ID *"}
                         </label>
                         <input
                           type="text"
                           value={twitterResourceId}
                           onChange={(e) => {
+                            setTouched((t) => ({ ...t, twitterResource: true }));
                             const val = e.target.value.trim();
-                            if (twitterMetricType === "posts") {
+                            if (twitterMetricType === "posts" || twitterMetricType === "impressions") {
                               // Strip @ and URL prefixes, keep just the username
                               const urlMatch = val.match(/(?:twitter\.com|x\.com)\/(@?(\w+))/i);
                               setTwitterResourceId(urlMatch ? urlMatch[2] : val.replace(/^@/, ""));
@@ -2343,12 +2355,15 @@ const Create = () => {
                               setTwitterResourceId(match ? match[1] : val);
                             }
                           }}
-                          placeholder={twitterMetricType === "posts" ? "e.g. elonmusk" : "e.g. https://x.com/user/status/123456789 or 123456789"}
-                          className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          placeholder={(twitterMetricType === "posts" || twitterMetricType === "impressions") ? "e.g. elonmusk (no @ or links)" : "e.g. https://x.com/user/status/123456789 or 123456789"}
+                          className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${touched.twitterResource && errors.twitterResource ? "border-destructive" : "border-border"}`}
                         />
+                        {touched.twitterResource && errors.twitterResource && (
+                          <p className="text-[10px] text-destructive mt-1">{errors.twitterResource}</p>
+                        )}
                         <p className="text-[10px] text-muted-foreground mt-1">
-                          {twitterMetricType === "posts"
-                            ? "Enter the X username (without @) whose post count you want to track."
+                          {(twitterMetricType === "posts" || twitterMetricType === "impressions")
+                            ? "Enter the X handle only — do not paste a profile link."
                             : "Paste the full tweet URL or just the numeric tweet ID."}
                         </p>
                       </div>
