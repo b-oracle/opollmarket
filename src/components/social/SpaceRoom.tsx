@@ -523,8 +523,6 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             }
             setReconnecting(false);
             toast.error("Could not reconnect to space");
-          } else {
-            toast.info("Disconnected from space");
           }
           setConnected(false);
           onClose();
