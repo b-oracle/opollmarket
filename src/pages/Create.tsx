@@ -2810,7 +2810,7 @@ const Create = () => {
               <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20">
                 <AlertTriangle className="w-4 h-4 text-destructive/60 shrink-0 mt-0.5" />
                 <p className="text-xs text-destructive/70">
-                  {feeBypass
+                  {feeBypass && !unlimitedMarkets
                     ? exceededFreeLimit
                       ? `A $${marketCreationFee} creation fee applies — you've reached your free market limit (${activeMarketCount}/${verificationLevel === "gold" ? goldMaxFreeMarkets : blueMaxFreeMarkets}). This fee is non-refundable (unless the market is cancelled). Your market will require approval before going live.`
                       : `A $${marketCreationFee} creation fee applies since you don't hold NFT/BC400. This fee is non-refundable (unless the market is cancelled). Your market will require approval before going live.`
