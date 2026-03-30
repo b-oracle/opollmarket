@@ -459,8 +459,104 @@ Deno.serve(async (req) => {
           const count = tm.twitter_current_count ?? 0;
           const options = (tm.market_options || []).sort((a: any, b: any) => a.sort_order - b.sort_order);
 
-          if (options.length === 0) continue;
+          // ── Binary Twitter markets ──
+          if (tm.market_type === "binary" || options.length === 0) {
+            // For binary: check if count met the target condition
+            const target = Number(tm.auto_resolve_target_price);
+            const operator = tm.auto_resolve_operator as string;
+            let winningSide = "no"; // deadline passed = default NO
+            if (!isNaN(target) && operator) {
+              if (conditionMet(count, target, operator)) {
+                winningSide = "yes";
+              }
+            }
 
+            await adminClient
+              .from("markets")
+              .update({
+                status: "resolved",
+                resolved_side: winningSide,
+                yes_price: winningSide === "yes" ? 1 : 0,
+                no_price: winningSide === "no" ? 1 : 0,
+              })
+              .eq("id", tm.id);
+
+            // Find winning/losing positions
+            const { data: winPositions } = await adminClient
+              .from("positions")
+              .select("*")
+              .eq("market_id", tm.id)
+              .eq("side", winningSide)
+              .gt("shares", 0);
+
+            const losingSide = winningSide === "yes" ? "no" : "yes";
+            const { data: losePositions } = await adminClient
+              .from("positions")
+              .select("*")
+              .eq("market_id", tm.id)
+              .eq("side", losingSide)
+              .gt("shares", 0);
+
+            const winners = winPositions || [];
+            const losers = losePositions || [];
+            const isOneSidedBinary = losers.length === 0 || winners.length === 0;
+
+            if (winners.length === 0) {
+              console.log(`Twitter binary market ${tm.id}: No winners — platform profit`);
+            } else if (isOneSidedBinary && losers.length === 0) {
+              const { data: feeSettings } = await adminClient
+                .from("commission_settings")
+                .select("admin_fee_percent")
+                .limit(1)
+                .single();
+              const adminFeePercent = feeSettings?.admin_fee_percent ?? 2;
+              for (const pos of winners) {
+                const capital = pos.shares * pos.avg_price;
+                const fee = capital * (adminFeePercent / 100);
+                const payout = capital - fee;
+                if (payout <= 0) continue;
+                await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout, _bonus_delta: 0, _insurance_delta: 0 });
+                await adminClient.from("transactions").insert({
+                  user_id: pos.user_id, market_id: tm.id, option_id: pos.option_id,
+                  type: "payout", amount: payout, side: pos.side, shares: pos.shares,
+                  price: pos.avg_price, status: "confirmed",
+                });
+              }
+            } else {
+              for (const pos of winners) {
+                const payout = pos.shares;
+                await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout, _bonus_delta: 0, _insurance_delta: 0 });
+                await adminClient.from("transactions").insert({
+                  user_id: pos.user_id, market_id: tm.id, option_id: pos.option_id,
+                  type: "payout", amount: payout, side: pos.side, shares: pos.shares,
+                  price: 1, status: "confirmed",
+                });
+              }
+            }
+
+            // Notifications
+            const allBinaryPositions = [...winners, ...losers];
+            const uniqueBinaryUsers = new Map<string, string>();
+            for (const p of allBinaryPositions) {
+              if (!uniqueBinaryUsers.has(p.user_id)) uniqueBinaryUsers.set(p.user_id, p.side);
+            }
+            const binaryNotifs = Array.from(uniqueBinaryUsers.entries()).map(([userId, side]) => {
+              const won = side === winningSide;
+              return {
+                user_id: userId,
+                title: won ? "You Won! 🎉 Twitter Market Resolved" : "Twitter Market Resolved",
+                message: `"${tm.title}" resolved ${winningSide.toUpperCase()} (Count: ${count}). ${won ? "Your payout has been credited!" : "Better luck next time!"}`,
+                type: won ? "payout" : "resolution",
+                market_id: tm.id,
+              };
+            });
+            if (binaryNotifs.length > 0) await adminClient.from("notifications").insert(binaryNotifs);
+            console.log(`Twitter binary market ${tm.id}: Resolved ${winningSide.toUpperCase()} (count=${count})`);
+            twitterResolved++;
+            continue;
+          }
+
+          // ── Multi-option / Range Twitter markets ──
           // Find the winning option based on which range bracket the count falls into
           let winningOptionId: string | null = null;
           for (const opt of options) {
@@ -528,7 +624,7 @@ Deno.serve(async (req) => {
               const fee = capital * (adminFeePercent / 100);
               const payout = capital - fee;
               if (payout <= 0) continue;
-              await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout });
+              await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout, _bonus_delta: 0, _insurance_delta: 0 });
               await adminClient.from("transactions").insert({
                 user_id: pos.user_id, market_id: tm.id, option_id: pos.option_id,
                 type: "payout", amount: payout, side: pos.side, shares: pos.shares,
@@ -538,7 +634,7 @@ Deno.serve(async (req) => {
           } else {
             for (const pos of winners) {
               const payout = pos.shares;
-              await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout });
+              await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout, _bonus_delta: 0, _insurance_delta: 0 });
               await adminClient.from("transactions").insert({
                 user_id: pos.user_id, market_id: tm.id, option_id: pos.option_id,
                 type: "payout", amount: payout, side: pos.side, shares: pos.shares,
