@@ -335,7 +335,7 @@ const AdminMarkets = () => {
   };
 
   const openResolveModal = async (market: MarketRow) => {
-    if (market.market_type === "multi") {
+    if (market.market_type === "multi" || market.market_type === "range") {
       const { data } = await supabase
         .from("market_options")
         .select("id, label, price, sort_order")
