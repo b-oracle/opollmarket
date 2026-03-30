@@ -598,6 +598,7 @@ Deno.serve(async (req) => {
             });
             if (binaryNotifs.length > 0) await adminClient.from("notifications").insert(binaryNotifs);
             console.log(`Twitter binary market ${tm.id}: Resolved ${winningSide.toUpperCase()} (count=${count})`);
+            await returnCreatorLiquidity(adminClient, tm);
             twitterResolved++;
             continue;
           }
@@ -707,6 +708,7 @@ Deno.serve(async (req) => {
           });
           if (notifs.length > 0) await adminClient.from("notifications").insert(notifs);
           console.log(`Twitter market ${tm.id}: Resolved to "${winningLabel}" (count=${count})`);
+          await returnCreatorLiquidity(adminClient, tm);
           twitterResolved++;
         }
       }
