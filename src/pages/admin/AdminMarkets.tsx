@@ -37,6 +37,7 @@ interface MarketRow {
   is_hidden: boolean;
   resolved_side: string | null;
   blockchain_tx_hash: string | null;
+  image_url: string | null;
 }
 
 interface MarketOption {
