@@ -679,13 +679,20 @@ Deno.serve(async (req) => {
               });
             }
           } else {
+            // Pool-proportional payout for multi-option to prevent overpayment
+            const totalWinnerShares = winners.reduce((s: number, p: any) => s + p.shares, 0);
+            const allPos = [...winners, ...losers];
+            const totalPool = allPos.reduce((s: number, p: any) => s + p.shares * p.avg_price, 0);
+            const payoutPerShare = totalWinnerShares > 0 ? Math.min(1, totalPool / totalWinnerShares) : 1;
+            console.log(`Twitter multi market ${tm.id}: pool-proportional payout`, { totalPool, totalWinnerShares, payoutPerShare });
+
             for (const pos of winners) {
-              const payout = pos.shares;
+              const payout = Math.round(pos.shares * payoutPerShare * 100) / 100;
               await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout, _bonus_delta: 0, _insurance_delta: 0 });
               await adminClient.from("transactions").insert({
                 user_id: pos.user_id, market_id: tm.id, option_id: pos.option_id,
                 type: "payout", amount: payout, side: pos.side, shares: pos.shares,
-                price: 1, status: "confirmed",
+                price: payoutPerShare, status: "confirmed",
               });
             }
           }
