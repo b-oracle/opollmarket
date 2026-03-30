@@ -116,11 +116,60 @@ async function fetchUserTweetCountInRange(
   }
 }
 
+// Sum impression_count across user's tweets in a date range
+async function fetchUserImpressionsInRange(
+  resourceId: string,
+  bearerToken: string,
+  startTime: string,
+  endTime: string
+): Promise<number | null> {
+  try {
+    const userId = await resolveUserId(resourceId, bearerToken);
+    if (!userId) return null;
+
+    let totalImpressions = 0;
+    let paginationToken: string | undefined;
+    let pages = 0;
+    const maxPages = 20;
+
+    do {
+      let url = `https://api.x.com/2/users/${userId}/tweets?max_results=100&tweet.fields=public_metrics&start_time=${startTime}&end_time=${endTime}`;
+      if (paginationToken) url += `&pagination_token=${paginationToken}`;
+
+      console.log(`Fetching impressions page ${pages + 1}:`, url);
+      const resp = await fetch(url, { headers: { Authorization: `Bearer ${bearerToken}` } });
+      if (!resp.ok) {
+        console.error(`Timeline API error [${resp.status}]:`, await resp.text());
+        return totalImpressions > 0 ? totalImpressions : null;
+      }
+      const data = await resp.json();
+      const tweets = data?.data || [];
+      for (const tweet of tweets) {
+        totalImpressions += tweet.public_metrics?.impression_count ?? 0;
+      }
+      paginationToken = data?.meta?.next_token;
+      pages++;
+    } while (paginationToken && pages < maxPages);
+
+    console.log(`Total impressions in range: ${totalImpressions} (${pages} pages)`);
+    return totalImpressions;
+  } catch (e) {
+    console.error("fetchUserImpressionsInRange error:", e);
+    return null;
+  }
+}
+
+// Check if a resource ID looks like a username (not a tweet ID)
+function isUsername(resourceId: string): boolean {
+  const resolved = resolveResourceId(resourceId);
+  return resolved.type === "username";
+}
+
 function extractCount(metricType: string, tweetMetrics: TwitterMetrics | null, userMetrics: UserPublicMetrics | null): number | null {
   if (metricType === "likes" && tweetMetrics) return tweetMetrics.like_count ?? null;
   if (metricType === "replies" && tweetMetrics) return tweetMetrics.reply_count ?? null;
   if (metricType === "retweets" && tweetMetrics) return (tweetMetrics.retweet_count ?? 0) + (tweetMetrics.quote_count ?? 0);
-  if (metricType === "views" && tweetMetrics) return tweetMetrics.impression_count ?? null;
+  if ((metricType === "views" || metricType === "impressions") && tweetMetrics) return tweetMetrics.impression_count ?? null;
   if (metricType === "tweets" && userMetrics) return userMetrics.tweet_count ?? null;
   if (metricType === "posts" && userMetrics) return userMetrics.tweet_count ?? null;
   return null;
@@ -153,8 +202,11 @@ Deno.serve(async (req) => {
     // Single metric fetch for frontend live counter
     if (body.metric_type && body.resource_id) {
       let count: number | null = null;
-      if ((body.metric_type === "tweets" || body.metric_type === "posts") && body.market_id) {
-        // Look up market dates for range-based counting
+      const isUserBased = isUsername(body.resource_id);
+      const isRangeMetric = body.metric_type === "tweets" || body.metric_type === "posts";
+      const isImpressionsMetric = body.metric_type === "impressions" || body.metric_type === "views";
+
+      if ((isRangeMetric || (isImpressionsMetric && isUserBased)) && body.market_id) {
         const { data: mkt } = await adminClient
           .from("markets")
           .select("created_at, end_date")
@@ -163,9 +215,13 @@ Deno.serve(async (req) => {
         if (mkt) {
           const startTime = new Date(mkt.created_at).toISOString();
           const endTime = new Date(mkt.end_date + "T23:59:59Z").toISOString();
-          count = await fetchUserTweetCountInRange(body.resource_id, bearerToken, startTime, endTime);
+          if (isImpressionsMetric && isUserBased) {
+            count = await fetchUserImpressionsInRange(body.resource_id, bearerToken, startTime, endTime);
+          } else {
+            count = await fetchUserTweetCountInRange(body.resource_id, bearerToken, startTime, endTime);
+          }
         }
-      } else if (body.metric_type === "tweets" || body.metric_type === "posts") {
+      } else if (isRangeMetric) {
         const userMetrics = await fetchUserMetrics(body.resource_id, bearerToken);
         count = extractCount(body.metric_type, null, userMetrics);
       } else {
@@ -181,7 +237,7 @@ Deno.serve(async (req) => {
     const { data: markets, error: fetchErr } = await adminClient
       .from("markets")
       .select("id, twitter_metric_type, twitter_resource_id, created_at, end_date")
-      .eq("status", "active")
+      .in("status", ["active", "ended"])
       .not("twitter_metric_type", "is", null)
       .not("twitter_resource_id", "is", null);
 
@@ -204,12 +260,19 @@ Deno.serve(async (req) => {
     for (const market of markets) {
       const metricType = market.twitter_metric_type as string;
       const resourceId = market.twitter_resource_id as string;
+      const isUserBased = isUsername(resourceId);
+      const isRangeMetric = metricType === "tweets" || metricType === "posts";
+      const isImpressionsMetric = metricType === "impressions" || metricType === "views";
 
       let count: number | null = null;
-      if (metricType === "tweets" || metricType === "posts") {
+      if (isRangeMetric || (isImpressionsMetric && isUserBased)) {
         const startTime = new Date(market.created_at).toISOString();
         const endTime = new Date(market.end_date + "T23:59:59Z").toISOString();
-        count = await fetchUserTweetCountInRange(resourceId, bearerToken, startTime, endTime);
+        if (isImpressionsMetric && isUserBased) {
+          count = await fetchUserImpressionsInRange(resourceId, bearerToken, startTime, endTime);
+        } else {
+          count = await fetchUserTweetCountInRange(resourceId, bearerToken, startTime, endTime);
+        }
       } else {
         const tweetMetrics = await fetchTweetMetrics(resourceId, bearerToken);
         count = extractCount(metricType, tweetMetrics, null);
