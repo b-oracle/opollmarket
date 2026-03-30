@@ -980,7 +980,42 @@ const AdminMarkets = () => {
                               )}
                             </div>
 
-                            {/* Trending */}
+                            {/* Market Image */}
+                            {isEditing && canEdit ? (
+                              <div>
+                                <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1 block">Market Image</label>
+                                <div className="flex items-center gap-3">
+                                  {(editState.newImageFile || editState.image_url) && (
+                                    <img
+                                      src={editState.newImageFile ? URL.createObjectURL(editState.newImageFile) : editState.image_url}
+                                      alt="Market"
+                                      className="w-16 h-16 rounded-lg object-cover border border-border"
+                                    />
+                                  )}
+                                  <label className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border border-border cursor-pointer hover:bg-muted transition-colors text-sm text-muted-foreground">
+                                    <ImagePlus className="w-4 h-4" />
+                                    {editState.image_url || editState.newImageFile ? "Replace Image" : "Add Image"}
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) setEditState({ ...editState, newImageFile: file });
+                                      }}
+                                    />
+                                  </label>
+                                </div>
+                              </div>
+                            ) : (
+                              (m as any).image_url && (
+                                <div>
+                                  <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1 block">Market Image</label>
+                                  <img src={(m as any).image_url} alt="Market" className="w-20 h-20 rounded-lg object-cover border border-border" />
+                                </div>
+                              )
+                            )}
+
                             <div className="flex items-center justify-between">
                               <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Trending</label>
                               <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
