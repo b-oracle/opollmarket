@@ -271,7 +271,7 @@ const AdminPredictions = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-h-0 overflow-hidden">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold flex items-center gap-2"><TrendingUp className="w-6 h-6 text-primary" /> Predictions</h1>
         <div className="flex gap-1 p-1 rounded-xl bg-muted/50">
@@ -282,7 +282,7 @@ const AdminPredictions = () => {
       </div>
 
       {/* Count Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {countCards.map(c => (
           <div key={c.label} className="bg-card border border-border rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
@@ -312,7 +312,7 @@ const AdminPredictions = () => {
               </div>
             )}
             {c.tooltip && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-popover border border-border rounded-lg text-[10px] text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-popover border border-border rounded-lg text-[10px] text-muted-foreground whitespace-normal max-w-[200px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
                 {c.tooltip}
               </div>
             )}
@@ -432,7 +432,7 @@ const AdminPredictions = () => {
       {activeTab === "markets" && (
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm" style={{ minWidth: 600 }}>
               <thead><tr className="border-b border-border bg-muted/30">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Title</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Category</th>
@@ -473,7 +473,7 @@ const AdminPredictions = () => {
       {activeTab === "predictions" && (
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm" style={{ minWidth: 650 }}>
               <thead><tr className="border-b border-border bg-muted/30">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">User</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Market</th>
