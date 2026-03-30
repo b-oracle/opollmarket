@@ -305,8 +305,8 @@ const AdminMarkets = () => {
     if (editState && titleInputRef.current) titleInputRef.current.focus();
   }, [editState?.id]);
 
-  const startEdit = (m: MarketRow & { image_url?: string }) => {
-    setEditState({ id: m.id, title: m.title, description: m.description, category: m.category, end_date: m.end_date, resolution_source: m.resolution_source, trending: m.trending, image_url: (m as any).image_url || "", newImageFile: null });
+  const startEdit = (m: MarketRow) => {
+    setEditState({ id: m.id, title: m.title, description: m.description, category: m.category, end_date: m.end_date, resolution_source: m.resolution_source, trending: m.trending, image_url: m.image_url || "", newImageFile: null });
     setExpandedId(m.id);
   };
 
@@ -1009,10 +1009,10 @@ const AdminMarkets = () => {
                                 </div>
                               </div>
                             ) : (
-                              (m as any).image_url && (
+                              m.image_url && (
                                 <div>
                                   <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1 block">Market Image</label>
-                                  <img src={(m as any).image_url} alt="Market" className="w-20 h-20 rounded-lg object-cover border border-border" />
+                                  <img src={m.image_url} alt="Market" className="w-20 h-20 rounded-lg object-cover border border-border" />
                                 </div>
                               )
                             )}
