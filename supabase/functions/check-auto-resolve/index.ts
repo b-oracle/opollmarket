@@ -473,6 +473,10 @@ Deno.serve(async (req) => {
       }
 
       console.log(`Market ${market.id}: Auto-resolved ${winningSide.toUpperCase()} — notified ${notifications.length} participants`);
+
+      // Return creator liquidity
+      await returnCreatorLiquidity(adminClient, market);
+
       resolvedCount++;
     }
 
