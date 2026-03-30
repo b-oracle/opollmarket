@@ -219,6 +219,48 @@ async function fetchPrice(asset: string): Promise<number | null> {
   }
 }
 
+// ── Return creator liquidity helper (mirrors resolve-market logic) ──
+async function returnCreatorLiquidity(adminClient: any, market: any) {
+  if (!market.initial_liquidity || market.initial_liquidity <= 0 || !market.liquidity_verified) {
+    return;
+  }
+  const creatorUserId = market.creator_wallet;
+  if (!creatorUserId) return;
+
+  const { data: settings } = await adminClient
+    .from("commission_settings")
+    .select("liquidity_return_fee_percent")
+    .limit(1)
+    .single();
+
+  const liquidityReturnFeePercent = Number(settings?.liquidity_return_fee_percent) || 5;
+  const feeAmount = market.initial_liquidity * (liquidityReturnFeePercent / 100);
+  const liquidityRefund = market.initial_liquidity - feeAmount;
+
+  if (liquidityRefund <= 0) return;
+
+  await adminClient.rpc("adjust_balance", { _user_id: creatorUserId, _delta: liquidityRefund, _bonus_delta: 0, _insurance_delta: 0 });
+
+  await adminClient.from("transactions").insert({
+    user_id: creatorUserId,
+    market_id: market.id,
+    type: "refund",
+    amount: liquidityRefund,
+    side: "liquidity_return",
+    status: "confirmed",
+  });
+
+  await adminClient.from("notifications").insert({
+    user_id: creatorUserId,
+    title: "Liquidity Returned 💰",
+    message: `Your $${market.initial_liquidity.toFixed(2)} initial liquidity for "${market.title}" has been returned ($${liquidityRefund.toFixed(2)} after ${liquidityReturnFeePercent}% fee).`,
+    type: "refund",
+    market_id: market.id,
+  });
+
+  console.log(`returnCreatorLiquidity: market ${market.id} refunded $${liquidityRefund} to ${creatorUserId}`);
+}
+
 function conditionMet(currentPrice: number, targetPrice: number, operator: string): boolean {
   switch (operator) {
     case "above": return currentPrice > targetPrice;
@@ -431,6 +473,10 @@ Deno.serve(async (req) => {
       }
 
       console.log(`Market ${market.id}: Auto-resolved ${winningSide.toUpperCase()} — notified ${notifications.length} participants`);
+
+      // Return creator liquidity
+      await returnCreatorLiquidity(adminClient, market);
+
       resolvedCount++;
     }
 
@@ -552,6 +598,7 @@ Deno.serve(async (req) => {
             });
             if (binaryNotifs.length > 0) await adminClient.from("notifications").insert(binaryNotifs);
             console.log(`Twitter binary market ${tm.id}: Resolved ${winningSide.toUpperCase()} (count=${count})`);
+            await returnCreatorLiquidity(adminClient, tm);
             twitterResolved++;
             continue;
           }
@@ -661,6 +708,7 @@ Deno.serve(async (req) => {
           });
           if (notifs.length > 0) await adminClient.from("notifications").insert(notifs);
           console.log(`Twitter market ${tm.id}: Resolved to "${winningLabel}" (count=${count})`);
+          await returnCreatorLiquidity(adminClient, tm);
           twitterResolved++;
         }
       }
