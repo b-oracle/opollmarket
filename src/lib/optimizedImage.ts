@@ -12,7 +12,7 @@ const SIZE_PRESETS: Record<ImageSize, { width: number; height?: number; quality?
   "avatar-sm": { width: 48, height: 48, quality: 70, resize: "cover" },
   "avatar-md": { width: 80, height: 80, quality: 70, resize: "cover" },
   "avatar-lg": { width: 200, height: 200, quality: 75, resize: "cover" },
-  card: { width: 400, quality: 70 },
+  card: { width: 600, quality: 75 },
   banner: { width: 800, quality: 75 },
   thumb: { width: 100, height: 100, quality: 65, resize: "cover" },
   story: { width: 600, quality: 75 },
