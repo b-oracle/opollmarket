@@ -1,34 +1,40 @@
 
 
-# Improve Space Controls Bar — Mobile Responsive Layout
+# Free Market Creation for Unlimited-Markets Creators
 
 ## Problem
-The controls bar at the bottom of a Space crams all buttons (mic, mute all, hand, record, leave, end space) into a single horizontal row with `gap-3`. On a ~400px mobile viewport, this overflows or looks cramped and unpolished.
-
-## Design
-Replace the flat row with a compact, mobile-friendly layout:
-- **Icon-only buttons** for all controls (remove text labels from "Mute All" / "Unmute All" / "End Space" on mobile)
-- Use **tooltips** or rely on icon clarity instead of text
-- Wrap the bar in a responsive container: on mobile, use smaller button sizes (`w-10 h-10`) and tighter gap (`gap-2`)
-- "End Space" becomes a smaller icon-only destructive button on mobile, with text visible on larger screens
-- "Mute All" becomes icon-only on mobile with text on `sm:` and above
-- Ensure the bar uses `flex-wrap` as a safety net so buttons never overflow off-screen
+Verified creators marked with "unlimited markets" (∞) still have to pass the wallet/NFT/BC400 gate check. If they fail, they must pay the creation fee ($50) to bypass. These whitelisted creators should create markets for free with no gate or fee.
 
 ## Changes
 
-### File: `src/components/social/SpaceRoom.tsx` (lines 1860-1933)
+### 1. Skip gate check entirely for unlimited-markets users
+**File**: `src/pages/Create.tsx`
 
-**Controls container**: Change from `gap-3` to `gap-2` and add `flex-wrap justify-center`
+- In the `useEffect` that triggers `runGateCheck` (~line 1315-1319): if `unlimitedMarkets` is true, skip the gate check entirely and set `gatePassed = true` immediately.
+- This means unlimited-markets creators never see the wallet/NFT/BC400 checks or the fee bypass prompt.
 
-**All icon buttons** (mic, hand, record, leave): Reduce from `w-11 h-11` → `w-10 h-10` with `w-5 h-5` icons staying the same
+### 2. Ensure no creation fee is charged during submission
+**File**: `src/pages/Create.tsx`
 
-**"Mute All" / "Unmute All" button**: Make text hidden on small screens:
-- `h-10 px-3 sm:px-4` with `<span className="hidden sm:inline">Mute All</span>` — icon always visible, text only on `sm:`+
+- In the fee calculation (~line 918): when `unlimitedMarkets` is true, force `feeBypass` to be treated as `false` so `creationFeeForDeduction` is 0.
+- In the market status logic (~line 963): when `unlimitedMarkets` is true and the market isn't flagged/similar, it should go directly to `active` (not `pending` for review), since `feeBypass` won't be set.
+- In the fee transaction recording (~line 1064): skip recording the creation fee transaction when `unlimitedMarkets` is true.
 
-**"End Space" button**: Same pattern — icon always visible, text hidden on mobile:
-- Add `X` or `PhoneOff`-style icon, text via `<span className="hidden sm:inline">End Space</span>`
+### 3. Hide fee-related UI warnings
+**File**: `src/pages/Create.tsx`
 
-**"Request to Speak" / "Request Sent"**: Same pattern — truncate text on mobile using `hidden sm:inline`
+- The fee warning text (~line 2807-2811) and the exceeded-free-limit banner (~line 1743) should not appear when `unlimitedMarkets` is true.
 
-This keeps the bar compact and readable at 400px while showing full labels on tablets/desktop.
+### Summary of Logic
+```
+if (unlimitedMarkets) {
+  - Auto-pass gate (no wallet/NFT check)
+  - No creation fee
+  - No escrow
+  - Market goes active directly (unless flagged by similarity)
+}
+```
+
+### Files Modified
+- `src/pages/Create.tsx` — ~5 small conditional changes
 
