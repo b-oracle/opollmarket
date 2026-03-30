@@ -116,11 +116,60 @@ async function fetchUserTweetCountInRange(
   }
 }
 
+// Sum impression_count across user's tweets in a date range
+async function fetchUserImpressionsInRange(
+  resourceId: string,
+  bearerToken: string,
+  startTime: string,
+  endTime: string
+): Promise<number | null> {
+  try {
+    const userId = await resolveUserId(resourceId, bearerToken);
+    if (!userId) return null;
+
+    let totalImpressions = 0;
+    let paginationToken: string | undefined;
+    let pages = 0;
+    const maxPages = 20;
+
+    do {
+      let url = `https://api.x.com/2/users/${userId}/tweets?max_results=100&tweet.fields=public_metrics&start_time=${startTime}&end_time=${endTime}`;
+      if (paginationToken) url += `&pagination_token=${paginationToken}`;
+
+      console.log(`Fetching impressions page ${pages + 1}:`, url);
+      const resp = await fetch(url, { headers: { Authorization: `Bearer ${bearerToken}` } });
+      if (!resp.ok) {
+        console.error(`Timeline API error [${resp.status}]:`, await resp.text());
+        return totalImpressions > 0 ? totalImpressions : null;
+      }
+      const data = await resp.json();
+      const tweets = data?.data || [];
+      for (const tweet of tweets) {
+        totalImpressions += tweet.public_metrics?.impression_count ?? 0;
+      }
+      paginationToken = data?.meta?.next_token;
+      pages++;
+    } while (paginationToken && pages < maxPages);
+
+    console.log(`Total impressions in range: ${totalImpressions} (${pages} pages)`);
+    return totalImpressions;
+  } catch (e) {
+    console.error("fetchUserImpressionsInRange error:", e);
+    return null;
+  }
+}
+
+// Check if a resource ID looks like a username (not a tweet ID)
+function isUsername(resourceId: string): boolean {
+  const resolved = resolveResourceId(resourceId);
+  return resolved.type === "username";
+}
+
 function extractCount(metricType: string, tweetMetrics: TwitterMetrics | null, userMetrics: UserPublicMetrics | null): number | null {
   if (metricType === "likes" && tweetMetrics) return tweetMetrics.like_count ?? null;
   if (metricType === "replies" && tweetMetrics) return tweetMetrics.reply_count ?? null;
   if (metricType === "retweets" && tweetMetrics) return (tweetMetrics.retweet_count ?? 0) + (tweetMetrics.quote_count ?? 0);
-  if (metricType === "views" && tweetMetrics) return tweetMetrics.impression_count ?? null;
+  if ((metricType === "views" || metricType === "impressions") && tweetMetrics) return tweetMetrics.impression_count ?? null;
   if (metricType === "tweets" && userMetrics) return userMetrics.tweet_count ?? null;
   if (metricType === "posts" && userMetrics) return userMetrics.tweet_count ?? null;
   return null;
