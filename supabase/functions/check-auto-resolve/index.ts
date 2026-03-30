@@ -243,7 +243,7 @@ Deno.serve(async (req) => {
     const { data: markets, error: fetchErr } = await adminClient
       .from("markets")
       .select("*")
-      .eq("status", "active")
+      .in("status", ["active", "ended"])
       .eq("auto_resolve", true)
       .not("auto_resolve_asset", "is", null)
       .not("auto_resolve_target_price", "is", null)
@@ -446,7 +446,7 @@ Deno.serve(async (req) => {
       const { data: twitterMarkets } = await adminClient
         .from("markets")
         .select("*, market_options!market_options_market_id_fkey(*)")
-        .eq("status", "active")
+        .in("status", ["active", "ended"])
         .eq("auto_resolve", true)
         .not("twitter_metric_type", "is", null)
         .not("twitter_resource_id", "is", null);
