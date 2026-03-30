@@ -252,9 +252,21 @@ async function handleResolve(
       totalPaidOut += payout;
     }
   } else {
-    // NORMAL: Two-sided market — winners get full share value ($1/share)
+    // NORMAL: Two-sided market
+    // For multi-option markets, cap payout at pool-proportional to prevent overpayment
+    const totalWinnerShares = winningPositions.reduce((s, p) => s + p.shares, 0);
+    let payoutPerShare = 1; // default $1/share for binary
+
+    if (market.market_type === "multi" && totalWinnerShares > 0) {
+      // Pool = sum of all wagers (winners + losers)
+      const allPositions = [...winningPositions, ...losingPositions];
+      const totalPool = allPositions.reduce((s, p) => s + p.shares * p.avg_price, 0);
+      payoutPerShare = Math.min(1, totalPool / totalWinnerShares);
+      console.log("resolve-market: multi-option pool-proportional payout", { totalPool, totalWinnerShares, payoutPerShare });
+    }
+
     for (const pos of winningPositions) {
-      const payout = pos.shares;
+      const payout = Math.round(pos.shares * payoutPerShare * 100) / 100;
 
       await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout, _bonus_delta: 0, _insurance_delta: 0 });
 
@@ -266,7 +278,7 @@ async function handleResolve(
         amount: payout,
         side: pos.side,
         shares: pos.shares,
-        price: 1,
+        price: payoutPerShare,
         status: "confirmed",
       });
 
