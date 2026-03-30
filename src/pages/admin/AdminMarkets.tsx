@@ -351,7 +351,7 @@ const AdminMarkets = () => {
     if (!resolveState) return;
     const { market, winningSide, winningOptionId } = resolveState;
     if (market.market_type === "binary" && !winningSide) { toast.error("Select the winning side (Yes or No)"); return; }
-    if (market.market_type === "multi" && !winningOptionId) { toast.error("Select the winning option"); return; }
+    if ((market.market_type === "multi" || market.market_type === "range") && !winningOptionId) { toast.error("Select the winning option"); return; }
     setResolving(true);
     try {
       const { data, error } = await supabase.functions.invoke("resolve-market", {
