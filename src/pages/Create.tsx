@@ -1037,7 +1037,7 @@ const Create = () => {
     if (error) {
       console.error("Failed to save market:", error);
       // Refund via secure RPC (rollback the deduction)
-      const rollbackFeeAmount = (feeBypass ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0) + boostCost + broadcastCost;
+      const rollbackFeeAmount = ((feeBypass && !unlimitedMarkets) ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0) + boostCost + broadcastCost;
       const bonusForFeeRollback = Math.min(Number(bal.bonus_balance || 0), rollbackFeeAmount);
       await supabase.rpc("deduct_market_liquidity" as any, {
         _user_id: user.id,
