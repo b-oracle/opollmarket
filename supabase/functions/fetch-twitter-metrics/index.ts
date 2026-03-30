@@ -202,8 +202,11 @@ Deno.serve(async (req) => {
     // Single metric fetch for frontend live counter
     if (body.metric_type && body.resource_id) {
       let count: number | null = null;
-      if ((body.metric_type === "tweets" || body.metric_type === "posts") && body.market_id) {
-        // Look up market dates for range-based counting
+      const isUserBased = isUsername(body.resource_id);
+      const isRangeMetric = body.metric_type === "tweets" || body.metric_type === "posts";
+      const isImpressionsMetric = body.metric_type === "impressions" || body.metric_type === "views";
+
+      if ((isRangeMetric || (isImpressionsMetric && isUserBased)) && body.market_id) {
         const { data: mkt } = await adminClient
           .from("markets")
           .select("created_at, end_date")
@@ -212,9 +215,13 @@ Deno.serve(async (req) => {
         if (mkt) {
           const startTime = new Date(mkt.created_at).toISOString();
           const endTime = new Date(mkt.end_date + "T23:59:59Z").toISOString();
-          count = await fetchUserTweetCountInRange(body.resource_id, bearerToken, startTime, endTime);
+          if (isImpressionsMetric && isUserBased) {
+            count = await fetchUserImpressionsInRange(body.resource_id, bearerToken, startTime, endTime);
+          } else {
+            count = await fetchUserTweetCountInRange(body.resource_id, bearerToken, startTime, endTime);
+          }
         }
-      } else if (body.metric_type === "tweets" || body.metric_type === "posts") {
+      } else if (isRangeMetric) {
         const userMetrics = await fetchUserMetrics(body.resource_id, bearerToken);
         count = extractCount(body.metric_type, null, userMetrics);
       } else {
