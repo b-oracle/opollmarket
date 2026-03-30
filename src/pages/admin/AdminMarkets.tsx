@@ -319,7 +319,7 @@ const AdminMarkets = () => {
     // Upload new image if selected
     if (editState.newImageFile) {
       try {
-        const compressed = await compressImage(editState.newImageFile, { maxWidth: 800, quality: 0.7, outputFormat: "webp" });
+        const compressed = await compressImage(editState.newImageFile, "market-banner");
         const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.webp`;
         const { error: upErr } = await supabase.storage.from("market-images").upload(fileName, compressed, { contentType: "image/webp", upsert: true });
         if (upErr) throw upErr;
