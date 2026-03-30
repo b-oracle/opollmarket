@@ -1,25 +1,32 @@
 
 
-# Fix: Range Highlighting for Labels with K/M Suffixes
+# Fix: Market Feed Image Display (Zoomed/Deformed)
 
 ## Problem
-The Live Impressions Tracker shows 5,168,278 but doesn't highlight the active range ("4.1M - 8M Views"). The `parseBracketRange` function in `TwitterEngagementTracker.tsx` only parses plain integers (e.g. `80-99`). It fails on labels like `"501k - 1.5M Views"`, `"< 500k Views"`, `"15.1M - 60M+ Views"`.
+Market card images appear overly zoomed and deformed on the feed. Two causes:
+
+1. **Parallax overflow**: The image container uses `inset-[-30px_0]` (extends 30px above and below the card), making images appear zoomed in and cropped excessively.
+2. **Small optimized size**: The `"card"` image preset is only 400px wide, which gets upscaled on larger screens causing blur/distortion.
 
 ## Fix
 
-### File: `src/components/TwitterEngagementTracker.tsx`
+### File: `src/components/MarketCard.tsx`
 
-Update `parseBracketRange` to:
-1. Strip trailing non-numeric text (e.g. " Views")
-2. Parse number suffixes: `k` → ×1,000, `M` → ×1,000,000, `B` → ×1,000,000,000
-3. Handle decimal multipliers (e.g. `1.5M` → 1,500,000)
-4. Support `+` suffix on the max value (e.g. `60M+` → treat as Infinity)
+**Line ~290** — Reduce the parallax overflow from `-30px` to `-10px` so the image doesn't appear as zoomed:
+```
+inset-[-30px_0]  →  inset-[-10px_0]
+```
 
-Add a helper `parseHumanNumber(str)` that converts `"4.1M"` → `4100000`, `"500k"` → `500000`, etc.
+Also add `object-position: center` to ensure the image focal point stays centered rather than shifting.
 
-Update the regex patterns in `parseBracketRange` to use this helper instead of plain `parseInt`.
+### File: `src/lib/optimizedImage.ts`
 
-### Changes Summary
-- ~20 lines changed in `parseBracketRange` + new `parseHumanNumber` helper
+Increase the `"card"` preset width from 400 to 600 to reduce upscaling blur on feed cards:
+```
+card: { width: 600, quality: 75 }
+```
+
+### Summary
+- 2 files, ~2 lines changed each
 - No backend changes
 
