@@ -915,7 +915,7 @@ const Create = () => {
 
     // Referral bonus can only cover the creation fee portion, not liquidity
     // If escrow is held, the creation fee is already deducted — skip it from fee calculation
-    const creationFeeForDeduction = (feeBypass && !escrowId) ? marketCreationFee : 0;
+    const creationFeeForDeduction = (feeBypass && !escrowId && !unlimitedMarkets) ? marketCreationFee : 0;
     const feeAmount = creationFeeForDeduction + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0) + boostCost + broadcastCost;
     const bonusForFee = Math.min(Number(bal.bonus_balance || 0), feeAmount);
 
@@ -960,7 +960,7 @@ const Create = () => {
     setSubmitStep("saving");
 
     // If similar, flagged, or fee bypass — needs admin review
-    const needsReview = isSimilar || isFlagged || feeBypass;
+    const needsReview = isSimilar || isFlagged || (feeBypass && !unlimitedMarkets);
     const marketStatus = needsReview ? "pending" : "active";
 
     // Image was already uploaded in parallel — extract result, or use AI-generated URL
@@ -1061,7 +1061,7 @@ const Create = () => {
     });
 
     // Record the creation fee transaction if fee bypass
-    if (feeBypass) {
+    if (feeBypass && !unlimitedMarkets) {
       await supabase.from("transactions").insert({
         user_id: user.id,
         type: "buy",
@@ -1314,9 +1314,14 @@ const Create = () => {
 
   useEffect(() => {
     if (isConnected && settingsLoaded && !gatePassed && !gateRunning && gateChecks.length === 0) {
-      runGateCheck();
+      if (unlimitedMarkets) {
+        setGatePassed(true);
+        setGateFinished(true);
+      } else {
+        runGateCheck();
+      }
     }
-  }, [isConnected, settingsLoaded]);
+  }, [isConnected, settingsLoaded, unlimitedMarkets]);
 
   // Fee bypass — check balance, show confirmation, then escrow
   const handleFeeBypass = async () => {
@@ -1740,7 +1745,7 @@ const Create = () => {
           <p className="text-sm text-muted-foreground">
             Launch a prediction market and earn fees from every trade.
           </p>
-          {exceededFreeLimit && (
+          {exceededFreeLimit && !unlimitedMarkets && (
             <div className="mt-3 p-3 rounded-xl bg-accent/10 border border-accent/30">
               <p className="text-xs font-medium text-accent-foreground">
                 ⚠️ You've reached your free market limit ({activeMarketCount}/{verificationLevel === "gold" ? goldMaxFreeMarkets : blueMaxFreeMarkets}).
@@ -2795,7 +2800,7 @@ const Create = () => {
                     )}
                     <div className="border-t border-border pt-1.5 flex justify-between">
                       <span className="font-semibold">Total</span>
-                      <span className="font-bold text-primary">${(parseFloat(initialLiquidity) + (feeBypass ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0) + (creationBoost ? boostTierPrices[creationBoostTier] : 0) + (creationBroadcast ? broadcastPriceVal : 0)).toFixed(2)} USDT</span>
+                      <span className="font-bold text-primary">${(parseFloat(initialLiquidity) + ((feeBypass && !unlimitedMarkets) ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0) + (creationBoost ? boostTierPrices[creationBoostTier] : 0) + (creationBroadcast ? broadcastPriceVal : 0)).toFixed(2)} USDT</span>
                     </div>
                   </div>
                 </div>
@@ -2805,7 +2810,7 @@ const Create = () => {
               <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20">
                 <AlertTriangle className="w-4 h-4 text-destructive/60 shrink-0 mt-0.5" />
                 <p className="text-xs text-destructive/70">
-                  {feeBypass
+                  {feeBypass && !unlimitedMarkets
                     ? exceededFreeLimit
                       ? `A $${marketCreationFee} creation fee applies — you've reached your free market limit (${activeMarketCount}/${verificationLevel === "gold" ? goldMaxFreeMarkets : blueMaxFreeMarkets}). This fee is non-refundable (unless the market is cancelled). Your market will require approval before going live.`
                       : `A $${marketCreationFee} creation fee applies since you don't hold NFT/BC400. This fee is non-refundable (unless the market is cancelled). Your market will require approval before going live.`
