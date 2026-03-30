@@ -791,6 +791,25 @@ const Create = () => {
   const [firstPredSide, setFirstPredSide] = useState<"yes" | "no">("yes");
   const [firstPredOptionId, setFirstPredOptionId] = useState<string | null>(null);
   const [firstPredAmount, setFirstPredAmount] = useState("5");
+  const [fetchingOptions, setFetchingOptions] = useState(false);
+
+  // Fallback: fetch options from DB if newMarketOptions is empty for multi/range markets
+  useEffect(() => {
+    if (submitStep === "first_prediction" && marketType !== "binary" && newMarketOptions.length === 0 && newMarketId) {
+      setFetchingOptions(true);
+      supabase
+        .from("market_options")
+        .select("id, label, sort_order")
+        .eq("market_id", newMarketId)
+        .order("sort_order")
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            setNewMarketOptions(data);
+          }
+          setFetchingOptions(false);
+        });
+    }
+  }, [submitStep, newMarketId, marketType, newMarketOptions.length]);
 
   // Progress tracking for submit flow
   const [submitProgress, setSubmitProgress] = useState(0);
@@ -2979,6 +2998,11 @@ const Create = () => {
                         No
                       </button>
                     </div>
+                   ) : fetchingOptions ? (
+                    <div className="w-full mb-4 flex items-center justify-center py-6">
+                      <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                      <span className="ml-2 text-sm text-muted-foreground">Loading options…</span>
+                    </div>
                    ) : newMarketOptions.length > 0 ? (
                     <div className="w-full mb-4 space-y-2">
                       <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Select Your Prediction</label>
@@ -3003,7 +3027,11 @@ const Create = () => {
                         </button>
                       ))}
                     </div>
-                   ) : null}
+                   ) : (
+                    <div className="w-full mb-4 p-3 rounded-xl bg-destructive/10 text-destructive text-sm text-center">
+                      No options found. Please try again.
+                    </div>
+                   )}
 
                   {/* Amount input */}
                   <div className="w-full mb-4">
