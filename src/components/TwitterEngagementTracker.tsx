@@ -30,16 +30,51 @@ const METRIC_ICONS: Record<string, string> = {
   posts: "📝",
 };
 
+function parseHumanNumber(str: string): number {
+  const clean = str.replace(/,/g, "").trim();
+  const match = clean.match(/^([\d.]+)\s*([kKmMbB])?(\+)?$/);
+  if (!match) return NaN;
+  const num = parseFloat(match[1]);
+  const suffix = (match[2] || "").toLowerCase();
+  if (suffix === "k") return num * 1_000;
+  if (suffix === "m") return num * 1_000_000;
+  if (suffix === "b") return num * 1_000_000_000;
+  return num;
+}
+
 function parseBracketRange(label: string): { min: number; max: number } | null {
-  // Handle formats: "80-99", "< 50", "> 200", "100-119", "80 - 99"
-  const rangeMatch = label.match(/^(\d+)\s*[-–]\s*(\d+)$/);
-  if (rangeMatch) return { min: parseInt(rangeMatch[1]), max: parseInt(rangeMatch[2]) };
+  // Strip trailing text like " Views", " Likes", " Posts" etc.
+  const cleaned = label.replace(/\s*(views|likes|replies|retweets|tweets|posts|impressions)\s*$/i, "").trim();
 
-  const ltMatch = label.match(/^[<≤]\s*(\d+)$/);
-  if (ltMatch) return { min: 0, max: parseInt(ltMatch[1]) };
+  // Range: "4.1M - 8M", "80 - 99", "501k - 1.5M"
+  const rangeMatch = cleaned.match(/^(.+?)\s*[-–]\s*(.+)$/);
+  if (rangeMatch) {
+    const min = parseHumanNumber(rangeMatch[1]);
+    const maxStr = rangeMatch[2].trim();
+    const hasPlus = maxStr.endsWith("+");
+    const max = hasPlus ? Infinity : parseHumanNumber(maxStr);
+    if (!isNaN(min) && (max === Infinity || !isNaN(max))) return { min, max };
+  }
 
-  const gtMatch = label.match(/^[>≥]\s*(\d+)$/);
-  if (gtMatch) return { min: parseInt(gtMatch[1]), max: Infinity };
+  // Less than: "< 500k", "< 50"
+  const ltMatch = cleaned.match(/^[<≤]\s*(.+)$/);
+  if (ltMatch) {
+    const max = parseHumanNumber(ltMatch[1]);
+    if (!isNaN(max)) return { min: 0, max };
+  }
+
+  // Greater than: "> 200", "> 60M", "60M+"
+  const gtMatch = cleaned.match(/^[>≥]\s*(.+)$/);
+  if (gtMatch) {
+    const min = parseHumanNumber(gtMatch[1]);
+    if (!isNaN(min)) return { min, max: Infinity };
+  }
+
+  // Standalone with +: "60M+"
+  if (cleaned.endsWith("+")) {
+    const min = parseHumanNumber(cleaned.slice(0, -1));
+    if (!isNaN(min)) return { min, max: Infinity };
+  }
 
   return null;
 }
