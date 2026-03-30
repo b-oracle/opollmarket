@@ -2787,7 +2787,7 @@ const Create = () => {
                       <span className="text-muted-foreground">Initial Liquidity</span>
                       <span className="font-medium">${initialLiquidity} USDT</span>
                     </div>
-                    {feeBypass && (
+                    {feeBypass && !unlimitedMarkets && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Creation Fee <span className="text-[10px]">(non-refundable)</span></span>
                         <span className="font-medium">${marketCreationFee} USDT</span>
