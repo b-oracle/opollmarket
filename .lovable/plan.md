@@ -1,40 +1,39 @@
 
 
-# Free Market Creation for Unlimited-Markets Creators
+# Fix: Return Creator Liquidity on Auto-Resolution
 
 ## Problem
-Verified creators marked with "unlimited markets" (∞) still have to pass the wallet/NFT/BC400 gate check. If they fail, they must pay the creation fee ($50) to bypass. These whitelisted creators should create markets for free with no gate or fee.
+The `check-auto-resolve` edge function resolves markets and pays winners but **never returns the creator's initial liquidity**. The manual `resolve-market` function does this correctly (lines 344-383). This means every auto-resolved market's creator loses their initial liquidity.
 
-## Changes
+The Elon Musk tweet market creator (`cef65e17-...`) put up $100 in initial liquidity that was never returned.
 
-### 1. Skip gate check entirely for unlimited-markets users
-**File**: `src/pages/Create.tsx`
+## Fix
 
-- In the `useEffect` that triggers `runGateCheck` (~line 1315-1319): if `unlimitedMarkets` is true, skip the gate check entirely and set `gatePassed = true` immediately.
-- This means unlimited-markets creators never see the wallet/NFT/BC400 checks or the fee bypass prompt.
+### File: `supabase/functions/check-auto-resolve/index.ts`
 
-### 2. Ensure no creation fee is charged during submission
-**File**: `src/pages/Create.tsx`
+Add a reusable helper function `returnCreatorLiquidity(adminClient, market)` that:
 
-- In the fee calculation (~line 918): when `unlimitedMarkets` is true, force `feeBypass` to be treated as `false` so `creationFeeForDeduction` is 0.
-- In the market status logic (~line 963): when `unlimitedMarkets` is true and the market isn't flagged/similar, it should go directly to `active` (not `pending` for review), since `feeBypass` won't be set.
-- In the fee transaction recording (~line 1064): skip recording the creation fee transaction when `unlimitedMarkets` is true.
+1. Checks `market.initial_liquidity > 0` and `market.liquidity_verified === true`
+2. Fetches `liquidity_return_fee_percent` from `commission_settings`
+3. Calculates refund = `initial_liquidity - (initial_liquidity * fee%/100)`
+4. Credits creator via `adjust_balance` RPC
+5. Records a `refund` transaction with `side: 'liquidity_return'`
+6. Sends a notification to the creator
 
-### 3. Hide fee-related UI warnings
-**File**: `src/pages/Create.tsx`
+Then call this helper in **three places** where markets get resolved:
+- After the standard crypto/commodity/forex resolution loop (~line 434)
+- After binary Twitter resolution (~line 570)
+- After multi-option Twitter resolution (~line 660)
 
-- The fee warning text (~line 2807-2811) and the exceeded-free-limit banner (~line 1743) should not appear when `unlimitedMarkets` is true.
+### One-time fix for the Elon Musk market
 
-### Summary of Logic
-```
-if (unlimitedMarkets) {
-  - Auto-pass gate (no wallet/NFT check)
-  - No creation fee
-  - No escrow
-  - Market goes active directly (unless flagged by similarity)
-}
-```
+Run a migration to credit the creator's liquidity refund for `e153f4cd-...`:
+- $100 initial liquidity minus 10% fee = **$90 refund**
+- Insert a `liquidity_return` transaction
+- Credit balance via `adjust_balance`
+- Send notification
 
 ### Files Modified
-- `src/pages/Create.tsx` — ~5 small conditional changes
+- `supabase/functions/check-auto-resolve/index.ts` — add liquidity return helper + 3 call sites
+- New migration — one-time fix for the already-resolved market
 
