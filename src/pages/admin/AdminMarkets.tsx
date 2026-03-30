@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin, ShieldAlert, ShieldCheck, Ban, BarChart3, Users, DollarSign, Layers, Clock, Archive, Flame, Eye, EyeOff, Download } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin, ShieldAlert, ShieldCheck, Ban, BarChart3, Users, DollarSign, Layers, Clock, Archive, Flame, Eye, EyeOff, Download, ImagePlus } from "lucide-react";
+import { compressImage } from "@/lib/imageCompression";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import RecordOnChainButton from "@/components/admin/RecordOnChainButton";
 import { toast } from "sonner";
@@ -70,6 +71,8 @@ interface EditState {
   end_date: string;
   resolution_source: string;
   trending: boolean;
+  image_url: string;
+  newImageFile: File | null;
 }
 interface MarketStatsData {
   total: number;
@@ -301,8 +304,8 @@ const AdminMarkets = () => {
     if (editState && titleInputRef.current) titleInputRef.current.focus();
   }, [editState?.id]);
 
-  const startEdit = (m: MarketRow) => {
-    setEditState({ id: m.id, title: m.title, description: m.description, category: m.category, end_date: m.end_date, resolution_source: m.resolution_source, trending: m.trending });
+  const startEdit = (m: MarketRow & { image_url?: string }) => {
+    setEditState({ id: m.id, title: m.title, description: m.description, category: m.category, end_date: m.end_date, resolution_source: m.resolution_source, trending: m.trending, image_url: (m as any).image_url || "", newImageFile: null });
     setExpandedId(m.id);
   };
 
@@ -312,6 +315,22 @@ const AdminMarkets = () => {
     if (!editState) return;
     if (editState.title.trim().length < 5) { toast.error("Title must be at least 5 characters"); return; }
     setSaving(true);
+    let imageUrl = editState.image_url;
+    // Upload new image if selected
+    if (editState.newImageFile) {
+      try {
+        const compressed = await compressImage(editState.newImageFile, { maxWidth: 800, quality: 0.7, outputFormat: "webp" });
+        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.webp`;
+        const { error: upErr } = await supabase.storage.from("market-images").upload(fileName, compressed, { contentType: "image/webp", upsert: true });
+        if (upErr) throw upErr;
+        const { data: pubData } = supabase.storage.from("market-images").getPublicUrl(fileName);
+        imageUrl = pubData.publicUrl;
+      } catch (e: any) {
+        toast.error("Image upload failed: " + (e.message || "Unknown error"));
+        setSaving(false);
+        return;
+      }
+    }
     const { error } = await supabase.from("markets").update({
       title: editState.title.trim(),
       description: editState.description.trim(),
@@ -319,6 +338,7 @@ const AdminMarkets = () => {
       end_date: editState.end_date,
       resolution_source: editState.resolution_source.trim(),
       trending: editState.trending,
+      image_url: imageUrl || null,
     }).eq("id", editState.id);
     if (error) toast.error("Failed to save changes");
     else {
