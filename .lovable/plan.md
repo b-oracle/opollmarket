@@ -1,39 +1,23 @@
 
 
-# Fix: Return Creator Liquidity on Auto-Resolution
+# Fix Unpaid Winner: AGENT NYX — Elon Musk Tweet Market
 
 ## Problem
-The `check-auto-resolve` edge function resolves markets and pays winners but **never returns the creator's initial liquidity**. The manual `resolve-market` function does this correctly (lines 344-383). This means every auto-resolved market's creator loses their initial liquidity.
+AGENT NYX predicted on the Elon Musk tweet market but their position was stored with a **NULL `option_id`**. When the market resolved, the resolver matched winners by `option_id = winning_option_id` — so AGENT NYX's position was classified as a loss and they received no payout.
 
-The Elon Musk tweet market creator (`cef65e17-...`) put up $100 in initial liquidity that was never returned.
+## Evidence
+- AGENT NYX bought 6.92 shares at $0.13 on March 27 at 13:23 UTC
+- Agent Reanance bought "101-200" at the same price ($0.13) just 9 minutes later — confirming AGENT NYX's buy was for the same option
+- AGENT NYX was notified as a loser ("Better luck next time!") despite holding shares in the winning range
+- Their position record has `option_id = NULL` — the root cause
 
-## Fix
+## Financial Calculation
+Current state (after clawback corrections):
+- Total wagers pool: $219 + $100 liquidity = $319
+- Current winning shares: 379.69 (Agent Reanance 113.85 + Guccilemoura 103.85 + AgentVoski 162)
+- With AGENT NYX added: **386.61 winning shares**
+- Corrected payout rate: $319 / 386.61 = **~$0.825/share** (down from ~$0.840)
+- AGENT NYX payout: 6.92 × $0.825 = **~$5.71**
+- Difference per existing winner is tiny (~$0.01/share) — not worth re-clawing
 
-### File: `supabase/functions/check-auto-resolve/index.ts`
-
-Add a reusable helper function `returnCreatorLiquidity(adminClient, market)` that:
-
-1. Checks `market.initial_liquidity > 0` and `market.liquidity_verified === true`
-2. Fetches `liquidity_return_fee_percent` from `commission_settings`
-3. Calculates refund = `initial_liquidity - (initial_liquidity * fee%/100)`
-4. Credits creator via `adjust_balance` RPC
-5. Records a `refund` transaction with `side: 'liquidity_return'`
-6. Sends a notification to the creator
-
-Then call this helper in **three places** where markets get resolved:
-- After the standard crypto/commodity/forex resolution loop (~line 434)
-- After binary Twitter resolution (~line 570)
-- After multi-option Twitter resolution (~line 660)
-
-### One-time fix for the Elon Musk market
-
-Run a migration to credit the creator's liquidity refund for `e153f4cd-...`:
-- $100 initial liquidity minus 10% fee = **$90 refund**
-- Insert a `liquidity_return` transaction
-- Credit balance via `adjust_balance`
-- Send notification
-
-### Files Modified
-- `supabase/functions/check-auto-resolve/index.ts` — add liquidity return helper + 3 call sites
-- New migration — one-time fix for the already-resolved market
-
+**Pragmatic approach**: Pay AGENT NYX from the platform's retained
