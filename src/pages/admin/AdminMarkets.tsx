@@ -174,7 +174,7 @@ const AdminMarkets = () => {
   const fetchMarkets = async () => {
     let query = supabase
       .from("markets")
-      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending, creator_wallet, moderator_decision, moderator_id, moderator_reviewed_at, polymarket_id, is_hidden, resolved_side, blockchain_tx_hash")
+      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending, creator_wallet, moderator_decision, moderator_id, moderator_reviewed_at, polymarket_id, is_hidden, resolved_side, blockchain_tx_hash, image_url")
       .order("created_at", { ascending: false });
     if (filter === "polymarket") {
       query = query.not("polymarket_id", "is", null);
