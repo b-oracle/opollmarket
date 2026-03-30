@@ -1,0 +1,1 @@
+UPDATE markets SET image_url = 'https://dqtjuhqndncanfwgjwva.supabase.co/storage/v1/object/public/market-images/nnamdi-kanu.jpeg' WHERE id = '86ec0ba9-fce9-4f90-9b1d-e90f45f249e0';

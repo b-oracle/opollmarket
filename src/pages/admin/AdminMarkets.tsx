@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin, ShieldAlert, ShieldCheck, Ban, BarChart3, Users, DollarSign, Layers, Clock, Archive, Flame, Eye, EyeOff, Download } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin, ShieldAlert, ShieldCheck, Ban, BarChart3, Users, DollarSign, Layers, Clock, Archive, Flame, Eye, EyeOff, Download, ImagePlus } from "lucide-react";
+import { compressImage } from "@/lib/imageCompression";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import RecordOnChainButton from "@/components/admin/RecordOnChainButton";
 import { toast } from "sonner";
@@ -36,6 +37,7 @@ interface MarketRow {
   is_hidden: boolean;
   resolved_side: string | null;
   blockchain_tx_hash: string | null;
+  image_url: string | null;
 }
 
 interface MarketOption {
@@ -70,6 +72,8 @@ interface EditState {
   end_date: string;
   resolution_source: string;
   trending: boolean;
+  image_url: string;
+  newImageFile: File | null;
 }
 interface MarketStatsData {
   total: number;
@@ -171,7 +175,7 @@ const AdminMarkets = () => {
   const fetchMarkets = async () => {
     let query = supabase
       .from("markets")
-      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending, creator_wallet, moderator_decision, moderator_id, moderator_reviewed_at, polymarket_id, is_hidden, resolved_side, blockchain_tx_hash")
+      .select("id, title, description, category, status, market_type, volume, participants, yes_price, end_date, created_at, resolution_source, trending, pinned_trending, creator_wallet, moderator_decision, moderator_id, moderator_reviewed_at, polymarket_id, is_hidden, resolved_side, blockchain_tx_hash, image_url")
       .order("created_at", { ascending: false });
     if (filter === "polymarket") {
       query = query.not("polymarket_id", "is", null);
@@ -302,7 +306,7 @@ const AdminMarkets = () => {
   }, [editState?.id]);
 
   const startEdit = (m: MarketRow) => {
-    setEditState({ id: m.id, title: m.title, description: m.description, category: m.category, end_date: m.end_date, resolution_source: m.resolution_source, trending: m.trending });
+    setEditState({ id: m.id, title: m.title, description: m.description, category: m.category, end_date: m.end_date, resolution_source: m.resolution_source, trending: m.trending, image_url: m.image_url || "", newImageFile: null });
     setExpandedId(m.id);
   };
 
@@ -312,6 +316,22 @@ const AdminMarkets = () => {
     if (!editState) return;
     if (editState.title.trim().length < 5) { toast.error("Title must be at least 5 characters"); return; }
     setSaving(true);
+    let imageUrl = editState.image_url;
+    // Upload new image if selected
+    if (editState.newImageFile) {
+      try {
+        const compressed = await compressImage(editState.newImageFile, "market-banner");
+        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.webp`;
+        const { error: upErr } = await supabase.storage.from("market-images").upload(fileName, compressed, { contentType: "image/webp", upsert: true });
+        if (upErr) throw upErr;
+        const { data: pubData } = supabase.storage.from("market-images").getPublicUrl(fileName);
+        imageUrl = pubData.publicUrl;
+      } catch (e: any) {
+        toast.error("Image upload failed: " + (e.message || "Unknown error"));
+        setSaving(false);
+        return;
+      }
+    }
     const { error } = await supabase.from("markets").update({
       title: editState.title.trim(),
       description: editState.description.trim(),
@@ -319,6 +339,7 @@ const AdminMarkets = () => {
       end_date: editState.end_date,
       resolution_source: editState.resolution_source.trim(),
       trending: editState.trending,
+      image_url: imageUrl || null,
     }).eq("id", editState.id);
     if (error) toast.error("Failed to save changes");
     else {
@@ -960,7 +981,42 @@ const AdminMarkets = () => {
                               )}
                             </div>
 
-                            {/* Trending */}
+                            {/* Market Image */}
+                            {isEditing && canEdit ? (
+                              <div>
+                                <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1 block">Market Image</label>
+                                <div className="flex items-center gap-3">
+                                  {(editState.newImageFile || editState.image_url) && (
+                                    <img
+                                      src={editState.newImageFile ? URL.createObjectURL(editState.newImageFile) : editState.image_url}
+                                      alt="Market"
+                                      className="w-16 h-16 rounded-lg object-cover border border-border"
+                                    />
+                                  )}
+                                  <label className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border border-border cursor-pointer hover:bg-muted transition-colors text-sm text-muted-foreground">
+                                    <ImagePlus className="w-4 h-4" />
+                                    {editState.image_url || editState.newImageFile ? "Replace Image" : "Add Image"}
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) setEditState({ ...editState, newImageFile: file });
+                                      }}
+                                    />
+                                  </label>
+                                </div>
+                              </div>
+                            ) : (
+                              m.image_url && (
+                                <div>
+                                  <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1 block">Market Image</label>
+                                  <img src={m.image_url} alt="Market" className="w-20 h-20 rounded-lg object-cover border border-border" />
+                                </div>
+                              )
+                            )}
+
                             <div className="flex items-center justify-between">
                               <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Trending</label>
                               <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
