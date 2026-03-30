@@ -1,23 +1,25 @@
 
 
-# Fix Unpaid Winner: AGENT NYX — Elon Musk Tweet Market
+# Fix: Show Option Selector on First Prediction for Range/Multi Markets
 
 ## Problem
-AGENT NYX predicted on the Elon Musk tweet market but their position was stored with a **NULL `option_id`**. When the market resolved, the resolver matched winners by `option_id = winning_option_id` — so AGENT NYX's position was classified as a loss and they received no payout.
+When a range or multi-option market is created, the "Place Your First Prediction" step does not show the options to pick from. The creator only sees the amount input. This happens because `newMarketOptions` state may be empty if the `.select()` after inserting options fails silently or the state doesn't populate in time.
 
-## Evidence
-- AGENT NYX bought 6.92 shares at $0.13 on March 27 at 13:23 UTC
-- Agent Reanance bought "101-200" at the same price ($0.13) just 9 minutes later — confirming AGENT NYX's buy was for the same option
-- AGENT NYX was notified as a loser ("Better luck next time!") despite holding shares in the winning range
-- Their position record has `option_id = NULL` — the root cause
+## Root Cause
+In `src/pages/Create.tsx` (~line 2982), the option list renders only when `newMarketOptions.length > 0`. If the array is empty (e.g. insert didn't return data, or a subtle race), the UI falls through to `null` — no selector at all. The creator can then submit a prediction without an `optionId`, which the backend now rejects (400 error).
 
-## Financial Calculation
-Current state (after clawback corrections):
-- Total wagers pool: $219 + $100 liquidity = $319
-- Current winning shares: 379.69 (Agent Reanance 113.85 + Guccilemoura 103.85 + AgentVoski 162)
-- With AGENT NYX added: **386.61 winning shares**
-- Corrected payout rate: $319 / 386.61 = **~$0.825/share** (down from ~$0.840)
-- AGENT NYX payout: 6.92 × $0.825 = **~$5.71**
-- Difference per existing winner is tiny (~$0.01/share) — not worth re-clawing
+## Fix
 
-**Pragmatic approach**: Pay AGENT NYX from the platform's retained
+### File: `src/pages/Create.tsx`
+
+1. **Add a fallback fetch** — When `submitStep` transitions to `"first_prediction"` and `marketType !== "binary"` but `newMarketOptions` is empty, fetch options from the `market_options` table using `newMarketId`. Add a `useEffect` that triggers on `[submitStep, newMarketId, marketType]`.
+
+2. **Disable the submit button** when it's a multi/range market and no option is selected (`!firstPredOptionId`). Currently the button is always enabled, allowing a submission that will fail.
+
+3. **Show a loading state** while options are being fetched, so the creator doesn't see a bare form.
+
+### Changes Summary
+- ~15 lines: new `useEffect` to fetch options as fallback
+- ~2 lines: disable submit button when no option selected for non-binary markets
+- No backend changes needed
+
