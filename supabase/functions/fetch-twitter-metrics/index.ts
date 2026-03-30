@@ -237,7 +237,7 @@ Deno.serve(async (req) => {
     const { data: markets, error: fetchErr } = await adminClient
       .from("markets")
       .select("id, twitter_metric_type, twitter_resource_id, created_at, end_date")
-      .eq("status", "active")
+      .in("status", ["active", "ended"])
       .not("twitter_metric_type", "is", null)
       .not("twitter_resource_id", "is", null);
 
@@ -260,12 +260,19 @@ Deno.serve(async (req) => {
     for (const market of markets) {
       const metricType = market.twitter_metric_type as string;
       const resourceId = market.twitter_resource_id as string;
+      const isUserBased = isUsername(resourceId);
+      const isRangeMetric = metricType === "tweets" || metricType === "posts";
+      const isImpressionsMetric = metricType === "impressions" || metricType === "views";
 
       let count: number | null = null;
-      if (metricType === "tweets" || metricType === "posts") {
+      if (isRangeMetric || (isImpressionsMetric && isUserBased)) {
         const startTime = new Date(market.created_at).toISOString();
         const endTime = new Date(market.end_date + "T23:59:59Z").toISOString();
-        count = await fetchUserTweetCountInRange(resourceId, bearerToken, startTime, endTime);
+        if (isImpressionsMetric && isUserBased) {
+          count = await fetchUserImpressionsInRange(resourceId, bearerToken, startTime, endTime);
+        } else {
+          count = await fetchUserTweetCountInRange(resourceId, bearerToken, startTime, endTime);
+        }
       } else {
         const tweetMetrics = await fetchTweetMetrics(resourceId, bearerToken);
         count = extractCount(metricType, tweetMetrics, null);
