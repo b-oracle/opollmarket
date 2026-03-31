@@ -634,7 +634,9 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                       <p className="text-[10px] text-destructive/70">
                         {orderType === "limit"
                           ? "Your funds will be escrowed until the order is filled or cancelled. You can cancel anytime from your portfolio."
-                          : "By confirming, you authorize this prediction. Your balance will be deducted. Predictions are final. Shares resolve at $1.00 or $0.00."}
+                          : isParimutuel
+                            ? "By confirming, you authorize this prediction. Your balance will be deducted. Predictions are final. Payout is proportional to the total pool split among winners."
+                            : "By confirming, you authorize this prediction. Your balance will be deducted. Predictions are final. Shares resolve at $1.00 or $0.00."}
                       </p>
                     </div>
                     <div className="space-y-3">
