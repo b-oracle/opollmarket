@@ -338,6 +338,17 @@ const Portfolio = () => {
     let currentValue: number;
     if (isResolved && isMultiOrRange) {
       currentValue = payoutMap[p.market_id] ?? 0;
+    } else if (!isResolved && market) {
+      // Slippage-adjusted "realizable" value for active positions:
+      // Simulate the AMM price impact of selling this position
+      const rawPrice = currentPriceCents / 100;
+      const grossProceeds = p.shares * rawPrice;
+      const totalLiq = Number((market as any).volume || 0) + Number((market as any).liquidity || 0) + 100;
+      const impact = Math.min(grossProceeds / totalLiq, 0.15);
+      const adjustedPrice = Math.max(0.01, rawPrice - impact / 2); // avg execution price ≈ midpoint
+      const adjustedGross = p.shares * adjustedPrice;
+      const exitFeePct = exitFeePercent / 100;
+      currentValue = adjustedGross * (1 - exitFeePct);
     } else {
       currentValue = p.shares * (currentPriceCents / 100);
     }
