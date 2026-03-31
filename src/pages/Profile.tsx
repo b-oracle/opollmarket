@@ -994,6 +994,9 @@ const Profile = () => {
     if (txFilter === "trades") result = result.filter((t: any) => t.type === "buy" || t.type === "sell");
     else if (txFilter === "deposits") result = result.filter((t: any) => t.type === "deposit");
     else if (txFilter === "withdrawals") result = result.filter((t: any) => t.type === "withdraw" || t.type === "withdrawal");
+    else if (txFilter === "payouts") result = result.filter((t: any) => t.type === "payout");
+    else if (txFilter === "refunds") result = result.filter((t: any) => t.type === "refund" || t.type === "one_sided_refund");
+    else if (txFilter === "sells") result = result.filter((t: any) => t.type === "sell");
 
     // Hide expired deposits everywhere except the "failed" status filter
     if (statusFilter !== "failed") {
