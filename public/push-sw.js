@@ -1,6 +1,14 @@
 // Push notification service worker handler
 // This runs in the existing service worker context
 
+// Aimtell push SDK — integrated here so it shares the PWA's service worker scope
+// (a separate aimtell-worker.js can't register because the PWA worker already owns "/")
+try {
+  importScripts('https://cdn.aimtell.com/sdk/aimtell-worker-sdk.js');
+} catch (e) {
+  // Silent — don't break VAPID push if Aimtell CDN is unavailable
+}
+
 self.addEventListener("push", (event) => {
   let data = { title: "OPOLL", body: "You have a new notification", url: "/" };
 
