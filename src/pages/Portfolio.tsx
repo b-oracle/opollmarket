@@ -270,6 +270,55 @@ const Portfolio = () => {
     enabled: !!user?.id && resolvedMarketIds.length > 0,
   });
 
+  // Fetch pool breakdown for resolved multi/range markets
+  const resolvedMultiRangeIds = rawPositions
+    .filter((p) => p.markets && p.markets.status === "resolved" && (p.markets.market_type === "multi" || p.markets.market_type === "range"))
+    .map((p) => p.market_id);
+
+  const { data: poolBreakdownMap = {} } = useQuery({
+    queryKey: ["portfolio-pool-breakdown", resolvedMultiRangeIds.join(",")],
+    queryFn: async () => {
+      if (resolvedMultiRangeIds.length === 0) return {};
+      // Fetch all positions for these markets to compute pool stats
+      const { data: allPositions, error } = await supabase
+        .from("positions")
+        .select("market_id, shares, avg_price, side, option_id")
+        .in("market_id", resolvedMultiRangeIds)
+        .gt("shares", 0);
+      if (error || !allPositions) return {};
+
+      // Fetch market winning info
+      const { data: markets } = await supabase
+        .from("markets")
+        .select("id, resolved_side, winning_option_id, market_type")
+        .in("id", resolvedMultiRangeIds);
+
+      const map: Record<string, { totalPool: number; winnersCapital: number; loserPool: number; totalWinnerShares: number; profitPerShare: number }> = {};
+
+      for (const mkt of markets || []) {
+        const mktPositions = allPositions.filter((p) => p.market_id === mkt.id);
+        const winners = mktPositions.filter((p) =>
+          mkt.market_type === "binary"
+            ? p.side === mkt.resolved_side
+            : p.option_id === mkt.winning_option_id
+        );
+        const losers = mktPositions.filter((p) =>
+          mkt.market_type === "binary"
+            ? p.side !== mkt.resolved_side
+            : p.option_id !== mkt.winning_option_id
+        );
+        const totalPool = mktPositions.reduce((s, p) => s + p.shares * p.avg_price, 0);
+        const winnersCapital = winners.reduce((s, p) => s + p.shares * p.avg_price, 0);
+        const loserPool = totalPool - winnersCapital;
+        const totalWinnerShares = winners.reduce((s, p) => s + p.shares, 0);
+        const profitPerShare = totalWinnerShares > 0 ? loserPool / totalWinnerShares : 0;
+        map[mkt.id] = { totalPool, winnersCapital, loserPool, totalWinnerShares, profitPerShare };
+      }
+      return map;
+    },
+    enabled: resolvedMultiRangeIds.length > 0,
+  });
+
   // Enrich positions with P&L
   const enriched: EnrichedPosition[] = rawPositions.map((p) => {
     const market = p.markets;
