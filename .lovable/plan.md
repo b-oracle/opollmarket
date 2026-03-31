@@ -1,39 +1,38 @@
+# Add Active/Resolved Filters to Portfolio Position Tags
 
+## What Changes
 
-# Fix: Range Market Resolution & Copy Trade Commission Calculation
+Add "Active" and "Resolved" filter options to the existing filter bar, and default to "Active" instead of "All".
 
-## Problem
-1. **Range markets use binary logic** — Line 260 only checks `market.market_type === "multi"`, so range markets fall through to `payoutPerShare = 1` (binary), risking overpayment.
-2. **Copy trade commission assumes $1/share** — Line 421 only checks for `"multi"` (not `"range"`), and line 425 hardcodes `pos.shares * (1 - pos.avg_price)` instead of using the actual `payoutPerShare`.
+## Technical Changes
 
-## Changes
+### File: `src/pages/Portfolio.tsx`
 
-### File: `supabase/functions/resolve-market/index.ts`
+1. **Update `FilterType**` (line 91):
+  ```
+   "all" | "profit" | "loss"  →  "active" | "all" | "profit" | "loss" | "resolved"
+  ```
+2. **Change default filter** (line 146):
+  ```
+   useState<FilterType>("all")  →  useState<FilterType>("active")
+  ```
+3. **Update filter buttons** (lines 758-762) — add Active and Resolved, reorder so Active is first:
+  ```
+   Active, In Profit, At Loss, Resolved, All
+  ```
+   Use `CheckCircle2` icon for Active and `Trophy` icon for Resolved (both already imported).
+4. **Update filter logic** (lines 326-330):
+  ```typescript
+   const filtered = enriched.filter((p) => {
+     if (filter === "active") return p.status === "active";
+     if (filter === "resolved") return p.status !== "active";
+     if (filter === "profit") return p.unrealizedPnl > 0;
+     if (filter === "loss") return p.unrealizedPnl < 0;
+     return true;
+   });
+  ```
 
-**Fix 1 — Line 260**: Add `"range"` to the parimutuel branch:
-```
-if (market.market_type === "multi" && totalWinnerShares > 0)
-→
-if ((market.market_type === "multi" || market.market_type === "range") && totalWinnerShares > 0)
-```
+### Summary
 
-**Fix 2 — Lines 418-429**: Use `payoutPerShare` (already computed above) instead of hardcoded `1`, and add `"range"` to the winner check:
-```typescript
-const isWinner =
-  (market.market_type === "binary" && winning_side && pos.side === winning_side) ||
-  ((market.market_type === "multi" || market.market_type === "range") && winning_option_id && pos.option_id === winning_option_id);
-
-if (isWinner) {
-  copierProfit += pos.shares * (payoutPerShare - pos.avg_price);
-} else {
-  copierProfit -= pos.shares * pos.avg_price;
-}
-```
-
-This requires `payoutPerShare` to be accessible in the copy trade section. It's already declared in the same function scope, so no structural changes needed.
-
-## Summary
-- 1 file: `supabase/functions/resolve-market/index.ts`
-- ~4 lines changed
-- No database migrations
-
+- 1 file, ~8 lines changed
+- No backend changes
