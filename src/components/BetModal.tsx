@@ -44,6 +44,7 @@ interface BetModalProps {
   optionId?: string;
   optionLabel?: string;
   optionColor?: string;
+  marketType?: string;
 }
 
 const PRESET_AMOUNTS = [10, 25, 50, 100];
@@ -92,7 +93,8 @@ const ShareToXButton = ({ marketTitle, marketId, side, optionLabel }: { marketTi
   );
 };
 
-const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId, optionLabel, optionColor }: BetModalProps) => {
+const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId, optionLabel, optionColor, marketType }: BetModalProps) => {
+  const isParimutuel = marketType === "multi" || marketType === "range";
   const { user, isEmailVerified } = useAuth();
   const { balance, bonusBalance, totalBalance } = useUserBalance();
   const { data: commission } = useCommissionSettings();
@@ -424,9 +426,14 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                           <span className="font-semibold">${totalCost.toFixed(2)}</span>
                         </div>
                         <div className="border-t border-border pt-2 flex justify-between text-xs">
-                          <span className="text-muted-foreground">Potential Payout</span>
+                          <span className="text-muted-foreground">
+                            {isParimutuel ? "Est. Payout (pool-based)" : "Potential Payout"}
+                          </span>
                           <span className={`font-bold ${sideTextClass}`}>${potentialPayout.toFixed(2)}</span>
                         </div>
+                        {isParimutuel && (
+                          <p className="text-[10px] text-muted-foreground/70 italic">Estimated at $1/share. Actual payout depends on final pool size.</p>
+                        )}
                         <div className="flex justify-between text-xs">
                           <span className="text-muted-foreground">Potential ROI</span>
                           <span className={`font-bold ${roi > 0 ? sideTextClass : "text-muted-foreground"}`}>
@@ -615,9 +622,12 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                           <span className="font-bold">${totalCost.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Potential Payout</span>
+                          <span className="text-muted-foreground">{isParimutuel ? "Est. Payout (pool-based)" : "Potential Payout"}</span>
                           <span className={`font-bold text-lg ${optionColor ? "" : sideTextClass}`} style={optionColor ? { color: optionColor } : undefined}>${potentialPayout.toFixed(2)}</span>
                         </div>
+                        {isParimutuel && (
+                          <p className="text-[10px] text-muted-foreground/70 italic mb-1">Estimated at $1/share. Actual payout depends on final pool size.</p>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 mb-5">
@@ -625,7 +635,9 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                       <p className="text-[10px] text-destructive/70">
                         {orderType === "limit"
                           ? "Your funds will be escrowed until the order is filled or cancelled. You can cancel anytime from your portfolio."
-                          : "By confirming, you authorize this prediction. Your balance will be deducted. Predictions are final. Shares resolve at $1.00 or $0.00."}
+                          : isParimutuel
+                            ? "By confirming, you authorize this prediction. Your balance will be deducted. Predictions are final. Payout is proportional to the total pool split among winners."
+                            : "By confirming, you authorize this prediction. Your balance will be deducted. Predictions are final. Shares resolve at $1.00 or $0.00."}
                       </p>
                     </div>
                     <div className="space-y-3">

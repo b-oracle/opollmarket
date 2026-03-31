@@ -668,6 +668,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         optionId={betModal.optionId}
         optionLabel={betModal.optionLabel}
         optionColor={betModal.optionColor}
+        marketType={market.marketType}
       />
 
       <CommentsDrawer
