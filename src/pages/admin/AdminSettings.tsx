@@ -1040,6 +1040,9 @@ const AdminSettings = () => {
 
       {/* Polymarket Import Presets */}
       <PolymarketPresetsSection canEdit={canEdit} />
+
+      {/* Sports Fixture Import Presets */}
+      <SportsImportPresetsSection canEdit={canEdit} />
     </div>
   );
 };
