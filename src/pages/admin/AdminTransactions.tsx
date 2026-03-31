@@ -148,13 +148,17 @@ const AdminTransactions = () => {
       // Enrich with market titles and user emails
       const marketIds = [...new Set(data.filter((t) => t.market_id).map((t) => t.market_id!))];
       const userIds = [...new Set(data.map((t) => t.user_id))];
+      const optionIds = [...new Set(data.filter((t) => t.option_id).map((t) => t.option_id!))];
 
-      const [marketsRes, profilesRes] = await Promise.all([
+      const [marketsRes, profilesRes, optionsRes] = await Promise.all([
         marketIds.length > 0
           ? supabase.from("markets").select("id, title").in("id", marketIds)
           : Promise.resolve({ data: [] }),
         userIds.length > 0
           ? supabase.from("profiles").select("id, email, display_name").in("id", userIds)
+          : Promise.resolve({ data: [] }),
+        optionIds.length > 0
+          ? supabase.from("market_options").select("id, label").in("id", optionIds)
           : Promise.resolve({ data: [] }),
       ]);
 
@@ -163,6 +167,9 @@ const AdminTransactions = () => {
 
       const userMap = new Map<string, string>();
       profilesRes.data?.forEach((p: any) => userMap.set(p.id, p.display_name || p.email || p.id.slice(0, 8)));
+
+      const optionMap = new Map<string, string>();
+      optionsRes.data?.forEach((o: any) => optionMap.set(o.id, o.label));
 
       setTxns(
         data.map((t) => ({
