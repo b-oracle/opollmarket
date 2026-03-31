@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { useAuth } from "@/hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import BottomSheet from "@/components/BottomSheet";
 import {
   ArrowLeft,
@@ -31,6 +32,7 @@ import {
   Edit,
   Share2,
   Shield,
+  Info,
 } from "lucide-react";
 import ShareModal from "@/components/ShareModal";
 import { PortfolioSummaryShareCard, PositionShareCard } from "@/components/PortfolioShareCards";
@@ -266,6 +268,55 @@ const Portfolio = () => {
       return map;
     },
     enabled: !!user?.id && resolvedMarketIds.length > 0,
+  });
+
+  // Fetch pool breakdown for resolved multi/range markets
+  const resolvedMultiRangeIds = rawPositions
+    .filter((p) => p.markets && p.markets.status === "resolved" && (p.markets.market_type === "multi" || p.markets.market_type === "range"))
+    .map((p) => p.market_id);
+
+  const { data: poolBreakdownMap = {} } = useQuery({
+    queryKey: ["portfolio-pool-breakdown", resolvedMultiRangeIds.join(",")],
+    queryFn: async () => {
+      if (resolvedMultiRangeIds.length === 0) return {};
+      // Fetch all positions for these markets to compute pool stats
+      const { data: allPositions, error } = await supabase
+        .from("positions")
+        .select("market_id, shares, avg_price, side, option_id")
+        .in("market_id", resolvedMultiRangeIds)
+        .gt("shares", 0);
+      if (error || !allPositions) return {};
+
+      // Fetch market winning info
+      const { data: markets } = await supabase
+        .from("markets")
+        .select("id, resolved_side, winning_option_id, market_type")
+        .in("id", resolvedMultiRangeIds);
+
+      const map: Record<string, { totalPool: number; winnersCapital: number; loserPool: number; totalWinnerShares: number; profitPerShare: number }> = {};
+
+      for (const mkt of markets || []) {
+        const mktPositions = allPositions.filter((p) => p.market_id === mkt.id);
+        const winners = mktPositions.filter((p) =>
+          mkt.market_type === "binary"
+            ? p.side === mkt.resolved_side
+            : p.option_id === mkt.winning_option_id
+        );
+        const losers = mktPositions.filter((p) =>
+          mkt.market_type === "binary"
+            ? p.side !== mkt.resolved_side
+            : p.option_id !== mkt.winning_option_id
+        );
+        const totalPool = mktPositions.reduce((s, p) => s + p.shares * p.avg_price, 0);
+        const winnersCapital = winners.reduce((s, p) => s + p.shares * p.avg_price, 0);
+        const loserPool = totalPool - winnersCapital;
+        const totalWinnerShares = winners.reduce((s, p) => s + p.shares, 0);
+        const profitPerShare = totalWinnerShares > 0 ? loserPool / totalWinnerShares : 0;
+        map[mkt.id] = { totalPool, winnersCapital, loserPool, totalWinnerShares, profitPerShare };
+      }
+      return map;
+    },
+    enabled: resolvedMultiRangeIds.length > 0,
   });
 
   // Enrich positions with P&L
@@ -897,6 +948,65 @@ const Portfolio = () => {
                             {pos.unrealizedPnl >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                             ${Math.abs(pos.unrealizedPnl).toFixed(2)}
                           </span>
+                          {pos.status === "resolved" && (pos.marketType === "multi" || pos.marketType === "range") && poolBreakdownMap[pos.marketId] && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                  <Info className="w-3 h-3" />
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent side="top" align="start" className="w-64 p-3 text-xs space-y-2">
+                                <p className="font-semibold text-foreground text-[11px]">Parimutuel Payout Breakdown</p>
+                                {(() => {
+                                  const bd = poolBreakdownMap[pos.marketId];
+                                  const capital = pos.shares * pos.avgPrice / 100;
+                                  const profit = pos.shares * bd.profitPerShare;
+                                  const payout = payoutMap[pos.marketId] ?? 0;
+                                  return (
+                                    <div className="space-y-1.5">
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Total Pool</span>
+                                        <span className="font-medium">${bd.totalPool.toFixed(2)}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Winners' Capital</span>
+                                        <span className="font-medium">${bd.winnersCapital.toFixed(2)}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Losers' Pool (Profit)</span>
+                                        <span className="font-medium">${bd.loserPool.toFixed(2)}</span>
+                                      </div>
+                                      <div className="border-t border-border pt-1.5 flex justify-between">
+                                        <span className="text-muted-foreground">Winning Shares</span>
+                                        <span className="font-medium">{bd.totalWinnerShares.toFixed(2)}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Profit/Share</span>
+                                        <span className="font-medium">${bd.profitPerShare.toFixed(4)}</span>
+                                      </div>
+                                      <div className="border-t border-border pt-1.5 space-y-1">
+                                        <div className="flex justify-between">
+                                          <span className="text-muted-foreground">Your Capital</span>
+                                          <span className="font-medium">${capital.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-muted-foreground">Your Profit</span>
+                                          <span className={`font-medium ${profit >= 0 ? "neon-yes" : "neon-no"}`}>${profit.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between font-semibold">
+                                          <span className="text-foreground">Your Payout</span>
+                                          <span className="text-foreground">${payout.toFixed(2)}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                              </PopoverContent>
+                            </Popover>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
