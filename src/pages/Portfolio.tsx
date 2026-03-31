@@ -239,10 +239,41 @@ const Portfolio = () => {
     enabled: !!user?.id,
   });
 
+  // Fetch actual payouts for resolved markets to get real P&L (not theoretical $1/share)
+  const resolvedMarketIds = rawPositions
+    .filter((p) => p.markets && p.markets.status === "resolved")
+    .map((p) => p.market_id);
+
+  const { data: payoutMap = {} } = useQuery({
+    queryKey: ["portfolio-payouts", user?.id, resolvedMarketIds.join(",")],
+    queryFn: async () => {
+      if (!user?.id || resolvedMarketIds.length === 0) return {};
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("market_id, amount, type")
+        .eq("user_id", user.id)
+        .in("market_id", resolvedMarketIds)
+        .in("type", ["payout", "refund", "one_sided_refund"])
+        .eq("status", "confirmed");
+      if (error) return {};
+      // Sum payouts per market
+      const map: Record<string, number> = {};
+      for (const tx of data || []) {
+        if (tx.market_id) {
+          map[tx.market_id] = (map[tx.market_id] || 0) + Number(tx.amount);
+        }
+      }
+      return map;
+    },
+    enabled: !!user?.id && resolvedMarketIds.length > 0,
+  });
+
   // Enrich positions with P&L
   const enriched: EnrichedPosition[] = rawPositions.map((p) => {
     const market = p.markets;
     const avgPriceCents = Math.round(p.avg_price * 100);
+    const isResolved = market?.status === "resolved";
+    const isMultiOrRange = market?.market_type === "multi" || market?.market_type === "range";
     const optionPrice = (p as any).market_options?.price;
     const currentPriceCents = market
       ? optionPrice != null
@@ -250,10 +281,21 @@ const Portfolio = () => {
         : Math.round((p.side === "yes" ? market.yes_price : market.no_price) * 100)
       : avgPriceCents;
     const invested = p.shares * p.avg_price;
-    const currentValue = p.shares * (currentPriceCents / 100);
+
+    // For resolved multi/range markets, use actual payout instead of theoretical shares × $1
+    // payoutMap has entries only for markets with payouts; no entry = $0 payout (lost)
+    let currentValue: number;
+    if (isResolved && isMultiOrRange) {
+      currentValue = payoutMap[p.market_id] ?? 0;
+    } else {
+      currentValue = p.shares * (currentPriceCents / 100);
+    }
+
     const unrealizedPnl = currentValue - invested;
     const pnlPercent = invested > 0 ? (unrealizedPnl / invested) * 100 : 0;
-    const maxPayout = p.shares; // $1 per share if correct
+    const maxPayout = isMultiOrRange && isResolved && payoutMap[p.market_id] !== undefined
+      ? payoutMap[p.market_id]
+      : p.shares; // $1 per share for binary
 
     const optionLabel = (p as any).market_options?.label || null;
     const optionSortOrder: number | null = (p as any).market_options?.sort_order ?? null;
