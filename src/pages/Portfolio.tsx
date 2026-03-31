@@ -32,6 +32,7 @@ import {
   Edit,
   Share2,
   Shield,
+  Info,
 } from "lucide-react";
 import ShareModal from "@/components/ShareModal";
 import { PortfolioSummaryShareCard, PositionShareCard } from "@/components/PortfolioShareCards";
