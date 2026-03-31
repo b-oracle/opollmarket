@@ -283,9 +283,10 @@ const Portfolio = () => {
     const invested = p.shares * p.avg_price;
 
     // For resolved multi/range markets, use actual payout instead of theoretical shares × $1
+    // payoutMap has entries only for markets with payouts; no entry = $0 payout (lost)
     let currentValue: number;
-    if (isResolved && isMultiOrRange && payoutMap[p.market_id] !== undefined) {
-      currentValue = payoutMap[p.market_id];
+    if (isResolved && isMultiOrRange) {
+      currentValue = payoutMap[p.market_id] ?? 0;
     } else {
       currentValue = p.shares * (currentPriceCents / 100);
     }
