@@ -228,7 +228,7 @@ const Portfolio = () => {
       if (!user?.id) return [];
       const { data, error } = await supabase
         .from("positions")
-        .select("id, market_id, side, option_id, shares, avg_price, markets(title, yes_price, no_price, category, end_date, status, market_type), market_options(label, sort_order, price)")
+        .select("id, market_id, side, option_id, shares, avg_price, markets(title, yes_price, no_price, category, end_date, status, market_type, volume, liquidity), market_options(label, sort_order, price)")
         .eq("user_id", user.id)
         .gt("shares", 0)
         .order("created_at", { ascending: false });
@@ -338,6 +338,17 @@ const Portfolio = () => {
     let currentValue: number;
     if (isResolved && isMultiOrRange) {
       currentValue = payoutMap[p.market_id] ?? 0;
+    } else if (!isResolved && market) {
+      // Slippage-adjusted "realizable" value for active positions:
+      // Simulate the AMM price impact of selling this position
+      const rawPrice = currentPriceCents / 100;
+      const grossProceeds = p.shares * rawPrice;
+      const totalLiq = Number((market as any).volume || 0) + Number((market as any).liquidity || 0) + 100;
+      const impact = Math.min(grossProceeds / totalLiq, 0.15);
+      const adjustedPrice = Math.max(0.01, rawPrice - impact / 2); // avg execution price ≈ midpoint
+      const adjustedGross = p.shares * adjustedPrice;
+      const exitFeePct = exitFeePercent / 100;
+      currentValue = adjustedGross * (1 - exitFeePct);
     } else {
       currentValue = p.shares * (currentPriceCents / 100);
     }
@@ -883,11 +894,27 @@ const Portfolio = () => {
                     <div className="flex items-center justify-between pt-2 border-t border-border">
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-muted-foreground">P&L:</span>
+                          <span className="text-[10px] text-muted-foreground">{pos.status === "active" ? "Est. P&L:" : "P&L:"}</span>
                           <span className={`text-xs font-bold flex items-center gap-0.5 ${pos.unrealizedPnl >= 0 ? "neon-yes" : "neon-no"}`}>
                             {pos.unrealizedPnl >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                             ${Math.abs(pos.unrealizedPnl).toFixed(2)}
                           </span>
+                          {pos.status === "active" && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                  <Info className="w-3 h-3" />
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent side="top" align="start" className="w-56 p-3 text-xs space-y-1">
+                                <p className="font-semibold text-foreground text-[11px]">Estimated Exit Value</p>
+                                <p className="text-muted-foreground">This P&L accounts for price slippage from AMM impact and the exit fee. Actual payout may vary slightly.</p>
+                              </PopoverContent>
+                            </Popover>
+                          )}
                           {pos.status === "resolved" && (pos.marketType === "multi" || pos.marketType === "range") && poolBreakdownMap[pos.marketId] && (
                             <Popover>
                               <PopoverTrigger asChild>
