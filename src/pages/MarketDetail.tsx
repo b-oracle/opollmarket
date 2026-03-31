@@ -3,7 +3,7 @@ import YouTubeEmbed, { isYouTubeUrl } from "@/components/YouTubeEmbed";
 import { useParams, useNavigate } from "react-router-dom";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
-import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2, Wallet, FileText, ExternalLink, CheckCircle2, XCircle, Pencil, Trash2, Check, X } from "lucide-react";
+import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2, Wallet, FileText, ExternalLink, CheckCircle2, XCircle, Pencil, Trash2, Check, X, Info } from "lucide-react";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 // LogoLoader removed for faster load
 import { useMarket } from "@/hooks/useMarkets";
@@ -918,6 +918,18 @@ const MarketDetail = () => {
           </div>
           <div className="glass rounded-xl p-2.5 sm:p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Clock className="w-3.5 h-3.5" /><span className="text-[11px] sm:text-xs">Ends</span></div><span className="text-base sm:text-lg font-bold">{getTimeRemaining(market.endDate)}</span></div>
         </div>
+
+        {!isEnded && (
+          <div className="glass rounded-xl p-3 mb-4 flex gap-2.5 items-start">
+            <Info className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+            <div>
+              <p className="text-xs font-semibold text-foreground">Early predictions get better pricing</p>
+              <p className="text-[11px] text-muted-foreground leading-relaxed mt-0.5">
+                Prices rise as more people predict on an option. Predicting early means you pay less per share and receive more shares — resulting in a larger payout if you win.
+              </p>
+            </div>
+          </div>
+        )}
 
         {!isMulti && <OrderBook yesPrice={yesPercent} noPrice={noPercent} liquidity={market.liquidity} marketId={market.id} />}
 
