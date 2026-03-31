@@ -1702,10 +1702,10 @@ const Profile = () => {
             </motion.button>
           </div>
           <div className="flex gap-2 mb-3 overflow-x-auto scrollbar-hide flex-nowrap whitespace-nowrap">
-            {(["all", "trades", "quick_trades", "deposits", "withdrawals"] as FilterType[]).map((f) => (
+            {(["all", "trades", "quick_trades", "deposits", "withdrawals", "payouts", "refunds", "sells"] as FilterType[]).map((f) => (
               <button key={f} onClick={() => { setTxFilter(f); setTxPage(1); }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize shrink-0 ${txFilter === f ? "bg-primary text-primary-foreground" : "glass text-muted-foreground hover:text-foreground"}`}>
-                {f === "deposits" ? "Deposits" : f === "withdrawals" ? "Withdrawals" : f === "quick_trades" ? "Quick Trades" : f === "trades" ? "Predictions" : f}
+                {f === "deposits" ? "Deposits" : f === "withdrawals" ? "Withdrawals" : f === "quick_trades" ? "Quick Trades" : f === "trades" ? "Predictions" : f === "payouts" ? "Payouts" : f === "refunds" ? "Refunds" : f === "sells" ? "Sells" : f}
               </button>
             ))}
           </div>
