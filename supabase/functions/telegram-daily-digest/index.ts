@@ -130,7 +130,7 @@ Deno.serve(async () => {
 
         // Build buttons for unlinked users
         buttons = [
-          [{ text: "🔗 Link Account & Start Trading", url: `${appUrl}/auth` }],
+          [{ text: "🔗 Link Account", callback_data: "cmd_link" }],
         ];
 
         // Add top market buttons
