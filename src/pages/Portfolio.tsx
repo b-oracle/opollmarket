@@ -228,7 +228,7 @@ const Portfolio = () => {
       if (!user?.id) return [];
       const { data, error } = await supabase
         .from("positions")
-        .select("id, market_id, side, option_id, shares, avg_price, markets(title, yes_price, no_price, category, end_date, status, market_type), market_options(label, sort_order, price)")
+        .select("id, market_id, side, option_id, shares, avg_price, markets(title, yes_price, no_price, category, end_date, status, market_type, volume, liquidity), market_options(label, sort_order, price)")
         .eq("user_id", user.id)
         .gt("shares", 0)
         .order("created_at", { ascending: false });
