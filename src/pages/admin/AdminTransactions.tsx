@@ -193,7 +193,7 @@ const AdminTransactions = () => {
       t.type,
       t.user_email || "",
       Number(t.amount),
-      t.side || "",
+      t.option_label || t.side || "",
       t.market_title || "",
       t.status,
     ]);
