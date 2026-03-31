@@ -1,40 +1,37 @@
 
 
-# Fix: Show Actual Option Labels in Admin Transactions
+# Enhance Prediction Modal: Show Price-per-Share & Accurate Payout Estimate
 
-## Problem
-The "Side" column in AdminTransactions only displays `t.side` which is always "yes"/"no" — the binary market values. For range and multi-option markets, this is incorrect. The actual option name (e.g. "80-99 Posts", "4.1M - 8M Views") is stored in `market_options` and linked via `option_id` on the transaction.
+## What Changes
 
-## Fix
+The BetModal already displays entry price, shares, and potential payout. The improvements are:
 
-### File: `src/pages/admin/AdminTransactions.tsx`
+1. **Add market type awareness** — pass `marketType` into BetModal so it can distinguish binary vs range/multi-option markets.
 
-1. **Add `option_id` to the TxRow interface** and add an `option_label` enrichment field.
+2. **Show a clearer "Price per Share" row** with a help note explaining what it means (e.g. "You pay 35¢ per share").
 
-2. **Fetch option labels during enrichment** — alongside the existing markets/profiles fetch, also fetch `market_options` for all `option_id`s found in the page's transactions. Build an `optionMap: Map<string, string>` (option_id → label).
+3. **Fix the payout estimate for range/multi markets** — currently `potentialPayout = shares` assumes $1/share resolution (binary). For range/multi markets, show "Payout depends on final pool distribution" instead of a misleading fixed number.
 
-3. **Display option label when available** — in the Side column, show `option_label` if it exists, otherwise fall back to `t.side.toUpperCase()`. Remove the binary yes=green/no=red color assumption; instead use a neutral color for option labels and keep green/red only for literal "yes"/"no" sides.
+4. **Fix the confirm step disclaimer** — line 628 says "Shares resolve at $1.00 or $0.00" which is only true for binary markets. For range/multi, change to "Payout is proportional to the total pool split among winners."
 
-4. **Include option label in CSV export** — update the Side column in `exportCSV` to use `t.option_label || t.side`.
+## Technical Changes
 
-### Technical Detail
+### File: `src/components/BetModal.tsx`
+- Add `marketType?: string` to `BetModalProps`
+- Derive `isParimutuel = marketType === "multi" || marketType === "range"`
+- In the input summary section (~line 396-436):
+  - Add a note under "Potential Payout" for parimutuel markets: "Estimated at $1/share. Actual payout depends on pool size."
+- In the confirm step (~line 617-629):
+  - For parimutuel markets, label payout as "Est. Payout (pool-based)" instead of "Potential Payout"
+  - Change the disclaimer text for non-binary markets
 
-In the enrichment section (~line 146-170), add:
-```typescript
-const optionIds = [...new Set(data.filter(t => t.option_id).map(t => t.option_id!))];
-// Fetch in batches if needed (option_ids can be many)
-const optionsRes = optionIds.length > 0
-  ? await supabase.from("market_options").select("id, label").in("id", optionIds)
-  : { data: [] };
-const optionMap = new Map<string, string>();
-optionsRes.data?.forEach((o: any) => optionMap.set(o.id, o.label));
-```
+### File: `src/components/MarketCard.tsx`
+- Pass `marketType={market.marketType}` to the `<BetModal>` component (~line 661)
 
-Then in the mapping, add `option_label: t.option_id ? optionMap.get(t.option_id) : undefined`.
-
-In the render (~line 318-326), change to show the option label with appropriate styling.
+### File: `src/pages/MarketDetail.tsx`
+- If BetModal is also rendered here, pass `marketType` similarly
 
 ### Summary
-- 1 file changed, ~15 lines added/modified
+- 2-3 files, ~15 lines changed
 - No backend changes
 
