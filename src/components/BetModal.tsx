@@ -93,7 +93,8 @@ const ShareToXButton = ({ marketTitle, marketId, side, optionLabel }: { marketTi
   );
 };
 
-const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId, optionLabel, optionColor }: BetModalProps) => {
+const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId, optionLabel, optionColor, marketType }: BetModalProps) => {
+  const isParimutuel = marketType === "multi" || marketType === "range";
   const { user, isEmailVerified } = useAuth();
   const { balance, bonusBalance, totalBalance } = useUserBalance();
   const { data: commission } = useCommissionSettings();
