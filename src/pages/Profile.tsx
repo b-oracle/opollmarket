@@ -57,7 +57,7 @@ const formatTimeAgo = (date: string) => {
   return `${Math.floor(hrs / 24)}d ago`;
 };
 
-type FilterType = "all" | "trades" | "deposits" | "withdrawals" | "quick_trades";
+type FilterType = "all" | "trades" | "deposits" | "withdrawals" | "quick_trades" | "payouts" | "refunds" | "sells";
 type StatusFilter = "all" | "confirmed" | "pending" | "failed";
 
 const TelegramSection = ({ userId }: { userId?: string }) => {
@@ -994,6 +994,9 @@ const Profile = () => {
     if (txFilter === "trades") result = result.filter((t: any) => t.type === "buy" || t.type === "sell");
     else if (txFilter === "deposits") result = result.filter((t: any) => t.type === "deposit");
     else if (txFilter === "withdrawals") result = result.filter((t: any) => t.type === "withdraw" || t.type === "withdrawal");
+    else if (txFilter === "payouts") result = result.filter((t: any) => t.type === "payout");
+    else if (txFilter === "refunds") result = result.filter((t: any) => t.type === "refund" || t.type === "one_sided_refund");
+    else if (txFilter === "sells") result = result.filter((t: any) => t.type === "sell");
 
     // Hide expired deposits everywhere except the "failed" status filter
     if (statusFilter !== "failed") {
@@ -1699,10 +1702,10 @@ const Profile = () => {
             </motion.button>
           </div>
           <div className="flex gap-2 mb-3 overflow-x-auto scrollbar-hide flex-nowrap whitespace-nowrap">
-            {(["all", "trades", "quick_trades", "deposits", "withdrawals"] as FilterType[]).map((f) => (
+            {(["all", "trades", "quick_trades", "deposits", "withdrawals", "payouts", "refunds", "sells"] as FilterType[]).map((f) => (
               <button key={f} onClick={() => { setTxFilter(f); setTxPage(1); }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize shrink-0 ${txFilter === f ? "bg-primary text-primary-foreground" : "glass text-muted-foreground hover:text-foreground"}`}>
-                {f === "deposits" ? "Deposits" : f === "withdrawals" ? "Withdrawals" : f === "quick_trades" ? "Quick Trades" : f === "trades" ? "Predictions" : f}
+                {f === "deposits" ? "Deposits" : f === "withdrawals" ? "Withdrawals" : f === "quick_trades" ? "Quick Trades" : f === "trades" ? "Predictions" : f === "payouts" ? "Payouts" : f === "refunds" ? "Refunds" : f === "sells" ? "Sells" : f}
               </button>
             ))}
           </div>
