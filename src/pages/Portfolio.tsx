@@ -948,6 +948,65 @@ const Portfolio = () => {
                             {pos.unrealizedPnl >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                             ${Math.abs(pos.unrealizedPnl).toFixed(2)}
                           </span>
+                          {pos.status === "resolved" && (pos.marketType === "multi" || pos.marketType === "range") && poolBreakdownMap[pos.marketId] && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                  <Info className="w-3 h-3" />
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent side="top" align="start" className="w-64 p-3 text-xs space-y-2">
+                                <p className="font-semibold text-foreground text-[11px]">Parimutuel Payout Breakdown</p>
+                                {(() => {
+                                  const bd = poolBreakdownMap[pos.marketId];
+                                  const capital = pos.shares * pos.avgPrice / 100;
+                                  const profit = pos.shares * bd.profitPerShare;
+                                  const payout = payoutMap[pos.marketId] ?? 0;
+                                  return (
+                                    <div className="space-y-1.5">
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Total Pool</span>
+                                        <span className="font-medium">${bd.totalPool.toFixed(2)}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Winners' Capital</span>
+                                        <span className="font-medium">${bd.winnersCapital.toFixed(2)}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Losers' Pool (Profit)</span>
+                                        <span className="font-medium">${bd.loserPool.toFixed(2)}</span>
+                                      </div>
+                                      <div className="border-t border-border pt-1.5 flex justify-between">
+                                        <span className="text-muted-foreground">Winning Shares</span>
+                                        <span className="font-medium">{bd.totalWinnerShares.toFixed(2)}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Profit/Share</span>
+                                        <span className="font-medium">${bd.profitPerShare.toFixed(4)}</span>
+                                      </div>
+                                      <div className="border-t border-border pt-1.5 space-y-1">
+                                        <div className="flex justify-between">
+                                          <span className="text-muted-foreground">Your Capital</span>
+                                          <span className="font-medium">${capital.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-muted-foreground">Your Profit</span>
+                                          <span className={`font-medium ${profit >= 0 ? "neon-yes" : "neon-no"}`}>${profit.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between font-semibold">
+                                          <span className="text-foreground">Your Payout</span>
+                                          <span className="text-foreground">${payout.toFixed(2)}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                              </PopoverContent>
+                            </Popover>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
