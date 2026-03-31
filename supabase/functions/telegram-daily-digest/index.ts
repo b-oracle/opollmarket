@@ -96,7 +96,7 @@ Deno.serve(async () => {
       const isLinked = !!tgUser.user_id;
 
       let text: string;
-      let buttons: Array<Array<{ text: string; url: string }>>;
+      let buttons: Array<Array<{ text: string; url?: string; callback_data?: string }>>;
 
       if (!isLinked) {
         // ── Unlinked user: CTA to link account + market recommendations ──
