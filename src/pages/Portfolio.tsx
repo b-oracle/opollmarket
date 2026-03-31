@@ -420,78 +420,17 @@ const Portfolio = () => {
     setSellStep("executing");
 
     try {
-      const grossProceeds = sellTarget.currentValue;
-      const exitFee = grossProceeds * (exitFeePercent / 100);
-
-      // 1. Set shares to 0 on the position
-      const { error: posError } = await supabase
-        .from("positions")
-        .update({ shares: 0, updated_at: new Date().toISOString() })
-        .eq("id", sellTarget.id)
-        .eq("user_id", user.id);
-
-      if (posError) throw posError;
-
-      // 2. Credit balance (net of exit fee), using bonus_balance for fee first
-      const { data: balanceRow } = await supabase
-        .from("balances")
-        .select("amount, bonus_balance")
-        .eq("user_id", user.id)
-        .single();
-
-      const currentBalance = Number(balanceRow?.amount || 0);
-      const currentBonus = Number(balanceRow?.bonus_balance || 0);
-
-      // Use referral bonus to cover exit fee first
-      const bonusForFee = Math.min(currentBonus, exitFee);
-      const feeFromProceeds = exitFee - bonusForFee;
-      const netProceeds = grossProceeds - feeFromProceeds;
-
-      const { error: balError } = await supabase
-        .from("balances")
-        .update({
-          amount: currentBalance + netProceeds,
-          bonus_balance: currentBonus - bonusForFee,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", user.id);
-
-      if (balError) throw balError;
-
-      // 2b. Update market: volume includes sell amount, liquidity decreases by what leaves pool
-      {
-        const { data: mkt } = await supabase
-          .from("markets")
-          .select("volume, liquidity")
-          .eq("id", sellTarget.marketId)
-          .single();
-
-        if (mkt) {
-          const netProceedsOut = grossProceeds - exitFee; // what actually leaves the pool
-          await supabase.from("markets").update({
-            volume: Number(mkt.volume) + grossProceeds,
-            liquidity: Math.max(0, Number(mkt.liquidity) - netProceedsOut),
-          }).eq("id", sellTarget.marketId);
-        }
-      }
-
-      // 3. Record sell transaction
-      await supabase.from("transactions").insert({
-        user_id: user.id,
-        market_id: sellTarget.marketId,
-        type: "sell",
-        side: sellTarget.side,
-        amount: netProceeds,
-        price: sellTarget.currentPrice / 100,
-        shares: sellTarget.shares,
-        status: "confirmed",
-        option_id: sellTarget.optionId,
+      const { data, error } = await supabase.functions.invoke("sell-position", {
+        body: { positionId: sellTarget.id },
       });
 
-      setSellStep("success");
-      toast.success("Position closed successfully!");
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || "Sell failed");
+      }
 
-      // Invalidate queries
+      setSellStep("success");
+      toast.success(`Position closed! You received $${Number(data.netProceeds).toFixed(2)}`);
+
       queryClient.invalidateQueries({ queryKey: ["portfolio-positions"] });
       queryClient.invalidateQueries({ queryKey: ["user-balance"] });
 
@@ -501,13 +440,14 @@ const Portfolio = () => {
             open: true,
             market: sellTarget.marketTitle,
             side: sellTarget.optionLabel || sellTarget.side.toUpperCase(),
-            payout: sellTarget.currentValue,
+            payout: data.grossProceeds ?? sellTarget.currentValue,
             profit: sellTarget.unrealizedPnl,
           });
         }, 600);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Sell failed:", err);
+      toast.error(err?.message || "Failed to close position");
       setSellStep("error");
     }
   }, [sellTarget, user?.id, queryClient]);
