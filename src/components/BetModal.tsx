@@ -621,9 +621,12 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
                           <span className="font-bold">${totalCost.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Potential Payout</span>
+                          <span className="text-muted-foreground">{isParimutuel ? "Est. Payout (pool-based)" : "Potential Payout"}</span>
                           <span className={`font-bold text-lg ${optionColor ? "" : sideTextClass}`} style={optionColor ? { color: optionColor } : undefined}>${potentialPayout.toFixed(2)}</span>
                         </div>
+                        {isParimutuel && (
+                          <p className="text-[10px] text-muted-foreground/70 italic mb-1">Estimated at $1/share. Actual payout depends on final pool size.</p>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 mb-5">
