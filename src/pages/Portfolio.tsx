@@ -88,7 +88,7 @@ interface EnrichedPosition {
   marketType: string;
 }
 
-type FilterType = "all" | "profit" | "loss";
+type FilterType = "active" | "all" | "profit" | "loss" | "resolved";
 type PortfolioTab = "positions" | "orders" | "copy" | "drafts" | "insurance";
 
 const Sparkline = ({ avgPrice, currentPrice, seed }: { avgPrice: number; currentPrice: number; seed: string }) => {
@@ -143,7 +143,7 @@ const Portfolio = () => {
   const isAuthenticated = !!user || isConnected;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [filter, setFilter] = useState<FilterType>("all");
+  const [filter, setFilter] = useState<FilterType>("active");
   const [activeTab, setActiveTab] = useState<PortfolioTab>("positions");
   const [sellTarget, setSellTarget] = useState<EnrichedPosition | null>(null);
   const [sellStep, setSellStep] = useState<"confirm" | "executing" | "success" | "error">("confirm");
@@ -324,6 +324,8 @@ const Portfolio = () => {
   });
 
   const filtered = enriched.filter((p) => {
+    if (filter === "active") return p.status === "active";
+    if (filter === "resolved") return p.status !== "active";
     if (filter === "profit") return p.unrealizedPnl > 0;
     if (filter === "loss") return p.unrealizedPnl < 0;
     return true;
@@ -756,9 +758,11 @@ const Portfolio = () => {
             {/* Filter tabs */}
             <div className="flex gap-1 p-0.5 rounded-lg bg-muted/50 mb-4 w-full sm:w-fit overflow-x-auto scrollbar-hide">
               {([
-                { key: "all" as FilterType, label: "All" },
+                { key: "active" as FilterType, label: "Active", icon: CheckCircle2 },
                 { key: "profit" as FilterType, label: "In Profit", icon: TrendingUp },
                 { key: "loss" as FilterType, label: "At Loss", icon: TrendingDown },
+                { key: "resolved" as FilterType, label: "Resolved", icon: Trophy },
+                { key: "all" as FilterType, label: "All" },
               ]).map((f) => (
                 <button
                   key={f.key}
