@@ -8,6 +8,7 @@ interface TxRow {
   type: string;
   amount: number;
   side: string | null;
+  option_id: string | null;
   shares: number | null;
   price: number | null;
   status: string;
@@ -15,6 +16,7 @@ interface TxRow {
   created_at: string;
   market_title?: string;
   user_email?: string;
+  option_label?: string;
 }
 
 const TYPE_STYLES: Record<string, { label: string; class: string }> = {
