@@ -1424,6 +1424,300 @@ const PolymarketPresetsSection = ({ canEdit }: { canEdit: boolean }) => {
   );
 };
 
+/* ─── Sports Fixture Import Presets ─── */
+
+const POPULAR_LEAGUES = [
+  { id: 39, name: "Premier League", country: "England", sport: "football", logo: "https://media.api-sports.io/football/leagues/39.png" },
+  { id: 140, name: "La Liga", country: "Spain", sport: "football", logo: "https://media.api-sports.io/football/leagues/140.png" },
+  { id: 135, name: "Serie A", country: "Italy", sport: "football", logo: "https://media.api-sports.io/football/leagues/135.png" },
+  { id: 78, name: "Bundesliga", country: "Germany", sport: "football", logo: "https://media.api-sports.io/football/leagues/78.png" },
+  { id: 61, name: "Ligue 1", country: "France", sport: "football", logo: "https://media.api-sports.io/football/leagues/61.png" },
+  { id: 2, name: "UEFA Champions League", country: "Europe", sport: "football", logo: "https://media.api-sports.io/football/leagues/2.png" },
+  { id: 3, name: "UEFA Europa League", country: "Europe", sport: "football", logo: "https://media.api-sports.io/football/leagues/3.png" },
+  { id: 332, name: "NPFL", country: "Nigeria", sport: "football", logo: "https://media.api-sports.io/football/leagues/332.png" },
+  { id: 253, name: "MLS", country: "USA", sport: "football", logo: "https://media.api-sports.io/football/leagues/253.png" },
+  { id: 1, name: "FIFA World Cup", country: "World", sport: "football", logo: "https://media.api-sports.io/football/leagues/1.png" },
+  { id: 12, name: "NBA", country: "USA", sport: "basketball", logo: "" },
+  { id: 1, name: "NFL", country: "USA", sport: "nfl", logo: "" },
+];
+
+interface SportsPreset {
+  id: string;
+  sport_type: string;
+  league_id: number;
+  league_name: string;
+  league_logo: string | null;
+  country: string | null;
+  max_imports_per_run: number;
+  max_days_ahead: number;
+  auto_approve: boolean;
+  enabled: boolean;
+  created_at: string;
+}
+
+const SportsImportPresetsSection = ({ canEdit }: { canEdit: boolean }) => {
+  const [presets, setPresets] = useState<SportsPreset[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+  const [importingId, setImportingId] = useState<string | null>(null);
+  const [importingAll, setImportingAll] = useState(false);
+  const [marketCount, setMarketCount] = useState(0);
+
+  const [addLeagueIdx, setAddLeagueIdx] = useState(0);
+  const [addMaxDays, setAddMaxDays] = useState("14");
+  const [addMaxImports, setAddMaxImports] = useState("10");
+  const [addAutoApprove, setAddAutoApprove] = useState(true);
+
+  const fetchPresets = async () => {
+    const { data, error } = await supabase
+      .from("sports_import_presets" as any)
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (!error && data) setPresets(data as any);
+    setLoading(false);
+  };
+
+  const fetchMarketCount = async () => {
+    const { count } = await supabase
+      .from("markets")
+      .select("id", { count: "exact", head: true })
+      .eq("resolution_source", "API-Football");
+    setMarketCount(count || 0);
+  };
+
+  useEffect(() => { fetchPresets(); fetchMarketCount(); }, []);
+
+  const handleAdd = async () => {
+    const league = POPULAR_LEAGUES[addLeagueIdx];
+    if (!league) return;
+    const maxDays = parseInt(addMaxDays) || 14;
+    const maxImports = parseInt(addMaxImports) || 10;
+
+    if (presets.some(p => p.league_id === league.id && p.sport_type === league.sport)) {
+      toast.error(`Preset for "${league.name}" already exists`);
+      return;
+    }
+
+    setAdding(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from("sports_import_presets" as any)
+      .insert({
+        sport_type: league.sport,
+        league_id: league.id,
+        league_name: league.name,
+        league_logo: league.logo || null,
+        country: league.country,
+        max_days_ahead: maxDays,
+        max_imports_per_run: maxImports,
+        auto_approve: addAutoApprove,
+        enabled: true,
+        created_by: user?.id,
+      } as any);
+    if (error) {
+      toast.error(error.message || "Failed to add preset");
+    } else {
+      toast.success(`Preset for "${league.name}" added`);
+      fetchPresets();
+    }
+    setAdding(false);
+  };
+
+  const toggleEnabled = async (id: string, current: boolean) => {
+    const { error } = await supabase
+      .from("sports_import_presets" as any)
+      .update({ enabled: !current, updated_at: new Date().toISOString() } as any)
+      .eq("id", id);
+    if (!error) setPresets(prev => prev.map(p => p.id === id ? { ...p, enabled: !current } : p));
+  };
+
+  const toggleAutoApprove = async (id: string, current: boolean) => {
+    const { error } = await supabase
+      .from("sports_import_presets" as any)
+      .update({ auto_approve: !current, updated_at: new Date().toISOString() } as any)
+      .eq("id", id);
+    if (!error) setPresets(prev => prev.map(p => p.id === id ? { ...p, auto_approve: !current } : p));
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this preset?")) return;
+    const { error } = await supabase.from("sports_import_presets" as any).delete().eq("id", id);
+    if (!error) {
+      setPresets(prev => prev.filter(p => p.id !== id));
+      toast.success("Preset deleted");
+    }
+  };
+
+  const handleImportNow = async (presetId: string) => {
+    setImportingId(presetId);
+    try {
+      const { data, error } = await supabase.functions.invoke("import-sports-fixtures", {
+        body: { preset_id: presetId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Imported ${data.imported || 0} sports markets`);
+      fetchMarketCount();
+    } catch (err: any) {
+      toast.error(err.message || "Import failed");
+    }
+    setImportingId(null);
+  };
+
+  const handleImportAll = async () => {
+    setImportingAll(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("import-sports-fixtures");
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Imported ${data.imported || 0} sports markets from ${data.presets_processed || 0} presets`);
+      fetchMarketCount();
+    } catch (err: any) {
+      toast.error(err.message || "Import failed");
+    }
+    setImportingAll(false);
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="py-8 flex justify-center">
+          <Loader2 className="w-5 h-5 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const availableLeagues = POPULAR_LEAGUES.filter(l => !presets.some(p => p.league_id === l.id && p.sport_type === l.sport));
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Zap className="w-5 h-5" /> Sports Fixture Auto-Import
+        </CardTitle>
+        <CardDescription>
+          Import upcoming matches from leagues via API-Football. Markets are created as multi-option (Home/Draw/Away) for football, binary for others. Auto-resolves via existing sports resolution.
+          {marketCount > 0 && <span className="ml-2 font-medium text-primary">{marketCount} total imported</span>}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {presets.length > 0 && (
+          <div className="space-y-2">
+            {presets.map((preset) => (
+              <div
+                key={preset.id}
+                className={`flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg border ${
+                  preset.enabled ? "border-primary/30 bg-primary/5" : "border-border bg-muted/30"
+                }`}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {preset.league_logo && (
+                      <img src={preset.league_logo} alt="" className="w-5 h-5 rounded-sm object-contain" />
+                    )}
+                    <span className="font-semibold text-sm">{preset.league_name}</span>
+                    <Badge variant="outline" className="text-[10px]">{preset.sport_type}</Badge>
+                    {preset.country && <span className="text-[10px] text-muted-foreground">{preset.country}</span>}
+                    <Badge variant={preset.enabled ? "default" : "secondary"} className="text-[10px]">
+                      {preset.enabled ? "Active" : "Paused"}
+                    </Badge>
+                    {preset.auto_approve && (
+                      <Badge variant="outline" className="text-[10px]">Auto-approve</Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Max {preset.max_days_ahead} days ahead · Limit {preset.max_imports_per_run} per run
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-muted-foreground">Enabled</span>
+                    <Switch checked={preset.enabled} onCheckedChange={() => toggleEnabled(preset.id, preset.enabled)} disabled={!canEdit} />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-muted-foreground">Auto-approve</span>
+                    <Switch checked={preset.auto_approve} onCheckedChange={() => toggleAutoApprove(preset.id, preset.auto_approve)} disabled={!canEdit} />
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => handleImportNow(preset.id)} disabled={importingId === preset.id || !preset.enabled} className="text-xs h-7">
+                    {importingId === preset.id ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RefreshCw className="w-3 h-3 mr-1" />}
+                    Import Now
+                  </Button>
+                  {canEdit && (
+                    <Button size="sm" variant="ghost" onClick={() => handleDelete(preset.id)} className="text-xs h-7 text-destructive hover:text-destructive">
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {presets.length === 0 && (
+          <div className="text-center py-6 text-sm text-muted-foreground">
+            No presets configured yet. Add a league below to start importing sports fixtures.
+          </div>
+        )}
+
+        {canEdit && availableLeagues.length > 0 && (
+          <Card className="border-dashed">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Plus className="w-4 h-4" /> Add League Preset
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">League</Label>
+                  <select
+                    value={addLeagueIdx}
+                    onChange={(e) => setAddLeagueIdx(Number(e.target.value))}
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    {availableLeagues.map((l, i) => (
+                      <option key={`${l.sport}-${l.id}`} value={POPULAR_LEAGUES.indexOf(l)}>
+                        {l.name} ({l.country}) — {l.sport}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Max Days Ahead</Label>
+                  <Input type="number" min={1} max={60} value={addMaxDays} onChange={(e) => setAddMaxDays(e.target.value)} placeholder="14" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Max Imports Per Run</Label>
+                  <Input type="number" min={1} max={50} value={addMaxImports} onChange={(e) => setAddMaxImports(e.target.value)} placeholder="10" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Auto-approve</Label>
+                  <div className="flex items-center gap-2 h-10">
+                    <Switch checked={addAutoApprove} onCheckedChange={setAddAutoApprove} />
+                    <span className="text-xs text-muted-foreground">{addAutoApprove ? "Markets go live" : "Require review"}</span>
+                  </div>
+                </div>
+              </div>
+              <Button onClick={handleAdd} disabled={adding} size="sm" className="text-xs">
+                {adding ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Plus className="w-3 h-3 mr-1" />}
+                Add Preset
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {presets.some(p => p.enabled) && (
+          <Button onClick={handleImportAll} disabled={importingAll} variant="outline" className="w-full text-sm">
+            {importingAll ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+            Import All Active Presets Now
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 /* ─── Feature Toggles Card ─── */
 const FeatureTogglesCard = () => {
   const { toggles, isLoading, setToggle, setSchedule } = useFeatureToggles();
