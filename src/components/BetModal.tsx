@@ -44,6 +44,7 @@ interface BetModalProps {
   optionId?: string;
   optionLabel?: string;
   optionColor?: string;
+  marketType?: string;
 }
 
 const PRESET_AMOUNTS = [10, 25, 50, 100];
