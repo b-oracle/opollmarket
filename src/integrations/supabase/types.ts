@@ -2196,6 +2196,54 @@ export type Database = {
           },
         ]
       }
+      sports_import_presets: {
+        Row: {
+          auto_approve: boolean
+          country: string | null
+          created_at: string
+          created_by: string
+          enabled: boolean
+          id: string
+          league_id: number
+          league_logo: string | null
+          league_name: string
+          max_days_ahead: number
+          max_imports_per_run: number
+          sport_type: string
+          updated_at: string
+        }
+        Insert: {
+          auto_approve?: boolean
+          country?: string | null
+          created_at?: string
+          created_by: string
+          enabled?: boolean
+          id?: string
+          league_id: number
+          league_logo?: string | null
+          league_name: string
+          max_days_ahead?: number
+          max_imports_per_run?: number
+          sport_type?: string
+          updated_at?: string
+        }
+        Update: {
+          auto_approve?: boolean
+          country?: string | null
+          created_at?: string
+          created_by?: string
+          enabled?: boolean
+          id?: string
+          league_id?: number
+          league_logo?: string | null
+          league_name?: string
+          max_days_ahead?: number
+          max_imports_per_run?: number
+          sport_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       status_comment_likes: {
         Row: {
           comment_id: string
