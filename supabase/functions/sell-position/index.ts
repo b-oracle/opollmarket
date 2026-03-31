@@ -225,6 +225,20 @@ Deno.serve(async (req) => {
       option_id: position.option_id || null,
     });
 
+    // 12. Trigger limit order matching after price change
+    try {
+      await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/match-limit-orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({ market_id: market.id }),
+      });
+    } catch {
+      // Non-critical — don't block the sell response
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
