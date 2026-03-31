@@ -326,7 +326,11 @@ const AdminTransactions = () => {
                     <td className="p-3 text-xs font-medium truncate max-w-[120px]">{t.user_email}</td>
                     <td className="p-3 font-semibold">${Number(t.amount).toLocaleString()}</td>
                     <td className="p-3">
-                      {t.side ? (
+                      {t.option_label ? (
+                        <span className="text-xs font-semibold text-foreground">
+                          {t.option_label}
+                        </span>
+                      ) : t.side ? (
                         <span className={`text-xs font-bold ${t.side === "yes" ? "text-green-500" : "text-red-500"}`}>
                           {t.side.toUpperCase()}
                         </span>
