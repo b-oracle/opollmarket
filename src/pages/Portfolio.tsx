@@ -894,11 +894,27 @@ const Portfolio = () => {
                     <div className="flex items-center justify-between pt-2 border-t border-border">
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-muted-foreground">P&L:</span>
+                          <span className="text-[10px] text-muted-foreground">{pos.status === "active" ? "Est. P&L:" : "P&L:"}</span>
                           <span className={`text-xs font-bold flex items-center gap-0.5 ${pos.unrealizedPnl >= 0 ? "neon-yes" : "neon-no"}`}>
                             {pos.unrealizedPnl >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                             ${Math.abs(pos.unrealizedPnl).toFixed(2)}
                           </span>
+                          {pos.status === "active" && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                  <Info className="w-3 h-3" />
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent side="top" align="start" className="w-56 p-3 text-xs space-y-1">
+                                <p className="font-semibold text-foreground text-[11px]">Estimated Exit Value</p>
+                                <p className="text-muted-foreground">This P&L accounts for price slippage from AMM impact and the exit fee. Actual payout may vary slightly.</p>
+                              </PopoverContent>
+                            </Popover>
+                          )}
                           {pos.status === "resolved" && (pos.marketType === "multi" || pos.marketType === "range") && poolBreakdownMap[pos.marketId] && (
                             <Popover>
                               <PopoverTrigger asChild>
