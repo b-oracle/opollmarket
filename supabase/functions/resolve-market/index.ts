@@ -253,20 +253,29 @@ async function handleResolve(
     }
   } else {
     // NORMAL: Two-sided market
-    // For multi-option markets, cap payout at pool-proportional to prevent overpayment
+    // For multi-option/range markets, use capital-first parimutuel model
     const totalWinnerShares = winningPositions.reduce((s, p) => s + p.shares, 0);
     let payoutPerShare = 1; // default $1/share for binary
 
+    let profitPerShare = 0;
     if ((market.market_type === "multi" || market.market_type === "range") && totalWinnerShares > 0) {
-      // Pool = sum of all wagers (winners + losers)
       const allPositions = [...winningPositions, ...losingPositions];
       const totalPool = allPositions.reduce((s, p) => s + p.shares * p.avg_price, 0);
-      payoutPerShare = Math.min(1, totalPool / totalWinnerShares);
-      console.log("resolve-market: multi-option pool-proportional payout", { totalPool, totalWinnerShares, payoutPerShare });
+      const winnersCapital = winningPositions.reduce((s, p) => s + p.shares * p.avg_price, 0);
+      const loserPool = totalPool - winnersCapital;
+      profitPerShare = loserPool / totalWinnerShares;
+      payoutPerShare = totalPool / totalWinnerShares;
+      console.log("resolve-market: capital-first parimutuel payout", { totalPool, winnersCapital, loserPool, profitPerShare, payoutPerShare });
     }
 
     for (const pos of winningPositions) {
-      const payout = Math.round(pos.shares * payoutPerShare * 100) / 100;
+      let payout: number;
+      if (market.market_type === "multi" || market.market_type === "range") {
+        const capital = pos.shares * pos.avg_price;
+        payout = Math.round((capital + pos.shares * profitPerShare) * 100) / 100;
+      } else {
+        payout = Math.round(pos.shares * payoutPerShare * 100) / 100;
+      }
 
       await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout, _bonus_delta: 0, _insurance_delta: 0 });
 
