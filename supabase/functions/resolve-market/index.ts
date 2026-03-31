@@ -418,13 +418,11 @@ async function handleResolve(
       for (const pos of copierPositions) {
         const isWinner =
           (market.market_type === "binary" && winning_side && pos.side === winning_side) ||
-          (market.market_type === "multi" && winning_option_id && pos.option_id === winning_option_id);
+          ((market.market_type === "multi" || market.market_type === "range") && winning_option_id && pos.option_id === winning_option_id);
 
         if (isWinner) {
-          // Profit = payout (shares * $1) minus cost (shares * avg_price)
-          copierProfit += pos.shares * (1 - pos.avg_price);
+          copierProfit += pos.shares * (payoutPerShare - pos.avg_price);
         } else {
-          // Loss = -(shares * avg_price)
           copierProfit -= pos.shares * pos.avg_price;
         }
       }
