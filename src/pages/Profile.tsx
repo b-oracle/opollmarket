@@ -656,6 +656,20 @@ const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
             <a href="/setup-security" className="text-xs text-primary font-semibold">Set Up</a>
           </div>
         )}
+        {(secSettings?.pin_enabled || secSettings?.totp_enabled) && (
+          <a
+            href="/setup-security"
+            className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors"
+          >
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <KeyRound className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">Change Password or PIN</p>
+              <p className="text-xs text-muted-foreground">Update your security credentials</p>
+            </div>
+          </a>
+        )}
       </div>
     </div>
   );
