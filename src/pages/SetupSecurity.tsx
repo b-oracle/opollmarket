@@ -237,6 +237,14 @@ const SetupSecurity = () => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      // Notify user across all channels (Telegram, Aimtell, WhatsApp, web push)
+      await supabase.from("notifications").insert({
+        user_id: user!.id,
+        title: "Security PIN Changed 🔐",
+        message: "Your security PIN was successfully updated. If this wasn't you, please contact support immediately.",
+        type: "info",
+      });
+
       toast.success("PIN changed successfully!");
       setOldPin("");
       setNewPin("");
