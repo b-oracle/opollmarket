@@ -6,7 +6,7 @@
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 
-type ImageSize = "avatar-sm" | "avatar-md" | "avatar-lg" | "card" | "banner" | "thumb" | "story";
+type ImageSize = "avatar-sm" | "avatar-md" | "avatar-lg" | "card" | "banner" | "thumb" | "story" | "feed";
 
 const SIZE_PRESETS: Record<ImageSize, { width: number; height?: number; quality?: number; resize?: string }> = {
   "avatar-sm": { width: 48, height: 48, quality: 70, resize: "cover" },
