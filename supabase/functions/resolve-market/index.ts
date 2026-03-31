@@ -257,7 +257,7 @@ async function handleResolve(
     const totalWinnerShares = winningPositions.reduce((s, p) => s + p.shares, 0);
     let payoutPerShare = 1; // default $1/share for binary
 
-    if (market.market_type === "multi" && totalWinnerShares > 0) {
+    if ((market.market_type === "multi" || market.market_type === "range") && totalWinnerShares > 0) {
       // Pool = sum of all wagers (winners + losers)
       const allPositions = [...winningPositions, ...losingPositions];
       const totalPool = allPositions.reduce((s, p) => s + p.shares * p.avg_price, 0);
