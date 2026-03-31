@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { useAuth } from "@/hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import BottomSheet from "@/components/BottomSheet";
 import {
   ArrowLeft,
