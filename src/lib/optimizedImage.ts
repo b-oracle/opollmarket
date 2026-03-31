@@ -16,6 +16,7 @@ const SIZE_PRESETS: Record<ImageSize, { width: number; height?: number; quality?
   banner: { width: 800, quality: 75 },
   thumb: { width: 100, height: 100, quality: 65, resize: "cover" },
   story: { width: 600, quality: 75 },
+  feed: { width: 900, quality: 70 },
 };
 
 /**
