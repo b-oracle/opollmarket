@@ -324,6 +324,8 @@ const Portfolio = () => {
   });
 
   const filtered = enriched.filter((p) => {
+    if (filter === "active") return p.status === "active";
+    if (filter === "resolved") return p.status !== "active";
     if (filter === "profit") return p.unrealizedPnl > 0;
     if (filter === "loss") return p.unrealizedPnl < 0;
     return true;
