@@ -143,7 +143,7 @@ const Portfolio = () => {
   const isAuthenticated = !!user || isConnected;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [filter, setFilter] = useState<FilterType>("all");
+  const [filter, setFilter] = useState<FilterType>("active");
   const [activeTab, setActiveTab] = useState<PortfolioTab>("positions");
   const [sellTarget, setSellTarget] = useState<EnrichedPosition | null>(null);
   const [sellStep, setSellStep] = useState<"confirm" | "executing" | "success" | "error">("confirm");
