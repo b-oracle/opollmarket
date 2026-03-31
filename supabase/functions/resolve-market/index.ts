@@ -257,14 +257,13 @@ async function handleResolve(
     const totalWinnerShares = winningPositions.reduce((s, p) => s + p.shares, 0);
     let payoutPerShare = 1; // default $1/share for binary
 
+    let profitPerShare = 0;
     if ((market.market_type === "multi" || market.market_type === "range") && totalWinnerShares > 0) {
-      // Capital-first: return each winner's wager, then distribute losers' wagers as profit
       const allPositions = [...winningPositions, ...losingPositions];
       const totalPool = allPositions.reduce((s, p) => s + p.shares * p.avg_price, 0);
       const winnersCapital = winningPositions.reduce((s, p) => s + p.shares * p.avg_price, 0);
       const loserPool = totalPool - winnersCapital;
-      const profitPerShare = totalWinnerShares > 0 ? loserPool / totalWinnerShares : 0;
-      // Keep payoutPerShare for copy-trade commission compatibility
+      profitPerShare = loserPool / totalWinnerShares;
       payoutPerShare = totalPool / totalWinnerShares;
       console.log("resolve-market: capital-first parimutuel payout", { totalPool, winnersCapital, loserPool, profitPerShare, payoutPerShare });
     }
@@ -272,13 +271,7 @@ async function handleResolve(
     for (const pos of winningPositions) {
       let payout: number;
       if (market.market_type === "multi" || market.market_type === "range") {
-        // Capital-first: return wager + share of loser pool
         const capital = pos.shares * pos.avg_price;
-        const allPositions = [...winningPositions, ...losingPositions];
-        const totalPool = allPositions.reduce((s, p) => s + p.shares * p.avg_price, 0);
-        const winnersCapital = winningPositions.reduce((s, p) => s + p.shares * p.avg_price, 0);
-        const loserPool = totalPool - winnersCapital;
-        const profitPerShare = totalWinnerShares > 0 ? loserPool / totalWinnerShares : 0;
         payout = Math.round((capital + pos.shares * profitPerShare) * 100) / 100;
       } else {
         payout = Math.round(pos.shares * payoutPerShare * 100) / 100;
