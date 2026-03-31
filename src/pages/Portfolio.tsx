@@ -88,7 +88,7 @@ interface EnrichedPosition {
   marketType: string;
 }
 
-type FilterType = "all" | "profit" | "loss";
+type FilterType = "active" | "all" | "profit" | "loss" | "resolved";
 type PortfolioTab = "positions" | "orders" | "copy" | "drafts" | "insurance";
 
 const Sparkline = ({ avgPrice, currentPrice, seed }: { avgPrice: number; currentPrice: number; seed: string }) => {
