@@ -1,35 +1,39 @@
 
 
-# Add Early Prediction Advantage Explainer on Market Detail Page
+# Fix: Range Market Resolution & Copy Trade Commission Calculation
 
-## What Changes
+## Problem
+1. **Range markets use binary logic** — Line 260 only checks `market.market_type === "multi"`, so range markets fall through to `payoutPerShare = 1` (binary), risking overpayment.
+2. **Copy trade commission assumes $1/share** — Line 421 only checks for `"multi"` (not `"range"`), and line 425 hardcodes `pos.shares * (1 - pos.avg_price)` instead of using the actual `payoutPerShare`.
 
-Add a small info banner below the stats grid (before the OrderBook/Creator card) that explains early prediction advantages. It will be a collapsible tip using an `Info` icon, visible only on active (non-ended) markets.
+## Changes
 
-## Technical Changes
+### File: `supabase/functions/resolve-market/index.ts`
 
-### File: `src/pages/MarketDetail.tsx`
-
-**After the stats grid (~line 920), before the OrderBook**, add a collapsible info tip:
-
-```tsx
-{!isEnded && (
-  <div className="glass rounded-xl p-3 mb-4 flex gap-2.5 items-start">
-    <Info className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-    <div>
-      <p className="text-xs font-semibold text-foreground">Early predictions get better pricing</p>
-      <p className="text-[11px] text-muted-foreground leading-relaxed mt-0.5">
-        Prices rise as more people predict on an option. Predicting early means you pay less per share and receive more shares — 
-        resulting in a larger payout if you win.
-      </p>
-    </div>
-  </div>
-)}
+**Fix 1 — Line 260**: Add `"range"` to the parimutuel branch:
+```
+if (market.market_type === "multi" && totalWinnerShares > 0)
+→
+if ((market.market_type === "multi" || market.market_type === "range") && totalWinnerShares > 0)
 ```
 
-- Add `Info` to the existing lucide-react import on line 6.
+**Fix 2 — Lines 418-429**: Use `payoutPerShare` (already computed above) instead of hardcoded `1`, and add `"range"` to the winner check:
+```typescript
+const isWinner =
+  (market.market_type === "binary" && winning_side && pos.side === winning_side) ||
+  ((market.market_type === "multi" || market.market_type === "range") && winning_option_id && pos.option_id === winning_option_id);
 
-### Summary
-- 1 file, ~10 lines added
-- No backend changes
+if (isWinner) {
+  copierProfit += pos.shares * (payoutPerShare - pos.avg_price);
+} else {
+  copierProfit -= pos.shares * pos.avg_price;
+}
+```
+
+This requires `payoutPerShare` to be accessible in the copy trade section. It's already declared in the same function scope, so no structural changes needed.
+
+## Summary
+- 1 file: `supabase/functions/resolve-market/index.ts`
+- ~4 lines changed
+- No database migrations
 
