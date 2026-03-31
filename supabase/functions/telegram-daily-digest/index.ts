@@ -96,7 +96,7 @@ Deno.serve(async () => {
       const isLinked = !!tgUser.user_id;
 
       let text: string;
-      let buttons: Array<Array<{ text: string; url: string }>>;
+      let buttons: Array<Array<{ text: string; url?: string; callback_data?: string }>>;
 
       if (!isLinked) {
         // ── Unlinked user: CTA to link account + market recommendations ──
@@ -130,7 +130,7 @@ Deno.serve(async () => {
 
         // Build buttons for unlinked users
         buttons = [
-          [{ text: "🔗 Link Account & Start Trading", url: `${appUrl}/auth` }],
+          [{ text: "🔗 Link Account", callback_data: "cmd_link" }],
         ];
 
         // Add top market buttons
