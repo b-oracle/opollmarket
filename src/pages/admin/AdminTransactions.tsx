@@ -176,6 +176,7 @@ const AdminTransactions = () => {
           ...t,
           market_title: t.market_id ? marketMap.get(t.market_id) || "Unknown" : undefined,
           user_email: userMap.get(t.user_id) || t.user_id.slice(0, 8),
+          option_label: t.option_id ? optionMap.get(t.option_id) : undefined,
         }))
       );
       setLoading(false);
