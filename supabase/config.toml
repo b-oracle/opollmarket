@@ -117,3 +117,5 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.remind-draft-completion]
     verify_jwt = false
+  [functions.sell-position]
+    verify_jwt = false

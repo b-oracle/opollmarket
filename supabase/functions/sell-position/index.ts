@@ -1,0 +1,246 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    // 1. Authenticate user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: corsHeaders,
+      });
+    }
+
+    const anonClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: { user }, error: userError } = await anonClient.auth.getUser();
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: corsHeaders,
+      });
+    }
+
+    const userId = user.id;
+    const { positionId } = await req.json();
+
+    if (!positionId) {
+      return new Response(JSON.stringify({ error: "Missing positionId" }), {
+        status: 400, headers: corsHeaders,
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // 2. Fetch position and verify ownership
+    const { data: position, error: posError } = await supabase
+      .from("positions")
+      .select("id, user_id, market_id, option_id, side, shares, avg_price")
+      .eq("id", positionId)
+      .single();
+
+    if (posError || !position) {
+      return new Response(JSON.stringify({ error: "Position not found" }), {
+        status: 404, headers: corsHeaders,
+      });
+    }
+
+    if (position.user_id !== userId) {
+      return new Response(JSON.stringify({ error: "Not your position" }), {
+        status: 403, headers: corsHeaders,
+      });
+    }
+
+    if (Number(position.shares) <= 0) {
+      return new Response(JSON.stringify({ error: "Position already closed" }), {
+        status: 400, headers: corsHeaders,
+      });
+    }
+
+    // 3. Fetch market
+    const { data: market, error: mktError } = await supabase
+      .from("markets")
+      .select("id, status, yes_price, no_price, volume, liquidity, market_type")
+      .eq("id", position.market_id)
+      .single();
+
+    if (mktError || !market) {
+      return new Response(JSON.stringify({ error: "Market not found" }), {
+        status: 404, headers: corsHeaders,
+      });
+    }
+
+    if (market.status !== "active") {
+      return new Response(JSON.stringify({ error: "Market is not active" }), {
+        status: 400, headers: corsHeaders,
+      });
+    }
+
+    const isMulti = market.market_type === "multi" || market.market_type === "range";
+
+    // 4. Determine current price
+    let currentPrice: number;
+    if (isMulti && position.option_id) {
+      const { data: opt } = await supabase
+        .from("market_options")
+        .select("price")
+        .eq("id", position.option_id)
+        .single();
+      currentPrice = Number(opt?.price ?? position.avg_price);
+    } else {
+      currentPrice = position.side === "yes"
+        ? Number(market.yes_price)
+        : Number(market.no_price);
+    }
+
+    const shares = Number(position.shares);
+    const grossProceeds = shares * currentPrice;
+
+    // 5. Fetch exit fee
+    const { data: commData } = await supabase
+      .from("commission_settings")
+      .select("exit_fee_percent")
+      .limit(1)
+      .single();
+
+    const exitFeePercent = Number(commData?.exit_fee_percent ?? 5) / 100;
+    const exitFee = Math.round(grossProceeds * exitFeePercent * 100) / 100;
+    const netProceeds = Math.round((grossProceeds - exitFee) * 100) / 100;
+
+    // 6. Zero out position shares
+    const { error: updatePosError } = await supabase
+      .from("positions")
+      .update({ shares: 0, updated_at: new Date().toISOString() })
+      .eq("id", positionId)
+      .eq("user_id", userId);
+
+    if (updatePosError) {
+      console.error("Position update error:", updatePosError);
+      return new Response(JSON.stringify({ error: "Failed to close position" }), {
+        status: 500, headers: corsHeaders,
+      });
+    }
+
+    // 7. Credit user balance (net proceeds to main)
+    await supabase.rpc("adjust_balance", {
+      _user_id: userId,
+      _delta: netProceeds,
+    });
+
+    // 8. Credit exit fee to platform pool
+    if (exitFee > 0) {
+      await supabase.rpc("adjust_platform_pool", { _delta: exitFee });
+    }
+
+    // 9. Update market volume & liquidity
+    const newVolume = Number(market.volume) + grossProceeds;
+    const newLiquidity = Math.max(0, Number(market.liquidity) - netProceeds);
+
+    const marketUpdate: Record<string, any> = {
+      volume: newVolume,
+      liquidity: newLiquidity,
+    };
+
+    // 10. AMM price recalculation
+    if (!isMulti) {
+      const totalLiq = Number(market.volume) + Number(market.liquidity) + 100;
+      const impact = Math.min(grossProceeds / totalLiq, 0.15);
+      let newYes = Number(market.yes_price);
+
+      if (position.side === "yes") {
+        // Selling YES pushes yes_price down
+        newYes = Math.max(0.01, newYes - impact);
+      } else {
+        // Selling NO pushes yes_price up
+        newYes = Math.min(0.99, newYes + impact);
+      }
+      const newNo = Math.round((1 - newYes) * 100) / 100;
+      newYes = Math.round(newYes * 100) / 100;
+
+      marketUpdate.yes_price = newYes;
+      marketUpdate.no_price = newNo;
+    }
+
+    await supabase.from("markets").update(marketUpdate).eq("id", market.id);
+
+    // Multi/range: rebalance option prices
+    if (isMulti && position.option_id) {
+      const { data: allOptions } = await supabase
+        .from("market_options")
+        .select("id, price")
+        .eq("market_id", market.id);
+
+      if (allOptions && allOptions.length > 0) {
+        const totalLiq = Number(market.volume) + Number(market.liquidity) + 100;
+        const impact = Math.min(grossProceeds / totalLiq, 0.15);
+        const selectedOpt = allOptions.find((o: any) => o.id === position.option_id);
+
+        if (selectedOpt) {
+          const newSelectedPrice = Math.max(0.01, Number(selectedOpt.price) - impact);
+
+          await supabase.from("market_options")
+            .update({ price: Math.round(newSelectedPrice * 100) / 100 })
+            .eq("id", position.option_id);
+
+          const othersTotal = allOptions
+            .filter((o: any) => o.id !== position.option_id)
+            .reduce((sum: number, o: any) => sum + Number(o.price), 0);
+
+          if (othersTotal > 0) {
+            const remaining = Math.max(0.01, 1 - newSelectedPrice);
+            const scaleFactor = remaining / othersTotal;
+            for (const opt of allOptions.filter((o: any) => o.id !== position.option_id)) {
+              const newPrice = Math.max(0.01, Math.round(Number(opt.price) * scaleFactor * 100) / 100);
+              await supabase.from("market_options").update({ price: newPrice }).eq("id", opt.id);
+            }
+          }
+        }
+      }
+    }
+
+    // 11. Insert sell transaction
+    await supabase.from("transactions").insert({
+      user_id: userId,
+      market_id: market.id,
+      type: "sell",
+      side: position.side,
+      amount: netProceeds,
+      price: currentPrice,
+      shares: shares,
+      status: "confirmed",
+      option_id: position.option_id || null,
+    });
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        netProceeds,
+        exitFee,
+        grossProceeds,
+        newYesPrice: marketUpdate.yes_price,
+        newNoPrice: marketUpdate.no_price,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (err) {
+    console.error("sell-position error:", err);
+    return new Response(
+      JSON.stringify({ error: "Internal server error" }),
+      { status: 500, headers: corsHeaders }
+    );
+  }
+});
