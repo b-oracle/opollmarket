@@ -8,6 +8,7 @@ interface TxRow {
   type: string;
   amount: number;
   side: string | null;
+  option_id: string | null;
   shares: number | null;
   price: number | null;
   status: string;
@@ -15,6 +16,7 @@ interface TxRow {
   created_at: string;
   market_title?: string;
   user_email?: string;
+  option_label?: string;
 }
 
 const TYPE_STYLES: Record<string, { label: string; class: string }> = {
@@ -146,13 +148,17 @@ const AdminTransactions = () => {
       // Enrich with market titles and user emails
       const marketIds = [...new Set(data.filter((t) => t.market_id).map((t) => t.market_id!))];
       const userIds = [...new Set(data.map((t) => t.user_id))];
+      const optionIds = [...new Set(data.filter((t) => t.option_id).map((t) => t.option_id!))];
 
-      const [marketsRes, profilesRes] = await Promise.all([
+      const [marketsRes, profilesRes, optionsRes] = await Promise.all([
         marketIds.length > 0
           ? supabase.from("markets").select("id, title").in("id", marketIds)
           : Promise.resolve({ data: [] }),
         userIds.length > 0
           ? supabase.from("profiles").select("id, email, display_name").in("id", userIds)
+          : Promise.resolve({ data: [] }),
+        optionIds.length > 0
+          ? supabase.from("market_options").select("id, label").in("id", optionIds)
           : Promise.resolve({ data: [] }),
       ]);
 
@@ -162,11 +168,15 @@ const AdminTransactions = () => {
       const userMap = new Map<string, string>();
       profilesRes.data?.forEach((p: any) => userMap.set(p.id, p.display_name || p.email || p.id.slice(0, 8)));
 
+      const optionMap = new Map<string, string>();
+      optionsRes.data?.forEach((o: any) => optionMap.set(o.id, o.label));
+
       setTxns(
         data.map((t) => ({
           ...t,
           market_title: t.market_id ? marketMap.get(t.market_id) || "Unknown" : undefined,
           user_email: userMap.get(t.user_id) || t.user_id.slice(0, 8),
+          option_label: t.option_id ? optionMap.get(t.option_id) : undefined,
         }))
       );
       setLoading(false);
@@ -183,7 +193,7 @@ const AdminTransactions = () => {
       t.type,
       t.user_email || "",
       Number(t.amount),
-      t.side || "",
+      t.option_label || t.side || "",
       t.market_title || "",
       t.status,
     ]);
@@ -316,7 +326,11 @@ const AdminTransactions = () => {
                     <td className="p-3 text-xs font-medium truncate max-w-[120px]">{t.user_email}</td>
                     <td className="p-3 font-semibold">${Number(t.amount).toLocaleString()}</td>
                     <td className="p-3">
-                      {t.side ? (
+                      {t.option_label ? (
+                        <span className="text-xs font-semibold text-foreground">
+                          {t.option_label}
+                        </span>
+                      ) : t.side ? (
                         <span className={`text-xs font-bold ${t.side === "yes" ? "text-green-500" : "text-red-500"}`}>
                           {t.side.toUpperCase()}
                         </span>
