@@ -78,7 +78,7 @@ async function fetchMatchResult(
       };
     }
 
-    // Generic parsing for other sports (basketball, baseball, hockey, etc.)
+    // Generic parsing for other sports
     const status = match.status?.short || match.game?.status?.short || "";
     const finished = ["FT", "AOT", "AP", "POST"].includes(status) || status === "FIN";
     const scores = match.scores;
@@ -118,7 +118,6 @@ function determineWinningSide(
 
   const outcome = predictedOutcome.toLowerCase().trim();
 
-  // Check common outcome patterns
   if (outcome === "home_win" || outcome === "home") {
     return result.winner === "home" ? "yes" : "no";
   }
@@ -151,10 +150,45 @@ function determineWinningSide(
     return totalGoals < threshold ? "yes" : "no";
   }
 
-  // BTTS (Both Teams To Score)
+  // BTTS
   if (outcome === "btts" || outcome === "both teams to score") {
     if (result.homeScore !== null && result.awayScore !== null) {
       return result.homeScore > 0 && result.awayScore > 0 ? "yes" : "no";
+    }
+  }
+
+  return null;
+}
+
+/**
+ * For multi-option markets (e.g. football Home/Draw/Away), determine the winning option ID
+ * based on the match result.
+ */
+function determineWinningOption(
+  options: { id: string; label: string }[],
+  result: MatchResult
+): string | null {
+  if (!result.finished || !result.winner) return null;
+
+  for (const opt of options) {
+    const label = opt.label.toLowerCase().trim();
+
+    // Check for "Draw"
+    if (result.winner === "draw" && label === "draw") return opt.id;
+
+    // Check for home team win
+    if (result.winner === "home") {
+      if (label.includes("win") && label.includes(result.homeTeam.toLowerCase())) return opt.id;
+      // Check by partial team name match
+      const teamParts = result.homeTeam.toLowerCase().split(/\s+/);
+      if (label.includes("win") && teamParts.some((p) => p.length > 2 && label.includes(p))) return opt.id;
+    }
+
+    // Check for away team win
+    if (result.winner === "away") {
+      if (label.includes("win") && label.includes(result.awayTeam.toLowerCase())) return opt.id;
+      const teamParts = result.awayTeam.toLowerCase().split(/\s+/);
+      if (label.includes("win") && teamParts.some((p) => p.length > 2 && label.includes(p))) return opt.id;
     }
   }
 
@@ -179,16 +213,15 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    // Fetch all active sports auto-resolve markets
+    // Fetch all active + ended sports auto-resolve markets
     const { data: markets, error: fetchErr } = await adminClient
       .from("markets")
       .select("*")
-      .eq("status", "active")
       .eq("auto_resolve", true)
       .eq("category", "Sports")
+      .in("status", ["active", "ended"])
       .not("sport_type", "is", null)
-      .not("sport_match_id", "is", null)
-      .not("sport_predicted_outcome", "is", null);
+      .not("sport_match_id", "is", null);
 
     if (fetchErr) {
       console.error("Failed to fetch sports auto-resolve markets:", fetchErr);
@@ -210,32 +243,213 @@ Deno.serve(async (req) => {
     for (const market of markets) {
       const sportType = market.sport_type as string;
       const matchId = market.sport_match_id as string;
-      const predictedOutcome = market.sport_predicted_outcome as string;
-      const deadline = market.auto_resolve_deadline ? new Date(market.auto_resolve_deadline) : null;
+      const predictedOutcome = (market.sport_predicted_outcome as string) || "";
+      const isMultiOption = market.market_type === "multi" || predictedOutcome === "multi_option";
+      const deadline = market.auto_resolve_deadline ? new Date(market.auto_resolve_deadline) : new Date(market.end_date);
       const now = new Date();
 
       const result = await fetchMatchResult(sportType, matchId, apiKey);
 
-      let winningSide: string | null = null;
-
       if (result && result.finished) {
-        winningSide = determineWinningSide(predictedOutcome, result);
-      } else if (deadline && now > deadline) {
+        if (isMultiOption) {
+          // Multi-option resolution: find the winning option
+          const { data: options } = await adminClient
+            .from("market_options")
+            .select("id, label")
+            .eq("market_id", market.id)
+            .order("sort_order");
+
+          if (!options || options.length === 0) {
+            console.warn(`Market ${market.id}: Multi-option but no options found, skipping`);
+            continue;
+          }
+
+          const winningOptionId = determineWinningOption(options, result);
+          if (!winningOptionId) {
+            console.warn(`Market ${market.id}: Could not determine winning option from result ${result.winner}`);
+            continue;
+          }
+
+          // Resolve multi-option market
+          await adminClient
+            .from("markets")
+            .update({
+              status: "resolved",
+              winning_option_id: winningOptionId,
+              resolved_side: result.winner || "resolved",
+            })
+            .eq("id", market.id);
+
+          // Update option prices: winner = 1.0, losers = 0
+          for (const opt of options) {
+            await adminClient
+              .from("market_options")
+              .update({ price: opt.id === winningOptionId ? 1.0 : 0 })
+              .eq("id", opt.id);
+          }
+
+          // Pay out winners (positions with the winning option)
+          const { data: winningPositions } = await adminClient
+            .from("positions")
+            .select("*")
+            .eq("market_id", market.id)
+            .eq("option_id", winningOptionId)
+            .gt("shares", 0);
+
+          // Calculate total pool and winning pool for capital-first parimutuel
+          const { data: allPositions } = await adminClient
+            .from("positions")
+            .select("*")
+            .eq("market_id", market.id)
+            .gt("shares", 0);
+
+          const totalPool = (allPositions || []).reduce((s, p) => s + p.shares * p.avg_price, 0);
+          const winnerCapital = (winningPositions || []).reduce((s, p) => s + p.shares * p.avg_price, 0);
+          const loserPool = totalPool - winnerCapital;
+
+          // Get fee settings
+          const { data: settings } = await adminClient
+            .from("commission_settings")
+            .select("admin_fee_percent")
+            .limit(1)
+            .single();
+          const feePercent = settings?.admin_fee_percent ?? 2;
+          const fees = loserPool * (feePercent / 100);
+          const profitPool = loserPool - fees;
+          const totalWinnerShares = (winningPositions || []).reduce((s, p) => s + p.shares, 0);
+
+          for (const pos of winningPositions || []) {
+            const capital = pos.shares * pos.avg_price;
+            const profitShare = totalWinnerShares > 0 ? (pos.shares / totalWinnerShares) * profitPool : 0;
+            const payout = Math.min(capital + profitShare, pos.shares); // cap at $1/share
+
+            await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout });
+
+            await adminClient.from("transactions").insert({
+              user_id: pos.user_id,
+              market_id: market.id,
+              option_id: pos.option_id,
+              type: "payout",
+              amount: payout,
+              side: pos.side,
+              shares: pos.shares,
+              price: 1,
+              status: "confirmed",
+            });
+          }
+
+          // Credit fees to platform pool
+          if (fees > 0) {
+            await adminClient.rpc("adjust_platform_pool", { _delta: fees });
+          }
+
+          // Notify participants
+          const scoreInfo = `${result.homeTeam} ${result.homeScore ?? "?"} - ${result.awayScore ?? "?"} ${result.awayTeam}`;
+          const winningLabel = options.find((o) => o.id === winningOptionId)?.label || "Winner";
+
+          const uniqueUsers = new Map<string, boolean>();
+          for (const p of allPositions || []) {
+            if (!uniqueUsers.has(p.user_id)) {
+              uniqueUsers.set(p.user_id, p.option_id === winningOptionId);
+            }
+          }
+
+          const notifications = Array.from(uniqueUsers.entries()).map(([userId, won]) => ({
+            user_id: userId,
+            title: won ? "You Won! 🎉 Sports Market Resolved" : "Sports Market Resolved",
+            message: `"${market.title}" resolved: ${winningLabel}. Final: ${scoreInfo}. ${won ? "Your payout has been credited!" : "Better luck next time!"}`,
+            type: won ? "payout" : "resolution",
+            market_id: market.id,
+          }));
+
+          if (notifications.length > 0) {
+            await adminClient.from("notifications").insert(notifications);
+          }
+
+          console.log(`Sports Market ${market.id}: Multi-option resolved → ${winningLabel} — notified ${notifications.length}`);
+          resolvedCount++;
+        } else {
+          // Binary market resolution
+          const winningSide = determineWinningSide(predictedOutcome, result);
+          if (!winningSide) continue;
+
+          await adminClient
+            .from("markets")
+            .update({
+              status: "resolved",
+              resolved_side: winningSide,
+              yes_price: winningSide === "yes" ? 1 : 0,
+              no_price: winningSide === "no" ? 1 : 0,
+            })
+            .eq("id", market.id);
+
+          const { data: winningPositions } = await adminClient
+            .from("positions")
+            .select("*")
+            .eq("market_id", market.id)
+            .eq("side", winningSide)
+            .gt("shares", 0);
+
+          for (const pos of winningPositions || []) {
+            const payout = pos.shares;
+            await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout });
+
+            await adminClient.from("transactions").insert({
+              user_id: pos.user_id,
+              market_id: market.id,
+              option_id: pos.option_id,
+              type: "payout",
+              amount: payout,
+              side: pos.side,
+              shares: pos.shares,
+              price: 1,
+              status: "confirmed",
+            });
+          }
+
+          const scoreInfo = `${result.homeTeam} ${result.homeScore ?? "?"} - ${result.awayScore ?? "?"} ${result.awayTeam}`;
+
+          const { data: allParticipants } = await adminClient
+            .from("positions")
+            .select("user_id, side")
+            .eq("market_id", market.id)
+            .gt("shares", 0);
+
+          const uniqueUsers = new Map<string, string>();
+          for (const p of allParticipants || []) {
+            if (!uniqueUsers.has(p.user_id)) uniqueUsers.set(p.user_id, p.side);
+          }
+
+          const notifications = Array.from(uniqueUsers.entries()).map(([userId, side]) => {
+            const won = side === winningSide;
+            return {
+              user_id: userId,
+              title: won ? "You Won! 🎉 Sports Market Resolved" : "Sports Market Resolved",
+              message: `"${market.title}" resolved ${winningSide!.toUpperCase()} — Final: ${scoreInfo}. ${won ? "Your payout has been credited!" : "Better luck next time!"}`,
+              type: won ? "payout" : "resolution",
+              market_id: market.id,
+            };
+          });
+
+          if (notifications.length > 0) {
+            await adminClient.from("notifications").insert(notifications);
+          }
+
+          console.log(`Sports Market ${market.id}: Resolved ${winningSide.toUpperCase()} — notified ${notifications.length}`);
+          resolvedCount++;
+        }
+      } else if (now > deadline) {
+        // Deadline passed handling
         const matchStatus = result?.status?.toUpperCase() || "UNKNOWN";
         const cancelledStatuses = ["PST", "CANC", "ABD", "WO", "INT", "SUSP"];
         const notStartedStatuses = ["NS", "TBD", "UNKNOWN", ""];
 
-        if (result && result.finished) {
-          // Match finished but determineWinningSide returned null — force NO
-          winningSide = "no";
-        } else if (cancelledStatuses.includes(matchStatus)) {
-          // Match was postponed/cancelled/abandoned — move to "ended" for admin review
+        if (cancelledStatuses.includes(matchStatus)) {
           await adminClient
             .from("markets")
             .update({ status: "ended" })
             .eq("id", market.id);
 
-          // Notify admins
           const { data: adminUsers } = await adminClient
             .from("user_roles")
             .select("user_id")
@@ -253,13 +467,9 @@ Deno.serve(async (req) => {
           }
 
           console.log(`Market ${market.id}: Match ${matchStatus}, moved to ended for admin review`);
-          continue;
         } else if (!notStartedStatuses.includes(matchStatus) && result) {
-          // Match is in some live/post state but not marked finished — wait longer
           console.log(`Market ${market.id}: Match status ${matchStatus}, waiting for finish...`);
-          continue;
         } else if (now.getTime() - deadline.getTime() > 6 * 60 * 60 * 1000) {
-          // 6h+ past deadline, match never started — move to ended for admin review
           await adminClient
             .from("markets")
             .update({ status: "ended" })
@@ -282,105 +492,10 @@ Deno.serve(async (req) => {
           }
 
           console.log(`Market ${market.id}: 6h+ past deadline, status ${matchStatus}, moved to ended for admin review`);
-          continue;
         } else {
-          // Within grace period, match hasn't started — skip
           console.log(`Market ${market.id}: Deadline passed but match not started (${matchStatus}), waiting...`);
-          continue;
         }
       }
-
-      if (!winningSide) continue;
-
-      // Resolve the market
-      await adminClient
-        .from("markets")
-        .update({
-          status: "resolved",
-          resolved_side: winningSide,
-          yes_price: winningSide === "yes" ? 1 : 0,
-          no_price: winningSide === "no" ? 1 : 0,
-        })
-        .eq("id", market.id);
-
-      // Find winning positions
-      const { data: winningPositions } = await adminClient
-        .from("positions")
-        .select("*")
-        .eq("market_id", market.id)
-        .eq("side", winningSide)
-        .gt("shares", 0);
-
-      // Pay out winners
-      for (const pos of winningPositions || []) {
-        const payout = pos.shares;
-
-        const { data: balance } = await adminClient
-          .from("balances")
-          .select("amount")
-          .eq("user_id", pos.user_id)
-          .single();
-
-        if (balance) {
-          await adminClient
-            .from("balances")
-            .update({
-              amount: balance.amount + payout,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("user_id", pos.user_id);
-        }
-
-        await adminClient.from("transactions").insert({
-          user_id: pos.user_id,
-          market_id: market.id,
-          option_id: pos.option_id,
-          type: "payout",
-          amount: payout,
-          side: pos.side,
-          shares: pos.shares,
-          price: 1,
-          status: "confirmed",
-        });
-      }
-
-      // Notify ALL participants
-      const scoreInfo = result
-        ? `${result.homeTeam} ${result.homeScore ?? "?"} - ${result.awayScore ?? "?"} ${result.awayTeam}`
-        : "";
-
-      const { data: allParticipants } = await adminClient
-        .from("positions")
-        .select("user_id, side")
-        .eq("market_id", market.id)
-        .gt("shares", 0);
-
-      const uniqueUsers = new Map<string, string>();
-      for (const p of allParticipants || []) {
-        if (!uniqueUsers.has(p.user_id)) uniqueUsers.set(p.user_id, p.side);
-      }
-
-      const notifications = Array.from(uniqueUsers.entries()).map(([userId, side]) => {
-        const won = side === winningSide;
-        const title = won
-          ? "You Won! 🎉 Sports Market Resolved"
-          : "Sports Market Resolved";
-        const message = `"${market.title}" resolved ${winningSide!.toUpperCase()}${scoreInfo ? ` — Final: ${scoreInfo}` : ""}. ${won ? "Your payout has been credited!" : "Better luck next time!"}`;
-        return {
-          user_id: userId,
-          title,
-          message,
-          type: won ? "payout" : "resolution",
-          market_id: market.id,
-        };
-      });
-
-      if (notifications.length > 0) {
-        await adminClient.from("notifications").insert(notifications);
-      }
-
-      console.log(`Sports Market ${market.id}: Resolved ${winningSide.toUpperCase()} — notified ${notifications.length} participants`);
-      resolvedCount++;
     }
 
     return new Response(
