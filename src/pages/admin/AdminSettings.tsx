@@ -823,6 +823,25 @@ const AdminSettings = () => {
                   <p className="text-[10px] text-muted-foreground">Current: {withdrawalCooldownNum} min. Set 0 to disable.</p>
                 </div>
 
+                <div className="border-t border-border pt-3 space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">KYC Daily Limits</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="kycTier1DailyLimit" className="text-xs">Tier 1 Daily ($)</Label>
+                      <Input id="kycTier1DailyLimit" type="number" min={0} step={50} value={kycTier1DailyLimit} onChange={(e) => setKycTier1DailyLimit(e.target.value)} placeholder="500" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="kycTier2DailyLimit" className="text-xs">Tier 2 Daily ($)</Label>
+                      <Input id="kycTier2DailyLimit" type="number" min={0} step={1000} value={kycTier2DailyLimit} onChange={(e) => setKycTier2DailyLimit(e.target.value)} placeholder="50000" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="maxDailyWithdrawals" className="text-xs">Max per Day (#)</Label>
+                      <Input id="maxDailyWithdrawals" type="number" min={1} step={1} value={maxDailyWithdrawals} onChange={(e) => setMaxDailyWithdrawals(e.target.value)} placeholder="5" />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Tier 1 (Basic KYC): ${kycTier1DailyLimitNum}/day · Tier 2 (Full KYC): ${kycTier2DailyLimitNum}/day · Max {maxDailyWithdrawalsNum} transactions/day</p>
+                </div>
+
                 <div className="flex items-center justify-between py-2 border-t border-border pt-3">
                   <div>
                     <Label className="text-sm font-medium">Withdrawal Limit</Label>
