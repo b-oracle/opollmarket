@@ -295,11 +295,16 @@ const KycSubmissionForm = () => {
           <p className="text-xs text-muted-foreground">
             Required before making any withdrawals. Upload a selfie holding a note showing today's date, your full name, and "Opollmarket".
           </p>
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
-              <Label className="text-xs">Full Legal Name</Label>
-              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="John Doe" className="mt-1" />
+              <Label className="text-xs">First Name</Label>
+              <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="John" className="mt-1" />
             </div>
+            <div>
+              <Label className="text-xs">Last Name</Label>
+              <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Doe" className="mt-1" />
+            </div>
+          </div>
             <div>
               <Label className="text-xs">Date of Birth</Label>
               <Input type="date" value={dob} onChange={(e) => setDob(e.target.value)} className="mt-1" />
