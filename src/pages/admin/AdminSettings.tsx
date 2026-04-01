@@ -60,6 +60,9 @@ const AdminSettings = () => {
   const [minWithdrawalAmount, setMinWithdrawalAmount] = useState("");
   const [withdrawalCooldown, setWithdrawalCooldown] = useState("");
   const [withdrawalMultiplier, setWithdrawalMultiplier] = useState("");
+  const [kycTier1DailyLimit, setKycTier1DailyLimit] = useState("500");
+  const [kycTier2DailyLimit, setKycTier2DailyLimit] = useState("50000");
+  const [maxDailyWithdrawals, setMaxDailyWithdrawals] = useState("5");
   const [withdrawalLimitEnabled, setWithdrawalLimitEnabled] = useState(true);
   const [exitFee, setExitFee] = useState("");
   const [liquidityReturnFee, setLiquidityReturnFee] = useState("");
