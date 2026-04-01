@@ -723,7 +723,12 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         room.on(RoomEvent.Reconnected, async () => {
           toast.success("Reconnected! ✅", { id: "space-reconnect" });
           updateParticipants(room);
-          // Stay muted on reconnect — user must unmute manually
+          // Restore mic state — don't force-mute speakers on reconnect
+          if (!muted && canPublish && !forceMuted) {
+            try {
+              await room.localParticipant.setMicrophoneEnabled(true);
+            } catch {}
+          }
         });
 
         await room.connect(normUrl(data.url), data.token);
