@@ -119,6 +119,7 @@ const AdminMarkets = () => {
   const [moderatorNameMap, setModeratorNameMap] = useState<Map<string, string>>(new Map());
   const [endedCount, setEndedCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
+  const [generatingAiImage, setGeneratingAiImage] = useState<string | null>(null);
 
   // Global stats (fetched once, independent of filter)
   const [globalStats, setGlobalStats] = useState<MarketStatsData | null>(null);
