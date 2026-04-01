@@ -49,6 +49,18 @@ export const ActiveSpaceProvider = ({ children }: { children: ReactNode }) => {
     setMinimized(false);
   }, []);
 
+  // Listen for join-space events from notification clicks
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.id) {
+        joinSpace({ id: detail.id, title: detail.title, hostId: detail.hostId });
+      }
+    };
+    window.addEventListener("join-space", handler);
+    return () => window.removeEventListener("join-space", handler);
+  }, [joinSpace]);
+
   return React.createElement(
     ActiveSpaceContext.Provider,
     { value: { activeSpace, minimized, joinSpace, leaveSpace, toggleMinimize, maximize } },
