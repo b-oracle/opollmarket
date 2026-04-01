@@ -14,6 +14,7 @@ interface CreateSpaceModalProps {
 
 const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
   const { user } = useAuth();
+  const { isFeatureEnabled } = useFeatureToggles();
   const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [creating, setCreating] = useState(false);
