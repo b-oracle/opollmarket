@@ -985,11 +985,12 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   };
 
   const invokeAction = async (action: string, target_user_id?: string) => {
-    // Client-side guard: only verified users can be made co-host
+    // Client-side guard: only verified users can be made co-host (unless toggle allows unverified)
     if (action === "make_cohost" && target_user_id) {
+      const allowUnverified = isFeatureEnabled("allow_unverified_spaces");
       const targetProfile = profiles[target_user_id];
       const targetVerification = targetProfile?.verification_level || "none";
-      if (targetVerification === "none") {
+      if (targetVerification === "none" && !allowUnverified) {
         toast.error("Only verified members (Blue or Gold tick) can be co-hosts");
         return;
       }
