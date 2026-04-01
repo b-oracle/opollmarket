@@ -38,6 +38,11 @@ Deno.serve(async (req) => {
     }
 
     const userId = user.id;
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+                     req.headers.get("x-real-ip") || "unknown";
+    const clientUa = req.headers.get("user-agent") || "unknown";
+    console.log(`[NGN Withdrawal] user=${userId} ip=${clientIp} ua=${clientUa}`);
+
     const { amount, bank_code, account_number, account_name } = await req.json();
 
     const adminClient = createClient(
@@ -225,6 +230,8 @@ Deno.serve(async (req) => {
       wallet_address: `${payazaBankCode}:${normalizedAccountNumber}:${account_name}`,
       crypto_currency: "NGN",
       status: "pending",
+      ip_address: clientIp,
+      user_agent: clientUa,
     });
 
     await adminClient.from("transactions").insert({

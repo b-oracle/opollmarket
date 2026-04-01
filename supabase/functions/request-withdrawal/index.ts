@@ -84,6 +84,11 @@ Deno.serve(async (req) => {
     }
 
     const userId = user.id;
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+                     req.headers.get("x-real-ip") || "unknown";
+    const clientUa = req.headers.get("user-agent") || "unknown";
+    console.log(`[Withdrawal] user=${userId} ip=${clientIp} ua=${clientUa}`);
+
     const { amount, wallet_address, crypto_currency } = await req.json();
 
     const adminClient = createClient(
@@ -434,6 +439,8 @@ Deno.serve(async (req) => {
         wallet_address: wallet_address.trim(),
         crypto_currency: payCurrency,
         status: "pending",
+        ip_address: clientIp,
+        user_agent: clientUa,
       });
 
       await adminClient.from("transactions").insert({
@@ -466,6 +473,8 @@ Deno.serve(async (req) => {
       status: "completed",
       nowpayments_id: payoutId ? String(payoutId) : null,
       tx_hash: payoutTxHash,
+      ip_address: clientIp,
+      user_agent: clientUa,
     });
 
     // Insert confirmed withdrawal transaction
