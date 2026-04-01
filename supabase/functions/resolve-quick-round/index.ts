@@ -270,6 +270,21 @@ Deno.serve(async (req) => {
     if (req.method === "POST") {
       const body = await req.json().catch(() => ({}));
       if (body.action === "deduct" && body.userId && body.amount) {
+        // Rate limit: max 20 QT bets per minute per user
+        const oneMinAgo = new Date(Date.now() - 60_000).toISOString();
+        const { count: recentBets } = await supabase
+          .from("quick_bets")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", body.userId)
+          .gte("created_at", oneMinAgo);
+
+        if ((recentBets ?? 0) >= 20) {
+          return new Response(JSON.stringify({ error: "Too many bets. Please slow down." }), {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
         const { data: debitResult } = await supabase.rpc("debit_balance_atomic", {
           _user_id: body.userId,
           _main_deduct: Number(body.amount),
@@ -455,15 +470,33 @@ Deno.serve(async (req) => {
           });
         }
       } else if (losers.length === 0) {
+        // Cap one-sided bonus: max $50 bonus per user per day
+        const dailyCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
         for (const bet of winners) {
           const streak = await getOrCreateStreak(supabase, bet.user_id);
           const newStreak = (streak.current_streak || 0) + 1;
           const multiplier = getStreakMultiplier(newStreak, s2, s3, s4, s5);
-          const basePayout = qtOneSidedBonus
+
+          // Check daily bonus cap before applying one-sided bonus
+          let applyBonus = qtOneSidedBonus;
+          if (qtOneSidedBonus) {
+            const { data: dailyBonusTxns } = await supabase
+              .from("transactions")
+              .select("amount")
+              .eq("user_id", bet.user_id)
+              .eq("type", "qt_one_sided_bonus")
+              .eq("status", "confirmed")
+              .gte("created_at", dailyCutoff);
+            const dailyBonusTotal = (dailyBonusTxns || []).reduce((s: number, t: any) => s + Number(t.amount), 0);
+            if (dailyBonusTotal >= 50) applyBonus = false;
+          }
+
+          const basePayout = applyBonus
             ? Number(bet.amount) * 1.005
             : Number(bet.amount) * (1 - platformFee);
           const payout = basePayout * multiplier;
-          const bonusAmount = qtOneSidedBonus ? Number(bet.amount) * 0.005 * multiplier : 0;
+          const bonusAmount = applyBonus ? Number(bet.amount) * 0.005 * multiplier : 0;
 
           await supabase
             .from("quick_bets")
@@ -472,7 +505,7 @@ Deno.serve(async (req) => {
           await creditBalance(supabase, bet.user_id, payout);
 
           // Record bonus as a transaction for accounting
-          if (qtOneSidedBonus && bonusAmount > 0) {
+          if (applyBonus && bonusAmount > 0) {
             await supabase.from("transactions").insert({
               user_id: bet.user_id,
               type: "qt_one_sided_bonus",

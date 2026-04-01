@@ -26,15 +26,21 @@ Deno.serve(async (req) => {
 
     // Verify webhook by checking the secret hash header
     const secretHash = Deno.env.get("FLUTTERWAVE_WEBHOOK_HASH");
-    if (secretHash) {
-      const signature = req.headers.get("verif-hash");
-      if (signature !== secretHash) {
-        console.warn("Flutterwave webhook: invalid signature");
-        return new Response(JSON.stringify({ error: "Invalid signature" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+    if (!secretHash) {
+      console.error("FLUTTERWAVE_WEBHOOK_HASH not configured — rejecting webhook");
+      return new Response(JSON.stringify({ error: "Webhook not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const signature = req.headers.get("verif-hash");
+    if (signature !== secretHash) {
+      console.warn("Flutterwave webhook: invalid signature");
+      return new Response(JSON.stringify({ error: "Invalid signature" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const adminClient = createClient(
