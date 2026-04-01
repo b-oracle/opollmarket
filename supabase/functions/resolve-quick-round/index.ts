@@ -270,6 +270,21 @@ Deno.serve(async (req) => {
     if (req.method === "POST") {
       const body = await req.json().catch(() => ({}));
       if (body.action === "deduct" && body.userId && body.amount) {
+        // Rate limit: max 20 QT bets per minute per user
+        const oneMinAgo = new Date(Date.now() - 60_000).toISOString();
+        const { count: recentBets } = await supabase
+          .from("quick_bets")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", body.userId)
+          .gte("created_at", oneMinAgo);
+
+        if ((recentBets ?? 0) >= 20) {
+          return new Response(JSON.stringify({ error: "Too many bets. Please slow down." }), {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
         const { data: debitResult } = await supabase.rpc("debit_balance_atomic", {
           _user_id: body.userId,
           _main_deduct: Number(body.amount),
