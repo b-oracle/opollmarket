@@ -1503,7 +1503,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             ✋
           </div>
         )}
-        {speakRequests.has(p.identity) && !hasHandUp && (
+        {speakRequests.has(p.identity) && !hasHandUp && !p.canPublish && p.identity !== hostId && !coHostIds.includes(p.identity) && (
           <div className="absolute -top-1 -right-1 text-base animate-pulse drop-shadow-md">
             🎙️
           </div>
