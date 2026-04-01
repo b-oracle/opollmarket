@@ -293,32 +293,36 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           }
         } catch {}
 
-        // Re-enable audio tracks that may have been suspended
+        // Restore mic state to what it was before backgrounding
+        // This prevents navigation or minimize from muting speakers
+        const shouldBeUnmuted = wasMicOnRef.current && canPublish && !forceMuted;
+
+        // Re-enable audio tracks that may have been suspended by the browser
         room.localParticipant.audioTrackPublications.forEach((pub) => {
           if (pub.track) {
-            pub.track.mediaStreamTrack.enabled = !muted;
+            pub.track.mediaStreamTrack.enabled = shouldBeUnmuted || !muted;
           }
         });
 
-        // If the user had mic on before backgrounding, re-enable it
-        if (wasMicOnRef.current && canPublish && !forceMuted) {
+        // If the user had mic on before backgrounding, fully re-enable it
+        if (shouldBeUnmuted) {
           try {
             await room.localParticipant.setMicrophoneEnabled(true);
             setMuted(false);
-          } catch {}
+          } catch {
+            // If re-enabling fails, don't force mute — keep the UI consistent
+          }
         }
 
         // Restart MediaRecorder if it was interrupted while recording
         if (recording && mediaRecorderRef.current?.state === "inactive") {
           try {
-            // Save existing chunks first
             if (recordedChunksRef.current.length > 0) {
               const partialBlob = new Blob(recordedChunksRef.current, { type: "audio/webm" });
               if (partialBlob.size > 1000) {
                 // Keep chunks for final upload
               }
             }
-            // Restart the recorder on the existing destination stream
             const dest = recordingDestRef.current;
             if (dest) {
               const recorder = new MediaRecorder(dest.stream, {
@@ -335,7 +339,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           } catch {}
         }
       } else {
-        // Going to background — track mic state
+        // Going to background — track mic state so we can restore it
         wasMicOnRef.current = !muted;
       }
     };
