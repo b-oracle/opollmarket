@@ -173,8 +173,8 @@ const DesktopFeedCard = ({ market, isBoosted, boostEndsAt, boostTier, commentCou
           <span className="flex items-center gap-1">
             <Clock className="w-3 h-3" /> {getTimeRemaining(market.endDate)}
           </span>
-          <CommentBadge marketId={market.id} />
-          <LikeBadge marketId={market.id} />
+          <CommentBadge count={commentCount} />
+          <LikeBadge count={likeCount} />
         </div>
 
         {/* Prediction buttons */}
