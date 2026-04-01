@@ -26,6 +26,90 @@ type SetupStep =
   | "change_pin_new"
   | "change_pin_confirm";
 
+const SecurityTogglesSection = ({ userId }: { userId?: string }) => {
+  const queryClient = useQueryClient();
+  const { data: secSettings, isLoading } = useQuery({
+    queryKey: ["security_settings", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data } = await supabase
+        .from("user_security_settings" as any)
+        .select("pin_enabled, totp_enabled, require_pin_withdrawal, require_totp_withdrawal, require_pin_login, require_totp_login")
+        .eq("user_id", userId)
+        .maybeSingle();
+      return data as unknown as { pin_enabled: boolean; totp_enabled: boolean; require_pin_withdrawal: boolean; require_totp_withdrawal: boolean; require_pin_login: boolean; require_totp_login: boolean } | null;
+    },
+    enabled: !!userId,
+  });
+
+  const updateToggle = async (field: string, value: boolean) => {
+    if (!userId) return;
+    const { error } = await supabase
+      .from("user_security_settings" as any)
+      .update({ [field]: value, updated_at: new Date().toISOString() } as any)
+      .eq("user_id", userId);
+    if (error) { toast.error("Failed to update"); return; }
+    queryClient.invalidateQueries({ queryKey: ["security_settings", userId] });
+    toast.success("Updated");
+  };
+
+  if (isLoading || (!secSettings?.pin_enabled && !secSettings?.totp_enabled)) return null;
+
+  return (
+    <div className="space-y-2 pt-2">
+      <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Security Preferences</h3>
+      {secSettings?.pin_enabled && (
+        <>
+          <div className="glass rounded-xl p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <Lock className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">PIN for Login</p>
+              <p className="text-xs text-muted-foreground">Require PIN after signing in</p>
+            </div>
+            <Switch checked={secSettings?.require_pin_login ?? false} onCheckedChange={(v) => updateToggle("require_pin_login", v)} />
+          </div>
+          <div className="glass rounded-xl p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <Lock className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">PIN for Withdrawals</p>
+              <p className="text-xs text-muted-foreground">Require PIN before withdrawing</p>
+            </div>
+            <Switch checked={secSettings?.require_pin_withdrawal ?? false} onCheckedChange={(v) => updateToggle("require_pin_withdrawal", v)} />
+          </div>
+        </>
+      )}
+      {secSettings?.totp_enabled && (
+        <>
+          <div className="glass rounded-xl p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <Shield className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">2FA for Login</p>
+              <p className="text-xs text-muted-foreground">Require authenticator code after signing in</p>
+            </div>
+            <Switch checked={secSettings?.require_totp_login ?? false} onCheckedChange={(v) => updateToggle("require_totp_login", v)} />
+          </div>
+          <div className="glass rounded-xl p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <Shield className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">2FA for Withdrawals</p>
+              <p className="text-xs text-muted-foreground">Require Google Authenticator code</p>
+            </div>
+            <Switch checked={secSettings?.require_totp_withdrawal ?? false} onCheckedChange={(v) => updateToggle("require_totp_withdrawal", v)} />
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 const SetupSecurity = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
