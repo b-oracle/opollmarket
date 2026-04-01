@@ -180,7 +180,7 @@ const AdminLayout = () => {
         {/* View-only banner removed — admin now has edit access */}
 
         <div className="max-w-5xl mx-auto p-4 sm:p-6">
-          <Outlet context={{ canEdit }} />
+          <Outlet context={{ canEdit, isSuperAdmin }} />
         </div>
       </main>
     </div>
