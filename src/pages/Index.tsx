@@ -553,8 +553,8 @@ const Index = () => {
                     {!isBoosted && market.trending && (
                       <span className="text-[10px] font-bold text-primary flex items-center gap-0.5"><Zap className="w-3 h-3" /> Trending</span>
                     )}
-                    <CommentBadge marketId={market.id} />
-                    <LikeBadge marketId={market.id} />
+                    <CommentBadge count={batchCounts?.comments.get(market.id) || 0} />
+                    <LikeBadge count={batchCounts?.likes.get(market.id) || 0} />
                     <span className="text-[10px] text-muted-foreground font-mono ml-auto">{formatVolume(market.volume)} Vol</span>
                   </div>
                   <h4 className="text-sm font-bold leading-snug truncate mb-1.5 group-hover:text-primary transition-colors">{market.title}</h4>
