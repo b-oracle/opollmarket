@@ -249,30 +249,32 @@ const KycSubmissionForm = () => {
                 <Label className="text-xs">Home Address</Label>
                 <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Full residential address" className="mt-1" />
               </div>
-              <div>
-                <Label className="text-xs">Government-Issued ID (Front)</Label>
-                <div className="mt-1 flex items-center gap-2">
-                  <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border cursor-pointer hover:bg-muted/50 transition-colors">
-                    <FileText className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground truncate">{idFrontFile?.name || "Upload front of ID"}</span>
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => setIdFrontFile(e.target.files?.[0] || null)} />
-                  </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs">Government-Issued ID (Front)</Label>
+                  <div className="mt-1">
+                    <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border cursor-pointer hover:bg-muted/50 transition-colors">
+                      <FileText className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground truncate">{idFrontFile?.name || "Upload front of ID"}</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => setIdFrontFile(e.target.files?.[0] || null)} />
+                    </label>
+                  </div>
                 </div>
-              </div>
-              <div>
-                <Label className="text-xs">Government-Issued ID (Back)</Label>
-                <div className="mt-1 flex items-center gap-2">
-                  <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border cursor-pointer hover:bg-muted/50 transition-colors">
-                    <FileText className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground truncate">{idBackFile?.name || "Upload back of ID"}</span>
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => setIdBackFile(e.target.files?.[0] || null)} />
-                  </label>
+                <div>
+                  <Label className="text-xs">Government-Issued ID (Back)</Label>
+                  <div className="mt-1">
+                    <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border cursor-pointer hover:bg-muted/50 transition-colors">
+                      <FileText className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground truncate">{idBackFile?.name || "Upload back of ID"}</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => setIdBackFile(e.target.files?.[0] || null)} />
+                    </label>
+                  </div>
                 </div>
               </div>
               <div>
                 <Label className="text-xs">Utility Bill (showing address)</Label>
-                <div className="mt-1 flex items-center gap-2">
-                  <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="mt-1">
+                  <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border cursor-pointer hover:bg-muted/50 transition-colors">
                     <FileText className="w-4 h-4 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground truncate">{utilityFile?.name || "Upload utility bill"}</span>
                     <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => setUtilityFile(e.target.files?.[0] || null)} />
