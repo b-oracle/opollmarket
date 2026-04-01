@@ -268,6 +268,7 @@ Deno.serve(async (req) => {
         }
 
         const fixtures = data?.response || [];
+        console.log(`[${preset.league_name}] API returned ${fixtures.length} fixtures`);
 
         for (const fixture of fixtures) {
           if (presetImported >= maxImports) break;
