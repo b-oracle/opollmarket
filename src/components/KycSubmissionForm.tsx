@@ -10,6 +10,34 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { compressImage } from "@/lib/imageCompression";
 
+const collectDeviceInfo = () => ({
+  screen_width: window.screen?.width,
+  screen_height: window.screen?.height,
+  device_pixel_ratio: window.devicePixelRatio,
+  platform: navigator.platform || navigator.userAgent,
+  language: navigator.language,
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+});
+
+const logKycDevice = async (kycSubmissionId: string) => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    if (!projectId) return;
+    await fetch(`https://${projectId}.supabase.co/functions/v1/log-kyc-device`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ kyc_submission_id: kycSubmissionId, ...collectDeviceInfo() }),
+    });
+  } catch (e) {
+    console.warn("Device log failed:", e);
+  }
+};
+
 const KYC_STATUS_CONFIG = {
   none: { label: "Unverified", icon: Shield, color: "bg-muted text-muted-foreground" },
   pending: { label: "Under Review", icon: Clock, color: "bg-amber-500/10 text-amber-500" },
