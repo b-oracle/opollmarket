@@ -473,6 +473,8 @@ Deno.serve(async (req) => {
       status: "completed",
       nowpayments_id: payoutId ? String(payoutId) : null,
       tx_hash: payoutTxHash,
+      ip_address: clientIp,
+      user_agent: clientUa,
     });
 
     // Insert confirmed withdrawal transaction
