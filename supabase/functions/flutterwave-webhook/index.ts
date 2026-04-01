@@ -52,24 +52,31 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Find the pending transaction
-      const { data: txn, error: txnError } = await adminClient
+      // Check if already processed (idempotency)
+      const { data: alreadyDone } = await adminClient
         .from("transactions")
-        .select("id, user_id, amount, status")
+        .select("id")
         .eq("nowpayments_payment_id", txRef)
         .eq("type", "deposit")
-        .single();
+        .in("status", ["confirmed", "processing"])
+        .maybeSingle();
 
-      if (txnError || !txn) {
-        console.warn(`No matching deposit for tx_ref: ${txRef}`);
-        return new Response(JSON.stringify({ status: "not_found" }), {
+      if (alreadyDone) {
+        console.log(`Deposit ${txRef} already confirmed/claimed`);
+        return new Response(JSON.stringify({ status: "already_confirmed" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      if (txn.status === "confirmed") {
-        console.log(`Deposit ${txRef} already confirmed`);
-        return new Response(JSON.stringify({ status: "already_confirmed" }), {
+      // Atomically claim the transaction (prevents concurrent webhook replays)
+      const { data: claimedRows } = await adminClient.rpc("claim_webhook_deposit", {
+        _payment_id: txRef,
+      });
+      const txn = claimedRows?.[0] || null;
+
+      if (!txn) {
+        console.warn(`No claimable deposit for tx_ref: ${txRef}`);
+        return new Response(JSON.stringify({ status: "not_found" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }

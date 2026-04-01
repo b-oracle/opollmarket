@@ -58,41 +58,44 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
   }
   const userId = parts[1];
 
-  // 1. Check if already credited (idempotency)
+  // 1. Check if already credited (idempotency) — includes 'processing' to catch in-flight claims
   const { data: confirmedTx } = await supabase
     .from("transactions")
     .select("id, status")
     .eq("nowpayments_payment_id", paymentIdStr)
-    .in("status", ["confirmed", "partial"])
+    .in("status", ["confirmed", "partial", "processing"])
     .maybeSingle();
 
   if (confirmedTx) {
-    console.log("Already processed deposit:", paymentIdStr);
+    console.log("Already processed/claimed deposit:", paymentIdStr);
     return;
   }
 
-  // 2. Find the matching transaction
-  const { data: matchByPaymentId } = await supabase
-    .from("transactions")
-    .select("id, amount, status")
-    .eq("nowpayments_payment_id", paymentIdStr)
-    .in("status", ["pending", "expired"])
-    .limit(1)
-    .maybeSingle();
+  // 2. Atomically claim the transaction (prevents concurrent webhook replays)
+  const { data: claimedRows } = await supabase.rpc("claim_webhook_deposit", {
+    _payment_id: paymentIdStr,
+  });
 
-  const { data: matchByUserPending } = !matchByPaymentId
-    ? await supabase
-        .from("transactions")
-        .select("id, amount, status")
-        .eq("user_id", userId)
-        .eq("type", "deposit")
-        .in("status", ["pending", "expired"])
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle()
-    : { data: null };
+  let matchedTx = claimedRows?.[0] || null;
 
-  const matchedTx = matchByPaymentId || matchByUserPending;
+  // Fallback: try matching by user + pending status (for txns without payment_id yet)
+  if (!matchedTx) {
+    // First try to set the payment_id on a matching pending tx, then claim it
+    await supabase
+      .from("transactions")
+      .update({ nowpayments_payment_id: paymentIdStr })
+      .eq("user_id", userId)
+      .eq("type", "deposit")
+      .in("status", ["pending", "expired"])
+      .is("nowpayments_payment_id", null)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    const { data: retryRows } = await supabase.rpc("claim_webhook_deposit", {
+      _payment_id: paymentIdStr,
+    });
+    matchedTx = retryRows?.[0] || null;
+  }
 
   // price_amount = the USD amount the user requested to deposit.
   // outcome_amount = NP's reported net received — but can be wildly wrong
