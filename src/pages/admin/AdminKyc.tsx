@@ -231,6 +231,29 @@ const AdminKyc = () => {
                   )}
                 </div>
 
+                {/* Device info */}
+                <div className="pt-1">
+                  {!deviceLogs[sub.id] ? (
+                    <Button variant="ghost" size="sm" className="text-xs h-6 text-muted-foreground" onClick={() => fetchDeviceLog(sub.id)}>
+                      <Monitor className="w-3 h-3 mr-1" /> Show Device Info
+                    </Button>
+                  ) : deviceLogs[sub.id] === "none" ? (
+                    <p className="text-[10px] text-muted-foreground italic">No device data recorded</p>
+                  ) : (
+                    <div className="rounded-lg bg-muted/30 p-2 space-y-0.5">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Device Fingerprint</p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px]">
+                        <div><span className="text-muted-foreground">IP:</span> {(deviceLogs[sub.id] as any).ip_address}</div>
+                        <div><span className="text-muted-foreground">Screen:</span> {(deviceLogs[sub.id] as any).screen_width}×{(deviceLogs[sub.id] as any).screen_height} @{(deviceLogs[sub.id] as any).device_pixel_ratio}x</div>
+                        <div><span className="text-muted-foreground">Platform:</span> {(deviceLogs[sub.id] as any).platform}</div>
+                        <div><span className="text-muted-foreground">Language:</span> {(deviceLogs[sub.id] as any).language}</div>
+                        <div className="col-span-2"><span className="text-muted-foreground">Timezone:</span> {(deviceLogs[sub.id] as any).timezone}</div>
+                        <div className="col-span-2 break-all"><span className="text-muted-foreground">UA:</span> {(deviceLogs[sub.id] as any).user_agent}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {sub.admin_note && (
                   <p className="text-xs text-muted-foreground italic">Note: {sub.admin_note}</p>
                 )}
