@@ -125,18 +125,27 @@ Deno.serve(async (req) => {
     // --- MAKE CO-HOST ---
     if (action === "make_cohost" && target_user_id) {
       requireHost();
-      // Server-side guard: only verified users can be co-hosts
-      const { data: targetProfile } = await supabaseAdmin
-        .from("profiles")
-        .select("verification_level")
-        .eq("id", target_user_id)
+      // Check if unverified users are allowed to be co-hosts
+      const { data: toggleRow } = await supabaseAdmin
+        .from("feature_toggles")
+        .select("enabled")
+        .eq("feature_key", "allow_unverified_spaces")
         .single();
-      const targetVer = targetProfile?.verification_level || "none";
-      if (targetVer === "none") {
-        return new Response(JSON.stringify({ error: "Only verified members can be co-hosts" }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      const allowUnverified = toggleRow?.enabled ?? false;
+
+      if (!allowUnverified) {
+        const { data: targetProfile } = await supabaseAdmin
+          .from("profiles")
+          .select("verification_level")
+          .eq("id", target_user_id)
+          .single();
+        const targetVer = targetProfile?.verification_level || "none";
+        if (targetVer === "none") {
+          return new Response(JSON.stringify({ error: "Only verified members can be co-hosts" }), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       }
       if (coHostIds.includes(target_user_id)) {
         return new Response(JSON.stringify({ success: true, action: "already_cohost" }), {
