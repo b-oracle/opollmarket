@@ -27,6 +27,73 @@ function buildMarketDescription(homeTeam: string, awayTeam: string, league: stri
   return `Who will win the match between ${homeTeam} and ${awayTeam}? ${league ? `League: ${league}. ` : ""}Scheduled for ${dateStr}. Market resolves based on the official final result.`;
 }
 
+/**
+ * Generate an AI image for a sports market and upload to storage.
+ * Returns the public URL or null on failure.
+ */
+async function generateSportsImage(
+  title: string,
+  sportType: string,
+  homeTeam: string,
+  awayTeam: string,
+  league: string,
+  lovableApiKey: string,
+  adminClient: any
+): Promise<string | null> {
+  try {
+    const prompt = `Generate a vibrant, dynamic sports banner image for a ${sportType} match: ${homeTeam} vs ${awayTeam} in ${league}. Show the sport in action with team colors and energy. Do NOT include any text or logos. Make it photorealistic, dramatic lighting, stadium atmosphere, high quality.`;
+
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${lovableApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3.1-flash-image-preview",
+        messages: [{ role: "user", content: prompt }],
+        modalities: ["image", "text"],
+      }),
+    });
+
+    if (!aiResponse.ok) {
+      console.warn(`AI image generation failed (${aiResponse.status}) for "${title}"`);
+      return null;
+    }
+
+    const aiData = await aiResponse.json();
+    const imageUrl = aiData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+
+    if (!imageUrl || !imageUrl.startsWith("data:image")) {
+      console.warn(`No image returned for "${title}"`);
+      return null;
+    }
+
+    // Upload base64 image to storage
+    const base64Data = imageUrl.split(",")[1];
+    const mimeMatch = imageUrl.match(/data:(image\/\w+);/);
+    const mimeType = mimeMatch ? mimeMatch[1] : "image/png";
+    const ext = mimeType.split("/")[1] || "png";
+    const fileName = `sport-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const binaryData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+
+    const { error: uploadErr } = await adminClient.storage
+      .from("market-images")
+      .upload(fileName, binaryData, { contentType: mimeType });
+
+    if (uploadErr) {
+      console.warn(`Storage upload failed for "${title}":`, uploadErr.message);
+      return null;
+    }
+
+    const { data: urlData } = adminClient.storage.from("market-images").getPublicUrl(fileName);
+    return urlData.publicUrl;
+  } catch (err) {
+    console.warn(`AI image generation error for "${title}":`, err);
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -36,6 +103,7 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const apiKey = Deno.env.get("API_FOOTBALL_KEY");
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
     if (!apiKey) {
@@ -120,10 +188,8 @@ Deno.serve(async (req) => {
         const headers = { "x-apisports-key": apiKey };
 
         if (preset.sport_type === "football") {
-          // Football: use league + next parameter
           fixturesUrl = `https://${sportConfig.host}${sportConfig.fixturePath}?league=${preset.league_id}&next=${Math.min(maxImports * 2, 50)}`;
         } else {
-          // Other sports: use league + season
           const currentSeason = new Date().getFullYear();
           fixturesUrl = `https://${sportConfig.host}${sportConfig.fixturePath}?league=${preset.league_id}&season=${currentSeason}`;
         }
@@ -145,7 +211,6 @@ Deno.serve(async (req) => {
         for (const fixture of fixtures) {
           if (presetImported >= maxImports) break;
 
-          // Extract fixture data based on sport type
           let matchId: string;
           let matchDate: string;
           let homeTeam: string;
@@ -175,10 +240,9 @@ Deno.serve(async (req) => {
           if (!matchId || !matchDate) continue;
 
           const fixtureDate = new Date(matchDate);
-          // Skip past matches and matches beyond max_days_ahead
           if (fixtureDate < new Date() || fixtureDate > maxEndDate) continue;
 
-          // Check if already imported (by sport_match_id)
+          // Check if already imported
           const { data: existing } = await adminClient
             .from("markets")
             .select("id")
@@ -189,13 +253,23 @@ Deno.serve(async (req) => {
           const title = buildMarketTitle(homeTeam, awayTeam, leagueName);
           const description = buildMarketDescription(homeTeam, awayTeam, leagueName, matchDate);
 
-          // Use league logo or team logo as image
-          const imageUrl = fixture.league?.logo || homeLogo || preset.league_logo || null;
+          // Generate AI image, fall back to league/team logo
+          let imageUrl: string | null = null;
+          if (lovableApiKey) {
+            imageUrl = await generateSportsImage(
+              title, preset.sport_type, homeTeam, awayTeam, leagueName,
+              lovableApiKey, adminClient
+            );
+          }
+          if (!imageUrl) {
+            imageUrl = fixture.league?.logo || homeLogo || preset.league_logo || null;
+          }
 
-          // Create market with multi-option (Home Win, Draw, Away Win) for football
-          // For other sports: binary (Home Win vs Away Win)
           const isFootball = preset.sport_type === "football";
           const marketType = isFootball ? "multi" : "binary";
+
+          // Set auto_resolve_deadline to 2 hours after match start (grace for delays)
+          const autoResolveDeadline = new Date(fixtureDate.getTime() + 2 * 60 * 60 * 1000);
 
           const { data: newMarket, error: insertErr } = await adminClient.from("markets").insert({
             title: title.slice(0, 500),
@@ -211,6 +285,9 @@ Deno.serve(async (req) => {
             sport_type: preset.sport_type,
             sport_match_id: matchId,
             sport_league: leagueName,
+            sport_predicted_outcome: isFootball ? "multi_option" : "home_win",
+            auto_resolve: true,
+            auto_resolve_deadline: autoResolveDeadline.toISOString(),
             yes_price: isFootball ? 0.33 : 0.5,
             no_price: isFootball ? 0.33 : 0.5,
             initial_liquidity: 0,
@@ -224,7 +301,7 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          // For football multi-option markets, create options (Home Win, Draw, Away Win)
+          // For football multi-option markets, create options
           if (isFootball && newMarket) {
             const options = [
               { label: `${homeTeam} Win`, market_id: newMarket.id, price: 0.33, sort_order: 0 },
