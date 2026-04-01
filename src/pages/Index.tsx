@@ -20,9 +20,8 @@ import LivePriceBadge from "@/components/LivePriceBadge";
 import { Gem, ArrowLeftRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import BoostMarketModal from "@/components/BoostMarketModal";
-import { useCommentCount } from "@/hooks/useCommentCount";
+import { useBatchCounts } from "@/hooks/useBatchCounts";
 import useAnalytics from "@/hooks/useAnalytics";
-import { useLikeCount } from "@/hooks/useLikeCount";
 import { useQuery } from "@tanstack/react-query";
 import { createStatelessReadClient } from "@/lib/statelessSupabase";
 
@@ -35,28 +34,25 @@ const formatVolume = (v: number) => {
 
 // getMarketImage replaced by CategoryIcon component
 
-const CommentBadge = React.forwardRef<HTMLSpanElement, { marketId: string }>(({ marketId }, ref) => {
-  const count = useCommentCount(marketId);
+const CommentBadge = ({ count }: { count: number }) => {
   if (count === 0) return null;
   return (
-    <span ref={ref} className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+    <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
       <MessageCircle className="w-3 h-3" />
       {count}
     </span>
   );
-});
-CommentBadge.displayName = "CommentBadge";
+};
 
-const LikeBadge = React.forwardRef<HTMLSpanElement, { marketId: string }>(({ marketId }, ref) => {
-  const count = useLikeCount(marketId);
+const LikeBadge = ({ count }: { count: number }) => {
   if (count === 0) return null;
   return (
-    <span ref={ref} className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+    <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
       <Heart className="w-3 h-3" />
       {count}
     </span>
   );
-});
+};
 
 const Index = () => {
   const navigate = useNavigate();
@@ -70,6 +66,10 @@ const Index = () => {
   const ITEMS_PER_PAGE = 20;
   const { track } = useAnalytics();
   const { user, loading: authLoading } = useAuth();
+
+  // Batch fetch all comment + like counts in 2 queries instead of 2×N
+  const marketIds = useMemo(() => markets.map(m => m.id), [markets]);
+  const { data: batchCounts } = useBatchCounts(marketIds);
 
   useEffect(() => { track("page_view", { page: "home" }); }, []);
 
@@ -553,8 +553,8 @@ const Index = () => {
                     {!isBoosted && market.trending && (
                       <span className="text-[10px] font-bold text-primary flex items-center gap-0.5"><Zap className="w-3 h-3" /> Trending</span>
                     )}
-                    <CommentBadge marketId={market.id} />
-                    <LikeBadge marketId={market.id} />
+                    <CommentBadge count={batchCounts?.comments.get(market.id) || 0} />
+                    <LikeBadge count={batchCounts?.likes.get(market.id) || 0} />
                     <span className="text-[10px] text-muted-foreground font-mono ml-auto">{formatVolume(market.volume)} Vol</span>
                   </div>
                   <h4 className="text-sm font-bold leading-snug truncate mb-1.5 group-hover:text-primary transition-colors">{market.title}</h4>

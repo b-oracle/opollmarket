@@ -19,8 +19,7 @@ import { useBookmarkedMarkets } from "@/hooks/useBookmarkedMarkets";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
 import { supabase } from "@/integrations/supabase/client";
-import { useCommentCount } from "@/hooks/useCommentCount";
-import { useLikeCount } from "@/hooks/useLikeCount";
+import { useBatchCounts } from "@/hooks/useBatchCounts";
 import BoostCountdown from "@/components/BoostCountdown";
 
 const useIsDesktop = () => {
@@ -56,31 +55,27 @@ const getTimeRemaining = (endDate: string) => {
 
 import { optionColors } from "@/lib/optionColors";
 
-const CommentBadge = ({ marketId }: {marketId: string;}) => {
-  const count = useCommentCount(marketId);
+const CommentBadge = ({ count }: { count: number }) => {
   if (count === 0) return null;
   return (
     <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
       <MessageCircle className="w-3 h-3" />
       {count}
     </span>);
-
 };
 
-const LikeBadge = ({ marketId }: {marketId: string;}) => {
-  const count = useLikeCount(marketId);
+const LikeBadge = ({ count }: { count: number }) => {
   if (count === 0) return null;
   return (
     <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
       <Heart className="w-3 h-3" />
       {count}
     </span>);
-
 };
 
 /* ── Desktop/Tablet Feed Card ── */
-const DesktopFeedCard = ({ market, isBoosted, boostEndsAt, boostTier
-}: {market: any;isBoosted: boolean;boostEndsAt?: string;boostTier?: string;}) => {
+const DesktopFeedCard = ({ market, isBoosted, boostEndsAt, boostTier, commentCount = 0, likeCount = 0
+}: {market: any;isBoosted: boolean;boostEndsAt?: string;boostTier?: string; commentCount?: number; likeCount?: number;}) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const yesPercent = Math.round(market.yesPrice * 100);
@@ -178,8 +173,8 @@ const DesktopFeedCard = ({ market, isBoosted, boostEndsAt, boostTier
           <span className="flex items-center gap-1">
             <Clock className="w-3 h-3" /> {getTimeRemaining(market.endDate)}
           </span>
-          <CommentBadge marketId={market.id} />
-          <LikeBadge marketId={market.id} />
+          <CommentBadge count={commentCount} />
+          <LikeBadge count={likeCount} />
         </div>
 
         {/* Prediction buttons */}
