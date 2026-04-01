@@ -67,7 +67,7 @@ const KycSubmissionForm = () => {
 
   const uploadFile = useCallback(async (file: File, folder: string): Promise<string> => {
     if (!user) throw new Error("Not authenticated");
-    const compressed = await compressImage(file, 1024, 0.8);
+    const compressed = await compressImage(file, "social");
     const ext = file.name.split(".").pop() || "jpg";
     const path = `${user.id}/${folder}_${Date.now()}.${ext}`;
     const { error } = await supabase.storage

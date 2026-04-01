@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { CheckCircle2, XCircle, Clock, Loader2, Eye, User, FileText, Image } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Loader2, Eye, User, FileText, Image, Camera } from "lucide-react";
 
 type KycSubmission = {
   id: string;
