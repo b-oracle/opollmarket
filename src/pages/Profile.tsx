@@ -766,7 +766,7 @@ const Profile = () => {
     }
   };
 
-  const [expandedTxId, setExpandedTxId] = useState<string | null>(null);
+  
 
   const { data: transactions = [] } = useQuery({
     queryKey: ["transactions", user?.id],
