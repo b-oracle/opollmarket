@@ -186,6 +186,9 @@ const AdminSettings = () => {
   const minWithdrawNum = parseFloat(minWithdrawalAmount) || 0;
   const withdrawalCooldownNum = parseInt(withdrawalCooldown) || 5;
   const withdrawalMultiplierNum = parseFloat(withdrawalMultiplier) || 2;
+  const kycTier1DailyLimitNum = parseFloat(kycTier1DailyLimit) || 500;
+  const kycTier2DailyLimitNum = parseFloat(kycTier2DailyLimit) || 50000;
+  const maxDailyWithdrawalsNum = parseInt(maxDailyWithdrawals) || 5;
   const exitFeeNum = parseFloat(exitFee) || 0;
   const liquidityReturnFeeNum = parseFloat(liquidityReturnFee) || 5;
   const minLiquidityNum = parseFloat(minLiquidity) || 10;
