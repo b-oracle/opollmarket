@@ -1,26 +1,51 @@
 
 
-# Fix Feed Card Images — Zoomed Out / Poor Fit
+# Session Timeout & Inactivity Auto-Logout
 
-## Problem
-Feed card background images use `object-cover object-top` which works well for portrait/square images but causes landscape-oriented images to appear overly zoomed out or poorly framed. The parallax container also shifts the image by up to 30px, which can expose empty space at edges. Additionally, the "card" image preset is only 600px wide — too small for full-bleed backgrounds on modern screens, causing upscaling blur.
+## Overview
+Add two timeout mechanisms:
+1. **1-hour session timeout** — after 1 hour of inactivity, require PIN re-verification to continue
+2. **24-hour inactivity timeout** — after 24 hours of total inactivity, fully log out the user (requires email login)
 
-## Solution
+Both controlled by a `session_timeout` feature toggle that super admins can enable/disable.
 
-### 1. Change image positioning to `object-center` (MarketCard.tsx, line 291)
-- Replace `object-top` with `object-center` so the focal point of images (regardless of aspect ratio) stays centered in the card
-- This prevents landscape images from being pushed to the top and looking zoomed out
+## How It Works
 
-### 2. Expand the image container to absorb parallax shift (line 290)
-- Change from `inset-0` to `inset-[-30px_0]` (vertical only) so the image has 30px bleed on top and bottom
-- This prevents the parallax translateY from revealing empty space at edges
-- The parent `overflow-hidden` on line 288 clips the overflow cleanly
+### PIN Re-verification (1 hour)
+- The existing `LoginSecurityGuard` in `App.tsx` stores a `login_sec_verified_{userId}` flag in localStorage
+- Currently this flag persists indefinitely — we'll store a **timestamp** instead of `"1"`
+- On every app render / visibility change, compare the stored timestamp to `Date.now()`
+- If >1 hour has elapsed and the `session_timeout` toggle is enabled, clear the flag → triggers the existing `SecurityVerificationModal`
+- Users without PIN/TOTP set up are unaffected (the guard already skips them)
 
-### 3. Add a "feed" image preset (optimizedImage.ts)
-- Add a new preset `"feed": { width: 900, quality: 70 }` — better resolution for full-screen backgrounds without over-serving data
-- Update the MarketCard to use `optimizedImageUrl(market.imageUrl, "feed")` instead of `"card"`
+### Full Logout (24 hours)
+- Store a `last_active_{userId}` timestamp in localStorage, updated on user interactions (page visibility, navigation)
+- On app boot / visibility change, if >24 hours have elapsed and toggle is enabled, call `signOut()`
 
 ## Files Changed
-- `src/components/MarketCard.tsx` — image container inset + object-position + preset name
-- `src/lib/optimizedImage.ts` — add "feed" preset
+
+### 1. Database — Add feature toggle row
+- Insert `session_timeout` row into `feature_toggles` table (using insert tool, not migration)
+
+### 2. `src/App.tsx` — LoginSecurityGuard enhancements
+- Change `isSessionVerified()` to read a **timestamp** from localStorage instead of `"1"` (backward-compatible: treat `"1"` as expired)
+- Change `markSessionVerified()` to store `Date.now().toString()`
+- Add a `useEffect` with a visibility change listener + 60-second interval that:
+  - Checks if timestamp is >1 hour old → clears verification flag, triggers PIN modal
+  - Checks if `last_active` is >24 hours old → calls `signOut()`
+  - Updates `last_active` timestamp on activity
+- Gate both checks behind `isFeatureEnabled("session_timeout")` from `useFeatureToggles`
+
+### 3. `src/pages/Auth.tsx` — Update verified marker
+- Change the post-login `localStorage.setItem` to store `Date.now().toString()` instead of `"1"` (line ~412)
+
+### 4. `src/hooks/useAuth.ts` — No changes needed
+- Sign-out already clears the `login_sec_verified_` key
+
+## Technical Details
+- Timestamps stored as epoch milliseconds in localStorage strings
+- 1-hour = `3_600_000` ms, 24-hour = `86_400_000` ms
+- Backward-compatible: existing `"1"` values are treated as expired (forces re-verification once)
+- The interval check runs every 60 seconds to avoid excessive polling
+- Feature toggle default: **disabled** (opt-in by super admin)
 
