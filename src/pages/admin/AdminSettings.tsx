@@ -60,6 +60,9 @@ const AdminSettings = () => {
   const [minWithdrawalAmount, setMinWithdrawalAmount] = useState("");
   const [withdrawalCooldown, setWithdrawalCooldown] = useState("");
   const [withdrawalMultiplier, setWithdrawalMultiplier] = useState("");
+  const [kycTier1DailyLimit, setKycTier1DailyLimit] = useState("500");
+  const [kycTier2DailyLimit, setKycTier2DailyLimit] = useState("50000");
+  const [maxDailyWithdrawals, setMaxDailyWithdrawals] = useState("5");
   const [withdrawalLimitEnabled, setWithdrawalLimitEnabled] = useState(true);
   const [exitFee, setExitFee] = useState("");
   const [liquidityReturnFee, setLiquidityReturnFee] = useState("");
@@ -121,6 +124,9 @@ const AdminSettings = () => {
         setMinWithdrawalAmount(String(d.min_withdrawal_amount ?? 5));
         setWithdrawalCooldown(String(d.withdrawal_cooldown_minutes ?? 5));
         setWithdrawalMultiplier(String(d.withdrawal_multiplier ?? 2));
+        setKycTier1DailyLimit(String(d.kyc_tier1_daily_limit ?? 500));
+        setKycTier2DailyLimit(String(d.kyc_tier2_daily_limit ?? 50000));
+        setMaxDailyWithdrawals(String(d.max_daily_withdrawals ?? 5));
         setWithdrawalLimitEnabled(d.withdrawal_limit_enabled !== false);
         setExitFee(String(d.exit_fee_percent ?? 5));
         setLiquidityReturnFee(String((d as any).liquidity_return_fee_percent ?? 5));
@@ -180,6 +186,9 @@ const AdminSettings = () => {
   const minWithdrawNum = parseFloat(minWithdrawalAmount) || 0;
   const withdrawalCooldownNum = parseInt(withdrawalCooldown) || 5;
   const withdrawalMultiplierNum = parseFloat(withdrawalMultiplier) || 2;
+  const kycTier1DailyLimitNum = parseFloat(kycTier1DailyLimit) || 500;
+  const kycTier2DailyLimitNum = parseFloat(kycTier2DailyLimit) || 50000;
+  const maxDailyWithdrawalsNum = parseInt(maxDailyWithdrawals) || 5;
   const exitFeeNum = parseFloat(exitFee) || 0;
   const liquidityReturnFeeNum = parseFloat(liquidityReturnFee) || 5;
   const minLiquidityNum = parseFloat(minLiquidity) || 10;
@@ -279,8 +288,11 @@ const AdminSettings = () => {
           min_withdrawal_amount: minWithdrawNum,
           withdrawal_cooldown_minutes: withdrawalCooldownNum,
           withdrawal_multiplier: withdrawalMultiplierNum,
-          withdrawal_limit_enabled: withdrawalLimitEnabled,
-           exit_fee_percent: exitFeeNum,
+           withdrawal_limit_enabled: withdrawalLimitEnabled,
+           kyc_tier1_daily_limit: kycTier1DailyLimitNum,
+           kyc_tier2_daily_limit: kycTier2DailyLimitNum,
+           max_daily_withdrawals: maxDailyWithdrawalsNum,
+            exit_fee_percent: exitFeeNum,
            liquidity_return_fee_percent: liquidityReturnFeeNum,
            min_liquidity: minLiquidityNum,
            withdrawal_fee_percent: withdrawalFeeNum,
@@ -809,6 +821,25 @@ const AdminSettings = () => {
                   <Label htmlFor="withdrawalCooldown" className="text-xs">Cooldown (minutes)</Label>
                   <Input id="withdrawalCooldown" type="number" min={0} step={1} value={withdrawalCooldown} onChange={(e) => setWithdrawalCooldown(e.target.value)} placeholder="5" />
                   <p className="text-[10px] text-muted-foreground">Current: {withdrawalCooldownNum} min. Set 0 to disable.</p>
+                </div>
+
+                <div className="border-t border-border pt-3 space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">KYC Daily Limits</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="kycTier1DailyLimit" className="text-xs">Tier 1 Daily ($)</Label>
+                      <Input id="kycTier1DailyLimit" type="number" min={0} step={50} value={kycTier1DailyLimit} onChange={(e) => setKycTier1DailyLimit(e.target.value)} placeholder="500" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="kycTier2DailyLimit" className="text-xs">Tier 2 Daily ($)</Label>
+                      <Input id="kycTier2DailyLimit" type="number" min={0} step={1000} value={kycTier2DailyLimit} onChange={(e) => setKycTier2DailyLimit(e.target.value)} placeholder="50000" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="maxDailyWithdrawals" className="text-xs">Max per Day (#)</Label>
+                      <Input id="maxDailyWithdrawals" type="number" min={1} step={1} value={maxDailyWithdrawals} onChange={(e) => setMaxDailyWithdrawals(e.target.value)} placeholder="5" />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Tier 1 (Basic KYC): ${kycTier1DailyLimitNum}/day · Tier 2 (Full KYC): ${kycTier2DailyLimitNum}/day · Max {maxDailyWithdrawalsNum} transactions/day</p>
                 </div>
 
                 <div className="flex items-center justify-between py-2 border-t border-border pt-3">

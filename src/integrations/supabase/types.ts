@@ -462,8 +462,11 @@ export type Database = {
           gold_revenue_share_percent: number
           gold_trending_multiplier: number
           id: string
+          kyc_tier1_daily_limit: number
+          kyc_tier2_daily_limit: number
           liquidity_return_fee_percent: number
           market_creation_fee: number | null
+          max_daily_withdrawals: number
           min_gold_token_balance: number
           min_liquidity: number
           min_nft_balance: number
@@ -528,8 +531,11 @@ export type Database = {
           gold_revenue_share_percent?: number
           gold_trending_multiplier?: number
           id?: string
+          kyc_tier1_daily_limit?: number
+          kyc_tier2_daily_limit?: number
           liquidity_return_fee_percent?: number
           market_creation_fee?: number | null
+          max_daily_withdrawals?: number
           min_gold_token_balance?: number
           min_liquidity?: number
           min_nft_balance?: number
@@ -594,8 +600,11 @@ export type Database = {
           gold_revenue_share_percent?: number
           gold_trending_multiplier?: number
           id?: string
+          kyc_tier1_daily_limit?: number
+          kyc_tier2_daily_limit?: number
           liquidity_return_fee_percent?: number
           market_creation_fee?: number | null
+          max_daily_withdrawals?: number
           min_gold_token_balance?: number
           min_liquidity?: number
           min_nft_balance?: number

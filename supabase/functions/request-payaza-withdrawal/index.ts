@@ -73,8 +73,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Enforce tier-based daily limits
-    const kycDailyLimit = kycStatus === "tier2" ? 50000 : 500;
+    // Fetch admin-configured daily limits
+    const { data: commSettings } = await adminClient
+      .from("commission_settings")
+      .select("kyc_tier1_daily_limit, kyc_tier2_daily_limit, max_daily_withdrawals")
+      .limit(1)
+      .single();
+    const kycDailyLimit = kycStatus === "tier2"
+      ? (commSettings?.kyc_tier2_daily_limit ?? 50000)
+      : (commSettings?.kyc_tier1_daily_limit ?? 500);
+    const maxDailyWithdrawals = commSettings?.max_daily_withdrawals ?? 5;
+
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data: recentWithdrawals } = await adminClient
       .from("transactions")
@@ -225,10 +234,9 @@ Deno.serve(async (req) => {
       .eq("user_id", userId)
       .gte("created_at", dailyCutoff);
 
-    const MAX_DAILY_WITHDRAWALS = 5;
-    if ((dailyCount ?? 0) >= MAX_DAILY_WITHDRAWALS) {
+    if ((dailyCount ?? 0) >= maxDailyWithdrawals) {
       return new Response(
-        JSON.stringify({ error: "You have reached the maximum of 5 withdrawals per 24 hours. Please try again later." }),
+        JSON.stringify({ error: `You have reached the maximum of ${maxDailyWithdrawals} withdrawals per 24 hours. Please try again later.` }),
         { status: 429, headers: corsHeaders }
       );
     }
