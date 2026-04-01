@@ -346,11 +346,11 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
       const { supabase } = await import("@/integrations/supabase/client");
       await supabase.auth.signOut({ scope: "local" });
     } catch {}
-    checkedUserRef.current = null;
-    setChecked(true);
+    processedUserRef.current = null;
   }, []);
 
-  if (!checked && !isLoginAllowed) return <PageFallback />;
+  const isReady = !userId || loading || skipQuery || !secLoading || processedUserRef.current === userId;
+  if (!isReady && !isLoginAllowed) return <PageFallback />;
 
   return (
     <>
