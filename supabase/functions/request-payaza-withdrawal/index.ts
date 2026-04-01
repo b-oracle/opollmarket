@@ -176,22 +176,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ─── Balance check ───
-    const { data: balance } = await adminClient
-      .from("balances")
-      .select("amount")
-      .eq("user_id", userId)
-      .eq("currency", "USDT")
-      .single();
-
-    const currentBalance = Number(balance?.amount || 0);
-    if (currentBalance < amount) {
-      return new Response(
-        JSON.stringify({ error: "Insufficient balance" }),
-        { status: 400, headers: corsHeaders }
-      );
-    }
-
     // ─── Calculate NGN payout amount ───
     let liveRate = fallbackRate;
     try {
@@ -214,12 +198,19 @@ Deno.serve(async (req) => {
 
     console.log(`[NGN Payout] USD ${amount} - fee ${feeAmount} = net ${netAmount} × ₦${payoutRate} = ₦${ngnPayout}`);
 
-    // ─── Deduct balance immediately (ONCE, before any provider attempts) ───
-    await adminClient
-      .from("balances")
-      .update({ amount: currentBalance - amount, updated_at: new Date().toISOString() })
-      .eq("user_id", userId)
-      .eq("currency", "USDT");
+    // ─── Atomic balance debit with row lock (prevents race condition) ───
+    const { data: debitResult } = await adminClient.rpc("debit_balance_atomic", {
+      _user_id: userId,
+      _main_deduct: amount,
+      _bonus_deduct: 0,
+    });
+
+    if (!debitResult?.success) {
+      return new Response(
+        JSON.stringify({ error: debitResult?.error || "Insufficient balance" }),
+        { status: 400, headers: corsHeaders }
+      );
+    }
 
     const transactionReference = `wd_${userId}_${Date.now()}`;
 
