@@ -43,6 +43,7 @@ const navItems: NavItem[] = [
   { to: "/admin/investor-deck", label: "Investor Deck", icon: Presentation, roles: ["super_admin"] },
   { to: "/admin/aimtell", label: "Aimtell Push", icon: Bell, roles: ["super_admin"] },
   { to: "/admin/api-keys", label: "API Keys", icon: FileCode2, roles: ["super_admin", "admin"] },
+  { to: "/admin/kyc", label: "KYC Verification", icon: ClipboardCheck, roles: ["super_admin", "admin"] },
 ];
 
 const AdminLayout = () => {
