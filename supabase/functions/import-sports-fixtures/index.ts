@@ -312,7 +312,19 @@ Deno.serve(async (req) => {
           if (existing && existing.length > 0) continue;
 
           const title = buildMarketTitle(homeTeam, awayTeam, leagueName);
-          const description = buildMarketDescription(homeTeam, awayTeam, leagueName, matchDate);
+          let description = buildMarketDescription(homeTeam, awayTeam, leagueName, matchDate);
+          let details: string | null = null;
+
+          // Generate AI description + details
+          if (lovableApiKey) {
+            const aiContent = await generateAiContent(
+              homeTeam, awayTeam, leagueName, preset.sport_type, matchDate, lovableApiKey
+            );
+            if (aiContent) {
+              if (aiContent.description) description = aiContent.description;
+              if (aiContent.details) details = aiContent.details;
+            }
+          }
 
           // Generate AI image, fall back to league/team logo
           let imageUrl: string | null = null;
