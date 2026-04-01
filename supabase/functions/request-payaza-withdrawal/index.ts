@@ -230,6 +230,8 @@ Deno.serve(async (req) => {
       wallet_address: `${payazaBankCode}:${normalizedAccountNumber}:${account_name}`,
       crypto_currency: "NGN",
       status: "pending",
+      ip_address: clientIp,
+      user_agent: clientUa,
     });
 
     await adminClient.from("transactions").insert({
