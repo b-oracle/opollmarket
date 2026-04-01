@@ -36,6 +36,19 @@ const AdminKyc = () => {
   const [adminNote, setAdminNote] = useState("");
   const [processing, setProcessing] = useState(false);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
+  const [deviceLogs, setDeviceLogs] = useState<Record<string, any>>({}); // keyed by submission id
+
+  const fetchDeviceLog = async (submissionId: string) => {
+    if (deviceLogs[submissionId]) return; // already loaded
+    const { data } = await supabase
+      .from("kyc_device_logs" as any)
+      .select("*")
+      .eq("kyc_submission_id", submissionId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setDeviceLogs((prev) => ({ ...prev, [submissionId]: data || "none" }));
+  };
 
   const { data: submissions = [], isLoading } = useQuery({
     queryKey: ["admin_kyc_submissions", filter],
