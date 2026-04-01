@@ -50,6 +50,20 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // ─── Block check: reject if user is blocked ───
+    const { data: profile } = await adminClient
+      .from("profiles")
+      .select("is_blocked")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (profile?.is_blocked) {
+      return new Response(
+        JSON.stringify({ error: "Your account has been suspended. Contact support." }),
+        { status: 403, headers: corsHeaders }
+      );
+    }
+
     // ─── Server-side security verification check ───
     const { data: secSettings } = await adminClient
       .from("user_security_settings")
