@@ -471,6 +471,7 @@ const App = () => {
                         <Route path="/rankings" element={<FeatureGate featureKey="rankings"><Rankings /></FeatureGate>} />
                         <Route path="/portfolio" element={<FeatureGate featureKey="portfolio"><Portfolio /></FeatureGate>} />
                         <Route path="/profile" element={<Profile />} />
+                        <Route path="/transactions" element={<TransactionHistory />} />
                         <Route path="/auth" element={<Auth />} />
                         <Route path="/reset-password" element={<ResetPassword />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
