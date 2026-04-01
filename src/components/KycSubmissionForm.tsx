@@ -113,7 +113,7 @@ const KycSubmissionForm = () => {
     setSubmitting(true);
     try {
       const selfieUrl = await uploadFile(selfieFile, "selfie");
-      const { error } = await supabase.from("kyc_submissions" as any).insert({
+      const { data: inserted, error } = await supabase.from("kyc_submissions" as any).insert({
         user_id: user.id,
         tier: 1,
         status: "pending",
@@ -121,8 +121,11 @@ const KycSubmissionForm = () => {
         date_of_birth: dob,
         phone_number: phone.trim(),
         selfie_url: selfieUrl,
-      } as any);
+      } as any).select("id").single();
       if (error) throw error;
+
+      // Log device info for fraud prevention
+      if (inserted?.id) logKycDevice(inserted.id);
 
       // Set profile to pending
       await supabase.from("profiles").update({ kyc_status: "pending" } as any).eq("id", user.id);
