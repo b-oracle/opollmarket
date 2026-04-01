@@ -53,13 +53,40 @@ Deno.serve(async (req) => {
     // ─── Block check: reject if user is blocked ───
     const { data: profile } = await adminClient
       .from("profiles")
-      .select("is_blocked")
+      .select("is_blocked, kyc_status")
       .eq("id", userId)
       .maybeSingle();
 
     if (profile?.is_blocked) {
       return new Response(
         JSON.stringify({ error: "Your account has been suspended. Contact support." }),
+        { status: 403, headers: corsHeaders }
+      );
+    }
+
+    // ─── KYC gate: require verification before withdrawals ───
+    const kycStatus = profile?.kyc_status || "none";
+    if (kycStatus === "none" || kycStatus === "pending" || kycStatus === "rejected") {
+      return new Response(
+        JSON.stringify({ error: "Identity verification required before withdrawals. Complete KYC in your profile settings." }),
+        { status: 403, headers: corsHeaders }
+      );
+    }
+
+    // Enforce tier-based daily limits
+    const kycDailyLimit = kycStatus === "tier2" ? 50000 : 500;
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: recentWithdrawals } = await adminClient
+      .from("transactions")
+      .select("amount")
+      .eq("user_id", userId)
+      .eq("type", "withdrawal")
+      .in("status", ["confirmed", "pending"])
+      .gte("created_at", twentyFourHoursAgo);
+    const dailyTotal = (recentWithdrawals || []).reduce((s, r) => s + Number(r.amount), 0);
+    if (dailyTotal + amount > kycDailyLimit) {
+      return new Response(
+        JSON.stringify({ error: `Daily withdrawal limit for your KYC tier is $${kycDailyLimit}. You've used $${dailyTotal.toFixed(2)} today.` }),
         { status: 403, headers: corsHeaders }
       );
     }

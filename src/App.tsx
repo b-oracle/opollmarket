@@ -64,6 +64,7 @@ const AdminSocial = lazy(() => import("./pages/admin/AdminSocial"));
 const InvestorDeck = lazy(() => import("./pages/admin/InvestorDeck"));
 const AdminAimtell = lazy(() => import("./pages/admin/AdminAimtell"));
 const AdminApiKeys = lazy(() => import("./pages/admin/AdminApiKeys"));
+const AdminKyc = lazy(() => import("./pages/admin/AdminKyc"));
 const AdminFiatSettings = lazy(() => import("./pages/admin/AdminFiatSettings"));
 const AdminReferrals = lazy(() => import("./pages/admin/AdminReferrals"));
 const AdminWhatsApp = lazy(() => import("./pages/admin/AdminWhatsApp"));
@@ -641,6 +642,7 @@ const App = () => {
                           <Route path="investor-deck" element={<InvestorDeck />} />
                           <Route path="aimtell" element={<AdminAimtell />} />
                           <Route path="api-keys" element={<AdminApiKeys />} />
+                          <Route path="kyc" element={<AdminKyc />} />
                         </Route>
                         <Route path="/developers" element={<Developers />} />
                         <Route path="/embed/market/:id" element={<EmbedMarket />} />

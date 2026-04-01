@@ -101,6 +101,21 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const fiatEnabled = isFeatureEnabled("fiat_deposit_payaza");
   const fiatWithdrawalEnabled = isFeatureEnabled("fiat_withdrawal");
 
+  // Fetch KYC status for withdrawal gate
+  const { data: kycStatus = "none" } = useQuery({
+    queryKey: ["kyc_status_modal", user?.id],
+    queryFn: async () => {
+      if (!user) return "none";
+      const { data } = await supabase
+        .from("profiles")
+        .select("kyc_status")
+        .eq("id", user.id)
+        .single();
+      return (data as any)?.kyc_status || "none";
+    },
+    enabled: !!user && open,
+  });
+
   // Fetch provider settings (deposit_provider & payout_provider)
   const { data: providerSettings } = useQuery({
     queryKey: ["fiat-provider-settings"],
@@ -803,6 +818,41 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                         <p className="text-[10px] text-muted-foreground">+ ${bonusBalance.toFixed(2)} bonus (non-withdrawable)</p>
                       )}
                     </div>
+
+                    {/* KYC gate for withdrawals */}
+                    {!isDeposit && (kycStatus === "none" || kycStatus === "pending" || kycStatus === "rejected") && (
+                      <div className="rounded-xl p-4 border border-amber-500/30 bg-amber-500/5 mb-5 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                          <p className="text-sm font-semibold text-amber-500">
+                            {kycStatus === "pending" ? "Verification In Progress" : "Identity Verification Required"}
+                          </p>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {kycStatus === "pending"
+                            ? "Your KYC documents are being reviewed. You'll be able to withdraw once approved."
+                            : "Complete identity verification in your Profile to enable withdrawals."}
+                        </p>
+                        <a
+                          href="/profile"
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
+                          onClick={handleClose}
+                        >
+                          Go to Profile → Verify Identity
+                        </a>
+                      </div>
+                    )}
+
+                    {/* Show daily limit info for verified users */}
+                    {!isDeposit && (kycStatus === "tier1" || kycStatus === "tier2") && (
+                      <div className="rounded-xl p-2.5 border border-border bg-muted/30 mb-4 flex items-center gap-2">
+                        <Info className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <p className="text-[10px] text-muted-foreground">
+                          Daily limit: <span className="font-semibold text-foreground">${kycStatus === "tier2" ? "50,000" : "500"}</span>
+                          {kycStatus === "tier1" && " · Upgrade to Tier 2 for higher limits"}
+                        </p>
+                      </div>
+                    )}
 
                     {/* Stale pending deposits banner */}
                     {isDeposit && stalePending.length > 0 && (

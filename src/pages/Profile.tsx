@@ -32,6 +32,7 @@ import { format } from "date-fns";
 import CopyTradeStats from "@/components/CopyTradeStats";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import LocationAutocomplete from "@/components/LocationAutocomplete";
+import KycSubmissionForm from "@/components/KycSubmissionForm";
 
 type TxType = "buy" | "sell" | "deposit" | "withdraw" | "withdrawal" | "commission" | "payout" | "refund" | "initial_liquidity" | "qt_one_sided_bonus";
 
@@ -1959,6 +1960,9 @@ const Profile = () => {
             </div>
           )}
         </div>
+
+        {/* KYC Verification */}
+        <KycSubmissionForm />
 
         {/* Security Settings */}
         <SecuritySettingsSection userId={user?.id} />
