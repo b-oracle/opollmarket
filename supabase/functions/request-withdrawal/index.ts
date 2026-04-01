@@ -84,6 +84,11 @@ Deno.serve(async (req) => {
     }
 
     const userId = user.id;
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+                     req.headers.get("x-real-ip") || "unknown";
+    const clientUa = req.headers.get("user-agent") || "unknown";
+    console.log(`[Withdrawal] user=${userId} ip=${clientIp} ua=${clientUa}`);
+
     const { amount, wallet_address, crypto_currency } = await req.json();
 
     const adminClient = createClient(
