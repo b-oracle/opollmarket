@@ -34,28 +34,25 @@ const formatVolume = (v: number) => {
 
 // getMarketImage replaced by CategoryIcon component
 
-const CommentBadge = React.forwardRef<HTMLSpanElement, { marketId: string }>(({ marketId }, ref) => {
-  const count = useCommentCount(marketId);
+const CommentBadge = ({ count }: { count: number }) => {
   if (count === 0) return null;
   return (
-    <span ref={ref} className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+    <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
       <MessageCircle className="w-3 h-3" />
       {count}
     </span>
   );
-});
-CommentBadge.displayName = "CommentBadge";
+};
 
-const LikeBadge = React.forwardRef<HTMLSpanElement, { marketId: string }>(({ marketId }, ref) => {
-  const count = useLikeCount(marketId);
+const LikeBadge = ({ count }: { count: number }) => {
   if (count === 0) return null;
   return (
-    <span ref={ref} className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+    <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
       <Heart className="w-3 h-3" />
       {count}
     </span>
   );
-});
+};
 
 const Index = () => {
   const navigate = useNavigate();
