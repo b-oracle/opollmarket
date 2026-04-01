@@ -1,5 +1,6 @@
 // App root – v5 (login security gate)
 import { lazy, Suspense, useState, useEffect, useRef, useCallback } from "react";
+import { useSecuritySettings, useInvalidateSecuritySettings } from "./hooks/useSecuritySettings";
 import { ActiveSpaceProvider, useActiveSpace } from "./hooks/useActiveSpace";
 import SpaceRoom from "./components/social/SpaceRoom";
 const SecurityVerificationModal = lazy(() => import("./components/SecurityVerificationModal"));
@@ -172,109 +173,45 @@ const MaintenanceGuard = ({ children }: { children: React.ReactNode }) => {
 const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
-  const [checked, setChecked] = useState(false);
-  const [needsSetup, setNeedsSetup] = useState(false);
-  const checkedUserRef = useRef<string | null>(null);
-  const checkingRef = useRef(false);
+  const userId = user?.id ?? null;
 
   const allowedPaths = ["/setup-security", "/auth", "/reset-password", "/forgot-password", "/terms", "/privacy", "/disclaimer"];
   const isAllowed = allowedPaths.some(p => location.pathname.startsWith(p));
 
-  // Use user.id as dep instead of user object to avoid re-fires on reference changes
-  const userId = user?.id ?? null;
+  // Check localStorage cache first (instant, no network)
+  const hasLocalCache = userId ? (() => { try { return localStorage.getItem(`security_ok_${userId}`) === "1"; } catch { return false; } })() : false;
+
+  const { data: secSettings, isLoading: secLoading } = useSecuritySettings(
+    // Skip the query entirely if localStorage already confirms setup is done
+    hasLocalCache ? null : userId
+  );
 
   // Listen for custom event from SetupSecurity page when setup completes
+  const invalidate = useInvalidateSecuritySettings();
   useEffect(() => {
     const handler = () => {
-      setNeedsSetup(false);
-      checkedUserRef.current = userId;
-      setChecked(true);
-      if (userId) try { localStorage.setItem(`security_ok_${userId}`, "1"); } catch {}
+      if (userId) {
+        try { localStorage.setItem(`security_ok_${userId}`, "1"); } catch {}
+        invalidate(userId);
+      }
     };
     window.addEventListener("security-setup-complete", handler);
     return () => window.removeEventListener("security-setup-complete", handler);
-  }, [userId]);
+  }, [userId, invalidate]);
 
+  // Persist to localStorage when we learn setup is complete
   useEffect(() => {
-    if (!userId || loading) {
-      checkingRef.current = false;
-      setChecked(true);
-      setNeedsSetup(false);
-      return;
+    if (secSettings?.security_setup_complete && userId) {
+      try { localStorage.setItem(`security_ok_${userId}`, "1"); } catch {}
     }
+  }, [secSettings?.security_setup_complete, userId]);
 
-    // If we already checked this user, keep previous result and avoid re-query loops.
-    if (checkedUserRef.current === userId) {
-      setChecked(true);
-      return;
-    }
+  if (loading) return <PageFallback />;
+  if (!userId) return <>{children}</>;
+  if (hasLocalCache) return <>{children}</>;
+  if (secLoading) return <PageFallback />;
 
-    // Check localStorage cache first to skip network request (persists across sessions)
-    try {
-      if (localStorage.getItem(`security_ok_${userId}`) === "1") {
-        checkedUserRef.current = userId;
-        setChecked(true);
-        setNeedsSetup(false);
-        return;
-      }
-    } catch {}
-
-    if (checkingRef.current) return; // prevent concurrent checks
-    checkingRef.current = true;
-    setChecked(false);
-
-    let active = true;
-
-    // Safety timeout: if the query hangs for >8s, fail OPEN (let through).
-    // LoginSecurityGuard already enforces PIN/TOTP verification on every login,
-    // so a false-open here doesn't bypass security — but a false-close causes
-    // users who already completed setup to be asked to set up again.
-    const safetyTimer = window.setTimeout(() => {
-      if (!active) return;
-      checkingRef.current = false;
-      setNeedsSetup(false);
-      setChecked(true);
-    }, 8000);
-
-    import("@/integrations/supabase/client")
-      .then(({ supabase }) =>
-        supabase
-          .from("user_security_settings" as any)
-          .select("security_setup_complete")
-          .eq("user_id", userId)
-          .maybeSingle()
-      )
-      .then(({ data, error }) => {
-        if (!active) return;
-        if (error) {
-          setChecked(true);
-          return;
-        }
-        const d = data as any;
-        const needs = !d || d.security_setup_complete === false;
-        setNeedsSetup(needs);
-        checkedUserRef.current = userId;
-        setChecked(true);
-        if (!needs) try { localStorage.setItem(`security_ok_${userId}`, "1"); } catch {}
-      })
-      .catch(() => {
-        if (!active) return;
-        setChecked(true);
-      })
-      .finally(() => {
-        if (!active) return;
-        window.clearTimeout(safetyTimer);
-        checkingRef.current = false;
-      });
-
-    return () => {
-      active = false;
-      window.clearTimeout(safetyTimer);
-      checkingRef.current = false;
-    };
-  }, [userId, loading]);
-
-  if (!checked) return <PageFallback />;
+  const needsSetup = !secSettings || secSettings.security_setup_complete === false;
   if (needsSetup && !isAllowed) return <Navigate to="/setup-security" replace />;
   return <>{children}</>;
 };
@@ -292,11 +229,9 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
   const userId = user?.id ?? null;
   const { isFeatureEnabled } = useFeatureToggles();
 
-  const [checked, setChecked] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [secReqs, setSecReqs] = useState({ require_pin: false, require_totp: false });
-  const checkingRef = useRef(false);
-  const checkedUserRef = useRef<string | null>(null);
+  const processedUserRef = useRef<string | null>(null);
 
   const loginAllowedPaths = ["/auth", "/reset-password", "/forgot-password", "/setup-security", "/terms", "/privacy", "/disclaimer"];
   const isLoginAllowed = loginAllowedPaths.some(p => location.pathname.startsWith(p));
@@ -305,11 +240,9 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
     try {
       const val = localStorage.getItem(`${LOGIN_SECURITY_VERIFIED_KEY}${uid}`);
       if (!val) return false;
-      // Backward compat: treat old "1" as expired (forces one-time re-verification)
       if (val === "1") return false;
       const ts = Number(val);
       if (isNaN(ts)) return false;
-      // If session_timeout toggle is enabled, check 1-hour expiry
       if (isFeatureEnabled("session_timeout")) {
         return Date.now() - ts < SESSION_PIN_TIMEOUT_MS;
       }
@@ -325,6 +258,13 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
     } catch {}
   }, []);
 
+  // Skip the DB query if session is already verified via localStorage
+  const skipQuery = !userId || (userId ? isSessionVerified(userId) : false);
+
+  const { data: secSettings, isLoading: secLoading, isError } = useSecuritySettings(
+    skipQuery ? null : userId
+  );
+
   // Update last_active timestamp on activity & check 24-hour logout
   useEffect(() => {
     if (!userId || !isFeatureEnabled("session_timeout")) return;
@@ -334,7 +274,6 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
     };
 
     const checkTimeouts = async () => {
-      // 24-hour full logout check
       try {
         const lastActive = localStorage.getItem(`${LAST_ACTIVE_KEY}${userId}`);
         if (lastActive && lastActive !== "1") {
@@ -347,19 +286,14 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
         }
       } catch {}
 
-      // 1-hour PIN re-verification check
-      if (!isSessionVerified(userId) && checkedUserRef.current === userId) {
-        // Re-trigger security check by resetting checked state
-        checkedUserRef.current = null;
-        setChecked(false);
-        checkingRef.current = false;
+      // 1-hour PIN re-verification — if expired, reset so we re-evaluate
+      if (!isSessionVerified(userId)) {
+        processedUserRef.current = null;
       }
     };
 
-    // Set initial activity
     updateActivity();
 
-    // Check on visibility change (user returns to tab)
     const onVisibility = () => {
       if (document.visibilityState === "visible") {
         checkTimeouts();
@@ -368,12 +302,7 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
     };
 
     document.addEventListener("visibilitychange", onVisibility);
-
-    // Periodic check every 60 seconds
-    const interval = setInterval(() => {
-      updateActivity();
-      checkTimeouts();
-    }, 60_000);
+    const interval = setInterval(() => { updateActivity(); checkTimeouts(); }, 60_000);
 
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
@@ -381,86 +310,30 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
     };
   }, [userId, isFeatureEnabled, isSessionVerified]);
 
+  // Process security settings once loaded — determine if modal is needed
   useEffect(() => {
-    if (!userId || loading) {
-      checkingRef.current = false;
-      setChecked(true);
-      setShowModal(false);
+    if (!userId || loading || skipQuery) return;
+    if (secLoading) return;
+    if (processedUserRef.current === userId) return;
+
+    if (isError) {
+      // On error, sign out for safety
+      import("@/integrations/supabase/client").then(({ supabase }) => supabase.auth.signOut({ scope: "local" })).catch(() => {});
+      processedUserRef.current = userId;
       return;
     }
 
-    if (checkedUserRef.current === userId) {
-      setChecked(true);
-      return;
+    const needPin = secSettings?.pin_enabled && secSettings?.require_pin_login;
+    const needTotp = secSettings?.totp_enabled && secSettings?.require_totp_login;
+
+    if (needPin || needTotp) {
+      setSecReqs({ require_pin: !!needPin, require_totp: !!needTotp });
+      setShowModal(true);
+    } else {
+      markSessionVerified(userId);
     }
-
-    if (isSessionVerified(userId)) {
-      checkedUserRef.current = userId;
-      setChecked(true);
-      return;
-    }
-
-    if (checkingRef.current) return;
-    checkingRef.current = true;
-    setChecked(false);
-
-    let active = true;
-
-    const checkLoginSecurity = async () => {
-      try {
-        const { supabase } = await import("@/integrations/supabase/client");
-
-        let result: any = undefined;
-        for (let attempt = 0; attempt < 3; attempt++) {
-          const { data, error } = await supabase
-            .from("user_security_settings" as any)
-            .select("pin_enabled, totp_enabled, require_pin_login, require_totp_login")
-            .eq("user_id", userId)
-            .maybeSingle();
-
-          if (!error) {
-            result = data;
-            break;
-          }
-          if (attempt < 2) await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
-        }
-
-        if (!active) return;
-
-        if (result === undefined) {
-          await supabase.auth.signOut({ scope: "local" });
-          return;
-        }
-
-        const sec = result as { pin_enabled: boolean; totp_enabled: boolean; require_pin_login: boolean; require_totp_login: boolean } | null;
-        const needPin = sec?.pin_enabled && sec?.require_pin_login;
-        const needTotp = sec?.totp_enabled && sec?.require_totp_login;
-
-        if (needPin || needTotp) {
-          setSecReqs({ require_pin: !!needPin, require_totp: !!needTotp });
-          setShowModal(true);
-          checkedUserRef.current = userId;
-          setChecked(true);
-        } else {
-          markSessionVerified(userId);
-          checkedUserRef.current = userId;
-          setChecked(true);
-        }
-      } catch {
-        if (!active) return;
-        try {
-          const { supabase } = await import("@/integrations/supabase/client");
-          await supabase.auth.signOut({ scope: "local" });
-        } catch {}
-      } finally {
-        if (active) checkingRef.current = false;
-      }
-    };
-
-    checkLoginSecurity();
-
-    return () => { active = false; checkingRef.current = false; };
-  }, [userId, loading, isSessionVerified, markSessionVerified]);
+    processedUserRef.current = userId;
+  }, [userId, loading, skipQuery, secLoading, isError, secSettings, markSessionVerified]);
 
   const handleVerified = useCallback(() => {
     setShowModal(false);
@@ -473,11 +346,11 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
       const { supabase } = await import("@/integrations/supabase/client");
       await supabase.auth.signOut({ scope: "local" });
     } catch {}
-    checkedUserRef.current = null;
-    setChecked(true);
+    processedUserRef.current = null;
   }, []);
 
-  if (!checked && !isLoginAllowed) return <PageFallback />;
+  const isReady = !userId || loading || skipQuery || !secLoading || processedUserRef.current === userId;
+  if (!isReady && !isLoginAllowed) return <PageFallback />;
 
   return (
     <>
