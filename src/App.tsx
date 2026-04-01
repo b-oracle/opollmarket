@@ -229,11 +229,9 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
   const userId = user?.id ?? null;
   const { isFeatureEnabled } = useFeatureToggles();
 
-  const [checked, setChecked] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [secReqs, setSecReqs] = useState({ require_pin: false, require_totp: false });
-  const checkingRef = useRef(false);
-  const checkedUserRef = useRef<string | null>(null);
+  const processedUserRef = useRef<string | null>(null);
 
   const loginAllowedPaths = ["/auth", "/reset-password", "/forgot-password", "/setup-security", "/terms", "/privacy", "/disclaimer"];
   const isLoginAllowed = loginAllowedPaths.some(p => location.pathname.startsWith(p));
@@ -242,11 +240,9 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
     try {
       const val = localStorage.getItem(`${LOGIN_SECURITY_VERIFIED_KEY}${uid}`);
       if (!val) return false;
-      // Backward compat: treat old "1" as expired (forces one-time re-verification)
       if (val === "1") return false;
       const ts = Number(val);
       if (isNaN(ts)) return false;
-      // If session_timeout toggle is enabled, check 1-hour expiry
       if (isFeatureEnabled("session_timeout")) {
         return Date.now() - ts < SESSION_PIN_TIMEOUT_MS;
       }
@@ -262,6 +258,13 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
     } catch {}
   }, []);
 
+  // Skip the DB query if session is already verified via localStorage
+  const skipQuery = !userId || (userId ? isSessionVerified(userId) : false);
+
+  const { data: secSettings, isLoading: secLoading, isError } = useSecuritySettings(
+    skipQuery ? null : userId
+  );
+
   // Update last_active timestamp on activity & check 24-hour logout
   useEffect(() => {
     if (!userId || !isFeatureEnabled("session_timeout")) return;
@@ -271,7 +274,6 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
     };
 
     const checkTimeouts = async () => {
-      // 24-hour full logout check
       try {
         const lastActive = localStorage.getItem(`${LAST_ACTIVE_KEY}${userId}`);
         if (lastActive && lastActive !== "1") {
@@ -284,19 +286,14 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
         }
       } catch {}
 
-      // 1-hour PIN re-verification check
-      if (!isSessionVerified(userId) && checkedUserRef.current === userId) {
-        // Re-trigger security check by resetting checked state
-        checkedUserRef.current = null;
-        setChecked(false);
-        checkingRef.current = false;
+      // 1-hour PIN re-verification — if expired, reset so we re-evaluate
+      if (!isSessionVerified(userId)) {
+        processedUserRef.current = null;
       }
     };
 
-    // Set initial activity
     updateActivity();
 
-    // Check on visibility change (user returns to tab)
     const onVisibility = () => {
       if (document.visibilityState === "visible") {
         checkTimeouts();
@@ -305,12 +302,7 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
     };
 
     document.addEventListener("visibilitychange", onVisibility);
-
-    // Periodic check every 60 seconds
-    const interval = setInterval(() => {
-      updateActivity();
-      checkTimeouts();
-    }, 60_000);
+    const interval = setInterval(() => { updateActivity(); checkTimeouts(); }, 60_000);
 
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
@@ -318,86 +310,30 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
     };
   }, [userId, isFeatureEnabled, isSessionVerified]);
 
+  // Process security settings once loaded — determine if modal is needed
   useEffect(() => {
-    if (!userId || loading) {
-      checkingRef.current = false;
-      setChecked(true);
-      setShowModal(false);
+    if (!userId || loading || skipQuery) return;
+    if (secLoading) return;
+    if (processedUserRef.current === userId) return;
+
+    if (isError) {
+      // On error, sign out for safety
+      import("@/integrations/supabase/client").then(({ supabase }) => supabase.auth.signOut({ scope: "local" })).catch(() => {});
+      processedUserRef.current = userId;
       return;
     }
 
-    if (checkedUserRef.current === userId) {
-      setChecked(true);
-      return;
+    const needPin = secSettings?.pin_enabled && secSettings?.require_pin_login;
+    const needTotp = secSettings?.totp_enabled && secSettings?.require_totp_login;
+
+    if (needPin || needTotp) {
+      setSecReqs({ require_pin: !!needPin, require_totp: !!needTotp });
+      setShowModal(true);
+    } else {
+      markSessionVerified(userId);
     }
-
-    if (isSessionVerified(userId)) {
-      checkedUserRef.current = userId;
-      setChecked(true);
-      return;
-    }
-
-    if (checkingRef.current) return;
-    checkingRef.current = true;
-    setChecked(false);
-
-    let active = true;
-
-    const checkLoginSecurity = async () => {
-      try {
-        const { supabase } = await import("@/integrations/supabase/client");
-
-        let result: any = undefined;
-        for (let attempt = 0; attempt < 3; attempt++) {
-          const { data, error } = await supabase
-            .from("user_security_settings" as any)
-            .select("pin_enabled, totp_enabled, require_pin_login, require_totp_login")
-            .eq("user_id", userId)
-            .maybeSingle();
-
-          if (!error) {
-            result = data;
-            break;
-          }
-          if (attempt < 2) await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
-        }
-
-        if (!active) return;
-
-        if (result === undefined) {
-          await supabase.auth.signOut({ scope: "local" });
-          return;
-        }
-
-        const sec = result as { pin_enabled: boolean; totp_enabled: boolean; require_pin_login: boolean; require_totp_login: boolean } | null;
-        const needPin = sec?.pin_enabled && sec?.require_pin_login;
-        const needTotp = sec?.totp_enabled && sec?.require_totp_login;
-
-        if (needPin || needTotp) {
-          setSecReqs({ require_pin: !!needPin, require_totp: !!needTotp });
-          setShowModal(true);
-          checkedUserRef.current = userId;
-          setChecked(true);
-        } else {
-          markSessionVerified(userId);
-          checkedUserRef.current = userId;
-          setChecked(true);
-        }
-      } catch {
-        if (!active) return;
-        try {
-          const { supabase } = await import("@/integrations/supabase/client");
-          await supabase.auth.signOut({ scope: "local" });
-        } catch {}
-      } finally {
-        if (active) checkingRef.current = false;
-      }
-    };
-
-    checkLoginSecurity();
-
-    return () => { active = false; checkingRef.current = false; };
-  }, [userId, loading, isSessionVerified, markSessionVerified]);
+    processedUserRef.current = userId;
+  }, [userId, loading, skipQuery, secLoading, isError, secSettings, markSessionVerified]);
 
   const handleVerified = useCallback(() => {
     setShowModal(false);
