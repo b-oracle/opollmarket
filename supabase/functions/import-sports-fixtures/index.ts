@@ -28,6 +28,67 @@ function buildMarketDescription(homeTeam: string, awayTeam: string, league: stri
 }
 
 /**
+ * Generate AI description and details for a sports market.
+ * Returns { description, details } or null on failure.
+ */
+async function generateAiContent(
+  homeTeam: string,
+  awayTeam: string,
+  league: string,
+  sportType: string,
+  matchDate: string,
+  lovableApiKey: string
+): Promise<{ description: string; details: string } | null> {
+  try {
+    const dateStr = new Date(matchDate).toLocaleDateString("en-US", {
+      weekday: "long", month: "long", day: "numeric", year: "numeric",
+    });
+
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${lovableApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          {
+            role: "system",
+            content: `You are a sports prediction market writer. You will output a JSON object with two fields:
+1. "description": A clear, concise 2-3 sentence market description explaining what users are predicting and how the market resolves. No markdown. Max 350 characters.
+2. "details": Rich background context about the matchup in markdown (use headers, bullet points, bold). Include team form, head-to-head history hints, key factors, and why this match matters. 300-700 characters.
+Output ONLY valid JSON, no code fences.`,
+          },
+          {
+            role: "user",
+            content: `Sport: ${sportType}\nMatch: ${homeTeam} vs ${awayTeam}\nLeague: ${league}\nDate: ${dateStr}\n\nGenerate description and details.`,
+          },
+        ],
+      }),
+    });
+
+    if (!aiResponse.ok) {
+      console.warn(`AI content generation failed (${aiResponse.status}) for ${homeTeam} vs ${awayTeam}`);
+      return null;
+    }
+
+    const aiData = await aiResponse.json();
+    const raw = aiData.choices?.[0]?.message?.content || "";
+    // Strip possible code fences
+    const cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+    return {
+      description: typeof parsed.description === "string" ? parsed.description.slice(0, 2000) : "",
+      details: typeof parsed.details === "string" ? parsed.details.slice(0, 5000) : "",
+    };
+  } catch (err) {
+    console.warn(`AI content parse error for ${homeTeam} vs ${awayTeam}:`, err);
+    return null;
+  }
+}
+
+/**
  * Generate an AI image for a sports market and upload to storage.
  * Returns the public URL or null on failure.
  */
