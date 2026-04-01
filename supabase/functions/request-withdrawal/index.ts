@@ -252,6 +252,52 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ─── Daily withdrawal cap: max 5 withdrawals per 24h ───
+    const dailyCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { count: dailyCount } = await adminClient
+      .from("withdrawal_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("created_at", dailyCutoff);
+
+    const MAX_DAILY_WITHDRAWALS = 5;
+    if ((dailyCount ?? 0) >= MAX_DAILY_WITHDRAWALS) {
+      return new Response(
+        JSON.stringify({ error: "You have reached the maximum of 5 withdrawals per 24 hours. Please try again later." }),
+        { status: 429, headers: corsHeaders }
+      );
+    }
+
+    // ─── Anomaly detection: alert admins on suspicious patterns ───
+    const { data: dailyWithdrawals } = await adminClient
+      .from("withdrawal_requests")
+      .select("amount")
+      .eq("user_id", userId)
+      .gte("created_at", dailyCutoff);
+
+    const dailyTotal = (dailyWithdrawals || []).reduce((sum: number, r: any) => sum + Number(r.amount), 0) + amount;
+    const ANOMALY_THRESHOLD = 1000; // $1000 in 24h triggers alert
+
+    if (dailyTotal >= ANOMALY_THRESHOLD) {
+      // Fire-and-forget admin alert
+      const { data: adminUsers } = await adminClient
+        .from("user_roles")
+        .select("user_id")
+        .in("role", ["admin", "super_admin"])
+        .limit(10);
+
+      if (adminUsers && adminUsers.length > 0) {
+        const alertNotifications = adminUsers.map((admin: any) => ({
+          user_id: admin.user_id,
+          title: "⚠️ Withdrawal Anomaly Detected",
+          message: `User ${userId.slice(0, 8)}… has withdrawn $${dailyTotal.toFixed(2)} in 24h (current request: $${amount}). IP: ${clientIp}`,
+          type: "system",
+        }));
+        await adminClient.from("notifications").insert(alertNotifications);
+        console.warn(`[ANOMALY] user=${userId} daily_total=$${dailyTotal} ip=${clientIp}`);
+      }
+    }
+
     // Atomic balance debit with row lock (main balance only, not bonus)
     const { data: debitResult } = await adminClient.rpc("debit_balance_atomic", {
       _user_id: userId,
