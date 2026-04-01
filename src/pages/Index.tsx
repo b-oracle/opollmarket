@@ -20,9 +20,8 @@ import LivePriceBadge from "@/components/LivePriceBadge";
 import { Gem, ArrowLeftRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import BoostMarketModal from "@/components/BoostMarketModal";
-import { useCommentCount } from "@/hooks/useCommentCount";
+import { useBatchCounts } from "@/hooks/useBatchCounts";
 import useAnalytics from "@/hooks/useAnalytics";
-import { useLikeCount } from "@/hooks/useLikeCount";
 import { useQuery } from "@tanstack/react-query";
 import { createStatelessReadClient } from "@/lib/statelessSupabase";
 
