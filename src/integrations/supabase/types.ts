@@ -3028,6 +3028,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      claim_webhook_deposit: {
+        Args: { _payment_id: string; _provider?: string }
+        Returns: {
+          amount: number
+          id: string
+          status: string
+          user_id: string
+        }[]
+      }
       count_visible_live_spaces: { Args: { _user_id: string }; Returns: number }
       debit_balance_atomic: {
         Args: { _bonus_deduct?: number; _main_deduct: number; _user_id: string }
@@ -3215,6 +3224,7 @@ export type Database = {
               error: true
             } & "Could not choose the best candidate function between: public.is_valid_referral_code(_code => text), public.is_valid_referral_code(_code => uuid). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
           }
+      normalize_email: { Args: { _email: string }; Returns: string }
       release_creation_fee_escrow: {
         Args: { _action: string; _escrow_id: string }
         Returns: Json
