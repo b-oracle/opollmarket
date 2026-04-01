@@ -67,6 +67,10 @@ const Index = () => {
   const { track } = useAnalytics();
   const { user, loading: authLoading } = useAuth();
 
+  // Batch fetch all comment + like counts in 2 queries instead of 2×N
+  const marketIds = useMemo(() => markets.map(m => m.id), [markets]);
+  const { data: batchCounts } = useBatchCounts(marketIds);
+
   useEffect(() => { track("page_view", { page: "home" }); }, []);
 
   // Pull-to-refresh
