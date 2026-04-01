@@ -52,7 +52,8 @@ const KycSubmissionForm = () => {
   const [submitting, setSubmitting] = useState(false);
 
   // Tier 1 fields
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [dob, setDob] = useState("");
   const [phone, setPhone] = useState("");
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
@@ -106,7 +107,8 @@ const KycSubmissionForm = () => {
   }, [user]);
 
   const handleTier1Submit = async () => {
-    if (!user || !fullName.trim() || !dob || !phone.trim() || !selfieFile) {
+    const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+    if (!user || !fullName || !firstName.trim() || !lastName.trim() || !dob || !phone.trim() || !selfieFile) {
       toast.error("Please fill all fields and upload a selfie");
       return;
     }
@@ -117,7 +119,7 @@ const KycSubmissionForm = () => {
         user_id: user.id,
         tier: 1,
         status: "pending",
-        full_name: fullName.trim(),
+        full_name: fullName,
         date_of_birth: dob,
         phone_number: phone.trim(),
         selfie_url: selfieUrl,
@@ -133,7 +135,7 @@ const KycSubmissionForm = () => {
       queryClient.invalidateQueries({ queryKey: ["kyc_status"] });
       queryClient.invalidateQueries({ queryKey: ["kyc_submission"] });
       toast.success("KYC submitted! We'll review within 24 hours.");
-      setFullName(""); setDob(""); setPhone(""); setSelfieFile(null);
+      setFirstName(""); setLastName(""); setDob(""); setPhone(""); setSelfieFile(null);
     } catch (err: any) {
       toast.error(err.message || "Submission failed");
     } finally {
@@ -247,30 +249,32 @@ const KycSubmissionForm = () => {
                 <Label className="text-xs">Home Address</Label>
                 <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Full residential address" className="mt-1" />
               </div>
-              <div>
-                <Label className="text-xs">Government-Issued ID (Front)</Label>
-                <div className="mt-1 flex items-center gap-2">
-                  <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border cursor-pointer hover:bg-muted/50 transition-colors">
-                    <FileText className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground truncate">{idFrontFile?.name || "Upload front of ID"}</span>
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => setIdFrontFile(e.target.files?.[0] || null)} />
-                  </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs">Government-Issued ID (Front)</Label>
+                  <div className="mt-1">
+                    <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border cursor-pointer hover:bg-muted/50 transition-colors">
+                      <FileText className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground truncate">{idFrontFile?.name || "Upload front of ID"}</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => setIdFrontFile(e.target.files?.[0] || null)} />
+                    </label>
+                  </div>
                 </div>
-              </div>
-              <div>
-                <Label className="text-xs">Government-Issued ID (Back)</Label>
-                <div className="mt-1 flex items-center gap-2">
-                  <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border cursor-pointer hover:bg-muted/50 transition-colors">
-                    <FileText className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground truncate">{idBackFile?.name || "Upload back of ID"}</span>
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => setIdBackFile(e.target.files?.[0] || null)} />
-                  </label>
+                <div>
+                  <Label className="text-xs">Government-Issued ID (Back)</Label>
+                  <div className="mt-1">
+                    <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border cursor-pointer hover:bg-muted/50 transition-colors">
+                      <FileText className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground truncate">{idBackFile?.name || "Upload back of ID"}</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => setIdBackFile(e.target.files?.[0] || null)} />
+                    </label>
+                  </div>
                 </div>
               </div>
               <div>
                 <Label className="text-xs">Utility Bill (showing address)</Label>
-                <div className="mt-1 flex items-center gap-2">
-                  <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="mt-1">
+                  <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border cursor-pointer hover:bg-muted/50 transition-colors">
                     <FileText className="w-4 h-4 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground truncate">{utilityFile?.name || "Upload utility bill"}</span>
                     <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => setUtilityFile(e.target.files?.[0] || null)} />
@@ -294,17 +298,25 @@ const KycSubmissionForm = () => {
             Required before making any withdrawals. Upload a selfie holding a note showing today's date, your full name, and "Opollmarket".
           </p>
           <div className="space-y-2">
-            <div>
-              <Label className="text-xs">Full Legal Name</Label>
-              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="John Doe" className="mt-1" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs">First Name</Label>
+                <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="John" className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-xs">Last Name</Label>
+                <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Doe" className="mt-1" />
+              </div>
             </div>
-            <div>
-              <Label className="text-xs">Date of Birth</Label>
-              <Input type="date" value={dob} onChange={(e) => setDob(e.target.value)} className="mt-1" />
-            </div>
-            <div>
-              <Label className="text-xs">Phone Number</Label>
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+234..." className="mt-1" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs">Date of Birth</Label>
+                <Input type="date" value={dob} onChange={(e) => setDob(e.target.value)} className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-xs">Phone Number</Label>
+                <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+234..." className="mt-1" />
+              </div>
             </div>
             <div>
               <Label className="text-xs">Selfie (holding note with date + name + "Opollmarket")</Label>
