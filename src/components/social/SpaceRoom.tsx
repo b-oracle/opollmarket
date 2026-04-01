@@ -1042,6 +1042,19 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         }
         setForceMutedUsers(prev => new Set(prev).add(target_user_id));
       }
+      // Clear indicators when making co-host (same as promote)
+      if (action === "make_cohost" && target_user_id) {
+        setRemoteHandRaises((prev) => {
+          const next = new Set(prev);
+          next.delete(target_user_id);
+          return next;
+        });
+        setSpeakRequests((prev) => {
+          const next = new Set(prev);
+          next.delete(target_user_id);
+          return next;
+        });
+      }
       // Refresh co_host_ids after co-host changes and broadcast to all participants
       if (action === "make_cohost" || action === "remove_cohost") {
         const { data: spaceData } = await supabase
@@ -1490,7 +1503,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             ✋
           </div>
         )}
-        {speakRequests.has(p.identity) && !hasHandUp && (
+        {speakRequests.has(p.identity) && !hasHandUp && !p.canPublish && p.identity !== hostId && !coHostIds.includes(p.identity) && (
           <div className="absolute -top-1 -right-1 text-base animate-pulse drop-shadow-md">
             🎙️
           </div>
