@@ -51,6 +51,8 @@ Deno.serve(async (req) => {
           title: "Space is Live! 🎙️",
           message: `"${space.title}" is now live! Join the conversation.`,
           type: "info",
+          market_id: space.id,
+          actor_id: space.host_id,
         }));
 
         await supabase.from("notifications").insert(notifications);
@@ -62,6 +64,7 @@ Deno.serve(async (req) => {
         title: "Your Scheduled Space is Live! 🎙️",
         message: `Your space "${space.title}" is now live. Join to start hosting!`,
         type: "info",
+        market_id: space.id,
       });
     }
 
