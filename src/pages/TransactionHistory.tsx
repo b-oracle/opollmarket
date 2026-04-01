@@ -382,8 +382,8 @@ const TransactionHistory = () => {
 
       <DepositWithdrawModal
         open={modalOpen}
-        onOpenChange={setModalOpen}
-        defaultTab={modalTab}
+        onClose={() => setModalOpen(false)}
+        initialTab={modalTab}
         resumePaymentId={resumePaymentId}
         resumeProvider={resumeProvider}
       />
