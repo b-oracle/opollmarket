@@ -986,7 +986,7 @@ const AdminMarkets = () => {
                             {isEditing && canEdit ? (
                               <div>
                                 <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1 block">Market Image</label>
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 flex-wrap">
                                   {(editState.newImageFile || editState.image_url) && (
                                     <img
                                       src={editState.newImageFile ? URL.createObjectURL(editState.newImageFile) : editState.image_url}
@@ -1007,6 +1007,36 @@ const AdminMarkets = () => {
                                       }}
                                     />
                                   </label>
+                                  <button
+                                    type="button"
+                                    disabled={generatingAiImage === editState.id}
+                                    onClick={async () => {
+                                      setGeneratingAiImage(editState.id);
+                                      try {
+                                        const { data, error } = await supabase.functions.invoke("generate-market-content", {
+                                          body: { type: "image", title: editState.title, category: editState.category },
+                                        });
+                                        if (error) throw error;
+                                        if (data?.error) { toast.error(data.error); return; }
+                                        if (data?.imageUrl) {
+                                          setEditState({ ...editState, image_url: data.imageUrl, newImageFile: null });
+                                          toast.success("AI image generated!");
+                                        }
+                                      } catch (err: any) {
+                                        toast.error(err?.message || "AI generation failed");
+                                      } finally {
+                                        setGeneratingAiImage(null);
+                                      }
+                                    }}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-colors text-sm text-primary font-medium disabled:opacity-50"
+                                  >
+                                    {generatingAiImage === editState.id ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <Sparkles className="w-4 h-4" />
+                                    )}
+                                    AI Generate
+                                  </button>
                                 </div>
                               </div>
                             ) : (
