@@ -541,7 +541,9 @@ const Feed = () => {
               isActive={i === activeIndex}
               isBoosted={boostedMarketIds.has(market.id)}
               boostEndsAt={boost?.ends_at}
-              boostTier={boost?.tier} />);
+              boostTier={boost?.tier}
+              batchCommentCount={batchCounts?.comments.get(market.id) || 0}
+              batchLikeCount={batchCounts?.likes.get(market.id) || 0} />);
 
 
         })}
