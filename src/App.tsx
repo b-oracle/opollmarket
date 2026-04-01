@@ -1,5 +1,6 @@
 // App root – v5 (login security gate)
 import { lazy, Suspense, useState, useEffect, useRef, useCallback } from "react";
+import { useSecuritySettings, useInvalidateSecuritySettings } from "./hooks/useSecuritySettings";
 import { ActiveSpaceProvider, useActiveSpace } from "./hooks/useActiveSpace";
 import SpaceRoom from "./components/social/SpaceRoom";
 const SecurityVerificationModal = lazy(() => import("./components/SecurityVerificationModal"));
