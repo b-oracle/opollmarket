@@ -7,8 +7,12 @@ import { toast } from "sonner";
 import { Shield, Lock, Smartphone, CheckCircle2, Loader2, Copy, Check, KeyRound, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import PinInput from "@/components/PinInput";
 import TopBar from "@/components/TopBar";
+import BottomNav from "@/components/BottomNav";
 import { motion } from "framer-motion";
 import SEOHead from "@/components/SEOHead";
+import KycSubmissionForm from "@/components/KycSubmissionForm";
+import { Switch } from "@/components/ui/switch";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 type SetupStep =
   | "choose"
