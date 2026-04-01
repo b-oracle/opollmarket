@@ -880,6 +880,59 @@ export type Database = {
           },
         ]
       }
+      kyc_device_logs: {
+        Row: {
+          created_at: string
+          device_pixel_ratio: number | null
+          id: string
+          ip_address: string | null
+          kyc_submission_id: string
+          language: string | null
+          platform: string | null
+          screen_height: number | null
+          screen_width: number | null
+          timezone: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_pixel_ratio?: number | null
+          id?: string
+          ip_address?: string | null
+          kyc_submission_id: string
+          language?: string | null
+          platform?: string | null
+          screen_height?: number | null
+          screen_width?: number | null
+          timezone?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_pixel_ratio?: number | null
+          id?: string
+          ip_address?: string | null
+          kyc_submission_id?: string
+          language?: string | null
+          platform?: string | null
+          screen_height?: number | null
+          screen_width?: number | null
+          timezone?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kyc_device_logs_kyc_submission_id_fkey"
+            columns: ["kyc_submission_id"]
+            isOneToOne: false
+            referencedRelation: "kyc_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kyc_submissions: {
         Row: {
           address: string | null

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { CheckCircle2, XCircle, Clock, Loader2, Eye, User, FileText, Image, Camera } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Loader2, Eye, User, FileText, Camera, Monitor } from "lucide-react";
 
 type KycSubmission = {
   id: string;
@@ -36,6 +36,19 @@ const AdminKyc = () => {
   const [adminNote, setAdminNote] = useState("");
   const [processing, setProcessing] = useState(false);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
+  const [deviceLogs, setDeviceLogs] = useState<Record<string, any>>({}); // keyed by submission id
+
+  const fetchDeviceLog = async (submissionId: string) => {
+    if (deviceLogs[submissionId]) return; // already loaded
+    const { data } = await supabase
+      .from("kyc_device_logs" as any)
+      .select("*")
+      .eq("kyc_submission_id", submissionId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setDeviceLogs((prev) => ({ ...prev, [submissionId]: data || "none" }));
+  };
 
   const { data: submissions = [], isLoading } = useQuery({
     queryKey: ["admin_kyc_submissions", filter],
@@ -215,6 +228,29 @@ const AdminKyc = () => {
                     <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => handleViewImage(sub.utility_bill_url!)}>
                       <FileText className="w-3 h-3 mr-1" /> Utility Bill
                     </Button>
+                  )}
+                </div>
+
+                {/* Device info */}
+                <div className="pt-1">
+                  {!deviceLogs[sub.id] ? (
+                    <Button variant="ghost" size="sm" className="text-xs h-6 text-muted-foreground" onClick={() => fetchDeviceLog(sub.id)}>
+                      <Monitor className="w-3 h-3 mr-1" /> Show Device Info
+                    </Button>
+                  ) : deviceLogs[sub.id] === "none" ? (
+                    <p className="text-[10px] text-muted-foreground italic">No device data recorded</p>
+                  ) : (
+                    <div className="rounded-lg bg-muted/30 p-2 space-y-0.5">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Device Fingerprint</p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px]">
+                        <div><span className="text-muted-foreground">IP:</span> {(deviceLogs[sub.id] as any).ip_address}</div>
+                        <div><span className="text-muted-foreground">Screen:</span> {(deviceLogs[sub.id] as any).screen_width}×{(deviceLogs[sub.id] as any).screen_height} @{(deviceLogs[sub.id] as any).device_pixel_ratio}x</div>
+                        <div><span className="text-muted-foreground">Platform:</span> {(deviceLogs[sub.id] as any).platform}</div>
+                        <div><span className="text-muted-foreground">Language:</span> {(deviceLogs[sub.id] as any).language}</div>
+                        <div className="col-span-2"><span className="text-muted-foreground">Timezone:</span> {(deviceLogs[sub.id] as any).timezone}</div>
+                        <div className="col-span-2 break-all"><span className="text-muted-foreground">UA:</span> {(deviceLogs[sub.id] as any).user_agent}</div>
+                      </div>
+                    </div>
                   )}
                 </div>
 

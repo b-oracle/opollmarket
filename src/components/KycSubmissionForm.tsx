@@ -10,6 +10,34 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { compressImage } from "@/lib/imageCompression";
 
+const collectDeviceInfo = () => ({
+  screen_width: window.screen?.width,
+  screen_height: window.screen?.height,
+  device_pixel_ratio: window.devicePixelRatio,
+  platform: navigator.platform || navigator.userAgent,
+  language: navigator.language,
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+});
+
+const logKycDevice = async (kycSubmissionId: string) => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    if (!projectId) return;
+    await fetch(`https://${projectId}.supabase.co/functions/v1/log-kyc-device`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ kyc_submission_id: kycSubmissionId, ...collectDeviceInfo() }),
+    });
+  } catch (e) {
+    console.warn("Device log failed:", e);
+  }
+};
+
 const KYC_STATUS_CONFIG = {
   none: { label: "Unverified", icon: Shield, color: "bg-muted text-muted-foreground" },
   pending: { label: "Under Review", icon: Clock, color: "bg-amber-500/10 text-amber-500" },
@@ -85,7 +113,7 @@ const KycSubmissionForm = () => {
     setSubmitting(true);
     try {
       const selfieUrl = await uploadFile(selfieFile, "selfie");
-      const { error } = await supabase.from("kyc_submissions" as any).insert({
+      const { data: inserted, error } = await supabase.from("kyc_submissions" as any).insert({
         user_id: user.id,
         tier: 1,
         status: "pending",
@@ -93,8 +121,11 @@ const KycSubmissionForm = () => {
         date_of_birth: dob,
         phone_number: phone.trim(),
         selfie_url: selfieUrl,
-      } as any);
+      } as any).select("id").single();
       if (error) throw error;
+
+      // Log device info for fraud prevention
+      if ((inserted as any)?.id) logKycDevice((inserted as any).id);
 
       // Set profile to pending
       await supabase.from("profiles").update({ kyc_status: "pending" } as any).eq("id", user.id);
@@ -122,7 +153,7 @@ const KycSubmissionForm = () => {
         uploadFile(idBackFile, "id_back"),
         uploadFile(utilityFile, "utility_bill"),
       ]);
-      const { error } = await supabase.from("kyc_submissions" as any).insert({
+      const { data: inserted, error } = await supabase.from("kyc_submissions" as any).insert({
         user_id: user.id,
         tier: 2,
         status: "pending",
@@ -131,8 +162,10 @@ const KycSubmissionForm = () => {
         id_front_url: idFrontUrl,
         id_back_url: idBackUrl,
         utility_bill_url: utilityUrl,
-      } as any);
+      } as any).select("id").single();
       if (error) throw error;
+
+      if ((inserted as any)?.id) logKycDevice((inserted as any).id);
 
       await supabase.from("profiles").update({ kyc_status: "pending" } as any).eq("id", user.id);
 
