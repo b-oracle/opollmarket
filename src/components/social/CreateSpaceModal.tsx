@@ -169,7 +169,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
 
               <MarketTagSelector selected={taggedMarkets} onChange={setTaggedMarkets} max={6} />
 
-              {!isVerified && verificationLevel !== null && (
+              {!isVerified && verificationLevel !== null && !allowUnverified && (
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs">
                   <ShieldAlert className="w-4 h-4 shrink-0" />
                   <span>Only verified members (Blue or Gold tick) can host Spaces.</span>
