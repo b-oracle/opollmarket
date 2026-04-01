@@ -32,7 +32,7 @@ const navItems: NavItem[] = [
   { to: "/admin/users", label: "Users", icon: Users, roles: ["super_admin", "admin", "moderator"] },
   { to: "/admin/referrals", label: "Referrals", icon: Gift, roles: ["super_admin", "admin"] },
   { to: "/admin/commissions", label: "Commissions", icon: Coins, roles: ["super_admin", "admin"] },
-  { to: "/admin/settings", label: "Settings", icon: Settings, roles: ["super_admin"] },
+  { to: "/admin/settings", label: "Settings", icon: Settings, roles: ["super_admin", "admin"] },
   { to: "/admin/contracts", label: "Smart Contracts", icon: FileCode2, roles: ["super_admin"] },
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3, roles: ["super_admin", "admin"] },
   { to: "/admin/checklist", label: "Launch Checklist", icon: Rocket, roles: ["super_admin"] },
@@ -180,14 +180,14 @@ const AdminLayout = () => {
         {/* View-only banner removed — admin now has edit access */}
 
         <div className="max-w-5xl mx-auto p-4 sm:p-6">
-          <Outlet context={{ canEdit }} />
+          <Outlet context={{ canEdit, isSuperAdmin }} />
         </div>
       </main>
     </div>
   );
 };
 
-export type AdminOutletContext = { canEdit: boolean };
+export type AdminOutletContext = { canEdit: boolean; isSuperAdmin: boolean };
 export const useAdminContext = () => useOutletContext<AdminOutletContext>();
 
 export default AdminLayout;

@@ -46,7 +46,7 @@ const ALL_TIMEFRAMES = [
 ];
 
 const AdminSettings = () => {
-  const { canEdit } = useAdminContext();
+  const { canEdit, isSuperAdmin } = useAdminContext();
   const [predictionFee, setPredictionFee] = useState("10");
   // admin_fee_percent is no longer configurable — platform keeps the remainder
   const [creatorFee, setCreatorFee] = useState("");
@@ -392,6 +392,17 @@ const AdminSettings = () => {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Admin-only view: show just import presets
+  if (!isSuperAdmin) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold">Auto-Import Settings</h1>
+        <PolymarketPresetsSection canEdit={canEdit} />
+        <SportsImportPresetsSection canEdit={canEdit} />
       </div>
     );
   }
