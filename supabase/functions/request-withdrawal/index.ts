@@ -439,6 +439,8 @@ Deno.serve(async (req) => {
         wallet_address: wallet_address.trim(),
         crypto_currency: payCurrency,
         status: "pending",
+        ip_address: clientIp,
+        user_agent: clientUa,
       });
 
       await adminClient.from("transactions").insert({
