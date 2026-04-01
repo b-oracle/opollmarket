@@ -296,10 +296,9 @@ Deno.serve(async (req) => {
       .eq("user_id", userId)
       .gte("created_at", dailyCutoff);
 
-    const MAX_DAILY_WITHDRAWALS = 5;
-    if ((dailyCount ?? 0) >= MAX_DAILY_WITHDRAWALS) {
+    if ((dailyCount ?? 0) >= maxDailyWithdrawals) {
       return new Response(
-        JSON.stringify({ error: "You have reached the maximum of 5 withdrawals per 24 hours. Please try again later." }),
+        JSON.stringify({ error: `You have reached the maximum of ${maxDailyWithdrawals} withdrawals per 24 hours. Please try again later.` }),
         { status: 429, headers: corsHeaders }
       );
     }
