@@ -101,6 +101,21 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const fiatEnabled = isFeatureEnabled("fiat_deposit_payaza");
   const fiatWithdrawalEnabled = isFeatureEnabled("fiat_withdrawal");
 
+  // Fetch KYC status for withdrawal gate
+  const { data: kycStatus = "none" } = useQuery({
+    queryKey: ["kyc_status_modal", user?.id],
+    queryFn: async () => {
+      if (!user) return "none";
+      const { data } = await supabase
+        .from("profiles")
+        .select("kyc_status")
+        .eq("id", user.id)
+        .single();
+      return (data as any)?.kyc_status || "none";
+    },
+    enabled: !!user && open,
+  });
+
   // Fetch provider settings (deposit_provider & payout_provider)
   const { data: providerSettings } = useQuery({
     queryKey: ["fiat-provider-settings"],
