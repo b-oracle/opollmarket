@@ -52,7 +52,8 @@ const KycSubmissionForm = () => {
   const [submitting, setSubmitting] = useState(false);
 
   // Tier 1 fields
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [dob, setDob] = useState("");
   const [phone, setPhone] = useState("");
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
