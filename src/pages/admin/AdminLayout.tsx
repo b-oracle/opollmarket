@@ -187,7 +187,7 @@ const AdminLayout = () => {
   );
 };
 
-export type AdminOutletContext = { canEdit: boolean };
+export type AdminOutletContext = { canEdit: boolean; isSuperAdmin: boolean };
 export const useAdminContext = () => useOutletContext<AdminOutletContext>();
 
 export default AdminLayout;
