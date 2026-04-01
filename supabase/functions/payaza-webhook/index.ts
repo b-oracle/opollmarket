@@ -6,14 +6,45 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function verifyPayazaSignature(body: string, signatureHeader: string | null, secretKey: string): Promise<boolean> {
+  if (!signatureHeader) return false;
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw", encoder.encode(secretKey), { name: "HMAC", hash: "SHA-512" }, false, ["sign"]
+  );
+  const signature = new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(body)));
+  const hex = Array.from(signature).map(b => b.toString(16).padStart(2, "0")).join("");
+  return hex.toLowerCase() === signatureHeader.toLowerCase();
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const body = await req.json();
-    console.log("Payaza webhook payload:", JSON.stringify(body));
+    const rawBody = await req.text();
+
+    // ── Signature verification (reject forged webhooks) ──
+    const payazaSecret = Deno.env.get("PAYAZA_SECRET_KEY");
+    if (!payazaSecret) {
+      console.error("PAYAZA_SECRET_KEY not configured — rejecting webhook");
+      return new Response(JSON.stringify({ error: "Webhook verification not configured" }), {
+        status: 500, headers: corsHeaders,
+      });
+    }
+
+    const signature = req.headers.get("x-payaza-signature") || req.headers.get("payaza-signature") || req.headers.get("x-webhook-signature");
+    const isValid = await verifyPayazaSignature(rawBody, signature, payazaSecret);
+    if (!isValid) {
+      console.error("Payaza webhook signature verification FAILED");
+      return new Response(JSON.stringify({ error: "Invalid signature" }), {
+        status: 401, headers: corsHeaders,
+      });
+    }
+
+    const body = JSON.parse(rawBody);
+    console.log("Payaza webhook payload (verified):", JSON.stringify(body));
 
     // Extract reference — Payaza sends it in multiple possible fields
     const reference =
