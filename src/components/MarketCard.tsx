@@ -65,7 +65,7 @@ const colorAlpha = (hex: string, alpha: number) => {
   return `rgba(${r},${g},${b},${alpha})`;
 };
 
-const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTier }: MarketCardProps) => {
+const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTier, batchCommentCount, batchLikeCount }: MarketCardProps) => {
   const navigate = useNavigate();
   const yesPercent = Math.round(market.yesPrice * 100);
   const noPercent = Math.round(market.noPrice * 100);
