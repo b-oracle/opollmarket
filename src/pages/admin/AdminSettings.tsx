@@ -124,6 +124,9 @@ const AdminSettings = () => {
         setMinWithdrawalAmount(String(d.min_withdrawal_amount ?? 5));
         setWithdrawalCooldown(String(d.withdrawal_cooldown_minutes ?? 5));
         setWithdrawalMultiplier(String(d.withdrawal_multiplier ?? 2));
+        setKycTier1DailyLimit(String(d.kyc_tier1_daily_limit ?? 500));
+        setKycTier2DailyLimit(String(d.kyc_tier2_daily_limit ?? 50000));
+        setMaxDailyWithdrawals(String(d.max_daily_withdrawals ?? 5));
         setWithdrawalLimitEnabled(d.withdrawal_limit_enabled !== false);
         setExitFee(String(d.exit_fee_percent ?? 5));
         setLiquidityReturnFee(String((d as any).liquidity_return_fee_percent ?? 5));
