@@ -347,6 +347,10 @@ const Feed = () => {
   const sortedMarkets = useMemo(() => allSortedMarkets.slice(0, visibleCount), [allSortedMarkets, visibleCount]);
   const hasMore = visibleCount < allSortedMarkets.length;
 
+  // Batch fetch comment + like counts for visible markets (2 queries instead of 2×N)
+  const visibleMarketIds = useMemo(() => sortedMarkets.map(m => m.id), [sortedMarkets]);
+  const { data: batchCounts } = useBatchCounts(visibleMarketIds);
+
   const endToastShown = useRef(false);
 
   useEffect(() => {
