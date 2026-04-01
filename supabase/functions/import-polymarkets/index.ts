@@ -42,6 +42,7 @@ Deno.serve(async (req) => {
     // Check if called manually with auth (optional)
     const authHeader = req.headers.get("Authorization");
     let manualPresetId: string | null = null;
+    let callingUserId: string | null = null;
     if (authHeader) {
       const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!, {
         global: { headers: { Authorization: authHeader } },
@@ -56,6 +57,7 @@ Deno.serve(async (req) => {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
+        callingUserId = user.id;
       }
       // Check if specific preset_id passed
       try {
@@ -76,22 +78,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get a super_admin user as the creator
-    const { data: saRole } = await adminClient
-      .from("user_roles")
-      .select("user_id")
-      .eq("role", "super_admin")
-      .limit(1)
-      .single();
+    // Use calling admin as creator if available, otherwise fall back to super_admin
+    let creatorId = callingUserId;
+    if (!creatorId) {
+      const { data: saRole } = await adminClient
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "super_admin")
+        .limit(1)
+        .single();
 
-    if (!saRole) {
-      return new Response(JSON.stringify({ error: "No super_admin user found" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      if (!saRole) {
+        return new Response(JSON.stringify({ error: "No super_admin user found" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      creatorId = saRole.user_id;
     }
-
-    const creatorId = saRole.user_id;
 
     // Get creator profile for name
     const { data: profile } = await adminClient
