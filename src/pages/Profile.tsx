@@ -1961,6 +1961,9 @@ const Profile = () => {
           )}
         </div>
 
+        {/* KYC Verification */}
+        <KycSubmissionForm />
+
         {/* Security Settings */}
         <SecuritySettingsSection userId={user?.id} />
 
