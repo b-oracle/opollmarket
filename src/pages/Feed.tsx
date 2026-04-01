@@ -19,8 +19,7 @@ import { useBookmarkedMarkets } from "@/hooks/useBookmarkedMarkets";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
 import { supabase } from "@/integrations/supabase/client";
-import { useCommentCount } from "@/hooks/useCommentCount";
-import { useLikeCount } from "@/hooks/useLikeCount";
+import { useBatchCounts } from "@/hooks/useBatchCounts";
 import BoostCountdown from "@/components/BoostCountdown";
 
 const useIsDesktop = () => {
