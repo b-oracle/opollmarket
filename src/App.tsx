@@ -281,10 +281,15 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
 // Gate that requires PIN/TOTP verification on login for ALL auth methods (OAuth, session restore, email/password)
 const LOGIN_SECURITY_VERIFIED_KEY = "login_sec_verified_";
 
+const SESSION_PIN_TIMEOUT_MS = 3_600_000; // 1 hour
+const SESSION_LOGOUT_TIMEOUT_MS = 86_400_000; // 24 hours
+const LAST_ACTIVE_KEY = "last_active_";
+
 const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
   const userId = user?.id ?? null;
+  const { isFeatureEnabled } = useFeatureToggles();
 
   const [checked, setChecked] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -297,17 +302,83 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
 
   const isSessionVerified = useCallback((uid: string) => {
     try {
-      return localStorage.getItem(`${LOGIN_SECURITY_VERIFIED_KEY}${uid}`) === "1";
+      const val = localStorage.getItem(`${LOGIN_SECURITY_VERIFIED_KEY}${uid}`);
+      if (!val) return false;
+      // Backward compat: treat old "1" as expired (forces one-time re-verification)
+      if (val === "1") return false;
+      const ts = Number(val);
+      if (isNaN(ts)) return false;
+      // If session_timeout toggle is enabled, check 1-hour expiry
+      if (isFeatureEnabled("session_timeout")) {
+        return Date.now() - ts < SESSION_PIN_TIMEOUT_MS;
+      }
+      return true;
     } catch {
       return false;
     }
-  }, []);
+  }, [isFeatureEnabled]);
 
   const markSessionVerified = useCallback((uid: string) => {
     try {
-      localStorage.setItem(`${LOGIN_SECURITY_VERIFIED_KEY}${uid}`, "1");
+      localStorage.setItem(`${LOGIN_SECURITY_VERIFIED_KEY}${uid}`, Date.now().toString());
     } catch {}
   }, []);
+
+  // Update last_active timestamp on activity & check 24-hour logout
+  useEffect(() => {
+    if (!userId || !isFeatureEnabled("session_timeout")) return;
+
+    const updateActivity = () => {
+      try { localStorage.setItem(`${LAST_ACTIVE_KEY}${userId}`, Date.now().toString()); } catch {}
+    };
+
+    const checkTimeouts = async () => {
+      // 24-hour full logout check
+      try {
+        const lastActive = localStorage.getItem(`${LAST_ACTIVE_KEY}${userId}`);
+        if (lastActive && lastActive !== "1") {
+          const elapsed = Date.now() - Number(lastActive);
+          if (elapsed > SESSION_LOGOUT_TIMEOUT_MS) {
+            const { supabase } = await import("@/integrations/supabase/client");
+            await supabase.auth.signOut();
+            return;
+          }
+        }
+      } catch {}
+
+      // 1-hour PIN re-verification check
+      if (!isSessionVerified(userId) && checkedUserRef.current === userId) {
+        // Re-trigger security check by resetting checked state
+        checkedUserRef.current = null;
+        setChecked(false);
+        checkingRef.current = false;
+      }
+    };
+
+    // Set initial activity
+    updateActivity();
+
+    // Check on visibility change (user returns to tab)
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        checkTimeouts();
+        updateActivity();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibility);
+
+    // Periodic check every 60 seconds
+    const interval = setInterval(() => {
+      updateActivity();
+      checkTimeouts();
+    }, 60_000);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      clearInterval(interval);
+    };
+  }, [userId, isFeatureEnabled, isSessionVerified]);
 
   useEffect(() => {
     if (!userId || loading) {
