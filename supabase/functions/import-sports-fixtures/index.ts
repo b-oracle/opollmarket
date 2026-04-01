@@ -268,6 +268,7 @@ Deno.serve(async (req) => {
         }
 
         const fixtures = data?.response || [];
+        console.log(`[${preset.league_name}] API returned ${fixtures.length} fixtures`);
 
         for (const fixture of fixtures) {
           if (presetImported >= maxImports) break;
@@ -298,10 +299,20 @@ Deno.serve(async (req) => {
             leagueName = fixture.league?.name || preset.league_name;
           }
 
-          if (!matchId || !matchDate) continue;
+          if (!matchId || !matchDate) {
+            console.log(`  Skipped fixture: missing matchId or matchDate`);
+            continue;
+          }
 
           const fixtureDate = new Date(matchDate);
-          if (fixtureDate < new Date() || fixtureDate > maxEndDate) continue;
+          if (fixtureDate < new Date()) {
+            console.log(`  Skipped ${homeTeam} vs ${awayTeam}: in the past (${matchDate})`);
+            continue;
+          }
+          if (fixtureDate > maxEndDate) {
+            console.log(`  Skipped ${homeTeam} vs ${awayTeam}: too far ahead (${matchDate})`);
+            continue;
+          }
 
           // Check if already imported
           const { data: existing } = await adminClient
@@ -309,7 +320,10 @@ Deno.serve(async (req) => {
             .select("id")
             .eq("sport_match_id", matchId)
             .limit(1);
-          if (existing && existing.length > 0) continue;
+          if (existing && existing.length > 0) {
+            console.log(`  Skipped ${homeTeam} vs ${awayTeam}: already imported (match ${matchId})`);
+            continue;
+          }
 
           const title = buildMarketTitle(homeTeam, awayTeam, leagueName);
           let description = buildMarketDescription(homeTeam, awayTeam, leagueName, matchDate);
