@@ -125,7 +125,7 @@ const KycSubmissionForm = () => {
       if (error) throw error;
 
       // Log device info for fraud prevention
-      if (inserted?.id) logKycDevice(inserted.id);
+      if ((inserted as any)?.id) logKycDevice((inserted as any).id);
 
       // Set profile to pending
       await supabase.from("profiles").update({ kyc_status: "pending" } as any).eq("id", user.id);
