@@ -172,109 +172,45 @@ const MaintenanceGuard = ({ children }: { children: React.ReactNode }) => {
 const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
-  const [checked, setChecked] = useState(false);
-  const [needsSetup, setNeedsSetup] = useState(false);
-  const checkedUserRef = useRef<string | null>(null);
-  const checkingRef = useRef(false);
+  const userId = user?.id ?? null;
 
   const allowedPaths = ["/setup-security", "/auth", "/reset-password", "/forgot-password", "/terms", "/privacy", "/disclaimer"];
   const isAllowed = allowedPaths.some(p => location.pathname.startsWith(p));
 
-  // Use user.id as dep instead of user object to avoid re-fires on reference changes
-  const userId = user?.id ?? null;
+  // Check localStorage cache first (instant, no network)
+  const hasLocalCache = userId ? (() => { try { return localStorage.getItem(`security_ok_${userId}`) === "1"; } catch { return false; } })() : false;
+
+  const { data: secSettings, isLoading: secLoading } = useSecuritySettings(
+    // Skip the query entirely if localStorage already confirms setup is done
+    hasLocalCache ? null : userId
+  );
 
   // Listen for custom event from SetupSecurity page when setup completes
+  const invalidate = useInvalidateSecuritySettings();
   useEffect(() => {
     const handler = () => {
-      setNeedsSetup(false);
-      checkedUserRef.current = userId;
-      setChecked(true);
-      if (userId) try { localStorage.setItem(`security_ok_${userId}`, "1"); } catch {}
+      if (userId) {
+        try { localStorage.setItem(`security_ok_${userId}`, "1"); } catch {}
+        invalidate(userId);
+      }
     };
     window.addEventListener("security-setup-complete", handler);
     return () => window.removeEventListener("security-setup-complete", handler);
-  }, [userId]);
+  }, [userId, invalidate]);
 
+  // Persist to localStorage when we learn setup is complete
   useEffect(() => {
-    if (!userId || loading) {
-      checkingRef.current = false;
-      setChecked(true);
-      setNeedsSetup(false);
-      return;
+    if (secSettings?.security_setup_complete && userId) {
+      try { localStorage.setItem(`security_ok_${userId}`, "1"); } catch {}
     }
+  }, [secSettings?.security_setup_complete, userId]);
 
-    // If we already checked this user, keep previous result and avoid re-query loops.
-    if (checkedUserRef.current === userId) {
-      setChecked(true);
-      return;
-    }
+  if (loading) return <PageFallback />;
+  if (!userId) return <>{children}</>;
+  if (hasLocalCache) return <>{children}</>;
+  if (secLoading) return <PageFallback />;
 
-    // Check localStorage cache first to skip network request (persists across sessions)
-    try {
-      if (localStorage.getItem(`security_ok_${userId}`) === "1") {
-        checkedUserRef.current = userId;
-        setChecked(true);
-        setNeedsSetup(false);
-        return;
-      }
-    } catch {}
-
-    if (checkingRef.current) return; // prevent concurrent checks
-    checkingRef.current = true;
-    setChecked(false);
-
-    let active = true;
-
-    // Safety timeout: if the query hangs for >8s, fail OPEN (let through).
-    // LoginSecurityGuard already enforces PIN/TOTP verification on every login,
-    // so a false-open here doesn't bypass security — but a false-close causes
-    // users who already completed setup to be asked to set up again.
-    const safetyTimer = window.setTimeout(() => {
-      if (!active) return;
-      checkingRef.current = false;
-      setNeedsSetup(false);
-      setChecked(true);
-    }, 8000);
-
-    import("@/integrations/supabase/client")
-      .then(({ supabase }) =>
-        supabase
-          .from("user_security_settings" as any)
-          .select("security_setup_complete")
-          .eq("user_id", userId)
-          .maybeSingle()
-      )
-      .then(({ data, error }) => {
-        if (!active) return;
-        if (error) {
-          setChecked(true);
-          return;
-        }
-        const d = data as any;
-        const needs = !d || d.security_setup_complete === false;
-        setNeedsSetup(needs);
-        checkedUserRef.current = userId;
-        setChecked(true);
-        if (!needs) try { localStorage.setItem(`security_ok_${userId}`, "1"); } catch {}
-      })
-      .catch(() => {
-        if (!active) return;
-        setChecked(true);
-      })
-      .finally(() => {
-        if (!active) return;
-        window.clearTimeout(safetyTimer);
-        checkingRef.current = false;
-      });
-
-    return () => {
-      active = false;
-      window.clearTimeout(safetyTimer);
-      checkingRef.current = false;
-    };
-  }, [userId, loading]);
-
-  if (!checked) return <PageFallback />;
+  const needsSetup = !secSettings || secSettings.security_setup_complete === false;
   if (needsSetup && !isAllowed) return <Navigate to="/setup-security" replace />;
   return <>{children}</>;
 };
