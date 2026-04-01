@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { X, Radio, Loader2, Calendar, Clock, ShieldAlert } from "lucide-react";
@@ -13,6 +14,7 @@ interface CreateSpaceModalProps {
 
 const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
   const { user } = useAuth();
+  const { isFeatureEnabled } = useFeatureToggles();
   const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [creating, setCreating] = useState(false);
@@ -34,7 +36,8 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
 
   if (!user) return null;
 
-  const isVerified = verificationLevel === "blue" || verificationLevel === "gold";
+  const allowUnverified = isFeatureEnabled("allow_unverified_spaces");
+  const isVerified = verificationLevel === "blue" || verificationLevel === "gold" || allowUnverified;
 
   const handleCreate = async () => {
     const trimmed = title.trim();
@@ -166,7 +169,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
 
               <MarketTagSelector selected={taggedMarkets} onChange={setTaggedMarkets} max={6} />
 
-              {!isVerified && verificationLevel !== null && (
+              {!isVerified && verificationLevel !== null && !allowUnverified && (
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs">
                   <ShieldAlert className="w-4 h-4 shrink-0" />
                   <span>Only verified members (Blue or Gold tick) can host Spaces.</span>
