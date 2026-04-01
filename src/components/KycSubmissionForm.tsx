@@ -153,7 +153,7 @@ const KycSubmissionForm = () => {
         uploadFile(idBackFile, "id_back"),
         uploadFile(utilityFile, "utility_bill"),
       ]);
-      const { error } = await supabase.from("kyc_submissions" as any).insert({
+      const { data: inserted, error } = await supabase.from("kyc_submissions" as any).insert({
         user_id: user.id,
         tier: 2,
         status: "pending",
@@ -162,8 +162,10 @@ const KycSubmissionForm = () => {
         id_front_url: idFrontUrl,
         id_back_url: idBackUrl,
         utility_bill_url: utilityUrl,
-      } as any);
+      } as any).select("id").single();
       if (error) throw error;
+
+      if ((inserted as any)?.id) logKycDevice((inserted as any).id);
 
       await supabase.from("profiles").update({ kyc_status: "pending" } as any).eq("id", user.id);
 
