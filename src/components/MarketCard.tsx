@@ -30,6 +30,10 @@ interface MarketCardProps {
   isBoosted?: boolean;
   boostEndsAt?: string;
   boostTier?: string;
+  /** Pre-fetched comment count – when provided, skips the per-card query */
+  batchCommentCount?: number;
+  /** Pre-fetched like count – when provided, skips the per-card query */
+  batchLikeCount?: number;
 }
 
 const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
