@@ -74,8 +74,8 @@ const LikeBadge = ({ count }: { count: number }) => {
 };
 
 /* ── Desktop/Tablet Feed Card ── */
-const DesktopFeedCard = ({ market, isBoosted, boostEndsAt, boostTier
-}: {market: any;isBoosted: boolean;boostEndsAt?: string;boostTier?: string;}) => {
+const DesktopFeedCard = ({ market, isBoosted, boostEndsAt, boostTier, commentCount = 0, likeCount = 0
+}: {market: any;isBoosted: boolean;boostEndsAt?: string;boostTier?: string; commentCount?: number; likeCount?: number;}) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const yesPercent = Math.round(market.yesPrice * 100);
