@@ -1032,9 +1032,9 @@ const Profile = () => {
             <div className="w-1 h-1 rounded-full bg-muted-foreground/30"></div>
             <button
               onClick={() => navigate(`/user/${user?.id}`)}
-              className="text-xs font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neon-yes/15 text-neon-yes border border-neon-yes/30 hover:bg-neon-yes/25 transition-all animate-pulse-glow"
+              className="text-xs font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25 transition-all animate-pulse-glow"
             >
-              <Users className="w-3.5 h-3.5" /> Social
+              <Users className="w-3.5 h-3.5" /> My Social
             </button>
           </div>
         </div>
