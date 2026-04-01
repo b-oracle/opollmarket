@@ -880,6 +880,66 @@ export type Database = {
           },
         ]
       }
+      kyc_submissions: {
+        Row: {
+          address: string | null
+          admin_note: string | null
+          created_at: string
+          date_of_birth: string | null
+          full_name: string | null
+          id: string
+          id_back_url: string | null
+          id_front_url: string | null
+          phone_number: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          selfie_url: string | null
+          status: string
+          tier: number
+          updated_at: string
+          user_id: string
+          utility_bill_url: string | null
+        }
+        Insert: {
+          address?: string | null
+          admin_note?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          full_name?: string | null
+          id?: string
+          id_back_url?: string | null
+          id_front_url?: string | null
+          phone_number?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_url?: string | null
+          status?: string
+          tier?: number
+          updated_at?: string
+          user_id: string
+          utility_bill_url?: string | null
+        }
+        Update: {
+          address?: string | null
+          admin_note?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          full_name?: string | null
+          id?: string
+          id_back_url?: string | null
+          id_front_url?: string | null
+          phone_number?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_url?: string | null
+          status?: string
+          tier?: number
+          updated_at?: string
+          user_id?: string
+          utility_bill_url?: string | null
+        }
+        Relationships: []
+      }
       limit_orders: {
         Row: {
           amount: number
@@ -1601,6 +1661,7 @@ export type Database = {
           interests: string[] | null
           is_blocked: boolean
           is_public: boolean
+          kyc_status: string
           location: string | null
           referred_by: string | null
           social_tutorial_seen: boolean
@@ -1628,6 +1689,7 @@ export type Database = {
           interests?: string[] | null
           is_blocked?: boolean
           is_public?: boolean
+          kyc_status?: string
           location?: string | null
           referred_by?: string | null
           social_tutorial_seen?: boolean
@@ -1655,6 +1717,7 @@ export type Database = {
           interests?: string[] | null
           is_blocked?: boolean
           is_public?: boolean
+          kyc_status?: string
           location?: string | null
           referred_by?: string | null
           social_tutorial_seen?: boolean
