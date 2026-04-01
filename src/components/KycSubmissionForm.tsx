@@ -107,7 +107,8 @@ const KycSubmissionForm = () => {
   }, [user]);
 
   const handleTier1Submit = async () => {
-    if (!user || !fullName.trim() || !dob || !phone.trim() || !selfieFile) {
+    const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+    if (!user || !fullName || !firstName.trim() || !lastName.trim() || !dob || !phone.trim() || !selfieFile) {
       toast.error("Please fill all fields and upload a selfie");
       return;
     }
