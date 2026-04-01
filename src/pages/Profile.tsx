@@ -32,7 +32,7 @@ import { format } from "date-fns";
 import CopyTradeStats from "@/components/CopyTradeStats";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import LocationAutocomplete from "@/components/LocationAutocomplete";
-import KycSubmissionForm from "@/components/KycSubmissionForm";
+
 
 type TxType = "buy" | "sell" | "deposit" | "withdraw" | "withdrawal" | "commission" | "payout" | "refund" | "initial_liquidity" | "qt_one_sided_bonus";
 
@@ -527,151 +527,6 @@ const TwitterSection = ({ userId }: { userId?: string }) => {
         )}
         {linking ? "Connecting..." : "Connect X Account"}
       </button>
-    </div>
-  );
-};
-
-const SecuritySettingsSection = ({ userId }: { userId?: string }) => {
-  const queryClient = useQueryClient();
-  const { data: secSettings, isLoading } = useQuery({
-    queryKey: ["security_settings", userId],
-    queryFn: async () => {
-      if (!userId) return null;
-      const { data } = await supabase
-        .from("user_security_settings" as any)
-        .select("pin_enabled, totp_enabled, require_pin_withdrawal, require_totp_withdrawal, require_pin_login, require_totp_login")
-        .eq("user_id", userId)
-        .maybeSingle();
-      return data as unknown as { pin_enabled: boolean; totp_enabled: boolean; require_pin_withdrawal: boolean; require_totp_withdrawal: boolean; require_pin_login: boolean; require_totp_login: boolean } | null;
-    },
-    enabled: !!userId,
-  });
-
-  const updateToggle = async (field: string, value: boolean) => {
-    if (!userId) return;
-    const { error } = await supabase
-      .from("user_security_settings" as any)
-      .update({ [field]: value, updated_at: new Date().toISOString() } as any)
-      .eq("user_id", userId);
-    if (error) { toast.error("Failed to update"); return; }
-    queryClient.invalidateQueries({ queryKey: ["security_settings", userId] });
-    toast.success("Updated");
-  };
-
-  if (isLoading) return null;
-
-  const pinActive = secSettings?.pin_enabled ?? false;
-  const totpActive = secSettings?.totp_enabled ?? false;
-  const anyLoginSec = (secSettings?.require_pin_login ?? false) || (secSettings?.require_totp_login ?? false);
-
-  return (
-    <div className="mb-6">
-      <div className="flex items-center gap-2 mb-3">
-        <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Security</h3>
-        {pinActive && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">
-            <Lock className="w-3 h-3" /> PIN
-          </span>
-        )}
-        {totpActive && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">
-            <Shield className="w-3 h-3" /> 2FA
-          </span>
-        )}
-        {anyLoginSec && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">
-            Login Protected
-          </span>
-        )}
-      </div>
-      <div className="space-y-2">
-        {secSettings?.pin_enabled && (
-          <>
-            <div className="glass rounded-xl p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <Lock className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold">PIN for Login</p>
-                <p className="text-xs text-muted-foreground">Require PIN after signing in</p>
-              </div>
-              <Switch
-                checked={secSettings?.require_pin_login ?? false}
-                onCheckedChange={(v) => updateToggle("require_pin_login", v)}
-              />
-            </div>
-            <div className="glass rounded-xl p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <Lock className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold">PIN for Withdrawals</p>
-                <p className="text-xs text-muted-foreground">Require PIN before withdrawing</p>
-              </div>
-              <Switch
-                checked={secSettings?.require_pin_withdrawal ?? false}
-                onCheckedChange={(v) => updateToggle("require_pin_withdrawal", v)}
-              />
-            </div>
-          </>
-        )}
-        {secSettings?.totp_enabled && (
-          <>
-            <div className="glass rounded-xl p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <Shield className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold">2FA for Login</p>
-                <p className="text-xs text-muted-foreground">Require authenticator code after signing in</p>
-              </div>
-              <Switch
-                checked={secSettings?.require_totp_login ?? false}
-                onCheckedChange={(v) => updateToggle("require_totp_login", v)}
-              />
-            </div>
-            <div className="glass rounded-xl p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <Shield className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold">2FA for Withdrawals</p>
-                <p className="text-xs text-muted-foreground">Require Google Authenticator code</p>
-              </div>
-              <Switch
-                checked={secSettings?.require_totp_withdrawal ?? false}
-                onCheckedChange={(v) => updateToggle("require_totp_withdrawal", v)}
-              />
-            </div>
-          </>
-        )}
-        {!secSettings?.pin_enabled && !secSettings?.totp_enabled && (
-          <div className="glass rounded-xl p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0">
-              <Shield className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold">No security methods set up</p>
-              <p className="text-xs text-muted-foreground">Set up a PIN or 2FA to secure withdrawals</p>
-            </div>
-            <a href="/setup-security" className="text-xs text-primary font-semibold">Set Up</a>
-          </div>
-        )}
-        {(secSettings?.pin_enabled || secSettings?.totp_enabled) && (
-          <a
-            href="/setup-security"
-            className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors"
-          >
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <KeyRound className="w-5 h-5 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold">Change Password or PIN</p>
-              <p className="text-xs text-muted-foreground">Update your security credentials</p>
-            </div>
-          </a>
-        )}
-      </div>
     </div>
   );
 };
@@ -1961,11 +1816,22 @@ const Profile = () => {
           )}
         </div>
 
-        {/* KYC Verification */}
-        <KycSubmissionForm />
-
-        {/* Security Settings */}
-        <SecuritySettingsSection userId={user?.id} />
+        {/* Security & KYC */}
+        <div className="mb-6">
+          <a
+            href="/setup-security"
+            className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors"
+          >
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <Shield className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">Security & KYC</p>
+              <p className="text-xs text-muted-foreground">Manage PIN, 2FA, password & identity verification</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </a>
+        </div>
 
         {/* Personal Info moved to Edit Profile modal */}
 
