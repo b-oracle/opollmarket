@@ -46,27 +46,33 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Find the pending transaction
-    const { data: tx, error: txError } = await adminClient
+    // Check if already processed (idempotency)
+    const { data: alreadyDone } = await adminClient
       .from("transactions")
-      .select("id, user_id, amount, status")
+      .select("id")
       .eq("nowpayments_payment_id", reference)
-      .eq("payment_provider", "payaza")
       .eq("type", "deposit")
+      .in("status", ["confirmed", "processing"])
       .maybeSingle();
 
-    if (txError || !tx) {
-      console.error("Transaction not found for reference:", reference, txError);
-      return new Response(JSON.stringify({ error: "Transaction not found" }), {
-        status: 404, headers: corsHeaders,
+    if (alreadyDone) {
+      console.log("Transaction already confirmed/claimed:", alreadyDone.id);
+      return new Response(JSON.stringify({ success: true, message: "Already confirmed" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Already confirmed — idempotent
-    if (tx.status === "confirmed") {
-      console.log("Transaction already confirmed:", tx.id);
-      return new Response(JSON.stringify({ success: true, message: "Already confirmed" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // Atomically claim the transaction (prevents concurrent webhook replays)
+    const { data: claimedRows } = await adminClient.rpc("claim_webhook_deposit", {
+      _payment_id: reference,
+      _provider: "payaza",
+    });
+    const tx = claimedRows?.[0] || null;
+
+    if (!tx) {
+      console.error("No claimable transaction for reference:", reference);
+      return new Response(JSON.stringify({ error: "Transaction not found or already claimed" }), {
+        status: 404, headers: corsHeaders,
       });
     }
 
