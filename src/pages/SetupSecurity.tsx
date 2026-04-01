@@ -288,19 +288,19 @@ const SetupSecurity = () => {
 
   return (
     <>
-      <SEOHead title="Security Settings — oPoll" description="Manage your account security" />
+      <SEOHead title="Security & KYC — oPoll" description="Manage your account security and identity verification" />
       <TopBar />
-      <div className="min-h-screen pt-[calc(3.5rem+env(safe-area-inset-top))] pb-8 px-4 flex flex-col items-center">
+      <div className="min-h-screen pt-[calc(3.5rem+env(safe-area-inset-top))] pb-24 px-4 flex flex-col items-center">
         <div className="w-full max-w-md space-y-6 mt-8">
           <div className="text-center space-y-2">
             <Shield className="w-12 h-12 text-primary mx-auto" />
             <h1 className="text-2xl font-bold">
-              {isFirstTimeSetup ? "Secure Your Account" : "Security Settings"}
+              {isFirstTimeSetup ? "Secure Your Account" : "Security & KYC"}
             </h1>
             <p className="text-muted-foreground text-sm">
               {isFirstTimeSetup
                 ? "Set up at least one security method to protect your account and enable withdrawals."
-                : "Manage your password, PIN, and two-factor authentication."}
+                : "Manage your password, PIN, two-factor authentication, and identity verification."}
             </p>
           </div>
 
