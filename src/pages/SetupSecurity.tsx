@@ -386,12 +386,22 @@ const SetupSecurity = () => {
               )}
 
               {!isFirstTimeSetup && (
-                <button
-                  onClick={() => navigate(-1)}
-                  className="w-full py-3 rounded-xl border border-border text-foreground font-semibold mt-4"
-                >
-                  Back
-                </button>
+                <>
+                  {/* Security Toggles */}
+                  <SecurityTogglesSection userId={user?.id} />
+
+                  {/* KYC Section */}
+                  <div className="pt-2">
+                    <KycSubmissionForm />
+                  </div>
+
+                  <button
+                    onClick={() => navigate(-1)}
+                    className="w-full py-3 rounded-xl border border-border text-foreground font-semibold mt-4"
+                  >
+                    Back
+                  </button>
+                </>
               )}
             </motion.div>
           )}
