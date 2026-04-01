@@ -347,6 +347,10 @@ const Feed = () => {
   const sortedMarkets = useMemo(() => allSortedMarkets.slice(0, visibleCount), [allSortedMarkets, visibleCount]);
   const hasMore = visibleCount < allSortedMarkets.length;
 
+  // Batch fetch comment + like counts for visible markets (2 queries instead of 2×N)
+  const visibleMarketIds = useMemo(() => sortedMarkets.map(m => m.id), [sortedMarkets]);
+  const { data: batchCounts } = useBatchCounts(visibleMarketIds);
+
   const endToastShown = useRef(false);
 
   useEffect(() => {
@@ -537,7 +541,9 @@ const Feed = () => {
               isActive={i === activeIndex}
               isBoosted={boostedMarketIds.has(market.id)}
               boostEndsAt={boost?.ends_at}
-              boostTier={boost?.tier} />);
+              boostTier={boost?.tier}
+              batchCommentCount={batchCounts?.comments.get(market.id) || 0}
+              batchLikeCount={batchCounts?.likes.get(market.id) || 0} />);
 
 
         })}
