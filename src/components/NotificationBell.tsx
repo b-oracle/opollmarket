@@ -90,6 +90,26 @@ const NotificationBell = () => {
       });
     }
 
+    // Space is Live notifications → join the space directly
+    if (n.title.includes("Space is Live") && n.market_id) {
+      setOpen(false);
+      // Fetch space info and join it
+      supabase
+        .from("spaces")
+        .select("id, title, host_id")
+        .eq("id", n.market_id)
+        .single()
+        .then(({ data: space }) => {
+          if (space && space.id) {
+            // Navigate to feed/social tab first, then join space via context
+            navigate("/feed?tab=spaces");
+            // Dispatch a custom event so the app can join the space
+            window.dispatchEvent(new CustomEvent("join-space", { detail: { id: space.id, title: space.title, hostId: space.host_id } }));
+          }
+        });
+      return;
+    }
+
     // Follower notifications → navigate to follower's profile
     if (n.title.includes("Follower") && n.actor_id) {
       setOpen(false);

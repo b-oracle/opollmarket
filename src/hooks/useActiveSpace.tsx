@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import React from "react";
 
 interface ActiveSpaceInfo {
@@ -48,6 +48,18 @@ export const ActiveSpaceProvider = ({ children }: { children: ReactNode }) => {
   const maximize = useCallback(() => {
     setMinimized(false);
   }, []);
+
+  // Listen for join-space events from notification clicks
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.id) {
+        joinSpace({ id: detail.id, title: detail.title, hostId: detail.hostId });
+      }
+    };
+    window.addEventListener("join-space", handler);
+    return () => window.removeEventListener("join-space", handler);
+  }, [joinSpace]);
 
   return React.createElement(
     ActiveSpaceContext.Provider,
