@@ -135,7 +135,7 @@ const KycSubmissionForm = () => {
       queryClient.invalidateQueries({ queryKey: ["kyc_status"] });
       queryClient.invalidateQueries({ queryKey: ["kyc_submission"] });
       toast.success("KYC submitted! We'll review within 24 hours.");
-      setFullName(""); setDob(""); setPhone(""); setSelfieFile(null);
+      setFirstName(""); setLastName(""); setDob(""); setPhone(""); setSelfieFile(null);
     } catch (err: any) {
       toast.error(err.message || "Submission failed");
     } finally {
