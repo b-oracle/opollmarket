@@ -347,6 +347,7 @@ Deno.serve(async (req) => {
           const { data: newMarket, error: insertErr } = await adminClient.from("markets").insert({
             title: title.slice(0, 500),
             description: description.slice(0, 2000),
+            details: details,
             category: "Sports",
             status: preset.auto_approve ? "active" : "pending",
             market_type: marketType,
