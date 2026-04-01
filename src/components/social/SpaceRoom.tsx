@@ -78,6 +78,7 @@ const CHAT_REACTIONS = ["👍", "❤️", "😂", "🔥", "👏"];
 
 const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => {
   const { user } = useAuth();
+  const { isFeatureEnabled } = useFeatureToggles();
   const queryClient = useQueryClient();
   const { minimized, toggleMinimize } = useActiveSpace();
   const roomRef = useRef<Room | null>(null);
