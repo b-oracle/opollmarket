@@ -91,13 +91,16 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const creatorLabel = creatorProfile?.display_name
     ? `@${creatorProfile.display_name}`
     : `@${market.creatorName}`;
-  const { liked, likeCount, toggleLike } = useMarketLike(market.id);
+  const skipIndividualLike = batchLikeCount !== undefined;
+  const { liked, likeCount: individualLikeCount, toggleLike } = useMarketLike(market.id);
+  const likeCount = skipIndividualLike ? batchLikeCount : individualLikeCount;
   const { bookmarked, toggleBookmark } = useBookmark(market.id);
   const bookmarkCount = useBookmarkCount(market.id);
   const [betModal, setBetModal] = useState<{ open: boolean; side: "yes" | "no"; optionId?: string; optionLabel?: string; optionPrice?: number; optionColor?: string }>({ open: false, side: "yes" });
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const commentCount = useCommentCount(market.id);
+  const individualCommentCount = useCommentCount(market.id);
+  const commentCount = batchCommentCount !== undefined ? batchCommentCount : individualCommentCount;
   const [dragX, setDragX] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
   const [swiping, setSwiping] = useState(false);
