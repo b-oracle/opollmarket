@@ -712,6 +712,7 @@ const SetupSecurity = () => {
           )}
         </div>
       </div>
+      <BottomNav />
     </>
   );
 };
