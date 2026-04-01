@@ -55,26 +55,22 @@ const getTimeRemaining = (endDate: string) => {
 
 import { optionColors } from "@/lib/optionColors";
 
-const CommentBadge = ({ marketId }: {marketId: string;}) => {
-  const count = useCommentCount(marketId);
+const CommentBadge = ({ count }: { count: number }) => {
   if (count === 0) return null;
   return (
     <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
       <MessageCircle className="w-3 h-3" />
       {count}
     </span>);
-
 };
 
-const LikeBadge = ({ marketId }: {marketId: string;}) => {
-  const count = useLikeCount(marketId);
+const LikeBadge = ({ count }: { count: number }) => {
   if (count === 0) return null;
   return (
     <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
       <Heart className="w-3 h-3" />
       {count}
     </span>);
-
 };
 
 /* ── Desktop/Tablet Feed Card ── */
