@@ -2953,10 +2953,12 @@ export type Database = {
           created_at: string
           crypto_currency: string
           id: string
+          ip_address: string | null
           nowpayments_id: string | null
           status: string
           tx_hash: string | null
           updated_at: string
+          user_agent: string | null
           user_id: string
           wallet_address: string
         }
@@ -2966,10 +2968,12 @@ export type Database = {
           created_at?: string
           crypto_currency?: string
           id?: string
+          ip_address?: string | null
           nowpayments_id?: string | null
           status?: string
           tx_hash?: string | null
           updated_at?: string
+          user_agent?: string | null
           user_id: string
           wallet_address: string
         }
@@ -2979,10 +2983,12 @@ export type Database = {
           created_at?: string
           crypto_currency?: string
           id?: string
+          ip_address?: string | null
           nowpayments_id?: string | null
           status?: string
           tx_hash?: string | null
           updated_at?: string
+          user_agent?: string | null
           user_id?: string
           wallet_address?: string
         }
