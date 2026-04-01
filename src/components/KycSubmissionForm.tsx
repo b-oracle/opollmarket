@@ -119,7 +119,7 @@ const KycSubmissionForm = () => {
         user_id: user.id,
         tier: 1,
         status: "pending",
-        full_name: fullName.trim(),
+        full_name: fullName,
         date_of_birth: dob,
         phone_number: phone.trim(),
         selfie_url: selfieUrl,
