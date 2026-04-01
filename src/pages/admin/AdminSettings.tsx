@@ -46,7 +46,7 @@ const ALL_TIMEFRAMES = [
 ];
 
 const AdminSettings = () => {
-  const { canEdit } = useAdminContext();
+  const { canEdit, isSuperAdmin } = useAdminContext();
   const [predictionFee, setPredictionFee] = useState("10");
   // admin_fee_percent is no longer configurable — platform keeps the remainder
   const [creatorFee, setCreatorFee] = useState("");
