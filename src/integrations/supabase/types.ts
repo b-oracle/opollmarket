@@ -60,6 +60,13 @@ export type Database = {
             foreignKeyName: "affiliate_earnings_transaction_id_fkey"
             columns: ["transaction_id"]
             isOneToOne: false
+            referencedRelation: "market_trades_anonymous"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_earnings_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
             referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
@@ -1522,6 +1529,13 @@ export type Database = {
             columns: ["market_id"]
             isOneToOne: false
             referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_commissions_trade_transaction_id_fkey"
+            columns: ["trade_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "market_trades_anonymous"
             referencedColumns: ["id"]
           },
           {
@@ -3199,6 +3213,108 @@ export type Database = {
       }
     }
     Views: {
+      market_trades_anonymous: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          id: string | null
+          market_id: string | null
+          option_id: string | null
+          price: number | null
+          shares: number | null
+          side: string | null
+          type: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string | null
+          id?: string | null
+          market_id?: string | null
+          option_id?: string | null
+          price?: number | null
+          shares?: number | null
+          side?: string | null
+          type?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string | null
+          id?: string | null
+          market_id?: string | null
+          option_id?: string | null
+          price?: number | null
+          shares?: number | null
+          side?: string | null
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "market_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_book_entries: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          id: string | null
+          limit_price: number | null
+          market_id: string | null
+          option_id: string | null
+          shares: number | null
+          side: string | null
+          status: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string | null
+          id?: string | null
+          limit_price?: number | null
+          market_id?: string | null
+          option_id?: string | null
+          shares?: number | null
+          side?: string | null
+          status?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string | null
+          id?: string | null
+          limit_price?: number | null
+          market_id?: string | null
+          option_id?: string | null
+          shares?: number | null
+          side?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "limit_orders_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "limit_orders_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "market_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_profiles: {
         Row: {
           age: number | null
