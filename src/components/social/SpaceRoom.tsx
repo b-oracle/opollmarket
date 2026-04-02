@@ -174,6 +174,47 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     })();
   }, [user]);
 
+  // Invite user search
+  useEffect(() => {
+    if (!inviteSearchQuery.trim() || !user) { setInviteSearchResults([]); return; }
+    const timeout = setTimeout(async () => {
+      setInviteSearching(true);
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .neq("id", user.id)
+        .ilike("display_name", `%${inviteSearchQuery.trim()}%`)
+        .limit(10);
+      setInviteSearchResults(data || []);
+      setInviteSearching(false);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [inviteSearchQuery, user]);
+
+  const handleSendInvite = async (inviteeId: string, inviteeName: string) => {
+    setInviteSending(inviteeId);
+    try {
+      await supabase.from("space_invites" as any).insert({
+        space_id: spaceId,
+        inviter_id: user!.id,
+        invitee_id: inviteeId,
+      });
+      await supabase.from("notifications").insert({
+        user_id: inviteeId,
+        title: "Space Invite 🎙️",
+        message: `You've been invited to join "${displayTitle}"`,
+        type: "info",
+        actor_id: user!.id,
+      });
+      toast.success(`Invited ${inviteeName}`);
+    } catch (err: any) {
+      if (err.message?.includes("duplicate")) toast.info(`${inviteeName} already invited`);
+      else toast.error(err.message || "Failed to invite");
+    } finally {
+      setInviteSending(null);
+    }
+  };
+
   // Fetch self space stats when opening self stats sheet
   useEffect(() => {
     if (!showSelfStats || !user) return;
