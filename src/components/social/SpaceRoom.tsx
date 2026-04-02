@@ -323,7 +323,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const deviceMusicStartTimeRef = useRef<number>(0);
   const deviceFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch tagged market IDs for this space
+  // Fetch tagged market IDs for this space + subscribe to realtime updates
   useEffect(() => {
     (async () => {
       const { data } = await supabase
@@ -335,6 +335,21 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         setTaggedMarketIds((data as any).tagged_market_ids);
       }
     })();
+
+    const channel = supabase
+      .channel(`space-tags-${spaceId}`)
+      .on(
+        "postgres_changes" as any,
+        { event: "UPDATE", schema: "public", table: "spaces", filter: `id=eq.${spaceId}` },
+        (payload: any) => {
+          if (payload.new?.tagged_market_ids) {
+            setTaggedMarketIds(payload.new.tagged_market_ids);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [spaceId]);
   useEffect(() => {
     return () => {
