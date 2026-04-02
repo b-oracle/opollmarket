@@ -901,6 +901,19 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     toast.success("All speakers can now unmute");
   };
 
+  const forceHandDown = (targetId: string) => {
+    setRemoteHandRaises((prev) => {
+      const next = new Set(prev);
+      next.delete(targetId);
+      return next;
+    });
+    if (roomRef.current) {
+      const msg = JSON.stringify({ type: "force_lower_hand", targetId });
+      roomRef.current.localParticipant.publishData(new TextEncoder().encode(msg), { reliable: true });
+    }
+    setActionTarget(null);
+  };
+
   const handleForceUnmuteSingle = (targetId: string) => {
     if (roomRef.current) {
       const msg = JSON.stringify({ type: "force_unmute", targets: [targetId] });
