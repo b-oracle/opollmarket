@@ -141,6 +141,20 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [sendingGift, setSendingGift] = useState(false);
   const loadedMsgIdsRef = useRef<Set<string>>(new Set());
 
+  // Fetch gift balance on mount
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from("balances")
+        .select("gift_balance")
+        .eq("user_id", user.id)
+        .eq("currency", "USDT")
+        .maybeSingle();
+      if (data) setGiftBalance(Number((data as any).gift_balance ?? 0));
+    })();
+  }, [user]);
+
   // Load persisted chat history + subscribe to realtime new messages
   useEffect(() => {
     if (!spaceId || !user) return;
