@@ -847,7 +847,18 @@ const Commissions = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Tabs */}
+        {/* Summary Card Info Dialog */}
+        <Dialog open={!!summaryCardInfo} onOpenChange={(open) => { if (!open) setSummaryCardInfo(null); }}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>{summaryCardInfo?.label}</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {summaryCardInfo?.description}
+            </p>
+          </DialogContent>
+        </Dialog>
+
         <div className="flex gap-1.5 overflow-x-auto pb-2 mb-4 scrollbar-hide">
           {tabs.map((tab) => (
             <button
