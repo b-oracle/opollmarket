@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, X, Check, TrendingUp, RefreshCw, DollarSign, Info, BellRing, UserPlus } from "lucide-react";
+import { Bell, X, Check, TrendingUp, RefreshCw, DollarSign, Info, BellRing, UserPlus, Gift } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,6 +24,7 @@ const typeConfig: Record<string, { icon: typeof Bell; colorClass: string }> = {
   refund: { icon: RefreshCw, colorClass: "text-primary bg-primary/10" },
   info: { icon: Info, colorClass: "text-muted-foreground bg-muted/50" },
   follow: { icon: UserPlus, colorClass: "text-primary bg-primary/10" },
+  gift: { icon: Gift, colorClass: "text-primary bg-primary/10" },
 };
 
 const formatTimeAgo = (date: string) => {
@@ -107,6 +108,13 @@ const NotificationBell = () => {
             window.dispatchEvent(new CustomEvent("join-space", { detail: { id: space.id, title: space.title, hostId: space.host_id } }));
           }
         });
+      return;
+    }
+
+    // Gift notifications → navigate to sender's profile
+    if (n.type === "gift" && n.actor_id) {
+      setOpen(false);
+      navigate(`/user/${n.actor_id}`);
       return;
     }
 
