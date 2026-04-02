@@ -299,7 +299,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {isLive && (
               <span className="flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-destructive/20 text-destructive">
                 <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse" />
@@ -316,6 +316,12 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
               <span className="flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-accent text-accent-foreground">
                 <Play className="w-2.5 h-2.5" />
                 REPLAY
+              </span>
+            )}
+            {space.is_private && (
+              <span className="flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                <Lock className="w-2.5 h-2.5" />
+                PRIVATE
               </span>
             )}
             <p className="text-[9px] text-muted-foreground">
