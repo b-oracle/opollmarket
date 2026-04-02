@@ -47,16 +47,17 @@ const navItems: NavItem[] = [
 ];
 
 const AdminLayout = () => {
-  const { user, loading, isSuperAdmin, isAdmin, isModerator, hasAdminAccess, canEdit, signOut } = useAuth();
+  const { user, loading, isSuperAdmin, isAdmin, isModerator, hasAdminAccess, canEdit, signOut, rolesLoaded } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (!loading && (!user || !hasAdminAccess)) {
+    // Wait for both auth loading AND role checks to complete before redirecting
+    if (!loading && rolesLoaded && (!user || !hasAdminAccess)) {
       navigate("/auth");
     }
-  }, [user, loading, hasAdminAccess, navigate]);
+  }, [user, loading, rolesLoaded, hasAdminAccess, navigate]);
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
@@ -73,7 +74,7 @@ const AdminLayout = () => {
 
   const roleBadge = isSuperAdmin ? "Super Admin" : isAdmin ? "Admin" : "Moderator";
 
-  if (loading) {
+  if (loading || (user && !rolesLoaded)) {
     return (
       <div className="min-h-dvh bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-primary animate-spin" />

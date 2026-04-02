@@ -8,6 +8,7 @@ interface AuthContextValue {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  rolesLoaded: boolean;
   displayName: string;
   isSuperAdmin: boolean;
   isAdmin: boolean;
@@ -29,6 +30,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isModerator, setIsModerator] = useState(false);
+  const [rolesLoaded, setRolesLoaded] = useState(false);
   const [profileDisplayName, setProfileDisplayName] = useState<string | null>(null);
   const lastSessionRef = useRef<Session | null>(null);
   const signingOutRef = useRef(false);
@@ -57,12 +59,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsSuperAdmin(!!superAdminData);
         setIsAdmin(!!adminData);
         setIsModerator(!!modData);
+        setRolesLoaded(true);
       }
     } catch {
       if (mounted.current) {
         setIsSuperAdmin(false);
         setIsAdmin(false);
         setIsModerator(false);
+        setRolesLoaded(true);
       }
     }
   }, []);
@@ -105,6 +109,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setIsSuperAdmin(false);
           setIsAdmin(false);
           setIsModerator(false);
+          setRolesLoaded(false);
           setProfileDisplayName(null);
           if (mounted.current) setLoading(false);
           return;
@@ -118,6 +123,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setIsSuperAdmin(false);
           setIsAdmin(false);
           setIsModerator(false);
+          setRolesLoaded(false);
           setProfileDisplayName(null);
           if (mounted.current) setLoading(false);
           return;
@@ -167,6 +173,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setIsSuperAdmin(false);
           setIsAdmin(false);
           setIsModerator(false);
+          setRolesLoaded(true);
           setProfileDisplayName(null);
         }
         if (mounted.current) setLoading(false);
@@ -344,6 +351,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsSuperAdmin(false);
     setIsAdmin(false);
     setIsModerator(false);
+    setRolesLoaded(false);
     setProfileDisplayName(null);
 
     // Fire-and-forget: attempt global sign-out, fall back to local, never block UI
@@ -372,7 +380,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const displayName = profileDisplayName || user?.user_metadata?.display_name || user?.email?.split("@")[0] || "User";
 
   const value: AuthContextValue = {
-    user, session, loading, displayName, isSuperAdmin, isAdmin, isModerator, hasAdminAccess, canEdit, isEmailVerified,
+    user, session, loading, rolesLoaded, displayName, isSuperAdmin, isAdmin, isModerator, hasAdminAccess, canEdit, isEmailVerified,
     signIn, signUp, signOut,
   };
 
