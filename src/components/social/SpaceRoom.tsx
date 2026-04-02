@@ -478,7 +478,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         if (identity) {
           if (data.raised) {
             setRemoteHandRaises((prev) => new Set(prev).add(identity));
-            toast.info(`${data.senderName || "Someone"} raised their hand ✋`);
+            if (isHostRef.current || isCoHostRef.current) {
+              toast.info(`${data.senderName || "Someone"} raised their hand ✋`);
+            }
           } else {
             setRemoteHandRaises((prev) => {
               const next = new Set(prev);
