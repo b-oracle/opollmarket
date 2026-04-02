@@ -3009,6 +3009,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_security_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       webhook_events: {
@@ -3192,7 +3199,63 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_profiles: {
+        Row: {
+          age: number | null
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          display_name: string | null
+          gender: string | null
+          id: string | null
+          interests: string[] | null
+          is_blocked: boolean | null
+          is_public: boolean | null
+          location: string | null
+          social_tutorial_seen: boolean | null
+          twitter_linked_at: string | null
+          twitter_username: string | null
+          unlimited_markets: boolean | null
+          verification_level: string | null
+        }
+        Insert: {
+          age?: number | null
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          gender?: string | null
+          id?: string | null
+          interests?: string[] | null
+          is_blocked?: boolean | null
+          is_public?: boolean | null
+          location?: string | null
+          social_tutorial_seen?: boolean | null
+          twitter_linked_at?: string | null
+          twitter_username?: string | null
+          unlimited_markets?: boolean | null
+          verification_level?: string | null
+        }
+        Update: {
+          age?: number | null
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          gender?: string | null
+          id?: string | null
+          interests?: string[] | null
+          is_blocked?: boolean | null
+          is_public?: boolean | null
+          location?: string | null
+          social_tutorial_seen?: boolean | null
+          twitter_linked_at?: string | null
+          twitter_username?: string | null
+          unlimited_markets?: boolean | null
+          verification_level?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_market_liquidity: {
