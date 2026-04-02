@@ -1543,33 +1543,42 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
   const reactToMessage = (messageId: string, emoji: string) => {
     if (!user?.id) return;
-    let updatedReactions: Record<string, string[]> | undefined;
+
+    // Compute updated reactions from current messages state BEFORE calling setMessages
+    // to avoid any timing issues with React 18 batched updates
+    const currentMsg = messages.find((m) => m.id === messageId);
+    if (!currentMsg) return;
+
+    const reactions = { ...(currentMsg.reactions || {}) };
+    const users = reactions[emoji] ? [...reactions[emoji]] : [];
+    const idx = users.indexOf(user.id);
+    if (idx >= 0) users.splice(idx, 1);
+    else users.push(user.id);
+    if (users.length === 0) delete reactions[emoji];
+    else reactions[emoji] = users;
+
+    const updatedReactions = { ...reactions };
+
+    // Update local state
     setMessages((prev) =>
-      prev.map((m) => {
-        if (m.id !== messageId) return m;
-        const reactions = { ...(m.reactions || {}) };
-        const users = reactions[emoji] ? [...reactions[emoji]] : [];
-        const idx = users.indexOf(user.id);
-        if (idx >= 0) users.splice(idx, 1);
-        else users.push(user.id);
-        if (users.length === 0) delete reactions[emoji];
-        else reactions[emoji] = users;
-        updatedReactions = reactions;
-        return { ...m, reactions };
-      })
+      prev.map((m) => m.id === messageId ? { ...m, reactions: Object.keys(updatedReactions).length > 0 ? updatedReactions : undefined } : m)
     );
+
     // Broadcast reaction to peers
     if (roomRef.current) {
       const data = JSON.stringify({ type: "msg_reaction", messageId, emoji, userId: user.id });
       roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
     }
+
     // Persist reaction to DB (only for DB-persisted messages, not data-channel dedup keys)
-    if (updatedReactions && !messageId.startsWith("dc-") && !messageId.endsWith("-local")) {
+    if (!messageId.startsWith("dc-") && !messageId.endsWith("-local")) {
       supabase
         .from("space_messages")
         .update({ reactions: updatedReactions } as any)
         .eq("id", messageId)
-        .then(() => {});
+        .then(({ error }) => {
+          if (error) console.error("[SpaceRoom] Failed to persist reaction:", error.message);
+        });
     }
   };
 
