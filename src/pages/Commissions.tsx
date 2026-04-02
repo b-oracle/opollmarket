@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useUserBalance } from "@/hooks/useUserBalance";
 
-type TabKey = "all" | "creator" | "referral" | "copy_trade" | "signup_bonus" | "pending";
+type TabKey = "all" | "creator" | "referral" | "copy_trade" | "signup_bonus" | "pending" | "gift_sent" | "gift_received" | "bonus" | "osure";
 
 const tabs: { key: TabKey; label: string; icon: typeof DollarSign }[] = [
   { key: "all", label: "All", icon: DollarSign },
@@ -25,6 +25,10 @@ const tabs: { key: TabKey; label: string; icon: typeof DollarSign }[] = [
   { key: "referral", label: "Referral", icon: Users },
   { key: "copy_trade", label: "Copy Trade", icon: Copy },
   { key: "signup_bonus", label: "Signup Bonus", icon: Gift },
+  { key: "gift_sent", label: "Gifts Sent", icon: Gift },
+  { key: "gift_received", label: "Gifts Received", icon: Gift },
+  { key: "bonus", label: "Bonus", icon: Sparkles },
+  { key: "osure", label: "oSURE", icon: Shield },
   { key: "pending", label: "Pending", icon: Clock },
 ];
 
