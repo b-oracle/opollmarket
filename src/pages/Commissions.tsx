@@ -263,7 +263,7 @@ const Commissions = () => {
     enabled: allCopierIds.length > 0,
   });
 
-  const isLoading = loadingPC || loadingCT || loadingSB;
+  const isLoading = loadingPC || loadingCT || loadingSB || loadingGS || loadingGR || loadingBT || loadingOS;
 
   // Compute totals
   const totals = useMemo(() => {
