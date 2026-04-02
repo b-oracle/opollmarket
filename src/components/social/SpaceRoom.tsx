@@ -2390,6 +2390,73 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
               </motion.div>
             </>
           )}
+
+          {/* Self Stats Sheet */}
+          {showSelfStats && (
+            <>
+              <motion.div
+                key="self-stats-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/40 z-[95]"
+                onClick={() => setShowSelfStats(false)}
+              />
+              <motion.div
+                key="self-stats-sheet"
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 100, opacity: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="absolute bottom-0 inset-x-0 z-[96] bg-card rounded-t-2xl border-t border-border p-5"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <p className="font-semibold text-sm">My Balances & Space Stats</p>
+                  <button onClick={() => setShowSelfStats(false)} className="p-1 rounded-full hover:bg-muted">
+                    <X className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                </div>
+
+                {/* Balances */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="bg-muted rounded-xl p-3 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Gift Balance</p>
+                    <p className={`text-lg font-bold ${giftBalance > 0 ? "text-green-500" : "text-destructive"}`}>
+                      ${giftBalance.toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="bg-muted rounded-xl p-3 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Rewards Balance</p>
+                    <p className="text-lg font-bold text-primary">
+                      ${rewardsBalance.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Space-specific stats */}
+                <p className="text-xs font-semibold text-muted-foreground mb-2">This Space</p>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="bg-muted rounded-xl p-3 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Gifts Sent</p>
+                    <p className="text-base font-bold text-foreground">{selfSpaceStats.sentCount}</p>
+                    <p className="text-[10px] text-muted-foreground">${selfSpaceStats.sent.toFixed(2)} total</p>
+                  </div>
+                  <div className="bg-muted rounded-xl p-3 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Gifts Received</p>
+                    <p className="text-base font-bold text-foreground">{selfSpaceStats.receivedCount}</p>
+                    <p className="text-[10px] text-muted-foreground">${selfSpaceStats.received.toFixed(2)} total</p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setShowSelfStats(false)}
+                  className="w-full flex items-center justify-center px-4 py-3 rounded-xl bg-muted hover:bg-muted/80 text-muted-foreground transition-colors"
+                >
+                  <span className="text-sm font-medium">Close</span>
+                </button>
+              </motion.div>
+            </>
+          )}
         </AnimatePresence>
       </motion.div>
     </AnimatePresence>
