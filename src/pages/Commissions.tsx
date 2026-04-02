@@ -58,6 +58,7 @@ const Commissions = () => {
   const [processing, setProcessing] = useState(false);
   const [bonusInfoOpen, setBonusInfoOpen] = useState(false);
   const [osureInfoOpen, setOsureInfoOpen] = useState(false);
+  const [summaryCardInfo, setSummaryCardInfo] = useState<{ label: string; description: string } | null>(null);
   const ITEMS_PER_PAGE = 15;
   const queryClient = useQueryClient();
   const { balance, giftBalance, bonusBalance, rewardsBalance, insuranceBalance, totalGiftBalance, isLoading: balLoading } = useUserBalance();
