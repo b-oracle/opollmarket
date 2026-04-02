@@ -44,6 +44,13 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (senderId === recipientId) {
+      return new Response(JSON.stringify({ error: "Cannot gift yourself" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Use service role for the RPC call
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
