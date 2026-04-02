@@ -931,7 +931,25 @@ const Profile = () => {
       <TopBar />
       <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
         {/* Avatar & Profile Edit */}
-        <div className="flex flex-col items-center mb-8">
+        <div className="flex flex-col items-center mb-8 relative">
+          <button
+            onClick={() => {
+              setEditName(profile?.display_name || authDisplayName);
+              setEditBio((profile as any)?.bio || "");
+              setEditIsPublic((profile as any)?.is_public ?? true);
+              setEditDob((profile as any)?.date_of_birth ? new Date((profile as any).date_of_birth) : (profile as any)?.age ? new Date(new Date().getFullYear() - (profile as any).age, 0, 1) : undefined);
+              setEditGender((profile as any)?.gender || "");
+              setEditLocation((profile as any)?.location || "");
+              setEditInterests((profile as any)?.interests || []);
+              setAvatarPreview(null);
+              setAvatarFile(null);
+              setSelectedNftUrl(null);
+              setEditingProfile(true);
+            }}
+            className="absolute top-0 right-0 text-xs text-primary font-semibold hover:underline flex items-center gap-1.5"
+          >
+            <Pencil className="w-3.5 h-3.5" /> Edit Profile
+          </button>
           <div className="relative mb-3">
             <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center overflow-hidden">
               {profile?.avatar_url ? (
@@ -954,26 +972,7 @@ const Profile = () => {
           <p className="text-xs text-muted-foreground">
             {user?.email ? `${user.email.slice(0, 3)}***@${user.email.split("@")[1]}` : ""}
           </p>
-          <div className="mt-3 flex items-center justify-center gap-3">
-            <button
-              onClick={() => {
-                setEditName(profile?.display_name || authDisplayName);
-                setEditBio((profile as any)?.bio || "");
-                setEditIsPublic((profile as any)?.is_public ?? true);
-                setEditDob((profile as any)?.date_of_birth ? new Date((profile as any).date_of_birth) : (profile as any)?.age ? new Date(new Date().getFullYear() - (profile as any).age, 0, 1) : undefined);
-                setEditGender((profile as any)?.gender || "");
-                setEditLocation((profile as any)?.location || "");
-                setEditInterests((profile as any)?.interests || []);
-                setAvatarPreview(null);
-                setAvatarFile(null);
-                setSelectedNftUrl(null);
-                setEditingProfile(true);
-              }}
-              className="text-xs text-primary font-semibold hover:underline flex items-center gap-1"
-            >
-              <Pencil className="w-3 h-3" /> Edit Profile
-            </button>
-            <div className="w-1 h-1 rounded-full bg-muted-foreground/30"></div>
+          <div className="mt-4 w-full flex justify-center">
             <button
               onClick={() => navigate(`/user/${user?.id}`)}
               className="text-xs font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25 transition-all animate-pulse-glow"
