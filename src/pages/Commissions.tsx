@@ -45,7 +45,48 @@ const Commissions = () => {
   const [showChart, setShowChart] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [topUpOpen, setTopUpOpen] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [topUpAmount, setTopUpAmount] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [processing, setProcessing] = useState(false);
   const ITEMS_PER_PAGE = 15;
+  const queryClient = useQueryClient();
+  const { balance, giftBalance, bonusBalance, rewardsBalance, isLoading: balLoading } = useUserBalance();
+
+  const handleTopUp = async () => {
+    const amt = Number(topUpAmount);
+    if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
+    if (amt > balance) { toast.error("Insufficient main balance"); return; }
+    setProcessing(true);
+    const { data, error } = await supabase.rpc("topup_gift_balance", { _user_id: user!.id, _amount: amt } as any);
+    setProcessing(false);
+    if (error || !(data as any)?.success) {
+      toast.error((data as any)?.error || error?.message || "Top up failed");
+      return;
+    }
+    toast.success(`Topped up $${amt.toFixed(2)} to gift balance`);
+    setTopUpOpen(false);
+    setTopUpAmount("");
+    queryClient.invalidateQueries({ queryKey: ["balance"] });
+  };
+
+  const handleWithdraw = async () => {
+    const amt = Number(withdrawAmount);
+    if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
+    if (amt > rewardsBalance) { toast.error("Insufficient rewards balance"); return; }
+    setProcessing(true);
+    const { data, error } = await supabase.rpc("withdraw_rewards_balance", { _user_id: user!.id, _amount: amt } as any);
+    setProcessing(false);
+    if (error || !(data as any)?.success) {
+      toast.error((data as any)?.error || error?.message || "Withdrawal failed");
+      return;
+    }
+    toast.success(`Withdrew $${amt.toFixed(2)} to main balance`);
+    setWithdrawOpen(false);
+    setWithdrawAmount("");
+    queryClient.invalidateQueries({ queryKey: ["balance"] });
+  };
 
   // Fetch pending_commissions (creator + referral, released + pending)
   const { data: pendingCommissions, isLoading: loadingPC } = useQuery({
