@@ -26,7 +26,7 @@ export const useLimitOrders = (marketId?: string) => {
       if (!marketId) return [];
       const { data } = await supabase
         .from("limit_orders")
-        .select("*")
+        .select("id, market_id, option_id, side, order_type, limit_price, amount, shares, status, created_at")
         .eq("market_id", marketId)
         .eq("status", "pending")
         .order("limit_price", { ascending: false });
