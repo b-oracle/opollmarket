@@ -294,6 +294,8 @@ const Commissions = () => {
       copierId?: string | null;
       commissionPercent?: number | null;
       releasesAt?: string | null;
+      emoji?: string | null;
+      description?: string | null;
     }[] = [];
 
     (pendingCommissions ?? []).forEach((c) => {
@@ -332,9 +334,56 @@ const Commissions = () => {
       });
     });
 
+    (giftsSent ?? []).forEach((g) => {
+      records.push({
+        id: g.id,
+        category: "gift_sent",
+        amount: Number(g.amount),
+        date: g.created_at,
+        status: "released",
+        emoji: g.emoji,
+        description: `Sent ${g.emoji} gift`,
+      });
+    });
+
+    (giftsReceived ?? []).forEach((g) => {
+      records.push({
+        id: g.id,
+        category: "gift_received",
+        amount: Number(g.amount),
+        date: g.created_at,
+        status: "released",
+        emoji: g.emoji,
+        description: `Received ${g.emoji} gift`,
+      });
+    });
+
+    (bonusTxns ?? []).forEach((t) => {
+      records.push({
+        id: t.id,
+        category: "bonus",
+        amount: Number(t.amount),
+        date: t.created_at,
+        status: "released",
+        description: "Bonus credit",
+      });
+    });
+
+    (osureTxns ?? []).forEach((t) => {
+      records.push({
+        id: t.id,
+        category: "osure",
+        amount: Number(t.claim_amount),
+        date: t.created_at,
+        status: t.status as "released" | "pending",
+        marketId: t.market_id,
+        description: `Tier ${t.tier} claim`,
+      });
+    });
+
     records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     return records;
-  }, [pendingCommissions, copyEarnings, signupBonuses]);
+  }, [pendingCommissions, copyEarnings, signupBonuses, giftsSent, giftsReceived, bonusTxns, osureTxns]);
 
   const filtered = (activeTab === "all"
     ? allRecords
