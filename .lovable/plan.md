@@ -1,47 +1,37 @@
 
 
-## Improve Gift Notification with Sender Info
+## Add Sender Name to Floating Gift Emoji
 
-### Problem
-The gift notification already includes the sender's name in the message text, but:
-1. The `actor_id` field is not set, so tapping the notification doesn't navigate to the sender's profile.
-2. The `gift` type has no icon/color config in the notification bell — it falls back to a generic info icon.
-3. Gift notifications don't include a Telegram relay call.
+### What changes
 
-### Changes
+**File: `src/components/social/SpaceRoom.tsx`**
 
-**File: `supabase/functions/send-space-gift/index.ts`**
-- Add `actor_id: senderId` to the notification insert so the bell can deep-link to the sender's profile.
-- Add a Telegram notification relay call (invoke `telegram-notify`) after inserting the notification.
+1. **Extend the floating reaction data model** — Add an optional `label` field to the `floatingReactions` state type:
+   ```ts
+   // Line 137: Change type from
+   { id: string; emoji: string; identity: string }[]
+   // to
+   { id: string; emoji: string; identity: string; label?: string }[]
+   ```
 
-**File: `src/components/NotificationBell.tsx`**
-- Add `gift` to the `typeConfig` map with a gift-appropriate icon (e.g. `Gift` from lucide) and color class.
-- Add a handler in `handleClick` for gift-type notifications: if `actor_id` is set, navigate to `/user/${actor_id}`.
+2. **Include sender name when broadcasting targeted emoji** — The broadcast already sends `senderName` in the data payload (line 1368). When receiving a `targeted_emoji` event (line 706-710), pass `data.senderName` into the floating reaction. Also do the same for the local floating reaction on the sender side (line 1372-1374), but with a label like `"You gifted {targetName}"` or similar.
 
-### Technical details
+3. **When receiving a targeted emoji (line 706-710)** — For the recipient and all viewers, set the label to `"{senderName} gifted {emoji}"`. Check if the current user is the target (`data.targetId === user?.id`) and if so, use `"{senderName} gifted you"`.
 
-Edge function notification insert change:
-```ts
-await adminClient.from("notifications").insert({
-  user_id: recipientId,
-  title: "Gift Received! 🎁",
-  message: `${senderName} sent you ${emoji} ($${Number(amount).toFixed(2)})`,
-  type: "gift",
-  actor_id: senderId,  // <-- ADD THIS
-});
-```
+4. **Render the label in the floating animation (lines 1811-1821)** — Below the emoji, show the label text in a small styled span:
+   ```tsx
+   <motion.div key={r.id} ...>
+     {r.emoji}
+     {r.label && (
+       <div className="text-[10px] text-white font-semibold whitespace-nowrap bg-black/50 rounded px-1 mt-0.5 text-center">
+         {r.label}
+       </div>
+     )}
+   </motion.div>
+   ```
 
-NotificationBell typeConfig addition:
-```ts
-gift: { icon: Gift, colorClass: "text-primary bg-primary/10" },
-```
-
-handleClick addition for gift type:
-```ts
-if (n.type === "gift" && n.actor_id) {
-  setOpen(false);
-  navigate(`/user/${n.actor_id}`);
-  return;
-}
-```
+### Summary
+- Only gift emojis (targeted emoji) get the floating label — general reactions remain unchanged
+- The recipient sees "{Name} gifted you {emoji}", other participants see "{Name} gifted {targetName} {emoji}"
+- No database or backend changes needed — the `senderName` is already in the broadcast payload
 
