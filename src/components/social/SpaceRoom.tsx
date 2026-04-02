@@ -2535,7 +2535,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[70] bg-black/60"
+                className="fixed inset-0 z-[100] bg-black/60"
                 onClick={() => setShowTopUpModal(false)}
               />
               <motion.div
