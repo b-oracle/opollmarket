@@ -1703,6 +1703,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             🔇
           </div>
         )}
+        {djIdentity === p.identity && (
+          <div className="absolute -top-1 -left-1 text-base animate-pulse drop-shadow-md">
+            🎵
+          </div>
+        )}
       </div>
     );
   };
