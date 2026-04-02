@@ -1,16 +1,21 @@
 
 
-## Move Chart Above All Cards
+## Replace General Floating Reaction Emojis
 
 ### What changes
 
-**File: `src/pages/Commissions.tsx`**
+**File: `src/components/social/SpaceRoom.tsx`**
 
-Reorder the three sections so the layout becomes:
+Replace the first four money-themed emojis in the `REACTIONS` array (used for general floating reactions) with skin-toned hand gestures, reserving the money emojis exclusively for the gift emoji picker.
 
-1. **Pie Chart** (collapsible) — currently at lines 567-626
-2. **Summary Cards** (Total Earned, Creator, Referral, etc.) — currently at lines 548-565
-3. **Balance Cards** (Gift, Bonus, oSURE) — stays at lines 628-680
+**Line 78** — Change:
+```
+const REACTIONS = ["💸", "🤑", "💰", "💵", "🌹", "💝", "🔥", "🕺", "💃", "👏", "👍", "❤️", "😂", "💯", "🎯"];
+```
+To:
+```
+const REACTIONS = ["🙏🏽", "👎🏽", "✌🏽", "👌🏽", "🌹", "💝", "🔥", "🕺", "💃", "👏", "👍", "❤️", "😂", "💯", "🎯"];
+```
 
-The fix is simply swapping the Summary Cards block and the Pie Chart block — move the `AnimatePresence` chart section (lines 567-626) above the Summary Cards grid (lines 548-565).
+No other changes needed — the money emojis (`💸`, `🤑`, `💰`, `💵`) remain in `EMOJI_PRICES` and the gift emoji picker, so gifting is unaffected.
 
