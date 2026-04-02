@@ -314,8 +314,9 @@ export default function QuickTrade() {
   const [userBets, setUserBets] = useState<Bet[]>([]);
   const [selectedTimeframe, setSelectedTimeframe] = useState(ALL_TIMEFRAMES[2]); // default 5m
   const [streak, setStreak] = useState<{ current_streak: number; best_streak: number } | null>(null);
-  const [milestoneModal, setMilestoneModal] = useState<{ open: boolean; streak: number; multiplier: number }>({ open: false, streak: 0, multiplier: 1 });
-  const prevStreakRef = useRef<number>(0);
+   const [milestoneModal, setMilestoneModal] = useState<{ open: boolean; streak: number; multiplier: number }>({ open: false, streak: 0, multiplier: 1 });
+   const prevStreakRef = useRef<number>(-1);
+   const shownMilestonesRef = useRef<Set<number>>(new Set());
   const chartCardRef = useRef<HTMLDivElement>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showWinShare, setShowWinShare] = useState(false);
@@ -364,9 +365,16 @@ export default function QuickTrade() {
       const prev = prevStreakRef.current;
       const curr = newStreak.current_streak;
 
-      // Trigger milestone celebration when crossing 3 or 5
-      if (curr >= 3 && prev < curr && (curr === 3 || curr === 5)) {
-        setMilestoneModal({ open: true, streak: curr, multiplier: getStreakMultiplier(curr) });
+      // Trigger milestone celebration only once per session per milestone
+      if (curr >= 3 && (curr === 3 || curr === 5) && !shownMilestonesRef.current.has(curr)) {
+        // Only show if streak actually increased (not on initial load with existing streak)
+        if (prevStreakRef.current !== -1 && prevStreakRef.current < curr) {
+          shownMilestonesRef.current.add(curr);
+          setMilestoneModal({ open: true, streak: curr, multiplier: getStreakMultiplier(curr) });
+        } else if (prevStreakRef.current === -1) {
+          // First load — just mark as shown so it doesn't pop up later
+          shownMilestonesRef.current.add(curr);
+        }
       }
 
       prevStreakRef.current = curr;
