@@ -2298,21 +2298,45 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
                 className="absolute bottom-0 inset-x-0 z-[96] bg-card rounded-t-2xl border-t border-border p-5"
               >
-                <div className="flex items-center gap-3 mb-4">
-                  {renderAvatar(emojiTarget, "lg")}
-                  <div>
-                    <p className="font-semibold text-sm">Send emoji to {emojiTarget.name}</p>
-                    <p className="text-xs text-muted-foreground">They'll get a notification</p>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    {renderAvatar(emojiTarget, "lg")}
+                    <div>
+                      <p className="font-semibold text-sm">Send gift to {emojiTarget.name}</p>
+                      <p className="text-xs text-muted-foreground">Emoji gifts deduct from your gift balance</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Gift Balance</p>
+                    <p className={`text-sm font-bold ${giftBalance > 0 ? "text-green-500" : "text-destructive"}`}>${giftBalance.toFixed(2)}</p>
                   </div>
                 </div>
-                <div className="flex items-center justify-center gap-3 mb-3">
-                  {REACTIONS.map((emoji) => (
-                    <button key={emoji} onClick={() => sendTargetedEmoji(emoji)}
-                      className="w-11 h-11 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center text-xl transition-transform active:scale-125">
-                      {emoji}
-                    </button>
-                  ))}
+                <div className="grid grid-cols-4 gap-2 mb-3">
+                  {REACTIONS.map((emoji) => {
+                    const price = EMOJI_PRICES[emoji] ?? 0.05;
+                    const canAfford = giftBalance >= price;
+                    return (
+                      <button
+                        key={emoji}
+                        onClick={() => sendTargetedEmoji(emoji)}
+                        disabled={!canAfford || sendingGift}
+                        className={`flex flex-col items-center gap-1 py-2.5 rounded-xl transition-all active:scale-95 ${
+                          canAfford
+                            ? "bg-muted hover:bg-muted/80"
+                            : "bg-muted/40 opacity-50 cursor-not-allowed"
+                        }`}
+                      >
+                        <span className="text-2xl">{emoji}</span>
+                        <span className="text-[10px] font-medium text-muted-foreground">${price.toFixed(2)}</span>
+                      </button>
+                    );
+                  })}
                 </div>
+                {giftBalance <= 0 && (
+                  <p className="text-xs text-center text-destructive mb-2">
+                    No gift balance. Top up in your Commissions page.
+                  </p>
+                )}
                 <button
                   onClick={() => setEmojiTarget(null)}
                   className="w-full flex items-center justify-center px-4 py-3 rounded-xl bg-muted hover:bg-muted/80 text-muted-foreground transition-colors"
