@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, DollarSign, Users, Gift, Copy, Clock, Sparkles, PieChart as PieChartIcon, ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Wallet, ArrowDownToLine, ArrowUpFromLine, Gem } from "lucide-react";
+import { ArrowLeft, DollarSign, Users, Gift, Copy, Clock, Sparkles, PieChart as PieChartIcon, ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Wallet, ArrowDownToLine, ArrowUpFromLine, Gem, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,35 +38,19 @@ const formatDate = (d: string) => {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 };
 
-const RevenueShareCard = ({ userId }: { userId: string }) => {
-  const { data: revShareTotal = 0, isLoading } = useQuery({
-    queryKey: ["revenue-share-total", userId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("pending_commissions")
-        .select("amount, status")
-        .eq("user_id", userId)
-        .eq("type", "creator")
-        .eq("status", "released");
-      return (data ?? []).reduce((s, r) => s + Number(r.amount), 0);
-    },
-    enabled: !!userId,
-  });
-
-  return (
-    <Card className="border-border/50">
-      <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
-        <div className="w-8 h-8 rounded-full flex items-center justify-center text-violet-500 bg-violet-500/10">
-          <Gem className="w-4 h-4" />
-        </div>
-        {isLoading ? <Skeleton className="h-5 w-16" /> : (
-          <span className="text-sm font-bold">{formatAmount(revShareTotal)}</span>
-        )}
-        <span className="text-[10px] text-muted-foreground leading-tight">Revenue Share</span>
-      </CardContent>
-    </Card>
-  );
-};
+const InsuranceBalanceCard = ({ insuranceBalance, isLoading }: { insuranceBalance: number; isLoading: boolean }) => (
+  <Card className="border-border/50">
+    <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
+      <div className="w-8 h-8 rounded-full flex items-center justify-center text-emerald-500 bg-emerald-500/10">
+        <Shield className="w-4 h-4" />
+      </div>
+      {isLoading ? <Skeleton className="h-5 w-16" /> : (
+        <span className="text-sm font-bold">{formatAmount(insuranceBalance)}</span>
+      )}
+      <span className="text-[10px] text-muted-foreground leading-tight">oSURE Balance</span>
+    </CardContent>
+  </Card>
+);
 
 const Commissions = () => {
   const { user } = useAuth();
@@ -82,7 +66,7 @@ const Commissions = () => {
   const [processing, setProcessing] = useState(false);
   const ITEMS_PER_PAGE = 15;
   const queryClient = useQueryClient();
-  const { balance, giftBalance, bonusBalance, rewardsBalance, totalGiftBalance, isLoading: balLoading } = useUserBalance();
+  const { balance, giftBalance, bonusBalance, rewardsBalance, insuranceBalance, totalGiftBalance, isLoading: balLoading } = useUserBalance();
 
   const handleTopUp = async () => {
     const amt = Number(topUpAmount);
@@ -311,7 +295,7 @@ const Commissions = () => {
 
   const summaryCards = [
     { label: "Total Earned", value: totals.total, icon: DollarSign, color: "text-green-500 bg-green-500/10" },
-    { label: "Creator", value: totals.creator, icon: Sparkles, color: "text-amber-500 bg-amber-500/10" },
+    { label: "Creator", value: totals.creator, icon: Gem, color: "text-violet-500 bg-violet-500/10" },
     { label: "Referral", value: totals.referral, icon: Users, color: "text-blue-500 bg-blue-500/10" },
     { label: "Copy Trade", value: totals.copyTrade, icon: Copy, color: "text-purple-500 bg-purple-500/10" },
     { label: "Signup Bonus", value: totals.signup, icon: Gift, color: "text-primary bg-primary/10" },
@@ -489,8 +473,8 @@ const Commissions = () => {
             </CardContent>
           </Card>
 
-          {/* Revenue Share */}
-          <RevenueShareCard userId={user.id} />
+          {/* oSURE Balance */}
+          <InsuranceBalanceCard insuranceBalance={insuranceBalance} isLoading={balLoading} />
         </div>
 
         {/* Gift Balance Detail Dialog */}
