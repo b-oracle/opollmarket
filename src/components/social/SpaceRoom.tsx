@@ -1472,6 +1472,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     setDeviceMusicPlaying(false);
     setDeviceMusicPaused(false);
     setDeviceMusicName(null);
+    setDjIdentity(prev => prev === user?.id ? null : prev);
   };
 
   const reactToMessage = (messageId: string, emoji: string) => {
