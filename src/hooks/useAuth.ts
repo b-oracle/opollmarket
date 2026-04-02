@@ -123,6 +123,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setIsSuperAdmin(false);
           setIsAdmin(false);
           setIsModerator(false);
+          setRolesLoaded(false);
           setProfileDisplayName(null);
           if (mounted.current) setLoading(false);
           return;
