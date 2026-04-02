@@ -1332,11 +1332,17 @@ const Profile = () => {
         </AnimatePresence>
 
         {/* Balance + Stats */}
-        <div className="glass rounded-xl p-4 mb-6 text-center">
+        <div className="glass rounded-xl p-4 mb-3 text-center">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Balance</p>
           <p className="text-3xl font-bold text-primary">${balance.toFixed(2)}</p>
           <p className="text-[10px] text-muted-foreground">USD</p>
         </div>
+
+        <button onClick={() => navigate("/commissions")} className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98] mb-6">
+          <DollarSign className="w-5 h-5 text-primary" />
+          <span className="text-sm font-medium flex-1 text-left">Balance Breakdown</span>
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+        </button>
 
         <div className="grid grid-cols-3 gap-3 mb-3">
           {(() => {
@@ -1479,11 +1485,6 @@ const Profile = () => {
           <button onClick={() => navigate("/referrals")} className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
             <Gift className="w-5 h-5 text-primary" />
             <span className="text-sm font-medium flex-1 text-left">Referral Program</span>
-            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          </button>
-          <button onClick={() => navigate("/commissions")} className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
-            <DollarSign className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium flex-1 text-left">Commission Breakdown</span>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
           <button onClick={() => navigate("/my-promotions")} className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
