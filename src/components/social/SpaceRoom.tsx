@@ -2018,13 +2018,15 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
               </button>
             )}
 
-            <button onClick={toggleHand}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                handRaised ? "bg-yellow-500/20 text-yellow-500" : "bg-muted text-muted-foreground"
-              }`}
-              title={handRaised ? "Lower hand" : "Raise hand"}>
-              <Hand className="w-5 h-5" />
-            </button>
+            {(isHost || isCoHost || canPublish) && (
+              <button onClick={toggleHand}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                  handRaised ? "bg-yellow-500/20 text-yellow-500" : "bg-muted text-muted-foreground"
+                }`}
+                title={handRaised ? "Lower hand" : "Raise hand"}>
+                <Hand className="w-5 h-5" />
+              </button>
+            )}
 
             {/* Recording toggle for host */}
             {isHost && (
