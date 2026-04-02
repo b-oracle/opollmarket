@@ -41,7 +41,8 @@ import { useActiveSpace } from "@/hooks/useActiveSpace";
 import SpaceMiniPlayer from "./SpaceMiniPlayer";
 import TaggedMarketsCarousel from "./TaggedMarketsCarousel";
 import { SOUND_REACTIONS, playSoundById, AMBIENT_TRACKS, startAmbient, stopAmbient, isAmbientPlaying, warmAudioContext } from "@/lib/spaceSounds";
-import { Music, ChevronDown, Upload, Square, Play, Pause } from "lucide-react";
+import { Music, ChevronDown, Upload, Square, Play, Pause, Search } from "lucide-react";
+import { optimizedImageUrl as optimizedImg } from "@/lib/optimizedImage";
 
 interface SpaceRoomProps {
   spaceId: string;
@@ -150,6 +151,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [selfSpaceStats, setSelfSpaceStats] = useState<{ sent: number; received: number; sentCount: number; receivedCount: number }>({ sent: 0, received: 0, sentCount: 0, receivedCount: 0 });
   const [giftActivities, setGiftActivities] = useState<Array<{ id: string; emoji: string; amount: number; created_at: string; direction: 'sent' | 'received'; other_name: string; other_id: string }>>([]);
   const loadedMsgIdsRef = useRef<Set<string>>(new Set());
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteSearchQuery, setInviteSearchQuery] = useState("");
+  const [inviteSearchResults, setInviteSearchResults] = useState<{ id: string; display_name: string; avatar_url: string | null }[]>([]);
+  const [inviteSearching, setInviteSearching] = useState(false);
+  const [inviteSending, setInviteSending] = useState<string | null>(null);
 
   // Fetch gift balance on mount
   useEffect(() => {
@@ -167,6 +173,47 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       }
     })();
   }, [user]);
+
+  // Invite user search
+  useEffect(() => {
+    if (!inviteSearchQuery.trim() || !user) { setInviteSearchResults([]); return; }
+    const timeout = setTimeout(async () => {
+      setInviteSearching(true);
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .neq("id", user.id)
+        .ilike("display_name", `%${inviteSearchQuery.trim()}%`)
+        .limit(10);
+      setInviteSearchResults(data || []);
+      setInviteSearching(false);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [inviteSearchQuery, user]);
+
+  const handleSendInvite = async (inviteeId: string, inviteeName: string) => {
+    setInviteSending(inviteeId);
+    try {
+      await supabase.from("space_invites" as any).insert({
+        space_id: spaceId,
+        inviter_id: user!.id,
+        invitee_id: inviteeId,
+      });
+      await supabase.from("notifications").insert({
+        user_id: inviteeId,
+        title: "Space Invite 🎙️",
+        message: `You've been invited to join "${displayTitle}"`,
+        type: "info",
+        actor_id: user!.id,
+      });
+      toast.success(`Invited ${inviteeName}`);
+    } catch (err: any) {
+      if (err.message?.includes("duplicate")) toast.info(`${inviteeName} already invited`);
+      else toast.error(err.message || "Failed to invite");
+    } finally {
+      setInviteSending(null);
+    }
+  };
 
   // Fetch self space stats when opening self stats sheet
   useEffect(() => {
@@ -2266,6 +2313,16 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
               </button>
             )}
 
+            {/* Invite button for host/co-host */}
+            {hasModPowers && (
+              <button onClick={() => setShowInviteModal(true)}
+                className="h-10 px-3 sm:px-4 rounded-full flex items-center justify-center gap-2 text-sm font-medium bg-accent text-accent-foreground transition-colors"
+                title="Invite Users">
+                <UserPlus className="w-4 h-4" />
+                <span className="hidden sm:inline">Invite</span>
+              </button>
+            )}
+
             <button onClick={handleLeave}
               className="w-10 h-10 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
               title="Leave Space">
@@ -2720,6 +2777,75 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           )}
         </AnimatePresence>
       </motion.div>
+
+      {/* Invite Users Modal */}
+      <AnimatePresence>
+        {showInviteModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200]"
+              onClick={() => { setShowInviteModal(false); setInviteSearchQuery(""); }}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="fixed inset-0 z-[200] flex items-center justify-center p-6 pointer-events-none"
+            >
+              <div className="glass-strong rounded-2xl p-5 w-full max-w-sm pointer-events-auto space-y-3 max-h-[70vh] overflow-y-auto">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold flex items-center gap-2">
+                    <UserPlus className="w-5 h-5 text-primary" />
+                    Invite to Space
+                  </h3>
+                  <button onClick={() => { setShowInviteModal(false); setInviteSearchQuery(""); }} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <input
+                    value={inviteSearchQuery}
+                    onChange={(e) => setInviteSearchQuery(e.target.value)}
+                    placeholder="Search users…"
+                    className="w-full bg-muted/50 border border-border rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground"
+                    autoFocus
+                  />
+                </div>
+                <div className="space-y-1 max-h-60 overflow-y-auto">
+                  {inviteSearching && <p className="text-xs text-muted-foreground text-center py-4"><Loader2 className="w-3 h-3 animate-spin inline mr-1" />Searching…</p>}
+                  {!inviteSearching && inviteSearchQuery.trim() && inviteSearchResults.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-4">No users found</p>
+                  )}
+                  {inviteSearchResults.map((u) => (
+                    <div key={u.id} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted/50 transition-colors">
+                      <div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">
+                        {u.avatar_url ? (
+                          <img src={optimizedImg(u.avatar_url, "avatar-sm")} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xs font-bold">{(u.display_name || "?").charAt(0).toUpperCase()}</span>
+                        )}
+                      </div>
+                      <span className="text-sm truncate flex-1">{u.display_name}</span>
+                      <button
+                        onClick={() => handleSendInvite(u.id, u.display_name)}
+                        disabled={inviteSending === u.id}
+                        className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-50 flex items-center gap-1"
+                      >
+                        {inviteSending === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserPlus className="w-3 h-3" />}
+                        Invite
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Enable Speaker Prompt */}
       <AnimatePresence>

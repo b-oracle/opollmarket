@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Radio, Headphones, LogIn, LogOut, Loader2, Bell, BellOff, Calendar, Share2, Play, Pause, Trash2, RotateCcw, RotateCw, Users, TrendingUp, MessageCircle, Clock, Pencil, Check, X } from "lucide-react";
+import { Radio, Headphones, LogIn, LogOut, Loader2, Bell, BellOff, Calendar, Share2, Play, Pause, Trash2, RotateCcw, RotateCw, Users, TrendingUp, MessageCircle, Clock, Pencil, Check, X, Lock } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { useState, useRef, useEffect } from "react";
 import SpaceShareSheet from "./SpaceShareSheet";
@@ -20,6 +20,7 @@ interface SpaceCardProps {
     reminder_count?: number;
     is_recorded?: boolean;
     recording_url?: string | null;
+    is_private?: boolean;
   };
   hostProfile?: { display_name?: string | null; avatar_url?: string | null } | null;
   index?: number;
@@ -298,7 +299,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {isLive && (
               <span className="flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-destructive/20 text-destructive">
                 <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse" />
@@ -315,6 +316,12 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
               <span className="flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-accent text-accent-foreground">
                 <Play className="w-2.5 h-2.5" />
                 REPLAY
+              </span>
+            )}
+            {space.is_private && (
+              <span className="flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                <Lock className="w-2.5 h-2.5" />
+                PRIVATE
               </span>
             )}
             <p className="text-[9px] text-muted-foreground">
