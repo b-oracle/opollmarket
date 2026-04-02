@@ -138,7 +138,10 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [unreadCount, setUnreadCount] = useState(0);
   const [emojiTarget, setEmojiTarget] = useState<ParticipantInfo | null>(null);
   const [giftBalance, setGiftBalance] = useState<number>(0);
+  const [rewardsBalance, setRewardsBalance] = useState<number>(0);
   const [sendingGift, setSendingGift] = useState(false);
+  const [showSelfStats, setShowSelfStats] = useState(false);
+  const [selfSpaceStats, setSelfSpaceStats] = useState<{ sent: number; received: number; sentCount: number; receivedCount: number }>({ sent: 0, received: 0, sentCount: 0, receivedCount: 0 });
   const loadedMsgIdsRef = useRef<Set<string>>(new Set());
 
   // Fetch gift balance on mount
