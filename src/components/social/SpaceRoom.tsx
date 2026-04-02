@@ -349,6 +349,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           if (payload.new?.tagged_market_ids) {
             setTaggedMarketIds(payload.new.tagged_market_ids);
           }
+          if (payload.new?.title && payload.new.title !== displayTitle) {
+            setDisplayTitle(payload.new.title);
+          }
         }
       )
       .subscribe();
