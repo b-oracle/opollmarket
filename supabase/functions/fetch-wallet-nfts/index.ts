@@ -6,8 +6,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Ankr Advanced API – free tier, no API key required for basic queries
-const ANKR_RPC = "https://rpc.ankr.com/multichain/?ankr_getNFTsByOwner=";
+const CHAIN_MAP: Record<string, string> = {
+  bsc: "0x38",
+  eth: "0x1",
+  polygon: "0x89",
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -58,65 +61,71 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Use Ankr Advanced API (free, no key needed) to fetch NFTs across BSC, ETH, Polygon
-    const ankrRes = await fetch("https://rpc.ankr.com/multichain", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        method: "ankr_getNFTsByOwner",
-        params: {
-          walletAddress: wallet_address,
-          blockchain: ["bsc", "eth", "polygon"],
-          pageSize: 50,
-        },
-        id: 1,
-      }),
-    });
-
-    if (!ankrRes.ok) {
-      const errBody = await ankrRes.text();
-      console.error("Ankr API error:", ankrRes.status, errBody);
-      return new Response(JSON.stringify({ error: "Failed to fetch NFTs" }), {
-        status: 502,
+    const moralisKey = Deno.env.get("MORALIS_API_KEY");
+    if (!moralisKey) {
+      console.error("MORALIS_API_KEY not configured");
+      return new Response(JSON.stringify({ error: "NFT service not configured" }), {
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const ankrData = await ankrRes.json();
+    // Fetch NFTs from multiple chains in parallel using Moralis
+    const chains = ["bsc", "eth", "polygon"];
+    const results = await Promise.allSettled(
+      chains.map(async (chain) => {
+        const chainHex = CHAIN_MAP[chain];
+        const url = `https://deep-index.moralis.io/api/v2.2/${wallet_address}/nft?chain=${chainHex}&format=decimal&limit=50&normalizeMetadata=true`;
+        const res = await fetch(url, {
+          headers: {
+            accept: "application/json",
+            "X-API-Key": moralisKey,
+          },
+        });
 
-    if (ankrData.error) {
-      console.error("Ankr RPC error:", JSON.stringify(ankrData.error));
-      return new Response(JSON.stringify({ error: "Failed to fetch NFTs" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+        if (!res.ok) {
+          const errText = await res.text();
+          console.error(`Moralis ${chain} error: ${res.status} ${errText}`);
+          return [];
+        }
 
-    const assets = ankrData.result?.assets || [];
+        const data = await res.json();
+        return (data.result || []).map((nft: any) => {
+          let imageUrl =
+            nft.normalized_metadata?.image ||
+            nft.metadata?.image ||
+            null;
 
-    const nfts = assets.map((nft: any) => {
-      let imageUrl = nft.imageUrl || null;
+          // Parse metadata string if needed
+          if (!imageUrl && typeof nft.metadata === "string") {
+            try {
+              const parsed = JSON.parse(nft.metadata);
+              imageUrl = parsed.image || parsed.image_url || null;
+            } catch {
+              // ignore parse errors
+            }
+          }
 
-      // Try metadata fallback
-      if (!imageUrl && nft.traits?.image) {
-        imageUrl = nft.traits.image;
-      }
+          // Convert IPFS URLs to gateway
+          if (imageUrl?.startsWith("ipfs://")) {
+            imageUrl = imageUrl.replace("ipfs://", "https://ipfs.io/ipfs/");
+          }
 
-      // Convert IPFS URLs to gateway
-      if (imageUrl?.startsWith("ipfs://")) {
-        imageUrl = imageUrl.replace("ipfs://", "https://ipfs.io/ipfs/");
-      }
+          return {
+            token_address: (nft.token_address || "").toLowerCase(),
+            token_id: nft.token_id,
+            name: nft.normalized_metadata?.name || nft.name || `#${nft.token_id}`,
+            image_url: imageUrl,
+            collection_name: nft.name || "Unknown Collection",
+            blockchain: chain,
+          };
+        });
+      })
+    );
 
-      return {
-        token_address: (nft.contractAddress || "").toLowerCase(),
-        token_id: nft.tokenId,
-        name: nft.name || `#${nft.tokenId}`,
-        image_url: imageUrl,
-        collection_name: nft.collectionName || "Unknown Collection",
-        blockchain: nft.blockchain || "bsc",
-      };
-    });
+    const nfts = results.flatMap((r) =>
+      r.status === "fulfilled" ? r.value : []
+    );
 
     return new Response(JSON.stringify({ nfts }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
