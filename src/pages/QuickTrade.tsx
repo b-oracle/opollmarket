@@ -314,8 +314,9 @@ export default function QuickTrade() {
   const [userBets, setUserBets] = useState<Bet[]>([]);
   const [selectedTimeframe, setSelectedTimeframe] = useState(ALL_TIMEFRAMES[2]); // default 5m
   const [streak, setStreak] = useState<{ current_streak: number; best_streak: number } | null>(null);
-  const [milestoneModal, setMilestoneModal] = useState<{ open: boolean; streak: number; multiplier: number }>({ open: false, streak: 0, multiplier: 1 });
-  const prevStreakRef = useRef<number>(0);
+   const [milestoneModal, setMilestoneModal] = useState<{ open: boolean; streak: number; multiplier: number }>({ open: false, streak: 0, multiplier: 1 });
+   const prevStreakRef = useRef<number>(-1);
+   const shownMilestonesRef = useRef<Set<number>>(new Set());
   const chartCardRef = useRef<HTMLDivElement>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showWinShare, setShowWinShare] = useState(false);
