@@ -1163,6 +1163,37 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
   };
 
+  const sendTargetedEmoji = async (emoji: string) => {
+    if (!roomRef.current || !user || !emojiTarget) return;
+    const targetId = emojiTarget.identity;
+    const senderName = roomRef.current.localParticipant.name || user.email?.split("@")[0] || "Someone";
+
+    // Broadcast to all peers so floating emoji shows for everyone
+    const data = JSON.stringify({ type: "targeted_emoji", emoji, targetId, senderName });
+    roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
+
+    // Show locally too
+    const id = `${Date.now()}-${Math.random()}`;
+    setFloatingReactions((prev) => [...prev, { id, emoji, identity: targetId }]);
+    setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
+
+    // Send notification to target via edge function (inserts notification + push)
+    try {
+      await supabase.functions.invoke("send-push", {
+        body: {
+          user_id: targetId,
+          title: "Emoji Received ✨",
+          body: `${senderName} sent you ${emoji}`,
+          url: "/feed",
+        },
+      });
+    } catch {
+      // non-critical
+    }
+
+    setEmojiTarget(null);
+  };
+
   const sendSoundReaction = (soundId: string) => {
     if (!roomRef.current || !user) return;
     // Play locally
