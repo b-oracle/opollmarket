@@ -1217,31 +1217,47 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   };
 
   const sendTargetedEmoji = async (emoji: string) => {
-    if (!roomRef.current || !user || !emojiTarget) return;
+    if (!roomRef.current || !user || !emojiTarget || sendingGift) return;
     const targetId = emojiTarget.identity;
+    const price = EMOJI_PRICES[emoji] ?? 0.05;
     const senderName = roomRef.current.localParticipant.name || user.email?.split("@")[0] || "Someone";
 
-    // Broadcast to all peers so floating emoji shows for everyone
-    const data = JSON.stringify({ type: "targeted_emoji", emoji, targetId, senderName });
-    roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
+    if (giftBalance < price) {
+      toast.error("Insufficient gift balance. Top up in your Commissions page.");
+      return;
+    }
 
-    // Show locally too
-    const id = `${Date.now()}-${Math.random()}`;
-    setFloatingReactions((prev) => [...prev, { id, emoji, identity: targetId }]);
-    setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
+    setSendingGift(true);
 
-    // Send notification to target via edge function (inserts notification + push)
     try {
-      await supabase.functions.invoke("send-push", {
-        body: {
-          user_id: targetId,
-          title: "Emoji Received ✨",
-          body: `${senderName} sent you ${emoji}`,
-          url: "/feed",
-        },
+      // Call edge function for atomic gift + notification
+      const { data: giftResult, error: giftError } = await supabase.functions.invoke("send-space-gift", {
+        body: { recipientId: targetId, spaceId, emoji, amount: price },
       });
+
+      if (giftError || giftResult?.error) {
+        toast.error(giftResult?.error || giftError?.message || "Gift failed");
+        setSendingGift(false);
+        return;
+      }
+
+      // Update local gift balance
+      setGiftBalance(Number(giftResult?.remaining_gift_balance ?? giftBalance - price));
+
+      // Broadcast to all peers so floating emoji shows for everyone
+      const data = JSON.stringify({ type: "targeted_emoji", emoji, targetId, senderName });
+      roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
+
+      // Show locally too
+      const id = `${Date.now()}-${Math.random()}`;
+      setFloatingReactions((prev) => [...prev, { id, emoji, identity: targetId }]);
+      setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
+
+      toast.success(`Sent ${emoji} ($${price.toFixed(2)}) to ${emojiTarget.name}!`);
     } catch {
-      // non-critical
+      toast.error("Failed to send gift");
+    } finally {
+      setSendingGift(false);
     }
 
     setEmojiTarget(null);
