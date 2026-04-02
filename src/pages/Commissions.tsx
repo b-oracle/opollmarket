@@ -443,6 +443,80 @@ const Commissions = () => {
           )}
         </div>
 
+        {/* Summary Cards */}
+        <div className="grid grid-cols-3 gap-2 mb-5">
+          {summaryCards.map((card) => (
+            <Card key={card.label} className="border-border/50">
+              <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${card.color}`}>
+                  <card.icon className="w-4 h-4" />
+                </div>
+                {isLoading ? (
+                  <Skeleton className="h-5 w-16" />
+                ) : (
+                  <span className="text-sm font-bold">{formatAmount(card.value)}</span>
+                )}
+                <span className="text-[10px] text-muted-foreground leading-tight">{card.label}</span>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Pie Chart (collapsible) */}
+        <AnimatePresence>
+          {showChart && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+              className="overflow-hidden mb-5"
+            >
+              <Card className="border-border/50">
+                <CardContent className="p-4">
+                  <ResponsiveContainer width="100%" height={220}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: "Creator", value: totals.creator },
+                          { name: "Referral", value: totals.referral },
+                          { name: "Copy Trade", value: totals.copyTrade },
+                          { name: "Signup Bonus", value: totals.signup },
+                        ].filter((d) => d.value > 0)}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={55}
+                        outerRadius={85}
+                        paddingAngle={3}
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        <Cell fill="#f59e0b" />
+                        <Cell fill="#3b82f6" />
+                        <Cell fill="#a855f7" />
+                        <Cell fill="hsl(var(--primary))" />
+                      </Pie>
+                      <RechartsTooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          fontSize: "12px",
+                        }}
+                        formatter={(value: number) => [`$${value.toFixed(2)}`]}
+                      />
+                      <Legend iconSize={8} wrapperStyle={{ fontSize: "11px" }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <p className="text-center text-xs text-muted-foreground mt-1">
+                    Total: <span className="font-bold text-foreground">{formatAmount(totals.total)}</span>
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Balance Cards */}
         <div className="grid grid-cols-3 gap-2 mb-5">
           {/* Gift Balance (combined) */}
@@ -463,7 +537,10 @@ const Commissions = () => {
           </Card>
 
           {/* Bonus Balance */}
-          <Card className="border-border/50">
+          <Card
+            className="border-border/50 cursor-pointer hover:border-primary/30 transition-colors"
+            onClick={() => setBonusInfoOpen(true)}
+          >
             <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-amber-500 bg-amber-500/10">
                 <Sparkles className="w-4 h-4" />
@@ -472,11 +549,26 @@ const Commissions = () => {
                 <span className="text-sm font-bold">{formatAmount(bonusBalance)}</span>
               )}
               <span className="text-[10px] text-muted-foreground leading-tight">Bonus Balance</span>
+              <span className="text-[9px] text-primary font-medium">Tap for info ▸</span>
             </CardContent>
           </Card>
 
           {/* oSURE Balance */}
-          <InsuranceBalanceCard insuranceBalance={insuranceBalance} isLoading={balLoading} />
+          <Card
+            className="border-border/50 cursor-pointer hover:border-primary/30 transition-colors"
+            onClick={() => setOsureInfoOpen(true)}
+          >
+            <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-emerald-500 bg-emerald-500/10">
+                <Shield className="w-4 h-4" />
+              </div>
+              {balLoading ? <Skeleton className="h-5 w-16" /> : (
+                <span className="text-sm font-bold">{formatAmount(insuranceBalance)}</span>
+              )}
+              <span className="text-[10px] text-muted-foreground leading-tight">oSURE Balance</span>
+              <span className="text-[9px] text-primary font-medium">Tap for info ▸</span>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Gift Balance Detail Dialog */}
@@ -570,79 +662,45 @@ const Commissions = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Pie Chart (collapsible) */}
-        <AnimatePresence>
-          {showChart && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
-              className="overflow-hidden mb-5"
-            >
-              <Card className="border-border/50">
-                <CardContent className="p-4">
-                  <ResponsiveContainer width="100%" height={220}>
-                    <PieChart>
-                      <Pie
-                        data={[
-                          { name: "Creator", value: totals.creator },
-                          { name: "Referral", value: totals.referral },
-                          { name: "Copy Trade", value: totals.copyTrade },
-                          { name: "Signup Bonus", value: totals.signup },
-                        ].filter((d) => d.value > 0)}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={55}
-                        outerRadius={85}
-                        paddingAngle={3}
-                        dataKey="value"
-                        stroke="none"
-                      >
-                        <Cell fill="#f59e0b" />
-                        <Cell fill="#3b82f6" />
-                        <Cell fill="#a855f7" />
-                        <Cell fill="hsl(var(--primary))" />
-                      </Pie>
-                      <RechartsTooltip
-                        contentStyle={{
-                          backgroundColor: "hsl(var(--card))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: "8px",
-                          fontSize: "12px",
-                        }}
-                        formatter={(value: number) => [`$${value.toFixed(2)}`]}
-                      />
-                      <Legend iconSize={8} wrapperStyle={{ fontSize: "11px" }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <p className="text-center text-xs text-muted-foreground mt-1">
-                    Total: <span className="font-bold text-foreground">{formatAmount(totals.total)}</span>
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Bonus Balance Info Dialog */}
+        <Dialog open={bonusInfoOpen} onOpenChange={setBonusInfoOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-amber-500" /> Bonus Balance
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
+                <span className="text-sm text-muted-foreground">Current Balance</span>
+                <span className="text-lg font-bold">{formatAmount(bonusBalance)}</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Bonus balance is earned from registration rewards and promotions. It can be used to pay for platform services like market creation fees, AI generation costs, and prediction fees. It cannot be used for direct wagers or withdrawals.
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-3 gap-2 mb-5">
-          {summaryCards.map((card) => (
-            <Card key={card.label} className="border-border/50">
-              <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${card.color}`}>
-                  <card.icon className="w-4 h-4" />
-                </div>
-                {isLoading ? (
-                  <Skeleton className="h-5 w-16" />
-                ) : (
-                  <span className="text-sm font-bold">{formatAmount(card.value)}</span>
-                )}
-                <span className="text-[10px] text-muted-foreground leading-tight">{card.label}</span>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {/* oSURE Balance Info Dialog */}
+        <Dialog open={osureInfoOpen} onOpenChange={setOsureInfoOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-emerald-500" /> oSURE Balance
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
+                <span className="text-sm text-muted-foreground">Current Balance</span>
+                <span className="text-lg font-bold">{formatAmount(insuranceBalance)}</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                oSURE balance is your prediction protection fund. When you lose a protected prediction, the coverage amount is credited here. Use it on future predictions — it unlocks to your main balance when you win.
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Tabs */}
         <div className="flex gap-1.5 overflow-x-auto pb-2 mb-4 scrollbar-hide">
