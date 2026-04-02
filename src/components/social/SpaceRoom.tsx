@@ -144,6 +144,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [topUpAmount, setTopUpAmount] = useState("");
   const [topUpLoading, setTopUpLoading] = useState(false);
   const [showAudioPrompt, setShowAudioPrompt] = useState(false);
+  const audioEnabledRef = useRef(false);
   const [mainBalance, setMainBalance] = useState<number>(0);
   const [showSelfStats, setShowSelfStats] = useState(false);
   const [selfSpaceStats, setSelfSpaceStats] = useState<{ sent: number; received: number; sentCount: number; receivedCount: number }>({ sent: 0, received: 0, sentCount: 0, receivedCount: 0 });
@@ -931,7 +932,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
         setConnected(true);
         setConnecting(false);
-        setShowAudioPrompt(true);
+        if (!audioEnabledRef.current) {
+          setShowAudioPrompt(true);
+        }
 
         // Fetch co_host_ids from space
         const { data: spaceData } = await supabase
@@ -2727,7 +2730,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200]"
-              onClick={() => setShowAudioPrompt(false)}
+              onClick={() => { audioEnabledRef.current = true; setShowAudioPrompt(false); }}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -2747,14 +2750,15 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                       await roomRef.current?.startAudio();
                       warmAudioContext();
                     } catch {}
-                    setShowAudioPrompt(false);
-                  }}
-                  className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors"
-                >
-                  Enable Speaker 🔊
-                </button>
-                <button
-                  onClick={() => setShowAudioPrompt(false)}
+                     audioEnabledRef.current = true;
+                     setShowAudioPrompt(false);
+                   }}
+                   className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors"
+                 >
+                   Enable Speaker 🔊
+                 </button>
+                 <button
+                   onClick={() => { audioEnabledRef.current = true; setShowAudioPrompt(false); }}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Skip
