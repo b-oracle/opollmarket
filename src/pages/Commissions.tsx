@@ -862,9 +862,13 @@ const Commissions = () => {
                           <span className="text-[10px] text-muted-foreground">⏳ 48h hold</span>
                         )}
                       </div>
-                      <p className="text-[11px] text-muted-foreground">{formatDate(record.date)}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {record.description ? `${record.description} · ` : ""}{formatDate(record.date)}
+                      </p>
                     </div>
-                    <span className="text-sm font-bold text-green-500">+{formatAmount(record.amount)}</span>
+                    <span className={`text-sm font-bold ${record.category === "gift_sent" ? "text-red-500" : "text-green-500"}`}>
+                      {record.category === "gift_sent" ? "-" : "+"}{formatAmount(record.amount)}
+                    </span>
                     <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                   </div>
                   <AnimatePresence>
