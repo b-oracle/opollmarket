@@ -2542,7 +2542,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-[71] bg-card border border-border rounded-2xl p-5 max-w-sm mx-auto shadow-xl"
+                className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-[101] bg-card border border-border rounded-2xl p-5 max-w-sm mx-auto shadow-xl"
               >
                 <h3 className="text-base font-bold text-foreground mb-1">Top Up Gift Balance</h3>
                 <p className="text-xs text-muted-foreground mb-4">
