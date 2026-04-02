@@ -134,7 +134,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [floatingReactions, setFloatingReactions] = useState<{ id: string; emoji: string; identity: string }[]>([]);
+  const [floatingReactions, setFloatingReactions] = useState<{ id: string; emoji: string; identity: string; label?: string }[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [emojiTarget, setEmojiTarget] = useState<ParticipantInfo | null>(null);
   const [giftBalance, setGiftBalance] = useState<number>(0);
