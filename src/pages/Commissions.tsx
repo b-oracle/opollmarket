@@ -416,7 +416,7 @@ const Commissions = () => {
           <button onClick={() => navigate(-1)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-lg font-bold flex-1">Commission Breakdown</h1>
+          <h1 className="text-lg font-bold flex-1">Balance Breakdown</h1>
           {!isLoading && totals.total > 0 && (
             <button
               onClick={() => setShowChart(!showChart)}
