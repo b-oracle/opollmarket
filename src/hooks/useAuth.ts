@@ -376,7 +376,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const displayName = profileDisplayName || user?.user_metadata?.display_name || user?.email?.split("@")[0] || "User";
 
   const value: AuthContextValue = {
-    user, session, loading, displayName, isSuperAdmin, isAdmin, isModerator, hasAdminAccess, canEdit, isEmailVerified,
+    user, session, loading, rolesLoaded, displayName, isSuperAdmin, isAdmin, isModerator, hasAdminAccess, canEdit, isEmailVerified,
     signIn, signUp, signOut,
   };
 
