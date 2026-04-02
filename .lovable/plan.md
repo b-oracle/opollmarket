@@ -1,34 +1,50 @@
 
 
-## Move "Edit Profile" to top-right corner and center "My Social"
+## Send Emoji to a Specific Participant in Spaces
 
-### What changes
+### What it does
+When any user taps on another participant's avatar during a live Space, an emoji picker appears. The sender picks an emoji, it floats from the tapped user's avatar, and the recipient gets a notification in the notification bell: "**[SenderName] sent you ❤️**".
 
-**File: `src/pages/Profile.tsx`**
+### Current behavior
+- Tapping avatars only works for moderators (host/co-host) — it opens an admin action sheet.
+- Regular users cannot interact with avatars at all.
+- Existing reactions broadcast to the whole room (not targeted).
 
-1. **Move "Edit Profile" button** out of the centered `div` (line ~957) and position it absolutely in the top-right corner of the profile header area. It will sit as a small icon-text button pinned to the right, aligned with the avatar row.
+### Changes
 
-2. **Center "My Social" button** — remove the flex row with the dot separator, and place "My Social" as a standalone centered element beneath the email, keeping its existing pulsating style.
+**File: `src/components/social/SpaceRoom.tsx`**
 
-### Layout change (lines ~934-983)
+1. **New state**: Add `emojiTarget` state to track which participant was tapped for emoji sending (separate from the mod `actionTarget`).
 
-```text
-BEFORE:
-  [Avatar]
-  [Name + Admin badge]
-  [Email]
-  [Edit Profile • My Social]   ← side by side
+2. **Avatar click logic change**: When a user taps an avatar (that isn't themselves):
+   - If they have mod powers AND it's not the host → open the existing action sheet (unchanged).
+   - If they don't have mod powers OR they tap their own avatar's neighbor → open a small emoji picker overlay for that participant.
+   - Mod users also get a "Send Emoji" button added to the existing action sheet.
 
-AFTER:
-  [Avatar]              [Edit Profile] ← top-right corner (absolute)
-  [Name + Admin badge]
-  [Email]
-  [    My Social    ]   ← centered, full width
-```
+3. **Non-mod avatar tap**: For listeners/speakers without mod powers, tapping any other participant's avatar opens a compact emoji picker popover anchored near the avatar.
+
+4. **`sendTargetedEmoji` function**: Sends a data-channel message with `{ type: "targeted_emoji", emoji, targetId, senderName }`. Also triggers the floating reaction from the target's avatar locally.
+
+5. **Data channel handler**: When receiving a `targeted_emoji` message where `targetId === user.id`, insert a notification into the `notifications` table: title "Emoji Received", message "[SenderName] sent you [emoji]", type "info".
+
+6. **Emoji picker UI**: A small bottom sheet or popover showing the existing `REACTIONS` array (🔥👏👍❤️😂💯🎯). Tapping one sends the targeted emoji and closes the picker.
 
 ### Implementation detail
 
-- Make the profile header container (`div.flex.flex-col.items-center.mb-8` at line 934) `relative` so we can absolutely position the edit button.
-- Place the "Edit Profile" button as `absolute top-0 right-0` with the same styling but slightly adjusted padding.
-- Remove the dot separator div and the wrapping flex row. Render "My Social" in its own centered `div` with `justify-center`.
+- Avatar `onClick` for non-mod users: `setEmojiTarget(p)` (opens emoji picker).
+- For mod users: keep existing behavior but add a "Send Emoji" row in the action sheet that switches to the emoji picker.
+- Data channel message format: `{ type: "targeted_emoji", emoji: "❤️", targetId: "uuid", senderName: "John" }`.
+- On receiving, if `targetId === user.id`, call `supabase.from("notifications").insert(...)` with `user_id = targetId`, `title = "Emoji Received"`, `message = "${senderName} sent you ${emoji}"`, `type = "info"`.
+- The floating animation still appears from the target's avatar for all room participants (broadcast via data channel).
+- Notification insert uses the service role via an edge function or direct insert if RLS allows (notifications table only allows service-role inserts, so we'll use the existing `send-push` pattern or insert via a lightweight edge function call).
+
+Since the `notifications` table doesn't allow client INSERT, we'll add a small edge function `send-emoji-notification` or reuse the data channel + have the **sender** invoke `supabase.functions.invoke("send-push", { body: { user_id: targetId, title: "Emoji Received", body: "${senderName} sent you ${emoji}" } })` to also create a notification row. Alternatively, we can add an RLS policy allowing authenticated users to insert notifications for others — but that's less secure. Better approach: the sender calls `send-push` which already exists and handles push + we add a notification insert inside it.
+
+### Revised approach for notification
+- Modify `send-push/index.ts` to also insert a row into the `notifications` table when sending a push (it already has service role access).
+- The sender calls `supabase.functions.invoke("send-push", { body: { user_id: targetId, title: "Emoji Received ✨", body: "${senderName} sent you ${emoji}" } })`.
+
+### Files to modify
+1. **`src/components/social/SpaceRoom.tsx`** — emoji target state, avatar click for all users, emoji picker UI, sendTargetedEmoji function, data channel handler
+2. **`supabase/functions/send-push/index.ts`** — add notification row insert alongside push delivery
 
