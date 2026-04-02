@@ -1543,7 +1543,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   if (minimized) {
     return (
       <SpaceMiniPlayer
-        title={spaceTitle}
+        title={displayTitle}
         participantCount={participants.length}
         isMuted={muted}
         onToggleMute={toggleMute}
