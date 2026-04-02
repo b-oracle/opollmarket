@@ -145,14 +145,14 @@ const AdminKyc = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">KYC Verification</h1>
-        <div className="flex gap-1 p-1 rounded-lg bg-muted/50">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold">KYC Verification</h1>
+        <div className="flex gap-1 p-1 rounded-lg bg-muted/50 overflow-x-auto scrollbar-hide">
           {(["pending", "approved", "rejected", "all"] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors whitespace-nowrap ${
                 filter === f ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
