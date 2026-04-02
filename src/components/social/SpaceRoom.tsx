@@ -2030,11 +2030,18 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                       {/* Device music section */}
                       <input ref={deviceFileInputRef} type="file" accept=".mp3,.m4a,.wav,.ogg,.flac,.aac,.wma,.opus,audio/mpeg,audio/mp4,audio/wav,audio/ogg,audio/flac,audio/aac" className="hidden" onChange={handleDeviceMusicFile} />
                       {!deviceMusicPlaying ? (
+                        djIdentity && djIdentity !== user?.id ? (
+                          <div className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-muted-foreground">
+                            <Music className="w-3 h-3" />
+                            <span>Someone is already playing music</span>
+                          </div>
+                        ) : (
                         <button onClick={() => deviceFileInputRef.current?.click()}
                           className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs hover:bg-muted text-foreground transition-colors">
                           <Upload className="w-3 h-3" />
                           <span>Play from device</span>
                         </button>
+                        )
                       ) : (
                         <div className="px-3 py-1.5 space-y-1.5">
                           <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">🎵 {deviceMusicName}</p>
