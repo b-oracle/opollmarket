@@ -932,7 +932,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
         setConnected(true);
         setConnecting(false);
-        setShowAudioPrompt(true);
+        if (!audioEnabledRef.current) {
+          setShowAudioPrompt(true);
+        }
 
         // Fetch co_host_ids from space
         const { data: spaceData } = await supabase
