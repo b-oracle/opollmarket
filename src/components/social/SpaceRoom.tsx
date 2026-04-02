@@ -306,8 +306,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [ambientTrack, setAmbientTrack] = useState<string | null>(null);
   const [showMusicMenu, setShowMusicMenu] = useState(false);
 
-  // Device music state
+   // Device music state
   const [deviceMusicPlaying, setDeviceMusicPlaying] = useState(false);
+  const [djIdentity, setDjIdentity] = useState<string | null>(null);
   const [deviceMusicPaused, setDeviceMusicPaused] = useState(false);
   const [deviceMusicName, setDeviceMusicName] = useState<string | null>(null);
   const [deviceMusicVolume, setDeviceMusicVolume] = useState(0.5);
