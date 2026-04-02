@@ -470,6 +470,9 @@ const Commissions = () => {
                           { name: "Referral", value: totals.referral },
                           { name: "Copy Trade", value: totals.copyTrade },
                           { name: "Signup Bonus", value: totals.signup },
+                          ...(totalGiftBalance > 0 ? [{ name: "Gift", value: totalGiftBalance }] : []),
+                          ...(bonusBalance > 0 ? [{ name: "Bonus", value: bonusBalance }] : []),
+                          ...(insuranceBalance > 0 ? [{ name: "oSURE", value: insuranceBalance }] : []),
                         ].filter((d) => d.value > 0)}
                         cx="50%"
                         cy="50%"
@@ -483,6 +486,9 @@ const Commissions = () => {
                         <Cell fill="#3b82f6" />
                         <Cell fill="#a855f7" />
                         <Cell fill="hsl(var(--primary))" />
+                        <Cell fill="#ec4899" />
+                        <Cell fill="#f59e0b" />
+                        <Cell fill="#10b981" />
                       </Pie>
                       <RechartsTooltip
                         contentStyle={{
