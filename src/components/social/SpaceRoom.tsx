@@ -2431,9 +2431,18 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                       No gift balance.
                     </p>
                     <button
-                      onClick={() => {
-                        setEmojiTarget(null);
-                        window.location.href = "/commissions";
+                      onClick={async () => {
+                        if (!user) return;
+                        const { data } = await supabase
+                          .from("balances")
+                          .select("amount, gift_balance")
+                          .eq("user_id", user.id)
+                          .eq("currency", "USDT")
+                          .maybeSingle();
+                        setMainBalance(Number((data as any)?.amount ?? 0));
+                        setGiftBalance(Number((data as any)?.gift_balance ?? 0));
+                        setTopUpAmount("");
+                        setShowTopUpModal(true);
                       }}
                       className="px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
                     >
