@@ -120,6 +120,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [isCoHost, setIsCoHost] = useState(false);
   const isHostRef = useRef(false);
   const isCoHostRef = useRef(false);
+  useEffect(() => { isHostRef.current = isHost; }, [isHost]);
+  useEffect(() => { isCoHostRef.current = isCoHost; }, [isCoHost]);
   const [spaceCoHostIds, setSpaceCoHostIds] = useState<string[]>([]);
   const [handRaised, setHandRaised] = useState(false);
   const [canPublish, setCanPublish] = useState(false);
