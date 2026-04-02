@@ -74,7 +74,7 @@ const AdminLayout = () => {
 
   const roleBadge = isSuperAdmin ? "Super Admin" : isAdmin ? "Admin" : "Moderator";
 
-  if (loading) {
+  if (loading || (user && !rolesLoaded)) {
     return (
       <div className="min-h-dvh bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-primary animate-spin" />
