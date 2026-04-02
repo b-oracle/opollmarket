@@ -134,7 +134,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [floatingReactions, setFloatingReactions] = useState<{ id: string; emoji: string; identity: string }[]>([]);
+  const [floatingReactions, setFloatingReactions] = useState<{ id: string; emoji: string; identity: string; label?: string }[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [emojiTarget, setEmojiTarget] = useState<ParticipantInfo | null>(null);
   const [giftBalance, setGiftBalance] = useState<number>(0);
@@ -706,7 +706,10 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       } else if (data.type === "targeted_emoji") {
         // Show floating reaction from target's avatar for everyone
         const id = `${Date.now()}-${Math.random()}`;
-        setFloatingReactions((prev) => [...prev, { id, emoji: data.emoji, identity: data.targetId }]);
+        const label = data.targetId === user?.id
+          ? `${data.senderName} gifted you`
+          : `${data.senderName} gifted ${data.emoji}`;
+        setFloatingReactions((prev) => [...prev, { id, emoji: data.emoji, identity: data.targetId, label }]);
         setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
       }
     } catch {
@@ -1370,7 +1373,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
       // Show locally too
       const id = `${Date.now()}-${Math.random()}`;
-      setFloatingReactions((prev) => [...prev, { id, emoji, identity: targetId }]);
+      const label = `You gifted ${emojiTarget.name}`;
+      setFloatingReactions((prev) => [...prev, { id, emoji, identity: targetId, label }]);
       setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
 
       toast.success(`Sent ${emoji} ($${price.toFixed(2)}) to ${emojiTarget.name}!`);
@@ -1818,6 +1822,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   style={{ left, top }}
                 >
                   {r.emoji}
+                  {r.label && (
+                    <div className="text-[10px] text-white font-semibold whitespace-nowrap bg-black/50 rounded px-1 mt-0.5 text-center">
+                      {r.label}
+                    </div>
+                  )}
                 </motion.div>
               );
             })}
