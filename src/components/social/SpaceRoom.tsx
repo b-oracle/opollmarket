@@ -184,16 +184,18 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       // Gifts sent in this space
       const { data: sentData } = await supabase
         .from("space_gifts")
-        .select("amount")
+        .select("id, amount, emoji, created_at, recipient_id")
         .eq("sender_id", user.id)
-        .eq("space_id", spaceId);
+        .eq("space_id", spaceId)
+        .order("created_at", { ascending: false });
       const sentTotal = (sentData || []).reduce((s, r) => s + Number(r.amount), 0);
       // Gifts received in this space
       const { data: recvData } = await supabase
         .from("space_gifts")
-        .select("amount")
+        .select("id, amount, emoji, created_at, sender_id")
         .eq("recipient_id", user.id)
-        .eq("space_id", spaceId);
+        .eq("space_id", spaceId)
+        .order("created_at", { ascending: false });
       const recvTotal = (recvData || []).reduce((s, r) => s + Number(r.amount), 0);
       setSelfSpaceStats({
         sent: sentTotal,
@@ -201,6 +203,41 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         sentCount: sentData?.length || 0,
         receivedCount: recvData?.length || 0,
       });
+
+      // Fetch profile names for gift activities
+      const sentIds = (sentData || []).map(g => g.recipient_id).filter(Boolean);
+      const recvIds = (recvData || []).map(g => g.sender_id).filter(Boolean);
+      const allIds = [...new Set([...sentIds, ...recvIds])];
+      let profileMap: Record<string, string> = {};
+      if (allIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, display_name")
+          .in("id", allIds);
+        (profiles || []).forEach((p: any) => { profileMap[p.id] = p.display_name || "Anonymous"; });
+      }
+
+      const activities = [
+        ...(sentData || []).map((g: any) => ({
+          id: g.id,
+          emoji: g.emoji,
+          amount: Number(g.amount),
+          created_at: g.created_at,
+          direction: 'sent' as const,
+          other_name: profileMap[g.recipient_id] || "Anonymous",
+          other_id: g.recipient_id,
+        })),
+        ...(recvData || []).map((g: any) => ({
+          id: g.id,
+          emoji: g.emoji,
+          amount: Number(g.amount),
+          created_at: g.created_at,
+          direction: 'received' as const,
+          other_name: profileMap[g.sender_id] || "Anonymous",
+          other_id: g.sender_id,
+        })),
+      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setGiftActivities(activities);
     })();
   }, [showSelfStats, user, spaceId]);
 
