@@ -144,6 +144,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [topUpAmount, setTopUpAmount] = useState("");
   const [topUpLoading, setTopUpLoading] = useState(false);
   const [showAudioPrompt, setShowAudioPrompt] = useState(false);
+  const audioEnabledRef = useRef(false);
   const [mainBalance, setMainBalance] = useState<number>(0);
   const [showSelfStats, setShowSelfStats] = useState(false);
   const [selfSpaceStats, setSelfSpaceStats] = useState<{ sent: number; received: number; sentCount: number; receivedCount: number }>({ sent: 0, received: 0, sentCount: 0, receivedCount: 0 });
