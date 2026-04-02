@@ -20,6 +20,7 @@ interface SpaceCardProps {
     reminder_count?: number;
     is_recorded?: boolean;
     recording_url?: string | null;
+    is_private?: boolean;
   };
   hostProfile?: { display_name?: string | null; avatar_url?: string | null } | null;
   index?: number;
