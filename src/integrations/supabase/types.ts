@@ -2154,6 +2154,38 @@ export type Database = {
         }
         Relationships: []
       }
+      space_invites: {
+        Row: {
+          created_at: string
+          id: string
+          invitee_id: string
+          inviter_id: string
+          space_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invitee_id: string
+          inviter_id: string
+          space_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invitee_id?: string
+          inviter_id?: string
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_invites_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_messages: {
         Row: {
           content: string
@@ -2263,6 +2295,7 @@ export type Database = {
           ended_at: string | null
           host_id: string
           id: string
+          is_private: boolean
           is_recorded: boolean
           listener_count: number
           peak_listeners: number
@@ -2282,6 +2315,7 @@ export type Database = {
           ended_at?: string | null
           host_id: string
           id?: string
+          is_private?: boolean
           is_recorded?: boolean
           listener_count?: number
           peak_listeners?: number
@@ -2301,6 +2335,7 @@ export type Database = {
           ended_at?: string | null
           host_id?: string
           id?: string
+          is_private?: boolean
           is_recorded?: boolean
           listener_count?: number
           peak_listeners?: number
@@ -3341,6 +3376,7 @@ export type Database = {
           ended_at: string | null
           host_id: string
           id: string
+          is_private: boolean
           is_recorded: boolean
           listener_count: number
           peak_listeners: number
