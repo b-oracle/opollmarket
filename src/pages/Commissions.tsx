@@ -295,7 +295,7 @@ const Commissions = () => {
 
   const summaryCards = [
     { label: "Total Earned", value: totals.total, icon: DollarSign, color: "text-green-500 bg-green-500/10" },
-    { label: "Creator", value: totals.creator, icon: Sparkles, color: "text-amber-500 bg-amber-500/10" },
+    { label: "Creator", value: totals.creator, icon: Gem, color: "text-violet-500 bg-violet-500/10" },
     { label: "Referral", value: totals.referral, icon: Users, color: "text-blue-500 bg-blue-500/10" },
     { label: "Copy Trade", value: totals.copyTrade, icon: Copy, color: "text-purple-500 bg-purple-500/10" },
     { label: "Signup Bonus", value: totals.signup, icon: Gift, color: "text-primary bg-primary/10" },
