@@ -2170,6 +2170,14 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                       </button>
                     )
                   )}
+                  {/* Send Emoji — available to mods in action sheet */}
+                  <button
+                    onClick={() => { setEmojiTarget(actionTarget); setActionTarget(null); setActionType(null); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-muted hover:bg-muted/80 text-foreground transition-colors"
+                  >
+                    <span className="text-lg">😍</span>
+                    <span className="text-sm font-medium">Send Emoji</span>
+                  </button>
                   <button
                     onClick={() => invokeAction("kick", actionTarget.identity)}
                     disabled={promoting === actionTarget.identity}
@@ -2185,6 +2193,52 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     <span className="text-sm font-medium">Cancel</span>
                   </button>
                 </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Emoji picker overlay for targeted emoji */}
+        <AnimatePresence>
+          {emojiTarget && (
+            <>
+              <motion.div
+                key="emoji-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/40 z-[95]"
+                onClick={() => setEmojiTarget(null)}
+              />
+              <motion.div
+                key="emoji-picker"
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 100, opacity: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="absolute bottom-0 inset-x-0 z-[96] bg-card rounded-t-2xl border-t border-border p-5"
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  {renderAvatar(emojiTarget, "lg")}
+                  <div>
+                    <p className="font-semibold text-sm">Send emoji to {emojiTarget.name}</p>
+                    <p className="text-xs text-muted-foreground">They'll get a notification</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-center gap-3 mb-3">
+                  {REACTIONS.map((emoji) => (
+                    <button key={emoji} onClick={() => sendTargetedEmoji(emoji)}
+                      className="w-11 h-11 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center text-xl transition-transform active:scale-125">
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setEmojiTarget(null)}
+                  className="w-full flex items-center justify-center px-4 py-3 rounded-xl bg-muted hover:bg-muted/80 text-muted-foreground transition-colors"
+                >
+                  <span className="text-sm font-medium">Cancel</span>
+                </button>
               </motion.div>
             </>
           )}
