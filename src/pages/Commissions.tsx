@@ -640,7 +640,7 @@ const Commissions = () => {
         </AnimatePresence>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-3 gap-2 mb-5">
+        <div className="grid grid-cols-3 gap-2 mb-2">
           {summaryCards.map((card) => (
             <Card key={card.label} className="border-border/50">
               <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
