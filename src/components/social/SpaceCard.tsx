@@ -44,6 +44,23 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
   const [duration, setDuration] = useState(0);
   const [deleting, setDeleting] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [editTitleValue, setEditTitleValue] = useState(space.title);
+  const [savingTitle, setSavingTitle] = useState(false);
+
+  const handleSaveCardTitle = async () => {
+    const trimmed = editTitleValue.trim();
+    if (!trimmed || trimmed === space.title) { setEditingTitle(false); return; }
+    setSavingTitle(true);
+    const { error } = await supabase
+      .from("spaces" as any)
+      .update({ title: trimmed } as any)
+      .eq("id", space.id);
+    if (error) { toast.error("Failed to update title"); }
+    else { queryClient.invalidateQueries({ queryKey: ["spaces"] }); toast.success("Title updated"); }
+    setSavingTitle(false);
+    setEditingTitle(false);
+  };
 
   const isRecorded = space.status === "ended" && space.is_recorded && space.recording_url;
 
