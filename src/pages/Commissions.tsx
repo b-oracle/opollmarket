@@ -621,10 +621,13 @@ const Commissions = () => {
                           border: "1px solid hsl(var(--border))",
                           borderRadius: "8px",
                           fontSize: "12px",
+                          color: "hsl(var(--foreground))",
                         }}
+                        itemStyle={{ color: "hsl(var(--foreground))" }}
+                        labelStyle={{ color: "hsl(var(--foreground))" }}
                         formatter={(value: number) => [`$${value.toFixed(2)}`]}
                       />
-                      <Legend iconSize={8} wrapperStyle={{ fontSize: "11px" }} />
+                      <Legend iconSize={8} wrapperStyle={{ fontSize: "11px", color: "hsl(var(--foreground))" }} />
                     </PieChart>
                   </ResponsiveContainer>
                   <p className="text-center text-xs text-muted-foreground mt-1">
