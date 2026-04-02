@@ -643,7 +643,11 @@ const Commissions = () => {
         {/* Summary Cards */}
         <div className="grid grid-cols-3 gap-2 mb-2">
           {summaryCards.map((card) => (
-            <Card key={card.label} className="border-border/50">
+            <Card
+              key={card.label}
+              className="border-border/50 cursor-pointer hover:border-primary/30 transition-colors"
+              onClick={() => setSummaryCardInfo({ label: card.label, description: card.description })}
+            >
               <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${card.color}`}>
                   <card.icon className="w-4 h-4" />
