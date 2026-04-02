@@ -41,7 +41,8 @@ import { useActiveSpace } from "@/hooks/useActiveSpace";
 import SpaceMiniPlayer from "./SpaceMiniPlayer";
 import TaggedMarketsCarousel from "./TaggedMarketsCarousel";
 import { SOUND_REACTIONS, playSoundById, AMBIENT_TRACKS, startAmbient, stopAmbient, isAmbientPlaying, warmAudioContext } from "@/lib/spaceSounds";
-import { Music, ChevronDown, Upload, Square, Play, Pause } from "lucide-react";
+import { Music, ChevronDown, Upload, Square, Play, Pause, Search } from "lucide-react";
+import { optimizedImageUrl as optimizedImg } from "@/lib/optimizedImage";
 
 interface SpaceRoomProps {
   spaceId: string;
