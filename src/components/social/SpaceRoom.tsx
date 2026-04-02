@@ -1835,9 +1835,12 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                       <div key={p.identity} className="flex flex-col items-center gap-1 cursor-pointer"
                         ref={(el: HTMLDivElement | null) => { if (el) avatarRefs.current.set(p.identity, el); else avatarRefs.current.delete(p.identity); }}
                         onClick={() => {
+                          if (p.identity === user?.id) return;
                           if (hasModPowers) {
                             setActionTarget(p);
                             setActionType("listener");
+                          } else {
+                            setEmojiTarget(p);
                           }
                         }}>
                         {renderAvatar(p, "sm")}
