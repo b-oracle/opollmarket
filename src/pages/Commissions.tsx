@@ -38,19 +38,7 @@ const formatDate = (d: string) => {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 };
 
-const InsuranceBalanceCard = ({ insuranceBalance, isLoading }: { insuranceBalance: number; isLoading: boolean }) => (
-  <Card className="border-border/50">
-    <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
-      <div className="w-8 h-8 rounded-full flex items-center justify-center text-emerald-500 bg-emerald-500/10">
-        <Shield className="w-4 h-4" />
-      </div>
-      {isLoading ? <Skeleton className="h-5 w-16" /> : (
-        <span className="text-sm font-bold">{formatAmount(insuranceBalance)}</span>
-      )}
-      <span className="text-[10px] text-muted-foreground leading-tight">oSURE Balance</span>
-    </CardContent>
-  </Card>
-);
+// Balance cards are now inline below
 
 const Commissions = () => {
   const { user } = useAuth();
