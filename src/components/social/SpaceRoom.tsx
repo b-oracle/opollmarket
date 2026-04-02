@@ -505,6 +505,19 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           const wasCoHost = newCoHostIds.includes(user.id);
           setIsCoHost(wasCoHost);
         }
+      } else if (data.type === "force_lower_hand") {
+        if (user && data.targetId === user.id) {
+          setHandRaised(false);
+          toast.info("Your hand was lowered by the host ✋");
+        }
+        // Also remove from remote hand raises for all participants
+        if (data.targetId) {
+          setRemoteHandRaises((prev) => {
+            const next = new Set(prev);
+            next.delete(data.targetId);
+            return next;
+          });
+        }
       } else if (data.type === "force_mute") {
         if (user) {
           const targets = data.targets;
