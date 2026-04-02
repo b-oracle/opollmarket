@@ -76,6 +76,9 @@ interface ChatMessage {
 }
 
 const REACTIONS = ["🔥", "👏", "👍", "❤️", "😂", "💯", "🎯"];
+const EMOJI_PRICES: Record<string, number> = {
+  "🔥": 0.10, "👏": 0.10, "👍": 0.05, "❤️": 0.25, "😂": 0.05, "💯": 0.50, "🎯": 1.00,
+};
 const CHAT_REACTIONS = ["👍", "❤️", "😂", "🔥", "👏"];
 
 const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => {
