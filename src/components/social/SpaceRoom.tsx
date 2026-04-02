@@ -118,6 +118,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [profiles, setProfiles] = useState<Record<string, ProfileInfo>>({});
   const [isHost, setIsHost] = useState(false);
   const [isCoHost, setIsCoHost] = useState(false);
+  const isHostRef = useRef(false);
+  const isCoHostRef = useRef(false);
   const [spaceCoHostIds, setSpaceCoHostIds] = useState<string[]>([]);
   const [handRaised, setHandRaised] = useState(false);
   const [canPublish, setCanPublish] = useState(false);
