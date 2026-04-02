@@ -2558,6 +2558,30 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   </div>
                 </div>
 
+                {/* Gift Activity List */}
+                {giftActivities.length > 0 && (
+                  <>
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">Gift Activity</p>
+                    <div className="max-h-40 overflow-y-auto space-y-1.5 mb-4 scrollbar-thin">
+                      {giftActivities.map((a) => (
+                        <div key={a.id} className="flex items-center justify-between bg-muted rounded-lg px-3 py-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-base">{a.emoji}</span>
+                            <div className="min-w-0">
+                              <p className="text-xs font-medium text-foreground truncate">
+                                {a.direction === 'sent' ? `You → ${a.other_name}` : `${a.other_name} → You`}
+                              </p>
+                            </div>
+                          </div>
+                          <span className={`text-xs font-bold shrink-0 ${a.direction === 'received' ? 'text-green-500' : 'text-destructive'}`}>
+                            {a.direction === 'received' ? '+' : '-'}${a.amount.toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
                 <button
                   onClick={() => setShowSelfStats(false)}
                   className="w-full flex items-center justify-center px-4 py-3 rounded-xl bg-muted hover:bg-muted/80 text-muted-foreground transition-colors"
