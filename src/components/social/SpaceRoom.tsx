@@ -2122,9 +2122,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
         {/* Reaction bar */}
         {connected && !chatOpen && (
-          <div className="px-5 py-2 space-y-1.5">
+          <div className="px-5 py-2 space-y-1.5 max-w-2xl mx-auto w-full">
             {/* Regular reactions — everyone */}
-            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1">
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1 justify-center flex-wrap">
               {REACTIONS.map((emoji) => (
                 <button key={emoji} onClick={() => sendReaction(emoji)}
                   className="w-9 h-9 min-w-[36px] rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center text-base transition-transform active:scale-125 flex-shrink-0">
