@@ -1822,6 +1822,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   style={{ left, top }}
                 >
                   {r.emoji}
+                  {r.label && (
+                    <div className="text-[10px] text-white font-semibold whitespace-nowrap bg-black/50 rounded px-1 mt-0.5 text-center">
+                      {r.label}
+                    </div>
+                  )}
                 </motion.div>
               );
             })}
