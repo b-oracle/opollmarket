@@ -245,6 +245,13 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
       const ts = Number(val);
       if (isNaN(ts)) return false;
       if (isFeatureEnabled("session_timeout")) {
+        // Check inactivity — only expire if user has been INACTIVE for 1 hour
+        const lastActive = localStorage.getItem(`${LAST_ACTIVE_KEY}${uid}`);
+        if (lastActive && lastActive !== "1") {
+          const inactiveMs = Date.now() - Number(lastActive);
+          return inactiveMs < SESSION_PIN_TIMEOUT_MS;
+        }
+        // No activity recorded yet — fall back to verification timestamp
         return Date.now() - ts < SESSION_PIN_TIMEOUT_MS;
       }
       return true;
