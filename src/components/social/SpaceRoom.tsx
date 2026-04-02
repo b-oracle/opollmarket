@@ -77,6 +77,7 @@ interface ChatMessage {
 }
 
 const REACTIONS = ["🙏🏽", "👎🏽", "✌🏽", "👌🏽", "🌹", "💝", "🔥", "🕺", "💃", "👏", "👍", "❤️", "😂", "💯", "🎯"];
+const GIFT_EMOJIS = ["💸", "🤑", "💰", "💵", "🌹", "💝", "🔥", "🕺", "💃", "👏", "👍", "❤️", "😂", "💯", "🎯"];
 const EMOJI_PRICES: Record<string, number> = {
   "💸": 0.10, "🤑": 0.25, "💰": 0.50, "💵": 0.05, "🌹": 0.10, "💝": 0.25, "🔥": 0.05,
 };
@@ -2526,7 +2527,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   </div>
                 </div>
                 <div className="grid grid-cols-4 gap-2 mb-3">
-                  {REACTIONS.map((emoji) => {
+                  {GIFT_EMOJIS.map((emoji) => {
                     const price = EMOJI_PRICES[emoji] ?? 0.05;
                     const canAfford = giftBalance >= price;
                     return (
