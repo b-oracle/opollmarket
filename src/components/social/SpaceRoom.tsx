@@ -129,6 +129,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [floatingReactions, setFloatingReactions] = useState<{ id: string; emoji: string; identity: string }[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [emojiTarget, setEmojiTarget] = useState<ParticipantInfo | null>(null);
   const loadedMsgIdsRef = useRef<Set<string>>(new Set());
 
   // Load persisted chat history + subscribe to realtime new messages
@@ -557,6 +558,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             });
           }
         }
+      } else if (data.type === "targeted_emoji") {
+        // Show floating reaction from target's avatar for everyone
+        const id = `${Date.now()}-${Math.random()}`;
+        setFloatingReactions((prev) => [...prev, { id, emoji: data.emoji, identity: data.targetId }]);
+        setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
       }
     } catch {
       // ignore malformed
@@ -1157,6 +1163,37 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
   };
 
+  const sendTargetedEmoji = async (emoji: string) => {
+    if (!roomRef.current || !user || !emojiTarget) return;
+    const targetId = emojiTarget.identity;
+    const senderName = roomRef.current.localParticipant.name || user.email?.split("@")[0] || "Someone";
+
+    // Broadcast to all peers so floating emoji shows for everyone
+    const data = JSON.stringify({ type: "targeted_emoji", emoji, targetId, senderName });
+    roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
+
+    // Show locally too
+    const id = `${Date.now()}-${Math.random()}`;
+    setFloatingReactions((prev) => [...prev, { id, emoji, identity: targetId }]);
+    setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
+
+    // Send notification to target via edge function (inserts notification + push)
+    try {
+      await supabase.functions.invoke("send-push", {
+        body: {
+          user_id: targetId,
+          title: "Emoji Received ✨",
+          body: `${senderName} sent you ${emoji}`,
+          url: "/feed",
+        },
+      });
+    } catch {
+      // non-critical
+    }
+
+    setEmojiTarget(null);
+  };
+
   const sendSoundReaction = (soundId: string) => {
     if (!roomRef.current || !user) return;
     // Play locally
@@ -1753,9 +1790,12 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     <motion.div key={p.identity} layout className="flex flex-col items-center gap-1"
                       ref={(el: HTMLDivElement | null) => { if (el) avatarRefs.current.set(p.identity, el); else avatarRefs.current.delete(p.identity); }}
                       onClick={() => {
-                        if (hasModPowers && p.identity !== hostId && p.identity !== user?.id) {
+                        if (p.identity === user?.id) return;
+                        if (hasModPowers && p.identity !== hostId) {
                           setActionTarget(p);
                           setActionType("speaker");
+                        } else if (!hasModPowers || p.identity === hostId) {
+                          setEmojiTarget(p);
                         }
                       }}>
                       {renderAvatar(p, "lg")}
@@ -1795,9 +1835,12 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                       <div key={p.identity} className="flex flex-col items-center gap-1 cursor-pointer"
                         ref={(el: HTMLDivElement | null) => { if (el) avatarRefs.current.set(p.identity, el); else avatarRefs.current.delete(p.identity); }}
                         onClick={() => {
+                          if (p.identity === user?.id) return;
                           if (hasModPowers) {
                             setActionTarget(p);
                             setActionType("listener");
+                          } else {
+                            setEmojiTarget(p);
                           }
                         }}>
                         {renderAvatar(p, "sm")}
@@ -2127,6 +2170,14 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                       </button>
                     )
                   )}
+                  {/* Send Emoji — available to mods in action sheet */}
+                  <button
+                    onClick={() => { setEmojiTarget(actionTarget); setActionTarget(null); setActionType(null); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-muted hover:bg-muted/80 text-foreground transition-colors"
+                  >
+                    <span className="text-lg">😍</span>
+                    <span className="text-sm font-medium">Send Emoji</span>
+                  </button>
                   <button
                     onClick={() => invokeAction("kick", actionTarget.identity)}
                     disabled={promoting === actionTarget.identity}
@@ -2142,6 +2193,52 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     <span className="text-sm font-medium">Cancel</span>
                   </button>
                 </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Emoji picker overlay for targeted emoji */}
+        <AnimatePresence>
+          {emojiTarget && (
+            <>
+              <motion.div
+                key="emoji-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/40 z-[95]"
+                onClick={() => setEmojiTarget(null)}
+              />
+              <motion.div
+                key="emoji-picker"
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 100, opacity: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="absolute bottom-0 inset-x-0 z-[96] bg-card rounded-t-2xl border-t border-border p-5"
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  {renderAvatar(emojiTarget, "lg")}
+                  <div>
+                    <p className="font-semibold text-sm">Send emoji to {emojiTarget.name}</p>
+                    <p className="text-xs text-muted-foreground">They'll get a notification</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-center gap-3 mb-3">
+                  {REACTIONS.map((emoji) => (
+                    <button key={emoji} onClick={() => sendTargetedEmoji(emoji)}
+                      className="w-11 h-11 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center text-xl transition-transform active:scale-125">
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setEmojiTarget(null)}
+                  className="w-full flex items-center justify-center px-4 py-3 rounded-xl bg-muted hover:bg-muted/80 text-muted-foreground transition-colors"
+                >
+                  <span className="text-sm font-medium">Cancel</span>
+                </button>
               </motion.div>
             </>
           )}
