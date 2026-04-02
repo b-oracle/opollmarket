@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
     // Find live spaces that started more than 30 minutes ago
     const { data: liveSpaces, error: fetchErr } = await supabase
       .from("spaces")
-      .select("id, title, host_id, started_at")
+      .select("id, title, host_id, co_host_ids, started_at")
       .eq("status", "live")
       .lt("started_at", cutoff);
 
@@ -39,28 +39,50 @@ Deno.serve(async (req) => {
     let ended = 0;
 
     for (const space of liveSpaces) {
-      // Check if host has any recent messages in the last 30 minutes
-      const { count: recentHostMessages } = await supabase
+      // Gather all key user IDs: host + co-hosts
+      const keyUserIds: string[] = [space.host_id];
+      if (space.co_host_ids?.length) {
+        keyUserIds.push(...space.co_host_ids);
+      }
+
+      // Get all connected speakers in this space
+      const { data: connectedSpeakers } = await supabase
+        .from("space_participants")
+        .select("user_id")
+        .eq("space_id", space.id)
+        .eq("role", "speaker")
+        .is("left_at", null);
+
+      if (connectedSpeakers?.length) {
+        for (const sp of connectedSpeakers) {
+          if (!keyUserIds.includes(sp.user_id)) {
+            keyUserIds.push(sp.user_id);
+          }
+        }
+      }
+
+      // Check if ANY key user (host/co-host/speaker) is still connected
+      const { data: connectedKeyUsers } = await supabase
+        .from("space_participants")
+        .select("user_id")
+        .eq("space_id", space.id)
+        .in("user_id", keyUserIds)
+        .is("left_at", null);
+
+      const anyKeyUserPresent = (connectedKeyUsers?.length ?? 0) > 0;
+
+      // Check if ANY key user has sent messages in the last 30 minutes
+      const { count: recentKeyMessages } = await supabase
         .from("space_messages")
         .select("id", { count: "exact", head: true })
         .eq("space_id", space.id)
-        .eq("user_id", space.host_id)
+        .in("user_id", keyUserIds)
         .gte("created_at", cutoff);
 
-      // Check if host is still a connected participant (no left_at)
-      const { data: hostParticipant } = await supabase
-        .from("space_participants")
-        .select("id, left_at")
-        .eq("space_id", space.id)
-        .eq("user_id", space.host_id)
-        .is("left_at", null)
-        .maybeSingle();
+      const anyKeyUserActive = (recentKeyMessages ?? 0) > 0;
 
-      const hostIsPresent = !!hostParticipant;
-      const hostIsActive = (recentHostMessages ?? 0) > 0;
-
-      // End space if host has left OR host has no recent activity
-      if (!hostIsPresent || !hostIsActive) {
+      // End space if NO key user is connected OR none have recent activity
+      if (!anyKeyUserPresent || !anyKeyUserActive) {
         const now = new Date().toISOString();
 
         // End the space
@@ -81,7 +103,7 @@ Deno.serve(async (req) => {
         await supabase.from("notifications").insert({
           user_id: space.host_id,
           title: "Space Ended (Inactivity) ⏰",
-          message: `Your space "${space.title}" was automatically ended after ${INACTIVITY_MINUTES} minutes of inactivity.`,
+          message: `Your space "${space.title}" was automatically ended after ${INACTIVITY_MINUTES} minutes of no host, co-host, or speaker activity.`,
           type: "info",
         });
 
