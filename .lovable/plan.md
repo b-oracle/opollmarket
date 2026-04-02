@@ -1,50 +1,23 @@
 
 
-## Send Emoji to a Specific Participant in Spaces
+## Restrict Hand Raise to Speakers/Co-hosts/Host & Add "Lower Hand" Mod Action
 
-### What it does
-When any user taps on another participant's avatar during a live Space, an emoji picker appears. The sender picks an emoji, it floats from the tapped user's avatar, and the recipient gets a notification in the notification bell: "**[SenderName] sent you ❤️**".
-
-### Current behavior
-- Tapping avatars only works for moderators (host/co-host) — it opens an admin action sheet.
-- Regular users cannot interact with avatars at all.
-- Existing reactions broadcast to the whole room (not targeted).
-
-### Changes
+### What changes
 
 **File: `src/components/social/SpaceRoom.tsx`**
 
-1. **New state**: Add `emojiTarget` state to track which participant was tapped for emoji sending (separate from the mod `actionTarget`).
+1. **Hide "Raise Hand" button for listeners** — Currently the hand-raise button (line ~2021) is shown to everyone. Change it so it only renders when the user is the host, a co-host, or has publish permission (`canPublish`). Listeners already have the "Request to Speak" button, so no gap in UX.
 
-2. **Avatar click logic change**: When a user taps an avatar (that isn't themselves):
-   - If they have mod powers AND it's not the host → open the existing action sheet (unchanged).
-   - If they don't have mod powers OR they tap their own avatar's neighbor → open a small emoji picker overlay for that participant.
-   - Mod users also get a "Send Emoji" button added to the existing action sheet.
+2. **Add "Lower Hand" action in mod action sheet** — In the action sheet for speakers (line ~2122), add a "Lower Hand" button that appears when `remoteHandRaises.has(actionTarget.identity)` is true. This button will:
+   - Remove the identity from `remoteHandRaises` locally
+   - Broadcast a data channel message `{ type: "force_lower_hand", targetId }` so the target user's `handRaised` state is set to `false`
 
-3. **Non-mod avatar tap**: For listeners/speakers without mod powers, tapping any other participant's avatar opens a compact emoji picker popover anchored near the avatar.
-
-4. **`sendTargetedEmoji` function**: Sends a data-channel message with `{ type: "targeted_emoji", emoji, targetId, senderName }`. Also triggers the floating reaction from the target's avatar locally.
-
-5. **Data channel handler**: When receiving a `targeted_emoji` message where `targetId === user.id`, insert a notification into the `notifications` table: title "Emoji Received", message "[SenderName] sent you [emoji]", type "info".
-
-6. **Emoji picker UI**: A small bottom sheet or popover showing the existing `REACTIONS` array (🔥👏👍❤️😂💯🎯). Tapping one sends the targeted emoji and closes the picker.
+3. **Handle incoming `force_lower_hand` message** — In the data channel handler (~line 475), add a case for `type === "force_lower_hand"`. When the local user's identity matches `targetId`, set `handRaised` to `false` and show a toast "Your hand was lowered by the host".
 
 ### Implementation detail
 
-- Avatar `onClick` for non-mod users: `setEmojiTarget(p)` (opens emoji picker).
-- For mod users: keep existing behavior but add a "Send Emoji" row in the action sheet that switches to the emoji picker.
-- Data channel message format: `{ type: "targeted_emoji", emoji: "❤️", targetId: "uuid", senderName: "John" }`.
-- On receiving, if `targetId === user.id`, call `supabase.from("notifications").insert(...)` with `user_id = targetId`, `title = "Emoji Received"`, `message = "${senderName} sent you ${emoji}"`, `type = "info"`.
-- The floating animation still appears from the target's avatar for all room participants (broadcast via data channel).
-- Notification insert uses the service role via an edge function or direct insert if RLS allows (notifications table only allows service-role inserts, so we'll use the existing `send-push` pattern or insert via a lightweight edge function call).
-
-Since the `notifications` table doesn't allow client INSERT, we'll add a small edge function `send-emoji-notification` or reuse the data channel + have the **sender** invoke `supabase.functions.invoke("send-push", { body: { user_id: targetId, title: "Emoji Received", body: "${senderName} sent you ${emoji}" } })` to also create a notification row. Alternatively, we can add an RLS policy allowing authenticated users to insert notifications for others — but that's less secure. Better approach: the sender calls `send-push` which already exists and handles push + we add a notification insert inside it.
-
-### Revised approach for notification
-- Modify `send-push/index.ts` to also insert a row into the `notifications` table when sending a push (it already has service role access).
-- The sender calls `supabase.functions.invoke("send-push", { body: { user_id: targetId, title: "Emoji Received ✨", body: "${senderName} sent you ${emoji}" } })`.
-
-### Files to modify
-1. **`src/components/social/SpaceRoom.tsx`** — emoji target state, avatar click for all users, emoji picker UI, sendTargetedEmoji function, data channel handler
-2. **`supabase/functions/send-push/index.ts`** — add notification row insert alongside push delivery
+- **Hand button visibility guard** (line ~2021): Wrap with `{(isHost || isCoHost || canPublish) && ( ... )}`
+- **"Lower Hand" button** in action sheet (after the "Force Mute" button, ~line 2131): Render when `remoteHandRaises.has(actionTarget.identity)` — calls a new `forceHandDown(identity)` function
+- **`forceHandDown` function**: Removes identity from `remoteHandRaises`, broadcasts `{ type: "force_lower_hand", targetId: identity }` via data channel
+- **Data channel receiver**: On `force_lower_hand` where `targetId === user.id`, set `handRaised(false)` and toast notification
 
