@@ -138,6 +138,15 @@ const TransactionHistory = () => {
     <div className="min-h-screen bg-background">
       <TopBar />
       <div className="max-w-lg mx-auto px-4 pt-20 pb-28">
+        <div className="flex items-center gap-3 mb-5">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 rounded-lg hover:bg-muted transition-colors -ml-2"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-lg font-bold">Transaction History</h1>
+        </div>
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full glass flex items-center justify-center">
