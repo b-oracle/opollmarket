@@ -64,6 +64,8 @@ const Commissions = () => {
   const [topUpAmount, setTopUpAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [bonusInfoOpen, setBonusInfoOpen] = useState(false);
+  const [osureInfoOpen, setOsureInfoOpen] = useState(false);
   const ITEMS_PER_PAGE = 15;
   const queryClient = useQueryClient();
   const { balance, giftBalance, bonusBalance, rewardsBalance, insuranceBalance, totalGiftBalance, isLoading: balLoading } = useUserBalance();
