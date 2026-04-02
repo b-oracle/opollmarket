@@ -2750,14 +2750,15 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                       await roomRef.current?.startAudio();
                       warmAudioContext();
                     } catch {}
-                    setShowAudioPrompt(false);
-                  }}
-                  className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors"
-                >
-                  Enable Speaker 🔊
-                </button>
-                <button
-                  onClick={() => setShowAudioPrompt(false)}
+                     audioEnabledRef.current = true;
+                     setShowAudioPrompt(false);
+                   }}
+                   className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors"
+                 >
+                   Enable Speaker 🔊
+                 </button>
+                 <button
+                   onClick={() => { audioEnabledRef.current = true; setShowAudioPrompt(false); }}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Skip
