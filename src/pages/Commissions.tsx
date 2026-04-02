@@ -429,98 +429,128 @@ const Commissions = () => {
 
         {/* Balance Cards */}
         <div className="grid grid-cols-3 gap-2 mb-5">
-          <Card className="border-border/50">
+          {/* Gift Balance (combined) */}
+          <Card
+            className="border-border/50 cursor-pointer hover:border-primary/30 transition-colors"
+            onClick={() => setGiftDetailOpen(true)}
+          >
             <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-pink-500 bg-pink-500/10">
                 <Gift className="w-4 h-4" />
               </div>
               {balLoading ? <Skeleton className="h-5 w-16" /> : (
-                <span className="text-sm font-bold">${giftBalance.toFixed(2)}</span>
+                <span className="text-sm font-bold">{formatAmount(totalGiftBalance)}</span>
               )}
               <span className="text-[10px] text-muted-foreground leading-tight">Gift Balance</span>
-              <button
-                onClick={() => setTopUpOpen(true)}
-                className="flex items-center gap-1 text-[10px] font-medium text-primary hover:underline mt-0.5"
-              >
-                <ArrowDownToLine className="w-3 h-3" /> Top Up
-              </button>
+              <span className="text-[9px] text-primary font-medium">Tap for details ▸</span>
             </CardContent>
           </Card>
+
+          {/* Bonus Balance */}
           <Card className="border-border/50">
             <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-amber-500 bg-amber-500/10">
                 <Sparkles className="w-4 h-4" />
               </div>
               {balLoading ? <Skeleton className="h-5 w-16" /> : (
-                <span className="text-sm font-bold">${bonusBalance.toFixed(2)}</span>
+                <span className="text-sm font-bold">{formatAmount(bonusBalance)}</span>
               )}
               <span className="text-[10px] text-muted-foreground leading-tight">Bonus Balance</span>
             </CardContent>
           </Card>
-          <Card className="border-border/50">
-            <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center text-emerald-500 bg-emerald-500/10">
-                <Award className="w-4 h-4" />
-              </div>
-              {balLoading ? <Skeleton className="h-5 w-16" /> : (
-                <span className="text-sm font-bold">${rewardsBalance.toFixed(2)}</span>
-              )}
-              <span className="text-[10px] text-muted-foreground leading-tight">Rewards</span>
-              {rewardsBalance > 0 && (
-                <button
-                  onClick={() => setWithdrawOpen(true)}
-                  className="flex items-center gap-1 text-[10px] font-medium text-primary hover:underline mt-0.5"
-                >
-                  <ArrowUpFromLine className="w-3 h-3" /> Withdraw
-                </button>
-              )}
-            </CardContent>
-          </Card>
+
+          {/* Revenue Share */}
+          <RevenueShareCard userId={user.id} />
         </div>
 
-        {/* Top Up Modal */}
-        <Dialog open={topUpOpen} onOpenChange={setTopUpOpen}>
+        {/* Gift Balance Detail Dialog */}
+        <Dialog open={giftDetailOpen} onOpenChange={(open) => { setGiftDetailOpen(open); if (!open) setGiftAction(null); }}>
           <DialogContent className="max-w-sm">
             <DialogHeader>
-              <DialogTitle>Top Up Gift Balance</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">
+                <Gift className="w-5 h-5 text-pink-500" /> Gift Balance Details
+              </DialogTitle>
             </DialogHeader>
-            <p className="text-xs text-muted-foreground mb-3">
-              Transfer from your main balance (${balance.toFixed(2)}) to your gift balance for sending emoji gifts in Spaces.
-            </p>
-            <Input
-              type="number"
-              placeholder="Amount"
-              value={topUpAmount}
-              onChange={(e) => setTopUpAmount(e.target.value)}
-              min={0.01}
-              step={0.01}
-            />
-            <Button onClick={handleTopUp} disabled={processing} className="w-full mt-2">
-              {processing ? "Processing..." : "Top Up"}
-            </Button>
-          </DialogContent>
-        </Dialog>
 
-        {/* Withdraw Rewards Modal */}
-        <Dialog open={withdrawOpen} onOpenChange={setWithdrawOpen}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader>
-              <DialogTitle>Withdraw Rewards</DialogTitle>
-            </DialogHeader>
-            <p className="text-xs text-muted-foreground mb-3">
-              Transfer rewards (${rewardsBalance.toFixed(2)}) to your main balance.
-            </p>
-            <Input
-              type="number"
-              placeholder="Amount"
-              value={withdrawAmount}
-              onChange={(e) => setWithdrawAmount(e.target.value)}
-              min={0.01}
-              step={0.01}
-            />
-            <Button onClick={handleWithdraw} disabled={processing} className="w-full mt-2">
-              {processing ? "Processing..." : "Withdraw to Main"}
-            </Button>
+            {giftAction === null && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-3">
+                  <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
+                    <span className="text-sm text-muted-foreground">Total Balance</span>
+                    <span className="text-lg font-bold">{formatAmount(totalGiftBalance)}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
+                    <span className="text-sm text-muted-foreground">Available to Send</span>
+                    <span className="text-sm font-semibold">{formatAmount(giftBalance)}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
+                    <span className="text-sm text-muted-foreground">Gifts Received</span>
+                    <span className="text-sm font-semibold text-green-500">{formatAmount(rewardsBalance)}</span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1 gap-1.5" onClick={() => setGiftAction("topup")}>
+                    <ArrowDownToLine className="w-4 h-4" /> Top Up
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 gap-1.5"
+                    onClick={() => setGiftAction("withdraw")}
+                    disabled={rewardsBalance <= 0}
+                  >
+                    <ArrowUpFromLine className="w-4 h-4" /> Withdraw
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {giftAction === "topup" && (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  Transfer from your main balance ({formatAmount(balance)}) to your gift balance for sending emoji gifts in Spaces.
+                </p>
+                <Input
+                  type="number"
+                  placeholder="Amount"
+                  value={topUpAmount}
+                  onChange={(e) => setTopUpAmount(e.target.value)}
+                  min={0.01}
+                  step={0.01}
+                />
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" onClick={() => { setGiftAction(null); setTopUpAmount(""); }}>
+                    Back
+                  </Button>
+                  <Button onClick={handleTopUp} disabled={processing} className="flex-1">
+                    {processing ? "Processing..." : "Top Up"}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {giftAction === "withdraw" && (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  Transfer received gifts ({formatAmount(rewardsBalance)}) to your main balance.
+                </p>
+                <Input
+                  type="number"
+                  placeholder="Amount"
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  min={0.01}
+                  step={0.01}
+                />
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" onClick={() => { setGiftAction(null); setWithdrawAmount(""); }}>
+                    Back
+                  </Button>
+                  <Button onClick={handleWithdraw} disabled={processing} className="flex-1">
+                    {processing ? "Processing..." : "Withdraw"}
+                  </Button>
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
 
