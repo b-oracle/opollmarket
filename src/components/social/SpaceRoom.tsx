@@ -2422,9 +2422,20 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   })}
                 </div>
                 {giftBalance <= 0 && (
-                  <p className="text-xs text-center text-destructive mb-2">
-                    No gift balance. Top up in your Commissions page.
-                  </p>
+                  <div className="flex flex-col items-center gap-1.5 mb-2">
+                    <p className="text-xs text-center text-destructive">
+                      No gift balance.
+                    </p>
+                    <button
+                      onClick={() => {
+                        setEmojiTarget(null);
+                        window.location.href = "/commissions";
+                      }}
+                      className="px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
+                    >
+                      Top Up Gift Balance
+                    </button>
+                  </div>
                 )}
                 <button
                   onClick={() => setEmojiTarget(null)}
