@@ -45,8 +45,8 @@ const Commissions = () => {
   const [showChart, setShowChart] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [topUpOpen, setTopUpOpen] = useState(false);
-  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [giftDetailOpen, setGiftDetailOpen] = useState(false);
+  const [giftAction, setGiftAction] = useState<"topup" | "withdraw" | null>(null);
   const [topUpAmount, setTopUpAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [processing, setProcessing] = useState(false);
