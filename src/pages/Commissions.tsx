@@ -678,7 +678,7 @@ const Commissions = () => {
                 <span className="text-sm font-bold">{formatAmount(totalGiftBalance)}</span>
               )}
               <span className="text-[10px] text-muted-foreground leading-tight">Gift Balance</span>
-              <span className="text-[9px] text-primary font-medium">Tap for details ▸</span>
+              <span className="text-[9px] text-primary font-medium">Tap to top up ▸</span>
             </CardContent>
           </Card>
 
