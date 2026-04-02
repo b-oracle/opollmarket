@@ -75,7 +75,7 @@ interface ChatMessage {
   reactions?: Record<string, string[]>; // emoji -> array of user ids
 }
 
-const REACTIONS = ["💸", "🤑", "💰", "💵", "🌹", "💝", "🔥", "🕺", "💃", "👏", "👍", "❤️", "😂", "💯", "🎯"];
+const REACTIONS = ["🙏🏽", "👎🏽", "✌🏽", "👌🏽", "🌹", "💝", "🔥", "🕺", "💃", "👏", "👍", "❤️", "😂", "💯", "🎯"];
 const EMOJI_PRICES: Record<string, number> = {
   "💸": 0.10, "🤑": 0.25, "💰": 0.50, "💵": 0.05, "🌹": 0.10, "💝": 0.25, "🔥": 0.05,
 };
