@@ -545,25 +545,6 @@ const Commissions = () => {
           )}
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-3 gap-2 mb-5">
-          {summaryCards.map((card) => (
-            <Card key={card.label} className="border-border/50">
-              <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${card.color}`}>
-                  <card.icon className="w-4 h-4" />
-                </div>
-                {isLoading ? (
-                  <Skeleton className="h-5 w-16" />
-                ) : (
-                  <span className="text-sm font-bold">{formatAmount(card.value)}</span>
-                )}
-                <span className="text-[10px] text-muted-foreground leading-tight">{card.label}</span>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
         {/* Pie Chart (collapsible) */}
         <AnimatePresence>
           {showChart && (
@@ -624,6 +605,25 @@ const Commissions = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-3 gap-2 mb-5">
+          {summaryCards.map((card) => (
+            <Card key={card.label} className="border-border/50">
+              <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${card.color}`}>
+                  <card.icon className="w-4 h-4" />
+                </div>
+                {isLoading ? (
+                  <Skeleton className="h-5 w-16" />
+                ) : (
+                  <span className="text-sm font-bold">{formatAmount(card.value)}</span>
+                )}
+                <span className="text-[10px] text-muted-foreground leading-tight">{card.label}</span>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
         {/* Balance Cards */}
         <div className="grid grid-cols-3 gap-2 mb-5">
