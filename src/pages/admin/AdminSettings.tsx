@@ -1761,6 +1761,38 @@ const SportsImportPresetsSection = ({ canEdit }: { canEdit: boolean }) => {
 };
 
 /* ─── Feature Toggles Card ─── */
+
+const TOGGLE_CATEGORIES: Record<string, { label: string; keys: string[] }> = {
+  core: {
+    label: "🏠 Core Platform",
+    keys: ["create_market", "portfolio", "feed", "rankings", "referrals", "faq", "sales_deck", "quick_trade", "copy_trading"],
+  },
+  social: {
+    label: "💬 Social Features",
+    keys: ["social_profiles", "social_status_feed", "social_stories", "social_tutorial", "social_spaces", "allow_unverified_spaces", "private_spaces", "space_gifts", "space_recording", "space_chat", "status_image_upload"],
+  },
+  charts: {
+    label: "📊 Charts & Display",
+    keys: ["line_chart", "poly_chart", "tradingview_chart", "show_wagered_stats"],
+  },
+  ai: {
+    label: "🤖 AI Features",
+    keys: ["ai_generate_description", "ai_generate_details", "ai_generate_image"],
+  },
+  payments: {
+    label: "💰 Payments & Fiat",
+    keys: ["fiat_deposit_payaza", "fiat_withdrawal", "balance_promotions", "ngn_promotions"],
+  },
+  integrations: {
+    label: "🔗 Integrations & API",
+    keys: ["public_api", "predict_via_telegram", "predict_via_whatsapp"],
+  },
+  system: {
+    label: "⚙️ System",
+    keys: ["maintenance_mode", "session_timeout"],
+  },
+};
+
 const FeatureTogglesCard = () => {
   const { toggles, isLoading, setToggle, setSchedule } = useFeatureToggles();
   const { canEdit } = useAdminContext();
@@ -1768,10 +1800,10 @@ const FeatureTogglesCard = () => {
   const [scheduleStart, setScheduleStart] = useState("");
   const [scheduleEnd, setScheduleEnd] = useState("");
   const [savingSchedule, setSavingSchedule] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(["core"]));
 
   const maintenanceToggle = toggles.find((t: any) => t.feature_key === "maintenance_mode");
 
-  // Sync schedule inputs when data loads
   useEffect(() => {
     if (maintenanceToggle) {
       setScheduleStart(maintenanceToggle.scheduled_start ? maintenanceToggle.scheduled_start.slice(0, 16) : "");
@@ -1837,6 +1869,19 @@ const FeatureTogglesCard = () => {
     }
   };
 
+  const toggleCategory = (cat: string) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  };
+
+  // Categorize toggles
+  const allCategorizedKeys = new Set(Object.values(TOGGLE_CATEGORIES).flatMap((c) => c.keys));
+  const uncategorized = toggles.filter((t: any) => !allCategorizedKeys.has(t.feature_key));
+
   if (isLoading) {
     return (
       <Card className="mb-6">
@@ -1846,6 +1891,98 @@ const FeatureTogglesCard = () => {
       </Card>
     );
   }
+
+  const renderToggleRow = (t: any) => (
+    <div key={t.feature_key} className="space-y-2">
+      <div className="flex items-center justify-between rounded-lg border border-border p-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-sm font-medium">{t.label}</span>
+          <Badge variant={t.enabled ? "default" : "secondary"} className="text-[10px]">
+            {t.feature_key === "maintenance_mode"
+              ? t.enabled ? "Active" : "Inactive"
+              : t.enabled ? "Live" : "Hidden"}
+          </Badge>
+          {t.feature_key === "maintenance_mode" && t.scheduled_start && t.scheduled_end && (
+            <Badge variant="outline" className="text-[10px]">
+              Scheduled
+            </Badge>
+          )}
+        </div>
+        <Switch
+          checked={t.enabled}
+          disabled={!canEdit || togglingKey === t.feature_key}
+          onCheckedChange={(val) => handleToggle(t.feature_key, t.label, val)}
+        />
+      </div>
+
+      {/* Maintenance schedule section */}
+      {t.feature_key === "maintenance_mode" && (
+        <Card className="border-dashed ml-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Timer className="w-4 h-4" /> Scheduled Maintenance Window
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Set a start and end time. Maintenance mode will auto-activate and deactivate on schedule (checked every minute).
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-1 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Start Time</Label>
+                <Input
+                  type="datetime-local"
+                  value={scheduleStart}
+                  onChange={(e) => setScheduleStart(e.target.value)}
+                  disabled={!canEdit}
+                  className="text-xs w-full min-w-0"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">End Time</Label>
+                <Input
+                  type="datetime-local"
+                  value={scheduleEnd}
+                  onChange={(e) => setScheduleEnd(e.target.value)}
+                  disabled={!canEdit}
+                  className="text-xs w-full min-w-0"
+                />
+              </div>
+            </div>
+            {maintenanceToggle?.scheduled_start && maintenanceToggle?.scheduled_end && (
+              <div className="rounded-lg bg-muted/50 p-2 text-[11px] text-muted-foreground">
+                Current schedule: <span className="font-medium text-foreground">{new Date(maintenanceToggle.scheduled_start).toLocaleString()}</span>
+                {" → "}
+                <span className="font-medium text-foreground">{new Date(maintenanceToggle.scheduled_end).toLocaleString()}</span>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={handleSaveSchedule}
+                disabled={!canEdit || savingSchedule || !scheduleStart || !scheduleEnd}
+                className="text-xs"
+              >
+                {savingSchedule ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Save className="w-3 h-3 mr-1" />}
+                Save Schedule
+              </Button>
+              {maintenanceToggle?.scheduled_start && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleClearSchedule}
+                  disabled={!canEdit || savingSchedule}
+                  className="text-xs"
+                >
+                  Clear Schedule
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
 
   return (
     <Card className="mb-6">
@@ -1857,98 +1994,72 @@ const FeatureTogglesCard = () => {
           Enable or disable platform features. Disabled features are hidden from public users but remain accessible to admins.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
-        {toggles.map((t: any) => (
-          <div key={t.feature_key} className="space-y-2">
-            <div className="flex items-center justify-between rounded-lg border border-border p-3">
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium">{t.label}</span>
-                <Badge variant={t.enabled ? "default" : "secondary"} className="text-[10px]">
-                  {t.feature_key === "maintenance_mode"
-                    ? t.enabled ? "Active" : "Inactive"
-                    : t.enabled ? "Live" : "Hidden"}
-                </Badge>
-                {t.feature_key === "maintenance_mode" && t.scheduled_start && t.scheduled_end && (
-                  <Badge variant="outline" className="text-[10px]">
-                    Scheduled
-                  </Badge>
-                )}
-              </div>
-              <Switch
-                checked={t.enabled}
-                disabled={!canEdit || togglingKey === t.feature_key}
-                onCheckedChange={(val) => handleToggle(t.feature_key, t.label, val)}
-              />
-            </div>
+      <CardContent className="space-y-2">
+        {Object.entries(TOGGLE_CATEGORIES).map(([catKey, cat]) => {
+          const catToggles = cat.keys
+            .map((k) => toggles.find((t: any) => t.feature_key === k))
+            .filter(Boolean) as any[];
+          if (catToggles.length === 0) return null;
 
-            {/* Maintenance schedule section */}
-            {t.feature_key === "maintenance_mode" && (
-              <Card className="border-dashed ml-2">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Timer className="w-4 h-4" /> Scheduled Maintenance Window
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    Set a start and end time. Maintenance mode will auto-activate and deactivate on schedule (checked every minute).
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="grid grid-cols-1 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Start Time</Label>
-                      <Input
-                        type="datetime-local"
-                        value={scheduleStart}
-                        onChange={(e) => setScheduleStart(e.target.value)}
-                        disabled={!canEdit}
-                        className="text-xs w-full min-w-0"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">End Time</Label>
-                      <Input
-                        type="datetime-local"
-                        value={scheduleEnd}
-                        onChange={(e) => setScheduleEnd(e.target.value)}
-                        disabled={!canEdit}
-                        className="text-xs w-full min-w-0"
-                      />
-                    </div>
-                  </div>
-                  {maintenanceToggle?.scheduled_start && maintenanceToggle?.scheduled_end && (
-                    <div className="rounded-lg bg-muted/50 p-2 text-[11px] text-muted-foreground">
-                      Current schedule: <span className="font-medium text-foreground">{new Date(maintenanceToggle.scheduled_start).toLocaleString()}</span>
-                      {" → "}
-                      <span className="font-medium text-foreground">{new Date(maintenanceToggle.scheduled_end).toLocaleString()}</span>
-                    </div>
-                  )}
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={handleSaveSchedule}
-                      disabled={!canEdit || savingSchedule || !scheduleStart || !scheduleEnd}
-                      className="text-xs"
-                    >
-                      {savingSchedule ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Save className="w-3 h-3 mr-1" />}
-                      Save Schedule
-                    </Button>
-                    {maintenanceToggle?.scheduled_start && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleClearSchedule}
-                        disabled={!canEdit || savingSchedule}
-                        className="text-xs"
-                      >
-                        Clear Schedule
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+          const enabledCount = catToggles.filter((t: any) => t.enabled).length;
+          const isExpanded = expandedCategories.has(catKey);
+
+          return (
+            <div key={catKey} className="border border-border rounded-lg overflow-hidden">
+              <button
+                onClick={() => toggleCategory(catKey)}
+                className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors text-left"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold">{cat.label}</span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {enabledCount}/{catToggles.length} active
+                  </span>
+                </div>
+                <svg
+                  className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {isExpanded && (
+                <div className="px-4 pb-3 space-y-2 border-t border-border pt-2">
+                  {catToggles.map(renderToggleRow)}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Uncategorized toggles */}
+        {uncategorized.length > 0 && (
+          <div className="border border-border rounded-lg overflow-hidden">
+            <button
+              onClick={() => toggleCategory("_uncategorized")}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors text-left"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold">🔧 Other</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {uncategorized.filter((t: any) => t.enabled).length}/{uncategorized.length} active
+                </span>
+              </div>
+              <svg
+                className={`w-4 h-4 text-muted-foreground transition-transform ${expandedCategories.has("_uncategorized") ? "rotate-180" : ""}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {expandedCategories.has("_uncategorized") && (
+              <div className="px-4 pb-3 space-y-2 border-t border-border pt-2">
+                {uncategorized.map(renderToggleRow)}
+              </div>
             )}
           </div>
-        ))}
+        )}
+
         {toggles.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-4">No feature toggles found.</p>
         )}
