@@ -560,15 +560,28 @@ const Commissions = () => {
                   <ResponsiveContainer width="100%" height={220}>
                     <PieChart>
                       <Pie
-                        data={[
-                          { name: "Creator", value: totals.creator },
-                          { name: "Referral", value: totals.referral },
-                          { name: "Copy Trade", value: totals.copyTrade },
-                          { name: "Signup Bonus", value: totals.signup },
-                          ...(totalGiftBalance > 0 ? [{ name: "Gift", value: totalGiftBalance }] : []),
-                          ...(bonusBalance > 0 ? [{ name: "Bonus", value: bonusBalance }] : []),
-                          ...(insuranceBalance > 0 ? [{ name: "oSURE", value: insuranceBalance }] : []),
-                        ].filter((d) => d.value > 0)}
+                        data={(() => {
+                          const colorMap: Record<string, string> = {
+                            Creator: "#8b5cf6",
+                            Referral: "#3b82f6",
+                            "Copy Trade": "#a855f7",
+                            "Signup Bonus": "#22c55e",
+                            Pending: "#f59e0b",
+                            Gift: "#ec4899",
+                            Bonus: "#f59e0b",
+                            oSURE: "#10b981",
+                          };
+                          return [
+                            { name: "Creator", value: totals.creator, color: colorMap.Creator },
+                            { name: "Referral", value: totals.referral, color: colorMap.Referral },
+                            { name: "Copy Trade", value: totals.copyTrade, color: colorMap["Copy Trade"] },
+                            { name: "Signup Bonus", value: totals.signup, color: colorMap["Signup Bonus"] },
+                            { name: "Pending", value: totals.pending, color: colorMap.Pending },
+                            { name: "Gift", value: totalGiftBalance, color: colorMap.Gift },
+                            { name: "Bonus", value: bonusBalance, color: colorMap.Bonus },
+                            { name: "oSURE", value: insuranceBalance, color: colorMap.oSURE },
+                          ].filter((d) => d.value > 0);
+                        })()}
                         cx="50%"
                         cy="50%"
                         innerRadius={55}
@@ -577,13 +590,30 @@ const Commissions = () => {
                         dataKey="value"
                         stroke="none"
                       >
-                        <Cell fill="#f59e0b" />
-                        <Cell fill="#3b82f6" />
-                        <Cell fill="#a855f7" />
-                        <Cell fill="hsl(var(--primary))" />
-                        <Cell fill="#ec4899" />
-                        <Cell fill="#f59e0b" />
-                        <Cell fill="#10b981" />
+                        {(() => {
+                          const colorMap: Record<string, string> = {
+                            Creator: "#8b5cf6",
+                            Referral: "#3b82f6",
+                            "Copy Trade": "#a855f7",
+                            "Signup Bonus": "#22c55e",
+                            Pending: "#f59e0b",
+                            Gift: "#ec4899",
+                            Bonus: "#f59e0b",
+                            oSURE: "#10b981",
+                          };
+                          return [
+                            { name: "Creator", value: totals.creator },
+                            { name: "Referral", value: totals.referral },
+                            { name: "Copy Trade", value: totals.copyTrade },
+                            { name: "Signup Bonus", value: totals.signup },
+                            { name: "Pending", value: totals.pending },
+                            { name: "Gift", value: totalGiftBalance },
+                            { name: "Bonus", value: bonusBalance },
+                            { name: "oSURE", value: insuranceBalance },
+                          ]
+                            .filter((d) => d.value > 0)
+                            .map((d, i) => <Cell key={i} fill={colorMap[d.name]} />);
+                        })()}
                       </Pie>
                       <RechartsTooltip
                         contentStyle={{
