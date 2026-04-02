@@ -505,6 +505,19 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           const wasCoHost = newCoHostIds.includes(user.id);
           setIsCoHost(wasCoHost);
         }
+      } else if (data.type === "force_lower_hand") {
+        if (user && data.targetId === user.id) {
+          setHandRaised(false);
+          toast.info("Your hand was lowered by the host ✋");
+        }
+        // Also remove from remote hand raises for all participants
+        if (data.targetId) {
+          setRemoteHandRaises((prev) => {
+            const next = new Set(prev);
+            next.delete(data.targetId);
+            return next;
+          });
+        }
       } else if (data.type === "force_mute") {
         if (user) {
           const targets = data.targets;
@@ -886,6 +899,19 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     setAllForceMuted(false);
     setForceMutedUsers(new Set());
     toast.success("All speakers can now unmute");
+  };
+
+  const forceHandDown = (targetId: string) => {
+    setRemoteHandRaises((prev) => {
+      const next = new Set(prev);
+      next.delete(targetId);
+      return next;
+    });
+    if (roomRef.current) {
+      const msg = JSON.stringify({ type: "force_lower_hand", targetId });
+      roomRef.current.localParticipant.publishData(new TextEncoder().encode(msg), { reliable: true });
+    }
+    setActionTarget(null);
   };
 
   const handleForceUnmuteSingle = (targetId: string) => {
@@ -2018,13 +2044,15 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
               </button>
             )}
 
-            <button onClick={toggleHand}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                handRaised ? "bg-yellow-500/20 text-yellow-500" : "bg-muted text-muted-foreground"
-              }`}
-              title={handRaised ? "Lower hand" : "Raise hand"}>
-              <Hand className="w-5 h-5" />
-            </button>
+            {(isHost || isCoHost || canPublish) && (
+              <button onClick={toggleHand}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                  handRaised ? "bg-yellow-500/20 text-yellow-500" : "bg-muted text-muted-foreground"
+                }`}
+                title={handRaised ? "Lower hand" : "Raise hand"}>
+                <Hand className="w-5 h-5" />
+              </button>
+            )}
 
             {/* Recording toggle for host */}
             {isHost && (
@@ -2136,6 +2164,15 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                         >
                           <Unlock className="w-5 h-5" />
                           <span className="text-sm font-medium">Allow to Unmute</span>
+                        </button>
+                      )}
+                      {remoteHandRaises.has(actionTarget.identity) && (
+                        <button
+                          onClick={() => forceHandDown(actionTarget.identity)}
+                          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-600 transition-colors"
+                        >
+                          <Hand className="w-5 h-5" />
+                          <span className="text-sm font-medium">Lower Hand ✋</span>
                         </button>
                       )}
                       <button
