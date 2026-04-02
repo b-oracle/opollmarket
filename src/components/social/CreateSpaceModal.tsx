@@ -4,12 +4,20 @@ import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { X, Radio, Loader2, Calendar, Clock, ShieldAlert } from "lucide-react";
+import { X, Radio, Loader2, Calendar, Clock, ShieldAlert, Lock, Search, UserPlus, UserMinus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MarketTagSelector, { type MarketTag } from "./MarketTagSelector";
+import { optimizedImageUrl } from "@/lib/optimizedImage";
+
 interface CreateSpaceModalProps {
   open: boolean;
   onClose: () => void;
+}
+
+interface InviteUser {
+  id: string;
+  display_name: string;
+  avatar_url: string | null;
 }
 
 const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
@@ -23,6 +31,11 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
   const [scheduledTime, setScheduledTime] = useState("");
   const [taggedMarkets, setTaggedMarkets] = useState<MarketTag[]>([]);
   const [verificationLevel, setVerificationLevel] = useState<string | null>(null);
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [invitees, setInvitees] = useState<InviteUser[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<InviteUser[]>([]);
+  const [searching, setSearching] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -33,6 +46,23 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
       .single()
       .then(({ data }) => setVerificationLevel(data?.verification_level ?? "none"));
   }, [user]);
+
+  // Search users for invite
+  useEffect(() => {
+    if (!searchQuery.trim() || !user) { setSearchResults([]); return; }
+    const timeout = setTimeout(async () => {
+      setSearching(true);
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .neq("id", user.id)
+        .ilike("display_name", `%${searchQuery.trim()}%`)
+        .limit(10);
+      setSearchResults((data || []).filter((u) => !invitees.some((i) => i.id === u.id)));
+      setSearching(false);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [searchQuery, user, invitees]);
 
   if (!user) return null;
 
@@ -61,6 +91,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
         host_id: user.id,
         title: trimmed,
         tagged_market_ids: taggedMarkets.map((m) => m.id),
+        is_private: isPrivate,
       };
 
       if (mode === "scheduled") {
@@ -75,10 +106,31 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
         .single();
       if (error) throw error;
 
+      const spaceId = (space as any).id;
+
+      // Insert invites for private space
+      if (isPrivate && invitees.length > 0) {
+        const inviteRows = invitees.map((u) => ({
+          space_id: spaceId,
+          inviter_id: user.id,
+          invitee_id: u.id,
+        }));
+        await supabase.from("space_invites" as any).insert(inviteRows);
+
+        // Send notifications to invitees
+        const notifs = invitees.map((u) => ({
+          user_id: u.id,
+          title: "Space Invite 🎙️",
+          message: `You've been invited to join "${trimmed}"`,
+          type: "info",
+          actor_id: user.id,
+        }));
+        await supabase.from("notifications").insert(notifs);
+      }
+
       if (mode === "live") {
-        // Join as host immediately
         await supabase.from("space_participants").insert({
-          space_id: (space as any).id,
+          space_id: spaceId,
           user_id: user.id,
           role: "host",
         });
@@ -93,6 +145,9 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
       setScheduledTime("");
       setTaggedMarkets([]);
       setMode("live");
+      setIsPrivate(false);
+      setInvitees([]);
+      setSearchQuery("");
       onClose();
     } catch (err: any) {
       toast.error(err.message || "Failed to create space");
@@ -101,7 +156,6 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
     }
   };
 
-  // Get min datetime (now)
   const now = new Date();
   const minDate = now.toISOString().split("T")[0];
   const minTime = scheduledDate === minDate
@@ -125,7 +179,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 24, scale: 0.98 }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="pointer-events-auto w-full bg-background p-6 space-y-4 rounded-t-2xl border-t border-border lg:max-w-md lg:rounded-2xl lg:border lg:shadow-2xl"
+              className="pointer-events-auto w-full bg-background p-6 space-y-4 rounded-t-2xl border-t border-border lg:max-w-md lg:rounded-2xl lg:border lg:shadow-2xl max-h-[85vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold flex items-center gap-2">
@@ -168,6 +222,79 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
               />
 
               <MarketTagSelector selected={taggedMarkets} onChange={setTaggedMarkets} max={6} />
+
+              {/* Private Space toggle */}
+              <button
+                onClick={() => setIsPrivate(!isPrivate)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors ${
+                  isPrivate ? "bg-primary/10 border-primary/30 text-primary" : "bg-muted/50 border-border text-muted-foreground"
+                }`}
+              >
+                <Lock className={`w-4 h-4 ${isPrivate ? "text-primary" : ""}`} />
+                <div className="text-left flex-1">
+                  <p className="text-sm font-semibold">Private Space</p>
+                  <p className="text-[10px] opacity-70">Invite-only — only invited users can join</p>
+                </div>
+                <div className={`w-10 h-6 rounded-full transition-colors relative ${isPrivate ? "bg-primary" : "bg-muted"}`}>
+                  <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${isPrivate ? "translate-x-5" : "translate-x-1"}`} />
+                </div>
+              </button>
+
+              {/* Invite picker */}
+              {isPrivate && (
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <input
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search users to invite…"
+                      className="w-full bg-muted/50 border border-border rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground"
+                    />
+                  </div>
+                  {/* Search results */}
+                  {searchQuery.trim() && (
+                    <div className="max-h-32 overflow-y-auto space-y-1">
+                      {searching && <p className="text-xs text-muted-foreground text-center py-2"><Loader2 className="w-3 h-3 animate-spin inline mr-1" />Searching…</p>}
+                      {!searching && searchResults.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">No users found</p>}
+                      {searchResults.map((u) => (
+                        <button
+                          key={u.id}
+                          onClick={() => {
+                            setInvitees((prev) => [...prev, u]);
+                            setSearchQuery("");
+                            setSearchResults([]);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="w-7 h-7 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">
+                            {u.avatar_url ? (
+                              <img src={optimizedImageUrl(u.avatar_url, "avatar-sm")} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-xs font-bold">{(u.display_name || "?").charAt(0).toUpperCase()}</span>
+                            )}
+                          </div>
+                          <span className="text-sm truncate flex-1 text-left">{u.display_name}</span>
+                          <UserPlus className="w-3.5 h-3.5 text-primary shrink-0" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {/* Invited list */}
+                  {invitees.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {invitees.map((u) => (
+                        <span key={u.id} className="flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-full text-xs">
+                          {u.display_name}
+                          <button onClick={() => setInvitees((prev) => prev.filter((i) => i.id !== u.id))} className="hover:text-destructive">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {!isVerified && verificationLevel !== null && !allowUnverified && (
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs">
