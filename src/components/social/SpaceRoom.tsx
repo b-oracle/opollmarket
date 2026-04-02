@@ -2538,11 +2538,17 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
                 {/* Balances */}
                 <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="bg-muted rounded-xl p-3 text-center">
+                  <div className="bg-muted rounded-xl p-3 text-center relative">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Gift Balance</p>
                     <p className={`text-lg font-bold ${giftBalance > 0 ? "text-green-500" : "text-destructive"}`}>
                       ${giftBalance.toFixed(2)}
                     </p>
+                    <button
+                      onClick={() => setShowTopUpModal(true)}
+                      className="mt-1.5 px-3 py-1 rounded-lg bg-primary text-primary-foreground text-[10px] font-semibold hover:bg-primary/90 transition-colors"
+                    >
+                      Top Up
+                    </button>
                   </div>
                   <div className="bg-muted rounded-xl p-3 text-center">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Rewards Balance</p>
