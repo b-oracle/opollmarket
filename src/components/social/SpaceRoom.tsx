@@ -151,6 +151,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [selfSpaceStats, setSelfSpaceStats] = useState<{ sent: number; received: number; sentCount: number; receivedCount: number }>({ sent: 0, received: 0, sentCount: 0, receivedCount: 0 });
   const [giftActivities, setGiftActivities] = useState<Array<{ id: string; emoji: string; amount: number; created_at: string; direction: 'sent' | 'received'; other_name: string; other_id: string }>>([]);
   const loadedMsgIdsRef = useRef<Set<string>>(new Set());
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteSearchQuery, setInviteSearchQuery] = useState("");
+  const [inviteSearchResults, setInviteSearchResults] = useState<{ id: string; display_name: string; avatar_url: string | null }[]>([]);
+  const [inviteSearching, setInviteSearching] = useState(false);
+  const [inviteSending, setInviteSending] = useState<string | null>(null);
 
   // Fetch gift balance on mount
   useEffect(() => {
