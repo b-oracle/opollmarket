@@ -139,7 +139,64 @@ const Commissions = () => {
     enabled: !!user?.id,
   });
 
-  // Fetch market titles for all market IDs
+  // Fetch gift transactions (sent & received)
+  const { data: giftsSent, isLoading: loadingGS } = useQuery({
+    queryKey: ["gifts-sent", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("space_gifts")
+        .select("id, amount, emoji, created_at, recipient_id, space_id")
+        .eq("sender_id", user!.id)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!user?.id,
+  });
+
+  const { data: giftsReceived, isLoading: loadingGR } = useQuery({
+    queryKey: ["gifts-received", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("space_gifts")
+        .select("id, amount, emoji, created_at, sender_id, space_id")
+        .eq("recipient_id", user!.id)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!user?.id,
+  });
+
+  // Fetch bonus transactions
+  const { data: bonusTxns, isLoading: loadingBT } = useQuery({
+    queryKey: ["bonus-transactions", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("transactions")
+        .select("id, amount, created_at, type, status")
+        .eq("user_id", user!.id)
+        .in("type", ["bonus", "signup_bonus_credit", "registration_bonus"])
+        .eq("status", "confirmed")
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!user?.id,
+  });
+
+  // Fetch insurance (oSURE) transactions
+  const { data: osureTxns, isLoading: loadingOS } = useQuery({
+    queryKey: ["osure-transactions", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("insurance_claims")
+        .select("id, claim_amount, premium_paid, created_at, status, tier, market_id")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!user?.id,
+  });
+
+
   const allMarketIds = useMemo(() => {
     const ids = new Set<string>();
     (pendingCommissions ?? []).forEach((c) => c.market_id && ids.add(c.market_id));
