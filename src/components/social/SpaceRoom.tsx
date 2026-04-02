@@ -2527,7 +2527,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   </div>
                 </div>
                 <div className="grid grid-cols-4 gap-2 mb-3">
-                  {REACTIONS.map((emoji) => {
+                  {GIFT_EMOJIS.map((emoji) => {
                     const price = EMOJI_PRICES[emoji] ?? 0.05;
                     const canAfford = giftBalance >= price;
                     return (
