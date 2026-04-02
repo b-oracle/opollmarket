@@ -66,7 +66,7 @@ const Commissions = () => {
       return;
     }
     toast.success(`Topped up $${amt.toFixed(2)} to gift balance`);
-    setTopUpOpen(false);
+    setGiftAction(null);
     setTopUpAmount("");
     queryClient.invalidateQueries({ queryKey: ["balance"] });
   };
