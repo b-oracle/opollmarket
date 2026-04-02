@@ -558,6 +558,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             });
           }
         }
+      } else if (data.type === "targeted_emoji") {
+        // Show floating reaction from target's avatar for everyone
+        const id = `${Date.now()}-${Math.random()}`;
+        setFloatingReactions((prev) => [...prev, { id, emoji: data.emoji, identity: data.targetId }]);
+        setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
       }
     } catch {
       // ignore malformed
