@@ -104,15 +104,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    // NFT verification requires using NFT as avatar
-    const usingNftAvatar = !!profile.avatar_url && !profile.avatar_url.includes("/storage/v1/");
-    const isNftVerified = hasNft && usingNftAvatar;
-
     // Determine verification level
+    // NFT ownership alone grants blue tick; gold requires NFT + gold-tier token balance
     let level = "none";
-    if (isNftVerified && hasGoldTokens) {
+    if (hasNft && hasGoldTokens) {
       level = "gold";
-    } else if (isNftVerified || hasTokens) {
+    } else if (hasNft || hasTokens) {
       level = "blue";
     }
 
