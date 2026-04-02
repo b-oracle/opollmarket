@@ -348,6 +348,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsSuperAdmin(false);
     setIsAdmin(false);
     setIsModerator(false);
+    setRolesLoaded(false);
     setProfileDisplayName(null);
 
     // Fire-and-forget: attempt global sign-out, fall back to local, never block UI
