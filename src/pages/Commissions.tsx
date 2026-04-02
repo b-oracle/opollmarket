@@ -52,7 +52,7 @@ const Commissions = () => {
   const [processing, setProcessing] = useState(false);
   const ITEMS_PER_PAGE = 15;
   const queryClient = useQueryClient();
-  const { balance, giftBalance, bonusBalance, rewardsBalance, isLoading: balLoading } = useUserBalance();
+  const { balance, giftBalance, bonusBalance, rewardsBalance, totalGiftBalance, isLoading: balLoading } = useUserBalance();
 
   const handleTopUp = async () => {
     const amt = Number(topUpAmount);
