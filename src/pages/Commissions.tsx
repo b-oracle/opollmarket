@@ -83,7 +83,7 @@ const Commissions = () => {
       return;
     }
     toast.success(`Withdrew $${amt.toFixed(2)} to main balance`);
-    setWithdrawOpen(false);
+    setGiftAction(null);
     setWithdrawAmount("");
     queryClient.invalidateQueries({ queryKey: ["balance"] });
   };

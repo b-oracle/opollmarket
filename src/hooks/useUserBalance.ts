@@ -33,6 +33,7 @@ export const useUserBalance = () => {
     insuranceBalance: balanceData.insurance,
     giftBalance: balanceData.gift,
     rewardsBalance: balanceData.rewards,
+    totalGiftBalance: balanceData.gift + balanceData.rewards,
     totalBalance: balanceData.amount + balanceData.bonus,
     totalWithInsurance: balanceData.amount + balanceData.bonus + balanceData.insurance,
     isLoading,
