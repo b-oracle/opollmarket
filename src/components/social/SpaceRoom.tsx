@@ -2313,6 +2313,16 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
               </button>
             )}
 
+            {/* Invite button for host/co-host */}
+            {hasModPowers && (
+              <button onClick={() => setShowInviteModal(true)}
+                className="h-10 px-3 sm:px-4 rounded-full flex items-center justify-center gap-2 text-sm font-medium bg-accent text-accent-foreground transition-colors"
+                title="Invite Users">
+                <UserPlus className="w-4 h-4" />
+                <span className="hidden sm:inline">Invite</span>
+              </button>
+            )}
+
             <button onClick={handleLeave}
               className="w-10 h-10 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
               title="Leave Space">
