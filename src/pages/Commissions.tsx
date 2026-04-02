@@ -395,12 +395,12 @@ const Commissions = () => {
 
 
   const summaryCards = [
-    { label: "Total Earned", value: totals.total, icon: DollarSign, color: "text-green-500 bg-green-500/10" },
-    { label: "Creator", value: totals.creator, icon: Gem, color: "text-violet-500 bg-violet-500/10" },
-    { label: "Referral", value: totals.referral, icon: Users, color: "text-blue-500 bg-blue-500/10" },
-    { label: "Copy Trade", value: totals.copyTrade, icon: Copy, color: "text-purple-500 bg-purple-500/10" },
-    { label: "Signup Bonus", value: totals.signup, icon: Gift, color: "text-primary bg-primary/10" },
-    { label: "Pending", value: totals.pending, icon: Clock, color: "text-muted-foreground bg-muted" },
+    { label: "Total Earned", value: totals.total, icon: DollarSign, color: "text-green-500 bg-green-500/10", description: "The total amount earned across all commission types including creator fees, referral bonuses, copy trade commissions, and signup bonuses." },
+    { label: "Creator", value: totals.creator, icon: Gem, color: "text-violet-500 bg-violet-500/10", description: "Earnings from markets you created. You earn a creator fee each time someone places a prediction on your market." },
+    { label: "Referral", value: totals.referral, icon: Users, color: "text-blue-500 bg-blue-500/10", description: "Commission earned when users you referred place predictions. You earn a percentage of the platform fee from their trades." },
+    { label: "Copy Trade", value: totals.copyTrade, icon: Copy, color: "text-purple-500 bg-purple-500/10", description: "Commission earned when other users copy your trades and make a profit. You receive a percentage of their gains." },
+    { label: "Signup Bonus", value: totals.signup, icon: Gift, color: "text-primary bg-primary/10", description: "One-time bonus rewards credited when users you referred successfully sign up and verify their account." },
+    { label: "Pending", value: totals.pending, icon: Clock, color: "text-muted-foreground bg-muted", description: "Commissions that are still within the 48-hour hold period. Once released, they will be added to your main balance." },
   ];
 
   const categoryBadge: Record<string, { label: string; className: string }> = {
