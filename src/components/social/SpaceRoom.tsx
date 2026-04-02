@@ -1403,6 +1403,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
       setDeviceMusicPlaying(true);
       setDeviceMusicPaused(false);
+      setDjIdentity(user?.id ?? null);
       setDeviceMusicName(file.name);
       setShowMusicMenu(false);
       toast.success(`Now playing: ${file.name} 🎵`);
