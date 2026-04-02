@@ -1,40 +1,35 @@
 
 
-## Add "Enable Speaker" Prompt on Space Join
+## Persist "Enable Speaker" Prompt State
 
 ### Problem
-When participants join an ongoing space, they can't hear speakers until they interact with the microphone. This is because mobile browsers block audio playback until a user gesture occurs (autoplay policy). LiveKit's `room.startAudio()` method resolves this, but it requires an explicit user tap.
+The "Enable Speaker" modal appears every time the connection fires (including reconnects or re-renders), not just on the first join. Once a user has enabled audio, it should not reappear unless the session fully resets (i.e., they leave the space and rejoin from scratch).
 
 ### What changes
 
 **File: `src/components/social/SpaceRoom.tsx`**
 
-1. **Add state for the audio prompt modal**
+1. **Add a ref to track if audio was already enabled** — Use a `useRef` so it survives re-renders without triggering them:
    ```ts
-   const [showAudioPrompt, setShowAudioPrompt] = useState(false);
+   const audioEnabledRef = useRef(false);
    ```
 
-2. **Show the prompt after connecting** — After `setConnected(true)` (line 931), add:
+2. **Only show the prompt if audio hasn't been enabled yet** — Change line 934 from always setting `true` to conditionally:
    ```ts
-   setShowAudioPrompt(true);
+   if (!audioEnabledRef.current) {
+     setShowAudioPrompt(true);
+   }
    ```
 
-3. **Handle the "Enable Speaker" button click** — Create a handler that calls `roomRef.current.startAudio()` (LiveKit's method to resume the AudioContext and unblock all subscribed audio tracks), then dismiss the modal:
+3. **Mark audio as enabled when user taps "Enable Speaker" or "Skip"** — In both the enable button handler and the skip handler, set the ref:
    ```ts
-   const handleEnableAudio = async () => {
-     try {
-       await roomRef.current?.startAudio();
-       warmAudioContext();
-     } catch {}
-     setShowAudioPrompt(false);
-   };
+   audioEnabledRef.current = true;
+   setShowAudioPrompt(false);
    ```
 
-4. **Render a modal overlay** — Show a centered modal with a speaker icon, a brief message ("Enable your speaker to hear participants"), and a prominent "Enable Speaker 🔊" button. Style it consistently with existing space modals (glass background, rounded corners). Include a dismiss/skip option. The modal renders only when `showAudioPrompt` is true and `connected` is true.
+4. **Reset the ref when leaving the space** — In the disconnect/cleanup logic, reset `audioEnabledRef.current = false` so that a fresh join shows the prompt again.
 
-### Technical details
-- `Room.startAudio()` is the LiveKit SDK method that resumes the browser AudioContext and plays all attached `<audio>` elements, satisfying autoplay policy requirements
-- The modal itself acts as the required "user gesture" — tapping the button is the interaction browsers need
-- No backend changes needed
-- The prompt appears once per join; dismissed state is not persisted
+### Why a ref instead of state or sessionStorage
+- A ref persists across reconnects within the same component mount (same space session) but resets when the component unmounts (leaving the space)
+- No need for sessionStorage since the desired behavior is per-space-session, not per-browser-session
 
