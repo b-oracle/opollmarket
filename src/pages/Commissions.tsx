@@ -395,7 +395,7 @@ const Commissions = () => {
 
 
   const summaryCards = [
-    { label: "Total Earned", value: totals.total, icon: DollarSign, color: "text-green-500 bg-green-500/10", description: "The total amount earned across all commission types including creator fees, referral bonuses, copy trade commissions, and signup bonuses." },
+    { label: "Wallet Balance", value: balance, icon: Wallet, color: "text-primary bg-primary/10", description: "Your available main balance that can be used for predictions, withdrawals, and topping up your gift balance." },
     { label: "Creator", value: totals.creator, icon: Gem, color: "text-violet-500 bg-violet-500/10", description: "Earnings from markets you created. You earn a creator fee each time someone places a prediction on your market." },
     { label: "Referral", value: totals.referral, icon: Users, color: "text-blue-500 bg-blue-500/10", description: "Commission earned when users you referred place predictions. You earn a percentage of the platform fee from their trades." },
     { label: "Copy Trade", value: totals.copyTrade, icon: Copy, color: "text-purple-500 bg-purple-500/10", description: "Commission earned when other users copy your trades and make a profit. You receive a percentage of their gains." },
