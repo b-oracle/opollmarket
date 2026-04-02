@@ -59,12 +59,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsSuperAdmin(!!superAdminData);
         setIsAdmin(!!adminData);
         setIsModerator(!!modData);
+        setRolesLoaded(true);
       }
     } catch {
       if (mounted.current) {
         setIsSuperAdmin(false);
         setIsAdmin(false);
         setIsModerator(false);
+        setRolesLoaded(true);
       }
     }
   }, []);
