@@ -407,6 +407,10 @@ const Commissions = () => {
     referral: { label: "Referral", className: "bg-blue-500/10 text-blue-500 border-blue-500/20" },
     copy_trade: { label: "Copy Trade", className: "bg-purple-500/10 text-purple-500 border-purple-500/20" },
     signup_bonus: { label: "Signup Bonus", className: "bg-primary/10 text-primary border-primary/20" },
+    gift_sent: { label: "Gift Sent", className: "bg-pink-500/10 text-pink-500 border-pink-500/20" },
+    gift_received: { label: "Gift Received", className: "bg-green-500/10 text-green-500 border-green-500/20" },
+    bonus: { label: "Bonus", className: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
+    osure: { label: "oSURE", className: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" },
     pending: { label: "Pending", className: "bg-muted text-muted-foreground border-border" },
   };
 
