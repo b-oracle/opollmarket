@@ -1,64 +1,35 @@
 
 
-## Merge Gift + Rewards into Single "Gift Balance" Card & Add Revenue Share Card
+## Music DJ Indicator on Avatar + Single-Player Enforcement
 
-### What changes
+### What it does
+1. Shows a 🎵 music icon badge on the avatar of whoever is currently playing device music, visible to all participants.
+2. Enforces only one participant can play device music at a time — if someone else is already the DJ, the "Play from device" button is disabled with a message.
 
-**1. Combine Gift Balance and Rewards Balance into one card**
+### How it works
 
-The "Gift Balance" card will show the combined total of `gift_balance + rewards_balance`. Tapping the card opens a detail sheet/dialog showing:
-- **Total Gift Balance**: combined figure
-- **Available to Send**: current `gift_balance`
-- **Gifts Received**: current `rewards_balance`
-- **Top Up** button (transfers from main → gift_balance)
-- **Withdraw** button (transfers rewards_balance → main balance)
+**Detecting the DJ (all participants)**
 
-The separate "Rewards" card is removed.
+LiveKit already publishes device music as a track with `source: Track.Source.ScreenShareAudio` and `name: "device-music"`. Remote participants receive this track publication. We can detect who is the DJ by scanning all participants' track publications for a `ScreenShareAudio` track named `device-music`.
 
-**2. Replace "Rewards" card with "Revenue Share"**
+- Add a state `djIdentity: string | null` that tracks which participant identity is currently playing device music.
+- For the local user: set `djIdentity` to `user.id` when `deviceMusicPlaying` is true.
+- For remote users: listen for `TrackPublished` / `TrackUnpublished` events on the room. When a track with `source === Track.Source.ScreenShareAudio` is published, set `djIdentity` to that participant's identity. When unpublished, clear it.
 
-A new "Revenue Share" card shows the user's accumulated revenue share earnings (for Blue/Gold verified creators). This queries `pending_commissions` where `type = 'revenue_share'` or a similar identifier, summing released amounts. If the user has no revenue share earnings, it shows $0.00.
+**Avatar badge (renderAvatar)**
 
-### Files to modify
+In the `renderAvatar` function (~line 1651), add a condition: if `p.identity === djIdentity`, render a small 🎵 pulsing icon on the avatar (positioned similarly to the ✋ hand indicator but on a different corner, e.g. top-left).
 
-**`src/pages/Commissions.tsx`**
-- Remove the third "Rewards" balance card
-- Update the "Gift Balance" card to show `giftBalance + rewardsBalance` as the displayed total
-- Make the Gift Balance card clickable — opens a new dialog showing sent vs received breakdown with Top Up and Withdraw actions
-- Add a "Revenue Share" card in the third slot, pulling data from `pending_commissions` where `type = 'revenue_share'` (or from a dedicated query)
-- Move the Top Up and Withdraw modals into the new Gift detail dialog
-- Remove `withdrawOpen` / `withdrawAmount` state (folded into gift detail dialog)
+**Single-player enforcement**
 
-**`src/hooks/useUserBalance.ts`**
-- Keep exposing `giftBalance` and `rewardsBalance` separately (the Commissions page needs both for the breakdown)
-- Add a computed `totalGiftBalance: giftBalance + rewardsBalance`
+In the music menu (~line 2009), disable the "Play from device" button when `djIdentity` is set and `djIdentity !== user?.id`. Show text like "Someone is already playing music" instead.
 
-### UI layout (balance cards row)
+### File to modify
 
-```text
-┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│   🎁 $X.XX   │  │   ✨ $X.XX   │  │   💎 $X.XX   │
-│ Gift Balance  │  │ Bonus Balance│  │ Revenue Share │
-│   [tap ▸]     │  │              │  │              │
-└──────────────┘  └──────────────┘  └──────────────┘
-```
-
-### Gift Balance detail dialog (on tap)
-
-```text
-┌─────────────────────────────┐
-│     Gift Balance Details     │
-│                              │
-│  Total:     $X.XX            │
-│  To Send:   $X.XX            │
-│  Received:  $X.XX            │
-│                              │
-│  [Top Up]   [Withdraw]       │
-└─────────────────────────────┘
-```
-
-### Technical detail
-
-- Revenue share data: query `pending_commissions` filtered by `type = 'revenue_share'`, sum the amounts. This aligns with the existing revenue share bonus system that credits verified creators upon market resolution.
-- The `totalGiftBalance` convenience field in `useUserBalance` avoids duplicating arithmetic across components.
+**`src/components/social/SpaceRoom.tsx`**
+- Add `djIdentity` state
+- Set it locally when `deviceMusicPlaying` changes
+- Add `TrackPublished`/`TrackUnpublished` room event listeners to detect remote DJ
+- Update `renderAvatar` to show 🎵 badge when `p.identity === djIdentity`
+- Disable "Play from device" button when another participant is the DJ
 
