@@ -761,8 +761,23 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           updateParticipants(room);
         });
 
+        // DJ detection: track who is playing device music
+        room.on(RoomEvent.TrackPublished, (pub, participant) => {
+          if (pub.source === Track.Source.ScreenShareAudio && pub.trackName === "device-music") {
+            setDjIdentity(participant.identity);
+          }
+        });
+        room.on(RoomEvent.TrackUnpublished, (pub, participant) => {
+          if (pub.source === Track.Source.ScreenShareAudio && pub.trackName === "device-music") {
+            setDjIdentity(prev => prev === participant.identity ? null : prev);
+          }
+        });
+
         room.on(RoomEvent.ParticipantConnected, () => updateParticipants(room));
-        room.on(RoomEvent.ParticipantDisconnected, () => updateParticipants(room));
+        room.on(RoomEvent.ParticipantDisconnected, (p) => {
+          setDjIdentity(prev => prev === p.identity ? null : prev);
+          updateParticipants(room);
+        });
         room.on(RoomEvent.TrackMuted, () => updateParticipants(room));
         room.on(RoomEvent.TrackUnmuted, () => updateParticipants(room));
         room.on(RoomEvent.ActiveSpeakersChanged, () => updateParticipants(room));
