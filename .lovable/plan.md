@@ -1,37 +1,40 @@
 
 
-## Add Sender Name to Floating Gift Emoji
+## Add "Enable Speaker" Prompt on Space Join
+
+### Problem
+When participants join an ongoing space, they can't hear speakers until they interact with the microphone. This is because mobile browsers block audio playback until a user gesture occurs (autoplay policy). LiveKit's `room.startAudio()` method resolves this, but it requires an explicit user tap.
 
 ### What changes
 
 **File: `src/components/social/SpaceRoom.tsx`**
 
-1. **Extend the floating reaction data model** — Add an optional `label` field to the `floatingReactions` state type:
+1. **Add state for the audio prompt modal**
    ```ts
-   // Line 137: Change type from
-   { id: string; emoji: string; identity: string }[]
-   // to
-   { id: string; emoji: string; identity: string; label?: string }[]
+   const [showAudioPrompt, setShowAudioPrompt] = useState(false);
    ```
 
-2. **Include sender name when broadcasting targeted emoji** — The broadcast already sends `senderName` in the data payload (line 1368). When receiving a `targeted_emoji` event (line 706-710), pass `data.senderName` into the floating reaction. Also do the same for the local floating reaction on the sender side (line 1372-1374), but with a label like `"You gifted {targetName}"` or similar.
-
-3. **When receiving a targeted emoji (line 706-710)** — For the recipient and all viewers, set the label to `"{senderName} gifted {emoji}"`. Check if the current user is the target (`data.targetId === user?.id`) and if so, use `"{senderName} gifted you"`.
-
-4. **Render the label in the floating animation (lines 1811-1821)** — Below the emoji, show the label text in a small styled span:
-   ```tsx
-   <motion.div key={r.id} ...>
-     {r.emoji}
-     {r.label && (
-       <div className="text-[10px] text-white font-semibold whitespace-nowrap bg-black/50 rounded px-1 mt-0.5 text-center">
-         {r.label}
-       </div>
-     )}
-   </motion.div>
+2. **Show the prompt after connecting** — After `setConnected(true)` (line 931), add:
+   ```ts
+   setShowAudioPrompt(true);
    ```
 
-### Summary
-- Only gift emojis (targeted emoji) get the floating label — general reactions remain unchanged
-- The recipient sees "{Name} gifted you {emoji}", other participants see "{Name} gifted {targetName} {emoji}"
-- No database or backend changes needed — the `senderName` is already in the broadcast payload
+3. **Handle the "Enable Speaker" button click** — Create a handler that calls `roomRef.current.startAudio()` (LiveKit's method to resume the AudioContext and unblock all subscribed audio tracks), then dismiss the modal:
+   ```ts
+   const handleEnableAudio = async () => {
+     try {
+       await roomRef.current?.startAudio();
+       warmAudioContext();
+     } catch {}
+     setShowAudioPrompt(false);
+   };
+   ```
+
+4. **Render a modal overlay** — Show a centered modal with a speaker icon, a brief message ("Enable your speaker to hear participants"), and a prominent "Enable Speaker 🔊" button. Style it consistently with existing space modals (glass background, rounded corners). Include a dismiss/skip option. The modal renders only when `showAudioPrompt` is true and `connected` is true.
+
+### Technical details
+- `Room.startAudio()` is the LiveKit SDK method that resumes the browser AudioContext and plays all attached `<audio>` elements, satisfying autoplay policy requirements
+- The modal itself acts as the required "user gesture" — tapping the button is the interaction browsers need
+- No backend changes needed
+- The prompt appears once per join; dismissed state is not persisted
 
