@@ -26,20 +26,26 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
+    if (userError || !authUser) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const senderId = claimsData.claims.sub;
+    const senderId = authUser.id;
     const { recipientId, spaceId, emoji, amount } = await req.json();
 
     if (!recipientId || !spaceId || !emoji || !amount || amount <= 0) {
       return new Response(JSON.stringify({ error: "Missing or invalid parameters" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (senderId === recipientId) {
+      return new Response(JSON.stringify({ error: "Cannot gift yourself" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
