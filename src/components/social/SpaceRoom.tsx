@@ -2730,7 +2730,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200]"
-              onClick={() => setShowAudioPrompt(false)}
+              onClick={() => { audioEnabledRef.current = true; setShowAudioPrompt(false); }}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
