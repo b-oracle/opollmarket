@@ -416,8 +416,8 @@ const Commissions = () => {
           <button onClick={() => navigate(-1)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-lg font-bold flex-1">Commission Breakdown</h1>
-          {!isLoading && totals.total > 0 && (
+          <h1 className="text-lg font-bold flex-1">Balance Breakdown</h1>
+          {!isLoading && (totals.total > 0 || totalGiftBalance > 0 || bonusBalance > 0 || insuranceBalance > 0) && (
             <button
               onClick={() => setShowChart(!showChart)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
@@ -470,6 +470,9 @@ const Commissions = () => {
                           { name: "Referral", value: totals.referral },
                           { name: "Copy Trade", value: totals.copyTrade },
                           { name: "Signup Bonus", value: totals.signup },
+                          ...(totalGiftBalance > 0 ? [{ name: "Gift", value: totalGiftBalance }] : []),
+                          ...(bonusBalance > 0 ? [{ name: "Bonus", value: bonusBalance }] : []),
+                          ...(insuranceBalance > 0 ? [{ name: "oSURE", value: insuranceBalance }] : []),
                         ].filter((d) => d.value > 0)}
                         cx="50%"
                         cy="50%"
@@ -483,6 +486,9 @@ const Commissions = () => {
                         <Cell fill="#3b82f6" />
                         <Cell fill="#a855f7" />
                         <Cell fill="hsl(var(--primary))" />
+                        <Cell fill="#ec4899" />
+                        <Cell fill="#f59e0b" />
+                        <Cell fill="#10b981" />
                       </Pie>
                       <RechartsTooltip
                         contentStyle={{
@@ -497,7 +503,7 @@ const Commissions = () => {
                     </PieChart>
                   </ResponsiveContainer>
                   <p className="text-center text-xs text-muted-foreground mt-1">
-                    Total: <span className="font-bold text-foreground">{formatAmount(totals.total)}</span>
+                    Total: <span className="font-bold text-foreground">{formatAmount(totals.total + totalGiftBalance + bonusBalance + insuranceBalance)}</span>
                   </p>
                 </CardContent>
               </Card>
