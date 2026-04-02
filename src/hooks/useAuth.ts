@@ -8,6 +8,7 @@ interface AuthContextValue {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  rolesLoaded: boolean;
   displayName: string;
   isSuperAdmin: boolean;
   isAdmin: boolean;
