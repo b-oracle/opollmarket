@@ -503,7 +503,7 @@ const Commissions = () => {
                     </PieChart>
                   </ResponsiveContainer>
                   <p className="text-center text-xs text-muted-foreground mt-1">
-                    Total: <span className="font-bold text-foreground">{formatAmount(totals.total)}</span>
+                    Total: <span className="font-bold text-foreground">{formatAmount(totals.total + totalGiftBalance + bonusBalance + insuranceBalance)}</span>
                   </p>
                 </CardContent>
               </Card>
