@@ -38,6 +38,36 @@ const formatDate = (d: string) => {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 };
 
+const RevenueShareCard = ({ userId }: { userId: string }) => {
+  const { data: revShareTotal = 0, isLoading } = useQuery({
+    queryKey: ["revenue-share-total", userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("pending_commissions")
+        .select("amount, status")
+        .eq("user_id", userId)
+        .eq("type", "creator")
+        .eq("status", "released");
+      return (data ?? []).reduce((s, r) => s + Number(r.amount), 0);
+    },
+    enabled: !!userId,
+  });
+
+  return (
+    <Card className="border-border/50">
+      <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
+        <div className="w-8 h-8 rounded-full flex items-center justify-center text-violet-500 bg-violet-500/10">
+          <Gem className="w-4 h-4" />
+        </div>
+        {isLoading ? <Skeleton className="h-5 w-16" /> : (
+          <span className="text-sm font-bold">{formatAmount(revShareTotal)}</span>
+        )}
+        <span className="text-[10px] text-muted-foreground leading-tight">Revenue Share</span>
+      </CardContent>
+    </Card>
+  );
+};
+
 const Commissions = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
