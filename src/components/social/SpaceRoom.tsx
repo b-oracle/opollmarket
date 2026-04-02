@@ -1790,9 +1790,12 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     <motion.div key={p.identity} layout className="flex flex-col items-center gap-1"
                       ref={(el: HTMLDivElement | null) => { if (el) avatarRefs.current.set(p.identity, el); else avatarRefs.current.delete(p.identity); }}
                       onClick={() => {
-                        if (hasModPowers && p.identity !== hostId && p.identity !== user?.id) {
+                        if (p.identity === user?.id) return;
+                        if (hasModPowers && p.identity !== hostId) {
                           setActionTarget(p);
                           setActionType("speaker");
+                        } else if (!hasModPowers || p.identity === hostId) {
+                          setEmojiTarget(p);
                         }
                       }}>
                       {renderAvatar(p, "lg")}
