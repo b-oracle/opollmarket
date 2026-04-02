@@ -33,6 +33,8 @@ import {
   Minimize2,
   Lock,
   Unlock,
+  Pencil,
+  Check,
 } from "lucide-react";
 import NftBadge, { VerificationLevel } from "@/components/NftBadge";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
@@ -81,6 +83,26 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const { isFeatureEnabled } = useFeatureToggles();
   const queryClient = useQueryClient();
   const { minimized, toggleMinimize } = useActiveSpace();
+
+  // Editable title state
+  const [displayTitle, setDisplayTitle] = useState(spaceTitle);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [editTitleValue, setEditTitleValue] = useState(spaceTitle);
+  const [savingTitle, setSavingTitle] = useState(false);
+
+  const handleSaveTitle = async () => {
+    const trimmed = editTitleValue.trim();
+    if (!trimmed || trimmed === displayTitle) { setEditingTitle(false); return; }
+    setSavingTitle(true);
+    const { error } = await supabase
+      .from("spaces" as any)
+      .update({ title: trimmed } as any)
+      .eq("id", spaceId);
+    if (error) { toast.error("Failed to update title"); }
+    else { setDisplayTitle(trimmed); queryClient.invalidateQueries({ queryKey: ["spaces"] }); }
+    setSavingTitle(false);
+    setEditingTitle(false);
+  };
   const roomRef = useRef<Room | null>(null);
   const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -1521,7 +1543,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   if (minimized) {
     return (
       <SpaceMiniPlayer
-        title={spaceTitle}
+        title={displayTitle}
         participantCount={participants.length}
         isMuted={muted}
         onToggleMute={toggleMute}
@@ -1586,7 +1608,33 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 <Users className="w-3 h-3" />{participants.length}
               </span>
             </div>
-            <h3 className="text-sm font-bold mt-0.5 truncate">{spaceTitle}</h3>
+            {editingTitle ? (
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <input
+                  autoFocus
+                  value={editTitleValue}
+                  onChange={(e) => setEditTitleValue(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSaveTitle(); if (e.key === "Escape") setEditingTitle(false); }}
+                  className="text-sm font-bold bg-muted/50 border border-border rounded px-2 py-0.5 flex-1 min-w-0 outline-none focus:ring-1 focus:ring-primary"
+                  maxLength={120}
+                />
+                <button onClick={handleSaveTitle} disabled={savingTitle} className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20">
+                  <Check className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => { setEditingTitle(false); setEditTitleValue(displayTitle); }} className="w-6 h-6 rounded-full bg-muted text-muted-foreground flex items-center justify-center hover:bg-muted/80">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <h3 className="text-sm font-bold mt-0.5 truncate flex items-center gap-1.5">
+                {displayTitle}
+                {isHost && (
+                  <button onClick={() => { setEditTitleValue(displayTitle); setEditingTitle(true); }} className="text-muted-foreground hover:text-foreground transition-colors shrink-0">
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                )}
+              </h3>
+            )}
           </div>
           <div className="flex items-center gap-1">
             {/* Chat toggle with unread badge */}

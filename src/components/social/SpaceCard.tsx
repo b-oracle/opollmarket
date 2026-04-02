@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Radio, Headphones, LogIn, LogOut, Loader2, Bell, BellOff, Calendar, Share2, Play, Pause, Trash2, RotateCcw, RotateCw, Users, TrendingUp, MessageCircle, Clock } from "lucide-react";
+import { Radio, Headphones, LogIn, LogOut, Loader2, Bell, BellOff, Calendar, Share2, Play, Pause, Trash2, RotateCcw, RotateCw, Users, TrendingUp, MessageCircle, Clock, Pencil, Check, X } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { useState, useRef, useEffect } from "react";
 import SpaceShareSheet from "./SpaceShareSheet";
@@ -44,6 +44,23 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
   const [duration, setDuration] = useState(0);
   const [deleting, setDeleting] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [editTitleValue, setEditTitleValue] = useState(space.title);
+  const [savingTitle, setSavingTitle] = useState(false);
+
+  const handleSaveCardTitle = async () => {
+    const trimmed = editTitleValue.trim();
+    if (!trimmed || trimmed === space.title) { setEditingTitle(false); return; }
+    setSavingTitle(true);
+    const { error } = await supabase
+      .from("spaces" as any)
+      .update({ title: trimmed } as any)
+      .eq("id", space.id);
+    if (error) { toast.error("Failed to update title"); }
+    else { queryClient.invalidateQueries({ queryKey: ["spaces"] }); toast.success("Title updated"); }
+    setSavingTitle(false);
+    setEditingTitle(false);
+  };
 
   const isRecorded = space.status === "ended" && space.is_recorded && space.recording_url;
 
@@ -306,7 +323,33 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
                 : formatDistanceToNow(new Date(space.started_at), { addSuffix: true })}
             </p>
           </div>
-          <h4 className="text-sm font-bold mt-0.5 line-clamp-2">{space.title}</h4>
+          {editingTitle ? (
+            <div className="flex items-center gap-1.5 mt-0.5" onClick={(e) => e.stopPropagation()}>
+              <input
+                autoFocus
+                value={editTitleValue}
+                onChange={(e) => setEditTitleValue(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleSaveCardTitle(); if (e.key === "Escape") setEditingTitle(false); }}
+                className="text-sm font-bold bg-muted/50 border border-border rounded px-2 py-0.5 flex-1 min-w-0 outline-none focus:ring-1 focus:ring-primary"
+                maxLength={120}
+              />
+              <button onClick={handleSaveCardTitle} disabled={savingTitle} className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20">
+                <Check className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={() => { setEditingTitle(false); setEditTitleValue(space.title); }} className="w-6 h-6 rounded-full bg-muted text-muted-foreground flex items-center justify-center hover:bg-muted/80">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <h4 className="text-sm font-bold mt-0.5 line-clamp-2 flex items-center gap-1.5">
+              {space.title}
+              {isHost && isScheduled && (
+                <button onClick={(e) => { e.stopPropagation(); setEditTitleValue(space.title); setEditingTitle(true); }} className="text-muted-foreground hover:text-foreground transition-colors shrink-0">
+                  <Pencil className="w-3 h-3" />
+                </button>
+              )}
+            </h4>
+          )}
           <p className="text-[10px] text-muted-foreground mt-0.5">Hosted by {hostName}</p>
         </div>
       </div>
