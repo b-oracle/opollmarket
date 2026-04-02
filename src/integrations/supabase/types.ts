@@ -320,8 +320,10 @@ export type Database = {
           amount: number
           bonus_balance: number
           currency: string
+          gift_balance: number
           id: string
           insurance_balance: number
+          rewards_balance: number
           updated_at: string
           user_id: string
         }
@@ -329,8 +331,10 @@ export type Database = {
           amount?: number
           bonus_balance?: number
           currency?: string
+          gift_balance?: number
           id?: string
           insurance_balance?: number
+          rewards_balance?: number
           updated_at?: string
           user_id: string
         }
@@ -338,8 +342,10 @@ export type Database = {
           amount?: number
           bonus_balance?: number
           currency?: string
+          gift_balance?: number
           id?: string
           insurance_balance?: number
+          rewards_balance?: number
           updated_at?: string
           user_id?: string
         }
@@ -2118,6 +2124,36 @@ export type Database = {
         }
         Relationships: []
       }
+      space_gifts: {
+        Row: {
+          amount: number
+          created_at: string
+          emoji: string
+          id: string
+          recipient_id: string
+          sender_id: string
+          space_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          emoji: string
+          id?: string
+          recipient_id: string
+          sender_id: string
+          space_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          emoji?: string
+          id?: string
+          recipient_id?: string
+          sender_id?: string
+          space_id?: string
+        }
+        Relationships: []
+      }
       space_messages: {
         Row: {
           content: string
@@ -3354,8 +3390,26 @@ export type Database = {
         Args: { _action: string; _escrow_id: string }
         Returns: Json
       }
+      send_space_gift: {
+        Args: {
+          _amount: number
+          _emoji: string
+          _recipient_id: string
+          _sender_id: string
+          _space_id: string
+        }
+        Returns: Json
+      }
       settle_user_debts: { Args: { _user_id: string }; Returns: Json }
+      topup_gift_balance: {
+        Args: { _amount: number; _user_id: string }
+        Returns: Json
+      }
       update_trending_markets: { Args: never; Returns: undefined }
+      withdraw_rewards_balance: {
+        Args: { _amount: number; _user_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user" | "super_admin"

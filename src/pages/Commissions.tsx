@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, DollarSign, Users, Gift, Copy, Clock, Sparkles, PieChart as PieChartIcon, ChevronDown, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { ArrowLeft, DollarSign, Users, Gift, Copy, Clock, Sparkles, PieChart as PieChartIcon, ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Wallet, ArrowDownToLine, ArrowUpFromLine, Award } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
@@ -11,6 +11,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
 import { AnimatePresence, motion } from "framer-motion";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { useUserBalance } from "@/hooks/useUserBalance";
 
 type TabKey = "all" | "creator" | "referral" | "copy_trade" | "signup_bonus" | "pending";
 
@@ -40,7 +45,48 @@ const Commissions = () => {
   const [showChart, setShowChart] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [topUpOpen, setTopUpOpen] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [topUpAmount, setTopUpAmount] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [processing, setProcessing] = useState(false);
   const ITEMS_PER_PAGE = 15;
+  const queryClient = useQueryClient();
+  const { balance, giftBalance, bonusBalance, rewardsBalance, isLoading: balLoading } = useUserBalance();
+
+  const handleTopUp = async () => {
+    const amt = Number(topUpAmount);
+    if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
+    if (amt > balance) { toast.error("Insufficient main balance"); return; }
+    setProcessing(true);
+    const { data, error } = await supabase.rpc("topup_gift_balance", { _user_id: user!.id, _amount: amt } as any);
+    setProcessing(false);
+    if (error || !(data as any)?.success) {
+      toast.error((data as any)?.error || error?.message || "Top up failed");
+      return;
+    }
+    toast.success(`Topped up $${amt.toFixed(2)} to gift balance`);
+    setTopUpOpen(false);
+    setTopUpAmount("");
+    queryClient.invalidateQueries({ queryKey: ["balance"] });
+  };
+
+  const handleWithdraw = async () => {
+    const amt = Number(withdrawAmount);
+    if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
+    if (amt > rewardsBalance) { toast.error("Insufficient rewards balance"); return; }
+    setProcessing(true);
+    const { data, error } = await supabase.rpc("withdraw_rewards_balance", { _user_id: user!.id, _amount: amt } as any);
+    setProcessing(false);
+    if (error || !(data as any)?.success) {
+      toast.error((data as any)?.error || error?.message || "Withdrawal failed");
+      return;
+    }
+    toast.success(`Withdrew $${amt.toFixed(2)} to main balance`);
+    setWithdrawOpen(false);
+    setWithdrawAmount("");
+    queryClient.invalidateQueries({ queryKey: ["balance"] });
+  };
 
   // Fetch pending_commissions (creator + referral, released + pending)
   const { data: pendingCommissions, isLoading: loadingPC } = useQuery({
@@ -380,6 +426,103 @@ const Commissions = () => {
             </button>
           )}
         </div>
+
+        {/* Balance Cards */}
+        <div className="grid grid-cols-3 gap-2 mb-5">
+          <Card className="border-border/50">
+            <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-pink-500 bg-pink-500/10">
+                <Gift className="w-4 h-4" />
+              </div>
+              {balLoading ? <Skeleton className="h-5 w-16" /> : (
+                <span className="text-sm font-bold">${giftBalance.toFixed(2)}</span>
+              )}
+              <span className="text-[10px] text-muted-foreground leading-tight">Gift Balance</span>
+              <button
+                onClick={() => setTopUpOpen(true)}
+                className="flex items-center gap-1 text-[10px] font-medium text-primary hover:underline mt-0.5"
+              >
+                <ArrowDownToLine className="w-3 h-3" /> Top Up
+              </button>
+            </CardContent>
+          </Card>
+          <Card className="border-border/50">
+            <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-amber-500 bg-amber-500/10">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              {balLoading ? <Skeleton className="h-5 w-16" /> : (
+                <span className="text-sm font-bold">${bonusBalance.toFixed(2)}</span>
+              )}
+              <span className="text-[10px] text-muted-foreground leading-tight">Bonus Balance</span>
+            </CardContent>
+          </Card>
+          <Card className="border-border/50">
+            <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-emerald-500 bg-emerald-500/10">
+                <Award className="w-4 h-4" />
+              </div>
+              {balLoading ? <Skeleton className="h-5 w-16" /> : (
+                <span className="text-sm font-bold">${rewardsBalance.toFixed(2)}</span>
+              )}
+              <span className="text-[10px] text-muted-foreground leading-tight">Rewards</span>
+              {rewardsBalance > 0 && (
+                <button
+                  onClick={() => setWithdrawOpen(true)}
+                  className="flex items-center gap-1 text-[10px] font-medium text-primary hover:underline mt-0.5"
+                >
+                  <ArrowUpFromLine className="w-3 h-3" /> Withdraw
+                </button>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Top Up Modal */}
+        <Dialog open={topUpOpen} onOpenChange={setTopUpOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Top Up Gift Balance</DialogTitle>
+            </DialogHeader>
+            <p className="text-xs text-muted-foreground mb-3">
+              Transfer from your main balance (${balance.toFixed(2)}) to your gift balance for sending emoji gifts in Spaces.
+            </p>
+            <Input
+              type="number"
+              placeholder="Amount"
+              value={topUpAmount}
+              onChange={(e) => setTopUpAmount(e.target.value)}
+              min={0.01}
+              step={0.01}
+            />
+            <Button onClick={handleTopUp} disabled={processing} className="w-full mt-2">
+              {processing ? "Processing..." : "Top Up"}
+            </Button>
+          </DialogContent>
+        </Dialog>
+
+        {/* Withdraw Rewards Modal */}
+        <Dialog open={withdrawOpen} onOpenChange={setWithdrawOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Withdraw Rewards</DialogTitle>
+            </DialogHeader>
+            <p className="text-xs text-muted-foreground mb-3">
+              Transfer rewards (${rewardsBalance.toFixed(2)}) to your main balance.
+            </p>
+            <Input
+              type="number"
+              placeholder="Amount"
+              value={withdrawAmount}
+              onChange={(e) => setWithdrawAmount(e.target.value)}
+              min={0.01}
+              step={0.01}
+            />
+            <Button onClick={handleWithdraw} disabled={processing} className="w-full mt-2">
+              {processing ? "Processing..." : "Withdraw to Main"}
+            </Button>
+          </DialogContent>
+        </Dialog>
 
         {/* Pie Chart (collapsible) */}
         <AnimatePresence>
