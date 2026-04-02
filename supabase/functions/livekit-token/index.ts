@@ -112,6 +112,21 @@ Deno.serve(async (req) => {
     const isCoHost = coHostIds.includes(userId);
     const hasModPowers = isHost || isCoHost;
 
+    // Private space join-gating
+    if (space.is_private && !isHost && !isCoHost && !action) {
+      const { count } = await supabaseAdmin
+        .from("space_invites")
+        .select("id", { count: "exact", head: true })
+        .eq("space_id", space_id)
+        .eq("invitee_id", userId);
+      if (!count || count === 0) {
+        return new Response(
+          JSON.stringify({ error: "This is a private Space. You need an invite to join." }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // Helper to ensure host or co-host for moderation actions
     const requireMod = () => {
       if (!hasModPowers) throw new Error("Only the host or co-host can perform this action");
