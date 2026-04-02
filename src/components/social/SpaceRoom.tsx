@@ -138,7 +138,10 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [unreadCount, setUnreadCount] = useState(0);
   const [emojiTarget, setEmojiTarget] = useState<ParticipantInfo | null>(null);
   const [giftBalance, setGiftBalance] = useState<number>(0);
+  const [rewardsBalance, setRewardsBalance] = useState<number>(0);
   const [sendingGift, setSendingGift] = useState(false);
+  const [showSelfStats, setShowSelfStats] = useState(false);
+  const [selfSpaceStats, setSelfSpaceStats] = useState<{ sent: number; received: number; sentCount: number; receivedCount: number }>({ sent: 0, received: 0, sentCount: 0, receivedCount: 0 });
   const loadedMsgIdsRef = useRef<Set<string>>(new Set());
 
   // Fetch gift balance on mount
@@ -147,13 +150,54 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     (async () => {
       const { data } = await supabase
         .from("balances")
-        .select("gift_balance")
+        .select("gift_balance, rewards_balance")
         .eq("user_id", user.id)
         .eq("currency", "USDT")
         .maybeSingle();
-      if (data) setGiftBalance(Number((data as any).gift_balance ?? 0));
+      if (data) {
+        setGiftBalance(Number((data as any).gift_balance ?? 0));
+        setRewardsBalance(Number((data as any).rewards_balance ?? 0));
+      }
     })();
   }, [user]);
+
+  // Fetch self space stats when opening self stats sheet
+  useEffect(() => {
+    if (!showSelfStats || !user) return;
+    (async () => {
+      // Refresh balances
+      const { data: balData } = await supabase
+        .from("balances")
+        .select("gift_balance, rewards_balance")
+        .eq("user_id", user.id)
+        .eq("currency", "USDT")
+        .maybeSingle();
+      if (balData) {
+        setGiftBalance(Number((balData as any).gift_balance ?? 0));
+        setRewardsBalance(Number((balData as any).rewards_balance ?? 0));
+      }
+      // Gifts sent in this space
+      const { data: sentData } = await supabase
+        .from("space_gifts")
+        .select("amount")
+        .eq("sender_id", user.id)
+        .eq("space_id", spaceId);
+      const sentTotal = (sentData || []).reduce((s, r) => s + Number(r.amount), 0);
+      // Gifts received in this space
+      const { data: recvData } = await supabase
+        .from("space_gifts")
+        .select("amount")
+        .eq("recipient_id", user.id)
+        .eq("space_id", spaceId);
+      const recvTotal = (recvData || []).reduce((s, r) => s + Number(r.amount), 0);
+      setSelfSpaceStats({
+        sent: sentTotal,
+        received: recvTotal,
+        sentCount: sentData?.length || 0,
+        receivedCount: recvData?.length || 0,
+      });
+    })();
+  }, [showSelfStats, user, spaceId]);
 
   // Load persisted chat history + subscribe to realtime new messages
   useEffect(() => {
@@ -1859,7 +1903,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     <motion.div key={p.identity} layout className="flex flex-col items-center gap-1"
                       ref={(el: HTMLDivElement | null) => { if (el) avatarRefs.current.set(p.identity, el); else avatarRefs.current.delete(p.identity); }}
                       onClick={() => {
-                        if (p.identity === user?.id) return;
+                        if (p.identity === user?.id) { setShowSelfStats(true); return; }
                         if (hasModPowers && p.identity !== hostId) {
                           setActionTarget(p);
                           setActionType("speaker");
@@ -1904,7 +1948,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                       <div key={p.identity} className="flex flex-col items-center gap-1 cursor-pointer"
                         ref={(el: HTMLDivElement | null) => { if (el) avatarRefs.current.set(p.identity, el); else avatarRefs.current.delete(p.identity); }}
                         onClick={() => {
-                          if (p.identity === user?.id) return;
+                          if (p.identity === user?.id) { setShowSelfStats(true); return; }
                           if (hasModPowers) {
                             setActionTarget(p);
                             setActionType("listener");
@@ -2342,6 +2386,73 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   className="w-full flex items-center justify-center px-4 py-3 rounded-xl bg-muted hover:bg-muted/80 text-muted-foreground transition-colors"
                 >
                   <span className="text-sm font-medium">Cancel</span>
+                </button>
+              </motion.div>
+            </>
+          )}
+
+          {/* Self Stats Sheet */}
+          {showSelfStats && (
+            <>
+              <motion.div
+                key="self-stats-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/40 z-[95]"
+                onClick={() => setShowSelfStats(false)}
+              />
+              <motion.div
+                key="self-stats-sheet"
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 100, opacity: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="absolute bottom-0 inset-x-0 z-[96] bg-card rounded-t-2xl border-t border-border p-5"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <p className="font-semibold text-sm">My Balances & Space Stats</p>
+                  <button onClick={() => setShowSelfStats(false)} className="p-1 rounded-full hover:bg-muted">
+                    <X className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                </div>
+
+                {/* Balances */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="bg-muted rounded-xl p-3 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Gift Balance</p>
+                    <p className={`text-lg font-bold ${giftBalance > 0 ? "text-green-500" : "text-destructive"}`}>
+                      ${giftBalance.toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="bg-muted rounded-xl p-3 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Rewards Balance</p>
+                    <p className="text-lg font-bold text-primary">
+                      ${rewardsBalance.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Space-specific stats */}
+                <p className="text-xs font-semibold text-muted-foreground mb-2">This Space</p>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="bg-muted rounded-xl p-3 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Gifts Sent</p>
+                    <p className="text-base font-bold text-foreground">{selfSpaceStats.sentCount}</p>
+                    <p className="text-[10px] text-muted-foreground">${selfSpaceStats.sent.toFixed(2)} total</p>
+                  </div>
+                  <div className="bg-muted rounded-xl p-3 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Gifts Received</p>
+                    <p className="text-base font-bold text-foreground">{selfSpaceStats.receivedCount}</p>
+                    <p className="text-[10px] text-muted-foreground">${selfSpaceStats.received.toFixed(2)} total</p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setShowSelfStats(false)}
+                  className="w-full flex items-center justify-center px-4 py-3 rounded-xl bg-muted hover:bg-muted/80 text-muted-foreground transition-colors"
+                >
+                  <span className="text-sm font-medium">Close</span>
                 </button>
               </motion.div>
             </>
