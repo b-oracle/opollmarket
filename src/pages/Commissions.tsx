@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useUserBalance } from "@/hooks/useUserBalance";
 
-type TabKey = "all" | "creator" | "referral" | "copy_trade" | "signup_bonus" | "pending";
+type TabKey = "all" | "creator" | "referral" | "copy_trade" | "signup_bonus" | "pending" | "gift_sent" | "gift_received" | "bonus" | "osure";
 
 const tabs: { key: TabKey; label: string; icon: typeof DollarSign }[] = [
   { key: "all", label: "All", icon: DollarSign },
@@ -25,6 +25,10 @@ const tabs: { key: TabKey; label: string; icon: typeof DollarSign }[] = [
   { key: "referral", label: "Referral", icon: Users },
   { key: "copy_trade", label: "Copy Trade", icon: Copy },
   { key: "signup_bonus", label: "Signup Bonus", icon: Gift },
+  { key: "gift_sent", label: "Gifts Sent", icon: Gift },
+  { key: "gift_received", label: "Gifts Received", icon: Gift },
+  { key: "bonus", label: "Bonus", icon: Sparkles },
+  { key: "osure", label: "oSURE", icon: Shield },
   { key: "pending", label: "Pending", icon: Clock },
 ];
 
@@ -135,7 +139,64 @@ const Commissions = () => {
     enabled: !!user?.id,
   });
 
-  // Fetch market titles for all market IDs
+  // Fetch gift transactions (sent & received)
+  const { data: giftsSent, isLoading: loadingGS } = useQuery({
+    queryKey: ["gifts-sent", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("space_gifts")
+        .select("id, amount, emoji, created_at, recipient_id, space_id")
+        .eq("sender_id", user!.id)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!user?.id,
+  });
+
+  const { data: giftsReceived, isLoading: loadingGR } = useQuery({
+    queryKey: ["gifts-received", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("space_gifts")
+        .select("id, amount, emoji, created_at, sender_id, space_id")
+        .eq("recipient_id", user!.id)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!user?.id,
+  });
+
+  // Fetch bonus transactions
+  const { data: bonusTxns, isLoading: loadingBT } = useQuery({
+    queryKey: ["bonus-transactions", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("transactions")
+        .select("id, amount, created_at, type, status")
+        .eq("user_id", user!.id)
+        .in("type", ["bonus", "signup_bonus_credit", "registration_bonus"])
+        .eq("status", "confirmed")
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!user?.id,
+  });
+
+  // Fetch insurance (oSURE) transactions
+  const { data: osureTxns, isLoading: loadingOS } = useQuery({
+    queryKey: ["osure-transactions", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("insurance_claims")
+        .select("id, claim_amount, premium_paid, created_at, status, tier, market_id")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!user?.id,
+  });
+
+
   const allMarketIds = useMemo(() => {
     const ids = new Set<string>();
     (pendingCommissions ?? []).forEach((c) => c.market_id && ids.add(c.market_id));
@@ -202,7 +263,7 @@ const Commissions = () => {
     enabled: allCopierIds.length > 0,
   });
 
-  const isLoading = loadingPC || loadingCT || loadingSB;
+  const isLoading = loadingPC || loadingCT || loadingSB || loadingGS || loadingGR || loadingBT || loadingOS;
 
   // Compute totals
   const totals = useMemo(() => {
@@ -233,6 +294,8 @@ const Commissions = () => {
       copierId?: string | null;
       commissionPercent?: number | null;
       releasesAt?: string | null;
+      emoji?: string | null;
+      description?: string | null;
     }[] = [];
 
     (pendingCommissions ?? []).forEach((c) => {
@@ -271,9 +334,56 @@ const Commissions = () => {
       });
     });
 
+    (giftsSent ?? []).forEach((g) => {
+      records.push({
+        id: g.id,
+        category: "gift_sent",
+        amount: Number(g.amount),
+        date: g.created_at,
+        status: "released",
+        emoji: g.emoji,
+        description: `Sent ${g.emoji} gift`,
+      });
+    });
+
+    (giftsReceived ?? []).forEach((g) => {
+      records.push({
+        id: g.id,
+        category: "gift_received",
+        amount: Number(g.amount),
+        date: g.created_at,
+        status: "released",
+        emoji: g.emoji,
+        description: `Received ${g.emoji} gift`,
+      });
+    });
+
+    (bonusTxns ?? []).forEach((t) => {
+      records.push({
+        id: t.id,
+        category: "bonus",
+        amount: Number(t.amount),
+        date: t.created_at,
+        status: "released",
+        description: "Bonus credit",
+      });
+    });
+
+    (osureTxns ?? []).forEach((t) => {
+      records.push({
+        id: t.id,
+        category: "osure",
+        amount: Number(t.claim_amount),
+        date: t.created_at,
+        status: t.status as "released" | "pending",
+        marketId: t.market_id,
+        description: `Tier ${t.tier} claim`,
+      });
+    });
+
     records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     return records;
-  }, [pendingCommissions, copyEarnings, signupBonuses]);
+  }, [pendingCommissions, copyEarnings, signupBonuses, giftsSent, giftsReceived, bonusTxns, osureTxns]);
 
   const filtered = (activeTab === "all"
     ? allRecords
@@ -297,6 +407,10 @@ const Commissions = () => {
     referral: { label: "Referral", className: "bg-blue-500/10 text-blue-500 border-blue-500/20" },
     copy_trade: { label: "Copy Trade", className: "bg-purple-500/10 text-purple-500 border-purple-500/20" },
     signup_bonus: { label: "Signup Bonus", className: "bg-primary/10 text-primary border-primary/20" },
+    gift_sent: { label: "Gift Sent", className: "bg-pink-500/10 text-pink-500 border-pink-500/20" },
+    gift_received: { label: "Gift Received", className: "bg-green-500/10 text-green-500 border-green-500/20" },
+    bonus: { label: "Bonus", className: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
+    osure: { label: "oSURE", className: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" },
     pending: { label: "Pending", className: "bg-muted text-muted-foreground border-border" },
   };
 
@@ -748,9 +862,13 @@ const Commissions = () => {
                           <span className="text-[10px] text-muted-foreground">⏳ 48h hold</span>
                         )}
                       </div>
-                      <p className="text-[11px] text-muted-foreground">{formatDate(record.date)}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {record.description ? `${record.description} · ` : ""}{formatDate(record.date)}
+                      </p>
                     </div>
-                    <span className="text-sm font-bold text-green-500">+{formatAmount(record.amount)}</span>
+                    <span className={`text-sm font-bold ${record.category === "gift_sent" ? "text-red-500" : "text-green-500"}`}>
+                      {record.category === "gift_sent" ? "-" : "+"}{formatAmount(record.amount)}
+                    </span>
                     <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                   </div>
                   <AnimatePresence>
