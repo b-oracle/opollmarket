@@ -473,8 +473,8 @@ const Commissions = () => {
             </CardContent>
           </Card>
 
-          {/* Revenue Share */}
-          <RevenueShareCard userId={user.id} />
+          {/* oSURE Balance */}
+          <InsuranceBalanceCard insuranceBalance={insuranceBalance} isLoading={balLoading} />
         </div>
 
         {/* Gift Balance Detail Dialog */}
