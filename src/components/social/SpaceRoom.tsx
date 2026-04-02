@@ -2140,6 +2140,15 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                           <span className="text-sm font-medium">Allow to Unmute</span>
                         </button>
                       )}
+                      {remoteHandRaises.has(actionTarget.identity) && (
+                        <button
+                          onClick={() => forceHandDown(actionTarget.identity)}
+                          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-600 transition-colors"
+                        >
+                          <Hand className="w-5 h-5" />
+                          <span className="text-sm font-medium">Lower Hand ✋</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => invokeAction("demote", actionTarget.identity)}
                         disabled={promoting === actionTarget.identity}
