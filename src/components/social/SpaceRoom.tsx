@@ -129,6 +129,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [floatingReactions, setFloatingReactions] = useState<{ id: string; emoji: string; identity: string }[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [emojiTarget, setEmojiTarget] = useState<ParticipantInfo | null>(null);
   const loadedMsgIdsRef = useRef<Set<string>>(new Set());
 
   // Load persisted chat history + subscribe to realtime new messages
