@@ -306,8 +306,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [ambientTrack, setAmbientTrack] = useState<string | null>(null);
   const [showMusicMenu, setShowMusicMenu] = useState(false);
 
-  // Device music state
+   // Device music state
   const [deviceMusicPlaying, setDeviceMusicPlaying] = useState(false);
+  const [djIdentity, setDjIdentity] = useState<string | null>(null);
   const [deviceMusicPaused, setDeviceMusicPaused] = useState(false);
   const [deviceMusicName, setDeviceMusicName] = useState<string | null>(null);
   const [deviceMusicVolume, setDeviceMusicVolume] = useState(0.5);
@@ -760,8 +761,23 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           updateParticipants(room);
         });
 
+        // DJ detection: track who is playing device music
+        room.on(RoomEvent.TrackPublished, (pub, participant) => {
+          if (pub.source === Track.Source.ScreenShareAudio && pub.trackName === "device-music") {
+            setDjIdentity(participant.identity);
+          }
+        });
+        room.on(RoomEvent.TrackUnpublished, (pub, participant) => {
+          if (pub.source === Track.Source.ScreenShareAudio && pub.trackName === "device-music") {
+            setDjIdentity(prev => prev === participant.identity ? null : prev);
+          }
+        });
+
         room.on(RoomEvent.ParticipantConnected, () => updateParticipants(room));
-        room.on(RoomEvent.ParticipantDisconnected, () => updateParticipants(room));
+        room.on(RoomEvent.ParticipantDisconnected, (p) => {
+          setDjIdentity(prev => prev === p.identity ? null : prev);
+          updateParticipants(room);
+        });
         room.on(RoomEvent.TrackMuted, () => updateParticipants(room));
         room.on(RoomEvent.TrackUnmuted, () => updateParticipants(room));
         room.on(RoomEvent.ActiveSpeakersChanged, () => updateParticipants(room));
@@ -1387,6 +1403,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
       setDeviceMusicPlaying(true);
       setDeviceMusicPaused(false);
+      setDjIdentity(user?.id ?? null);
       setDeviceMusicName(file.name);
       setShowMusicMenu(false);
       toast.success(`Now playing: ${file.name} 🎵`);
@@ -1455,6 +1472,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     setDeviceMusicPlaying(false);
     setDeviceMusicPaused(false);
     setDeviceMusicName(null);
+    setDjIdentity(prev => prev === user?.id ? null : prev);
   };
 
   const reactToMessage = (messageId: string, emoji: string) => {
@@ -1683,6 +1701,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         {forceMutedUsers.has(p.identity) && !hasHandUp && !speakRequests.has(p.identity) && (
           <div className="absolute -top-1 -right-1 text-base drop-shadow-md">
             🔇
+          </div>
+        )}
+        {djIdentity === p.identity && (
+          <div className="absolute -top-1 -left-1 text-base animate-pulse drop-shadow-md">
+            🎵
           </div>
         )}
       </div>
@@ -2007,11 +2030,18 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                       {/* Device music section */}
                       <input ref={deviceFileInputRef} type="file" accept=".mp3,.m4a,.wav,.ogg,.flac,.aac,.wma,.opus,audio/mpeg,audio/mp4,audio/wav,audio/ogg,audio/flac,audio/aac" className="hidden" onChange={handleDeviceMusicFile} />
                       {!deviceMusicPlaying ? (
+                        djIdentity && djIdentity !== user?.id ? (
+                          <div className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-muted-foreground">
+                            <Music className="w-3 h-3" />
+                            <span>Someone is already playing music</span>
+                          </div>
+                        ) : (
                         <button onClick={() => deviceFileInputRef.current?.click()}
                           className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs hover:bg-muted text-foreground transition-colors">
                           <Upload className="w-3 h-3" />
                           <span>Play from device</span>
                         </button>
+                        )
                       ) : (
                         <div className="px-3 py-1.5 space-y-1.5">
                           <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">🎵 {deviceMusicName}</p>
