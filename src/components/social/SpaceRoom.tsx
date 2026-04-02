@@ -1608,7 +1608,33 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 <Users className="w-3 h-3" />{participants.length}
               </span>
             </div>
-            <h3 className="text-sm font-bold mt-0.5 truncate">{spaceTitle}</h3>
+            {editingTitle ? (
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <input
+                  autoFocus
+                  value={editTitleValue}
+                  onChange={(e) => setEditTitleValue(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSaveTitle(); if (e.key === "Escape") setEditingTitle(false); }}
+                  className="text-sm font-bold bg-muted/50 border border-border rounded px-2 py-0.5 flex-1 min-w-0 outline-none focus:ring-1 focus:ring-primary"
+                  maxLength={120}
+                />
+                <button onClick={handleSaveTitle} disabled={savingTitle} className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20">
+                  <Check className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => { setEditingTitle(false); setEditTitleValue(displayTitle); }} className="w-6 h-6 rounded-full bg-muted text-muted-foreground flex items-center justify-center hover:bg-muted/80">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <h3 className="text-sm font-bold mt-0.5 truncate flex items-center gap-1.5">
+                {displayTitle}
+                {isHost && (
+                  <button onClick={() => { setEditTitleValue(displayTitle); setEditingTitle(true); }} className="text-muted-foreground hover:text-foreground transition-colors shrink-0">
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                )}
+              </h3>
+            )}
           </div>
           <div className="flex items-center gap-1">
             {/* Chat toggle with unread badge */}
