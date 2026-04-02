@@ -150,13 +150,54 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     (async () => {
       const { data } = await supabase
         .from("balances")
-        .select("gift_balance")
+        .select("gift_balance, rewards_balance")
         .eq("user_id", user.id)
         .eq("currency", "USDT")
         .maybeSingle();
-      if (data) setGiftBalance(Number((data as any).gift_balance ?? 0));
+      if (data) {
+        setGiftBalance(Number((data as any).gift_balance ?? 0));
+        setRewardsBalance(Number((data as any).rewards_balance ?? 0));
+      }
     })();
   }, [user]);
+
+  // Fetch self space stats when opening self stats sheet
+  useEffect(() => {
+    if (!showSelfStats || !user) return;
+    (async () => {
+      // Refresh balances
+      const { data: balData } = await supabase
+        .from("balances")
+        .select("gift_balance, rewards_balance")
+        .eq("user_id", user.id)
+        .eq("currency", "USDT")
+        .maybeSingle();
+      if (balData) {
+        setGiftBalance(Number((balData as any).gift_balance ?? 0));
+        setRewardsBalance(Number((balData as any).rewards_balance ?? 0));
+      }
+      // Gifts sent in this space
+      const { data: sentData } = await supabase
+        .from("space_gifts")
+        .select("amount")
+        .eq("sender_id", user.id)
+        .eq("space_id", spaceId);
+      const sentTotal = (sentData || []).reduce((s, r) => s + Number(r.amount), 0);
+      // Gifts received in this space
+      const { data: recvData } = await supabase
+        .from("space_gifts")
+        .select("amount")
+        .eq("recipient_id", user.id)
+        .eq("space_id", spaceId);
+      const recvTotal = (recvData || []).reduce((s, r) => s + Number(r.amount), 0);
+      setSelfSpaceStats({
+        sent: sentTotal,
+        received: recvTotal,
+        sentCount: sentData?.length || 0,
+        receivedCount: recvData?.length || 0,
+      });
+    })();
+  }, [showSelfStats, user, spaceId]);
 
   // Load persisted chat history + subscribe to realtime new messages
   useEffect(() => {
