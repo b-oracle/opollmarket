@@ -711,7 +711,7 @@ const Commissions = () => {
                 <span className="text-sm font-bold">{formatAmount(insuranceBalance)}</span>
               )}
               <span className="text-[10px] text-muted-foreground leading-tight">oSURE Balance</span>
-              <span className="text-[9px] text-primary font-medium">Tap for info ▸</span>
+              
             </CardContent>
           </Card>
         </div>
