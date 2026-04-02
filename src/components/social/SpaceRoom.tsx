@@ -143,6 +143,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState("");
   const [topUpLoading, setTopUpLoading] = useState(false);
+  const [showAudioPrompt, setShowAudioPrompt] = useState(false);
   const [mainBalance, setMainBalance] = useState<number>(0);
   const [showSelfStats, setShowSelfStats] = useState(false);
   const [selfSpaceStats, setSelfSpaceStats] = useState<{ sent: number; received: number; sentCount: number; receivedCount: number }>({ sent: 0, received: 0, sentCount: 0, receivedCount: 0 });
@@ -930,6 +931,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
         setConnected(true);
         setConnecting(false);
+        setShowAudioPrompt(true);
 
         // Fetch co_host_ids from space
         const { data: spaceData } = await supabase
@@ -2706,6 +2708,53 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           )}
         </AnimatePresence>
       </motion.div>
+
+      {/* Enable Speaker Prompt */}
+      <AnimatePresence>
+        {showAudioPrompt && connected && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200]"
+              onClick={() => setShowAudioPrompt(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="fixed inset-0 z-[200] flex items-center justify-center p-6 pointer-events-none"
+            >
+              <div className="glass-strong rounded-2xl p-6 w-full max-w-xs text-center pointer-events-auto space-y-4">
+                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                  <Volume2 className="w-7 h-7 text-primary" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">Enable Speaker</h3>
+                <p className="text-sm text-muted-foreground">Tap below to hear other participants in this space</p>
+                <button
+                  onClick={async () => {
+                    try {
+                      await roomRef.current?.startAudio();
+                      warmAudioContext();
+                    } catch {}
+                    setShowAudioPrompt(false);
+                  }}
+                  className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors"
+                >
+                  Enable Speaker 🔊
+                </button>
+                <button
+                  onClick={() => setShowAudioPrompt(false)}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Skip
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </AnimatePresence>
   );
 };
