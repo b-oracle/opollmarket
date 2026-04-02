@@ -1373,7 +1373,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
       // Show locally too
       const id = `${Date.now()}-${Math.random()}`;
-      setFloatingReactions((prev) => [...prev, { id, emoji, identity: targetId }]);
+      const label = `You gifted ${emojiTarget.name}`;
+      setFloatingReactions((prev) => [...prev, { id, emoji, identity: targetId, label }]);
       setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
 
       toast.success(`Sent ${emoji} ($${price.toFixed(2)}) to ${emojiTarget.name}!`);
