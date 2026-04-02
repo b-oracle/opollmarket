@@ -118,6 +118,10 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [profiles, setProfiles] = useState<Record<string, ProfileInfo>>({});
   const [isHost, setIsHost] = useState(false);
   const [isCoHost, setIsCoHost] = useState(false);
+  const isHostRef = useRef(false);
+  const isCoHostRef = useRef(false);
+  useEffect(() => { isHostRef.current = isHost; }, [isHost]);
+  useEffect(() => { isCoHostRef.current = isCoHost; }, [isCoHost]);
   const [spaceCoHostIds, setSpaceCoHostIds] = useState<string[]>([]);
   const [handRaised, setHandRaised] = useState(false);
   const [canPublish, setCanPublish] = useState(false);
@@ -478,7 +482,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         if (identity) {
           if (data.raised) {
             setRemoteHandRaises((prev) => new Set(prev).add(identity));
-            toast.info(`${data.senderName || "Someone"} raised their hand ✋`);
+            if (isHostRef.current || isCoHostRef.current) {
+              toast.info(`${data.senderName || "Someone"} raised their hand ✋`);
+            }
           } else {
             setRemoteHandRaises((prev) => {
               const next = new Set(prev);
@@ -491,7 +497,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         const identity = participant?.identity;
         if (identity) {
           setSpeakRequests((prev) => new Set(prev).add(identity));
-          toast.info(`${data.senderName || "Someone"} wants to speak 🎙️`);
+          if (isHostRef.current || isCoHostRef.current) {
+            toast.info(`${data.senderName || "Someone"} wants to speak 🎙️`);
+          }
         }
       } else if (data.type === "speak_request_accepted") {
         setRequestPending(false);
