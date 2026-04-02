@@ -88,7 +88,21 @@ Deno.serve(async (req) => {
       title: "Gift Received! 🎁",
       message: `${senderName} sent you ${emoji} ($${Number(amount).toFixed(2)})`,
       type: "gift",
+      actor_id: senderId,
     });
+
+    // Relay to Telegram
+    try {
+      await adminClient.functions.invoke("telegram-notify", {
+        body: {
+          user_id: recipientId,
+          title: "Gift Received! 🎁",
+          message: `${senderName} sent you ${emoji} ($${Number(amount).toFixed(2)})`,
+          type: "gift",
+          actor_id: senderId,
+        },
+      });
+    } catch (_) { /* best-effort */ }
 
     return new Response(
       JSON.stringify({

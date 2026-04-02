@@ -111,6 +111,13 @@ const NotificationBell = () => {
       return;
     }
 
+    // Gift notifications → navigate to sender's profile
+    if (n.type === "gift" && n.actor_id) {
+      setOpen(false);
+      navigate(`/user/${n.actor_id}`);
+      return;
+    }
+
     // Follower notifications → navigate to follower's profile
     if (n.title.includes("Follower") && n.actor_id) {
       setOpen(false);
