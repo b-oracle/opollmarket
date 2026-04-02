@@ -146,6 +146,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [mainBalance, setMainBalance] = useState<number>(0);
   const [showSelfStats, setShowSelfStats] = useState(false);
   const [selfSpaceStats, setSelfSpaceStats] = useState<{ sent: number; received: number; sentCount: number; receivedCount: number }>({ sent: 0, received: 0, sentCount: 0, receivedCount: 0 });
+  const [giftActivities, setGiftActivities] = useState<Array<{ id: string; emoji: string; amount: number; created_at: string; direction: 'sent' | 'received'; other_name: string; other_id: string }>>([]);
   const loadedMsgIdsRef = useRef<Set<string>>(new Set());
 
   // Fetch gift balance on mount
@@ -183,16 +184,18 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       // Gifts sent in this space
       const { data: sentData } = await supabase
         .from("space_gifts")
-        .select("amount")
+        .select("id, amount, emoji, created_at, recipient_id")
         .eq("sender_id", user.id)
-        .eq("space_id", spaceId);
+        .eq("space_id", spaceId)
+        .order("created_at", { ascending: false });
       const sentTotal = (sentData || []).reduce((s, r) => s + Number(r.amount), 0);
       // Gifts received in this space
       const { data: recvData } = await supabase
         .from("space_gifts")
-        .select("amount")
+        .select("id, amount, emoji, created_at, sender_id")
         .eq("recipient_id", user.id)
-        .eq("space_id", spaceId);
+        .eq("space_id", spaceId)
+        .order("created_at", { ascending: false });
       const recvTotal = (recvData || []).reduce((s, r) => s + Number(r.amount), 0);
       setSelfSpaceStats({
         sent: sentTotal,
@@ -200,6 +203,41 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         sentCount: sentData?.length || 0,
         receivedCount: recvData?.length || 0,
       });
+
+      // Fetch profile names for gift activities
+      const sentIds = (sentData || []).map(g => g.recipient_id).filter(Boolean);
+      const recvIds = (recvData || []).map(g => g.sender_id).filter(Boolean);
+      const allIds = [...new Set([...sentIds, ...recvIds])];
+      let profileMap: Record<string, string> = {};
+      if (allIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, display_name")
+          .in("id", allIds);
+        (profiles || []).forEach((p: any) => { profileMap[p.id] = p.display_name || "Anonymous"; });
+      }
+
+      const activities = [
+        ...(sentData || []).map((g: any) => ({
+          id: g.id,
+          emoji: g.emoji,
+          amount: Number(g.amount),
+          created_at: g.created_at,
+          direction: 'sent' as const,
+          other_name: profileMap[g.recipient_id] || "Anonymous",
+          other_id: g.recipient_id,
+        })),
+        ...(recvData || []).map((g: any) => ({
+          id: g.id,
+          emoji: g.emoji,
+          amount: Number(g.amount),
+          created_at: g.created_at,
+          direction: 'received' as const,
+          other_name: profileMap[g.sender_id] || "Anonymous",
+          other_id: g.sender_id,
+        })),
+      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setGiftActivities(activities);
     })();
   }, [showSelfStats, user, spaceId]);
 
@@ -2519,6 +2557,30 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     <p className="text-[10px] text-muted-foreground">${selfSpaceStats.received.toFixed(2)} total</p>
                   </div>
                 </div>
+
+                {/* Gift Activity List */}
+                {giftActivities.length > 0 && (
+                  <>
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">Gift Activity</p>
+                    <div className="max-h-40 overflow-y-auto space-y-1.5 mb-4 scrollbar-thin">
+                      {giftActivities.map((a) => (
+                        <div key={a.id} className="flex items-center justify-between bg-muted rounded-lg px-3 py-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-base">{a.emoji}</span>
+                            <div className="min-w-0">
+                              <p className="text-xs font-medium text-foreground truncate">
+                                {a.direction === 'sent' ? `You → ${a.other_name}` : `${a.other_name} → You`}
+                              </p>
+                            </div>
+                          </div>
+                          <span className={`text-xs font-bold shrink-0 ${a.direction === 'received' ? 'text-green-500' : 'text-destructive'}`}>
+                            {a.direction === 'received' ? '+' : '-'}${a.amount.toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
 
                 <button
                   onClick={() => setShowSelfStats(false)}
