@@ -2778,6 +2778,75 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         </AnimatePresence>
       </motion.div>
 
+      {/* Invite Users Modal */}
+      <AnimatePresence>
+        {showInviteModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200]"
+              onClick={() => { setShowInviteModal(false); setInviteSearchQuery(""); }}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="fixed inset-0 z-[200] flex items-center justify-center p-6 pointer-events-none"
+            >
+              <div className="glass-strong rounded-2xl p-5 w-full max-w-sm pointer-events-auto space-y-3 max-h-[70vh] overflow-y-auto">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold flex items-center gap-2">
+                    <UserPlus className="w-5 h-5 text-primary" />
+                    Invite to Space
+                  </h3>
+                  <button onClick={() => { setShowInviteModal(false); setInviteSearchQuery(""); }} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <input
+                    value={inviteSearchQuery}
+                    onChange={(e) => setInviteSearchQuery(e.target.value)}
+                    placeholder="Search users…"
+                    className="w-full bg-muted/50 border border-border rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground"
+                    autoFocus
+                  />
+                </div>
+                <div className="space-y-1 max-h-60 overflow-y-auto">
+                  {inviteSearching && <p className="text-xs text-muted-foreground text-center py-4"><Loader2 className="w-3 h-3 animate-spin inline mr-1" />Searching…</p>}
+                  {!inviteSearching && inviteSearchQuery.trim() && inviteSearchResults.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-4">No users found</p>
+                  )}
+                  {inviteSearchResults.map((u) => (
+                    <div key={u.id} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted/50 transition-colors">
+                      <div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">
+                        {u.avatar_url ? (
+                          <img src={optimizedImg(u.avatar_url, "avatar-sm")} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xs font-bold">{(u.display_name || "?").charAt(0).toUpperCase()}</span>
+                        )}
+                      </div>
+                      <span className="text-sm truncate flex-1">{u.display_name}</span>
+                      <button
+                        onClick={() => handleSendInvite(u.id, u.display_name)}
+                        disabled={inviteSending === u.id}
+                        className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-50 flex items-center gap-1"
+                      >
+                        {inviteSending === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserPlus className="w-3 h-3" />}
+                        Invite
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Enable Speaker Prompt */}
       <AnimatePresence>
         {showAudioPrompt && connected && (
