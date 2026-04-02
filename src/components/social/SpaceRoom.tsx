@@ -83,6 +83,26 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const { isFeatureEnabled } = useFeatureToggles();
   const queryClient = useQueryClient();
   const { minimized, toggleMinimize } = useActiveSpace();
+
+  // Editable title state
+  const [displayTitle, setDisplayTitle] = useState(spaceTitle);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [editTitleValue, setEditTitleValue] = useState(spaceTitle);
+  const [savingTitle, setSavingTitle] = useState(false);
+
+  const handleSaveTitle = async () => {
+    const trimmed = editTitleValue.trim();
+    if (!trimmed || trimmed === displayTitle) { setEditingTitle(false); return; }
+    setSavingTitle(true);
+    const { error } = await supabase
+      .from("spaces" as any)
+      .update({ title: trimmed } as any)
+      .eq("id", spaceId);
+    if (error) { toast.error("Failed to update title"); }
+    else { setDisplayTitle(trimmed); queryClient.invalidateQueries({ queryKey: ["spaces"] }); }
+    setSavingTitle(false);
+    setEditingTitle(false);
+  };
   const roomRef = useRef<Room | null>(null);
   const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
   const chatEndRef = useRef<HTMLDivElement>(null);
