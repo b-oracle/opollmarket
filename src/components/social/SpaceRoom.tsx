@@ -2527,6 +2527,104 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             </>
           )}
         </AnimatePresence>
+        {/* Inline Top-Up Gift Balance Modal */}
+        <AnimatePresence>
+          {showTopUpModal && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[70] bg-black/60"
+                onClick={() => setShowTopUpModal(false)}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-[71] bg-card border border-border rounded-2xl p-5 max-w-sm mx-auto shadow-xl"
+              >
+                <h3 className="text-base font-bold text-foreground mb-1">Top Up Gift Balance</h3>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Transfer from your wallet balance to gift balance.
+                </p>
+
+                <div className="space-y-3 mb-4">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Wallet Balance</span>
+                    <span className="font-semibold text-foreground">${mainBalance.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Current Gift Balance</span>
+                    <span className="font-semibold text-foreground">${giftBalance.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <label className="text-xs text-muted-foreground mb-1 block">Amount ($)</label>
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    max={mainBalance}
+                    value={topUpAmount}
+                    onChange={(e) => setTopUpAmount(e.target.value)}
+                    placeholder="Enter amount"
+                    className="w-full px-3 py-2 rounded-lg bg-muted border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                <div className="flex gap-2 mb-3">
+                  {[1, 2, 5, 10].map((amt) => (
+                    <button
+                      key={amt}
+                      onClick={() => setTopUpAmount(String(Math.min(amt, mainBalance)))}
+                      disabled={mainBalance < amt}
+                      className="flex-1 py-1.5 rounded-lg bg-muted hover:bg-muted/80 text-xs font-semibold text-foreground border border-border disabled:opacity-40 transition-colors"
+                    >
+                      ${amt}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowTopUpModal(false)}
+                    className="flex-1 py-2.5 rounded-xl bg-muted text-muted-foreground text-sm font-medium hover:bg-muted/80 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const amt = parseFloat(topUpAmount);
+                      if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
+                      if (amt > mainBalance) { toast.error("Insufficient wallet balance"); return; }
+                      setTopUpLoading(true);
+                      const { data, error } = await supabase.rpc("topup_gift_balance", {
+                        _user_id: user!.id,
+                        _amount: amt,
+                      });
+                      if (error || (data as any)?.error) {
+                        toast.error((data as any)?.error || error?.message || "Top-up failed");
+                      } else {
+                        setGiftBalance((prev) => prev + amt);
+                        setMainBalance((prev) => prev - amt);
+                        toast.success(`$${amt.toFixed(2)} added to gift balance`);
+                        setShowTopUpModal(false);
+                        queryClient.invalidateQueries({ queryKey: ["balance"] });
+                      }
+                      setTopUpLoading(false);
+                    }}
+                    disabled={topUpLoading || !topUpAmount || parseFloat(topUpAmount) <= 0}
+                    className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  >
+                    {topUpLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Top Up"}
+                  </button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </motion.div>
     </AnimatePresence>
   );
