@@ -58,6 +58,7 @@ const Commissions = () => {
   const [processing, setProcessing] = useState(false);
   const [bonusInfoOpen, setBonusInfoOpen] = useState(false);
   const [osureInfoOpen, setOsureInfoOpen] = useState(false);
+  const [summaryCardInfo, setSummaryCardInfo] = useState<{ label: string; description: string } | null>(null);
   const ITEMS_PER_PAGE = 15;
   const queryClient = useQueryClient();
   const { balance, giftBalance, bonusBalance, rewardsBalance, insuranceBalance, totalGiftBalance, isLoading: balLoading } = useUserBalance();
@@ -394,12 +395,12 @@ const Commissions = () => {
 
 
   const summaryCards = [
-    { label: "Total Earned", value: totals.total, icon: DollarSign, color: "text-green-500 bg-green-500/10" },
-    { label: "Creator", value: totals.creator, icon: Gem, color: "text-violet-500 bg-violet-500/10" },
-    { label: "Referral", value: totals.referral, icon: Users, color: "text-blue-500 bg-blue-500/10" },
-    { label: "Copy Trade", value: totals.copyTrade, icon: Copy, color: "text-purple-500 bg-purple-500/10" },
-    { label: "Signup Bonus", value: totals.signup, icon: Gift, color: "text-primary bg-primary/10" },
-    { label: "Pending", value: totals.pending, icon: Clock, color: "text-muted-foreground bg-muted" },
+    { label: "Total Earned", value: totals.total, icon: DollarSign, color: "text-green-500 bg-green-500/10", description: "The total amount earned across all commission types including creator fees, referral bonuses, copy trade commissions, and signup bonuses." },
+    { label: "Creator", value: totals.creator, icon: Gem, color: "text-violet-500 bg-violet-500/10", description: "Earnings from markets you created. You earn a creator fee each time someone places a prediction on your market." },
+    { label: "Referral", value: totals.referral, icon: Users, color: "text-blue-500 bg-blue-500/10", description: "Commission earned when users you referred place predictions. You earn a percentage of the platform fee from their trades." },
+    { label: "Copy Trade", value: totals.copyTrade, icon: Copy, color: "text-purple-500 bg-purple-500/10", description: "Commission earned when other users copy your trades and make a profit. You receive a percentage of their gains." },
+    { label: "Signup Bonus", value: totals.signup, icon: Gift, color: "text-primary bg-primary/10", description: "One-time bonus rewards credited when users you referred successfully sign up and verify their account." },
+    { label: "Pending", value: totals.pending, icon: Clock, color: "text-muted-foreground bg-muted", description: "Commissions that are still within the 48-hour hold period. Once released, they will be added to your main balance." },
   ];
 
   const categoryBadge: Record<string, { label: string; className: string }> = {
@@ -642,7 +643,11 @@ const Commissions = () => {
         {/* Summary Cards */}
         <div className="grid grid-cols-3 gap-2 mb-2">
           {summaryCards.map((card) => (
-            <Card key={card.label} className="border-border/50">
+            <Card
+              key={card.label}
+              className="border-border/50 cursor-pointer hover:border-primary/30 transition-colors"
+              onClick={() => setSummaryCardInfo({ label: card.label, description: card.description })}
+            >
               <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${card.color}`}>
                   <card.icon className="w-4 h-4" />
@@ -673,7 +678,7 @@ const Commissions = () => {
                 <span className="text-sm font-bold">{formatAmount(totalGiftBalance)}</span>
               )}
               <span className="text-[10px] text-muted-foreground leading-tight">Gift Balance</span>
-              <span className="text-[9px] text-primary font-medium">Tap for details ▸</span>
+              <span className="text-[9px] text-primary font-medium">Tap to top up ▸</span>
             </CardContent>
           </Card>
 
@@ -690,7 +695,6 @@ const Commissions = () => {
                 <span className="text-sm font-bold">{formatAmount(bonusBalance)}</span>
               )}
               <span className="text-[10px] text-muted-foreground leading-tight">Bonus Balance</span>
-              <span className="text-[9px] text-primary font-medium">Tap for info ▸</span>
             </CardContent>
           </Card>
 
@@ -707,7 +711,7 @@ const Commissions = () => {
                 <span className="text-sm font-bold">{formatAmount(insuranceBalance)}</span>
               )}
               <span className="text-[10px] text-muted-foreground leading-tight">oSURE Balance</span>
-              <span className="text-[9px] text-primary font-medium">Tap for info ▸</span>
+              
             </CardContent>
           </Card>
         </div>
@@ -843,7 +847,18 @@ const Commissions = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Tabs */}
+        {/* Summary Card Info Dialog */}
+        <Dialog open={!!summaryCardInfo} onOpenChange={(open) => { if (!open) setSummaryCardInfo(null); }}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>{summaryCardInfo?.label}</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {summaryCardInfo?.description}
+            </p>
+          </DialogContent>
+        </Dialog>
+
         <div className="flex gap-1.5 overflow-x-auto pb-2 mb-4 scrollbar-hide">
           {tabs.map((tab) => (
             <button
