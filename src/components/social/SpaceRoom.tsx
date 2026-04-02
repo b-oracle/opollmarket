@@ -2535,62 +2535,87 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[70] bg-black/60"
+                className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm"
                 onClick={() => setShowTopUpModal(false)}
               />
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-[71] bg-card border border-border rounded-2xl p-5 max-w-sm mx-auto shadow-xl"
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 28, stiffness: 300 }}
+                className="fixed bottom-0 inset-x-0 z-[71] bg-card border-t border-border rounded-t-3xl px-5 pt-4 pb-8 max-w-lg mx-auto shadow-2xl"
               >
-                <h3 className="text-base font-bold text-foreground mb-1">Top Up Gift Balance</h3>
-                <p className="text-xs text-muted-foreground mb-4">
-                  Transfer from your wallet balance to gift balance.
-                </p>
+                {/* Drag handle */}
+                <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-4" />
 
-                <div className="space-y-3 mb-4">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Wallet Balance</span>
-                    <span className="font-semibold text-foreground">${mainBalance.toFixed(2)}</span>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">💸</span>
+                    <h3 className="text-base font-bold text-foreground">Top Up Gift Balance</h3>
                   </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Current Gift Balance</span>
-                    <span className="font-semibold text-foreground">${giftBalance.toFixed(2)}</span>
+                  <button
+                    onClick={() => setShowTopUpModal(false)}
+                    className="p-1.5 rounded-full hover:bg-muted transition-colors"
+                  >
+                    <X className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                </div>
+
+                {/* Balance display cards */}
+                <div className="grid grid-cols-2 gap-3 mb-5">
+                  <div className="bg-muted/50 rounded-xl p-3 text-center border border-border">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Wallet</p>
+                    <p className="text-lg font-bold text-foreground">${mainBalance.toFixed(2)}</p>
+                  </div>
+                  <div className="bg-muted/50 rounded-xl p-3 text-center border border-border">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Gift Balance</p>
+                    <p className="text-lg font-bold text-primary">${giftBalance.toFixed(2)}</p>
                   </div>
                 </div>
 
-                <div className="mb-3">
-                  <label className="text-xs text-muted-foreground mb-1 block">Amount ($)</label>
-                  <input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    max={mainBalance}
-                    value={topUpAmount}
-                    onChange={(e) => setTopUpAmount(e.target.value)}
-                    placeholder="Enter amount"
-                    className="w-full px-3 py-2 rounded-lg bg-muted border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-
-                <div className="flex gap-2 mb-3">
+                {/* Quick amount buttons */}
+                <p className="text-xs text-muted-foreground mb-2">Quick select</p>
+                <div className="grid grid-cols-4 gap-2 mb-4">
                   {[1, 2, 5, 10].map((amt) => (
                     <button
                       key={amt}
                       onClick={() => setTopUpAmount(String(Math.min(amt, mainBalance)))}
                       disabled={mainBalance < amt}
-                      className="flex-1 py-1.5 rounded-lg bg-muted hover:bg-muted/80 text-xs font-semibold text-foreground border border-border disabled:opacity-40 transition-colors"
+                      className={`py-2.5 rounded-xl text-sm font-bold border transition-all ${
+                        topUpAmount === String(Math.min(amt, mainBalance)) && parseFloat(topUpAmount) === Math.min(amt, mainBalance)
+                          ? "bg-primary/15 border-primary text-primary ring-1 ring-primary/30"
+                          : "bg-muted border-border text-foreground hover:bg-muted/80"
+                      } disabled:opacity-30`}
                     >
                       ${amt}
                     </button>
                   ))}
                 </div>
 
-                <div className="flex gap-2">
+                {/* Custom amount */}
+                <div className="mb-5">
+                  <label className="text-xs text-muted-foreground mb-1.5 block">Custom amount</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">$</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min="0.01"
+                      step="0.01"
+                      max={mainBalance}
+                      value={topUpAmount}
+                      onChange={(e) => setTopUpAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full pl-7 pr-3 py-3 rounded-xl bg-muted border border-border text-foreground text-base font-medium focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex gap-3">
                   <button
                     onClick={() => setShowTopUpModal(false)}
-                    className="flex-1 py-2.5 rounded-xl bg-muted text-muted-foreground text-sm font-medium hover:bg-muted/80 transition-colors"
+                    className="flex-1 py-3 rounded-xl bg-muted text-muted-foreground text-sm font-semibold hover:bg-muted/80 transition-colors"
                   >
                     Cancel
                   </button>
@@ -2616,9 +2641,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                       setTopUpLoading(false);
                     }}
                     disabled={topUpLoading || !topUpAmount || parseFloat(topUpAmount) <= 0}
-                    className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    className="flex-[1.5] py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    {topUpLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Top Up"}
+                    {topUpLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Top Up 💸"}
                   </button>
                 </div>
               </motion.div>
