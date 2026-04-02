@@ -365,9 +365,16 @@ export default function QuickTrade() {
       const prev = prevStreakRef.current;
       const curr = newStreak.current_streak;
 
-      // Trigger milestone celebration when crossing 3 or 5
-      if (curr >= 3 && prev < curr && (curr === 3 || curr === 5)) {
-        setMilestoneModal({ open: true, streak: curr, multiplier: getStreakMultiplier(curr) });
+      // Trigger milestone celebration only once per session per milestone
+      if (curr >= 3 && (curr === 3 || curr === 5) && !shownMilestonesRef.current.has(curr)) {
+        // Only show if streak actually increased (not on initial load with existing streak)
+        if (prevStreakRef.current !== -1 && prevStreakRef.current < curr) {
+          shownMilestonesRef.current.add(curr);
+          setMilestoneModal({ open: true, streak: curr, multiplier: getStreakMultiplier(curr) });
+        } else if (prevStreakRef.current === -1) {
+          // First load — just mark as shown so it doesn't pop up later
+          shownMilestonesRef.current.add(curr);
+        }
       }
 
       prevStreakRef.current = curr;
