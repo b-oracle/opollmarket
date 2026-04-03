@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
+import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -99,7 +100,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const { isFeatureEnabled } = useFeatureToggles();
   const queryClient = useQueryClient();
   const { minimized, toggleMinimize } = useActiveSpace();
-
+  const { data: commissionSettings } = useCommissionSettings();
+  const giftFeePercent = commissionSettings?.gift_fee_percent ?? 2;
   // Editable title state
   const [displayTitle, setDisplayTitle] = useState(spaceTitle);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -2803,7 +2805,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     {renderAvatar(emojiTarget, "lg")}
                     <div>
                       <p className="font-semibold text-sm">Send gift to {emojiTarget.name}</p>
-                      <p className="text-xs text-muted-foreground">Emoji gifts deduct from your gift balance</p>
+                      <p className="text-xs text-muted-foreground">Emoji gifts deduct from your gift balance ({giftFeePercent}% fee)</p>
                     </div>
                   </div>
                   <div className="text-right">

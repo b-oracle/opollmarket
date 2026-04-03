@@ -99,6 +99,7 @@ const AdminSettings = () => {
   const [osure100Premium, setOsure100Premium] = useState("30");
   const [welcomeBonusPercent, setWelcomeBonusPercent] = useState("0");
   const [welcomeBonusCap, setWelcomeBonusCap] = useState("0");
+  const [giftFeePercent, setGiftFeePercent] = useState("2");
   const [payazaMode, setPayazaMode] = useState<"checkout_sdk" | "direct_api">("direct_api"); // kept for save compatibility
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -169,6 +170,7 @@ const AdminSettings = () => {
         setOsure100Premium(String(d.osure_100_premium ?? 30));
         setWelcomeBonusPercent(String(d.welcome_bonus_percent ?? 0));
         setWelcomeBonusCap(String(d.welcome_bonus_cap ?? 0));
+        setGiftFeePercent(String(d.gift_fee_percent ?? 2));
         setSettingsId(d.id);
       }
       if (error) console.error(error);
@@ -223,6 +225,7 @@ const AdminSettings = () => {
   const osure100PremiumNum = parseFloat(osure100Premium) || 30;
   const welcomeBonusPercentNum = parseFloat(welcomeBonusPercent) || 0;
   const welcomeBonusCapNum = parseFloat(welcomeBonusCap) || 0;
+  const giftFeePercentNum = parseFloat(giftFeePercent) || 2;
 
   // Splits must sum to ≤ 100 — platform keeps the remainder
   const splitTotalGold = creatorGoldNum + referrerCommissionNum + bc400PoolPercentNum;
@@ -332,9 +335,10 @@ const AdminSettings = () => {
                   osure_25_premium: osure25PremiumNum,
                   osure_50_premium: osure50PremiumNum,
                   osure_100_premium: osure100PremiumNum,
-                  welcome_bonus_percent: welcomeBonusPercentNum,
-                  welcome_bonus_cap: welcomeBonusCapNum,
-           updated_at: new Date().toISOString(),
+                   welcome_bonus_percent: welcomeBonusPercentNum,
+                   welcome_bonus_cap: welcomeBonusCapNum,
+                   gift_fee_percent: giftFeePercentNum,
+            updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
         .eq("id", settingsId);
@@ -384,8 +388,9 @@ const AdminSettings = () => {
                payaza_mode: payazaMode,
                 qt_one_sided_bonus: qtOneSidedBonus,
                  bc400_pool_percent: bc400PoolPercentNum,
-                 welcome_bonus_percent: welcomeBonusPercentNum,
-                 welcome_bonus_cap: welcomeBonusCapNum,
+                  welcome_bonus_percent: welcomeBonusPercentNum,
+                  welcome_bonus_cap: welcomeBonusCapNum,
+                  gift_fee_percent: giftFeePercentNum,
         },
       });
 
@@ -1058,6 +1063,23 @@ const AdminSettings = () => {
                 {welcomeBonusPercentNum > 0 && welcomeBonusCapNum > 0 && (
                   <p className="text-[10px] text-muted-foreground">Example: $20 deposit → ${Math.min(20 * welcomeBonusPercentNum / 100, welcomeBonusCapNum).toFixed(2)} bonus</p>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Gift Fee */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Gift className="w-4 h-4 text-primary" /> Gift Fee
+                </CardTitle>
+                <CardDescription className="text-xs">Fee charged on all emoji gift transactions (Spaces & DMs). The fee is deducted from the gift amount before crediting the recipient.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="giftFeePercent" className="text-xs">Gift Fee (%)</Label>
+                  <Input id="giftFeePercent" type="number" min={0} max={100} step={0.5} value={giftFeePercent} onChange={(e) => setGiftFeePercent(e.target.value)} disabled={!canEdit} />
+                  <p className="text-[10px] text-muted-foreground">Current: {giftFeePercentNum}% — e.g. $1.00 gift → recipient gets ${(1 - 1 * giftFeePercentNum / 100).toFixed(2)}</p>
+                </div>
               </CardContent>
             </Card>
           </div>

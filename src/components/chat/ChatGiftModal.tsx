@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserBalance } from "@/hooks/useUserBalance";
+import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -39,6 +40,8 @@ const EMOJI_PRICES: Record<string, number> = {
 const ChatGiftModal = ({ open, onClose, conversationId, recipientId, recipientName }: ChatGiftModalProps) => {
   const { user } = useAuth();
   const { giftBalance } = useUserBalance();
+  const { data: settings } = useCommissionSettings();
+  const giftFeePercent = settings?.gift_fee_percent ?? 2;
   const [sending, setSending] = useState<string | null>(null);
   const [lastSentAt, setLastSentAt] = useState(0);
   const queryClient = useQueryClient();
@@ -83,7 +86,7 @@ const ChatGiftModal = ({ open, onClose, conversationId, recipientId, recipientNa
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-base font-semibold text-foreground">Send gift to {recipientName}</h3>
-            <p className="text-xs text-muted-foreground">Emoji gifts deduct from your gift balance</p>
+            <p className="text-xs text-muted-foreground">Emoji gifts deduct from your gift balance ({giftFeePercent}% fee)</p>
           </div>
           <div className="text-right">
             <p className="text-xs text-muted-foreground">Gift Balance</p>
