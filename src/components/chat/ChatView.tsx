@@ -171,6 +171,13 @@ const ChatView = () => {
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-2" style={{ paddingBottom: "80px" }}>
+        {messages.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full text-center px-6 py-20">
+            <span className="text-6xl mb-4">💬</span>
+            <h3 className="text-lg font-semibold text-foreground mb-1">No messages here yet...</h3>
+            <p className="text-sm text-muted-foreground">Send a message or a gift to start the conversation.</p>
+          </div>
+        )}
         {messages.map((m) => {
           const isMine = m.sender_id === user?.id;
           const isGift = m.gift_amount != null && m.gift_amount > 0;
