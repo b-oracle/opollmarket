@@ -3070,6 +3070,73 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             </>
           )}
         </AnimatePresence>
+
+        {/* Inline Convert Rewards to Gift Modal */}
+        <AnimatePresence>
+          {showConvertModal && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[100] bg-black/60"
+                onClick={() => setShowConvertModal(false)}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="fixed left-4 right-4 bottom-24 z-[101] bg-card rounded-2xl p-5 shadow-xl border border-border max-w-sm mx-auto"
+              >
+                <h3 className="text-sm font-bold text-foreground mb-1">Convert to Gift Balance</h3>
+                <p className="text-[11px] text-muted-foreground mb-3">
+                  Move rewards to your gift balance so you can send emoji gifts.
+                </p>
+                <p className="text-xs text-muted-foreground mb-2">Available: <span className="font-semibold text-primary">${rewardsBalance.toFixed(2)}</span></p>
+                <input
+                  type="number"
+                  value={convertAmount}
+                  onChange={(e) => setConvertAmount(e.target.value)}
+                  placeholder="Amount"
+                  min={0.01}
+                  step={0.01}
+                  className="w-full px-3 py-2.5 rounded-xl bg-muted text-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-primary mb-3"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowConvertModal(false)}
+                    className="flex-1 py-2.5 rounded-xl bg-muted text-muted-foreground text-sm font-medium hover:bg-muted/80 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const amt = parseFloat(convertAmount);
+                      if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
+                      if (amt > rewardsBalance) { toast.error("Insufficient rewards balance"); return; }
+                      setConvertLoading(true);
+                      const { data, error } = await supabase.rpc("transfer_rewards_to_gift", { _user_id: user!.id, _amount: amt } as any);
+                      if (error || !(data as any)?.success) {
+                        toast.error((data as any)?.error || error?.message || "Transfer failed");
+                      } else {
+                        setRewardsBalance((prev) => prev - amt);
+                        setGiftBalance((prev) => prev + amt);
+                        toast.success(`$${amt.toFixed(2)} converted to gift balance`);
+                        setShowConvertModal(false);
+                        queryClient.invalidateQueries({ queryKey: ["balance"] });
+                      }
+                      setConvertLoading(false);
+                    }}
+                    disabled={convertLoading || !convertAmount || parseFloat(convertAmount) <= 0}
+                    className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  >
+                    {convertLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Convert"}
+                  </button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </motion.div>
 
       {/* Invite Users Modal */}
