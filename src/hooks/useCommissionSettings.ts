@@ -111,6 +111,7 @@ export const useCommissionSettings = () => {
         ai_generation_cost: Number(d.ai_generation_cost ?? 0.5),
         welcome_bonus_percent: Number(d.welcome_bonus_percent ?? 0),
         welcome_bonus_cap: Number(d.welcome_bonus_cap ?? 0),
+        gift_fee_percent: Number(d.gift_fee_percent ?? 2),
       };
     },
     staleTime: 60_000,
