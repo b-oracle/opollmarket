@@ -35,10 +35,15 @@ import {
   Unlock,
   Pencil,
   Check,
+  Video,
+  VideoOff,
+  Monitor,
+  MonitorOff,
 } from "lucide-react";
 import NftBadge, { VerificationLevel } from "@/components/NftBadge";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
 import SpaceMiniPlayer from "./SpaceMiniPlayer";
+import SpaceVideoGrid from "./SpaceVideoGrid";
 import TaggedMarketsCarousel from "./TaggedMarketsCarousel";
 import { SOUND_REACTIONS, playSoundById, AMBIENT_TRACKS, startAmbient, stopAmbient, isAmbientPlaying, warmAudioContext } from "@/lib/spaceSounds";
 import { Music, ChevronDown, Upload, Square, Play, Pause, Search } from "lucide-react";
@@ -59,6 +64,10 @@ interface ParticipantInfo {
   audioTrack: boolean;
   canPublish: boolean;
   handRaised?: boolean;
+  hasVideo?: boolean;
+  hasScreenShare?: boolean;
+  videoTrack?: any;
+  screenShareTrack?: any;
 }
 
 interface ProfileInfo {
@@ -132,7 +141,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [canPublish, setCanPublish] = useState(false);
   const [promoting, setPromoting] = useState<string | null>(null);
 
-  // Chat state
+  // Video & Screen Share state
+  const [cameraOn, setCameraOn] = useState(false);
+  const [screenShareOn, setScreenShareOn] = useState(false);
+  const videoElementsRef = useRef<Map<string, HTMLVideoElement>>(new Map());
+
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -589,6 +602,17 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const updateParticipants = useCallback((room: Room) => {
     const all: ParticipantInfo[] = [];
     const addP = (p: any) => {
+      let videoTrack: any = null;
+      let screenShareTrack: any = null;
+      p.videoTrackPublications?.forEach((pub: any) => {
+        if (pub.track && pub.isSubscribed !== false) {
+          if (pub.source === Track.Source.ScreenShare) {
+            screenShareTrack = pub.track;
+          } else if (pub.source === Track.Source.Camera) {
+            videoTrack = pub.track;
+          }
+        }
+      });
       all.push({
         identity: p.identity,
         name: p.name || p.identity.slice(0, 8),
@@ -596,6 +620,10 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         isMuted: !p.isMicrophoneEnabled,
         audioTrack: p.audioTrackPublications.size > 0,
         canPublish: p.permissions?.canPublish ?? false,
+        hasVideo: !!videoTrack,
+        hasScreenShare: !!screenShareTrack,
+        videoTrack,
+        screenShareTrack,
       });
     };
     addP(room.localParticipant);
@@ -1076,7 +1104,43 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     } catch { toast.error("Microphone access denied"); }
   };
 
-  const handleMuteAll = async () => {
+  // Check if current user is verified (blue or gold)
+  const myProfile = profiles[user?.id || ""];
+  const isVerified = myProfile?.verification_level === "blue" || myProfile?.verification_level === "gold";
+  const canUseVideo = isVerified && canPublish && isFeatureEnabled("live_streaming");
+
+  const toggleCamera = async () => {
+    if (!roomRef.current || !canUseVideo) {
+      if (!isVerified) toast.error("Video is available for verified users only");
+      return;
+    }
+    try {
+      await roomRef.current.localParticipant.setCameraEnabled(!cameraOn);
+      setCameraOn(!cameraOn);
+      updateParticipants(roomRef.current);
+    } catch {
+      toast.error("Camera access denied");
+    }
+  };
+
+  const toggleScreenShare = async () => {
+    if (!roomRef.current || !canUseVideo) {
+      if (!isVerified) toast.error("Screen sharing is available for verified users only");
+      return;
+    }
+    try {
+      await roomRef.current.localParticipant.setScreenShareEnabled(!screenShareOn);
+      setScreenShareOn(!screenShareOn);
+      updateParticipants(roomRef.current);
+    } catch (err: any) {
+      if (err?.message?.includes("denied") || err?.message?.includes("cancel")) {
+        // User cancelled the screen share picker
+      } else {
+        toast.error("Screen share failed");
+      }
+    }
+  };
+
     await invokeAction("mute_all");
     // Broadcast force-mute to all via data channel
     if (roomRef.current) {
@@ -2047,6 +2111,43 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             </div>
           ) : (
             <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
+              {/* Video Grid — show when anyone has video or screen share */}
+              {isFeatureEnabled("live_streaming") && (() => {
+                const videoParticipants = participants.flatMap((p) => {
+                  const items: any[] = [];
+                  if (p.hasVideo && p.videoTrack) {
+                    items.push({
+                      identity: p.identity,
+                      name: p.name,
+                      isMuted: p.isMuted,
+                      isScreenShare: false,
+                      track: p.videoTrack,
+                      verificationLevel: profiles[p.identity]?.verification_level,
+                      avatarUrl: profiles[p.identity]?.avatar_url,
+                      isHost: p.identity === hostId,
+                      isCoHost: spaceCoHostIds.includes(p.identity),
+                    });
+                  }
+                  if (p.hasScreenShare && p.screenShareTrack) {
+                    items.push({
+                      identity: p.identity,
+                      name: `${p.name}'s screen`,
+                      isMuted: p.isMuted,
+                      isScreenShare: true,
+                      track: p.screenShareTrack,
+                      verificationLevel: profiles[p.identity]?.verification_level,
+                      avatarUrl: profiles[p.identity]?.avatar_url,
+                      isHost: p.identity === hostId,
+                      isCoHost: spaceCoHostIds.includes(p.identity),
+                    });
+                  }
+                  return items;
+                });
+                return videoParticipants.length > 0 ? (
+                  <SpaceVideoGrid videoParticipants={videoParticipants} hostId={hostId} />
+                ) : null;
+              })()}
+
               {/* Speakers */}
               <div>
                 <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
@@ -2258,6 +2359,28 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 }`}
                 title={forceMuted ? "Muted by host" : muted ? "Unmute" : "Mute"}>
                 {forceMuted ? <Lock className="w-5 h-5" /> : muted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              </button>
+            )}
+
+            {/* Camera toggle — verified speakers only */}
+            {canUseVideo && (
+              <button onClick={toggleCamera}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                  cameraOn ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                }`}
+                title={cameraOn ? "Turn off camera" : "Turn on camera"}>
+                {cameraOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+              </button>
+            )}
+
+            {/* Screen share toggle — verified hosts/co-hosts */}
+            {canUseVideo && hasModPowers && (
+              <button onClick={toggleScreenShare}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                  screenShareOn ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                }`}
+                title={screenShareOn ? "Stop screen share" : "Share screen"}>
+                {screenShareOn ? <MonitorOff className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
               </button>
             )}
 

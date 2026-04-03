@@ -1769,7 +1769,7 @@ const TOGGLE_CATEGORIES: Record<string, { label: string; keys: string[] }> = {
   },
   social: {
     label: "💬 Social Features",
-    keys: ["social_profiles", "social_status_feed", "social_stories", "social_tutorial", "social_spaces", "allow_unverified_spaces", "private_spaces", "space_gifts", "space_recording", "space_chat", "status_image_upload"],
+    keys: ["social_profiles", "social_status_feed", "social_stories", "social_tutorial", "social_spaces", "allow_unverified_spaces", "private_spaces", "space_gifts", "space_recording", "space_chat", "status_image_upload", "live_streaming"],
   },
   charts: {
     label: "📊 Charts & Display",
