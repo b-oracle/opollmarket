@@ -2111,6 +2111,43 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             </div>
           ) : (
             <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
+              {/* Video Grid — show when anyone has video or screen share */}
+              {isFeatureEnabled("live_streaming") && (() => {
+                const videoParticipants = participants.flatMap((p) => {
+                  const items: any[] = [];
+                  if (p.hasVideo && p.videoTrack) {
+                    items.push({
+                      identity: p.identity,
+                      name: p.name,
+                      isMuted: p.isMuted,
+                      isScreenShare: false,
+                      track: p.videoTrack,
+                      verificationLevel: profiles[p.identity]?.verification_level,
+                      avatarUrl: profiles[p.identity]?.avatar_url,
+                      isHost: p.identity === hostId,
+                      isCoHost: spaceCoHostIds.includes(p.identity),
+                    });
+                  }
+                  if (p.hasScreenShare && p.screenShareTrack) {
+                    items.push({
+                      identity: p.identity,
+                      name: `${p.name}'s screen`,
+                      isMuted: p.isMuted,
+                      isScreenShare: true,
+                      track: p.screenShareTrack,
+                      verificationLevel: profiles[p.identity]?.verification_level,
+                      avatarUrl: profiles[p.identity]?.avatar_url,
+                      isHost: p.identity === hostId,
+                      isCoHost: spaceCoHostIds.includes(p.identity),
+                    });
+                  }
+                  return items;
+                });
+                return videoParticipants.length > 0 ? (
+                  <SpaceVideoGrid videoParticipants={videoParticipants} hostId={hostId} />
+                ) : null;
+              })()}
+
               {/* Speakers */}
               <div>
                 <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
