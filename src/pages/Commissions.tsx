@@ -495,7 +495,9 @@ const Commissions = () => {
           {/* Amount & Date */}
           <div className="flex justify-between text-[11px]">
             <span className="text-muted-foreground">Amount</span>
-            <span className="font-semibold text-green-500">+{formatAmount(record.amount)}</span>
+            <span className={`font-semibold ${record.category === "gift_sent" ? "text-red-500" : "text-green-500"}`}>
+              {record.category === "gift_sent" ? "-" : "+"}{formatAmount(record.amount)}
+            </span>
           </div>
           <div className="flex justify-between text-[11px]">
             <span className="text-muted-foreground">Date</span>
