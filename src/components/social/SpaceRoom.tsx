@@ -162,6 +162,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [floatingReactions, setFloatingReactions] = useState<{ id: string; emoji: string; identity: string; label?: string }[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [emojiTarget, setEmojiTarget] = useState<ParticipantInfo | null>(null);
+  const [showGiftUserMenu, setShowGiftUserMenu] = useState(false);
+  const navigate = useNavigate();
   const [giftBalance, setGiftBalance] = useState<number>(0);
   const [rewardsBalance, setRewardsBalance] = useState<number>(0);
   const [sendingGift, setSendingGift] = useState(false);
