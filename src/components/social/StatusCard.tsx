@@ -339,7 +339,7 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
                 <span className="text-rose-500">No {Math.round(market.no_price * 100)}¢</span>
               </div>
             </div>
-            {user?.id === status.user_id && (
+            {user?.id === status.user_id && isFeatureEnabled("ai_social_generation") && (
               <button
                 onClick={handleReplaceMarketImage}
                 disabled={replacingImage}
