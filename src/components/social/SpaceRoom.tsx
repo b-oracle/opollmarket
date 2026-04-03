@@ -149,6 +149,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
   // Video & Screen Share state
   const [cameraOn, setCameraOn] = useState(false);
+  const [facingBack, setFacingBack] = useState(false);
   const [screenShareOn, setScreenShareOn] = useState(false);
   const videoElementsRef = useRef<Map<string, HTMLVideoElement>>(new Map());
 
