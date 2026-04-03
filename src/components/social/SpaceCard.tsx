@@ -604,6 +604,12 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
       hostName={hostName}
       isLive={isLive}
     />
+    <BroadcastSpaceModal
+      open={broadcastOpen}
+      onClose={() => setBroadcastOpen(false)}
+      spaceId={space.id}
+      spaceTitle={space.title}
+    />
     </>
   );
 };
