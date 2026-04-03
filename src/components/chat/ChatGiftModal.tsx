@@ -15,7 +15,7 @@ interface ChatGiftModalProps {
   recipientName: string;
 }
 
-const GIFT_EMOJIS = ["💸", "🤑", "💰", "💵", "🌹", "💝", "🔥", "🕺", "💃", "👏", "👍", "❤️", "😂", "💯", "🎯"];
+const GIFT_EMOJIS = ["💸", "🤑", "💰", "💵", "🌹", "💝", "🔥", "🕺", "💃", "👏", "👍", "❤️", "😂", "💯", "🎯", "👱🏼‍♀️"];
 
 const EMOJI_PRICES: Record<string, number> = {
   "💸": 0.10,
@@ -33,6 +33,7 @@ const EMOJI_PRICES: Record<string, number> = {
   "😂": 0.05,
   "💯": 0.10,
   "🎯": 0.10,
+  "👱🏼‍♀️": 50.00,
 };
 
 const ChatGiftModal = ({ open, onClose, conversationId, recipientId, recipientName }: ChatGiftModalProps) => {
