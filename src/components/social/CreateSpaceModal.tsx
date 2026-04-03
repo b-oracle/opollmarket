@@ -129,6 +129,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
           message: `You've been invited to join "${trimmed}"`,
           type: "info",
           actor_id: user.id,
+          market_id: spaceId,
         }));
         await supabase.from("notifications").insert(notifs);
       }

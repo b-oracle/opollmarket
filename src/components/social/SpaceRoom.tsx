@@ -231,6 +231,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         message: `You've been invited to join "${displayTitle}"`,
         type: "info",
         actor_id: user!.id,
+        market_id: spaceId,
       });
       toast.success(`Invited ${inviteeName}`);
     } catch (err: any) {
