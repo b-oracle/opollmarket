@@ -27,7 +27,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 import CopyTradeStats from "@/components/CopyTradeStats";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
@@ -662,7 +662,7 @@ const Profile = () => {
       if (!user) return null;
       const { data } = await supabase
         .from("profiles")
-        .select("wallet_address, avatar_url, display_name, is_public, bio, verification_level, age, gender, location, interests")
+        .select("wallet_address, avatar_url, display_name, is_public, bio, verification_level, age, date_of_birth, gender, location, interests")
         .eq("id", user.id)
         .single();
       return data;
@@ -937,7 +937,7 @@ const Profile = () => {
               setEditName(profile?.display_name || authDisplayName);
               setEditBio((profile as any)?.bio || "");
               setEditIsPublic((profile as any)?.is_public ?? true);
-              setEditDob((profile as any)?.date_of_birth ? new Date((profile as any).date_of_birth) : (profile as any)?.age ? new Date(new Date().getFullYear() - (profile as any).age, 0, 1) : undefined);
+              setEditDob((profile as any)?.date_of_birth ? parseISO((profile as any).date_of_birth) : undefined);
               setEditGender((profile as any)?.gender || "");
               setEditLocation((profile as any)?.location || "");
               setEditInterests((profile as any)?.interests || []);
@@ -1263,7 +1263,7 @@ const Profile = () => {
                             display_name: editName.trim(),
                             bio: editBio.trim(),
                             is_public: editIsPublic,
-                            date_of_birth: editDob ? editDob.toISOString().split("T")[0] : null,
+                            date_of_birth: editDob ? format(editDob, "yyyy-MM-dd") : null,
                             age: editDob ? Math.floor((Date.now() - editDob.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null,
                             gender: editGender || null,
                             location: editLocation.trim().slice(0, 100) || null,
@@ -1302,8 +1302,8 @@ const Profile = () => {
                             }).catch(() => {});
                           }
 
-                          queryClient.invalidateQueries({ queryKey: ["profile", user!.id] });
-                          queryClient.invalidateQueries({ queryKey: ["profile_display_name", user!.id] });
+                          await queryClient.invalidateQueries({ queryKey: ["profile", user!.id] });
+                          await queryClient.invalidateQueries({ queryKey: ["profile_display_name", user!.id] });
                           setAvatarFile(null);
                           setAvatarPreview(null);
                           setSelectedNftUrl(null);
