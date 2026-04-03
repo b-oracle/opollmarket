@@ -471,6 +471,7 @@ export type Database = {
           exit_fee_percent: number
           fallback_naira_rate: number
           fallback_payout_naira_rate: number
+          gift_fee_percent: number
           gold_max_free_markets: number
           gold_revenue_share_percent: number
           gold_trending_multiplier: number
@@ -542,6 +543,7 @@ export type Database = {
           exit_fee_percent?: number
           fallback_naira_rate?: number
           fallback_payout_naira_rate?: number
+          gift_fee_percent?: number
           gold_max_free_markets?: number
           gold_revenue_share_percent?: number
           gold_trending_multiplier?: number
@@ -613,6 +615,7 @@ export type Database = {
           exit_fee_percent?: number
           fallback_naira_rate?: number
           fallback_payout_naira_rate?: number
+          gift_fee_percent?: number
           gold_max_free_markets?: number
           gold_revenue_share_percent?: number
           gold_trending_multiplier?: number
@@ -3359,6 +3362,7 @@ export type Database = {
           creator_fee_percent: number | null
           deposit_provider: string | null
           exit_fee_percent: number | null
+          gift_fee_percent: number | null
           gold_max_free_markets: number | null
           market_creation_fee: number | null
           min_gold_token_balance: number | null
