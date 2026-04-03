@@ -573,6 +573,28 @@ const Commissions = () => {
               </Link>
             </div>
           )}
+
+          {/* Fee breakdown for gifts */}
+          {(record.category === "gift_sent" || record.category === "gift_received") && (
+            <>
+              <div className="flex justify-between text-[11px]">
+                <span className="text-muted-foreground">Platform Fee</span>
+                <span className="text-foreground">{giftFeePercent}%</span>
+              </div>
+              {record.category === "gift_sent" && (
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-muted-foreground">Recipient Gets</span>
+                  <span className="text-foreground">{formatAmount(record.amount * (1 - giftFeePercent / 100))}</span>
+                </div>
+              )}
+              {record.category === "gift_received" && (
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-muted-foreground">Net (after fee)</span>
+                  <span className="text-green-500 font-semibold">{formatAmount(record.amount)}</span>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </motion.div>
     );
