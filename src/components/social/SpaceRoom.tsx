@@ -163,8 +163,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [rewardsBalance, setRewardsBalance] = useState<number>(0);
   const [sendingGift, setSendingGift] = useState(false);
   const [showTopUpModal, setShowTopUpModal] = useState(false);
+  const [showConvertModal, setShowConvertModal] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState("");
+  const [convertAmount, setConvertAmount] = useState("");
   const [topUpLoading, setTopUpLoading] = useState(false);
+  const [convertLoading, setConvertLoading] = useState(false);
   const [showAudioPrompt, setShowAudioPrompt] = useState(false);
   const audioEnabledRef = useRef(false);
   const [mainBalance, setMainBalance] = useState<number>(0);
@@ -2904,11 +2907,19 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                       Top Up
                     </button>
                   </div>
-                  <div className="bg-muted rounded-xl p-3 text-center">
+                   <div className="bg-muted rounded-xl p-3 text-center">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Rewards Balance</p>
                     <p className="text-lg font-bold text-primary">
                       ${rewardsBalance.toFixed(2)}
                     </p>
+                    {rewardsBalance > 0 && (
+                      <button
+                        onClick={() => { setConvertAmount(rewardsBalance.toFixed(2)); setShowConvertModal(true); }}
+                        className="mt-1.5 px-3 py-1 rounded-lg bg-pink-500/20 text-pink-500 text-[10px] font-semibold hover:bg-pink-500/30 transition-colors"
+                      >
+                        Convert to Gifts
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -3053,6 +3064,73 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
                   >
                     {topUpLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Top Up"}
+                  </button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Inline Convert Rewards to Gift Modal */}
+        <AnimatePresence>
+          {showConvertModal && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[100] bg-black/60"
+                onClick={() => setShowConvertModal(false)}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="fixed left-4 right-4 bottom-24 z-[101] bg-card rounded-2xl p-5 shadow-xl border border-border max-w-sm mx-auto"
+              >
+                <h3 className="text-sm font-bold text-foreground mb-1">Convert to Gift Balance</h3>
+                <p className="text-[11px] text-muted-foreground mb-3">
+                  Move rewards to your gift balance so you can send emoji gifts.
+                </p>
+                <p className="text-xs text-muted-foreground mb-2">Available: <span className="font-semibold text-primary">${rewardsBalance.toFixed(2)}</span></p>
+                <input
+                  type="number"
+                  value={convertAmount}
+                  onChange={(e) => setConvertAmount(e.target.value)}
+                  placeholder="Amount"
+                  min={0.01}
+                  step={0.01}
+                  className="w-full px-3 py-2.5 rounded-xl bg-muted text-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-primary mb-3"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowConvertModal(false)}
+                    className="flex-1 py-2.5 rounded-xl bg-muted text-muted-foreground text-sm font-medium hover:bg-muted/80 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const amt = parseFloat(convertAmount);
+                      if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
+                      if (amt > rewardsBalance) { toast.error("Insufficient rewards balance"); return; }
+                      setConvertLoading(true);
+                      const { data, error } = await supabase.rpc("transfer_rewards_to_gift", { _user_id: user!.id, _amount: amt } as any);
+                      if (error || !(data as any)?.success) {
+                        toast.error((data as any)?.error || error?.message || "Transfer failed");
+                      } else {
+                        setRewardsBalance((prev) => prev - amt);
+                        setGiftBalance((prev) => prev + amt);
+                        toast.success(`$${amt.toFixed(2)} converted to gift balance`);
+                        setShowConvertModal(false);
+                        queryClient.invalidateQueries({ queryKey: ["balance"] });
+                      }
+                      setConvertLoading(false);
+                    }}
+                    disabled={convertLoading || !convertAmount || parseFloat(convertAmount) <= 0}
+                    className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  >
+                    {convertLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Convert"}
                   </button>
                 </div>
               </motion.div>
