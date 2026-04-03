@@ -715,7 +715,7 @@ const Commissions = () => {
         </div>
 
         {/* Gift Balance Detail Dialog */}
-        <Dialog open={giftDetailOpen} onOpenChange={(open) => { setGiftDetailOpen(open); if (!open) setGiftAction(null); }}>
+        <Dialog open={giftDetailOpen} onOpenChange={(open) => { setGiftDetailOpen(open); if (!open) { setGiftAction(null); setWithdrawDest(null); } }}>
           <DialogContent className="max-w-sm">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
