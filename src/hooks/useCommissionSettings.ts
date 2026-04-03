@@ -30,6 +30,8 @@ export interface CommissionSettings {
   osure_100_premium: number;
   social_ad_price: number;
   ai_generation_cost: number;
+  welcome_bonus_percent: number;
+  welcome_bonus_cap: number;
 }
 
 export const useCommissionSettings = () => {
