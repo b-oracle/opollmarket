@@ -3754,7 +3754,7 @@ export type Database = {
         Args: {
           p_amount: number
           p_conversation_id: string
-          p_emoji?: string
+          p_emoji: string
           p_recipient_id: string
         }
         Returns: string
