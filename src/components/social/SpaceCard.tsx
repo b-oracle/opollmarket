@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Radio, Headphones, LogIn, LogOut, Loader2, Bell, BellOff, Calendar, Share2, Play, Pause, Trash2, RotateCcw, RotateCw, Users, TrendingUp, MessageCircle, Clock, Pencil, Check, X, Lock } from "lucide-react";
+import { Radio, Headphones, LogIn, LogOut, Loader2, Bell, BellOff, Calendar, Share2, Play, Pause, Trash2, RotateCcw, RotateCw, Users, TrendingUp, MessageCircle, Clock, Pencil, Check, X, Lock, Megaphone, XCircle } from "lucide-react";
+import BroadcastSpaceModal from "./BroadcastSpaceModal";
 import { formatDistanceToNow, format } from "date-fns";
 import { useState, useRef, useEffect } from "react";
 import SpaceShareSheet from "./SpaceShareSheet";
@@ -48,7 +49,8 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
   const [editingTitle, setEditingTitle] = useState(false);
   const [editTitleValue, setEditTitleValue] = useState(space.title);
   const [savingTitle, setSavingTitle] = useState(false);
-
+  const [broadcastOpen, setBroadcastOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const handleSaveCardTitle = async () => {
     const trimmed = editTitleValue.trim();
     if (!trimmed || trimmed === space.title) { setEditingTitle(false); return; }
@@ -63,6 +65,50 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
     setEditingTitle(false);
   };
 
+  const handleCancelSpace = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user || user.id !== space.host_id) return;
+    if (!confirm("Cancel this scheduled space? Users with reminders will be notified.")) return;
+    setCancelling(true);
+    try {
+      // Get reminder users before deleting
+      const { data: reminders } = await supabase
+        .from("space_reminders" as any)
+        .select("user_id")
+        .eq("space_id", space.id);
+
+      // Update space status
+      await supabase
+        .from("spaces" as any)
+        .update({ status: "cancelled" } as any)
+        .eq("id", space.id);
+
+      // Delete reminders
+      await supabase
+        .from("space_reminders" as any)
+        .delete()
+        .eq("space_id", space.id);
+
+      // Notify reminded users
+      if (reminders && reminders.length > 0) {
+        const notifications = (reminders as any[]).map((r: any) => ({
+          user_id: r.user_id,
+          title: "Space Cancelled ❌",
+          message: `"${space.title}" has been cancelled by the host.`,
+          type: "info",
+          market_id: space.id,
+        }));
+        await supabase.from("notifications").insert(notifications);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      toast.success("Space cancelled");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to cancel");
+    } finally {
+      setCancelling(false);
+    }
+  };
   const isRecorded = space.status === "ended" && space.is_recorded && space.recording_url;
 
   // Clean up audio on unmount
@@ -440,6 +486,16 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
           >
             <Share2 className="w-3 h-3" />
           </button>
+          {/* Broadcast button - scheduled and live */}
+          {(isScheduled || isLive) && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setBroadcastOpen(true); }}
+              className="px-2.5 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 text-[10px] font-semibold flex items-center gap-1 transition-colors"
+              title="Broadcast to all users"
+            >
+              <Megaphone className="w-3 h-3" />
+            </button>
+          )}
           {isScheduled && (
             <button
               onClick={handleToggleReminder}
@@ -460,21 +516,30 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
             </button>
           )}
           {isHost && isScheduled && (
-            <button
-              onClick={async (e) => {
-                e.stopPropagation();
-                const { error } = await supabase
-                  .from("spaces" as any)
-                  .update({ status: "live", started_at: new Date().toISOString() })
-                  .eq("id", space.id);
-                if (error) { toast.error("Failed"); return; }
-                queryClient.invalidateQueries({ queryKey: ["spaces"] });
-                toast.success("Space is now live! 🎙️");
-              }}
-              className="px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-[10px] font-semibold hover:bg-destructive/20 transition-colors flex items-center gap-1"
-            >
-              <Radio className="w-3 h-3" /> Go Live Now
-            </button>
+            <>
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  const { error } = await supabase
+                    .from("spaces" as any)
+                    .update({ status: "live", started_at: new Date().toISOString() })
+                    .eq("id", space.id);
+                  if (error) { toast.error("Failed"); return; }
+                  queryClient.invalidateQueries({ queryKey: ["spaces"] });
+                  toast.success("Space is now live! 🎙️");
+                }}
+                className="px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-[10px] font-semibold hover:bg-destructive/20 transition-colors flex items-center gap-1"
+              >
+                <Radio className="w-3 h-3" /> Go Live
+              </button>
+              <button
+                onClick={handleCancelSpace}
+                disabled={cancelling}
+                className="px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-[10px] font-semibold hover:bg-destructive/10 hover:text-destructive transition-colors flex items-center gap-1"
+              >
+                {cancelling ? <Loader2 className="w-3 h-3 animate-spin" /> : <><XCircle className="w-3 h-3" /> Cancel</>}
+              </button>
+            </>
           )}
           {isHost && isLive && (
             <button
@@ -538,6 +603,12 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
       spaceTitle={space.title}
       hostName={hostName}
       isLive={isLive}
+    />
+    <BroadcastSpaceModal
+      open={broadcastOpen}
+      onClose={() => setBroadcastOpen(false)}
+      spaceId={space.id}
+      spaceTitle={space.title}
     />
     </>
   );

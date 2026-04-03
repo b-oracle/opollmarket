@@ -2212,6 +2212,47 @@ export type Database = {
         }
         Relationships: []
       }
+      space_broadcasts: {
+        Row: {
+          amount: number
+          bonus_amount: number | null
+          created_at: string | null
+          id: string
+          space_id: string
+          status: string
+          tier: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          bonus_amount?: number | null
+          created_at?: string | null
+          id?: string
+          space_id: string
+          status?: string
+          tier?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          bonus_amount?: number | null
+          created_at?: string | null
+          id?: string
+          space_id?: string
+          status?: string
+          tier?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_broadcasts_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_gifts: {
         Row: {
           amount: number

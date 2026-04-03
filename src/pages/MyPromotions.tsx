@@ -9,7 +9,7 @@ import { Loader2, Zap, Megaphone, Eye, MousePointerClick, BarChart3, ArrowLeft, 
 import { format, formatDistanceToNow, isPast, differenceInHours } from "date-fns";
 import BoostCountdown from "@/components/BoostCountdown";
 
-type TabKey = "boosts" | "social_ads" | "broadcasts";
+type TabKey = "boosts" | "social_ads" | "broadcasts" | "space_broadcasts";
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
@@ -124,7 +124,21 @@ const MyPromotions = () => {
     enabled: !!user?.id,
   });
 
-  const isLoading = boostsLoading || adsLoading || broadcastsLoading;
+  // Fetch space broadcasts
+  const { data: spaceBroadcasts = [], isLoading: spaceBcLoading } = useQuery({
+    queryKey: ["my-space-broadcasts", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("space_broadcasts" as any)
+        .select("*")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false });
+      return (data || []) as any[];
+    },
+    enabled: !!user?.id,
+  });
+
+  const isLoading = boostsLoading || adsLoading || broadcastsLoading || spaceBcLoading;
 
   // Summary stats
   const boostStats = useMemo(() => {
@@ -190,6 +204,7 @@ const MyPromotions = () => {
     { key: "boosts", label: "Boosts", icon: Zap, count: boosts.length },
     { key: "social_ads", label: "Social Ads", icon: Eye, count: socialAds.length },
     { key: "broadcasts", label: "Broadcasts", icon: Megaphone, count: broadcasts.length },
+    { key: "space_broadcasts", label: "Space", icon: Radio, count: spaceBroadcasts.length },
   ];
 
   if (!user) {
@@ -444,6 +459,36 @@ const MyPromotions = () => {
                       </div>
                       <div className="text-[11px] text-muted-foreground">
                         Created {format(new Date(bc.created_at), "MMM d, yyyy HH:mm")}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Space Broadcasts Tab */}
+            {tab === "space_broadcasts" && (
+              <div className="space-y-3">
+                {spaceBroadcasts.length === 0 ? (
+                  <EmptyState icon={Radio} label="No space broadcasts yet" description="Broadcast a space to notify all users" />
+                ) : spaceBroadcasts.map((sb: any) => {
+                  const { display, key } = getResolvedBroadcastStatus(sb);
+                  return (
+                    <div key={sb.id} className="bg-card border border-border rounded-xl p-4 space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Radio className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-bold truncate max-w-[250px]">
+                          Space Broadcast
+                        </span>
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
+                          statusColors[key] || statusColors.expired
+                        }`}>
+                          {display}
+                        </span>
+                        <span className="text-xs font-semibold text-muted-foreground ml-auto">${sb.amount}</span>
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        Created {format(new Date(sb.created_at), "MMM d, yyyy HH:mm")}
                       </div>
                     </div>
                   );
