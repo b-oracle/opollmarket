@@ -1,58 +1,44 @@
 
 
-## Welcome Bonus on First Deposit
+## Toggle-Based Live Stream Selection in Spaces
 
-### Overview
-After a user completes KYC and makes their first deposit, they receive X% of that deposit amount (capped at $X) as bonus balance. Admin can toggle this on/off and configure the percentage and cap.
+### UX Flow
+```text
+[ ] Enable Live Stream          ← toggle off by default
 
-### Database Changes
+  ↓ (when toggled on)
 
-**Migration 1 — Add settings to `commission_settings`:**
-```sql
-ALTER TABLE public.commission_settings
-  ADD COLUMN welcome_bonus_percent numeric NOT NULL DEFAULT 0,
-  ADD COLUMN welcome_bonus_cap numeric NOT NULL DEFAULT 0;
-```
-- `welcome_bonus_percent` — e.g. 50 means 50% of first deposit
-- `welcome_bonus_cap` — e.g. 10 means max $10 bonus
+  [YouTube]  [StreamYard]       ← platform picker (radio buttons)
 
-**Migration 2 — Add feature toggle row:**
-```sql
-INSERT INTO public.feature_toggles (feature_key, label, enabled)
-VALUES ('welcome_bonus', 'Welcome Bonus (First Deposit)', false);
+  ↓ (after selecting platform)
+
+  [ Paste your YouTube Live URL… ]   ← contextual input + validation
 ```
 
-### Server-Side Logic
+### Changes
 
-Create a reusable helper function used by all 3 deposit confirmation paths. After crediting the deposit:
+**1. `src/components/YouTubeEmbed.tsx`**
+- Add `getStreamYardId(url)` helper to extract ID from `streamyard.com/watch/...` or `streamyard.com/...`
+- Add `isStreamYardUrl(url)` check
+- Export a combined `isStreamUrl(url)` that checks either platform
+- Render StreamYard embeds as `<iframe src="https://streamyard.com/watch/{id}?embed=true" />`
 
-1. Check `feature_toggles` — is `welcome_bonus` enabled?
-2. Check `profiles` — is `kyc_status` = `'approved'` (tier 1 or 2)?
-3. Check `transactions` — does the user have any prior confirmed deposits (excluding the current one)? If yes, skip.
-4. Read `commission_settings` for `welcome_bonus_percent` and `welcome_bonus_cap`
-5. Calculate: `bonus = min(deposit_amount * percent / 100, cap)`
-6. Credit via `adjust_balance` with `_bonus_delta: bonus`
-7. Log a `welcome_bonus` transaction and send a notification
+**2. `src/components/social/CreateSpaceModal.tsx`**
+- Replace the current always-visible stream URL input with:
+  - A toggle button "Enable Live Stream" (reuse the same style as the Private Space toggle)
+  - When on, show two radio-style platform buttons: YouTube | StreamYard
+  - Below that, show the URL input with platform-specific placeholder and validation
+- Store `streamPlatform` state (`"youtube" | "streamyard"`)
+- Validate URL against the selected platform before submit
 
-**Files modified:**
-- `supabase/functions/nowpayments-webhook/index.ts` — call welcome bonus helper after `handleDeposit` credits balance
-- `supabase/functions/flutterwave-webhook/index.ts` — call welcome bonus helper after deposit confirmation
-- `supabase/functions/confirm-deposit-admin/index.ts` — call welcome bonus helper after manual confirmation
+**3. `src/components/social/SpaceRoom.tsx`**
+- Replace `isYouTubeUrl` checks with `isStreamUrl` for the host inline-edit validation
+- Pass the URL to the updated embed component which auto-detects the platform
+- Update placeholder and error text to reflect selected platform (or generic "stream URL")
 
-The helper will be inlined in each file (edge functions can't share imports across folders) but with identical logic.
+**4. `src/components/social/SpaceMiniPlayer.tsx`**
+- No changes needed — already uses a generic TV icon for any stream
 
-### Admin UI
-
-- The feature toggle already appears automatically in the Admin Settings toggle grid under a relevant category
-- Add `welcome_bonus_percent` and `welcome_bonus_cap` fields to `src/pages/admin/AdminSettings.tsx` (or wherever commission settings are edited), visible when the toggle is enabled
-
-### Client-Side
-
-- Add `welcome_bonus_percent` and `welcome_bonus_cap` to `useCommissionSettings.ts` so the admin UI can read/write them
-- Optionally show a "Welcome Bonus" banner on the deposit page for eligible users (KYC approved, no prior deposits)
-
-### Security
-- All eligibility checks and bonus crediting happen server-side
-- The bonus is added to `bonus_balance` (non-withdrawable, usable for fees)
-- One-time only: checked by counting prior confirmed deposits
+### No database changes
+The `stream_url` column is already a generic `text` field. Platform detection happens client-side from the URL pattern.
 
