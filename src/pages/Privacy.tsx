@@ -239,11 +239,14 @@ const Privacy = () => {
         </section>
 
         <section id="data-retention" className="space-y-2 scroll-mt-20">
-          <h2 className="text-base font-semibold text-foreground">10. Data Retention</h2>
+          <h2 className="text-base font-semibold text-foreground">14. Data Retention</h2>
           <p>We retain your personal data according to the following principles:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li><strong>Active Accounts:</strong> Data is retained for as long as your account remains active.</li>
             <li><strong>Financial Records:</strong> Transaction records, trade history, and deposit/withdrawal logs are retained for a minimum of 5 years for regulatory compliance and audit purposes.</li>
+            <li><strong>Direct Messages:</strong> Message content is retained for the lifetime of the conversation. Gift transaction records are retained alongside financial records.</li>
+            <li><strong>KYC Documents:</strong> Identity verification documents and device fingerprints are retained for the account duration plus 5 years for regulatory compliance and fraud prevention.</li>
+            <li><strong>Stories:</strong> Stories expire and are automatically deleted after 24 hours. Story view and like data may be retained in anonymized form.</li>
             <li><strong>Moderation Logs:</strong> Content moderation records are retained for accountability and dispute resolution for a minimum of 2 years.</li>
             <li><strong>Analytics Data:</strong> Anonymized and aggregated analytics data may be retained indefinitely for trend analysis and Platform improvement.</li>
             <li><strong>Account Deletion:</strong> Upon account deletion request, personal identifiers are removed or anonymized. Blockchain data and transaction records required for legal compliance are retained as permitted by law.</li>
