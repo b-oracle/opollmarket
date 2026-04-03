@@ -1,0 +1,2 @@
+ALTER TABLE public.markets ADD COLUMN IF NOT EXISTS api_key_id uuid REFERENCES public.api_keys(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_markets_api_key ON public.markets (api_key_id) WHERE api_key_id IS NOT NULL;

@@ -1312,6 +1312,7 @@ export type Database = {
       }
       markets: {
         Row: {
+          api_key_id: string | null
           auto_resolve: boolean
           auto_resolve_asset: string | null
           auto_resolve_deadline: string | null
@@ -1364,6 +1365,7 @@ export type Database = {
           yes_price: number
         }
         Insert: {
+          api_key_id?: string | null
           auto_resolve?: boolean
           auto_resolve_asset?: string | null
           auto_resolve_deadline?: string | null
@@ -1416,6 +1418,7 @@ export type Database = {
           yes_price?: number
         }
         Update: {
+          api_key_id?: string | null
           auto_resolve?: boolean
           auto_resolve_asset?: string | null
           auto_resolve_deadline?: string | null
@@ -1468,6 +1471,13 @@ export type Database = {
           yes_price?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "markets_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "markets_winning_option_id_fkey"
             columns: ["winning_option_id"]

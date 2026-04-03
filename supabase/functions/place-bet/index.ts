@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     // Validate market is active and not expired
     const { data: marketCheck, error: marketCheckErr } = await supabase
       .from("markets")
-      .select("status, end_date, creator_wallet, market_type")
+      .select("status, end_date, creator_wallet, market_type, api_key_id")
       .eq("id", marketId)
       .single();
 
