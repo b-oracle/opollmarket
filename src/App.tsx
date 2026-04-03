@@ -123,10 +123,12 @@ const isEmbedRoute = (pathname: string) => pathname.startsWith("/embed/") || pat
 
 const noFooterRoutes = ["/feed", "/quick-trade", "/messages"];
 
+const isFullscreenRoute = (pathname: string) => pathname.startsWith("/messages");
+
 const ConditionalFooter = () => {
   const location = useLocation();
   if (isAdminRoute(location.pathname) || isEmbedRoute(location.pathname)) return null;
-  if (noFooterRoutes.includes(location.pathname)) return null;
+  if (noFooterRoutes.includes(location.pathname) || isFullscreenRoute(location.pathname)) return null;
   return <DesktopFooter />;
 };
 
