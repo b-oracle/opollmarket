@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Trash2, Loader2, MessageCircle, ExternalLink, Repeat2, BarChart3 } from "lucide-react";
+import { Heart, Trash2, Loader2, MessageCircle, ExternalLink, Repeat2, BarChart3, RefreshCw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { toast } from "sonner";
