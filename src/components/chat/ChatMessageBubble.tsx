@@ -165,59 +165,28 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
       <div className={`flex ${isMine ? "justify-end" : "justify-start"} group relative`}>
         <div className="relative" ref={bubbleRef}>
           <motion.div
-            initial={{ scale: 0.6, opacity: 0 }}
+            initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 400, damping: 15 }}
-            className={`max-w-[75%] rounded-2xl overflow-hidden select-none touch-none border ${
+            transition={{ type: "spring", stiffness: 300, damping: 18 }}
+            className={`max-w-[70%] rounded-2xl select-none touch-none ${
               isMine
-                ? "border-primary/30 bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5"
-                : "border-accent/40 bg-gradient-to-br from-accent/30 via-accent/15 to-accent/5"
+                ? "bg-primary/15 rounded-br-md"
+                : "bg-accent/20 rounded-bl-md"
             }`}
             {...pointerProps}
           >
-            {/* Shimmer overlay */}
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
-              initial={{ x: "-100%" }}
-              animate={{ x: "200%" }}
-              transition={{ duration: 1.5, delay: 0.3, ease: "easeInOut" }}
-            />
-
-            <div className="relative px-4 py-3">
-              {/* Header with sparkle */}
-              <div className="flex items-center gap-1.5 mb-2">
-                <motion.div
-                  animate={{ rotate: [0, 15, -15, 0] }}
-                  transition={{ duration: 0.6, delay: 0.4 }}
-                >
-                  <Gift className="w-4 h-4 text-primary" />
-                </motion.div>
-                <span className="text-[11px] font-medium text-muted-foreground">
-                  {isMine ? "You sent a gift" : "Gift received!"}
-                </span>
-                <motion.div
-                  animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
-                  transition={{ duration: 1.5, repeat: 2, ease: "easeInOut" }}
-                >
-                  <Sparkles className="w-3 h-3 text-primary" />
-                </motion.div>
-              </div>
-
-              {/* Amount - big and bold */}
+            <div className="px-4 py-3 text-center">
+              <p className="text-2xl mb-1">{m.content}</p>
               <motion.p
-                className="text-2xl font-bold text-primary"
-                initial={{ scale: 0.5 }}
+                className="text-lg font-bold text-primary"
+                initial={{ scale: 0.7 }}
                 animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 300, damping: 12, delay: 0.15 }}
+                transition={{ type: "spring", stiffness: 300, damping: 12, delay: 0.1 }}
               >
                 ${m.gift_amount}
               </motion.p>
-
-              {/* Gift emoji content */}
-              <p className="text-xl mt-1">{m.content}</p>
-
-              <p className="text-[10px] text-muted-foreground/70 mt-2">
-                {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
+              <p className="text-[10px] text-muted-foreground mt-1.5">
+                {isMine ? "Gift sent" : "Gift received"} · {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
               </p>
               {reactionBadges}
             </div>
