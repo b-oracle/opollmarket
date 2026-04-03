@@ -808,6 +808,7 @@ export type Database = {
           created_at: string
           id: string
           last_message_at: string | null
+          status: string
           user_a: string
           user_b: string
         }
@@ -815,6 +816,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_message_at?: string | null
+          status?: string
           user_a: string
           user_b: string
         }
@@ -822,6 +824,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_message_at?: string | null
+          status?: string
           user_a?: string
           user_b?: string
         }
@@ -3558,6 +3561,7 @@ export type Database = {
       }
     }
     Functions: {
+      accept_dm_request: { Args: { _conversation_id: string }; Returns: Json }
       add_market_liquidity: {
         Args: { _amount: number; _market_id: string; _user_id: string }
         Returns: Json
@@ -3795,6 +3799,7 @@ export type Database = {
             } & "Could not choose the best candidate function between: public.is_valid_referral_code(_code => text), public.is_valid_referral_code(_code => uuid). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
           }
       normalize_email: { Args: { _email: string }; Returns: string }
+      reject_dm_request: { Args: { _conversation_id: string }; Returns: Json }
       release_creation_fee_escrow: {
         Args: { _action: string; _escrow_id: string }
         Returns: Json
@@ -3819,6 +3824,10 @@ export type Database = {
         Returns: Json
       }
       settle_user_debts: { Args: { _user_id: string }; Returns: Json }
+      start_dm_conversation: {
+        Args: { _other_user_id: string }
+        Returns: string
+      }
       topup_gift_balance: {
         Args: { _amount: number; _user_id: string }
         Returns: Json

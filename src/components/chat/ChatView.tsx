@@ -3,13 +3,15 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Send, Gift, Loader2, Share2 } from "lucide-react";
+import { ArrowLeft, Send, Gift, Loader2, Share2, Check, X } from "lucide-react";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import ChatGiftModal from "./ChatGiftModal";
 import ChatMessageBubble from "./ChatMessageBubble";
 import ChatSharePicker from "./ChatSharePicker";
 import SEOHead from "@/components/SEOHead";
+import { toast } from "sonner";
 
 interface Message {
   id: string;
@@ -31,6 +33,7 @@ const ChatView = () => {
   const [sending, setSending] = useState(false);
   const [showGift, setShowGift] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [accepting, setAccepting] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -54,9 +57,29 @@ const ChatView = () => {
     enabled: !!conversationId && !!user,
   });
 
+  const convStatus = (convo as any)?.status || "active";
   const otherId = convo ? ((convo as any).user_a === user?.id ? (convo as any).user_b : (convo as any).user_a) : null;
   const otherName = (convo as any)?.other_user?.display_name || "User";
   const otherVerification = ((convo as any)?.other_user?.verification_level || "none") as VerificationLevel;
+
+  // Determine if current user is the recipient of a pending request
+  const { data: firstMessage } = useQuery({
+    queryKey: ["dm-first-message", conversationId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("dm_messages" as any)
+        .select("sender_id")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle() as any;
+      return data;
+    },
+    enabled: !!conversationId && convStatus === "pending",
+  });
+
+  const isRecipientOfRequest = convStatus === "pending" && firstMessage && (firstMessage as any).sender_id !== user?.id;
+  const isSenderOfRequest = convStatus === "pending" && firstMessage && (firstMessage as any).sender_id === user?.id;
 
   const { data: messages = [] } = useQuery({
     queryKey: ["dm-messages", conversationId],
@@ -123,7 +146,6 @@ const ChatView = () => {
       queryClient.invalidateQueries({ queryKey: ["dm-messages", conversationId] });
       queryClient.invalidateQueries({ queryKey: ["dm-conversations"] });
     } catch {
-      const { toast } = await import("sonner");
       toast.error("Failed to send message");
     } finally {
       setSending(false);
@@ -141,6 +163,53 @@ const ChatView = () => {
   const handleShareLink = (url: string) => {
     sendMessage(url);
   };
+
+  const handleAccept = async () => {
+    if (!conversationId) return;
+    setAccepting(true);
+    try {
+      const { data, error } = await supabase.rpc("accept_dm_request", {
+        _conversation_id: conversationId,
+      });
+      if (error) throw error;
+      if (!(data as any)?.success) {
+        toast.error((data as any)?.error || "Failed to accept");
+        return;
+      }
+      toast.success("Request accepted!");
+      queryClient.invalidateQueries({ queryKey: ["dm-conversation", conversationId] });
+      queryClient.invalidateQueries({ queryKey: ["dm-conversations"] });
+    } catch {
+      toast.error("Failed to accept request");
+    } finally {
+      setAccepting(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!conversationId) return;
+    setAccepting(true);
+    try {
+      const { data, error } = await supabase.rpc("reject_dm_request", {
+        _conversation_id: conversationId,
+      });
+      if (error) throw error;
+      if (!(data as any)?.success) {
+        toast.error((data as any)?.error || "Failed to reject");
+        return;
+      }
+      toast("Request rejected");
+      navigate("/messages");
+    } catch {
+      toast.error("Failed to reject request");
+    } finally {
+      setAccepting(false);
+    }
+  };
+
+  // Can the user send messages?
+  const canSendMessage = convStatus === "active" || (isSenderOfRequest && messages.length === 0);
+  const isRejected = convStatus === "rejected";
 
   return (
     <div className="h-[100dvh] bg-background flex flex-col overflow-hidden overflow-x-hidden">
@@ -166,13 +235,56 @@ const ChatView = () => {
         </div>
       </div>
 
+      {/* Pending request banner for recipient */}
+      {isRecipientOfRequest && (
+        <div className="shrink-0 bg-amber-500/10 border-b border-amber-500/20 px-4 py-3 flex items-center gap-3">
+          <p className="text-sm text-foreground flex-1">
+            <span className="font-semibold">{otherName}</span> wants to message you
+          </p>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleReject}
+            disabled={accepting}
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
+            <X className="w-4 h-4 mr-1" />
+            Reject
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleAccept}
+            disabled={accepting}
+          >
+            <Check className="w-4 h-4 mr-1" />
+            Accept
+          </Button>
+        </div>
+      )}
+
+      {/* Pending status for sender */}
+      {isSenderOfRequest && (
+        <div className="shrink-0 bg-muted/50 border-b border-border px-4 py-2.5 text-center">
+          <p className="text-xs text-muted-foreground">
+            ⏳ Message request sent — waiting for {otherName} to accept
+          </p>
+        </div>
+      )}
+
+      {/* Rejected status */}
+      {isRejected && (
+        <div className="shrink-0 bg-destructive/10 border-b border-destructive/20 px-4 py-2.5 text-center">
+          <p className="text-xs text-muted-foreground">This message request was declined</p>
+        </div>
+      )}
+
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-4 py-4 space-y-2">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center px-6 py-20">
             <span className="text-6xl mb-4">💬</span>
             <h3 className="text-lg font-semibold text-foreground mb-1">No messages here yet...</h3>
-            <p className="text-sm text-muted-foreground">Send a message or a gift to start the conversation.</p>
+            <p className="text-sm text-muted-foreground">Send a message to start the conversation.</p>
           </div>
         )}
         {messages.map((m) => (
@@ -181,40 +293,54 @@ const ChatView = () => {
       </div>
 
       {/* Input bar */}
-      <div className="bg-background/95 backdrop-blur border-t border-border px-4 py-3 shrink-0" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
-        <div className="max-w-lg mx-auto flex items-center gap-2">
-          <button
-            onClick={() => setShowGift(true)}
-            className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors shrink-0"
-            aria-label="Send gift"
-          >
-            <Gift className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setShowShare(true)}
-            className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors shrink-0"
-            aria-label="Share market or space"
-          >
-            <Share2 className="w-4 h-4" />
-          </button>
-          <Input
-            ref={inputRef}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
-            className="flex-1 h-10 rounded-full"
-            maxLength={2000}
-          />
-          <button
-            onClick={() => sendMessage()}
-            disabled={!text.trim() || sending}
-            className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground disabled:opacity-50 transition-all active:scale-95 shrink-0"
-          >
-            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          </button>
+      {canSendMessage && !isRejected ? (
+        <div className="bg-background/95 backdrop-blur border-t border-border px-4 py-3 shrink-0" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
+          <div className="max-w-lg mx-auto flex items-center gap-2">
+            {convStatus === "active" && (
+              <>
+                <button
+                  onClick={() => setShowGift(true)}
+                  className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors shrink-0"
+                  aria-label="Send gift"
+                >
+                  <Gift className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setShowShare(true)}
+                  className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors shrink-0"
+                  aria-label="Share market or space"
+                >
+                  <Share2 className="w-4 h-4" />
+                </button>
+              </>
+            )}
+            <Input
+              ref={inputRef}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={convStatus === "pending" ? "Send a message request..." : "Type a message..."}
+              className="flex-1 h-10 rounded-full"
+              maxLength={2000}
+            />
+            <button
+              onClick={() => sendMessage()}
+              disabled={!text.trim() || sending}
+              className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground disabled:opacity-50 transition-all active:scale-95 shrink-0"
+            >
+              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
-      </div>
+      ) : !isRejected && convStatus === "pending" && isSenderOfRequest ? (
+        <div className="bg-muted/30 border-t border-border px-4 py-3 text-center shrink-0" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
+          <p className="text-xs text-muted-foreground">You can send more messages once your request is accepted</p>
+        </div>
+      ) : isRejected ? (
+        <div className="bg-muted/30 border-t border-border px-4 py-3 text-center shrink-0" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
+          <p className="text-xs text-muted-foreground">You can no longer send messages in this conversation</p>
+        </div>
+      ) : null}
 
       {showGift && otherId && (
         <ChatGiftModal
