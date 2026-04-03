@@ -47,6 +47,27 @@ async function verifySignature(
   return computed === signature;
 }
 
+async function processWelcomeBonus(supabase: ReturnType<typeof createClient>, userId: string, depositAmount: number) {
+  const { data: toggle } = await supabase.from("feature_toggles").select("enabled").eq("feature_key", "welcome_bonus").maybeSingle();
+  if (!toggle?.enabled) return;
+  const { data: profile } = await supabase.from("profiles").select("kyc_status").eq("id", userId).single();
+  if (!profile || profile.kyc_status !== "approved") return;
+  const { count } = await supabase.from("transactions").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("type", "deposit").eq("status", "confirmed");
+  if ((count ?? 0) > 1) return;
+  const { data: settings } = await supabase.from("commission_settings").select("welcome_bonus_percent, welcome_bonus_cap").limit(1).single();
+  if (!settings) return;
+  const percent = Number(settings.welcome_bonus_percent) || 0;
+  const cap = Number(settings.welcome_bonus_cap) || 0;
+  if (percent <= 0 || cap <= 0) return;
+  const bonus = Math.min(depositAmount * percent / 100, cap);
+  if (bonus <= 0) return;
+  const { error: adjError } = await supabase.rpc("adjust_balance", { _user_id: userId, _delta: 0, _bonus_delta: bonus, _insurance_delta: 0 });
+  if (adjError) { console.error("Welcome bonus credit failed:", adjError); return; }
+  await supabase.from("transactions").insert({ user_id: userId, type: "welcome_bonus", amount: bonus, status: "confirmed" });
+  await supabase.from("notifications").insert({ user_id: userId, title: "Welcome Bonus! 🎁", message: `You received a $${bonus.toFixed(2)} welcome bonus on your first deposit!`, type: "deposit" });
+  console.log(`Welcome bonus: $${bonus.toFixed(2)} credited to user ${userId}`);
+}
+
 async function handleDeposit(supabase: ReturnType<typeof createClient>, payload: Record<string, unknown>, orderId: string) {
   const { payment_id, actually_paid, outcome_amount, pay_amount, price_amount } = payload;
   const paymentIdStr = String(payment_id);
