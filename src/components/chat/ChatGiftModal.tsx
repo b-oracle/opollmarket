@@ -1,13 +1,11 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserBalance } from "@/hooks/useUserBalance";
 import { toast } from "sonner";
-import { Gift, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import BottomSheet from "@/components/BottomSheet";
 
 interface ChatGiftModalProps {
   open: boolean;
@@ -17,79 +15,112 @@ interface ChatGiftModalProps {
   recipientName: string;
 }
 
-const GIFT_PRESETS = [1, 5, 10, 25, 50];
+const GIFT_EMOJIS = ["💸", "🤑", "💰", "💵", "🌹", "💝", "🔥", "🕺", "💃", "👏", "👍", "❤️", "😂", "💯", "🎯"];
+
+const EMOJI_PRICES: Record<string, number> = {
+  "💸": 0.10,
+  "🤑": 0.25,
+  "💰": 0.50,
+  "💵": 0.05,
+  "🌹": 0.15,
+  "💝": 0.20,
+  "🔥": 0.10,
+  "🕺": 0.05,
+  "💃": 0.05,
+  "👏": 0.05,
+  "👍": 0.05,
+  "❤️": 0.05,
+  "😂": 0.05,
+  "💯": 0.10,
+  "🎯": 0.10,
+};
 
 const ChatGiftModal = ({ open, onClose, conversationId, recipientId, recipientName }: ChatGiftModalProps) => {
   const { user } = useAuth();
   const { giftBalance } = useUserBalance();
-  const [amount, setAmount] = useState("");
-  const [sending, setSending] = useState(false);
+  const [sending, setSending] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  const handleSend = async () => {
-    const val = parseFloat(amount);
-    if (!val || val <= 0) { toast.error("Enter a valid amount"); return; }
-    if (val > giftBalance) { toast.error("Insufficient gift balance"); return; }
+  const handleSendEmoji = async (emoji: string) => {
+    const price = EMOJI_PRICES[emoji] ?? 0.05;
+    if (price > giftBalance) {
+      toast.error("Insufficient gift balance");
+      return;
+    }
 
-    setSending(true);
+    setSending(emoji);
     try {
       const { error } = await supabase.rpc("send_dm_gift" as any, {
         p_conversation_id: conversationId,
         p_recipient_id: recipientId,
-        p_amount: val,
-        p_emoji: "🎁",
+        p_amount: price,
+        p_emoji: emoji,
       });
       if (error) throw error;
-      toast.success(`Sent $${val} gift to ${recipientName}!`);
+      toast.success(`Sent ${emoji} ($${price.toFixed(2)}) to ${recipientName}!`);
       queryClient.invalidateQueries({ queryKey: ["dm-messages", conversationId] });
       queryClient.invalidateQueries({ queryKey: ["user-balance"] });
-      setAmount("");
       onClose();
     } catch (err: any) {
       toast.error(err.message || "Gift failed");
     } finally {
-      setSending(false);
+      setSending(null);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Gift className="w-5 h-5 text-primary" /> Send Gift
-          </DialogTitle>
-        </DialogHeader>
-        <p className="text-sm text-muted-foreground">
-          Gift balance: <span className="font-semibold text-foreground">${giftBalance.toFixed(2)}</span>
-        </p>
-        <div className="flex gap-2 flex-wrap">
-          {GIFT_PRESETS.map((p) => (
-            <Button
-              key={p}
-              variant={amount === String(p) ? "default" : "outline"}
-              size="sm"
-              onClick={() => setAmount(String(p))}
-              disabled={p > giftBalance}
-            >
-              ${p}
-            </Button>
-          ))}
+    <BottomSheet open={open} onClose={onClose} maxHeight="70dvh">
+      <div className="p-4 space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-semibold text-foreground">Send gift to {recipientName}</h3>
+            <p className="text-xs text-muted-foreground">Emoji gifts deduct from your gift balance</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">Gift Balance</p>
+            <p className="text-sm font-bold text-green-500">${giftBalance.toFixed(2)}</p>
+          </div>
         </div>
-        <Input
-          type="number"
-          placeholder="Custom amount"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          min={0.01}
-          step={0.01}
-        />
-        <Button onClick={handleSend} disabled={sending || !amount} className="w-full">
-          {sending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Gift className="w-4 h-4 mr-2" />}
-          Send Gift
-        </Button>
-      </DialogContent>
-    </Dialog>
+
+        {/* Emoji Grid */}
+        {giftBalance <= 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <span className="text-4xl mb-2">😢</span>
+            <p className="text-sm font-medium text-foreground">No gift balance</p>
+            <p className="text-xs text-muted-foreground">Top up your gift balance to send emoji gifts</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-4 gap-2">
+            {GIFT_EMOJIS.map((emoji) => {
+              const price = EMOJI_PRICES[emoji] ?? 0.05;
+              const canAfford = price <= giftBalance;
+              const isSending = sending === emoji;
+
+              return (
+                <button
+                  key={emoji}
+                  onClick={() => handleSendEmoji(emoji)}
+                  disabled={!canAfford || !!sending}
+                  className={`flex flex-col items-center justify-center rounded-xl p-3 transition-all ${
+                    canAfford
+                      ? "bg-secondary hover:bg-accent active:scale-95"
+                      : "bg-muted opacity-40 cursor-not-allowed"
+                  }`}
+                >
+                  {isSending ? (
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  ) : (
+                    <span className="text-2xl">{emoji}</span>
+                  )}
+                  <span className="text-[10px] text-muted-foreground mt-1">${price.toFixed(2)}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </BottomSheet>
   );
 };
 
