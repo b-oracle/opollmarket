@@ -3650,6 +3650,7 @@ export type Database = {
           verification_level: string
         }[]
       }
+      get_platform_user_count: { Args: never; Returns: number }
       get_platform_volume: {
         Args: never
         Returns: {
