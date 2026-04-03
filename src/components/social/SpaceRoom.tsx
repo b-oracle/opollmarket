@@ -1104,7 +1104,43 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     } catch { toast.error("Microphone access denied"); }
   };
 
-  const handleMuteAll = async () => {
+  // Check if current user is verified (blue or gold)
+  const myProfile = profiles[user?.id || ""];
+  const isVerified = myProfile?.verification_level === "blue" || myProfile?.verification_level === "gold";
+  const canUseVideo = isVerified && canPublish && isFeatureEnabled("live_streaming");
+
+  const toggleCamera = async () => {
+    if (!roomRef.current || !canUseVideo) {
+      if (!isVerified) toast.error("Video is available for verified users only");
+      return;
+    }
+    try {
+      await roomRef.current.localParticipant.setCameraEnabled(!cameraOn);
+      setCameraOn(!cameraOn);
+      updateParticipants(roomRef.current);
+    } catch {
+      toast.error("Camera access denied");
+    }
+  };
+
+  const toggleScreenShare = async () => {
+    if (!roomRef.current || !canUseVideo) {
+      if (!isVerified) toast.error("Screen sharing is available for verified users only");
+      return;
+    }
+    try {
+      await roomRef.current.localParticipant.setScreenShareEnabled(!screenShareOn);
+      setScreenShareOn(!screenShareOn);
+      updateParticipants(roomRef.current);
+    } catch (err: any) {
+      if (err?.message?.includes("denied") || err?.message?.includes("cancel")) {
+        // User cancelled the screen share picker
+      } else {
+        toast.error("Screen share failed");
+      }
+    }
+  };
+
     await invokeAction("mute_all");
     // Broadcast force-mute to all via data channel
     if (roomRef.current) {
