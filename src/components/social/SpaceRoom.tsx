@@ -2804,9 +2804,14 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
                 className="absolute bottom-0 inset-x-0 z-[96] bg-card rounded-t-2xl border-t border-border p-5"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    {renderAvatar(emojiTarget, "lg")}
+                <div className="flex items-center justify-between mb-2">
+                  <div
+                    className="flex items-center gap-3 cursor-pointer group"
+                    onClick={() => setShowGiftUserMenu((v) => !v)}
+                  >
+                    <div className={`rounded-full transition-all ${showGiftUserMenu ? "ring-2 ring-primary" : "ring-2 ring-transparent group-active:ring-primary/30"}`}>
+                      {renderAvatar(emojiTarget, "lg")}
+                    </div>
                     <div>
                       <p className="font-semibold text-sm">Send gift to {emojiTarget.name}</p>
                       <p className="text-xs text-muted-foreground">Emoji gifts deduct from your gift balance ({giftFeePercent}% fee)</p>
