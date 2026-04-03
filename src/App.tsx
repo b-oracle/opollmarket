@@ -121,7 +121,7 @@ if (typeof window !== "undefined") {
 const isAdminRoute = (pathname: string) => pathname.startsWith("/admin");
 const isEmbedRoute = (pathname: string) => pathname.startsWith("/embed/") || pathname === "/embed";
 
-const noFooterRoutes = ["/feed", "/quick-trade"];
+const noFooterRoutes = ["/feed", "/quick-trade", "/messages"];
 
 const ConditionalFooter = () => {
   const location = useLocation();
