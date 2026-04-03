@@ -1129,6 +1129,26 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const isVerified = myProfile?.verification_level === "blue" || myProfile?.verification_level === "gold";
   const canUseVideo = isVerified && canPublish && isFeatureEnabled("live_streaming");
 
+  const getScreenShareUnsupportedMessage = () => {
+    if (typeof window === "undefined" || typeof navigator === "undefined") {
+      return "Screen sharing isn't available in this environment";
+    }
+
+    const ua = navigator.userAgent;
+    const isIOSDevice = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const hasDisplayMedia = Boolean(navigator.mediaDevices?.getDisplayMedia);
+
+    if (isIOSDevice) {
+      return "Screen sharing isn't supported on iPhone/iPad browsers yet. Use a desktop browser for now.";
+    }
+
+    if (!hasDisplayMedia) {
+      return "Screen sharing isn't supported in this browser. Try Chrome or Edge on desktop.";
+    }
+
+    return null;
+  };
+
   const toggleCamera = async () => {
     if (!roomRef.current || !canUseVideo) {
       if (!isVerified) toast.error("Video is available for verified users only");
@@ -1148,16 +1168,40 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       if (!isVerified) toast.error("Screen sharing is available for verified users only");
       return;
     }
+
+    if (!screenShareOn) {
+      const unsupportedMessage = getScreenShareUnsupportedMessage();
+      if (unsupportedMessage) {
+        toast.error(unsupportedMessage);
+        return;
+      }
+    }
+
     try {
       await roomRef.current.localParticipant.setScreenShareEnabled(!screenShareOn);
       setScreenShareOn(!screenShareOn);
       updateParticipants(roomRef.current);
     } catch (err: any) {
-      if (err?.message?.includes("denied") || err?.message?.includes("cancel")) {
-        // User cancelled the screen share picker
-      } else {
-        toast.error("Screen share failed");
+      const errorText = `${err?.name || ""} ${err?.message || ""}`.toLowerCase();
+
+      if (errorText.includes("cancel")) {
+        return;
       }
+
+      if (errorText.includes("denied") || errorText.includes("notallowederror")) {
+        toast.error("Screen sharing permission was denied");
+      } else if (
+        errorText.includes("notsupported") ||
+        errorText.includes("not supported") ||
+        errorText.includes("getdisplaymedia") ||
+        errorText.includes("notimplemented")
+      ) {
+        toast.error(getScreenShareUnsupportedMessage() || "Screen sharing isn't supported in this browser");
+      } else {
+        toast.error(err?.message || "Screen share failed");
+      }
+
+      console.error("Screen share failed:", err);
     }
   };
 
