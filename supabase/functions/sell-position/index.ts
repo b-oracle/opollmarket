@@ -121,17 +121,41 @@ Deno.serve(async (req) => {
     const exitFee = Math.round(grossProceeds * exitFeePercent * 100) / 100;
     const netProceeds = Math.round((grossProceeds - exitFee) * 100) / 100;
 
-    // 6. Zero out position shares
-    const { error: updatePosError } = await supabase
+    // 6. Zero out position shares — verify it actually took effect
+    const { data: updatedRows, error: updatePosError } = await supabase
       .from("positions")
       .update({ shares: 0, updated_at: new Date().toISOString() })
       .eq("id", positionId)
-      .eq("user_id", userId);
+      .eq("user_id", userId)
+      .gt("shares", 0)
+      .select("id, shares");
 
     if (updatePosError) {
       console.error("Position update error:", updatePosError);
       return new Response(JSON.stringify({ error: "Failed to close position" }), {
         status: 500, headers: corsHeaders,
+      });
+    }
+
+    // Verify the update actually modified the row
+    if (!updatedRows || updatedRows.length === 0) {
+      console.error("Position update matched 0 rows — possible race condition", { positionId, userId });
+      return new Response(JSON.stringify({ error: "Position already closed or update failed" }), {
+        status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Double-check shares are actually 0
+    const { data: verifyPos } = await supabase
+      .from("positions")
+      .select("shares")
+      .eq("id", positionId)
+      .single();
+
+    if (verifyPos && Number(verifyPos.shares) !== 0) {
+      console.error("Position shares not zeroed after update!", { positionId, shares: verifyPos.shares });
+      return new Response(JSON.stringify({ error: "Position close verification failed" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
