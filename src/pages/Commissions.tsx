@@ -500,7 +500,7 @@ const Commissions = () => {
 
     records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     return records;
-  }, [pendingCommissions, copyEarnings, signupBonuses, giftsSent, giftsReceived, bonusTxns, osureTxns]);
+  }, [pendingCommissions, copyEarnings, signupBonuses, giftsSent, giftsReceived, bonusTxns, osureTxns, giftProfiles]);
 
   const filtered = (activeTab === "all"
     ? allRecords
