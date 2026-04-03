@@ -3284,6 +3284,7 @@ export type Database = {
           ai_generation_cost: number | null
           auto_resolve_fee: number | null
           bc400_pool_percent: number | null
+          blue_max_free_markets: number | null
           boost_flash_price: number | null
           boost_standard_price: number | null
           boost_whale_price: number | null
@@ -3293,12 +3294,15 @@ export type Database = {
           creator_fee_percent: number | null
           deposit_provider: string | null
           exit_fee_percent: number | null
+          gold_max_free_markets: number | null
           market_creation_fee: number | null
           min_gold_token_balance: number | null
           min_liquidity: number | null
           min_nft_balance: number | null
           min_token_balance: number | null
           min_withdrawal_amount: number | null
+          nft_buy_url: string | null
+          nft_contract_address: string | null
           osure_100_premium: number | null
           osure_25_premium: number | null
           osure_50_premium: number | null
@@ -3318,6 +3322,8 @@ export type Database = {
           referral_reward_amount: number | null
           referrer_commission_percent: number | null
           social_ad_price: number | null
+          token_contract_address: string | null
+          token_decimals: number | null
           welcome_bonus_cap: number | null
           welcome_bonus_percent: number | null
           withdrawal_cooldown_minutes: number | null
