@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import ThemeToggle from "@/components/ThemeToggle";
 import NotificationBell from "@/components/NotificationBell";
+import ChatIcon from "@/components/chat/ChatIcon";
 import SignOutConfirmDialog from "@/components/SignOutConfirmDialog";
 import { useSidebarState } from "@/hooks/useSidebarState";
 import logo from "@/assets/logo.png";
@@ -112,6 +113,7 @@ const TopBar = () => {
           {hasAdminAccess && user && (
             <AdminBadgeButton isAdminRoute={isAdminRoute} onClick={() => navigate(isAdminRoute ? "/" : "/admin")} userId={user.id} />
           )}
+          <ChatIcon />
           <NotificationBell />
           <ThemeToggle />
           {loading ? null : user ? (
