@@ -8,7 +8,7 @@ import { X, Radio, Loader2, Calendar, Clock, ShieldAlert, Lock, Search, UserPlus
 import { motion, AnimatePresence } from "framer-motion";
 import MarketTagSelector, { type MarketTag } from "./MarketTagSelector";
 import { optimizedImageUrl } from "@/lib/optimizedImage";
-import { isYouTubeUrl } from "@/components/YouTubeEmbed";
+import { isYouTubeUrl, isStreamYardUrl } from "@/components/YouTubeEmbed";
 
 interface CreateSpaceModalProps {
   open: boolean;
@@ -38,6 +38,8 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
   const [searchResults, setSearchResults] = useState<InviteUser[]>([]);
   const [searching, setSearching] = useState(false);
   const [streamUrl, setStreamUrl] = useState("");
+  const [enableStream, setEnableStream] = useState(false);
+  const [streamPlatform, setStreamPlatform] = useState<"youtube" | "streamyard">("youtube");
 
   useEffect(() => {
     if (!user) return;
@@ -152,6 +154,8 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
       setInvitees([]);
       setSearchQuery("");
       setStreamUrl("");
+      setEnableStream(false);
+      setStreamPlatform("youtube");
       onClose();
     } catch (err: any) {
       toast.error(err.message || "Failed to create space");
@@ -227,21 +231,60 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
 
               <MarketTagSelector selected={taggedMarkets} onChange={setTaggedMarkets} max={6} />
 
-              {/* Optional Stream URL */}
-              <div className="space-y-1">
-                <label className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
-                  <Tv className="w-3 h-3 shrink-0" /> YouTube Live URL (optional)
-                </label>
-                <input
-                  value={streamUrl}
-                  onChange={(e) => setStreamUrl(e.target.value)}
-                  placeholder="https://youtube.com/watch?v=..."
-                  className="w-full bg-muted/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground"
-                />
-                {streamUrl.trim() && !isYouTubeUrl(streamUrl) && (
-                  <p className="text-[10px] text-destructive">Please enter a valid YouTube URL</p>
-                )}
-              </div>
+              {/* Enable Live Stream toggle */}
+              <button
+                onClick={() => { setEnableStream(!enableStream); if (enableStream) { setStreamUrl(""); } }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors ${
+                  enableStream ? "bg-primary/10 border-primary/30 text-primary" : "bg-muted/50 border-border text-muted-foreground"
+                }`}
+              >
+                <Tv className={`w-4 h-4 ${enableStream ? "text-primary" : ""}`} />
+                <div className="text-left flex-1">
+                  <p className="text-sm font-semibold">Enable Live Stream</p>
+                  <p className="text-[10px] opacity-70">Embed a YouTube or StreamYard broadcast</p>
+                </div>
+                <div className={`w-10 h-6 rounded-full transition-colors relative ${enableStream ? "bg-primary" : "bg-muted"}`}>
+                  <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${enableStream ? "translate-x-5" : "translate-x-1"}`} />
+                </div>
+              </button>
+
+              {enableStream && (
+                <div className="space-y-3">
+                  {/* Platform picker */}
+                  <div className="flex gap-2 p-1 bg-muted/50 rounded-lg">
+                    <button
+                      onClick={() => { setStreamPlatform("youtube"); setStreamUrl(""); }}
+                      className={`flex-1 py-2 rounded-md text-xs font-semibold transition-colors ${
+                        streamPlatform === "youtube" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      YouTube
+                    </button>
+                    <button
+                      onClick={() => { setStreamPlatform("streamyard"); setStreamUrl(""); }}
+                      className={`flex-1 py-2 rounded-md text-xs font-semibold transition-colors ${
+                        streamPlatform === "streamyard" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      StreamYard
+                    </button>
+                  </div>
+
+                  {/* Contextual URL input */}
+                  <input
+                    value={streamUrl}
+                    onChange={(e) => setStreamUrl(e.target.value)}
+                    placeholder={streamPlatform === "youtube" ? "https://youtube.com/watch?v=..." : "https://streamyard.com/watch/..."}
+                    className="w-full bg-muted/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground"
+                  />
+                  {streamUrl.trim() && streamPlatform === "youtube" && !isYouTubeUrl(streamUrl) && (
+                    <p className="text-[10px] text-destructive">Please enter a valid YouTube URL</p>
+                  )}
+                  {streamUrl.trim() && streamPlatform === "streamyard" && !isStreamYardUrl(streamUrl) && (
+                    <p className="text-[10px] text-destructive">Please enter a valid StreamYard URL</p>
+                  )}
+                </div>
+              )}
 
               {/* Private Space toggle */}
               <button

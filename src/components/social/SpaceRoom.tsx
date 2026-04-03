@@ -48,7 +48,7 @@ import TaggedMarketsCarousel from "./TaggedMarketsCarousel";
 import { SOUND_REACTIONS, playSoundById, AMBIENT_TRACKS, startAmbient, stopAmbient, isAmbientPlaying, warmAudioContext } from "@/lib/spaceSounds";
 import { Music, ChevronDown, Upload, Square, Play, Pause, Search, Tv } from "lucide-react";
 import { optimizedImageUrl as optimizedImg } from "@/lib/optimizedImage";
-import YouTubeEmbed, { isYouTubeUrl } from "@/components/YouTubeEmbed";
+import YouTubeEmbed, { isStreamUrl } from "@/components/YouTubeEmbed";
 
 interface SpaceRoomProps {
   spaceId: string;
@@ -2059,14 +2059,14 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 <input
                   value={streamInputValue}
                   onChange={(e) => setStreamInputValue(e.target.value)}
-                  placeholder="Paste YouTube Live URL…"
+                  placeholder="Paste YouTube or StreamYard URL…"
                   className="flex-1 bg-muted/50 border border-border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground"
                 />
                 <button
                   onClick={async () => {
                     const url = streamInputValue.trim();
-                    if (url && !isYouTubeUrl(url)) {
-                      toast.error("Please paste a valid YouTube URL");
+                    if (url && !isStreamUrl(url)) {
+                      toast.error("Please paste a valid YouTube or StreamYard URL");
                       return;
                     }
                     await supabase.from("spaces" as any).update({ stream_url: url || null } as any).eq("id", spaceId);
@@ -2096,8 +2096,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           </div>
         )}
 
-        {/* Embedded YouTube Stream */}
-        {streamUrl && isYouTubeUrl(streamUrl) && !streamCollapsed && (
+        {/* Embedded Stream (YouTube / StreamYard) */}
+        {streamUrl && isStreamUrl(streamUrl) && !streamCollapsed && (
           <div className="relative border-b border-border">
             <YouTubeEmbed url={streamUrl} className="w-full aspect-video" />
             <button
@@ -2108,7 +2108,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             </button>
           </div>
         )}
-        {streamUrl && isYouTubeUrl(streamUrl) && streamCollapsed && (
+        {streamUrl && isStreamUrl(streamUrl) && streamCollapsed && (
           <button
             onClick={() => setStreamCollapsed(false)}
             className="flex items-center gap-2 px-5 py-2 border-b border-border text-xs text-primary hover:bg-muted/30 transition-colors"

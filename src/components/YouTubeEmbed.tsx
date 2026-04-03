@@ -23,16 +23,30 @@ export const getYouTubeId = (url: string): string | null => {
 
 export const isYouTubeUrl = (url: string): boolean => !!getYouTubeId(url);
 
+/**
+ * Extract StreamYard broadcast ID from URL.
+ * Supports: streamyard.com/watch/ID and streamyard.com/ID
+ */
+export const getStreamYardId = (url: string): string | null => {
+  const match = url.match(/streamyard\.com\/(?:watch\/)?([a-zA-Z0-9_-]+)/);
+  return match ? match[1] : null;
+};
+
+export const isStreamYardUrl = (url: string): boolean => !!getStreamYardId(url);
+
+/** Returns true if the URL is a supported stream platform (YouTube or StreamYard). */
+export const isStreamUrl = (url: string): boolean => isYouTubeUrl(url) || isStreamYardUrl(url);
+
 const YouTubeEmbed = ({ url, className = "", fallbackImage, fallbackAlt }: YouTubeEmbedProps) => {
   const videoId = getYouTubeId(url);
+  const streamYardId = !videoId ? getStreamYardId(url) : null;
   const [showFallback, setShowFallback] = useState(false);
 
-  // Check if video exists via thumbnail probe
+  // Check if YouTube video exists via thumbnail probe
   useEffect(() => {
     if (!videoId) return;
     const img = new Image();
     img.onload = () => {
-      // YouTube returns a 120x90 default placeholder for unavailable videos
       if (img.naturalWidth === 120 && img.naturalHeight === 90) {
         setShowFallback(true);
       }
@@ -40,6 +54,20 @@ const YouTubeEmbed = ({ url, className = "", fallbackImage, fallbackAlt }: YouTu
     img.onerror = () => setShowFallback(true);
     img.src = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
   }, [videoId]);
+
+  // StreamYard embed
+  if (streamYardId) {
+    return (
+      <iframe
+        className={className}
+        src={`https://streamyard.com/watch/${streamYardId}?embed=true`}
+        title="StreamYard broadcast"
+        allow="autoplay; encrypted-media"
+        allowFullScreen
+        loading="lazy"
+      />
+    );
+  }
 
   if (!videoId) return null;
 
