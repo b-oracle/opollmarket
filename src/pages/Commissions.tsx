@@ -64,6 +64,8 @@ const Commissions = () => {
   const ITEMS_PER_PAGE = 15;
   const queryClient = useQueryClient();
   const { balance, giftBalance, bonusBalance, rewardsBalance, insuranceBalance, totalGiftBalance, isLoading: balLoading } = useUserBalance();
+  const { data: commSettings } = useCommissionSettings();
+  const giftFeePercent = commSettings?.gift_fee_percent ?? 2;
 
   const handleTopUp = async () => {
     const amt = Number(topUpAmount);
