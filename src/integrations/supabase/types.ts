@@ -3770,6 +3770,10 @@ export type Database = {
         Args: { _amount: number; _user_id: string }
         Returns: Json
       }
+      transfer_rewards_to_gift: {
+        Args: { _amount: number; _user_id: string }
+        Returns: Json
+      }
       update_trending_markets: { Args: never; Returns: undefined }
       withdraw_rewards_balance: {
         Args: { _amount: number; _user_id: string }

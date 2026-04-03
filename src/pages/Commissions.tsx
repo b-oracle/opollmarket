@@ -53,6 +53,7 @@ const Commissions = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [giftDetailOpen, setGiftDetailOpen] = useState(false);
   const [giftAction, setGiftAction] = useState<"topup" | "withdraw" | null>(null);
+  const [withdrawDest, setWithdrawDest] = useState<"main" | "gift" | null>(null);
   const [topUpAmount, setTopUpAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [processing, setProcessing] = useState(false);
@@ -93,6 +94,24 @@ const Commissions = () => {
     }
     toast.success(`Withdrew $${amt.toFixed(2)} to main balance`);
     setGiftAction(null);
+    setWithdrawAmount("");
+    queryClient.invalidateQueries({ queryKey: ["balance"] });
+  };
+
+  const handleTransferToGift = async () => {
+    const amt = Number(withdrawAmount);
+    if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
+    if (amt > rewardsBalance) { toast.error("Insufficient rewards balance"); return; }
+    setProcessing(true);
+    const { data, error } = await supabase.rpc("transfer_rewards_to_gift", { _user_id: user!.id, _amount: amt } as any);
+    setProcessing(false);
+    if (error || !(data as any)?.success) {
+      toast.error((data as any)?.error || error?.message || "Transfer failed");
+      return;
+    }
+    toast.success(`Transferred $${amt.toFixed(2)} to gift balance`);
+    setGiftAction(null);
+    setWithdrawDest(null);
     setWithdrawAmount("");
     queryClient.invalidateQueries({ queryKey: ["balance"] });
   };
@@ -714,7 +733,7 @@ const Commissions = () => {
         </div>
 
         {/* Gift Balance Detail Dialog */}
-        <Dialog open={giftDetailOpen} onOpenChange={(open) => { setGiftDetailOpen(open); if (!open) setGiftAction(null); }}>
+        <Dialog open={giftDetailOpen} onOpenChange={(open) => { setGiftDetailOpen(open); if (!open) { setGiftAction(null); setWithdrawDest(null); } }}>
           <DialogContent className="max-w-sm">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -778,10 +797,29 @@ const Commissions = () => {
               </div>
             )}
 
-            {giftAction === "withdraw" && (
+            {giftAction === "withdraw" && withdrawDest === null && (
               <div className="space-y-3">
                 <p className="text-xs text-muted-foreground">
-                  Transfer received gifts ({formatAmount(rewardsBalance)}) to your main balance.
+                  Where would you like to transfer your received gifts ({formatAmount(rewardsBalance)})?
+                </p>
+                <div className="grid grid-cols-1 gap-2">
+                  <Button variant="outline" className="w-full justify-start gap-2 h-12" onClick={() => setWithdrawDest("main")}>
+                    <Wallet className="w-4 h-4 text-primary" /> To Main Balance
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start gap-2 h-12" onClick={() => setWithdrawDest("gift")}>
+                    <Gift className="w-4 h-4 text-pink-500" /> To Gift Balance
+                  </Button>
+                </div>
+                <Button variant="ghost" className="w-full" onClick={() => { setGiftAction(null); }}>
+                  ← Back
+                </Button>
+              </div>
+            )}
+
+            {giftAction === "withdraw" && withdrawDest !== null && (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  Transfer to {withdrawDest === "main" ? "main balance" : "gift balance"} — Available: {formatAmount(rewardsBalance)}
                 </p>
                 <Input
                   type="number"
@@ -792,11 +830,11 @@ const Commissions = () => {
                   step={0.01}
                 />
                 <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1" onClick={() => { setGiftAction(null); setWithdrawAmount(""); }}>
+                  <Button variant="outline" className="flex-1" onClick={() => { setWithdrawDest(null); setWithdrawAmount(""); }}>
                     Back
                   </Button>
-                  <Button onClick={handleWithdraw} disabled={processing} className="flex-1">
-                    {processing ? "Processing..." : "Withdraw"}
+                  <Button onClick={withdrawDest === "main" ? handleWithdraw : handleTransferToGift} disabled={processing} className="flex-1">
+                    {processing ? "Processing..." : "Transfer"}
                   </Button>
                 </div>
               </div>
