@@ -2362,6 +2362,28 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
               </button>
             )}
 
+            {/* Camera toggle — verified speakers only */}
+            {canUseVideo && (
+              <button onClick={toggleCamera}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                  cameraOn ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                }`}
+                title={cameraOn ? "Turn off camera" : "Turn on camera"}>
+                {cameraOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+              </button>
+            )}
+
+            {/* Screen share toggle — verified hosts/co-hosts */}
+            {canUseVideo && hasModPowers && (
+              <button onClick={toggleScreenShare}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                  screenShareOn ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                }`}
+                title={screenShareOn ? "Stop screen share" : "Share screen"}>
+                {screenShareOn ? <MonitorOff className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
+              </button>
+            )}
+
             {/* Mute All / Unmute All — for moderators */}
             {hasModPowers && (
               allForceMuted ? (
