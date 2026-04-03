@@ -49,7 +49,8 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
   const [editingTitle, setEditingTitle] = useState(false);
   const [editTitleValue, setEditTitleValue] = useState(space.title);
   const [savingTitle, setSavingTitle] = useState(false);
-
+  const [broadcastOpen, setBroadcastOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const handleSaveCardTitle = async () => {
     const trimmed = editTitleValue.trim();
     if (!trimmed || trimmed === space.title) { setEditingTitle(false); return; }
