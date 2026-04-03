@@ -55,7 +55,8 @@ const ChatGiftModal = ({ open, onClose, conversationId, recipientId, recipientNa
       return;
     }
 
-    setSending(emoji);
+      setSending(emoji);
+      setLastSentAt(Date.now());
     try {
       const { error } = await supabase.rpc("send_dm_gift" as any, {
         p_conversation_id: conversationId,
