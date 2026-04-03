@@ -132,6 +132,36 @@ Deno.serve(async (req) => {
       type: "deposit",
     });
 
+    // Welcome bonus check
+    try {
+      // Check feature toggle
+      const { data: toggle } = await adminClient.from("feature_toggles").select("enabled").eq("feature_key", "welcome_bonus").maybeSingle();
+      if (toggle?.enabled) {
+        const { data: profile } = await adminClient.from("profiles").select("kyc_status").eq("id", user_id).single();
+        if (profile?.kyc_status === "approved") {
+          const { count } = await adminClient.from("transactions").select("id", { count: "exact", head: true }).eq("user_id", user_id).eq("type", "deposit").eq("status", "confirmed");
+          if ((count ?? 0) <= 1) {
+            const { data: settings } = await adminClient.from("commission_settings").select("welcome_bonus_percent, welcome_bonus_cap").limit(1).single();
+            if (settings) {
+              const percent = Number(settings.welcome_bonus_percent) || 0;
+              const cap = Number(settings.welcome_bonus_cap) || 0;
+              if (percent > 0 && cap > 0) {
+                const bonus = Math.min(Number(amount) * percent / 100, cap);
+                if (bonus > 0) {
+                  await adminClient.rpc("adjust_balance", { _user_id: user_id, _delta: 0, _bonus_delta: bonus, _insurance_delta: 0 });
+                  await adminClient.from("transactions").insert({ user_id, type: "welcome_bonus", amount: bonus, status: "confirmed" });
+                  await adminClient.from("notifications").insert({ user_id, title: "Welcome Bonus! 🎁", message: `You received a $${bonus.toFixed(2)} welcome bonus on your first deposit!`, type: "deposit" });
+                  console.log(`Welcome bonus: $${bonus.toFixed(2)} credited to user ${user_id}`);
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (wbErr) {
+      console.error("Welcome bonus error:", wbErr);
+    }
+
     // Settle any outstanding debts
     try {
       const { data: debtResult } = await adminClient.rpc("settle_user_debts", { _user_id: user_id });

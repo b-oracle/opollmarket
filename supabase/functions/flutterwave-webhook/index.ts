@@ -6,6 +6,76 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function processWelcomeBonus(supabase: ReturnType<typeof createClient>, userId: string, depositAmount: number) {
+  // 1. Check feature toggle
+  const { data: toggle } = await supabase
+    .from("feature_toggles")
+    .select("enabled")
+    .eq("feature_key", "welcome_bonus")
+    .maybeSingle();
+  if (!toggle?.enabled) return;
+
+  // 2. Check KYC status
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("kyc_status")
+    .eq("id", userId)
+    .single();
+  if (!profile || profile.kyc_status !== "approved") return;
+
+  // 3. Check if first deposit (no other confirmed deposits)
+  const { count } = await supabase
+    .from("transactions")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("type", "deposit")
+    .eq("status", "confirmed");
+  if ((count ?? 0) > 1) return; // >1 because current deposit is already confirmed
+
+  // 4. Get settings
+  const { data: settings } = await supabase
+    .from("commission_settings")
+    .select("welcome_bonus_percent, welcome_bonus_cap")
+    .limit(1)
+    .single();
+  if (!settings) return;
+  const percent = Number(settings.welcome_bonus_percent) || 0;
+  const cap = Number(settings.welcome_bonus_cap) || 0;
+  if (percent <= 0 || cap <= 0) return;
+
+  // 5. Calculate and credit
+  const bonus = Math.min(depositAmount * percent / 100, cap);
+  if (bonus <= 0) return;
+
+  const { error: adjError } = await supabase.rpc("adjust_balance", {
+    _user_id: userId,
+    _delta: 0,
+    _bonus_delta: bonus,
+    _insurance_delta: 0,
+  });
+  if (adjError) {
+    console.error("Welcome bonus credit failed:", adjError);
+    return;
+  }
+
+  // 6. Log transaction & notify
+  await supabase.from("transactions").insert({
+    user_id: userId,
+    type: "welcome_bonus",
+    amount: bonus,
+    status: "confirmed",
+  });
+
+  await supabase.from("notifications").insert({
+    user_id: userId,
+    title: "Welcome Bonus! 🎁",
+    message: `You received a $${bonus.toFixed(2)} welcome bonus on your first deposit!`,
+    type: "deposit",
+  });
+
+  console.log(`Welcome bonus: $${bonus.toFixed(2)} credited to user ${userId}`);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -142,6 +212,13 @@ Deno.serve(async (req) => {
         message: `Your deposit of $${Number(txn.amount).toFixed(2)} has been confirmed.`,
         type: "deposit",
       });
+
+      // Welcome bonus check
+      try {
+        await processWelcomeBonus(adminClient, txn.user_id, Number(txn.amount));
+      } catch (wbErr) {
+        console.error("Welcome bonus error:", wbErr);
+      }
 
       console.log(`Flutterwave deposit confirmed: ${txRef}, $${txn.amount} for user ${txn.user_id}`);
 

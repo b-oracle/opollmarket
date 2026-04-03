@@ -507,6 +507,8 @@ export type Database = {
           token_decimals: number | null
           updated_at: string
           updated_by: string | null
+          welcome_bonus_cap: number
+          welcome_bonus_percent: number
           withdrawal_cooldown_minutes: number
           withdrawal_fee_percent: number
           withdrawal_limit_enabled: boolean
@@ -576,6 +578,8 @@ export type Database = {
           token_decimals?: number | null
           updated_at?: string
           updated_by?: string | null
+          welcome_bonus_cap?: number
+          welcome_bonus_percent?: number
           withdrawal_cooldown_minutes?: number
           withdrawal_fee_percent?: number
           withdrawal_limit_enabled?: boolean
@@ -645,6 +649,8 @@ export type Database = {
           token_decimals?: number | null
           updated_at?: string
           updated_by?: string | null
+          welcome_bonus_cap?: number
+          welcome_bonus_percent?: number
           withdrawal_cooldown_minutes?: number
           withdrawal_fee_percent?: number
           withdrawal_limit_enabled?: boolean

@@ -97,6 +97,8 @@ const AdminSettings = () => {
   const [osure25Premium, setOsure25Premium] = useState("10");
   const [osure50Premium, setOsure50Premium] = useState("20");
   const [osure100Premium, setOsure100Premium] = useState("30");
+  const [welcomeBonusPercent, setWelcomeBonusPercent] = useState("0");
+  const [welcomeBonusCap, setWelcomeBonusCap] = useState("0");
   const [payazaMode, setPayazaMode] = useState<"checkout_sdk" | "direct_api">("direct_api"); // kept for save compatibility
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -165,6 +167,8 @@ const AdminSettings = () => {
         setOsure25Premium(String(d.osure_25_premium ?? 10));
         setOsure50Premium(String(d.osure_50_premium ?? 20));
         setOsure100Premium(String(d.osure_100_premium ?? 30));
+        setWelcomeBonusPercent(String(d.welcome_bonus_percent ?? 0));
+        setWelcomeBonusCap(String(d.welcome_bonus_cap ?? 0));
         setSettingsId(d.id);
       }
       if (error) console.error(error);
@@ -217,6 +221,8 @@ const AdminSettings = () => {
   const osure25PremiumNum = parseFloat(osure25Premium) || 10;
   const osure50PremiumNum = parseFloat(osure50Premium) || 20;
   const osure100PremiumNum = parseFloat(osure100Premium) || 30;
+  const welcomeBonusPercentNum = parseFloat(welcomeBonusPercent) || 0;
+  const welcomeBonusCapNum = parseFloat(welcomeBonusCap) || 0;
 
   // Splits must sum to ≤ 100 — platform keeps the remainder
   const splitTotalGold = creatorGoldNum + referrerCommissionNum + bc400PoolPercentNum;
@@ -323,9 +329,11 @@ const AdminSettings = () => {
                 broadcast_price: broadcastPriceNum,
                  bc400_pool_percent: bc400PoolPercentNum,
                  osure_enabled: osureEnabled,
-                 osure_25_premium: osure25PremiumNum,
-                 osure_50_premium: osure50PremiumNum,
-                 osure_100_premium: osure100PremiumNum,
+                  osure_25_premium: osure25PremiumNum,
+                  osure_50_premium: osure50PremiumNum,
+                  osure_100_premium: osure100PremiumNum,
+                  welcome_bonus_percent: welcomeBonusPercentNum,
+                  welcome_bonus_cap: welcomeBonusCapNum,
            updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
@@ -375,7 +383,9 @@ const AdminSettings = () => {
                auto_resolve_fee: autoResolveFeeNum,
                payaza_mode: payazaMode,
                 qt_one_sided_bonus: qtOneSidedBonus,
-                bc400_pool_percent: bc400PoolPercentNum,
+                 bc400_pool_percent: bc400PoolPercentNum,
+                 welcome_bonus_percent: welcomeBonusPercentNum,
+                 welcome_bonus_cap: welcomeBonusCapNum,
         },
       });
 
@@ -1021,6 +1031,33 @@ const AdminSettings = () => {
                     <li>AI Generate Image</li>
                   </ul>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Welcome Bonus */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Gift className="w-4 h-4 text-primary" /> Welcome Bonus
+                </CardTitle>
+                <CardDescription className="text-xs">First deposit bonus for KYC-verified users. Enable via the "Welcome Bonus" feature toggle above.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="welcomeBonusPercent" className="text-xs">Bonus Percent (%)</Label>
+                    <Input id="welcomeBonusPercent" type="number" min={0} max={100} step={1} value={welcomeBonusPercent} onChange={(e) => setWelcomeBonusPercent(e.target.value)} disabled={!canEdit} />
+                    <p className="text-[10px] text-muted-foreground">% of first deposit amount</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="welcomeBonusCap" className="text-xs">Max Bonus ($)</Label>
+                    <Input id="welcomeBonusCap" type="number" min={0} step={1} value={welcomeBonusCap} onChange={(e) => setWelcomeBonusCap(e.target.value)} disabled={!canEdit} />
+                    <p className="text-[10px] text-muted-foreground">Capped at this amount</p>
+                  </div>
+                </div>
+                {welcomeBonusPercentNum > 0 && welcomeBonusCapNum > 0 && (
+                  <p className="text-[10px] text-muted-foreground">Example: $20 deposit → ${Math.min(20 * welcomeBonusPercentNum / 100, welcomeBonusCapNum).toFixed(2)} bonus</p>
+                )}
               </CardContent>
             </Card>
           </div>

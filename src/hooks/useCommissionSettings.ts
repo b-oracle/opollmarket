@@ -30,6 +30,8 @@ export interface CommissionSettings {
   osure_100_premium: number;
   social_ad_price: number;
   ai_generation_cost: number;
+  welcome_bonus_percent: number;
+  welcome_bonus_cap: number;
 }
 
 export const useCommissionSettings = () => {
@@ -38,7 +40,7 @@ export const useCommissionSettings = () => {
     queryFn: async (): Promise<CommissionSettings> => {
       const { data, error } = await supabase
         .from("commission_settings")
-        .select("prediction_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, exit_fee_percent, quick_trade_fee_percent, qt_min_bet, qt_max_bet, qt_streak_2x, qt_streak_3x, qt_streak_4x, qt_streak_5x, qt_enabled_assets, qt_enabled_timeframes, qt_disabled_assets, auto_resolve_fee, boost_flash_price, boost_standard_price, boost_whale_price, broadcast_price, bc400_pool_percent, osure_enabled, osure_25_premium, osure_50_premium, osure_100_premium, social_ad_price, ai_generation_cost")
+        .select("prediction_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, exit_fee_percent, quick_trade_fee_percent, qt_min_bet, qt_max_bet, qt_streak_2x, qt_streak_3x, qt_streak_4x, qt_streak_5x, qt_enabled_assets, qt_enabled_timeframes, qt_disabled_assets, auto_resolve_fee, boost_flash_price, boost_standard_price, boost_whale_price, broadcast_price, bc400_pool_percent, osure_enabled, osure_25_premium, osure_50_premium, osure_100_premium, social_ad_price, ai_generation_cost, welcome_bonus_percent, welcome_bonus_cap")
         .limit(1)
         .maybeSingle();
       if (error || !data) {
@@ -69,9 +71,11 @@ export const useCommissionSettings = () => {
           osure_25_premium: 10,
           osure_50_premium: 20,
           osure_100_premium: 30,
-          social_ad_price: 10,
-          ai_generation_cost: 0.5,
-        };
+           social_ad_price: 10,
+           ai_generation_cost: 0.5,
+           welcome_bonus_percent: 0,
+           welcome_bonus_cap: 0,
+         };
       }
       const d = data as any;
       return {
@@ -103,6 +107,8 @@ export const useCommissionSettings = () => {
         osure_100_premium: Number(d.osure_100_premium ?? 30),
         social_ad_price: Number(d.social_ad_price ?? 10),
         ai_generation_cost: Number(d.ai_generation_cost ?? 0.5),
+        welcome_bonus_percent: Number(d.welcome_bonus_percent ?? 0),
+        welcome_bonus_cap: Number(d.welcome_bonus_cap ?? 0),
       };
     },
     staleTime: 60_000,
