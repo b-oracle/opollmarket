@@ -39,6 +39,7 @@ import {
   VideoOff,
   Monitor,
   MonitorOff,
+  SwitchCamera,
 } from "lucide-react";
 import NftBadge, { VerificationLevel } from "@/components/NftBadge";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
@@ -148,6 +149,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
   // Video & Screen Share state
   const [cameraOn, setCameraOn] = useState(false);
+  const [facingBack, setFacingBack] = useState(false);
   const [screenShareOn, setScreenShareOn] = useState(false);
   const videoElementsRef = useRef<Map<string, HTMLVideoElement>>(new Map());
 
@@ -1160,6 +1162,21 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       updateParticipants(roomRef.current);
     } catch {
       toast.error("Camera access denied");
+    }
+  };
+
+  const flipCamera = async () => {
+    if (!roomRef.current || !cameraOn) return;
+    try {
+      const newFacing = !facingBack;
+      await roomRef.current.localParticipant.setCameraEnabled(false);
+      await roomRef.current.localParticipant.setCameraEnabled(true, {
+        facingMode: newFacing ? "environment" : "user",
+      });
+      setFacingBack(newFacing);
+      updateParticipants(roomRef.current);
+    } catch {
+      toast.error("Failed to switch camera");
     }
   };
 
@@ -2503,6 +2520,15 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 }`}
                 title={cameraOn ? "Turn off camera" : "Turn on camera"}>
                 {cameraOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+              </button>
+            )}
+
+            {/* Flip camera — only when camera is active */}
+            {canUseVideo && cameraOn && (
+              <button onClick={flipCamera}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-colors bg-muted text-muted-foreground hover:bg-accent"
+                title={facingBack ? "Switch to front camera" : "Switch to back camera"}>
+                <SwitchCamera className="w-5 h-5" />
               </button>
             )}
 
