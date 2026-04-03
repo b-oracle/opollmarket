@@ -168,7 +168,7 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", stiffness: 300, damping: 18 }}
-            className={`max-w-[70%] rounded-2xl select-none touch-none ${
+            className={`w-fit rounded-2xl select-none touch-none ${
               isMine
                 ? "bg-primary/15 rounded-br-md"
                 : "bg-accent/20 rounded-bl-md"
