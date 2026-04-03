@@ -166,27 +166,44 @@ const Commissions = () => {
   const { data: giftsSent, isLoading: loadingGS } = useQuery({
     queryKey: ["gifts-sent", user?.id],
     queryFn: async () => {
-      const [spaceRes, dmRes] = await Promise.all([
+      const [spaceRes, dmMsgRes] = await Promise.all([
         supabase
           .from("space_gifts")
           .select("id, amount, emoji, created_at, recipient_id, space_id")
           .eq("sender_id", user!.id)
           .order("created_at", { ascending: false }),
         supabase
-          .from("transactions")
-          .select("id, amount, created_at")
-          .eq("user_id", user!.id)
-          .eq("type", "gift_sent")
+          .from("dm_messages")
+          .select("id, gift_amount, created_at, conversation_id, content")
+          .eq("sender_id", user!.id)
+          .gt("gift_amount", 0)
           .order("created_at", { ascending: false }),
       ]);
-      const spaceGifts = (spaceRes.data ?? []).map((g: any) => ({ ...g, source: "space" }));
-      const dmGifts = (dmRes.data ?? []).map((t: any) => ({
-        id: t.id,
-        amount: Math.abs(Number(t.amount)),
-        emoji: "💬",
-        created_at: t.created_at,
-        source: "dm",
-      }));
+      const spaceGifts = (spaceRes.data ?? []).map((g: any) => ({ ...g, source: "space", counterpartyId: g.recipient_id }));
+      
+      // For DM gifts sent, resolve counterparty from conversations
+      const dmGifts: any[] = [];
+      const dmData = dmMsgRes.data ?? [];
+      if (dmData.length > 0) {
+        const convIds = [...new Set(dmData.map((m: any) => m.conversation_id))];
+        const { data: convs } = await supabase
+          .from("dm_conversations")
+          .select("id, user_a, user_b")
+          .in("id", convIds);
+        const convMap = new Map((convs ?? []).map((c: any) => [c.id, c]));
+        dmData.forEach((m: any) => {
+          const conv = convMap.get(m.conversation_id);
+          const counterpartyId = conv ? (conv.user_a === user!.id ? conv.user_b : conv.user_a) : null;
+          dmGifts.push({
+            id: m.id,
+            amount: Math.abs(Number(m.gift_amount)),
+            emoji: m.content || "💬",
+            created_at: m.created_at,
+            source: "dm",
+            counterpartyId,
+          });
+        });
+      }
       return [...spaceGifts, ...dmGifts].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     },
     enabled: !!user?.id,
@@ -195,27 +212,45 @@ const Commissions = () => {
   const { data: giftsReceived, isLoading: loadingGR } = useQuery({
     queryKey: ["gifts-received", user?.id],
     queryFn: async () => {
-      const [spaceRes, dmRes] = await Promise.all([
+      const [spaceRes, dmMsgRes] = await Promise.all([
         supabase
           .from("space_gifts")
           .select("id, amount, emoji, created_at, sender_id, space_id")
           .eq("recipient_id", user!.id)
           .order("created_at", { ascending: false }),
         supabase
-          .from("transactions")
-          .select("id, amount, created_at")
-          .eq("user_id", user!.id)
-          .eq("type", "gift_received")
+          .from("dm_messages")
+          .select("id, gift_amount, created_at, conversation_id, sender_id, content")
+          .neq("sender_id", user!.id)
+          .gt("gift_amount", 0)
           .order("created_at", { ascending: false }),
       ]);
-      const spaceGifts = (spaceRes.data ?? []).map((g: any) => ({ ...g, source: "space" }));
-      const dmGifts = (dmRes.data ?? []).map((t: any) => ({
-        id: t.id,
-        amount: Number(t.amount),
-        emoji: "💬",
-        created_at: t.created_at,
-        source: "dm",
-      }));
+      // For received DM gifts, need to find conversations where user is participant
+      const spaceGifts = (spaceRes.data ?? []).map((g: any) => ({ ...g, source: "space", counterpartyId: g.sender_id }));
+      
+      const dmGifts: any[] = [];
+      const dmData = dmMsgRes.data ?? [];
+      if (dmData.length > 0) {
+        const convIds = [...new Set(dmData.map((m: any) => m.conversation_id))];
+        const { data: convs } = await supabase
+          .from("dm_conversations")
+          .select("id, user_a, user_b")
+          .in("id", convIds);
+        const convMap = new Map((convs ?? []).map((c: any) => [c.id, c]));
+        dmData.forEach((m: any) => {
+          const conv = convMap.get(m.conversation_id);
+          // Only include if user is a participant in this conversation
+          if (!conv || (conv.user_a !== user!.id && conv.user_b !== user!.id)) return;
+          dmGifts.push({
+            id: m.id,
+            amount: Number(m.gift_amount),
+            emoji: m.content || "💬",
+            created_at: m.created_at,
+            source: "dm",
+            counterpartyId: m.sender_id,
+          });
+        });
+      }
       return [...spaceGifts, ...dmGifts].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     },
     enabled: !!user?.id,
