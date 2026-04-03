@@ -329,6 +329,10 @@ const Terms = () => {
             <li>Submit false, misleading, or fraudulent market proposals or resolution claims.</li>
             <li>Circumvent or attempt to circumvent content moderation, token-gating, verification badge requirements, or any other access control mechanism.</li>
             <li>Abuse the copy trading system to artificially generate commissions or manipulate trading patterns.</li>
+            <li>Use direct messaging to send spam, solicit, harass, or send unsolicited commercial messages.</li>
+            <li>Exploit the gifting system for money laundering, structuring, or transferring funds to circumvent withdrawal controls.</li>
+            <li>Submit falsified or fraudulent KYC documents, or use another person's identity documents.</li>
+            <li>Create or participate in Spaces for the purpose of harassment, hate speech, or promoting illegal activities.</li>
           </ul>
         </section>
 
