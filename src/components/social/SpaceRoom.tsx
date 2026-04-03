@@ -602,6 +602,17 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const updateParticipants = useCallback((room: Room) => {
     const all: ParticipantInfo[] = [];
     const addP = (p: any) => {
+      let videoTrack: any = null;
+      let screenShareTrack: any = null;
+      p.videoTrackPublications?.forEach((pub: any) => {
+        if (pub.track && pub.isSubscribed !== false) {
+          if (pub.source === Track.Source.ScreenShare) {
+            screenShareTrack = pub.track;
+          } else if (pub.source === Track.Source.Camera) {
+            videoTrack = pub.track;
+          }
+        }
+      });
       all.push({
         identity: p.identity,
         name: p.name || p.identity.slice(0, 8),
@@ -609,6 +620,10 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         isMuted: !p.isMicrophoneEnabled,
         audioTrack: p.audioTrackPublications.size > 0,
         canPublish: p.permissions?.canPublish ?? false,
+        hasVideo: !!videoTrack,
+        hasScreenShare: !!screenShareTrack,
+        videoTrack,
+        screenShareTrack,
       });
     };
     addP(room.localParticipant);
