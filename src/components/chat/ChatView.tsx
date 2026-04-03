@@ -46,7 +46,7 @@ const ChatView = () => {
         .select("id, display_name, avatar_url")
         .eq("id", otherId)
         .maybeSingle();
-      return { ...data, other_user: profile };
+      return { ...(data as any), other_user: profile };
     },
     enabled: !!conversationId && !!user,
   });
