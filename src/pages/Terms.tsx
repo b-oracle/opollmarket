@@ -16,6 +16,10 @@ const tocItems = [
   { id: "creation", label: "Market Creation & Token-Gating" },
   { id: "verification", label: "Verification Badges" },
   { id: "copytrade", label: "Copy Trading" },
+  { id: "dm", label: "Direct Messaging" },
+  { id: "spaces", label: "Spaces (Live Rooms)" },
+  { id: "social", label: "Stories & Social Features" },
+  { id: "kyc", label: "KYC & Identity Verification" },
   { id: "moderation", label: "Content Moderation & Community Guidelines" },
   { id: "resolution", label: "Market Resolution" },
   { id: "boosting", label: "Market Boosting" },
@@ -90,7 +94,11 @@ const Terms = () => {
             <li><strong>Copy trade</strong> by following successful traders and automatically replicating their predictions and Quick Trades.</li>
             <li><strong>Earn verification badges</strong> (Blue Tick, Gold Tick) by holding qualifying BC400 tokens and/or NFTs, unlocking benefits such as trending boosts and revenue share bonus.</li>
             <li><strong>Boost markets</strong> to increase visibility through paid promotional tiers.</li>
-            <li><strong>Engage socially</strong> by commenting on markets, liking content, bookmarking markets, following users, and sharing via integrated social channels (X/Twitter, Telegram, WhatsApp).</li>
+            <li><strong>Engage socially</strong> by commenting on markets, liking content, bookmarking markets, following users, posting status updates, sharing stories, and sharing via integrated social channels (X/Twitter, Telegram, WhatsApp).</li>
+            <li><strong>Direct message</strong> mutual follows with text and emoji gifts through a secure in-app messaging system.</li>
+            <li><strong>Host and join Spaces</strong> — live audio/video rooms for real-time discussions with gifting capabilities.</li>
+            <li><strong>Share Stories</strong> — ephemeral visual posts that expire after 24 hours.</li>
+            <li><strong>Complete KYC verification</strong> to unlock higher daily withdrawal limits.</li>
             <li><strong>Participate in a referral program</strong> to earn bonus rewards for introducing new users.</li>
             <li><strong>View real-time data</strong> including order book depth, price history charts, live trade feeds, and live sports scores.</li>
           </ul>
@@ -200,6 +208,58 @@ const Terms = () => {
           </ul>
         </section>
 
+        <section id="dm" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">8d. Direct Messaging</h2>
+          <p>The Platform provides a direct messaging feature for mutual follows. By using this feature, you agree that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Direct messaging is available only between users who mutually follow each other. The Platform enforces this restriction to prevent unsolicited messages.</li>
+            <li>Messages are limited to 2,000 characters in length.</li>
+            <li>A rate limit of 5 messages per 10 seconds per conversation is enforced to prevent spam. Violations may result in temporary messaging restrictions.</li>
+            <li><strong>In-Chat Gifting:</strong> Users may send emoji gifts within conversations. Each emoji has a fixed dollar value. Gift amounts are deducted from the sender's gift balance and credited to the recipient's rewards balance. Gift transactions are final and non-reversible.</li>
+            <li>Messages are not end-to-end encrypted. They are encrypted in transit (TLS) and at rest in the database. The Platform reserves the right to access message content for moderation, legal compliance, or fraud investigation purposes.</li>
+            <li>The Platform is not responsible for the content of messages exchanged between users. You are solely responsible for the messages you send.</li>
+          </ul>
+        </section>
+
+        <section id="spaces" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">8e. Spaces (Live Audio/Video Rooms)</h2>
+          <p>The Platform offers live audio and video rooms ("Spaces") where users can host real-time discussions. By using Spaces, you agree that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Hosts are responsible for the content and conduct within their Space. The Platform reserves the right to terminate any Space that violates community guidelines.</li>
+            <li>Spaces may be recorded if the host enables recording. All participants are notified when recording is active.</li>
+            <li><strong>Space Gifting:</strong> Listeners may send emoji gifts to speakers and co-hosts during live Spaces. Gift transactions follow the same rules as in-chat gifting (deducted from gift balance, credited to rewards balance, final and non-reversible).</li>
+            <li>The Platform is not responsible for statements, opinions, or content shared by participants during Spaces.</li>
+            <li>Scheduled Spaces may be cancelled or rescheduled by the host at any time.</li>
+            <li>Co-hosts are granted elevated privileges (microphone, camera, screen share) at the host's discretion.</li>
+          </ul>
+        </section>
+
+        <section id="social" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">8f. Stories & Social Features</h2>
+          <p>The Platform offers social features including Stories and Status Posts. By using these features, you agree that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Stories</strong> are ephemeral posts (text, images, market shares) that are publicly visible and automatically expire after 24 hours. You cannot recover deleted or expired stories.</li>
+            <li><strong>Status Posts</strong> are permanent social updates that are publicly visible. You may delete your own status posts at any time.</li>
+            <li>All social content is subject to the Platform's content moderation policies and community guidelines.</li>
+            <li>You grant the Platform a non-exclusive license to display and distribute your social content as part of Platform operations.</li>
+            <li>The Platform is not responsible for how other users interact with or respond to your social content.</li>
+          </ul>
+        </section>
+
+        <section id="kyc" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">8g. KYC & Identity Verification</h2>
+          <p>The Platform implements a multi-tiered Know Your Customer (KYC) system to comply with regulations and enable higher withdrawal limits. By submitting KYC information, you agree that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Tier 1 (Basic):</strong> Requires your full name, date of birth, phone number, and a selfie holding a handwritten note referencing "Opollmarket" and the current date.</li>
+            <li><strong>Tier 2 (Full):</strong> Requires government-issued identification (front and back), proof of address, and utility bills.</li>
+            <li>Daily withdrawal limits are determined by your KYC tier. Unverified users have the lowest limits. Exact limits are configured by the System-Mod Engine and displayed in the Platform.</li>
+            <li>The Platform collects device fingerprint data (IP address, browser, screen dimensions, timezone) during KYC submission for fraud prevention.</li>
+            <li>KYC submissions are reviewed by authorized administrators. The Platform reserves the right to request additional documentation or reject submissions at its sole discretion.</li>
+            <li>Providing false, forged, or misleading identity documents is strictly prohibited and may result in permanent account suspension.</li>
+            <li>KYC documents are stored securely in a private storage bucket with restricted access.</li>
+          </ul>
+        </section>
+
         <section id="moderation" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">9. Content Moderation & Community Guidelines</h2>
           <p>All user-generated content — including market titles, descriptions, answer options, cover images, comments, display names, and avatars — is subject to automated AI moderation and manual review by the System-Mod Engine. Content that violates community guidelines will be removed or flagged.</p>
@@ -269,6 +329,10 @@ const Terms = () => {
             <li>Submit false, misleading, or fraudulent market proposals or resolution claims.</li>
             <li>Circumvent or attempt to circumvent content moderation, token-gating, verification badge requirements, or any other access control mechanism.</li>
             <li>Abuse the copy trading system to artificially generate commissions or manipulate trading patterns.</li>
+            <li>Use direct messaging to send spam, solicit, harass, or send unsolicited commercial messages.</li>
+            <li>Exploit the gifting system for money laundering, structuring, or transferring funds to circumvent withdrawal controls.</li>
+            <li>Submit falsified or fraudulent KYC documents, or use another person's identity documents.</li>
+            <li>Create or participate in Spaces for the purpose of harassment, hate speech, or promoting illegal activities.</li>
           </ul>
         </section>
 
@@ -325,7 +389,7 @@ const Terms = () => {
           <p>For questions, concerns, or requests relating to these Terms, please contact us through the Platform's support channels or via the contact information provided in the application.</p>
         </section>
 
-        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: March 10, 2026</p>
+        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: April 3, 2026</p>
       </div>
       <BackToTop />
     </div>

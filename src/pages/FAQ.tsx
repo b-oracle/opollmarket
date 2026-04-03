@@ -135,6 +135,41 @@ const faqSections = [
     ],
   },
   {
+    title: "Direct Messaging",
+    items: [
+      { question: "How do I send a direct message?", answer: "Tap the chat icon (💬) in the top bar to open your conversations. You can start a new conversation with any user you mutually follow." },
+      { question: "Who can I message?", answer: "Direct messaging is available only between **mutual follows** — both you and the other user must follow each other. This prevents unsolicited messages." },
+      { question: "Can I send gifts in chat?", answer: "Yes! Tap the gift icon next to the message input to send an emoji gift. Each emoji has a fixed dollar value (e.g., 💸 $1, 💰 $5, 👱🏼‍♀️ $50). The amount is deducted from your **gift balance** and credited to the recipient's **rewards balance**." },
+      { question: "Are messages encrypted?", answer: "Messages are encrypted in transit (TLS) and at rest in the database. The Platform does not offer client-side end-to-end encryption at this time." },
+      { question: "Is there a message rate limit?", answer: "Yes. To prevent spam, you can send a maximum of 5 messages per 10 seconds in any conversation." },
+    ],
+  },
+  {
+    title: "Spaces (Live Rooms)",
+    items: [
+      { question: "What are Spaces?", answer: "Spaces are live audio/video rooms where users can host conversations, discussions, and debates with their followers in real-time." },
+      { question: "How do I create a Space?", answer: "Go to the Social tab and tap 'Create Space'. You can set a title, tag markets for discussion, invite co-hosts, and optionally schedule it for later." },
+      { question: "Can I send gifts during a Space?", answer: "Yes! Listeners can send emoji gifts to speakers and co-hosts during live Spaces. Gift values are deducted from your gift balance and credited to the recipient's rewards balance." },
+      { question: "Can I use video in Spaces?", answer: "Yes. Hosts and co-hosts can enable their camera, including switching between front and back cameras on mobile devices." },
+    ],
+  },
+  {
+    title: "Stories & Status Posts",
+    items: [
+      { question: "What are Stories?", answer: "Stories are short-lived visual posts (text, images, or market shares) that expire after 24 hours. They appear in the stories carousel at the top of the Social feed." },
+      { question: "What are Status Posts?", answer: "Status posts are permanent social updates you can share with your followers, including text content, images, and tagged markets. Other users can like, comment, and engage with your posts." },
+    ],
+  },
+  {
+    title: "KYC (Identity Verification)",
+    items: [
+      { question: "What is KYC?", answer: "KYC (Know Your Customer) is an identity verification process required to unlock higher withdrawal limits. It helps us maintain platform security and comply with regulations." },
+      { question: "What are the KYC tiers?", answer: "**Tier 1 (Basic):** Requires your name, date of birth, phone number, and a selfie with a verification note.\n\n**Tier 2 (Full):** Requires government-issued ID (front & back), address proof, and utility bills." },
+      { question: "How do withdrawal limits work with KYC?", answer: "Without KYC, you have a lower daily withdrawal limit. Completing Tier 1 increases your limit, and Tier 2 unlocks the highest daily withdrawal allowance. Exact limits are set by the admin." },
+      { question: "Is my KYC data secure?", answer: "Yes. KYC documents are stored in a private, access-controlled storage bucket. Device fingerprinting (IP, browser, screen size) is logged during submission for fraud prevention." },
+    ],
+  },
+  {
     title: "Security & Privacy",
     items: [
       { question: "Is OPollMarket secure?", answer: "Yes. The platform implements secure wallet authentication, blockchain-based settlement, and standard cybersecurity measures." },
