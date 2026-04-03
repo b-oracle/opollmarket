@@ -516,21 +516,30 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
             </button>
           )}
           {isHost && isScheduled && (
-            <button
-              onClick={async (e) => {
-                e.stopPropagation();
-                const { error } = await supabase
-                  .from("spaces" as any)
-                  .update({ status: "live", started_at: new Date().toISOString() })
-                  .eq("id", space.id);
-                if (error) { toast.error("Failed"); return; }
-                queryClient.invalidateQueries({ queryKey: ["spaces"] });
-                toast.success("Space is now live! 🎙️");
-              }}
-              className="px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-[10px] font-semibold hover:bg-destructive/20 transition-colors flex items-center gap-1"
-            >
-              <Radio className="w-3 h-3" /> Go Live Now
-            </button>
+            <>
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  const { error } = await supabase
+                    .from("spaces" as any)
+                    .update({ status: "live", started_at: new Date().toISOString() })
+                    .eq("id", space.id);
+                  if (error) { toast.error("Failed"); return; }
+                  queryClient.invalidateQueries({ queryKey: ["spaces"] });
+                  toast.success("Space is now live! 🎙️");
+                }}
+                className="px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-[10px] font-semibold hover:bg-destructive/20 transition-colors flex items-center gap-1"
+              >
+                <Radio className="w-3 h-3" /> Go Live
+              </button>
+              <button
+                onClick={handleCancelSpace}
+                disabled={cancelling}
+                className="px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-[10px] font-semibold hover:bg-destructive/10 hover:text-destructive transition-colors flex items-center gap-1"
+              >
+                {cancelling ? <Loader2 className="w-3 h-3 animate-spin" /> : <><XCircle className="w-3 h-3" /> Cancel</>}
+              </button>
+            </>
           )}
           {isHost && isLive && (
             <button
