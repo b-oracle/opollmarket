@@ -223,7 +223,7 @@ const Privacy = () => {
         </section>
 
         <section id="your-rights" className="space-y-2 scroll-mt-20">
-          <h2 className="text-base font-semibold text-foreground">9. Your Rights</h2>
+          <h2 className="text-base font-semibold text-foreground">13. Your Rights</h2>
           <p>Depending on your jurisdiction (including under GDPR, CCPA, and similar regulations), you may have the following rights regarding your personal data:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li><strong>Right of Access:</strong> Request a copy of the personal data we hold about you.</li>
