@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Plus, MessageCircle, Search } from "lucide-react";
+import { ArrowLeft, Plus, MessageCircle, Search, Inbox } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { formatDistanceToNow } from "date-fns";
 import SEOHead from "@/components/SEOHead";
@@ -13,6 +13,7 @@ interface ConversationRow {
   user_a: string;
   user_b: string;
   last_message_at: string;
+  status: string;
   other_user: { id: string; display_name: string; avatar_url: string | null } | null;
   last_message?: string;
   unread_count?: number;
@@ -24,8 +25,9 @@ const ConversationList = () => {
   const queryClient = useQueryClient();
   const [showNewChat, setShowNewChat] = useState(false);
   const [search, setSearch] = useState("");
+  const [tab, setTab] = useState<"chats" | "requests">("chats");
 
-  const { data: conversations = [], isLoading } = useQuery({
+  const { data: allConversations = [], isLoading } = useQuery({
     queryKey: ["dm-conversations", user?.id],
     queryFn: async () => {
       if (!user) return [];
@@ -48,7 +50,6 @@ const ConversationList = () => {
 
       const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
 
-      // Get last message + unread count per conversation
       const results: ConversationRow[] = [];
       for (const c of convos as any[]) {
         const otherId = c.user_a === user.id ? c.user_b : c.user_a;
@@ -81,7 +82,32 @@ const ConversationList = () => {
     staleTime: 10_000,
   });
 
-  // Mutual follows for new chat picker
+  // Split into active chats and pending requests (where I'm the recipient)
+  const conversations = allConversations.filter((c) => c.status === "active");
+  const pendingRequests = allConversations.filter((c) => {
+    if (c.status !== "pending") return false;
+    // Show in requests tab only if I'm the recipient (not the sender of first msg)
+    return true; // We'll show all pending - sender sees it in chats, recipient in requests
+  });
+
+  // For new chat picker - now searches ALL users, not just mutuals
+  const { data: searchResults = [] } = useQuery({
+    queryKey: ["user-search-for-dm", user?.id, search],
+    queryFn: async () => {
+      if (!user || !search.trim()) return [];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .neq("id", user.id)
+        .ilike("display_name", `%${search.trim()}%`)
+        .limit(20);
+
+      return profiles || [];
+    },
+    enabled: !!user && showNewChat && search.trim().length > 0,
+  });
+
+  // Also fetch mutual follows for quick suggestions
   const { data: mutualFollows = [] } = useQuery({
     queryKey: ["mutual-follows-for-dm", user?.id],
     queryFn: async () => {
@@ -115,50 +141,29 @@ const ConversationList = () => {
   });
 
   const existingPartnerIds = new Set(
-    conversations.map((c) => c.other_user?.id).filter(Boolean)
+    allConversations.map((c) => c.other_user?.id).filter(Boolean)
   );
 
-  const availableMutuals = mutualFollows.filter(
-    (m) => !existingPartnerIds.has(m.id)
-  );
-
-  const filteredMutuals = search
-    ? availableMutuals.filter((m) =>
-        (m.display_name || "").toLowerCase().includes(search.toLowerCase())
-      )
-    : availableMutuals;
+  const displayUsers = search.trim()
+    ? searchResults.filter((m) => !existingPartnerIds.has(m.id))
+    : mutualFollows.filter((m) => !existingPartnerIds.has(m.id));
 
   const startConversation = async (otherId: string) => {
     if (!user) return;
-    const [a, b] = user.id < otherId ? [user.id, otherId] : [otherId, user.id];
-
-    // Check if exists
-    const { data: existing } = await supabase
-      .from("dm_conversations" as any)
-      .select("id")
-      .eq("user_a", a)
-      .eq("user_b", b)
-      .maybeSingle();
-
-    if (existing) {
-      navigate(`/messages/${(existing as any).id}`);
-      return;
-    }
-
-    const { data: created, error } = await supabase
-      .from("dm_conversations" as any)
-      .insert({ user_a: a, user_b: b })
-      .select("id")
-      .single();
-
-    if (error) {
+    try {
+      const { data, error } = await supabase.rpc("start_dm_conversation", {
+        _other_user_id: otherId,
+      });
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["dm-conversations"] });
+      navigate(`/messages/${data}`);
+    } catch {
       const { toast } = await import("sonner");
-      toast.error("Could not start conversation. Make sure you follow each other.");
-      return;
+      toast.error("Could not start conversation");
     }
-    queryClient.invalidateQueries({ queryKey: ["dm-conversations"] });
-    navigate(`/messages/${(created as any).id}`);
   };
+
+  const requestCount = pendingRequests.length;
 
   return (
     <div className="h-[100dvh] bg-background flex flex-col overflow-hidden overflow-x-hidden">
@@ -178,109 +183,172 @@ const ConversationList = () => {
           </button>
         </div>
 
+        {/* Tabs */}
+        <div className="shrink-0 flex border-b border-border">
+          <button
+            onClick={() => setTab("chats")}
+            className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+              tab === "chats"
+                ? "text-primary border-b-2 border-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Chats
+          </button>
+          <button
+            onClick={() => setTab("requests")}
+            className={`flex-1 py-2.5 text-sm font-medium transition-colors relative ${
+              tab === "requests"
+                ? "text-primary border-b-2 border-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Requests
+            {requestCount > 0 && (
+              <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
+                {requestCount}
+              </span>
+            )}
+          </button>
+        </div>
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto min-h-0" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
-        {/* New chat picker */}
-        {showNewChat && (
-          <div className="border-b border-border p-4 space-y-3">
-            <Input
-              placeholder="Search mutual follows..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-9"
-            />
-            {filteredMutuals.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-2">
-                {search ? "No matches" : "No mutual follows available"}
-              </p>
+          {/* New chat picker */}
+          {showNewChat && (
+            <div className="border-b border-border p-4 space-y-3">
+              <Input
+                placeholder="Search users..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-9"
+              />
+              {displayUsers.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-2">
+                  {search ? "No matches" : "No suggestions available"}
+                </p>
+              ) : (
+                <div className="max-h-48 overflow-y-auto space-y-1">
+                  {displayUsers.map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => startConversation(m.id)}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+                        {m.avatar_url ? (
+                          <img src={m.avatar_url} className="w-full h-full object-cover" alt="" />
+                        ) : (
+                          <span className="text-xs font-bold text-primary">
+                            {(m.display_name || "?").charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-sm font-medium">{m.display_name || "User"}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Conversation list */}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : tab === "chats" ? (
+            conversations.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
+                <MessageCircle className="w-12 h-12 opacity-30" />
+                <p className="text-sm">No messages yet</p>
+                <button
+                  onClick={() => setShowNewChat(true)}
+                  className="text-sm text-primary font-medium hover:underline"
+                >
+                  Start a conversation
+                </button>
+              </div>
             ) : (
-              <div className="max-h-48 overflow-y-auto space-y-1">
-                {filteredMutuals.map((m) => (
-                  <button
-                    key={m.id}
-                    onClick={() => startConversation(m.id)}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent/50 transition-colors"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
-                      {m.avatar_url ? (
-                        <img src={m.avatar_url} className="w-full h-full object-cover" alt="" />
-                      ) : (
-                        <span className="text-xs font-bold text-primary">
-                          {(m.display_name || "?").charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-sm font-medium">{m.display_name || "User"}</span>
-                  </button>
+              <div className="divide-y divide-border">
+                {conversations.map((c) => (
+                  <ConversationItem key={c.id} c={c} navigate={navigate} />
                 ))}
               </div>
-            )}
-          </div>
-        )}
-
-        {/* Conversation list */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : conversations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
-            <MessageCircle className="w-12 h-12 opacity-30" />
-            <p className="text-sm">No messages yet</p>
-            <button
-              onClick={() => setShowNewChat(true)}
-              className="text-sm text-primary font-medium hover:underline"
-            >
-              Start a conversation
-            </button>
-          </div>
-        ) : (
-          <div className="divide-y divide-border">
-            {conversations.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => navigate(`/messages/${c.id}`)}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/30 transition-colors text-left"
-              >
-                <div className="relative w-11 h-11 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0">
-                  {c.other_user?.avatar_url ? (
-                    <img src={c.other_user.avatar_url} className="w-full h-full object-cover" alt="" />
-                  ) : (
-                    <span className="text-sm font-bold text-primary">
-                      {(c.other_user?.display_name || "?").charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                  {(c.unread_count || 0) > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-destructive border-2 border-background" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold truncate">{c.other_user?.display_name || "User"}</span>
-                    <span className="text-[10px] text-muted-foreground shrink-0">
-                      {c.last_message_at
-                        ? formatDistanceToNow(new Date(c.last_message_at), { addSuffix: true })
-                        : ""}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground truncate mt-0.5">
-                    {c.last_message || "Start chatting..."}
-                  </p>
-                </div>
-                {(c.unread_count || 0) > 0 && (
-                  <span className="min-w-[20px] h-5 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold px-1.5">
-                    {c.unread_count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
+            )
+          ) : (
+            pendingRequests.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
+                <Inbox className="w-12 h-12 opacity-30" />
+                <p className="text-sm">No message requests</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {pendingRequests.map((c) => (
+                  <ConversationItem key={c.id} c={c} navigate={navigate} isPending />
+                ))}
+              </div>
+            )
+          )}
         </div>
       </div>
     </div>
   );
 };
+
+function ConversationItem({
+  c,
+  navigate,
+  isPending,
+}: {
+  c: ConversationRow;
+  navigate: (path: string) => void;
+  isPending?: boolean;
+}) {
+  return (
+    <button
+      onClick={() => navigate(`/messages/${c.id}`)}
+      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/30 transition-colors text-left"
+    >
+      <div className="relative w-11 h-11 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0">
+        {c.other_user?.avatar_url ? (
+          <img src={c.other_user.avatar_url} className="w-full h-full object-cover" alt="" />
+        ) : (
+          <span className="text-sm font-bold text-primary">
+            {(c.other_user?.display_name || "?").charAt(0).toUpperCase()}
+          </span>
+        )}
+        {(c.unread_count || 0) > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-destructive border-2 border-background" />
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-semibold truncate">{c.other_user?.display_name || "User"}</span>
+          <span className="text-[10px] text-muted-foreground shrink-0">
+            {c.last_message_at
+              ? formatDistanceToNow(new Date(c.last_message_at), { addSuffix: true })
+              : ""}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 mt-0.5">
+          {isPending && (
+            <span className="text-[10px] font-medium text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-full shrink-0">
+              Request
+            </span>
+          )}
+          <p className="text-xs text-muted-foreground truncate">
+            {c.last_message || "Start chatting..."}
+          </p>
+        </div>
+      </div>
+      {(c.unread_count || 0) > 0 && (
+        <span className="min-w-[20px] h-5 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold px-1.5">
+          {c.unread_count}
+        </span>
+      )}
+    </button>
+  );
+}
 
 export default ConversationList;
