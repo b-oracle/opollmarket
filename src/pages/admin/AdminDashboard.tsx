@@ -464,6 +464,9 @@ const AdminDashboard = () => {
     { label: "QT Volume", value: (stats?.quickTradeVolume ?? 0) >= 1000 ? `$${((stats?.quickTradeVolume ?? 0) / 1000).toFixed(1)}K` : `$${(stats?.quickTradeVolume ?? 0).toFixed(2)}`, icon: Zap, color: "text-amber-500" },
     { label: "Follows", value: stats?.totalFollows ?? 0, icon: UserCheck, color: "text-emerald-500" },
     { label: "Likes", value: stats?.totalLikes ?? 0, icon: Heart, color: "text-pink-500" },
+    { label: "DM Chats", value: stats?.dmConversations ?? 0, icon: Mail, color: "text-indigo-500" },
+    { label: "DM Messages", value: stats?.dmMessages ?? 0, icon: MessageCircle, color: "text-violet-500" },
+    { label: "DM Gifts", value: `$${(stats?.dmGiftsTotal ?? 0).toFixed(0)}`, icon: Gift, color: "text-rose-500", sub: `${stats?.dmGiftsCount ?? 0} sent` },
     { label: "Referrals", value: stats?.totalReferrals ?? 0, icon: UserPlus, color: "text-cyan-500" },
     { label: "Rewards Paid", value: `$${(stats?.totalRewardsPaid ?? 0).toFixed(0)}`, icon: Gift, color: "text-orange-500" },
   ];
