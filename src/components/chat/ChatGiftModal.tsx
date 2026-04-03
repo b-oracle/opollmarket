@@ -101,7 +101,13 @@ const ChatGiftModal = ({ open, onClose, conversationId, recipientId, recipientNa
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <span className="text-4xl mb-2">😢</span>
             <p className="text-sm font-medium text-foreground">No gift balance</p>
-            <p className="text-xs text-muted-foreground">Top up your gift balance to send emoji gifts</p>
+            <p className="text-xs text-muted-foreground mb-3">Top up your gift balance to send emoji gifts</p>
+            <button
+              onClick={() => { onClose(); navigate("/commissions"); }}
+              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              Top Up Gift Balance
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-4 gap-2">
