@@ -66,8 +66,9 @@ const BroadcastSpaceModal = ({ open, onClose, spaceId, spaceTitle }: BroadcastSp
         _bonus_deduct: bonusUse,
       });
 
-      if (!debitResult?.success) {
-        toast.error(debitResult?.error || "Failed to debit balance");
+      const dr = debitResult as any;
+      if (!dr?.success) {
+        toast.error(dr?.error || "Failed to debit balance");
         setSending(false);
         return;
       }
