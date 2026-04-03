@@ -111,6 +111,53 @@ const Privacy = () => {
           <p>Automated moderation decisions that result in content rejection or account restrictions are subject to human review upon request. Moderation logs are retained for accountability and dispute resolution purposes.</p>
         </section>
 
+        <section id="dm-messaging" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">5. Direct Messaging</h2>
+          <p>The Platform provides a direct messaging feature restricted to mutual follows. By using direct messaging, you acknowledge that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Message Content:</strong> Message text, gift emojis, and gift amounts are stored in our database and associated with your user ID and conversation.</li>
+            <li><strong>Encryption:</strong> Messages are encrypted in transit via TLS and at rest in the database. The Platform does not currently implement client-side end-to-end encryption.</li>
+            <li><strong>Access Control:</strong> Only the two participants of a conversation can read their messages. Row-Level Security policies enforce this at the database level.</li>
+            <li><strong>Rate Limiting:</strong> Message sending is rate-limited (5 messages per 10 seconds per conversation) to prevent abuse. Rate limit data is processed server-side.</li>
+            <li><strong>Gift Transactions:</strong> In-chat gifts create financial transactions that are logged for audit purposes, including sender, recipient, emoji, and amount.</li>
+          </ul>
+        </section>
+
+        <section id="spaces-social" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">6. Spaces, Stories & Social Features</h2>
+          <p className="font-medium text-foreground">6.1 Spaces (Live Audio/Video Rooms)</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>When you join or host a Space, your participation (user ID, role, join/leave timestamps) is recorded.</li>
+            <li>Chat messages sent within a Space are stored and visible to all participants.</li>
+            <li>If recording is enabled by the host, audio/video streams may be recorded and stored. Participants are notified when recording is active.</li>
+            <li>Gift transactions during Spaces are logged with sender, recipient, emoji, amount, and Space ID.</li>
+            <li>Listener and participant counts are tracked for analytics.</li>
+          </ul>
+          <p className="font-medium text-foreground mt-3">6.2 Stories</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Stories (text, images, market shares) are visible to all users and automatically expire after 24 hours.</li>
+            <li>Story views and likes are recorded and associated with your user ID.</li>
+            <li>Expired stories are periodically cleaned up from the database.</li>
+          </ul>
+          <p className="font-medium text-foreground mt-3">6.3 Status Posts</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Status posts, including text, images, and tagged markets, are publicly visible and permanent unless deleted by you.</li>
+            <li>Likes, comments, and view counts on status posts are recorded.</li>
+          </ul>
+        </section>
+
+        <section id="kyc-data" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">7. KYC & Identity Verification Data</h2>
+          <p>The Platform implements a multi-tiered Know Your Customer (KYC) system for withdrawal eligibility. By submitting KYC information, you acknowledge that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Document Storage:</strong> KYC documents (selfies, government IDs, utility bills) are stored in a private, access-controlled storage bucket. Only authorized administrators can access these documents for review.</li>
+            <li><strong>Device Fingerprinting:</strong> During KYC submission, we collect device information (IP address, user agent, screen dimensions, device pixel ratio, platform, language, timezone) to detect fraud and prevent duplicate accounts.</li>
+            <li><strong>Retention:</strong> KYC data is retained for the duration of your account plus a minimum of 5 years for regulatory compliance. Device logs are retained for fraud investigation purposes.</li>
+            <li><strong>Review Process:</strong> KYC submissions are reviewed by authorized administrators. Admin notes, reviewer identity, and review timestamps are recorded.</li>
+            <li><strong>Purpose Limitation:</strong> KYC data is used exclusively for identity verification, fraud prevention, and regulatory compliance. It is not used for marketing or shared with third parties except as required by law.</li>
+          </ul>
+        </section>
+
         <section id="data-sharing" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">5. Data Sharing & Disclosure</h2>
           <p><strong>We do not sell, rent, or trade your personal data to third parties for marketing purposes.</strong></p>
