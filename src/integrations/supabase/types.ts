@@ -3288,6 +3288,7 @@ export type Database = {
           created_at: string
           crypto_currency: string
           id: string
+          idempotency_key: string | null
           ip_address: string | null
           nowpayments_id: string | null
           status: string
@@ -3303,6 +3304,7 @@ export type Database = {
           created_at?: string
           crypto_currency?: string
           id?: string
+          idempotency_key?: string | null
           ip_address?: string | null
           nowpayments_id?: string | null
           status?: string
@@ -3318,6 +3320,7 @@ export type Database = {
           created_at?: string
           crypto_currency?: string
           id?: string
+          idempotency_key?: string | null
           ip_address?: string | null
           nowpayments_id?: string | null
           status?: string
@@ -3583,6 +3586,10 @@ export type Database = {
           _unlimited_markets?: boolean
         }
         Returns: undefined
+      }
+      claim_market_for_resolution: {
+        Args: { _market_id: string }
+        Returns: Json
       }
       claim_webhook_deposit: {
         Args: { _payment_id: string; _provider?: string }
