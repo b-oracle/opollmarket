@@ -2050,6 +2050,73 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         {/* Tagged Markets Carousel */}
         <TaggedMarketsCarousel spaceId={spaceId} taggedMarketIds={taggedMarketIds} isHost={isHost} isCoHost={isCoHost} onMinimize={toggleMinimize} />
 
+        {/* Stream URL controls (host/co-host) */}
+        {hasModPowers && (
+          <div className="px-5 py-2 border-b border-border">
+            {showStreamInput ? (
+              <div className="flex items-center gap-2">
+                <input
+                  value={streamInputValue}
+                  onChange={(e) => setStreamInputValue(e.target.value)}
+                  placeholder="Paste YouTube Live URL…"
+                  className="flex-1 bg-muted/50 border border-border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground"
+                />
+                <button
+                  onClick={async () => {
+                    const url = streamInputValue.trim();
+                    if (url && !isYouTubeUrl(url)) {
+                      toast.error("Please paste a valid YouTube URL");
+                      return;
+                    }
+                    await supabase.from("spaces" as any).update({ stream_url: url || null } as any).eq("id", spaceId);
+                    setStreamUrl(url || null);
+                    setShowStreamInput(false);
+                    setStreamInputValue("");
+                    toast.success(url ? "Stream shared! 📺" : "Stream removed");
+                  }}
+                  className="px-3 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold"
+                >
+                  {streamInputValue.trim() ? "Share" : "Clear"}
+                </button>
+                <button onClick={() => { setShowStreamInput(false); setStreamInputValue(""); }}
+                  className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => { setShowStreamInput(true); setStreamInputValue(streamUrl || ""); }}
+                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Tv className="w-3.5 h-3.5" />
+                {streamUrl ? "Change Stream" : "Share Stream"}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Embedded YouTube Stream */}
+        {streamUrl && isYouTubeUrl(streamUrl) && !streamCollapsed && (
+          <div className="relative border-b border-border">
+            <YouTubeEmbed url={streamUrl} className="w-full aspect-video" />
+            <button
+              onClick={() => setStreamCollapsed(true)}
+              className="absolute top-2 right-2 w-7 h-7 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center text-muted-foreground hover:text-foreground z-10"
+            >
+              <ChevronDown className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        {streamUrl && isYouTubeUrl(streamUrl) && streamCollapsed && (
+          <button
+            onClick={() => setStreamCollapsed(false)}
+            className="flex items-center gap-2 px-5 py-2 border-b border-border text-xs text-primary hover:bg-muted/30 transition-colors"
+          >
+            <Tv className="w-3.5 h-3.5" />
+            Show Stream 📺
+          </button>
+        )}
+
         {/* Content */}
         <div className="flex-1 overflow-hidden flex flex-col">
           {reconnecting ? (
