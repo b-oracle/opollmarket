@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserBalance } from "@/hooks/useUserBalance";
@@ -39,6 +40,7 @@ const EMOJI_PRICES: Record<string, number> = {
 
 const ChatGiftModal = ({ open, onClose, conversationId, recipientId, recipientName }: ChatGiftModalProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { giftBalance } = useUserBalance();
   const { data: settings } = useCommissionSettings();
   const giftFeePercent = settings?.gift_fee_percent ?? 2;
@@ -99,7 +101,13 @@ const ChatGiftModal = ({ open, onClose, conversationId, recipientId, recipientNa
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <span className="text-4xl mb-2">😢</span>
             <p className="text-sm font-medium text-foreground">No gift balance</p>
-            <p className="text-xs text-muted-foreground">Top up your gift balance to send emoji gifts</p>
+            <p className="text-xs text-muted-foreground mb-3">Top up your gift balance to send emoji gifts</p>
+            <button
+              onClick={() => { onClose(); navigate("/commissions"); }}
+              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              Top Up Gift Balance
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-4 gap-2">
