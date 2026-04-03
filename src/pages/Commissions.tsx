@@ -386,7 +386,7 @@ const Commissions = () => {
       });
     });
 
-    (giftsSent ?? []).forEach((g) => {
+    (giftsSent ?? []).forEach((g: any) => {
       records.push({
         id: g.id,
         category: "gift_sent",
@@ -394,11 +394,11 @@ const Commissions = () => {
         date: g.created_at,
         status: "released",
         emoji: g.emoji,
-        description: `Sent ${g.emoji} gift`,
+        description: `Sent ${g.emoji} gift${g.source === "dm" ? " (DM)" : ""}`,
       });
     });
 
-    (giftsReceived ?? []).forEach((g) => {
+    (giftsReceived ?? []).forEach((g: any) => {
       records.push({
         id: g.id,
         category: "gift_received",
@@ -406,7 +406,7 @@ const Commissions = () => {
         date: g.created_at,
         status: "released",
         emoji: g.emoji,
-        description: `Received ${g.emoji} gift`,
+        description: `Received ${g.emoji} gift${g.source === "dm" ? " (DM)" : ""}`,
       });
     });
 
