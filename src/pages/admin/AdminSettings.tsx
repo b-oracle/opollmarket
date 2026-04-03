@@ -335,9 +335,10 @@ const AdminSettings = () => {
                   osure_25_premium: osure25PremiumNum,
                   osure_50_premium: osure50PremiumNum,
                   osure_100_premium: osure100PremiumNum,
-                  welcome_bonus_percent: welcomeBonusPercentNum,
-                  welcome_bonus_cap: welcomeBonusCapNum,
-           updated_at: new Date().toISOString(),
+                   welcome_bonus_percent: welcomeBonusPercentNum,
+                   welcome_bonus_cap: welcomeBonusCapNum,
+                   gift_fee_percent: giftFeePercentNum,
+            updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
         .eq("id", settingsId);
