@@ -495,6 +495,7 @@ const MyPromotions = () => {
                 })}
               </div>
             )}
+          </>
         )}
       </div>
       <BottomNav />
