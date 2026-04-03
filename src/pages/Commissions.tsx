@@ -648,15 +648,13 @@ const Commissions = () => {
               className="border-border/50 cursor-pointer hover:border-primary/30 transition-colors"
               onClick={() => setSummaryCardInfo({ label: card.label, description: card.description })}
             >
-              <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
+              <CardContent className="p-3 flex flex-col items-center text-center gap-1.5 min-h-[100px] justify-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${card.color}`}>
                   <card.icon className="w-4 h-4" />
                 </div>
-                {isLoading ? (
-                  <Skeleton className="h-5 w-16" />
-                ) : (
-                  <span className="text-sm font-bold">{formatAmount(card.value)}</span>
-                )}
+                <span className="text-sm font-bold h-5 flex items-center">
+                  {isLoading ? <Skeleton className="h-4 w-14" /> : formatAmount(card.value)}
+                </span>
                 <span className="text-[10px] text-muted-foreground leading-tight">{card.label}</span>
               </CardContent>
             </Card>
