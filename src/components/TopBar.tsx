@@ -6,8 +6,10 @@ import ChatIcon from "@/components/chat/ChatIcon";
 import SignOutConfirmDialog from "@/components/SignOutConfirmDialog";
 import { useSidebarState } from "@/hooks/useSidebarState";
 import logo from "@/assets/logo.png";
-import { User, LogOut, Shield, ArrowLeft } from "lucide-react";
+import { User, LogOut, Shield, ArrowLeft, Moon, Sun } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { useTheme } from "next-themes";
+import { Switch } from "@/components/ui/switch";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -58,6 +60,7 @@ const AdminBadgeButton = ({ isAdminRoute, onClick, userId }: { isAdminRoute: boo
 
 const TopBar = () => {
   const { user, isSuperAdmin, isAdmin, hasAdminAccess, signOut, loading, displayName } = useAuth();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [showMenu, setShowMenu] = useState(false);
@@ -115,7 +118,6 @@ const TopBar = () => {
           )}
           <ChatIcon />
           <NotificationBell />
-          <ThemeToggle />
           {loading ? null : user ? (
             <div className="relative">
               <button
@@ -147,6 +149,13 @@ const TopBar = () => {
                     >
                       <User className="w-4 h-4" /> Profile
                     </button>
+                    <div className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-accent/50 transition-colors text-sm cursor-pointer" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+                      <span className="flex items-center gap-2">
+                        {theme === "dark" ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                        Dark Mode
+                      </span>
+                      <Switch checked={theme === "dark"} onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")} className="scale-90" />
+                    </div>
                     <button
                       onClick={() => { setShowMenu(false); setSignOutOpen(true); }}
                       className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-destructive/10 transition-colors text-sm text-destructive"
@@ -158,12 +167,15 @@ const TopBar = () => {
               </AnimatePresence>
             </div>
           ) : (
-            <button
-              onClick={() => navigate("/auth")}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground transition-all active:scale-95"
-            >
-              Sign In
-            </button>
+            <>
+              <ThemeToggle />
+              <button
+                onClick={() => navigate("/auth")}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground transition-all active:scale-95"
+              >
+                Sign In
+              </button>
+            </>
           )}
         </div>
       </div>
