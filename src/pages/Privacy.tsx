@@ -58,6 +58,8 @@ const Privacy = () => {
             <li><strong>Wallet Information:</strong> Public blockchain wallet addresses you connect to the Platform (e.g., MetaMask, Trust Wallet, SafePal, Coinbase Wallet, Rabby, Binance Wallet, Bitget Wallet). We never request or store your private keys or seed phrases.</li>
             <li><strong>User-Generated Content:</strong> Market proposals, comments, display names, and uploaded images (market covers, profile avatars).</li>
             <li><strong>Financial Information:</strong> Transaction amounts, trade details, deposit/withdrawal data, referral information, bonus balance usage, limit order history, exit fee records, Quick Trade round history, and copy trade settings.</li>
+            <li><strong>Direct Messages:</strong> Message content, gift emoji selections, gift amounts, and conversation metadata exchanged through the Platform's direct messaging feature.</li>
+            <li><strong>KYC Documents:</strong> Full name, date of birth, phone number, selfie photographs, government-issued identification (front/back), proof of address, and utility bills submitted for identity verification.</li>
             <li><strong>Security Settings:</strong> Security PIN preferences and TOTP enrollment status (we never store plaintext PINs or TOTP secrets in reversible form).</li>
             <li><strong>Communication Data:</strong> Any information you provide when contacting support or submitting feedback.</li>
           </ul>
