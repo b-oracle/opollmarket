@@ -75,7 +75,8 @@ const Privacy = () => {
           <p className="font-medium text-foreground mt-3">2.3 Information from Third Parties</p>
           <ul className="list-disc pl-5 space-y-1">
             <li><strong>Blockchain Data:</strong> Publicly available on-chain data including token balances, NFT ownership, and transaction histories associated with wallet addresses you connect.</li>
-            <li><strong>Payment Processors:</strong> Transaction confirmation data from integrated payment providers (e.g., NOWPayments) for deposit and withdrawal processing.</li>
+            <li><strong>Payment Processors:</strong> Transaction confirmation data from integrated payment providers (e.g., NOWPayments, Payaza, Flutterwave) for deposit and withdrawal processing.</li>
+            <li><strong>KYC Device Fingerprinting:</strong> During KYC submission, we collect device data including IP address, user agent, screen dimensions, device pixel ratio, platform, language, and timezone for fraud prevention.</li>
           </ul>
         </section>
 
