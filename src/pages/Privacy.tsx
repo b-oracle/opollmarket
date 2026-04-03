@@ -183,7 +183,7 @@ const Privacy = () => {
         </section>
 
         <section id="data-security" className="space-y-2 scroll-mt-20">
-          <h2 className="text-base font-semibold text-foreground">7. Data Security</h2>
+          <h2 className="text-base font-semibold text-foreground">10. Data Security</h2>
           <p>We implement industry-standard technical and organizational measures to protect your information, including:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li>Encryption of data in transit (TLS/SSL) and at rest.</li>
@@ -192,8 +192,23 @@ const Privacy = () => {
             <li>Role-based access controls for system-mod functions.</li>
             <li>Regular security reviews and vulnerability assessments.</li>
             <li>Secure storage of uploaded files in isolated, access-controlled storage buckets.</li>
+            <li>Database-level rate limiting on messaging to prevent spam and abuse.</li>
+            <li>Private KYC document storage with restricted admin-only access.</li>
           </ul>
           <p>Despite these measures, no system is 100% secure. We cannot guarantee absolute security of your data. You are responsible for maintaining the security of your account credentials and connected wallets.</p>
+        </section>
+
+        <section id="push-notifications" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">11. Push Notifications</h2>
+          <p>The Platform may send push notifications to your browser or device for important updates including:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Market resolutions and payout notifications.</li>
+            <li>New direct messages and chat gifts.</li>
+            <li>Copy trade alerts and follower activity.</li>
+            <li>Space invitations and scheduled Space reminders.</li>
+            <li>Platform announcements and promotional broadcasts.</li>
+          </ul>
+          <p>Push notification subscriptions (endpoint URL, encryption keys) are stored securely. You can disable push notifications at any time through your browser settings or the Platform's notification preferences. We use third-party push notification services (Aimtell) to deliver notifications.</p>
         </section>
 
         <section id="cookies" className="space-y-2 scroll-mt-20">
