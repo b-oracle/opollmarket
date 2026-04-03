@@ -8,7 +8,7 @@ import { X, Radio, Loader2, Calendar, Clock, ShieldAlert, Lock, Search, UserPlus
 import { motion, AnimatePresence } from "framer-motion";
 import MarketTagSelector, { type MarketTag } from "./MarketTagSelector";
 import { optimizedImageUrl } from "@/lib/optimizedImage";
-import { isYouTubeUrl } from "@/components/YouTubeEmbed";
+import { isYouTubeUrl, isStreamYardUrl } from "@/components/YouTubeEmbed";
 
 interface CreateSpaceModalProps {
   open: boolean;
