@@ -40,6 +40,7 @@ const EMOJI_PRICES: Record<string, number> = {
 
 const ChatGiftModal = ({ open, onClose, conversationId, recipientId, recipientName }: ChatGiftModalProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { giftBalance } = useUserBalance();
   const { data: settings } = useCommissionSettings();
   const giftFeePercent = settings?.gift_fee_percent ?? 2;
