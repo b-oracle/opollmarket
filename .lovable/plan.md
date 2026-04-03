@@ -1,30 +1,40 @@
 
 
-## Redesign Chat Gift Modal to Match Space Emoji Gifting
+## Transfer Rewards to Gift Balance
 
-### What changes
+### Overview
+Add a "Convert to Gifts" action on the Rewards Balance card in the SpaceRoom stats panel, plus a new database RPC to securely move funds from `rewards_balance` to `gift_balance`.
 
-**`src/components/chat/ChatGiftModal.tsx`** — Complete redesign
+### Database Migration
 
-Replace the current dollar-amount preset buttons + custom input with the same emoji grid used in Spaces:
+Create RPC `transfer_rewards_to_gift(_user_id uuid, _amount numeric) RETURNS jsonb`:
+- `SECURITY DEFINER` with `auth.uid()` enforcement (same pattern as `topup_gift_balance`)
+- Validates `_amount > 0`
+- Locks the balance row `FOR UPDATE`
+- Checks `rewards_balance >= _amount`
+- Deducts from `rewards_balance`, adds to `gift_balance`
+- Returns `{ success: true, remaining_rewards, new_gift_balance }`
 
-1. Use the same `GIFT_EMOJIS` and `EMOJI_PRICES` constants from SpaceRoom:
-   ```
-   GIFT_EMOJIS = ["💸", "🤑", "💰", "💵", "🌹", "💝", "🔥", "🕺", "💃", "👏", "👍", "❤️", "😂", "💯", "🎯"]
-   EMOJI_PRICES = { "💸": 0.10, "🤑": 0.25, "💰": 0.50, "💵": 0.05, ... } // default 0.05
-   ```
+### Frontend Changes
 
-2. Replace the dialog layout with a bottom-sheet style matching the Space gift picker:
-   - Header: recipient avatar + "Send gift to {name}" + "Emoji gifts deduct from your gift balance"
-   - Top-right: Gift Balance label + amount in green
-   - 4-column emoji grid — each tile shows emoji + price, disabled if can't afford
-   - Tapping an emoji immediately sends the gift (no confirm button needed)
-   - "No gift balance" state with top-up prompt when balance is 0
+**`src/components/social/SpaceRoom.tsx`**
 
-3. The `send_dm_gift` RPC call stays the same but now passes the selected emoji instead of always "🎁", and the amount comes from `EMOJI_PRICES[emoji]`
+1. Add state: `showRewardsTransfer` (boolean), `transferAmount` (string), `transferring` (boolean)
+2. On the Rewards Balance card (line ~2907-2912), add a "Convert" button below the balance (same style as the "Top Up" button on the Gift Balance card)
+3. When tapped, show a small inline form (or swap the card content):
+   - Input for amount (pre-filled with full rewards balance)
+   - "Convert to Gift Balance" button
+   - Calls `supabase.rpc("transfer_rewards_to_gift", { _user_id: user.id, _amount: amt })`
+   - On success: refresh balances, toast confirmation
+   - On error: toast error message
 
-4. Remove the custom amount `Input` and dollar preset buttons entirely
+**`src/pages/Commissions.tsx`**
 
-### No database changes needed
-The `send_dm_gift` RPC already accepts `p_emoji` and `p_amount` parameters.
+4. Add a third action button "Convert to Gifts" alongside "Top Up" and "Withdraw" in the gift balance breakdown section (~line 741-753)
+5. Add a `giftAction === "convert"` state that shows a similar form transferring rewards→gift balance using the same RPC
+
+### Security
+- RPC enforces `auth.uid() = _user_id` server-side
+- `FOR UPDATE` row lock prevents race conditions
+- No new RLS policies needed (RPC is `SECURITY DEFINER`)
 
