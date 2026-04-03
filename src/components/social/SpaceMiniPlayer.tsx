@@ -33,6 +33,11 @@ const SpaceMiniPlayer = ({ title, participantCount, isMuted, hasStream, onToggle
             <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
               <Users className="w-2.5 h-2.5" />{participantCount}
             </span>
+            {hasStream && (
+              <span className="text-[10px] text-primary flex items-center gap-0.5">
+                <Tv className="w-2.5 h-2.5" />
+              </span>
+            )}
           </div>
           <p className="text-xs font-semibold truncate mt-0.5">{title}</p>
         </div>
