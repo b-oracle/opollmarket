@@ -204,6 +204,7 @@ const MyPromotions = () => {
     { key: "boosts", label: "Boosts", icon: Zap, count: boosts.length },
     { key: "social_ads", label: "Social Ads", icon: Eye, count: socialAds.length },
     { key: "broadcasts", label: "Broadcasts", icon: Megaphone, count: broadcasts.length },
+    { key: "space_broadcasts", label: "Space", icon: Radio, count: spaceBroadcasts.length },
   ];
 
   if (!user) {
