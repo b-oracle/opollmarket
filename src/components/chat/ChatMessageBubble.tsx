@@ -162,22 +162,64 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
     return (
       <div className={`flex ${isMine ? "justify-end" : "justify-start"} group relative`}>
         <div className="relative" ref={bubbleRef}>
-          <div
-            className={`max-w-[75%] rounded-2xl px-4 py-3 border select-none touch-none ${
-              isMine ? "bg-primary/10 border-primary/20" : "bg-accent/30 border-accent/50"
+          <motion.div
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 400, damping: 15 }}
+            className={`max-w-[75%] rounded-2xl overflow-hidden select-none touch-none border ${
+              isMine
+                ? "border-primary/30 bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5"
+                : "border-accent/40 bg-gradient-to-br from-accent/30 via-accent/15 to-accent/5"
             }`}
             {...pointerProps}
           >
-            <div className="flex items-center gap-2 mb-1">
-              <Gift className="w-4 h-4 text-primary" />
-              <span className="text-sm font-bold text-primary">${m.gift_amount}</span>
+            {/* Shimmer overlay */}
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+              initial={{ x: "-100%" }}
+              animate={{ x: "200%" }}
+              transition={{ duration: 1.5, delay: 0.3, ease: "easeInOut" }}
+            />
+
+            <div className="relative px-4 py-3">
+              {/* Header with sparkle */}
+              <div className="flex items-center gap-1.5 mb-2">
+                <motion.div
+                  animate={{ rotate: [0, 15, -15, 0] }}
+                  transition={{ duration: 0.6, delay: 0.4 }}
+                >
+                  <Gift className="w-4 h-4 text-primary" />
+                </motion.div>
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  {isMine ? "You sent a gift" : "Gift received!"}
+                </span>
+                <motion.div
+                  animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
+                  transition={{ duration: 1.5, repeat: 2, ease: "easeInOut" }}
+                >
+                  <Sparkles className="w-3 h-3 text-yellow-400" />
+                </motion.div>
+              </div>
+
+              {/* Amount - big and bold */}
+              <motion.p
+                className="text-2xl font-bold text-primary"
+                initial={{ scale: 0.5 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 300, damping: 12, delay: 0.15 }}
+              >
+                ${m.gift_amount}
+              </motion.p>
+
+              {/* Gift emoji content */}
+              <p className="text-xl mt-1">{m.content}</p>
+
+              <p className="text-[10px] text-muted-foreground/70 mt-2">
+                {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
+              </p>
+              {reactionBadges}
             </div>
-            <p className="text-lg">{m.content}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">
-              {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
-            </p>
-            {reactionBadges}
-          </div>
+          </motion.div>
           {smileyButton}
         </div>
         {pickerOverlay}
