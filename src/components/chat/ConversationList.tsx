@@ -178,43 +178,6 @@ const ConversationList = () => {
           </button>
         </div>
 
-        {/* New chat picker */}
-        {showNewChat && (
-          <div className="border-b border-border p-4 space-y-3">
-            <Input
-              placeholder="Search mutual follows..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-9"
-            />
-            {filteredMutuals.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-2">
-                {search ? "No matches" : "No mutual follows available"}
-              </p>
-            ) : (
-              <div className="max-h-48 overflow-y-auto space-y-1">
-                {filteredMutuals.map((m) => (
-                  <button
-                    key={m.id}
-                    onClick={() => startConversation(m.id)}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent/50 transition-colors"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
-                      {m.avatar_url ? (
-                        <img src={m.avatar_url} className="w-full h-full object-cover" alt="" />
-                      ) : (
-                        <span className="text-xs font-bold text-primary">
-                          {(m.display_name || "?").charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-sm font-medium">{m.display_name || "User"}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto min-h-0" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
