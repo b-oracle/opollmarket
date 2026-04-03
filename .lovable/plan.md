@@ -1,18 +1,27 @@
 
 
-## Fix Messages Page Horizontal Scroll
+## Add Tappable Avatar with Actions in Space Gift Modal
 
 ### Problem
-The Messages page (`ConversationList`) allows horizontal scrolling on mobile. The outer container doesn't clip horizontal overflow, so any content that extends beyond the viewport width causes a side-scroll.
+In the Space gift modal, the recipient's avatar is displayed but not interactive. Users want to tap it to view the recipient's profile or send them a DM.
 
 ### Solution
-Two small CSS changes:
+Make the avatar + name area in the Space gift modal tappable. On tap, show two action buttons inline (or a small popover): **View Profile** and **Send Message**. This keeps the user in context without heavy UI changes.
 
-**`src/components/chat/ConversationList.tsx`**
-- Add `overflow-x-hidden` to the root `div` (line 164) to prevent any horizontal scroll at the page level
+### Changes
 
-**`src/components/chat/ChatView.tsx`**
-- Add `overflow-x-hidden` to the root `div` (the `h-[100dvh]` container) for consistency — same fix applied to the individual chat thread view
+**`src/components/social/SpaceRoom.tsx`** (lines ~2804-2810)
 
-These are single-property additions to existing elements. No layout restructuring needed — the viewport-locked flex pattern is already correct, this just clips any rogue horizontal overflow.
+1. Add `useState` for a mini action menu toggle (e.g. `showGiftUserMenu`)
+2. Make the avatar + name row tappable — on tap, toggle the action menu
+3. When expanded, show two small action buttons below the name:
+   - **View Profile** — calls `navigate(\`/user/\${emojiTarget.identity}\`)` and closes the gift modal
+   - **Send Message** — calls `navigate(\`/messages\`)` after starting/finding a DM conversation with `start_dm_conversation` RPC, then closes the modal
+4. Add `useNavigate` import (if not already present)
+5. Tapping avatar again or tapping an action collapses the menu
+
+### UI Detail
+- Avatar gets a subtle ring/highlight when tappable (`cursor-pointer ring-2 ring-primary/30` on hover)
+- Action buttons render as two small pill-shaped buttons below the name text, animated in with a simple fade
+- Keeps the existing gift picker layout intact — actions appear between the header and the emoji grid
 
