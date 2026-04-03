@@ -2059,7 +2059,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 <input
                   value={streamInputValue}
                   onChange={(e) => setStreamInputValue(e.target.value)}
-                  placeholder="Paste YouTube Live URL…"
+                  placeholder="Paste YouTube or StreamYard URL…"
                   className="flex-1 bg-muted/50 border border-border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground"
                 />
                 <button
