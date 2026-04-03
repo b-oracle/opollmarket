@@ -465,7 +465,36 @@ const MyPromotions = () => {
                 })}
               </div>
             )}
-          </>
+
+            {/* Space Broadcasts Tab */}
+            {tab === "space_broadcasts" && (
+              <div className="space-y-3">
+                {spaceBroadcasts.length === 0 ? (
+                  <EmptyState icon={Radio} label="No space broadcasts yet" description="Broadcast a space to notify all users" />
+                ) : spaceBroadcasts.map((sb: any) => {
+                  const { display, key } = getResolvedBroadcastStatus(sb);
+                  return (
+                    <div key={sb.id} className="bg-card border border-border rounded-xl p-4 space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Radio className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-bold truncate max-w-[250px]">
+                          Space Broadcast
+                        </span>
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
+                          statusColors[key] || statusColors.expired
+                        }`}>
+                          {display}
+                        </span>
+                        <span className="text-xs font-semibold text-muted-foreground ml-auto">${sb.amount}</span>
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        Created {format(new Date(sb.created_at), "MMM d, yyyy HH:mm")}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
         )}
       </div>
       <BottomNav />
