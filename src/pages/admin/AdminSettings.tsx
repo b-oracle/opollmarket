@@ -225,6 +225,7 @@ const AdminSettings = () => {
   const osure100PremiumNum = parseFloat(osure100Premium) || 30;
   const welcomeBonusPercentNum = parseFloat(welcomeBonusPercent) || 0;
   const welcomeBonusCapNum = parseFloat(welcomeBonusCap) || 0;
+  const giftFeePercentNum = parseFloat(giftFeePercent) || 2;
 
   // Splits must sum to ≤ 100 — platform keeps the remainder
   const splitTotalGold = creatorGoldNum + referrerCommissionNum + bc400PoolPercentNum;

@@ -2803,7 +2803,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     {renderAvatar(emojiTarget, "lg")}
                     <div>
                       <p className="font-semibold text-sm">Send gift to {emojiTarget.name}</p>
-                      <p className="text-xs text-muted-foreground">Emoji gifts deduct from your gift balance</p>
+                      <p className="text-xs text-muted-foreground">Emoji gifts deduct from your gift balance ({giftFeePercent}% fee)</p>
                     </div>
                   </div>
                   <div className="text-right">
