@@ -40,6 +40,7 @@ const ChatGiftModal = ({ open, onClose, conversationId, recipientId, recipientNa
   const { user } = useAuth();
   const { giftBalance } = useUserBalance();
   const [sending, setSending] = useState<string | null>(null);
+  const [lastSentAt, setLastSentAt] = useState(0);
   const queryClient = useQueryClient();
 
   const handleSendEmoji = async (emoji: string) => {
