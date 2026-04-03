@@ -294,8 +294,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         {/* Visible banner: always image + gradient */}
         <div className="absolute inset-0 overflow-hidden">
           {market.imageUrl ? (
-            <div className="absolute inset-0 will-change-transform flex items-center justify-center" style={{ transform: `translateY(${parallaxY}px)` }}>
-              <img src={optimizedImageUrl(market.imageUrl, "feed")} alt="" className="max-w-full max-h-full object-contain opacity-50" loading="lazy" />
+            <div className="absolute inset-0 flex items-center justify-center p-3 sm:p-4">
+              <img src={optimizedImageUrl(market.imageUrl, "feed")} alt="" className="w-full h-full object-contain opacity-50 will-change-transform" style={{ transform: `translateY(${parallaxY * 0.3}px) scale(1.05)` }} loading="lazy" />
             </div>
           ) : null}
           {/* Strong bottom-heavy gradient for text readability */}
