@@ -243,13 +243,14 @@ const Create = () => {
         .limit(1)
         .single();
       if (data) {
-        setMinTokenBalance(Number(data.min_token_balance) || 10_000_000);
-        setMinNftBalance(Number(data.min_nft_balance) || 1);
-        setTokenContractAddress(data.token_contract_address || "");
-        setNftContractAddress(data.nft_contract_address || "");
-        setNftBuyUrl(data.nft_buy_url || "");
-        setMarketCreationFee(Number(data.market_creation_fee) || 50);
-        setTokenDecimals(Number(data.token_decimals) ?? 18);
+        const d = data as any;
+        setMinTokenBalance(Number(d.min_token_balance) || 10_000_000);
+        setMinNftBalance(Number(d.min_nft_balance) || 1);
+        setTokenContractAddress(d.token_contract_address || "");
+        setNftContractAddress(d.nft_contract_address || "");
+        setNftBuyUrl(d.nft_buy_url || "");
+        setMarketCreationFee(Number(d.market_creation_fee) || 50);
+        setTokenDecimals(Number(d.token_decimals) ?? 18);
         setBlueMaxFreeMarkets(Number((data as any).blue_max_free_markets) || 5);
         setGoldMaxFreeMarkets(Number((data as any).gold_max_free_markets) || 20);
         setAiGenerationCost(Number((data as any).ai_generation_cost ?? 0.5));
