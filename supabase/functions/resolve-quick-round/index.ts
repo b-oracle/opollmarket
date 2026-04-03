@@ -269,13 +269,35 @@ Deno.serve(async (req) => {
     // Handle balance deduction for placing bets
     if (req.method === "POST") {
       const body = await req.json().catch(() => ({}));
-      if (body.action === "deduct" && body.userId && body.amount) {
+      if (body.action === "deduct" && body.amount) {
+        // SECURITY: Verify the caller's JWT to get the real user ID
+        const authHeader = req.headers.get("Authorization");
+        if (!authHeader?.startsWith("Bearer ")) {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const anonClient = createClient(
+          supabaseUrl,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          { global: { headers: { Authorization: authHeader } } }
+        );
+        const { data: { user: deductUser }, error: deductAuthErr } = await anonClient.auth.getUser();
+        if (deductAuthErr || !deductUser) {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const verifiedUserId = deductUser.id;
+
         // Rate limit: max 20 QT bets per minute per user
         const oneMinAgo = new Date(Date.now() - 60_000).toISOString();
         const { count: recentBets } = await supabase
           .from("quick_bets")
           .select("id", { count: "exact", head: true })
-          .eq("user_id", body.userId)
+          .eq("user_id", verifiedUserId)
           .gte("created_at", oneMinAgo);
 
         if ((recentBets ?? 0) >= 20) {
@@ -286,7 +308,7 @@ Deno.serve(async (req) => {
         }
 
         const { data: debitResult } = await supabase.rpc("debit_balance_atomic", {
-          _user_id: body.userId,
+          _user_id: verifiedUserId,
           _main_deduct: Number(body.amount),
         });
         if (!debitResult?.success) {

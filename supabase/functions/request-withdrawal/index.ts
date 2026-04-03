@@ -89,7 +89,24 @@ Deno.serve(async (req) => {
     const clientUa = req.headers.get("user-agent") || "unknown";
     console.log(`[Withdrawal] user=${userId} ip=${clientIp} ua=${clientUa}`);
 
-    const { amount, wallet_address, crypto_currency } = await req.json();
+    const { amount, wallet_address, crypto_currency, idempotency_key } = await req.json();
+
+    // Idempotency: reject duplicate submissions
+    if (idempotency_key) {
+      const { count: existingKey } = await createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      ).from("withdrawal_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("idempotency_key", idempotency_key);
+      if ((existingKey ?? 0) > 0) {
+        return new Response(JSON.stringify({ error: "Duplicate withdrawal request" }), {
+          status: 409, headers: corsHeaders,
+        });
+      }
+    }
+    const withdrawalIdempotencyKey = idempotency_key || `${userId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
 
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -536,6 +553,7 @@ Deno.serve(async (req) => {
         status: "pending",
         ip_address: clientIp,
         user_agent: clientUa,
+        idempotency_key: withdrawalIdempotencyKey,
       });
 
       await adminClient.from("transactions").insert({
@@ -570,6 +588,7 @@ Deno.serve(async (req) => {
       tx_hash: payoutTxHash,
       ip_address: clientIp,
       user_agent: clientUa,
+      idempotency_key: withdrawalIdempotencyKey,
     });
 
     // Insert confirmed withdrawal transaction

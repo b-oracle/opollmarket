@@ -95,7 +95,19 @@ async function handleResolve(
     });
   }
 
-  // Fetch market
+  // Atomically claim the market for resolution (row lock prevents concurrent double-resolve)
+  const { data: claimResult } = await adminClient.rpc("claim_market_for_resolution", {
+    _market_id: market_id,
+  });
+
+  if (!claimResult?.success) {
+    return new Response(JSON.stringify({ error: claimResult?.error || "Cannot resolve market" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Fetch market details after claiming the lock
   const { data: market, error: marketErr } = await adminClient
     .from("markets")
     .select("*")
@@ -106,37 +118,6 @@ async function handleResolve(
     console.error("resolve-market: Market not found", marketErr?.message);
     return new Response(JSON.stringify({ error: "Market not found" }), {
       status: 404,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  if (market.status === "resolved") {
-    return new Response(JSON.stringify({ error: "Market already resolved" }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  // Prevent re-resolution: if a market was previously resolved (has payout history), block it
-  if (market.resolved_side || market.winning_option_id) {
-    console.error("resolve-market: Market has prior resolution data", { resolved_side: market.resolved_side, winning_option_id: market.winning_option_id });
-    return new Response(JSON.stringify({ error: "Market was previously resolved. Clear resolution data before re-resolving." }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  // Check for existing payout transactions (catches edge cases where status was reset)
-  const { count: existingPayouts } = await adminClient
-    .from("transactions")
-    .select("id", { count: "exact", head: true })
-    .eq("market_id", market_id)
-    .in("type", ["payout", "refund"]);
-
-  if (existingPayouts && existingPayouts > 0) {
-    console.error("resolve-market: Market already has payout/refund transactions", { count: existingPayouts });
-    return new Response(JSON.stringify({ error: `Market already has ${existingPayouts} payout/refund transactions. Cannot re-resolve to avoid duplicate payments.` }), {
-      status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
@@ -326,7 +307,7 @@ async function handleResolve(
     }
   }
 
-  // For WINNERS: forfeit insurance premium, unlock insurance_balance → main balance
+  // For WINNERS: forfeit insurance premium, unlock ONLY this market's insurance → main balance
   for (const pos of winningPositions) {
     if (pos.insurance_tier && !pos.insurance_claimed) {
       // Forfeit: mark claim as forfeited
@@ -338,26 +319,20 @@ async function handleResolve(
       await adminClient.from("positions").update({ insurance_claimed: true }).eq("id", pos.id);
     }
 
-    // Unlock insurance balance → main balance for ANY winner (even without insurance)
-    const { data: winnerBal } = await adminClient
-      .from("balances")
-      .select("insurance_balance")
+    // Only unlock insurance balance for winners who HAD insurance on THIS market
+    // Sum claimed amounts from this market's losing positions that were paid to this user's insurance_balance
+    const { data: userClaims } = await adminClient
+      .from("insurance_claims")
+      .select("claim_amount")
       .eq("user_id", pos.user_id)
-      .eq("currency", "USDT")
-      .single();
+      .eq("market_id", market_id)
+      .eq("status", "claimed");
 
-    const insBalance = Number(winnerBal?.insurance_balance || 0);
-    if (insBalance > 0) {
-      await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: insBalance, _insurance_delta: -insBalance });
-
-      await adminClient.from("notifications").insert({
-        user_id: pos.user_id,
-        title: "Insurance Balance Unlocked! 🎉",
-        message: `Your insurance balance of $${insBalance.toFixed(2)} has been unlocked to your main balance after winning "${market.title}".`,
-        type: "payout",
-        market_id: market_id,
-      });
-    }
+    const thisMarketInsurance = (userClaims || []).reduce((s, c) => s + Number(c.claim_amount || 0), 0);
+    // For winners who had insured positions on this market, their premium was forfeited above.
+    // We don't unlock blanket insurance balance — only market-specific claimed amounts would have
+    // been credited to insurance_balance for LOSERS, not winners. So skip blanket unlock.
+    // The insurance_balance is only relevant for losers' claims on other active markets.
   }
 
   console.log("resolve-market: Success, winners:", winningPositions.length, "losers:", losingPositions.length, "one-sided:", isOneSided, "paid:", totalPaidOut);
