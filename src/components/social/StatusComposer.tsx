@@ -42,6 +42,7 @@ const StatusComposer = () => {
   if (!user) return null;
 
   const showImageUpload = isFeatureEnabled("status_image_upload");
+  const showAiGeneration = isFeatureEnabled("ai_social_generation");
   const aiCost = commissionSettings?.ai_generation_cost ?? 0.5;
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -317,24 +318,28 @@ const StatusComposer = () => {
           </button>
 
           {/* AI Caption button */}
-          <button
-            onClick={handleGenerateCaption}
-            disabled={generatingCaption || (!content.trim() && !selectedMarket)}
-            className="relative w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground disabled:opacity-40"
-            title={`AI Caption ($${aiCost})`}
-          >
-            {generatingCaption ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-          </button>
+          {showAiGeneration && (
+            <button
+              onClick={handleGenerateCaption}
+              disabled={generatingCaption || (!content.trim() && !selectedMarket)}
+              className="relative w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground disabled:opacity-40"
+              title={`AI Caption ($${aiCost})`}
+            >
+              {generatingCaption ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            </button>
+          )}
 
           {/* AI Image button */}
-          <button
-            onClick={handleGenerateImage}
-            disabled={generatingImage || (!content.trim() && !selectedMarket)}
-            className="relative w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground disabled:opacity-40"
-            title={`AI Image ($${aiCost})`}
-          >
-            {generatingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-          </button>
+          {showAiGeneration && (
+            <button
+              onClick={handleGenerateImage}
+              disabled={generatingImage || (!content.trim() && !selectedMarket)}
+              className="relative w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground disabled:opacity-40"
+              title={`AI Image ($${aiCost})`}
+            >
+              {generatingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+            </button>
+          )}
 
           {/* Image upload */}
           {showImageUpload && (

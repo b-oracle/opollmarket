@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Trash2, Loader2, MessageCircle, ExternalLink, Repeat2, BarChart3, RefreshCw } from "lucide-react";
@@ -113,6 +114,7 @@ interface StatusCardProps {
 const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCardProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isFeatureEnabled } = useFeatureToggles();
   const queryClient = useQueryClient();
   const [likeLoading, setLikeLoading] = useState(false);
   const [showComments, setShowComments] = useState(false);
@@ -337,7 +339,7 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
                 <span className="text-rose-500">No {Math.round(market.no_price * 100)}¢</span>
               </div>
             </div>
-            {user?.id === status.user_id && (
+            {user?.id === status.user_id && isFeatureEnabled("ai_social_generation") && (
               <button
                 onClick={handleReplaceMarketImage}
                 disabled={replacingImage}
