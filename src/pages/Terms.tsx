@@ -258,6 +258,7 @@ const Terms = () => {
             <li>Providing false, forged, or misleading identity documents is strictly prohibited and may result in permanent account suspension.</li>
             <li>KYC documents are stored securely in a private storage bucket with restricted access.</li>
           </ul>
+        </section>
 
         <section id="moderation" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">9. Content Moderation & Community Guidelines</h2>
