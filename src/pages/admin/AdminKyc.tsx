@@ -87,41 +87,16 @@ const AdminKyc = () => {
     if (!canEdit) return;
     setProcessing(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      // Update submission
-      const { error: subError } = await supabase
-        .from("kyc_submissions" as any)
-        .update({
-          status: action,
+      const { data, error } = await supabase.functions.invoke("review-kyc", {
+        body: {
+          submission_id: submission.id,
+          action,
           admin_note: adminNote || null,
-          reviewed_by: user?.id,
-          reviewed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        } as any)
-        .eq("id", submission.id);
-      if (subError) throw subError;
+        },
+      });
 
-      // Update profile kyc_status
-      const newKycStatus = action === "approved"
-        ? (submission.tier === 2 ? "tier2" : "tier1")
-        : "rejected";
-
-      const { error: profError } = await supabase
-        .from("profiles")
-        .update({ kyc_status: newKycStatus } as any)
-        .eq("id", submission.user_id);
-      if (profError) throw profError;
-
-      // Send notification
-      await supabase.from("notifications").insert({
-        user_id: submission.user_id,
-        title: action === "approved" ? "KYC Approved ✓" : "KYC Rejected",
-        message: action === "approved"
-          ? `Your Tier ${submission.tier} identity verification has been approved. ${submission.tier === 1 ? "You can now withdraw up to $500/day." : "You now have full withdrawal access up to $50,000/day."}`
-          : `Your identity verification was rejected. ${adminNote ? `Reason: ${adminNote}` : "Please resubmit with correct documents."}`,
-        type: action === "approved" ? "info" : "warning",
-      } as any);
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       queryClient.invalidateQueries({ queryKey: ["admin_kyc_submissions"] });
       toast.success(`KYC ${action === "approved" ? "approved" : "rejected"}`);
