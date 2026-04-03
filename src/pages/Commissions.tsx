@@ -98,6 +98,24 @@ const Commissions = () => {
     queryClient.invalidateQueries({ queryKey: ["balance"] });
   };
 
+  const handleTransferToGift = async () => {
+    const amt = Number(withdrawAmount);
+    if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
+    if (amt > rewardsBalance) { toast.error("Insufficient rewards balance"); return; }
+    setProcessing(true);
+    const { data, error } = await supabase.rpc("transfer_rewards_to_gift", { _user_id: user!.id, _amount: amt } as any);
+    setProcessing(false);
+    if (error || !(data as any)?.success) {
+      toast.error((data as any)?.error || error?.message || "Transfer failed");
+      return;
+    }
+    toast.success(`Transferred $${amt.toFixed(2)} to gift balance`);
+    setGiftAction(null);
+    setWithdrawDest(null);
+    setWithdrawAmount("");
+    queryClient.invalidateQueries({ queryKey: ["balance"] });
+  
+
   // Fetch pending_commissions (creator + referral, released + pending)
   const { data: pendingCommissions, isLoading: loadingPC } = useQuery({
     queryKey: ["commissions-breakdown", user?.id],
