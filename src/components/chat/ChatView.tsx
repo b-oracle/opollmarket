@@ -38,9 +38,9 @@ const ChatView = () => {
         .from("dm_conversations" as any)
         .select("*")
         .eq("id", conversationId)
-        .single();
+        .single() as any;
       if (!data) return null;
-      const otherId = (data as any).user_a === user!.id ? (data as any).user_b : (data as any).user_a;
+      const otherId = data.user_a === user!.id ? data.user_b : data.user_a;
       const { data: profile } = await supabase
         .from("profiles")
         .select("id, display_name, avatar_url")
