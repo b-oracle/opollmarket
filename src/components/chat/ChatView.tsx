@@ -46,7 +46,7 @@ const ChatView = () => {
       const otherId = data.user_a === user!.id ? data.user_b : data.user_a;
       const { data: profile } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url")
+        .select("id, display_name, avatar_url, verification_level")
         .eq("id", otherId)
         .maybeSingle();
       return { ...(data as any), other_user: profile };
