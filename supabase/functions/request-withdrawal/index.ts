@@ -553,6 +553,7 @@ Deno.serve(async (req) => {
         status: "pending",
         ip_address: clientIp,
         user_agent: clientUa,
+        idempotency_key: withdrawalIdempotencyKey,
       });
 
       await adminClient.from("transactions").insert({
