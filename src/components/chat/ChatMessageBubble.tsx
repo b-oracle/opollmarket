@@ -69,8 +69,10 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
   const openPicker = useCallback(() => {
     if (!bubbleRef.current) return;
     const rect = bubbleRef.current.getBoundingClientRect();
+    const desiredTop = rect.top - 44;
+    const minTop = 60; // below header
     setPickerPos({
-      top: rect.top - 44,
+      top: desiredTop < minTop ? rect.bottom + 4 : desiredTop,
       left: Math.max(8, Math.min(rect.left + rect.width / 2 - 100, window.innerWidth - 208)),
     });
     setShowReactions(true);
