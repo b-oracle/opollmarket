@@ -94,6 +94,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
         title: trimmed,
         tagged_market_ids: taggedMarkets.map((m) => m.id),
         is_private: isPrivate,
+        stream_url: streamUrl.trim() || null,
       };
 
       if (mode === "scheduled") {
