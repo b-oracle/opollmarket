@@ -165,6 +165,9 @@ const AdminSocial = () => {
     { label: "Total Comments", value: totalComments, icon: MessageCircle, color: "text-blue-500" },
     { label: "Total Profiles", value: totalCount, icon: Users, color: "text-emerald-500" },
     { label: "Social Views", value: totalViews, icon: BarChart3, color: "text-amber-500" },
+    { label: "DM Chats", value: dmConversations, icon: Mail, color: "text-indigo-500" },
+    { label: "DM Messages", value: dmMessages, icon: MessageCircle, color: "text-violet-500" },
+    { label: "DM Gifts", value: `$${dmGiftsTotal.toFixed(0)}`, icon: Gift, color: "text-rose-500" },
   ];
 
   return (
