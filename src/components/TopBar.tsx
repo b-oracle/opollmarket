@@ -8,6 +8,8 @@ import { useSidebarState } from "@/hooks/useSidebarState";
 import logo from "@/assets/logo.png";
 import { User, LogOut, Shield, ArrowLeft, Moon, Sun } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { useTheme } from "next-themes";
+import { Switch } from "@/components/ui/switch";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
