@@ -800,6 +800,68 @@ export type Database = {
         }
         Relationships: []
       }
+      dm_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string | null
+          user_a: string
+          user_b: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          user_a: string
+          user_b: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          user_a?: string
+          user_b?: string
+        }
+        Relationships: []
+      }
+      dm_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          gift_amount: number | null
+          id: string
+          read_at: string | null
+          sender_id: string
+        }
+        Insert: {
+          content?: string
+          conversation_id: string
+          created_at?: string
+          gift_amount?: number | null
+          id?: string
+          read_at?: string | null
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          gift_amount?: number | null
+          id?: string
+          read_at?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dm_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "dm_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feature_toggles: {
         Row: {
           enabled: boolean
@@ -3659,6 +3721,10 @@ export type Database = {
         Args: { _amount: number; _user_id: string }
         Returns: Json
       }
+      is_mutual_follow: {
+        Args: { user_a: string; user_b: string }
+        Returns: boolean
+      }
       is_valid_referral_code:
         | {
             Args: { _code: string }
@@ -3676,6 +3742,15 @@ export type Database = {
       release_creation_fee_escrow: {
         Args: { _action: string; _escrow_id: string }
         Returns: Json
+      }
+      send_dm_gift: {
+        Args: {
+          p_amount: number
+          p_conversation_id: string
+          p_emoji?: string
+          p_recipient_id: string
+        }
+        Returns: string
       }
       send_space_gift: {
         Args: {
