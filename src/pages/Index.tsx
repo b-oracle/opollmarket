@@ -164,7 +164,7 @@ const Index = () => {
       const supabase = createStatelessReadClient();
       const [marketsRes, usersRes, volRes] = await Promise.all([
         supabase.from("markets").select("id", { count: "exact", head: true }),
-        supabase.from("profiles").select("id", { count: "exact", head: true }),
+        supabase.rpc("get_platform_user_count" as any),
         supabase.rpc("get_platform_volume"),
       ]);
 
@@ -176,7 +176,7 @@ const Index = () => {
       const totalVol = Number(volRow?.prediction_volume ?? 0) + Number(volRow?.qt_volume ?? 0);
       return {
         totalVolume: totalVol,
-        totalUsers: usersRes.count ?? 0,
+        totalUsers: (usersRes.data as number) ?? 0,
         totalMarkets: marketsRes.count ?? 0,
         lastUpdated: new Date(),
       };
