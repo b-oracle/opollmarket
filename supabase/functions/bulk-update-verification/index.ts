@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
       if (nftContractAddress && profile.wallet_address) {
         try {
           const { data: nftData } = await adminClient.functions.invoke("fetch-wallet-nfts", {
-            body: { wallet_address: profile.wallet_address },
+            body: { wallet_address: profile.wallet_address, nft_contract_address: nftContractAddress },
           });
           const nfts = nftData?.nfts || [];
           const matching = nfts.filter(
