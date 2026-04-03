@@ -3,12 +3,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
+import { useUserBalance } from "@/hooks/useUserBalance";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Image, Loader2, Send, X, BarChart3, Search, Sparkles, Wand2 } from "lucide-react";
+import { Image, Loader2, Send, X, BarChart3, Search, Sparkles, Wand2, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { optimizedImageUrl } from "@/lib/optimizedImage";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
 const MAX_CHARS = 280;
 
@@ -24,6 +35,7 @@ const StatusComposer = () => {
   const { user } = useAuth();
   const { isFeatureEnabled } = useFeatureToggles();
   const { data: commissionSettings } = useCommissionSettings();
+  const { balance, bonusBalance } = useUserBalance();
   const queryClient = useQueryClient();
   const [content, setContent] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -37,6 +49,7 @@ const StatusComposer = () => {
   const [searching, setSearching] = useState(false);
   const [generatingCaption, setGeneratingCaption] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<"caption" | "image" | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   if (!user) return null;
@@ -44,6 +57,8 @@ const StatusComposer = () => {
   const showImageUpload = isFeatureEnabled("status_image_upload");
   const showAiGeneration = isFeatureEnabled("ai_social_generation");
   const aiCost = commissionSettings?.ai_generation_cost ?? 0.5;
+  const totalAvailable = bonusBalance + balance;
+  const canAfford = totalAvailable >= aiCost;
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -90,12 +105,42 @@ const StatusComposer = () => {
     setSelectedMarket(null);
   };
 
-  const handleGenerateCaption = async () => {
+  const requestGenerateCaption = () => {
     const topic = selectedMarket?.title || content.trim();
     if (!topic) {
       toast.error("Link a market or type something first");
       return;
     }
+    setConfirmAction("caption");
+  };
+
+  const requestGenerateImage = () => {
+    const text = content.trim() || selectedMarket?.title;
+    if (!text) {
+      toast.error("Write a caption first to generate an image");
+      return;
+    }
+    setConfirmAction("image");
+  };
+
+  const handleConfirmGenerate = async () => {
+    const action = confirmAction;
+    setConfirmAction(null);
+    if (!action) return;
+
+    if (!canAfford) {
+      toast.error("Insufficient balance for AI generation");
+      return;
+    }
+
+    if (action === "caption") {
+      await executeGenerateCaption();
+    } else {
+      await executeGenerateImage();
+    }
+  };
+
+  const executeGenerateCaption = async () => {
     setGeneratingCaption(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-social-content", {
@@ -120,18 +165,13 @@ const StatusComposer = () => {
     }
   };
 
-  const handleGenerateImage = async () => {
-    const text = content.trim() || selectedMarket?.title;
-    if (!text) {
-      toast.error("Write a caption first to generate an image");
-      return;
-    }
+  const executeGenerateImage = async () => {
     setGeneratingImage(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-social-content", {
         body: {
           type: "image",
-          caption: text,
+          caption: content.trim() || selectedMarket?.title,
           market_title: selectedMarket?.title || null,
         },
       });
@@ -303,7 +343,6 @@ const StatusComposer = () => {
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1">
-          {/* Link Market button */}
           <button
             onClick={() => {
               setMarketSearchOpen(!marketSearchOpen);
@@ -317,10 +356,9 @@ const StatusComposer = () => {
             <BarChart3 className="w-4 h-4" />
           </button>
 
-          {/* AI Caption button */}
           {showAiGeneration && (
             <button
-              onClick={handleGenerateCaption}
+              onClick={requestGenerateCaption}
               disabled={generatingCaption || (!content.trim() && !selectedMarket)}
               className="relative w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground disabled:opacity-40"
               title={`AI Caption ($${aiCost})`}
@@ -329,10 +367,9 @@ const StatusComposer = () => {
             </button>
           )}
 
-          {/* AI Image button */}
           {showAiGeneration && (
             <button
-              onClick={handleGenerateImage}
+              onClick={requestGenerateImage}
               disabled={generatingImage || (!content.trim() && !selectedMarket)}
               className="relative w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground disabled:opacity-40"
               title={`AI Image ($${aiCost})`}
@@ -341,7 +378,6 @@ const StatusComposer = () => {
             </button>
           )}
 
-          {/* Image upload */}
           {showImageUpload && (
             <>
               <button
@@ -369,6 +405,66 @@ const StatusComposer = () => {
           Post
         </motion.button>
       </div>
+
+      {/* AI Generation Confirmation Modal */}
+      <AlertDialog open={confirmAction !== null} onOpenChange={(open) => { if (!open) setConfirmAction(null); }}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              {confirmAction === "caption" ? <Sparkles className="w-5 h-5 text-primary" /> : <Wand2 className="w-5 h-5 text-primary" />}
+              AI {confirmAction === "caption" ? "Caption" : "Image"} Generation
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  This will generate {confirmAction === "caption" ? "an AI-powered caption" : "an AI-powered image"} for your post.
+                </p>
+                <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Cost</span>
+                    <span className="font-bold text-foreground">${aiCost.toFixed(2)}</span>
+                  </div>
+                  <div className="border-t border-border pt-2 space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Bonus Balance</span>
+                      <span className="text-foreground">${bonusBalance.toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Main Balance</span>
+                      <span className="text-foreground">${balance.toFixed(2)}</span>
+                    </div>
+                  </div>
+                  {bonusBalance >= aiCost ? (
+                    <p className="text-[11px] text-muted-foreground">Deducted from bonus balance first</p>
+                  ) : bonusBalance > 0 ? (
+                    <p className="text-[11px] text-muted-foreground">
+                      ${bonusBalance.toFixed(2)} from bonus + ${(aiCost - bonusBalance).toFixed(2)} from main balance
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground">Deducted from main balance</p>
+                  )}
+                </div>
+                {!canAfford && (
+                  <div className="flex items-center gap-2 text-destructive text-sm">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>Insufficient balance. Please deposit funds first.</span>
+                  </div>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmGenerate}
+              disabled={!canAfford}
+              className="bg-primary text-primary-foreground disabled:opacity-50"
+            >
+              Generate (${aiCost.toFixed(2)})
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
