@@ -255,7 +255,6 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
       setReplacingImage(false);
     }
   };
-  };
 
   const name = profile?.display_name || "Anonymous";
   const vLevel = (profile?.verification_level || "none") as VerificationLevel;
@@ -420,3 +419,4 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
 };
 
 export default StatusCard;
+
