@@ -235,6 +235,14 @@ const AdminSocial = () => {
                 <span className="text-sm text-muted-foreground">Public Profiles</span>
                 <span className="text-sm font-bold">{profiles.filter(p => p.is_public).length} / {profiles.length}</span>
               </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Avg DM Messages/Chat</span>
+                <span className="text-sm font-bold">{dmConversations > 0 ? (dmMessages / dmConversations).toFixed(1) : "0"}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">DM Gift Volume</span>
+                <span className="text-sm font-bold text-rose-500">${dmGiftsTotal.toFixed(2)}</span>
+              </div>
             </div>
           </div>
         </div>
