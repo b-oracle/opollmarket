@@ -1,58 +1,25 @@
 
 
-## Add "Convert to Gift Balance" Option in Withdraw Flow
+## Fix Chat View Scroll Behavior
 
-### What changes
+### Problem
+The chat screen uses `min-h-screen` making it a tall document that scrolls as a whole page. The header is `sticky` not `fixed`, so scrolling moves everything — even when messages fit on screen. The page should lock in place and only the message area should scroll when there are enough messages to overflow.
 
-**Database Migration** — Create RPC `transfer_rewards_to_gift`
-- Parameters: `_user_id uuid`, `_amount numeric`
-- `SECURITY DEFINER`, enforces `auth.uid() = _user_id`
-- Locks balances row `FOR UPDATE`, validates `rewards_balance >= _amount`
-- Deducts from `rewards_balance`, adds to `gift_balance`
-- Returns `jsonb { success, remaining_rewards, new_gift_balance }`
+### Solution
+Convert ChatView from a document-flow layout to a fixed viewport layout.
 
-**`src/pages/Commissions.tsx`** — Modify the withdraw flow
+**`src/components/chat/ChatView.tsx`**
 
-Currently the "Withdraw" button only transfers rewards → main balance. Change it to present a destination choice:
+1. Change the outer container from `min-h-screen bg-background flex flex-col` to `h-[100dvh] bg-background flex flex-col overflow-hidden` — this locks the entire view to the viewport height and prevents document-level scrolling.
 
-1. Replace `giftAction === "withdraw"` view with a two-step flow:
-   - First show destination picker: **"To Main Balance"** and **"To Gift Balance"** as two buttons
-   - Then show the amount input + confirm button based on selection
+2. Change the header from `sticky top-0` to just a static flex child (remove sticky positioning). It naturally stays at the top since the parent is a non-scrolling flex column.
 
-2. Add state: `withdrawDest: "main" | "gift" | null`
+3. Change the messages area from `flex-1 overflow-y-auto` with `paddingBottom: "80px"` to `flex-1 overflow-y-auto min-h-0` with a smaller bottom padding (the input bar will be a flex child, not fixed). The `min-h-0` is critical — without it, flex children won't shrink below their content size.
 
-3. When dest is `"main"` — use existing `withdraw_rewards_balance` RPC (no change)
-4. When dest is `"gift"` — call new `transfer_rewards_to_gift` RPC
+4. Change the input bar from `fixed bottom-0 left-0 right-0` to a static flex child at the bottom (remove fixed positioning). This eliminates the need for phantom bottom padding in the messages area.
 
-### UX Result
-```text
-Gift Balance Details
-┌──────────────────────────────┐
-│ Total Balance         $1.10  │
-│ Available to Send     $0.55  │
-│ Gifts Received        $0.55  │
-├──────────────────────────────┤
-│  [Top Up]    [Withdraw]      │
-└──────────────────────────────┘
-
-After tapping Withdraw:
-┌──────────────────────────────┐
-│ Where to transfer?           │
-│                              │
-│ [💰 Main Balance]            │
-│ [🎁 Gift Balance]            │
-│                              │
-│ [← Back]                     │
-└──────────────────────────────┘
-
-After selecting destination:
-┌──────────────────────────────┐
-│ Transfer to Gift Balance     │
-│ Available: $0.55             │
-│ [Amount input]               │
-│ [Back]  [Transfer]           │
-└──────────────────────────────┘
-```
-
-### No other file changes needed
+### Result
+- Header, messages, and input bar are three flex children inside a viewport-height container
+- Only the messages area scrolls, and only when content overflows
+- When messages fit on screen, scrolling does nothing — the view holds still
 
