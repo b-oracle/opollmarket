@@ -124,7 +124,21 @@ const MyPromotions = () => {
     enabled: !!user?.id,
   });
 
-  const isLoading = boostsLoading || adsLoading || broadcastsLoading;
+  // Fetch space broadcasts
+  const { data: spaceBroadcasts = [], isLoading: spaceBcLoading } = useQuery({
+    queryKey: ["my-space-broadcasts", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("space_broadcasts" as any)
+        .select("*")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false });
+      return (data || []) as any[];
+    },
+    enabled: !!user?.id,
+  });
+
+  const isLoading = boostsLoading || adsLoading || broadcastsLoading || spaceBcLoading;
 
   // Summary stats
   const boostStats = useMemo(() => {
