@@ -38,6 +38,8 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
   const [searchResults, setSearchResults] = useState<InviteUser[]>([]);
   const [searching, setSearching] = useState(false);
   const [streamUrl, setStreamUrl] = useState("");
+  const [enableStream, setEnableStream] = useState(false);
+  const [streamPlatform, setStreamPlatform] = useState<"youtube" | "streamyard">("youtube");
 
   useEffect(() => {
     if (!user) return;
