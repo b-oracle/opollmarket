@@ -79,7 +79,7 @@ const ChatGiftModal = ({ open, onClose, conversationId, recipientId, recipientNa
           </div>
           <div className="text-right">
             <p className="text-xs text-muted-foreground">Gift Balance</p>
-            <p className="text-sm font-bold text-green-500">${giftBalance.toFixed(2)}</p>
+            <p className="text-sm font-bold text-emerald-500 dark:text-emerald-400">${giftBalance.toFixed(2)}</p>
           </div>
         </div>
 
