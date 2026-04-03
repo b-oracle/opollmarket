@@ -159,7 +159,7 @@ const Privacy = () => {
         </section>
 
         <section id="data-sharing" className="space-y-2 scroll-mt-20">
-          <h2 className="text-base font-semibold text-foreground">5. Data Sharing & Disclosure</h2>
+          <h2 className="text-base font-semibold text-foreground">8. Data Sharing & Disclosure</h2>
           <p><strong>We do not sell, rent, or trade your personal data to third parties for marketing purposes.</strong></p>
           <p>We may share your information in the following circumstances:</p>
           <ul className="list-disc pl-5 space-y-1">
