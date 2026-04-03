@@ -1,40 +1,58 @@
 
 
-## Transfer Rewards to Gift Balance
+## Add "Convert to Gift Balance" Option in Withdraw Flow
 
-### Overview
-Add a "Convert to Gifts" action on the Rewards Balance card in the SpaceRoom stats panel, plus a new database RPC to securely move funds from `rewards_balance` to `gift_balance`.
+### What changes
 
-### Database Migration
-
-Create RPC `transfer_rewards_to_gift(_user_id uuid, _amount numeric) RETURNS jsonb`:
-- `SECURITY DEFINER` with `auth.uid()` enforcement (same pattern as `topup_gift_balance`)
-- Validates `_amount > 0`
-- Locks the balance row `FOR UPDATE`
-- Checks `rewards_balance >= _amount`
+**Database Migration** — Create RPC `transfer_rewards_to_gift`
+- Parameters: `_user_id uuid`, `_amount numeric`
+- `SECURITY DEFINER`, enforces `auth.uid() = _user_id`
+- Locks balances row `FOR UPDATE`, validates `rewards_balance >= _amount`
 - Deducts from `rewards_balance`, adds to `gift_balance`
-- Returns `{ success: true, remaining_rewards, new_gift_balance }`
+- Returns `jsonb { success, remaining_rewards, new_gift_balance }`
 
-### Frontend Changes
+**`src/pages/Commissions.tsx`** — Modify the withdraw flow
 
-**`src/components/social/SpaceRoom.tsx`**
+Currently the "Withdraw" button only transfers rewards → main balance. Change it to present a destination choice:
 
-1. Add state: `showRewardsTransfer` (boolean), `transferAmount` (string), `transferring` (boolean)
-2. On the Rewards Balance card (line ~2907-2912), add a "Convert" button below the balance (same style as the "Top Up" button on the Gift Balance card)
-3. When tapped, show a small inline form (or swap the card content):
-   - Input for amount (pre-filled with full rewards balance)
-   - "Convert to Gift Balance" button
-   - Calls `supabase.rpc("transfer_rewards_to_gift", { _user_id: user.id, _amount: amt })`
-   - On success: refresh balances, toast confirmation
-   - On error: toast error message
+1. Replace `giftAction === "withdraw"` view with a two-step flow:
+   - First show destination picker: **"To Main Balance"** and **"To Gift Balance"** as two buttons
+   - Then show the amount input + confirm button based on selection
 
-**`src/pages/Commissions.tsx`**
+2. Add state: `withdrawDest: "main" | "gift" | null`
 
-4. Add a third action button "Convert to Gifts" alongside "Top Up" and "Withdraw" in the gift balance breakdown section (~line 741-753)
-5. Add a `giftAction === "convert"` state that shows a similar form transferring rewards→gift balance using the same RPC
+3. When dest is `"main"` — use existing `withdraw_rewards_balance` RPC (no change)
+4. When dest is `"gift"` — call new `transfer_rewards_to_gift` RPC
 
-### Security
-- RPC enforces `auth.uid() = _user_id` server-side
-- `FOR UPDATE` row lock prevents race conditions
-- No new RLS policies needed (RPC is `SECURITY DEFINER`)
+### UX Result
+```text
+Gift Balance Details
+┌──────────────────────────────┐
+│ Total Balance         $1.10  │
+│ Available to Send     $0.55  │
+│ Gifts Received        $0.55  │
+├──────────────────────────────┤
+│  [Top Up]    [Withdraw]      │
+└──────────────────────────────┘
+
+After tapping Withdraw:
+┌──────────────────────────────┐
+│ Where to transfer?           │
+│                              │
+│ [💰 Main Balance]            │
+│ [🎁 Gift Balance]            │
+│                              │
+│ [← Back]                     │
+└──────────────────────────────┘
+
+After selecting destination:
+┌──────────────────────────────┐
+│ Transfer to Gift Balance     │
+│ Available: $0.55             │
+│ [Amount input]               │
+│ [Back]  [Transfer]           │
+└──────────────────────────────┘
+```
+
+### No other file changes needed
 
