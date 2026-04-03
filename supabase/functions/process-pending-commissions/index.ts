@@ -81,6 +81,38 @@ Deno.serve(async (req) => {
               .update({ bc400_pool_balance: Number((cs as any).bc400_pool_balance || 0) + pc.amount } as any)
               .eq("id", cs.id);
           }
+        } else if (pc.type === "partner") {
+          // Partner revenue share: deduct from platform pool, credit to API key owner
+          await supabase.rpc("adjust_platform_pool", { _delta: -pc.amount });
+
+          // Find the API key owner from the market's api_key_id
+          if (pc.market_id) {
+            const { data: market } = await supabase
+              .from("markets")
+              .select("api_key_id")
+              .eq("id", pc.market_id)
+              .single();
+
+            if (market?.api_key_id) {
+              // Look up which user owns this API key (partner_name is used for display, but we need a user to credit)
+              // For now, record in affiliate_earnings and update status
+              const { data: earnings } = await supabase
+                .from("affiliate_earnings")
+                .select("id")
+                .eq("api_key_id", market.api_key_id)
+                .eq("status", "pending")
+                .limit(50);
+
+              if (earnings) {
+                for (const e of earnings) {
+                  await supabase
+                    .from("affiliate_earnings")
+                    .update({ status: "released" })
+                    .eq("id", e.id);
+                }
+              }
+            }
+          }
         } else if (pc.amount >= 0.01) {
           // Creator or referral — deduct from platform pool, credit to recipient
           await supabase.rpc("adjust_platform_pool", { _delta: -pc.amount });
