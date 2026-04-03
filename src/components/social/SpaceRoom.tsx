@@ -102,8 +102,12 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   // Editable title state
   const [displayTitle, setDisplayTitle] = useState(spaceTitle);
   const [editingTitle, setEditingTitle] = useState(false);
-  const [editTitleValue, setEditTitleValue] = useState(spaceTitle);
+   const [editTitleValue, setEditTitleValue] = useState(spaceTitle);
   const [savingTitle, setSavingTitle] = useState(false);
+  const [streamUrl, setStreamUrl] = useState<string | null>(null);
+  const [showStreamInput, setShowStreamInput] = useState(false);
+  const [streamInputValue, setStreamInputValue] = useState("");
+  const [streamCollapsed, setStreamCollapsed] = useState(false);
 
   const handleSaveTitle = async () => {
     const trimmed = editTitleValue.trim();
