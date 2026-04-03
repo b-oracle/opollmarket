@@ -446,6 +446,18 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       }
     })();
 
+    // Also fetch stream_url
+    (async () => {
+      const { data: sData } = await supabase
+        .from("spaces" as any)
+        .select("stream_url")
+        .eq("id", spaceId)
+        .single();
+      if (sData && (sData as any).stream_url) {
+        setStreamUrl((sData as any).stream_url);
+      }
+    })();
+
     const channel = supabase
       .channel(`space-tags-${spaceId}`)
       .on(
@@ -457,6 +469,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           }
           if (payload.new?.title) {
             setDisplayTitle(payload.new.title);
+          }
+          if (payload.new?.stream_url !== undefined) {
+            setStreamUrl(payload.new.stream_url || null);
           }
         }
       )
