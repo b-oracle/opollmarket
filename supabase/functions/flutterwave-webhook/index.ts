@@ -15,7 +15,19 @@ async function processWelcomeBonus(supabase: ReturnType<typeof createClient>, us
     .maybeSingle();
   if (!toggle?.enabled) return;
 
-  // 2. Check KYC status
+  // 2. Idempotency: check if welcome_bonus already credited
+  const { count: existingBonus } = await supabase
+    .from("transactions")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("type", "welcome_bonus")
+    .eq("status", "confirmed");
+  if ((existingBonus ?? 0) > 0) {
+    console.log(`Welcome bonus already credited for user ${userId}`);
+    return;
+  }
+
+  // 3. Check KYC status
   const { data: profile } = await supabase
     .from("profiles")
     .select("kyc_status")
@@ -23,7 +35,7 @@ async function processWelcomeBonus(supabase: ReturnType<typeof createClient>, us
     .single();
   if (!profile || profile.kyc_status !== "approved") return;
 
-  // 3. Check if first deposit (no other confirmed deposits)
+  // 4. Check if first deposit (no other confirmed deposits)
   const { count } = await supabase
     .from("transactions")
     .select("id", { count: "exact", head: true })
@@ -32,7 +44,7 @@ async function processWelcomeBonus(supabase: ReturnType<typeof createClient>, us
     .eq("status", "confirmed");
   if ((count ?? 0) > 1) return; // >1 because current deposit is already confirmed
 
-  // 4. Get settings
+  // 5. Get settings
   const { data: settings } = await supabase
     .from("commission_settings")
     .select("welcome_bonus_percent, welcome_bonus_cap")
@@ -43,7 +55,7 @@ async function processWelcomeBonus(supabase: ReturnType<typeof createClient>, us
   const cap = Number(settings.welcome_bonus_cap) || 0;
   if (percent <= 0 || cap <= 0) return;
 
-  // 5. Calculate and credit
+  // 6. Calculate and credit
   const bonus = Math.min(depositAmount * percent / 100, cap);
   if (bonus <= 0) return;
 
@@ -51,14 +63,13 @@ async function processWelcomeBonus(supabase: ReturnType<typeof createClient>, us
     _user_id: userId,
     _delta: 0,
     _bonus_delta: bonus,
-    _insurance_delta: 0,
   });
   if (adjError) {
     console.error("Welcome bonus credit failed:", adjError);
     return;
   }
 
-  // 6. Log transaction & notify
+  // 7. Log transaction & notify
   await supabase.from("transactions").insert({
     user_id: userId,
     type: "welcome_bonus",

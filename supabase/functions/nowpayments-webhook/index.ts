@@ -50,6 +50,9 @@ async function verifySignature(
 async function processWelcomeBonus(supabase: ReturnType<typeof createClient>, userId: string, depositAmount: number) {
   const { data: toggle } = await supabase.from("feature_toggles").select("enabled").eq("feature_key", "welcome_bonus").maybeSingle();
   if (!toggle?.enabled) return;
+  // Idempotency: check if already credited
+  const { count: existingBonus } = await supabase.from("transactions").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("type", "welcome_bonus").eq("status", "confirmed");
+  if ((existingBonus ?? 0) > 0) { console.log(`Welcome bonus already credited for user ${userId}`); return; }
   const { data: profile } = await supabase.from("profiles").select("kyc_status").eq("id", userId).single();
   if (!profile || profile.kyc_status !== "approved") return;
   const { count } = await supabase.from("transactions").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("type", "deposit").eq("status", "confirmed");
@@ -61,7 +64,7 @@ async function processWelcomeBonus(supabase: ReturnType<typeof createClient>, us
   if (percent <= 0 || cap <= 0) return;
   const bonus = Math.min(depositAmount * percent / 100, cap);
   if (bonus <= 0) return;
-  const { error: adjError } = await supabase.rpc("adjust_balance", { _user_id: userId, _delta: 0, _bonus_delta: bonus, _insurance_delta: 0 });
+  const { error: adjError } = await supabase.rpc("adjust_balance", { _user_id: userId, _delta: 0, _bonus_delta: bonus });
   if (adjError) { console.error("Welcome bonus credit failed:", adjError); return; }
   await supabase.from("transactions").insert({ user_id: userId, type: "welcome_bonus", amount: bonus, status: "confirmed" });
   await supabase.from("notifications").insert({ user_id: userId, title: "Welcome Bonus! 🎁", message: `You received a $${bonus.toFixed(2)} welcome bonus on your first deposit!`, type: "deposit" });
