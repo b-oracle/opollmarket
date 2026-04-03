@@ -166,27 +166,44 @@ const Commissions = () => {
   const { data: giftsSent, isLoading: loadingGS } = useQuery({
     queryKey: ["gifts-sent", user?.id],
     queryFn: async () => {
-      const [spaceRes, dmRes] = await Promise.all([
+      const [spaceRes, dmMsgRes] = await Promise.all([
         supabase
           .from("space_gifts")
           .select("id, amount, emoji, created_at, recipient_id, space_id")
           .eq("sender_id", user!.id)
           .order("created_at", { ascending: false }),
         supabase
-          .from("transactions")
-          .select("id, amount, created_at")
-          .eq("user_id", user!.id)
-          .eq("type", "gift_sent")
+          .from("dm_messages")
+          .select("id, gift_amount, created_at, conversation_id, content")
+          .eq("sender_id", user!.id)
+          .gt("gift_amount", 0)
           .order("created_at", { ascending: false }),
       ]);
-      const spaceGifts = (spaceRes.data ?? []).map((g: any) => ({ ...g, source: "space" }));
-      const dmGifts = (dmRes.data ?? []).map((t: any) => ({
-        id: t.id,
-        amount: Math.abs(Number(t.amount)),
-        emoji: "💬",
-        created_at: t.created_at,
-        source: "dm",
-      }));
+      const spaceGifts = (spaceRes.data ?? []).map((g: any) => ({ ...g, source: "space", counterpartyId: g.recipient_id }));
+      
+      // For DM gifts sent, resolve counterparty from conversations
+      const dmGifts: any[] = [];
+      const dmData = dmMsgRes.data ?? [];
+      if (dmData.length > 0) {
+        const convIds = [...new Set(dmData.map((m: any) => m.conversation_id))];
+        const { data: convs } = await supabase
+          .from("dm_conversations")
+          .select("id, user_a, user_b")
+          .in("id", convIds);
+        const convMap = new Map((convs ?? []).map((c: any) => [c.id, c]));
+        dmData.forEach((m: any) => {
+          const conv = convMap.get(m.conversation_id);
+          const counterpartyId = conv ? (conv.user_a === user!.id ? conv.user_b : conv.user_a) : null;
+          dmGifts.push({
+            id: m.id,
+            amount: Math.abs(Number(m.gift_amount)),
+            emoji: m.content || "💬",
+            created_at: m.created_at,
+            source: "dm",
+            counterpartyId,
+          });
+        });
+      }
       return [...spaceGifts, ...dmGifts].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     },
     enabled: !!user?.id,
@@ -195,27 +212,45 @@ const Commissions = () => {
   const { data: giftsReceived, isLoading: loadingGR } = useQuery({
     queryKey: ["gifts-received", user?.id],
     queryFn: async () => {
-      const [spaceRes, dmRes] = await Promise.all([
+      const [spaceRes, dmMsgRes] = await Promise.all([
         supabase
           .from("space_gifts")
           .select("id, amount, emoji, created_at, sender_id, space_id")
           .eq("recipient_id", user!.id)
           .order("created_at", { ascending: false }),
         supabase
-          .from("transactions")
-          .select("id, amount, created_at")
-          .eq("user_id", user!.id)
-          .eq("type", "gift_received")
+          .from("dm_messages")
+          .select("id, gift_amount, created_at, conversation_id, sender_id, content")
+          .neq("sender_id", user!.id)
+          .gt("gift_amount", 0)
           .order("created_at", { ascending: false }),
       ]);
-      const spaceGifts = (spaceRes.data ?? []).map((g: any) => ({ ...g, source: "space" }));
-      const dmGifts = (dmRes.data ?? []).map((t: any) => ({
-        id: t.id,
-        amount: Number(t.amount),
-        emoji: "💬",
-        created_at: t.created_at,
-        source: "dm",
-      }));
+      // For received DM gifts, need to find conversations where user is participant
+      const spaceGifts = (spaceRes.data ?? []).map((g: any) => ({ ...g, source: "space", counterpartyId: g.sender_id }));
+      
+      const dmGifts: any[] = [];
+      const dmData = dmMsgRes.data ?? [];
+      if (dmData.length > 0) {
+        const convIds = [...new Set(dmData.map((m: any) => m.conversation_id))];
+        const { data: convs } = await supabase
+          .from("dm_conversations")
+          .select("id, user_a, user_b")
+          .in("id", convIds);
+        const convMap = new Map((convs ?? []).map((c: any) => [c.id, c]));
+        dmData.forEach((m: any) => {
+          const conv = convMap.get(m.conversation_id);
+          // Only include if user is a participant in this conversation
+          if (!conv || (conv.user_a !== user!.id && conv.user_b !== user!.id)) return;
+          dmGifts.push({
+            id: m.id,
+            amount: Number(m.gift_amount),
+            emoji: m.content || "💬",
+            created_at: m.created_at,
+            source: "dm",
+            counterpartyId: m.sender_id,
+          });
+        });
+      }
       return [...spaceGifts, ...dmGifts].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     },
     enabled: !!user?.id,
@@ -318,6 +353,29 @@ const Commissions = () => {
     enabled: allCopierIds.length > 0,
   });
 
+  // Fetch gift counterparty profiles
+  const allGiftCounterpartyIds = useMemo(() => {
+    const ids = new Set<string>();
+    (giftsSent ?? []).forEach((g: any) => g.counterpartyId && ids.add(g.counterpartyId));
+    (giftsReceived ?? []).forEach((g: any) => g.counterpartyId && ids.add(g.counterpartyId));
+    return Array.from(ids);
+  }, [giftsSent, giftsReceived]);
+
+  const { data: giftProfiles } = useQuery({
+    queryKey: ["gift-profiles", allGiftCounterpartyIds],
+    queryFn: async () => {
+      if (allGiftCounterpartyIds.length === 0) return {};
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .in("id", allGiftCounterpartyIds);
+      const map: Record<string, { display_name: string | null; avatar_url: string | null }> = {};
+      (data ?? []).forEach((p) => { map[p.id] = { display_name: p.display_name, avatar_url: p.avatar_url }; });
+      return map;
+    },
+    enabled: allGiftCounterpartyIds.length > 0,
+  });
+
   const isLoading = loadingPC || loadingCT || loadingSB || loadingGS || loadingGR || loadingBT || loadingOS;
 
   // Compute totals
@@ -390,6 +448,8 @@ const Commissions = () => {
     });
 
     (giftsSent ?? []).forEach((g: any) => {
+      const counterpartyName = g.counterpartyId && giftProfiles?.[g.counterpartyId]?.display_name;
+      const toLabel = counterpartyName ? ` to ${counterpartyName}` : "";
       records.push({
         id: g.id,
         category: "gift_sent",
@@ -397,11 +457,13 @@ const Commissions = () => {
         date: g.created_at,
         status: "released",
         emoji: g.emoji,
-        description: `Sent ${g.emoji} gift${g.source === "dm" ? " (DM)" : ""}`,
+        description: `Sent ${g.emoji}${toLabel}${g.source === "dm" ? " (DM)" : ""}`,
       });
     });
 
     (giftsReceived ?? []).forEach((g: any) => {
+      const counterpartyName = g.counterpartyId && giftProfiles?.[g.counterpartyId]?.display_name;
+      const fromLabel = counterpartyName ? ` from ${counterpartyName}` : "";
       records.push({
         id: g.id,
         category: "gift_received",
@@ -409,7 +471,7 @@ const Commissions = () => {
         date: g.created_at,
         status: "released",
         emoji: g.emoji,
-        description: `Received ${g.emoji} gift${g.source === "dm" ? " (DM)" : ""}`,
+        description: `Received ${g.emoji}${fromLabel}${g.source === "dm" ? " (DM)" : ""}`,
       });
     });
 
@@ -438,7 +500,7 @@ const Commissions = () => {
 
     records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     return records;
-  }, [pendingCommissions, copyEarnings, signupBonuses, giftsSent, giftsReceived, bonusTxns, osureTxns]);
+  }, [pendingCommissions, copyEarnings, signupBonuses, giftsSent, giftsReceived, bonusTxns, osureTxns, giftProfiles]);
 
   const filtered = (activeTab === "all"
     ? allRecords
