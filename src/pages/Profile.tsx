@@ -1137,7 +1137,7 @@ const Profile = () => {
                             {editDob ? format(editDob, "PPP") : "Select your date of birth"}
                           </button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 z-[60]" align="start">
+                        <PopoverContent className="w-auto p-0 z-[100]" align="start" side="top" sideOffset={8}>
                           <Calendar
                             mode="single"
                             selected={editDob}
