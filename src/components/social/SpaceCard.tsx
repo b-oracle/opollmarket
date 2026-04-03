@@ -109,7 +109,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
       setCancelling(false);
     }
   };
-
+  const isRecorded = space.status === "ended" && space.is_recorded && space.recording_url;
 
   // Clean up audio on unmount
   useEffect(() => {
