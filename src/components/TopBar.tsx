@@ -113,6 +113,7 @@ const TopBar = () => {
           {hasAdminAccess && user && (
             <AdminBadgeButton isAdminRoute={isAdminRoute} onClick={() => navigate(isAdminRoute ? "/" : "/admin")} userId={user.id} />
           )}
+          <ChatIcon />
           <NotificationBell />
           <ThemeToggle />
           {loading ? null : user ? (
