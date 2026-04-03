@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
+import { cleanupBlockedPwaContext, isPwaBlockedContext } from "@/lib/pwa";
 
 const DISMISSED_SW_KEY = "opoll_sw_dismissed_version";
 const APPLIED_SW_KEY = "opoll_sw_applied_version";
@@ -62,9 +63,12 @@ export const usePWAUpdate = () => {
   const waitingVersionRef = useRef<string | null>(null);
   const [showUpdate, setShowUpdate] = useState(false);
   const [waitingSW, setWaitingSW] = useState<ServiceWorker | null>(null);
+  const blockedContext = isPwaBlockedContext();
 
   const shouldPromptForWorker = useCallback(
     (candidate: ServiceWorker, registration: ServiceWorkerRegistration): boolean => {
+      if (blockedContext) return false;
+
       const candidateVersion = getWorkerVersion(candidate);
       if (!candidateVersion) return false;
 
@@ -79,7 +83,7 @@ export const usePWAUpdate = () => {
 
       return true;
     },
-    []
+    [blockedContext]
   );
 
   const surfaceWaitingWorker = useCallback(
@@ -105,6 +109,14 @@ export const usePWAUpdate = () => {
       if (intervalRef.current) {
         window.clearInterval(intervalRef.current);
         intervalRef.current = null;
+      }
+
+      if (blockedContext) {
+        waitingVersionRef.current = null;
+        setWaitingSW(null);
+        setShowUpdate(false);
+        void cleanupBlockedPwaContext();
+        return;
       }
 
       if (registration) {
@@ -153,6 +165,14 @@ export const usePWAUpdate = () => {
 
   // Also check on visibility change + listen for controllerchange to auto-reload
   useEffect(() => {
+    if (blockedContext) {
+      waitingVersionRef.current = null;
+      setShowUpdate(false);
+      setWaitingSW(null);
+      void cleanupBlockedPwaContext();
+      return;
+    }
+
     const handleVisibility = () => {
       if (document.visibilityState === "visible" && navigator.onLine) {
         registrationRef.current?.update();
@@ -189,9 +209,11 @@ export const usePWAUpdate = () => {
         intervalRef.current = null;
       }
     };
-  }, []);
+  }, [blockedContext]);
 
   const update = useCallback(() => {
+    if (blockedContext) return;
+
     const waitingVersion = getWorkerVersion(waitingSW);
 
     setShowUpdate(false);
@@ -210,9 +232,11 @@ export const usePWAUpdate = () => {
 
     // Also call the vite-pwa helper
     updateServiceWorker(true);
-  }, [waitingSW, updateServiceWorker]);
+  }, [blockedContext, waitingSW, updateServiceWorker]);
 
   const dismiss = useCallback(() => {
+    if (blockedContext) return;
+
     const waitingVersion = getWorkerVersion(waitingSW);
     if (waitingVersion) {
       safeStorage.setLocal(DISMISSED_SW_KEY, waitingVersion);
@@ -221,7 +245,7 @@ export const usePWAUpdate = () => {
     waitingVersionRef.current = null;
     setShowUpdate(false);
     setWaitingSW(null);
-  }, [waitingSW]);
+  }, [blockedContext, waitingSW]);
 
   return { showUpdate, update, dismiss };
 };
