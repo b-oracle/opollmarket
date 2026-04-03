@@ -97,6 +97,8 @@ const AdminSettings = () => {
   const [osure25Premium, setOsure25Premium] = useState("10");
   const [osure50Premium, setOsure50Premium] = useState("20");
   const [osure100Premium, setOsure100Premium] = useState("30");
+  const [welcomeBonusPercent, setWelcomeBonusPercent] = useState("0");
+  const [welcomeBonusCap, setWelcomeBonusCap] = useState("0");
   const [payazaMode, setPayazaMode] = useState<"checkout_sdk" | "direct_api">("direct_api"); // kept for save compatibility
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
