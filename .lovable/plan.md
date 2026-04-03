@@ -1,57 +1,58 @@
 
 
-## AI-Powered Caption & Image Generation for Social Status Posts
+## Welcome Bonus on First Deposit
 
 ### Overview
-Add optional AI generation buttons to the StatusComposer so users can:
-1. **Generate a caption** based on a linked market or free-text topic (for a fee)
-2. **Generate an AI post image** based on the caption text (for a fee)
-3. **Replace a market post image** — market creators can regenerate the image for their own market's status post
+After a user completes KYC and makes their first deposit, they receive X% of that deposit amount (capped at $X) as bonus balance. Admin can toggle this on/off and configure the percentage and cap.
 
-All generation uses the existing `generate-market-content` edge function pattern (balance deduction, Lovable AI gateway, refund on failure).
+### Database Changes
 
-### Backend — New Edge Function
+**Migration 1 — Add settings to `commission_settings`:**
+```sql
+ALTER TABLE public.commission_settings
+  ADD COLUMN welcome_bonus_percent numeric NOT NULL DEFAULT 0,
+  ADD COLUMN welcome_bonus_cap numeric NOT NULL DEFAULT 0;
+```
+- `welcome_bonus_percent` — e.g. 50 means 50% of first deposit
+- `welcome_bonus_cap` — e.g. 10 means max $10 bonus
 
-**File: `supabase/functions/generate-social-content/index.ts`**
+**Migration 2 — Add feature toggle row:**
+```sql
+INSERT INTO public.feature_toggles (feature_key, label, enabled)
+VALUES ('welcome_bonus', 'Welcome Bonus (First Deposit)', false);
+```
 
-A new edge function handling two generation types:
-- `type: "caption"` — Takes an optional `market_title`, `market_category`, and `user_hint` (what the user typed so far). Returns a generated caption (max 280 chars). Uses `google/gemini-3-flash-preview`.
-- `type: "image"` — Takes `caption` text. Generates an image based on caption content using `google/gemini-3.1-flash-image-preview`. Uploads to `social-media` storage bucket. Returns the public URL.
+### Server-Side Logic
 
-Follows the same pattern as `generate-market-content`:
-- Authenticates user via auth header
-- Loads `ai_generation_cost` from `commission_settings`
-- Deducts balance (bonus first, then main) atomically
-- Refunds on AI or upload failure
-- Logs transaction with side `ai_social_caption` or `ai_social_image`
+Create a reusable helper function used by all 3 deposit confirmation paths. After crediting the deposit:
 
-### Frontend — StatusComposer Changes
+1. Check `feature_toggles` — is `welcome_bonus` enabled?
+2. Check `profiles` — is `kyc_status` = `'approved'` (tier 1 or 2)?
+3. Check `transactions` — does the user have any prior confirmed deposits (excluding the current one)? If yes, skip.
+4. Read `commission_settings` for `welcome_bonus_percent` and `welcome_bonus_cap`
+5. Calculate: `bonus = min(deposit_amount * percent / 100, cap)`
+6. Credit via `adjust_balance` with `_bonus_delta: bonus`
+7. Log a `welcome_bonus` transaction and send a notification
 
-**File: `src/components/social/StatusComposer.tsx`**
+**Files modified:**
+- `supabase/functions/nowpayments-webhook/index.ts` — call welcome bonus helper after `handleDeposit` credits balance
+- `supabase/functions/flutterwave-webhook/index.ts` — call welcome bonus helper after deposit confirmation
+- `supabase/functions/confirm-deposit-admin/index.ts` — call welcome bonus helper after manual confirmation
 
-Add two new buttons to the toolbar:
-1. **✨ AI Caption** (Sparkles icon) — Generates a caption based on the linked market title or existing text. Replaces the textarea content with the generated caption. Shows loading state and cost tooltip.
-2. **🎨 AI Image** (Wand icon) — Generates an image based on the current caption text. Sets the image preview and stores the URL (no file upload needed since the edge function returns a hosted URL). Disabled if caption is empty.
+The helper will be inlined in each file (edge functions can't share imports across folders) but with identical logic.
 
-Both buttons show a small cost badge (e.g. "$0.50") and require confirmation via the existing toast pattern.
+### Admin UI
 
-For market creators: when a market is linked and the user is the creator, an additional "Regenerate Market Image" option appears that updates `markets.image_url` via the edge function.
+- The feature toggle already appears automatically in the Admin Settings toggle grid under a relevant category
+- Add `welcome_bonus_percent` and `welcome_bonus_cap` fields to `src/pages/admin/AdminSettings.tsx` (or wherever commission settings are edited), visible when the toggle is enabled
 
-### StatusCard — Creator Image Replace
+### Client-Side
 
-**File: `src/components/social/StatusCard.tsx`**
+- Add `welcome_bonus_percent` and `welcome_bonus_cap` to `useCommissionSettings.ts` so the admin UI can read/write them
+- Optionally show a "Welcome Bonus" banner on the deposit page for eligible users (KYC approved, no prior deposits)
 
-For posts linked to a market where `status.user_id === user?.id` (the creator), add a subtle "🔄 Replace Image" button on the market card preview. This calls the same `generate-social-content` edge function with `type: "image"` and also updates `markets.image_url`.
-
-### Files to Create/Modify
-
-1. **Create** `supabase/functions/generate-social-content/index.ts` — New edge function
-2. **Modify** `src/components/social/StatusComposer.tsx` — Add AI generation buttons + logic
-3. **Modify** `src/components/social/StatusCard.tsx` — Add creator image replace button on own market posts
-
-### Cost & Security
-- Uses the same `ai_generation_cost` setting from `commission_settings` (currently $0.50 per generation)
-- Each generation type charges independently
-- Balance check and deduction happen server-side with refund on failure
-- Only authenticated users can generate content
+### Security
+- All eligibility checks and bonus crediting happen server-side
+- The bonus is added to `bonus_balance` (non-withdrawable, usable for fees)
+- One-time only: checked by counting prior confirmed deposits
 
