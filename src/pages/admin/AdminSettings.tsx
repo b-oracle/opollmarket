@@ -99,6 +99,7 @@ const AdminSettings = () => {
   const [osure100Premium, setOsure100Premium] = useState("30");
   const [welcomeBonusPercent, setWelcomeBonusPercent] = useState("0");
   const [welcomeBonusCap, setWelcomeBonusCap] = useState("0");
+  const [giftFeePercent, setGiftFeePercent] = useState("2");
   const [payazaMode, setPayazaMode] = useState<"checkout_sdk" | "direct_api">("direct_api"); // kept for save compatibility
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
