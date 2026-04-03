@@ -88,34 +88,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Credit the user's balance
-    const { data: balance } = await adminClient
-      .from("balances")
-      .select("amount")
-      .eq("user_id", user_id)
-      .eq("currency", "USDT")
-      .single();
-
-    if (!balance) {
-      return new Response(JSON.stringify({ error: "No balance record found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
+    // Credit the user's balance atomically
     // If partial, only credit the difference (amount - already credited)
     const alreadyCredited = tx.status === "partial" ? Number(tx.amount) : 0;
     const creditAmount = Number(amount) - alreadyCredited;
 
     if (creditAmount > 0) {
-      await adminClient
-        .from("balances")
-        .update({
-          amount: Number(balance.amount) + creditAmount,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", user_id)
-        .eq("currency", "USDT");
+      const { error: balError } = await adminClient.rpc("adjust_balance", {
+        _user_id: user_id,
+        _delta: creditAmount,
+        _bonus_delta: 0,
+      });
+      if (balError) {
+        console.error("CRITICAL: Failed to credit balance:", balError);
+        return new Response(JSON.stringify({ error: "Balance credit failed" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Update transaction
