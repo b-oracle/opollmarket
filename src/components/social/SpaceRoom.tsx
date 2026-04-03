@@ -48,7 +48,7 @@ import TaggedMarketsCarousel from "./TaggedMarketsCarousel";
 import { SOUND_REACTIONS, playSoundById, AMBIENT_TRACKS, startAmbient, stopAmbient, isAmbientPlaying, warmAudioContext } from "@/lib/spaceSounds";
 import { Music, ChevronDown, Upload, Square, Play, Pause, Search, Tv } from "lucide-react";
 import { optimizedImageUrl as optimizedImg } from "@/lib/optimizedImage";
-import YouTubeEmbed, { isYouTubeUrl } from "@/components/YouTubeEmbed";
+import YouTubeEmbed, { isStreamUrl } from "@/components/YouTubeEmbed";
 
 interface SpaceRoomProps {
   spaceId: string;
