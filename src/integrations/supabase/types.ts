@@ -60,6 +60,13 @@ export type Database = {
             foreignKeyName: "affiliate_earnings_transaction_id_fkey"
             columns: ["transaction_id"]
             isOneToOne: false
+            referencedRelation: "public_market_trades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_earnings_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
             referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
@@ -1528,6 +1535,13 @@ export type Database = {
             columns: ["market_id"]
             isOneToOne: false
             referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_commissions_trade_transaction_id_fkey"
+            columns: ["trade_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "public_market_trades"
             referencedColumns: ["id"]
           },
           {
@@ -3208,6 +3222,164 @@ export type Database = {
       }
     }
     Views: {
+      admin_security_overview: {
+        Row: {
+          created_at: string | null
+          last_verified_at: string | null
+          pin_enabled: boolean | null
+          require_pin_login: boolean | null
+          require_pin_withdrawal: boolean | null
+          require_totp_login: boolean | null
+          require_totp_withdrawal: boolean | null
+          security_setup_complete: boolean | null
+          totp_enabled: boolean | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          last_verified_at?: string | null
+          pin_enabled?: boolean | null
+          require_pin_login?: boolean | null
+          require_pin_withdrawal?: boolean | null
+          require_totp_login?: boolean | null
+          require_totp_withdrawal?: boolean | null
+          security_setup_complete?: boolean | null
+          totp_enabled?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          last_verified_at?: string | null
+          pin_enabled?: boolean | null
+          require_pin_login?: boolean | null
+          require_pin_withdrawal?: boolean | null
+          require_totp_login?: boolean | null
+          require_totp_withdrawal?: boolean | null
+          security_setup_complete?: boolean | null
+          totp_enabled?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_security_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_security_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_commission_settings: {
+        Row: {
+          ai_generation_cost: number | null
+          auto_resolve_fee: number | null
+          bc400_pool_percent: number | null
+          boost_flash_price: number | null
+          boost_standard_price: number | null
+          boost_whale_price: number | null
+          broadcast_price: number | null
+          creator_fee_blue_percent: number | null
+          creator_fee_gold_percent: number | null
+          creator_fee_percent: number | null
+          deposit_provider: string | null
+          exit_fee_percent: number | null
+          market_creation_fee: number | null
+          min_gold_token_balance: number | null
+          min_liquidity: number | null
+          min_nft_balance: number | null
+          min_token_balance: number | null
+          min_withdrawal_amount: number | null
+          osure_100_premium: number | null
+          osure_25_premium: number | null
+          osure_50_premium: number | null
+          osure_enabled: boolean | null
+          payout_provider: string | null
+          prediction_fee_percent: number | null
+          qt_disabled_assets: string | null
+          qt_enabled_assets: string | null
+          qt_enabled_timeframes: string | null
+          qt_max_bet: number | null
+          qt_min_bet: number | null
+          qt_streak_2x: number | null
+          qt_streak_3x: number | null
+          qt_streak_4x: number | null
+          qt_streak_5x: number | null
+          quick_trade_fee_percent: number | null
+          referral_reward_amount: number | null
+          referrer_commission_percent: number | null
+          social_ad_price: number | null
+          welcome_bonus_cap: number | null
+          welcome_bonus_percent: number | null
+          withdrawal_cooldown_minutes: number | null
+          withdrawal_limit_enabled: boolean | null
+          withdrawal_multiplier: number | null
+        }
+        Relationships: []
+      }
+      public_market_trades: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          id: string | null
+          market_id: string | null
+          option_id: string | null
+          price: number | null
+          shares: number | null
+          side: string | null
+          status: string | null
+          type: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string | null
+          id?: string | null
+          market_id?: string | null
+          option_id?: string | null
+          price?: number | null
+          shares?: number | null
+          side?: string | null
+          status?: string | null
+          type?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string | null
+          id?: string | null
+          market_id?: string | null
+          option_id?: string | null
+          price?: number | null
+          shares?: number | null
+          side?: string | null
+          status?: string | null
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "market_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_profiles: {
         Row: {
           age: number | null
@@ -3218,14 +3390,14 @@ export type Database = {
           gender: string | null
           id: string | null
           interests: string[] | null
-          is_blocked: boolean | null
           is_public: boolean | null
+          kyc_status: string | null
           location: string | null
           social_tutorial_seen: boolean | null
-          twitter_linked_at: string | null
+          twitter_avatar_url: string | null
           twitter_username: string | null
-          unlimited_markets: boolean | null
           verification_level: string | null
+          wallet_address: string | null
         }
         Insert: {
           age?: number | null
@@ -3236,14 +3408,14 @@ export type Database = {
           gender?: string | null
           id?: string | null
           interests?: string[] | null
-          is_blocked?: boolean | null
           is_public?: boolean | null
+          kyc_status?: string | null
           location?: string | null
           social_tutorial_seen?: boolean | null
-          twitter_linked_at?: string | null
+          twitter_avatar_url?: string | null
           twitter_username?: string | null
-          unlimited_markets?: boolean | null
           verification_level?: string | null
+          wallet_address?: string | null
         }
         Update: {
           age?: number | null
@@ -3254,14 +3426,14 @@ export type Database = {
           gender?: string | null
           id?: string | null
           interests?: string[] | null
-          is_blocked?: boolean | null
           is_public?: boolean | null
+          kyc_status?: string | null
           location?: string | null
           social_tutorial_seen?: boolean | null
-          twitter_linked_at?: string | null
+          twitter_avatar_url?: string | null
           twitter_username?: string | null
-          unlimited_markets?: boolean | null
           verification_level?: string | null
+          wallet_address?: string | null
         }
         Relationships: []
       }
