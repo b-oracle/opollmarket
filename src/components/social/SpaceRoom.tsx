@@ -2907,11 +2907,19 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                       Top Up
                     </button>
                   </div>
-                  <div className="bg-muted rounded-xl p-3 text-center">
+                   <div className="bg-muted rounded-xl p-3 text-center">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Rewards Balance</p>
                     <p className="text-lg font-bold text-primary">
                       ${rewardsBalance.toFixed(2)}
                     </p>
+                    {rewardsBalance > 0 && (
+                      <button
+                        onClick={() => { setConvertAmount(rewardsBalance.toFixed(2)); setShowConvertModal(true); }}
+                        className="mt-1.5 px-3 py-1 rounded-lg bg-pink-500/20 text-pink-500 text-[10px] font-semibold hover:bg-pink-500/30 transition-colors"
+                      >
+                        Convert to Gifts
+                      </button>
+                    )}
                   </div>
                 </div>
 
