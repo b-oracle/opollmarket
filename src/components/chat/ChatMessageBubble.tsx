@@ -162,7 +162,7 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
 
   if (isGift) {
     return (
-      <div className="flex ${isMine ? "justify-end" : "justify-start"} group relative overflow-hidden">
+      <div className={`flex ${isMine ? "justify-end" : "justify-start"} group relative`}>
         <div className="relative" ref={bubbleRef}>
           <motion.div
             initial={{ scale: 0.6, opacity: 0 }}
