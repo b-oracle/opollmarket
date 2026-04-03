@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
@@ -161,6 +162,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [floatingReactions, setFloatingReactions] = useState<{ id: string; emoji: string; identity: string; label?: string }[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [emojiTarget, setEmojiTarget] = useState<ParticipantInfo | null>(null);
+  const [showGiftUserMenu, setShowGiftUserMenu] = useState(false);
+  const navigate = useNavigate();
   const [giftBalance, setGiftBalance] = useState<number>(0);
   const [rewardsBalance, setRewardsBalance] = useState<number>(0);
   const [sendingGift, setSendingGift] = useState(false);
@@ -2801,9 +2804,14 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
                 className="absolute bottom-0 inset-x-0 z-[96] bg-card rounded-t-2xl border-t border-border p-5"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    {renderAvatar(emojiTarget, "lg")}
+                <div className="flex items-center justify-between mb-2">
+                  <div
+                    className="flex items-center gap-3 cursor-pointer group"
+                    onClick={() => setShowGiftUserMenu((v) => !v)}
+                  >
+                    <div className={`rounded-full transition-all ${showGiftUserMenu ? "ring-2 ring-primary" : "ring-2 ring-transparent group-active:ring-primary/30"}`}>
+                      {renderAvatar(emojiTarget, "lg")}
+                    </div>
                     <div>
                       <p className="font-semibold text-sm">Send gift to {emojiTarget.name}</p>
                       <p className="text-xs text-muted-foreground">Emoji gifts deduct from your gift balance ({giftFeePercent}% fee)</p>
@@ -2814,6 +2822,50 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     <p className={`text-sm font-bold ${giftBalance > 0 ? "text-green-500" : "text-destructive"}`}>${giftBalance.toFixed(2)}</p>
                   </div>
                 </div>
+                <AnimatePresence>
+                  {showGiftUserMenu && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden mb-2"
+                    >
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setEmojiTarget(null);
+                            setShowGiftUserMenu(false);
+                            navigate(`/user/${emojiTarget.identity}`);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-secondary text-secondary-foreground text-xs font-medium hover:bg-secondary/80 transition-colors"
+                        >
+                          <Users className="w-3.5 h-3.5" />
+                          View Profile
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (!user) return;
+                            try {
+                              const { data } = await supabase.rpc("start_dm_conversation" as any, {
+                                other_user_id: emojiTarget.identity,
+                              });
+                              setEmojiTarget(null);
+                              setShowGiftUserMenu(false);
+                              navigate("/messages");
+                            } catch {
+                              toast.error("Could not start conversation");
+                            }
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-secondary text-secondary-foreground text-xs font-medium hover:bg-secondary/80 transition-colors"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          Send Message
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
                 <div className="grid grid-cols-4 gap-2 mb-3">
                   {GIFT_EMOJIS.map((emoji) => {
                     const price = EMOJI_PRICES[emoji] ?? 0.05;
