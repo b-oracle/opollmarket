@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-import { TrendingUp, Users, MessageSquare, ShoppingBag, Loader2, DollarSign, Activity, Gift, UserPlus, Zap, UserCheck, Heart, ArrowDownLeft, ArrowUpRight, Wallet, Scale, Info, Landmark } from "lucide-react";
+import { TrendingUp, Users, MessageSquare, ShoppingBag, Loader2, DollarSign, Activity, Gift, UserPlus, Zap, UserCheck, Heart, ArrowDownLeft, ArrowUpRight, Wallet, Scale, Info, Landmark, Mail, MessageCircle } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
 
 
@@ -19,6 +19,10 @@ interface Stats {
   quickTradeVolume: number;
   totalFollows: number;
   totalLikes: number;
+  dmConversations: number;
+  dmMessages: number;
+  dmGiftsTotal: number;
+  dmGiftsCount: number;
   totalDeposits: number;
   totalWithdrawals: number;
   depositCount: number;
@@ -84,7 +88,7 @@ const AdminDashboard = () => {
     const fetchAll = async () => {
       // Use the main authenticated client for admin queries
       // Use count queries for all counts (avoids 1000-row limit)
-      const [markets, comments, boosts, users, txns, referrals, qtRounds, qtBets, follows, likes] = await Promise.all([
+      const [markets, comments, boosts, users, txns, referrals, qtRounds, qtBets, follows, likes, dmConvos, dmMsgs] = await Promise.all([
         supabase.from("markets").select("*", { count: "exact", head: true }),
         supabase.from("comments").select("*", { count: "exact", head: true }),
         supabase.from("market_boosts").select("*", { count: "exact", head: true }).eq("status", "active"),
@@ -95,7 +99,27 @@ const AdminDashboard = () => {
         supabase.from("quick_bets").select("*", { count: "exact", head: true }),
         supabase.from("follows").select("*", { count: "exact", head: true }),
         supabase.from("market_likes").select("*", { count: "exact", head: true }),
+        supabase.from("dm_conversations").select("*", { count: "exact", head: true }),
+        supabase.from("dm_messages").select("*", { count: "exact", head: true }),
       ]);
+
+      // DM gift stats
+      const fetchDmGifts = async () => {
+        const allRows: { gift_amount: number }[] = [];
+        let from = 0;
+        const batchSize = 1000;
+        while (true) {
+          const { data, error } = await supabase.from("dm_messages").select("gift_amount").not("gift_amount", "is", null).gt("gift_amount", 0).range(from, from + batchSize - 1);
+          if (error || !data || data.length === 0) break;
+          allRows.push(...data);
+          if (data.length < batchSize) break;
+          from += batchSize;
+        }
+        return allRows;
+      };
+      const dmGiftRows = await fetchDmGifts();
+      const dmGiftsTotal = dmGiftRows.reduce((s, r) => s + Number(r.gift_amount), 0);
+      const dmGiftsCount = dmGiftRows.length;
 
       // Batch-fetch ALL market rows to avoid 1000-row cap
       const fetchAllMarketRows = async () => {
@@ -273,6 +297,10 @@ const AdminDashboard = () => {
         partialDepositsAmount,
         partialDepositCount: partialDepositCount.count ?? 0,
         providerBreakdown,
+        dmConversations: dmConvos.count ?? 0,
+        dmMessages: dmMsgs.count ?? 0,
+        dmGiftsTotal,
+        dmGiftsCount,
       });
 
       // Category breakdown
@@ -436,6 +464,9 @@ const AdminDashboard = () => {
     { label: "QT Volume", value: (stats?.quickTradeVolume ?? 0) >= 1000 ? `$${((stats?.quickTradeVolume ?? 0) / 1000).toFixed(1)}K` : `$${(stats?.quickTradeVolume ?? 0).toFixed(2)}`, icon: Zap, color: "text-amber-500" },
     { label: "Follows", value: stats?.totalFollows ?? 0, icon: UserCheck, color: "text-emerald-500" },
     { label: "Likes", value: stats?.totalLikes ?? 0, icon: Heart, color: "text-pink-500" },
+    { label: "DM Chats", value: stats?.dmConversations ?? 0, icon: Mail, color: "text-indigo-500" },
+    { label: "DM Messages", value: stats?.dmMessages ?? 0, icon: MessageCircle, color: "text-violet-500" },
+    { label: "DM Gifts", value: `$${(stats?.dmGiftsTotal ?? 0).toFixed(0)}`, icon: Gift, color: "text-rose-500", sub: `${stats?.dmGiftsCount ?? 0} sent` },
     { label: "Referrals", value: stats?.totalReferrals ?? 0, icon: UserPlus, color: "text-cyan-500" },
     { label: "Rewards Paid", value: `$${(stats?.totalRewardsPaid ?? 0).toFixed(0)}`, icon: Gift, color: "text-orange-500" },
   ];

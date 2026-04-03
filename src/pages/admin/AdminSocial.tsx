@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Users, UserCheck, Heart, MessageCircle, Search, Eye, EyeOff, Shield, TrendingUp, Share2, BarChart3 } from "lucide-react";
+import { Loader2, Users, UserCheck, Heart, MessageCircle, Search, Eye, EyeOff, Shield, TrendingUp, Share2, BarChart3, Mail, Gift } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -27,6 +27,9 @@ const AdminSocial = () => {
   const [totalLikes, setTotalLikes] = useState(0);
   const [totalComments, setTotalComments] = useState(0);
   const [totalViews, setTotalViews] = useState(0);
+  const [dmConversations, setDmConversations] = useState(0);
+  const [dmMessages, setDmMessages] = useState(0);
+  const [dmGiftsTotal, setDmGiftsTotal] = useState(0);
   const [followGrowth, setFollowGrowth] = useState<{ date: string; count: number }[]>([]);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -57,17 +60,33 @@ const AdminSocial = () => {
       return allFollows;
     };
 
-    const [{ count: followCount }, { count: likeCount }, { count: commentCount }, { count: viewCount }, followRows] = await Promise.all([
+    const [{ count: followCount }, { count: likeCount }, { count: commentCount }, { count: viewCount }, followRows, { count: dmConvoCount }, { count: dmMsgCount }] = await Promise.all([
       supabase.from("follows").select("id", { count: "exact", head: true }),
       supabase.from("market_likes").select("id", { count: "exact", head: true }),
       supabase.from("comments").select("id", { count: "exact", head: true }),
       supabase.from("status_views").select("id", { count: "exact", head: true }),
       fetchAllFollows(),
+      supabase.from("dm_conversations").select("id", { count: "exact", head: true }),
+      supabase.from("dm_messages").select("id", { count: "exact", head: true }),
     ]);
     setTotalFollows(followCount ?? 0);
     setTotalLikes(likeCount ?? 0);
     setTotalComments(commentCount ?? 0);
     setTotalViews(viewCount ?? 0);
+    setDmConversations(dmConvoCount ?? 0);
+    setDmMessages(dmMsgCount ?? 0);
+
+    // DM gift total
+    const dmGiftRows: { gift_amount: number }[] = [];
+    let gFrom = 0;
+    while (true) {
+      const { data, error } = await supabase.from("dm_messages").select("gift_amount").not("gift_amount", "is", null).gt("gift_amount", 0).range(gFrom, gFrom + 999);
+      if (error || !data || data.length === 0) break;
+      dmGiftRows.push(...data);
+      if (data.length < 1000) break;
+      gFrom += 1000;
+    }
+    setDmGiftsTotal(dmGiftRows.reduce((s, r) => s + Number(r.gift_amount), 0));
 
     // Follow growth over last 30 days
     const dayMap = new Map<string, number>();
@@ -146,6 +165,9 @@ const AdminSocial = () => {
     { label: "Total Comments", value: totalComments, icon: MessageCircle, color: "text-blue-500" },
     { label: "Total Profiles", value: totalCount, icon: Users, color: "text-emerald-500" },
     { label: "Social Views", value: totalViews, icon: BarChart3, color: "text-amber-500" },
+    { label: "DM Chats", value: dmConversations, icon: Mail, color: "text-indigo-500" },
+    { label: "DM Messages", value: dmMessages, icon: MessageCircle, color: "text-violet-500" },
+    { label: "DM Gifts", value: `$${dmGiftsTotal.toFixed(0)}`, icon: Gift, color: "text-rose-500" },
   ];
 
   return (
@@ -153,7 +175,7 @@ const AdminSocial = () => {
       <h1 className="text-2xl font-bold flex items-center gap-2"><Users className="w-6 h-6 text-primary" /> Social & Profiles</h1>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {statCards.map(c => (
           <div key={c.label} className="bg-card border border-border rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
@@ -212,6 +234,14 @@ const AdminSocial = () => {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Public Profiles</span>
                 <span className="text-sm font-bold">{profiles.filter(p => p.is_public).length} / {profiles.length}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Avg DM Messages/Chat</span>
+                <span className="text-sm font-bold">{dmConversations > 0 ? (dmMessages / dmConversations).toFixed(1) : "0"}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">DM Gift Volume</span>
+                <span className="text-sm font-bold text-rose-500">${dmGiftsTotal.toFixed(2)}</span>
               </div>
             </div>
           </div>
