@@ -143,6 +143,13 @@ Deno.serve(async (req) => {
         type: "deposit",
       });
 
+      // Welcome bonus check
+      try {
+        await processWelcomeBonus(adminClient, txn.user_id, Number(txn.amount));
+      } catch (wbErr) {
+        console.error("Welcome bonus error:", wbErr);
+      }
+
       console.log(`Flutterwave deposit confirmed: ${txRef}, $${txn.amount} for user ${txn.user_id}`);
 
       return new Response(JSON.stringify({ status: "confirmed" }), {
