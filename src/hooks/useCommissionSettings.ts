@@ -76,6 +76,7 @@ export const useCommissionSettings = () => {
            ai_generation_cost: 0.5,
            welcome_bonus_percent: 0,
            welcome_bonus_cap: 0,
+           gift_fee_percent: 2,
          };
       }
       const d = data as any;
