@@ -388,8 +388,9 @@ const AdminSettings = () => {
                payaza_mode: payazaMode,
                 qt_one_sided_bonus: qtOneSidedBonus,
                  bc400_pool_percent: bc400PoolPercentNum,
-                 welcome_bonus_percent: welcomeBonusPercentNum,
-                 welcome_bonus_cap: welcomeBonusCapNum,
+                  welcome_bonus_percent: welcomeBonusPercentNum,
+                  welcome_bonus_cap: welcomeBonusCapNum,
+                  gift_fee_percent: giftFeePercentNum,
         },
       });
 
