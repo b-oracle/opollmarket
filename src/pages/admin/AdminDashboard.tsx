@@ -88,7 +88,7 @@ const AdminDashboard = () => {
     const fetchAll = async () => {
       // Use the main authenticated client for admin queries
       // Use count queries for all counts (avoids 1000-row limit)
-      const [markets, comments, boosts, users, txns, referrals, qtRounds, qtBets, follows, likes] = await Promise.all([
+      const [markets, comments, boosts, users, txns, referrals, qtRounds, qtBets, follows, likes, dmConvos, dmMsgs] = await Promise.all([
         supabase.from("markets").select("*", { count: "exact", head: true }),
         supabase.from("comments").select("*", { count: "exact", head: true }),
         supabase.from("market_boosts").select("*", { count: "exact", head: true }).eq("status", "active"),
@@ -99,7 +99,27 @@ const AdminDashboard = () => {
         supabase.from("quick_bets").select("*", { count: "exact", head: true }),
         supabase.from("follows").select("*", { count: "exact", head: true }),
         supabase.from("market_likes").select("*", { count: "exact", head: true }),
+        supabase.from("dm_conversations").select("*", { count: "exact", head: true }),
+        supabase.from("dm_messages").select("*", { count: "exact", head: true }),
       ]);
+
+      // DM gift stats
+      const fetchDmGifts = async () => {
+        const allRows: { gift_amount: number }[] = [];
+        let from = 0;
+        const batchSize = 1000;
+        while (true) {
+          const { data, error } = await supabase.from("dm_messages").select("gift_amount").not("gift_amount", "is", null).gt("gift_amount", 0).range(from, from + batchSize - 1);
+          if (error || !data || data.length === 0) break;
+          allRows.push(...data);
+          if (data.length < batchSize) break;
+          from += batchSize;
+        }
+        return allRows;
+      };
+      const dmGiftRows = await fetchDmGifts();
+      const dmGiftsTotal = dmGiftRows.reduce((s, r) => s + Number(r.gift_amount), 0);
+      const dmGiftsCount = dmGiftRows.length;
 
       // Batch-fetch ALL market rows to avoid 1000-row cap
       const fetchAllMarketRows = async () => {
