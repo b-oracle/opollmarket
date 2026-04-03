@@ -86,7 +86,7 @@ const ChatGiftModal = ({ open, onClose, conversationId, recipientId, recipientNa
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-base font-semibold text-foreground">Send gift to {recipientName}</h3>
-            <p className="text-xs text-muted-foreground">Emoji gifts deduct from your gift balance</p>
+            <p className="text-xs text-muted-foreground">Emoji gifts deduct from your gift balance ({giftFeePercent}% fee)</p>
           </div>
           <div className="text-right">
             <p className="text-xs text-muted-foreground">Gift Balance</p>
