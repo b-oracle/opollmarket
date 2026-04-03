@@ -264,7 +264,7 @@ const Privacy = () => {
         </section>
 
         <section id="changes" className="space-y-2 scroll-mt-20">
-          <h2 className="text-base font-semibold text-foreground">13. Changes to This Policy</h2>
+          <h2 className="text-base font-semibold text-foreground">17. Changes to This Policy</h2>
           <p>We may update this Privacy Policy periodically to reflect changes in our practices, legal requirements, or Platform features. Material changes will be communicated through:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li>In-app notifications or banners.</li>
