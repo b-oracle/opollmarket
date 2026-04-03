@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ArrowLeft, Send, Gift, Loader2, Share2 } from "lucide-react";
+import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { Input } from "@/components/ui/input";
 import ChatGiftModal from "./ChatGiftModal";
 import ChatMessageBubble from "./ChatMessageBubble";
@@ -45,7 +46,7 @@ const ChatView = () => {
       const otherId = data.user_a === user!.id ? data.user_b : data.user_a;
       const { data: profile } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url")
+        .select("id, display_name, avatar_url, verification_level")
         .eq("id", otherId)
         .maybeSingle();
       return { ...(data as any), other_user: profile };
@@ -55,6 +56,7 @@ const ChatView = () => {
 
   const otherId = convo ? ((convo as any).user_a === user?.id ? (convo as any).user_b : (convo as any).user_a) : null;
   const otherName = (convo as any)?.other_user?.display_name || "User";
+  const otherVerification = ((convo as any)?.other_user?.verification_level || "none") as VerificationLevel;
 
   const { data: messages = [] } = useQuery({
     queryKey: ["dm-messages", conversationId],
@@ -160,6 +162,7 @@ const ChatView = () => {
             )}
           </div>
           <span className="text-sm font-semibold truncate">{otherName}</span>
+          {otherVerification !== "none" && <NftBadge level={otherVerification} size={16} />}
         </div>
       </div>
 
