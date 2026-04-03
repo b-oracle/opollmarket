@@ -117,6 +117,7 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
   const [likeLoading, setLikeLoading] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [repostLoading, setRepostLoading] = useState(false);
+  const [replacingImage, setReplacingImage] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const viewTracked = useRef(false);
   const liveUserIds = useLiveSpaceUsers();
