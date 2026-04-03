@@ -353,6 +353,29 @@ const Commissions = () => {
     enabled: allCopierIds.length > 0,
   });
 
+  // Fetch gift counterparty profiles
+  const allGiftCounterpartyIds = useMemo(() => {
+    const ids = new Set<string>();
+    (giftsSent ?? []).forEach((g: any) => g.counterpartyId && ids.add(g.counterpartyId));
+    (giftsReceived ?? []).forEach((g: any) => g.counterpartyId && ids.add(g.counterpartyId));
+    return Array.from(ids);
+  }, [giftsSent, giftsReceived]);
+
+  const { data: giftProfiles } = useQuery({
+    queryKey: ["gift-profiles", allGiftCounterpartyIds],
+    queryFn: async () => {
+      if (allGiftCounterpartyIds.length === 0) return {};
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .in("id", allGiftCounterpartyIds);
+      const map: Record<string, { display_name: string | null; avatar_url: string | null }> = {};
+      (data ?? []).forEach((p) => { map[p.id] = { display_name: p.display_name, avatar_url: p.avatar_url }; });
+      return map;
+    },
+    enabled: allGiftCounterpartyIds.length > 0,
+  });
+
   const isLoading = loadingPC || loadingCT || loadingSB || loadingGS || loadingGR || loadingBT || loadingOS;
 
   // Compute totals
