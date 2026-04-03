@@ -53,6 +53,7 @@ const Commissions = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [giftDetailOpen, setGiftDetailOpen] = useState(false);
   const [giftAction, setGiftAction] = useState<"topup" | "withdraw" | null>(null);
+  const [withdrawDest, setWithdrawDest] = useState<"main" | "gift" | null>(null);
   const [topUpAmount, setTopUpAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [processing, setProcessing] = useState(false);
