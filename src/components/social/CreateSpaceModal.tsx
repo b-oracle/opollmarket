@@ -227,6 +227,22 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
 
               <MarketTagSelector selected={taggedMarkets} onChange={setTaggedMarkets} max={6} />
 
+              {/* Optional Stream URL */}
+              <div className="space-y-1">
+                <label className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+                  <Tv className="w-3 h-3 shrink-0" /> YouTube Live URL (optional)
+                </label>
+                <input
+                  value={streamUrl}
+                  onChange={(e) => setStreamUrl(e.target.value)}
+                  placeholder="https://youtube.com/watch?v=..."
+                  className="w-full bg-muted/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground"
+                />
+                {streamUrl.trim() && !isYouTubeUrl(streamUrl) && (
+                  <p className="text-[10px] text-destructive">Please enter a valid YouTube URL</p>
+                )}
+              </div>
+
               {/* Private Space toggle */}
               <button
                 onClick={() => setIsPrivate(!isPrivate)}
