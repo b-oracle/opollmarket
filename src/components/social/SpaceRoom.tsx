@@ -1930,6 +1930,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         title={displayTitle}
         participantCount={participants.length}
         isMuted={muted}
+        hasStream={!!streamUrl}
         onToggleMute={toggleMute}
         onLeave={handleLeave}
       />
