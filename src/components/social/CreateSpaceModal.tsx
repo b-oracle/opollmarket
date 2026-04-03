@@ -154,6 +154,8 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
       setInvitees([]);
       setSearchQuery("");
       setStreamUrl("");
+      setEnableStream(false);
+      setStreamPlatform("youtube");
       onClose();
     } catch (err: any) {
       toast.error(err.message || "Failed to create space");

@@ -2108,7 +2108,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             </button>
           </div>
         )}
-        {streamUrl && isYouTubeUrl(streamUrl) && streamCollapsed && (
+        {streamUrl && isStreamUrl(streamUrl) && streamCollapsed && (
           <button
             onClick={() => setStreamCollapsed(false)}
             className="flex items-center gap-2 px-5 py-2 border-b border-border text-xs text-primary hover:bg-muted/30 transition-colors"
