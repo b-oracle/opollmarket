@@ -161,7 +161,7 @@ const ConversationList = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20">
       <SEOHead title="Messages | Pollmarket" description="Direct messages" />
       <div className="max-w-lg mx-auto">
         {/* Header */}
