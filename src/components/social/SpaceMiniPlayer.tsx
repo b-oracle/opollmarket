@@ -6,11 +6,12 @@ interface SpaceMiniPlayerProps {
   title: string;
   participantCount: number;
   isMuted: boolean;
+  hasStream?: boolean;
   onToggleMute: () => void;
   onLeave: () => void;
 }
 
-const SpaceMiniPlayer = ({ title, participantCount, isMuted, onToggleMute, onLeave }: SpaceMiniPlayerProps) => {
+const SpaceMiniPlayer = ({ title, participantCount, isMuted, hasStream, onToggleMute, onLeave }: SpaceMiniPlayerProps) => {
   const { maximize } = useActiveSpace();
 
   return (
