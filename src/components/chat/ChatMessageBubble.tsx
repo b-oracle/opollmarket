@@ -109,7 +109,7 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
   const smileyButton = (
     <button
       onClick={(e) => { e.stopPropagation(); openPicker(); }}
-      className={`absolute ${isMine ? "-left-7" : "-right-7"} top-1/2 -translate-y-1/2 p-0.5 rounded-full text-muted-foreground/40 hover:text-foreground hover:bg-accent transition-all`}
+      className={`absolute ${isMine ? "left-0 -translate-x-full" : "right-0 translate-x-full"} top-1/2 -translate-y-1/2 p-0.5 rounded-full text-muted-foreground/40 hover:text-foreground hover:bg-accent transition-all`}
     >
       <SmilePlus className="w-3.5 h-3.5" />
     </button>
