@@ -161,11 +161,11 @@ const ConversationList = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
       <SEOHead title="Messages | Pollmarket" description="Direct messages" />
-      <div className="max-w-lg mx-auto">
+      <div className="max-w-lg mx-auto w-full flex flex-col flex-1 min-h-0">
         {/* Header */}
-        <div className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3" style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
+        <div className="shrink-0 bg-background/95 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3 z-30" style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
           <button onClick={() => navigate("/feed")} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-5 h-5" />
           </button>
