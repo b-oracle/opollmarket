@@ -44,6 +44,11 @@ const ChatGiftModal = ({ open, onClose, conversationId, recipientId, recipientNa
   const queryClient = useQueryClient();
 
   const handleSendEmoji = async (emoji: string) => {
+    const now = Date.now();
+    if (now - lastSentAt < 3000) {
+      toast.error("Please wait before sending another gift");
+      return;
+    }
     const price = EMOJI_PRICES[emoji] ?? 0.05;
     if (price > giftBalance) {
       toast.error("Insufficient gift balance");
