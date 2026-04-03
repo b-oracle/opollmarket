@@ -35,6 +35,10 @@ import {
   Unlock,
   Pencil,
   Check,
+  Video,
+  VideoOff,
+  Monitor,
+  MonitorOff,
 } from "lucide-react";
 import NftBadge, { VerificationLevel } from "@/components/NftBadge";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
