@@ -231,6 +231,30 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
     toast.success("Deleted");
   };
 
+  const handleReplaceMarketImage = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!market || !user) return;
+    setReplacingImage(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-social-content", {
+        body: { type: "image", caption: status.content || market.title, market_id: market.id },
+      });
+      if (error) throw error;
+      if (data?.error) { toast.error(data.error); return; }
+      if (data?.imageUrl) {
+        toast.success(`Image replaced ($${data.cost || "0.50"})`);
+        queryClient.invalidateQueries({ queryKey: ["status-feed"] });
+        queryClient.invalidateQueries({ queryKey: ["markets"] });
+        queryClient.invalidateQueries({ queryKey: ["balance"] });
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to replace image");
+    } finally {
+      setReplacingImage(false);
+    }
+  };
+  };
+
   const name = profile?.display_name || "Anonymous";
   const vLevel = (profile?.verification_level || "none") as VerificationLevel;
   const timeAgo = formatDistanceToNow(new Date(status.created_at), { addSuffix: true });
