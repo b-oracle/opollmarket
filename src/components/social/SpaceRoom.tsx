@@ -100,7 +100,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const { isFeatureEnabled } = useFeatureToggles();
   const queryClient = useQueryClient();
   const { minimized, toggleMinimize } = useActiveSpace();
-
+  const { data: commissionSettings } = useCommissionSettings();
+  const giftFeePercent = commissionSettings?.gift_fee_percent ?? 2;
   // Editable title state
   const [displayTitle, setDisplayTitle] = useState(spaceTitle);
   const [editingTitle, setEditingTitle] = useState(false);
