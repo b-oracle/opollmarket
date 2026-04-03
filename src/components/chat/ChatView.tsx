@@ -162,6 +162,7 @@ const ChatView = () => {
             )}
           </div>
           <span className="text-sm font-semibold truncate">{otherName}</span>
+          {otherVerification !== "none" && <NftBadge level={otherVerification} size={16} />}
         </div>
       </div>
 
