@@ -39,6 +39,7 @@ import {
   VideoOff,
   Monitor,
   MonitorOff,
+  SwitchCamera,
 } from "lucide-react";
 import NftBadge, { VerificationLevel } from "@/components/NftBadge";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
