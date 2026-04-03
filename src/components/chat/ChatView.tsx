@@ -56,6 +56,7 @@ const ChatView = () => {
 
   const otherId = convo ? ((convo as any).user_a === user?.id ? (convo as any).user_b : (convo as any).user_a) : null;
   const otherName = (convo as any)?.other_user?.display_name || "User";
+  const otherVerification = ((convo as any)?.other_user?.verification_level || "none") as VerificationLevel;
 
   const { data: messages = [] } = useQuery({
     queryKey: ["dm-messages", conversationId],
