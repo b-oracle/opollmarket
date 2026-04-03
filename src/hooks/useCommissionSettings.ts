@@ -107,6 +107,8 @@ export const useCommissionSettings = () => {
         osure_100_premium: Number(d.osure_100_premium ?? 30),
         social_ad_price: Number(d.social_ad_price ?? 10),
         ai_generation_cost: Number(d.ai_generation_cost ?? 0.5),
+        welcome_bonus_percent: Number(d.welcome_bonus_percent ?? 0),
+        welcome_bonus_cap: Number(d.welcome_bonus_cap ?? 0),
       };
     },
     staleTime: 60_000,
