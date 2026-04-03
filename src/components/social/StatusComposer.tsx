@@ -42,6 +42,7 @@ const StatusComposer = () => {
   if (!user) return null;
 
   const showImageUpload = isFeatureEnabled("status_image_upload");
+  const showAiGeneration = isFeatureEnabled("ai_social_generation");
   const aiCost = commissionSettings?.ai_generation_cost ?? 0.5;
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
