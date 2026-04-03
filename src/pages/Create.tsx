@@ -1292,7 +1292,7 @@ const Create = () => {
     let nftPassed = false;
     try {
       const { data, error } = await supabase.functions.invoke("fetch-wallet-nfts", {
-        body: { wallet_address: address },
+        body: { wallet_address: address, nft_contract_address: nftContractAddress },
       });
       if (!error && data?.nfts) {
         // If a specific NFT contract is configured, filter by it
