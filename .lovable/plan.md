@@ -1,25 +1,37 @@
 
 
-## Fix Chat View Scroll Behavior
+## Fix Sticky Headers Across the Platform
 
 ### Problem
-The chat screen uses `min-h-screen` making it a tall document that scrolls as a whole page. The header is `sticky` not `fixed`, so scrolling moves everything — even when messages fit on screen. The page should lock in place and only the message area should scroll when there are enough messages to overflow.
+Several pages use `min-h-screen` with `sticky top-0` headers. On mobile, this means the header scrolls up before "sticking," creating a jittery experience — the same issue we fixed in ChatView.
 
-### Solution
-Convert ChatView from a document-flow layout to a fixed viewport layout.
+### Scope
+After auditing all pages, here's the breakdown:
 
-**`src/components/chat/ChatView.tsx`**
+**Need the viewport-locked flex fix (standalone full-screen views):**
+1. **ConversationList.tsx** (Messages page) — `min-h-screen` + `sticky` header, same pattern as old ChatView
+2. **SocialPage.tsx** — slide-over panel, uses `sticky` inside `h-full overflow-y-auto`. The sticky inside a scroll container works, but converting to flex would be more consistent
 
-1. Change the outer container from `min-h-screen bg-background flex flex-col` to `h-[100dvh] bg-background flex flex-col overflow-hidden` — this locks the entire view to the viewport height and prevents document-level scrolling.
+**Already correct / intentionally different:**
+- **MarketDetail.tsx** — already uses `h-dvh overflow-y-auto` with sticky inside the scroll container (correct pattern for long-scroll content pages)
+- **FAQ, Terms, Privacy, Disclaimer** — these are long-content pages under the global TopBar (which is already `fixed`). Their sub-headers use `sticky` correctly to pin while content scrolls beneath
+- **AdminLayout.tsx** — admin panels use sticky inside `overflow-y-auto` main area (correct)
+- **ChatView.tsx** — already fixed
 
-2. Change the header from `sticky top-0` to just a static flex child (remove sticky positioning). It naturally stays at the top since the parent is a non-scrolling flex column.
+### Changes
 
-3. Change the messages area from `flex-1 overflow-y-auto` with `paddingBottom: "80px"` to `flex-1 overflow-y-auto min-h-0` with a smaller bottom padding (the input bar will be a flex child, not fixed). The `min-h-0` is critical — without it, flex children won't shrink below their content size.
+**`src/components/chat/ConversationList.tsx`**
+- Outer: `min-h-screen bg-background pb-20` → `h-[100dvh] bg-background flex flex-col overflow-hidden`
+- Header: remove `sticky top-0`, add `shrink-0`
+- Content area (new chat picker + conversation list): wrap in `flex-1 overflow-y-auto min-h-0` div
+- Remove `pb-20` (no longer needed since input isn't fixed/overlapping)
+- Add safe-area bottom padding to the scrollable area instead
 
-4. Change the input bar from `fixed bottom-0 left-0 right-0` to a static flex child at the bottom (remove fixed positioning). This eliminates the need for phantom bottom padding in the messages area.
+**`src/components/SocialPage.tsx`**
+- Convert from `h-full overflow-y-auto` wrapper with `sticky` header to flex column layout
+- Header: remove `sticky top-0 z-10`, add `shrink-0`
+- Content: wrap in `flex-1 overflow-y-auto min-h-0`
 
-### Result
-- Header, messages, and input bar are three flex children inside a viewport-height container
-- Only the messages area scrolls, and only when content overflows
-- When messages fit on screen, scrolling does nothing — the view holds still
+### What stays the same
+- FAQ, Terms, Privacy, Disclaimer, MarketDetail, Admin — no changes needed. These pages have long scrollable content where `sticky` inside a scroll container is the correct UX pattern.
 
