@@ -2822,6 +2822,50 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     <p className={`text-sm font-bold ${giftBalance > 0 ? "text-green-500" : "text-destructive"}`}>${giftBalance.toFixed(2)}</p>
                   </div>
                 </div>
+                <AnimatePresence>
+                  {showGiftUserMenu && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden mb-2"
+                    >
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setEmojiTarget(null);
+                            setShowGiftUserMenu(false);
+                            navigate(`/user/${emojiTarget.identity}`);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-secondary text-secondary-foreground text-xs font-medium hover:bg-secondary/80 transition-colors"
+                        >
+                          <Users className="w-3.5 h-3.5" />
+                          View Profile
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (!user) return;
+                            try {
+                              const { data } = await supabase.rpc("start_dm_conversation" as any, {
+                                other_user_id: emojiTarget.identity,
+                              });
+                              setEmojiTarget(null);
+                              setShowGiftUserMenu(false);
+                              navigate("/messages");
+                            } catch {
+                              toast.error("Could not start conversation");
+                            }
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-secondary text-secondary-foreground text-xs font-medium hover:bg-secondary/80 transition-colors"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          Send Message
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
                 <div className="grid grid-cols-4 gap-2 mb-3">
                   {GIFT_EMOJIS.map((emoji) => {
                     const price = EMOJI_PRICES[emoji] ?? 0.05;
