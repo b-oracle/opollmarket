@@ -486,6 +486,16 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
           >
             <Share2 className="w-3 h-3" />
           </button>
+          {/* Broadcast button - scheduled and live */}
+          {(isScheduled || isLive) && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setBroadcastOpen(true); }}
+              className="px-2.5 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 text-[10px] font-semibold flex items-center gap-1 transition-colors"
+              title="Broadcast to all users"
+            >
+              <Megaphone className="w-3 h-3" />
+            </button>
+          )}
           {isScheduled && (
             <button
               onClick={handleToggleReminder}
