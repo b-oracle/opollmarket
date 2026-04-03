@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Trash2, Loader2, MessageCircle, ExternalLink, Repeat2, BarChart3 } from "lucide-react";
+import { Heart, Trash2, Loader2, MessageCircle, ExternalLink, Repeat2, BarChart3, RefreshCw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { toast } from "sonner";
@@ -117,6 +117,7 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
   const [likeLoading, setLikeLoading] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [repostLoading, setRepostLoading] = useState(false);
+  const [replacingImage, setReplacingImage] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const viewTracked = useRef(false);
   const liveUserIds = useLiveSpaceUsers();
@@ -230,6 +231,30 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
     toast.success("Deleted");
   };
 
+  const handleReplaceMarketImage = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!market || !user) return;
+    setReplacingImage(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-social-content", {
+        body: { type: "image", caption: status.content || market.title, market_id: market.id },
+      });
+      if (error) throw error;
+      if (data?.error) { toast.error(data.error); return; }
+      if (data?.imageUrl) {
+        toast.success(`Image replaced ($${data.cost || "0.50"})`);
+        queryClient.invalidateQueries({ queryKey: ["status-feed"] });
+        queryClient.invalidateQueries({ queryKey: ["markets"] });
+        queryClient.invalidateQueries({ queryKey: ["balance"] });
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to replace image");
+    } finally {
+      setReplacingImage(false);
+    }
+  };
+  };
+
   const name = profile?.display_name || "Anonymous";
   const vLevel = (profile?.verification_level || "none") as VerificationLevel;
   const timeAgo = formatDistanceToNow(new Date(status.created_at), { addSuffix: true });
@@ -312,6 +337,16 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
                 <span className="text-rose-500">No {Math.round(market.no_price * 100)}¢</span>
               </div>
             </div>
+            {user?.id === status.user_id && (
+              <button
+                onClick={handleReplaceMarketImage}
+                disabled={replacingImage}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-muted transition-colors shrink-0"
+                title="Replace image with AI"
+              >
+                {replacingImage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+              </button>
+            )}
           </div>
         </div>
       )}

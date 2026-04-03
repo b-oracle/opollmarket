@@ -2,9 +2,10 @@ import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
+import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Image, Loader2, Send, X, BarChart3, Search } from "lucide-react";
+import { Image, Loader2, Send, X, BarChart3, Search, Sparkles, Wand2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { optimizedImageUrl } from "@/lib/optimizedImage";
@@ -22,21 +23,26 @@ interface MarketResult {
 const StatusComposer = () => {
   const { user } = useAuth();
   const { isFeatureEnabled } = useFeatureToggles();
+  const { data: commissionSettings } = useCommissionSettings();
   const queryClient = useQueryClient();
   const [content, setContent] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [aiImageUrl, setAiImageUrl] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
   const [selectedMarket, setSelectedMarket] = useState<MarketResult | null>(null);
   const [marketSearchOpen, setMarketSearchOpen] = useState(false);
   const [marketQuery, setMarketQuery] = useState("");
   const [marketResults, setMarketResults] = useState<MarketResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [generatingCaption, setGeneratingCaption] = useState(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   if (!user) return null;
 
   const showImageUpload = isFeatureEnabled("status_image_upload");
+  const aiCost = commissionSettings?.ai_generation_cost ?? 0.5;
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -47,11 +53,13 @@ const StatusComposer = () => {
     }
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
+    setAiImageUrl(null);
   };
 
   const removeImage = () => {
     setImageFile(null);
     setImagePreview(null);
+    setAiImageUrl(null);
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -81,16 +89,79 @@ const StatusComposer = () => {
     setSelectedMarket(null);
   };
 
+  const handleGenerateCaption = async () => {
+    const topic = selectedMarket?.title || content.trim();
+    if (!topic) {
+      toast.error("Link a market or type something first");
+      return;
+    }
+    setGeneratingCaption(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-social-content", {
+        body: {
+          type: "caption",
+          market_title: selectedMarket?.title || null,
+          market_category: null,
+          user_hint: content.trim() || null,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) { toast.error(data.error); return; }
+      if (data?.content) {
+        setContent(data.content);
+        toast.success(`Caption generated ($${data.cost || aiCost})`);
+        queryClient.invalidateQueries({ queryKey: ["balance"] });
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to generate caption");
+    } finally {
+      setGeneratingCaption(false);
+    }
+  };
+
+  const handleGenerateImage = async () => {
+    const text = content.trim() || selectedMarket?.title;
+    if (!text) {
+      toast.error("Write a caption first to generate an image");
+      return;
+    }
+    setGeneratingImage(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-social-content", {
+        body: {
+          type: "image",
+          caption: text,
+          market_title: selectedMarket?.title || null,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) { toast.error(data.error); return; }
+      if (data?.imageUrl) {
+        setAiImageUrl(data.imageUrl);
+        setImagePreview(data.imageUrl);
+        setImageFile(null);
+        toast.success(`Image generated ($${data.cost || aiCost})`);
+        queryClient.invalidateQueries({ queryKey: ["balance"] });
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to generate image");
+    } finally {
+      setGeneratingImage(false);
+    }
+  };
+
   const handlePost = async () => {
     const trimmed = content.trim();
-    if (!trimmed && !imageFile && !selectedMarket) return;
+    if (!trimmed && !imageFile && !aiImageUrl && !selectedMarket) return;
     if (trimmed.length > MAX_CHARS) return;
 
     setPosting(true);
     try {
       let image_url: string | null = null;
 
-      if (imageFile) {
+      if (aiImageUrl) {
+        image_url = aiImageUrl;
+      } else if (imageFile) {
         const { compressImage, webpExtension } = await import("@/lib/imageCompression");
         const compressed = await compressImage(imageFile, "social");
         const ext = webpExtension();
@@ -230,7 +301,7 @@ const StatusComposer = () => {
       )}
 
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {/* Link Market button */}
           <button
             onClick={() => {
@@ -240,11 +311,32 @@ const StatusComposer = () => {
             className={`w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors ${
               selectedMarket ? "text-primary" : "text-muted-foreground"
             }`}
+            title="Link market"
           >
             <BarChart3 className="w-4 h-4" />
           </button>
 
-          {/* Image upload - hidden behind feature toggle */}
+          {/* AI Caption button */}
+          <button
+            onClick={handleGenerateCaption}
+            disabled={generatingCaption || (!content.trim() && !selectedMarket)}
+            className="relative w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground disabled:opacity-40"
+            title={`AI Caption ($${aiCost})`}
+          >
+            {generatingCaption ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+          </button>
+
+          {/* AI Image button */}
+          <button
+            onClick={handleGenerateImage}
+            disabled={generatingImage || (!content.trim() && !selectedMarket)}
+            className="relative w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground disabled:opacity-40"
+            title={`AI Image ($${aiCost})`}
+          >
+            {generatingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+          </button>
+
+          {/* Image upload */}
           {showImageUpload && (
             <>
               <button
@@ -257,7 +349,7 @@ const StatusComposer = () => {
             </>
           )}
 
-          <span className={`text-[10px] font-medium ${overLimit ? "text-destructive" : charsLeft <= 20 ? "text-yellow-500" : "text-muted-foreground"}`}>
+          <span className={`text-[10px] font-medium ml-1 ${overLimit ? "text-destructive" : charsLeft <= 20 ? "text-yellow-500" : "text-muted-foreground"}`}>
             {charsLeft}
           </span>
         </div>
@@ -265,7 +357,7 @@ const StatusComposer = () => {
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={handlePost}
-          disabled={posting || (!content.trim() && !imageFile && !selectedMarket) || overLimit}
+          disabled={posting || (!content.trim() && !imageFile && !aiImageUrl && !selectedMarket) || overLimit}
           className="px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-40 flex items-center gap-1.5 transition-colors"
         >
           {posting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
