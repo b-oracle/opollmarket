@@ -668,13 +668,13 @@ const Commissions = () => {
             className="border-border/50 cursor-pointer hover:border-primary/30 transition-colors"
             onClick={() => setGiftDetailOpen(true)}
           >
-            <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
+            <CardContent className="p-3 flex flex-col items-center text-center gap-1.5 min-h-[110px] justify-center">
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-pink-500 bg-pink-500/10">
                 <Gift className="w-4 h-4" />
               </div>
-              {balLoading ? <Skeleton className="h-5 w-16" /> : (
-                <span className="text-sm font-bold">{formatAmount(totalGiftBalance)}</span>
-              )}
+              <span className="text-sm font-bold h-5 flex items-center">
+                {balLoading ? <Skeleton className="h-4 w-14" /> : formatAmount(totalGiftBalance)}
+              </span>
               <span className="text-[10px] text-muted-foreground leading-tight">Gift Balance</span>
               <span className="text-[9px] text-primary font-medium">Tap to top up ▸</span>
             </CardContent>
@@ -685,13 +685,13 @@ const Commissions = () => {
             className="border-border/50 cursor-pointer hover:border-primary/30 transition-colors"
             onClick={() => setBonusInfoOpen(true)}
           >
-            <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
+            <CardContent className="p-3 flex flex-col items-center text-center gap-1.5 min-h-[110px] justify-center">
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-amber-500 bg-amber-500/10">
                 <Sparkles className="w-4 h-4" />
               </div>
-              {balLoading ? <Skeleton className="h-5 w-16" /> : (
-                <span className="text-sm font-bold">{formatAmount(bonusBalance)}</span>
-              )}
+              <span className="text-sm font-bold h-5 flex items-center">
+                {balLoading ? <Skeleton className="h-4 w-14" /> : formatAmount(bonusBalance)}
+              </span>
               <span className="text-[10px] text-muted-foreground leading-tight">Bonus Balance</span>
             </CardContent>
           </Card>
@@ -701,15 +701,14 @@ const Commissions = () => {
             className="border-border/50 cursor-pointer hover:border-primary/30 transition-colors"
             onClick={() => setOsureInfoOpen(true)}
           >
-            <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
+            <CardContent className="p-3 flex flex-col items-center text-center gap-1.5 min-h-[110px] justify-center">
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-emerald-500 bg-emerald-500/10">
                 <Shield className="w-4 h-4" />
               </div>
-              {balLoading ? <Skeleton className="h-5 w-16" /> : (
-                <span className="text-sm font-bold">{formatAmount(insuranceBalance)}</span>
-              )}
+              <span className="text-sm font-bold h-5 flex items-center">
+                {balLoading ? <Skeleton className="h-4 w-14" /> : formatAmount(insuranceBalance)}
+              </span>
               <span className="text-[10px] text-muted-foreground leading-tight">oSURE Balance</span>
-              
             </CardContent>
           </Card>
         </div>
