@@ -2065,8 +2065,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 <button
                   onClick={async () => {
                     const url = streamInputValue.trim();
-                    if (url && !isYouTubeUrl(url)) {
-                      toast.error("Please paste a valid YouTube URL");
+                    if (url && !isStreamUrl(url)) {
+                      toast.error("Please paste a valid YouTube or StreamYard URL");
                       return;
                     }
                     await supabase.from("spaces" as any).update({ stream_url: url || null } as any).eq("id", spaceId);
