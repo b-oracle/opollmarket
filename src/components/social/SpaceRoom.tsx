@@ -1141,6 +1141,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     }
   };
 
+  const handleMuteAll = async () => {
     await invokeAction("mute_all");
     // Broadcast force-mute to all via data channel
     if (roomRef.current) {
@@ -1150,7 +1151,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     setAllForceMuted(true);
     // Track all non-mod speakers as force-muted
     const allIds = new Set<string>();
-    participants.forEach(p => {
+    participants.forEach((p) => {
       if (p.identity !== hostId && !spaceCoHostIds.includes(p.identity) && (p.canPublish || p.audioTrack)) {
         allIds.add(p.identity);
       }
@@ -3020,5 +3021,6 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       </AnimatePresence>
     </AnimatePresence>
   );
+};
 
 export default SpaceRoom;
