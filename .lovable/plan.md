@@ -1,28 +1,24 @@
 
 
-## Fix Image Aspect Ratios in Status Cards and Market Feeds
+## Fix Overly Stretched/Zoomed Market Card Background Images
 
 ### Problem
-Images in social status posts and market feed cards can appear overly stretched because they use `w-full object-cover` without preserving their natural aspect ratio, causing distortion on wide or tall images.
+Market card background images in the feed appear overly zoomed and stretched. The current implementation uses `inset-[-30px_0]` (expanding the image 30px beyond the container on top and bottom for parallax) combined with `w-full h-full object-cover`, which over-crops images — especially portrait or non-standard aspect ratio images — making them look extremely zoomed in.
 
 ### Changes
 
-**File: `src/components/social/StatusCard.tsx`**
-
-1. **Status post images** (line ~321): Replace the stretched `w-full object-cover max-h-60` with `object-contain` inside a constrained container so images maintain their natural aspect ratio:
-   - Wrap in a `max-h-72 flex items-center justify-center bg-muted/20 rounded-lg overflow-hidden`
-   - Change the `<img>` to `max-w-full max-h-72 rounded-lg object-contain` — this ensures images scale down to fit without stretching or cropping
-
-2. **Market preview images inside status cards** (line ~306): These small 48x48 thumbnails are fine with `object-cover` — no change needed.
-
-**File: `src/components/social/SocialAdCard.tsx`**
-
-3. **Ad card market thumbnails**: Same pattern as StatusCard market previews — no change needed (already 48x48 cover thumbnails).
-
 **File: `src/components/MarketCard.tsx`**
 
-4. **Market card background images** (line ~298): These are intentional background fills with gradient overlays — `object-cover` is correct here. No change needed since they serve as atmospheric backgrounds, not primary image content.
+1. **Reduce parallax overflow** (line ~297): Change `inset-[-30px_0]` to `inset-[-10px_0]` — this still allows subtle parallax movement but reduces the extra zoom/crop significantly.
+
+2. **Use `object-top` instead of `object-center`** (line ~298): For market images (which often feature faces/subjects at the top), `object-top` keeps the important content visible rather than centering on the middle of an overly-cropped image.
+
+3. **Increase opacity slightly** (line ~298): Bump from `opacity-40` to `opacity-50` so the image is more visible and the stretch is less jarring against the dark gradient.
+
+**File: `src/lib/optimizedImage.ts`**
+
+4. **Increase feed image quality/width**: The `feed` preset currently renders at 900px width. This is fine, but ensure it doesn't force an aspect ratio that causes distortion. No change needed here — the preset doesn't set height, so it preserves natural ratio.
 
 ### Summary
-The core fix is in StatusCard's standalone image display: switching from `object-cover` (which crops) to `object-contain` (which preserves aspect ratio) inside a bounded container, so images never stretch beyond their natural proportions while staying within the card boundaries.
+The core fix reduces the parallax expansion from 30px to 10px and shifts object positioning to `object-top`, preventing the overly-zoomed appearance while maintaining the atmospheric background effect.
 
