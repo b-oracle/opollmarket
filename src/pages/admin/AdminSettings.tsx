@@ -383,7 +383,9 @@ const AdminSettings = () => {
                auto_resolve_fee: autoResolveFeeNum,
                payaza_mode: payazaMode,
                 qt_one_sided_bonus: qtOneSidedBonus,
-                bc400_pool_percent: bc400PoolPercentNum,
+                 bc400_pool_percent: bc400PoolPercentNum,
+                 welcome_bonus_percent: welcomeBonusPercentNum,
+                 welcome_bonus_cap: welcomeBonusCapNum,
         },
       });
 
