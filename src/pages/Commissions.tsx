@@ -159,16 +159,32 @@ const Commissions = () => {
     enabled: !!user?.id,
   });
 
-  // Fetch gift transactions (sent & received)
+  // Fetch gift transactions (sent & received) — Space gifts + DM gifts
   const { data: giftsSent, isLoading: loadingGS } = useQuery({
     queryKey: ["gifts-sent", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("space_gifts")
-        .select("id, amount, emoji, created_at, recipient_id, space_id")
-        .eq("sender_id", user!.id)
-        .order("created_at", { ascending: false });
-      return data ?? [];
+      const [spaceRes, dmRes] = await Promise.all([
+        supabase
+          .from("space_gifts")
+          .select("id, amount, emoji, created_at, recipient_id, space_id")
+          .eq("sender_id", user!.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("transactions")
+          .select("id, amount, created_at")
+          .eq("user_id", user!.id)
+          .eq("type", "gift_sent")
+          .order("created_at", { ascending: false }),
+      ]);
+      const spaceGifts = (spaceRes.data ?? []).map((g: any) => ({ ...g, source: "space" }));
+      const dmGifts = (dmRes.data ?? []).map((t: any) => ({
+        id: t.id,
+        amount: Math.abs(Number(t.amount)),
+        emoji: "💬",
+        created_at: t.created_at,
+        source: "dm",
+      }));
+      return [...spaceGifts, ...dmGifts].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     },
     enabled: !!user?.id,
   });
@@ -176,12 +192,28 @@ const Commissions = () => {
   const { data: giftsReceived, isLoading: loadingGR } = useQuery({
     queryKey: ["gifts-received", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("space_gifts")
-        .select("id, amount, emoji, created_at, sender_id, space_id")
-        .eq("recipient_id", user!.id)
-        .order("created_at", { ascending: false });
-      return data ?? [];
+      const [spaceRes, dmRes] = await Promise.all([
+        supabase
+          .from("space_gifts")
+          .select("id, amount, emoji, created_at, sender_id, space_id")
+          .eq("recipient_id", user!.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("transactions")
+          .select("id, amount, created_at")
+          .eq("user_id", user!.id)
+          .eq("type", "gift_received")
+          .order("created_at", { ascending: false }),
+      ]);
+      const spaceGifts = (spaceRes.data ?? []).map((g: any) => ({ ...g, source: "space" }));
+      const dmGifts = (dmRes.data ?? []).map((t: any) => ({
+        id: t.id,
+        amount: Number(t.amount),
+        emoji: "💬",
+        created_at: t.created_at,
+        source: "dm",
+      }));
+      return [...spaceGifts, ...dmGifts].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     },
     enabled: !!user?.id,
   });
