@@ -36,7 +36,7 @@ export const VerificationThresholdProvider = ({ children }: { children: React.Re
     queryKey: ["verification_thresholds"],
     queryFn: async () => {
       const { data: row } = await supabase
-        .from("commission_settings")
+        .from("public_commission_settings" as any)
         .select("min_token_balance, min_gold_token_balance, min_nft_balance")
         .limit(1)
         .maybeSingle();

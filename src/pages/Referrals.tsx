@@ -103,7 +103,7 @@ const Referrals = () => {
     queryKey: ["referral_reward_amount"],
     queryFn: async () => {
       const { data } = await supabase
-        .from("commission_settings")
+        .from("public_commission_settings" as any)
         .select("referral_reward_amount")
         .limit(1)
         .single();

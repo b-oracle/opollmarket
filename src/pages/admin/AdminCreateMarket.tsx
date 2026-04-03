@@ -148,7 +148,7 @@ const AdminCreateMarket = () => {
   useEffect(() => {
     (async () => {
       const { data } = await supabase
-        .from("commission_settings")
+        .from("public_commission_settings" as any)
         .select("ai_generation_cost")
         .limit(1)
         .single();
