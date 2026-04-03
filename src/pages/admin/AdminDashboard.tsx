@@ -19,6 +19,10 @@ interface Stats {
   quickTradeVolume: number;
   totalFollows: number;
   totalLikes: number;
+  dmConversations: number;
+  dmMessages: number;
+  dmGiftsTotal: number;
+  dmGiftsCount: number;
   totalDeposits: number;
   totalWithdrawals: number;
   depositCount: number;
