@@ -212,7 +212,7 @@ const Privacy = () => {
         </section>
 
         <section id="cookies" className="space-y-2 scroll-mt-20">
-          <h2 className="text-base font-semibold text-foreground">8. Cookies & Local Storage</h2>
+          <h2 className="text-base font-semibold text-foreground">12. Cookies & Local Storage</h2>
           <p>The Platform uses the following browser storage technologies:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li><strong>Essential Cookies & Session Storage:</strong> To maintain your authentication session, remember your theme preference (light/dark mode), and store temporary state necessary for Platform operation.</li>
