@@ -40,16 +40,23 @@ const ChatGiftModal = ({ open, onClose, conversationId, recipientId, recipientNa
   const { user } = useAuth();
   const { giftBalance } = useUserBalance();
   const [sending, setSending] = useState<string | null>(null);
+  const [lastSentAt, setLastSentAt] = useState(0);
   const queryClient = useQueryClient();
 
   const handleSendEmoji = async (emoji: string) => {
+    const now = Date.now();
+    if (now - lastSentAt < 3000) {
+      toast.error("Please wait before sending another gift");
+      return;
+    }
     const price = EMOJI_PRICES[emoji] ?? 0.05;
     if (price > giftBalance) {
       toast.error("Insufficient gift balance");
       return;
     }
 
-    setSending(emoji);
+      setSending(emoji);
+      setLastSentAt(Date.now());
     try {
       const { error } = await supabase.rpc("send_dm_gift" as any, {
         p_conversation_id: conversationId,

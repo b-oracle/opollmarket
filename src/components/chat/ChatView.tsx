@@ -121,12 +121,6 @@ const ChatView = () => {
         .insert({ conversation_id: conversationId, sender_id: user.id, content: trimmed });
       if (error) throw error;
 
-      // Update last_message_at
-      await supabase
-        .from("dm_conversations" as any)
-        .update({ last_message_at: new Date().toISOString() } as any)
-        .eq("id", conversationId);
-
       setText("");
       queryClient.invalidateQueries({ queryKey: ["dm-messages", conversationId] });
       queryClient.invalidateQueries({ queryKey: ["dm-conversations"] });
