@@ -167,6 +167,8 @@ const AdminSettings = () => {
         setOsure25Premium(String(d.osure_25_premium ?? 10));
         setOsure50Premium(String(d.osure_50_premium ?? 20));
         setOsure100Premium(String(d.osure_100_premium ?? 30));
+        setWelcomeBonusPercent(String(d.welcome_bonus_percent ?? 0));
+        setWelcomeBonusCap(String(d.welcome_bonus_cap ?? 0));
         setSettingsId(d.id);
       }
       if (error) console.error(error);
