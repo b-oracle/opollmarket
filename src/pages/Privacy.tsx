@@ -259,7 +259,7 @@ const Privacy = () => {
         </section>
 
         <section id="children" className="space-y-2 scroll-mt-20">
-          <h2 className="text-base font-semibold text-foreground">12. Children's Privacy</h2>
+          <h2 className="text-base font-semibold text-foreground">16. Children's Privacy</h2>
           <p>The Platform is not intended for users under 18 years of age. We do not knowingly collect personal information from minors. If we become aware that a user under 18 has created an account or provided personal data, we will take prompt steps to delete the account and associated information. If you believe a minor has provided us with personal data, please contact us immediately.</p>
         </section>
 
