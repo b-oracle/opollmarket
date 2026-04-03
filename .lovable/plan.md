@@ -1,17 +1,24 @@
 
 
-## Fix Messages Header Scrolling
+## Rework DM Emoji Reactions — Long-Press Approach
 
 ### Problem
-The `ConditionalLayout` wrapper applies `min-h-screen flex flex-col` to all routes. While ConversationList internally uses `h-[100dvh] overflow-hidden`, the parent's `min-h-screen` creates a document-level scroll context that can still allow the whole page (including the header) to scroll on mobile.
+The current reaction flow requires two taps on mobile: tap message to reveal a tiny SmilePlus button, then tap that button to open the picker. The SmilePlus relies on `group-hover` which doesn't work on touch devices. The absolute positioning also causes clipping issues near the top of the scroll area.
 
-### Solution
-Update `ConditionalLayout` in `src/App.tsx` to detect fullscreen routes (`/messages`, `/messages/:id`) and apply `h-[100dvh] overflow-hidden` instead of `min-h-screen` for those routes. This locks the outer container so the inner flex layout controls scrolling exclusively.
+### New Approach
+Replace the hover/tap-to-reveal button with a **long-press (press-and-hold)** gesture on the message bubble itself — matching WhatsApp/iMessage behavior. A single long-press opens the emoji picker directly above the message.
 
-### File: `src/App.tsx`
-1. Add `/messages` to a list of "fullscreen" routes (similar to how `noFooterRoutes` works)
-2. In `ConditionalLayout`, check if the current path starts with `/messages` — if so, use `h-[100dvh] overflow-hidden` instead of `min-h-screen`
-3. Also add `/messages` to `noFooterRoutes` so the desktop footer doesn't render and push content
+### Changes — `src/components/chat/ChatMessageBubble.tsx`
 
-This is the same pattern used for other viewport-locked views and ensures the header stays pinned while only the message list scrolls.
+1. **Remove** the SmilePlus button, `tapped` state, `tapTimeout` ref, and `handleTap`
+2. **Add long-press detection**: track `onPointerDown` / `onPointerUp` with a 500ms timer. If held long enough, show the reaction picker. Short taps do nothing (preserving link clicks).
+3. **Reposition the picker**: render it as a fixed-position overlay centered above the pressed message using `getBoundingClientRect()` on the bubble ref. This prevents clipping at scroll edges.
+4. **Keep the existing smiley button visible at all times** as a small persistent icon (no hover gating) for users who prefer a tap — but make it always-visible with reduced opacity instead of hidden.
+5. **Haptic feedback**: call `navigator.vibrate?.(10)` on long-press trigger for tactile confirmation on supported devices.
+
+### Result
+- One gesture (long-press) opens the picker — familiar mobile UX
+- Picker positioned via fixed overlay so it never clips
+- Persistent small smiley icon as fallback for quick-tap users
+- Existing reaction badges and toggle logic unchanged
 
