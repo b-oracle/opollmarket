@@ -121,7 +121,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     queryKey: ["fiat-provider-settings"],
     queryFn: async () => {
       const { data } = await supabase
-        .from("commission_settings")
+        .from("public_commission_settings" as any)
         .select("payout_provider")
         .limit(1)
         .single();
