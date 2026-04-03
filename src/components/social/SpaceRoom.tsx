@@ -3020,6 +3020,5 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       </AnimatePresence>
     </AnimatePresence>
   );
-};
 
 export default SpaceRoom;
