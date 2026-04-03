@@ -114,6 +114,7 @@ interface StatusCardProps {
 const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCardProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isFeatureEnabled } = useFeatureToggles();
   const queryClient = useQueryClient();
   const [likeLoading, setLikeLoading] = useState(false);
   const [showComments, setShowComments] = useState(false);
