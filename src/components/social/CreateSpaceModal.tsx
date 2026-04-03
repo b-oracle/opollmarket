@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { X, Radio, Loader2, Calendar, Clock, ShieldAlert, Lock, Search, UserPlus, UserMinus } from "lucide-react";
+import { X, Radio, Loader2, Calendar, Clock, ShieldAlert, Lock, Search, UserPlus, UserMinus, Tv } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MarketTagSelector, { type MarketTag } from "./MarketTagSelector";
 import { optimizedImageUrl } from "@/lib/optimizedImage";

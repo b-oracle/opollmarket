@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Mic, MicOff, PhoneOff, Maximize2, Users } from "lucide-react";
+import { Mic, MicOff, PhoneOff, Maximize2, Users, Tv } from "lucide-react";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
 
 interface SpaceMiniPlayerProps {
