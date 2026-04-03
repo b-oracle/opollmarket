@@ -118,7 +118,6 @@ const TopBar = () => {
           )}
           <ChatIcon />
           <NotificationBell />
-          <ThemeToggle />
           {loading ? null : user ? (
             <div className="relative">
               <button
