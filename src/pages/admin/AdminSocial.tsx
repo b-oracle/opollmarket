@@ -60,17 +60,33 @@ const AdminSocial = () => {
       return allFollows;
     };
 
-    const [{ count: followCount }, { count: likeCount }, { count: commentCount }, { count: viewCount }, followRows] = await Promise.all([
+    const [{ count: followCount }, { count: likeCount }, { count: commentCount }, { count: viewCount }, followRows, { count: dmConvoCount }, { count: dmMsgCount }] = await Promise.all([
       supabase.from("follows").select("id", { count: "exact", head: true }),
       supabase.from("market_likes").select("id", { count: "exact", head: true }),
       supabase.from("comments").select("id", { count: "exact", head: true }),
       supabase.from("status_views").select("id", { count: "exact", head: true }),
       fetchAllFollows(),
+      supabase.from("dm_conversations").select("id", { count: "exact", head: true }),
+      supabase.from("dm_messages").select("id", { count: "exact", head: true }),
     ]);
     setTotalFollows(followCount ?? 0);
     setTotalLikes(likeCount ?? 0);
     setTotalComments(commentCount ?? 0);
     setTotalViews(viewCount ?? 0);
+    setDmConversations(dmConvoCount ?? 0);
+    setDmMessages(dmMsgCount ?? 0);
+
+    // DM gift total
+    const dmGiftRows: { gift_amount: number }[] = [];
+    let gFrom = 0;
+    while (true) {
+      const { data, error } = await supabase.from("dm_messages").select("gift_amount").not("gift_amount", "is", null).gt("gift_amount", 0).range(gFrom, gFrom + 999);
+      if (error || !data || data.length === 0) break;
+      dmGiftRows.push(...data);
+      if (data.length < 1000) break;
+      gFrom += 1000;
+    }
+    setDmGiftsTotal(dmGiftRows.reduce((s, r) => s + Number(r.gift_amount), 0));
 
     // Follow growth over last 30 days
     const dayMap = new Map<string, number>();
