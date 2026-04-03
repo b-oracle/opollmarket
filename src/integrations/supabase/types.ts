@@ -831,6 +831,7 @@ export type Database = {
           created_at: string
           gift_amount: number | null
           id: string
+          reactions: Json
           read_at: string | null
           sender_id: string
         }
@@ -840,6 +841,7 @@ export type Database = {
           created_at?: string
           gift_amount?: number | null
           id?: string
+          reactions?: Json
           read_at?: string | null
           sender_id: string
         }
@@ -849,6 +851,7 @@ export type Database = {
           created_at?: string
           gift_amount?: number | null
           id?: string
+          reactions?: Json
           read_at?: string | null
           sender_id?: string
         }
