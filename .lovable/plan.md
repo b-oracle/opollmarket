@@ -1,27 +1,29 @@
 
 
-## Move Theme Toggle into Profile Dropdown Menu
+## Add Camera Flip (Front/Back) Button in Live Spaces
 
 ### What changes
-**`src/components/TopBar.tsx`**
-- Remove `<ThemeToggle />` from the top bar action row (line 118)
-- Add a theme toggle row inside the profile dropdown menu (between Profile and Sign Out), styled as a menu item with Sun/Moon icon and "Dark Mode" label + a switch/toggle on the right
-- Import `useTheme` from `next-themes` directly in TopBar (or inline the toggle logic) so it renders as a menu row with a switch, not a standalone button
-- For logged-out users, keep `<ThemeToggle />` visible in the top bar since they don't have a dropdown menu
 
-### UX Result
+**`src/components/social/SpaceRoom.tsx`**
+
+1. Add a `facingMode` state: `const [facingBack, setFacingBack] = useState(false);`
+
+2. Add a `flipCamera` function that:
+   - Calls `roomRef.current.localParticipant.setCameraEnabled(false)` to stop current track
+   - Then re-enables with the opposite facing mode using LiveKit's `setCameraEnabled(true, { facingMode: facingBack ? "user" : "environment" })`
+   - Toggles `facingBack` state
+
+3. Add a flip camera button next to the existing camera toggle button, visible only when `cameraOn && canUseVideo`:
+   - Uses `SwitchCamera` (or `RefreshCw`) icon from lucide-react
+   - Styled consistently with the other action buttons (same rounded circle style)
+
+### UI Result
 ```text
-Dropdown menu (logged in):
-┌──────────────────────┐
-│ BOracle              │
-│ icecuetech@gmail.com │
-├──────────────────────┤
-│ 👤 Profile           │
-│ 🌙 Dark Mode    [⬤] │  ← toggle switch
-│ 🚪 Sign Out          │
-└──────────────────────┘
+When camera is ON:
+  [Mic]  [Camera ✓]  [🔄 Flip]  [Screen]  ...
+                       ↑ only visible when camera is active
 ```
 
-### No other files need changes
-The `ThemeToggle` component can remain for reuse, but the dropdown will use inline `useTheme` logic with a Switch component for a cleaner menu-item look.
+### No database or config changes needed
+This is purely a frontend UX enhancement using LiveKit's existing `setCameraEnabled` options.
 
