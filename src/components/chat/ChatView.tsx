@@ -3,10 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Send, Gift, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Gift, Loader2, Share2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { formatDistanceToNow } from "date-fns";
 import ChatGiftModal from "./ChatGiftModal";
+import ChatMessageBubble from "./ChatMessageBubble";
+import ChatSharePicker from "./ChatSharePicker";
 import SEOHead from "@/components/SEOHead";
 
 interface Message {
@@ -17,6 +18,7 @@ interface Message {
   gift_amount: number | null;
   created_at: string;
   read_at: string | null;
+  reactions?: Record<string, string[]>;
 }
 
 const ChatView = () => {
@@ -27,10 +29,10 @@ const ChatView = () => {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [showGift, setShowGift] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Conversation info
   const { data: convo } = useQuery({
     queryKey: ["dm-conversation", conversationId],
     queryFn: async () => {
@@ -54,7 +56,6 @@ const ChatView = () => {
   const otherId = convo ? ((convo as any).user_a === user?.id ? (convo as any).user_b : (convo as any).user_a) : null;
   const otherName = (convo as any)?.other_user?.display_name || "User";
 
-  // Messages
   const { data: messages = [] } = useQuery({
     queryKey: ["dm-messages", conversationId],
     queryFn: async () => {
@@ -70,21 +71,18 @@ const ChatView = () => {
     staleTime: 5_000,
   });
 
-  // Auto-scroll on new messages
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages.length]);
 
-  // Mark messages as read
   useEffect(() => {
     if (!user || !conversationId || messages.length === 0) return;
     const unreadIds = messages
       .filter((m) => m.sender_id !== user.id && !m.read_at)
       .map((m) => m.id);
     if (unreadIds.length === 0) return;
-
     supabase
       .from("dm_messages" as any)
       .update({ read_at: new Date().toISOString() } as any)
@@ -94,14 +92,13 @@ const ChatView = () => {
       });
   }, [messages, user, conversationId, queryClient]);
 
-  // Realtime subscription
   useEffect(() => {
     if (!conversationId) return;
     const channel = supabase
       .channel(`dm-${conversationId}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "dm_messages", filter: `conversation_id=eq.${conversationId}` },
+        { event: "*", schema: "public", table: "dm_messages", filter: `conversation_id=eq.${conversationId}` },
         () => {
           queryClient.invalidateQueries({ queryKey: ["dm-messages", conversationId] });
           queryClient.invalidateQueries({ queryKey: ["dm-unread-count"] });
@@ -111,8 +108,8 @@ const ChatView = () => {
     return () => { supabase.removeChannel(channel); };
   }, [conversationId, queryClient]);
 
-  const sendMessage = useCallback(async () => {
-    const trimmed = text.trim();
+  const sendMessage = useCallback(async (content?: string) => {
+    const trimmed = (content || text).trim();
     if (!trimmed || sending || !conversationId || !user) return;
     setSending(true);
     try {
@@ -120,8 +117,7 @@ const ChatView = () => {
         .from("dm_messages" as any)
         .insert({ conversation_id: conversationId, sender_id: user.id, content: trimmed });
       if (error) throw error;
-
-      setText("");
+      if (!content) setText("");
       queryClient.invalidateQueries({ queryKey: ["dm-messages", conversationId] });
       queryClient.invalidateQueries({ queryKey: ["dm-conversations"] });
     } catch {
@@ -138,6 +134,10 @@ const ChatView = () => {
       e.preventDefault();
       sendMessage();
     }
+  };
+
+  const handleShareLink = (url: string) => {
+    sendMessage(url);
   };
 
   return (
@@ -172,46 +172,9 @@ const ChatView = () => {
             <p className="text-sm text-muted-foreground">Send a message or a gift to start the conversation.</p>
           </div>
         )}
-        {messages.map((m) => {
-          const isMine = m.sender_id === user?.id;
-          const isGift = m.gift_amount != null && m.gift_amount > 0;
-
-          if (isGift) {
-            return (
-              <div key={m.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[75%] rounded-2xl px-4 py-3 border ${
-                  isMine
-                    ? "bg-primary/10 border-primary/20"
-                    : "bg-accent/30 border-accent/50"
-                }`}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Gift className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-bold text-primary">${m.gift_amount}</span>
-                  </div>
-                  <p className="text-lg">{m.content}</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
-                  </p>
-                </div>
-              </div>
-            );
-          }
-
-          return (
-            <div key={m.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[75%] rounded-2xl px-3.5 py-2 ${
-                isMine
-                  ? "bg-primary text-primary-foreground rounded-br-md"
-                  : "bg-muted text-foreground rounded-bl-md"
-              }`}>
-                <p className="text-sm whitespace-pre-wrap break-words">{m.content}</p>
-                <p className={`text-[10px] mt-1 ${isMine ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
-                  {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
-                </p>
-              </div>
-            </div>
-          );
-        })}
+        {messages.map((m) => (
+          <ChatMessageBubble key={m.id} message={m} conversationId={conversationId!} />
+        ))}
       </div>
 
       {/* Input bar */}
@@ -224,6 +187,13 @@ const ChatView = () => {
           >
             <Gift className="w-4 h-4" />
           </button>
+          <button
+            onClick={() => setShowShare(true)}
+            className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors shrink-0"
+            aria-label="Share market or space"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
           <Input
             ref={inputRef}
             value={text}
@@ -234,7 +204,7 @@ const ChatView = () => {
             maxLength={2000}
           />
           <button
-            onClick={sendMessage}
+            onClick={() => sendMessage()}
             disabled={!text.trim() || sending}
             className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground disabled:opacity-50 transition-all active:scale-95 shrink-0"
           >
@@ -243,7 +213,6 @@ const ChatView = () => {
         </div>
       </div>
 
-      {/* Gift modal */}
       {showGift && otherId && (
         <ChatGiftModal
           open={showGift}
@@ -251,6 +220,14 @@ const ChatView = () => {
           conversationId={conversationId!}
           recipientId={otherId}
           recipientName={otherName}
+        />
+      )}
+
+      {showShare && (
+        <ChatSharePicker
+          open={showShare}
+          onClose={() => setShowShare(false)}
+          onShare={handleShareLink}
         />
       )}
     </div>
