@@ -87,7 +87,7 @@ const Commissions = () => {
   const handleWithdraw = async () => {
     const amt = Number(withdrawAmount);
     if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
-    if (amt > rewardsBalance) { toast.error("Insufficient rewards balance"); return; }
+    if (Math.round(amt * 100) > Math.round(rewardsBalance * 100)) { toast.error("Insufficient rewards balance"); return; }
     setProcessing(true);
     const { data, error } = await supabase.rpc("withdraw_rewards_balance", { _user_id: user!.id, _amount: amt } as any);
     setProcessing(false);
