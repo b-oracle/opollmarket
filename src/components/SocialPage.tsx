@@ -241,19 +241,17 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
             className="fixed inset-y-0 right-0 w-full max-w-md bg-background z-[61] overscroll-contain"
             style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" } as React.CSSProperties}
           >
-            {/* Inner scrollable wrapper – isolated scroll context for Chrome/Android */}
+            {/* Flex column layout – header stays fixed, content scrolls */}
             <div
-              className="h-full overflow-y-auto"
+              className="h-full flex flex-col overflow-hidden"
               style={{
-                WebkitOverflowScrolling: "touch",
                 touchAction: "pan-y",
                 overscrollBehavior: "contain",
-                willChange: "scroll-position",
               } as React.CSSProperties}
             >
             {/* Header */}
             <div
-              className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-border px-4 flex items-center gap-3"
+              className="shrink-0 bg-background/80 backdrop-blur-xl border-b border-border px-4 flex items-center gap-3 z-10"
               style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top))", paddingBottom: "0.75rem" }}
             >
               <button
