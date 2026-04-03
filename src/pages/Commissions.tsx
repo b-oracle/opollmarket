@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useUserBalance } from "@/hooks/useUserBalance";
+import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 
 type TabKey = "all" | "creator" | "referral" | "copy_trade" | "signup_bonus" | "pending" | "gift_sent" | "gift_received" | "bonus" | "osure";
 
