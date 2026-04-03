@@ -141,7 +141,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [canPublish, setCanPublish] = useState(false);
   const [promoting, setPromoting] = useState<string | null>(null);
 
-  // Chat state
+  // Video & Screen Share state
+  const [cameraOn, setCameraOn] = useState(false);
+  const [screenShareOn, setScreenShareOn] = useState(false);
+  const videoElementsRef = useRef<Map<string, HTMLVideoElement>>(new Map());
+
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
