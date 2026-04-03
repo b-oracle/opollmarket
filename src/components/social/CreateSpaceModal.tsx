@@ -151,6 +151,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
       setIsPrivate(false);
       setInvitees([]);
       setSearchQuery("");
+      setStreamUrl("");
       onClose();
     } catch (err: any) {
       toast.error(err.message || "Failed to create space");
