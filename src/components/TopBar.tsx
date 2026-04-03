@@ -167,12 +167,15 @@ const TopBar = () => {
               </AnimatePresence>
             </div>
           ) : (
-            <button
-              onClick={() => navigate("/auth")}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground transition-all active:scale-95"
-            >
-              Sign In
-            </button>
+            <>
+              <ThemeToggle />
+              <button
+                onClick={() => navigate("/auth")}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground transition-all active:scale-95"
+              >
+                Sign In
+              </button>
+            </>
           )}
         </div>
       </div>
