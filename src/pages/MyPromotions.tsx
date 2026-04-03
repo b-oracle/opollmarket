@@ -9,7 +9,7 @@ import { Loader2, Zap, Megaphone, Eye, MousePointerClick, BarChart3, ArrowLeft, 
 import { format, formatDistanceToNow, isPast, differenceInHours } from "date-fns";
 import BoostCountdown from "@/components/BoostCountdown";
 
-type TabKey = "boosts" | "social_ads" | "broadcasts";
+type TabKey = "boosts" | "social_ads" | "broadcasts" | "space_broadcasts";
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
