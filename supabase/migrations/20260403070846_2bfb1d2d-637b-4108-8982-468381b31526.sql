@@ -1,0 +1,1 @@
+ALTER TABLE public.spaces ADD COLUMN stream_url text DEFAULT null;

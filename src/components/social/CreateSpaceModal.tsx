@@ -4,10 +4,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { X, Radio, Loader2, Calendar, Clock, ShieldAlert, Lock, Search, UserPlus, UserMinus } from "lucide-react";
+import { X, Radio, Loader2, Calendar, Clock, ShieldAlert, Lock, Search, UserPlus, UserMinus, Tv } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MarketTagSelector, { type MarketTag } from "./MarketTagSelector";
 import { optimizedImageUrl } from "@/lib/optimizedImage";
+import { isYouTubeUrl } from "@/components/YouTubeEmbed";
 
 interface CreateSpaceModalProps {
   open: boolean;
@@ -36,6 +37,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<InviteUser[]>([]);
   const [searching, setSearching] = useState(false);
+  const [streamUrl, setStreamUrl] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -92,6 +94,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
         title: trimmed,
         tagged_market_ids: taggedMarkets.map((m) => m.id),
         is_private: isPrivate,
+        stream_url: streamUrl.trim() || null,
       };
 
       if (mode === "scheduled") {
@@ -148,6 +151,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
       setIsPrivate(false);
       setInvitees([]);
       setSearchQuery("");
+      setStreamUrl("");
       onClose();
     } catch (err: any) {
       toast.error(err.message || "Failed to create space");
@@ -222,6 +226,22 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
               />
 
               <MarketTagSelector selected={taggedMarkets} onChange={setTaggedMarkets} max={6} />
+
+              {/* Optional Stream URL */}
+              <div className="space-y-1">
+                <label className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+                  <Tv className="w-3 h-3 shrink-0" /> YouTube Live URL (optional)
+                </label>
+                <input
+                  value={streamUrl}
+                  onChange={(e) => setStreamUrl(e.target.value)}
+                  placeholder="https://youtube.com/watch?v=..."
+                  className="w-full bg-muted/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground"
+                />
+                {streamUrl.trim() && !isYouTubeUrl(streamUrl) && (
+                  <p className="text-[10px] text-destructive">Please enter a valid YouTube URL</p>
+                )}
+              </div>
 
               {/* Private Space toggle */}
               <button
