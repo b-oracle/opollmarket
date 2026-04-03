@@ -6,7 +6,7 @@ import ChatIcon from "@/components/chat/ChatIcon";
 import SignOutConfirmDialog from "@/components/SignOutConfirmDialog";
 import { useSidebarState } from "@/hooks/useSidebarState";
 import logo from "@/assets/logo.png";
-import { User, LogOut, Shield, ArrowLeft } from "lucide-react";
+import { User, LogOut, Shield, ArrowLeft, Moon, Sun } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
