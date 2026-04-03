@@ -588,6 +588,7 @@ Deno.serve(async (req) => {
       tx_hash: payoutTxHash,
       ip_address: clientIp,
       user_agent: clientUa,
+      idempotency_key: withdrawalIdempotencyKey,
     });
 
     // Insert confirmed withdrawal transaction
