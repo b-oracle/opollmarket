@@ -172,7 +172,7 @@ const Privacy = () => {
         </section>
 
         <section id="blockchain-data" className="space-y-2 scroll-mt-20">
-          <h2 className="text-base font-semibold text-foreground">6. Blockchain Data & Public Information</h2>
+          <h2 className="text-base font-semibold text-foreground">9. Blockchain Data & Public Information</h2>
           <p>You acknowledge that:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li>Blockchain transactions are publicly visible, permanently recorded, and immutable. We cannot delete, modify, or redact blockchain data once a transaction is confirmed.</li>
