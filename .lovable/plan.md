@@ -1,51 +1,69 @@
 
 
-## Partner Revenue Share for API-Created Markets
+## Fix: Private Space Invite Notifications Not Being Created
 
 ### Problem
-Currently, API partners only earn affiliate commission when bets are placed **through the API** itself. If a partner creates a market via the API and users predict on it through the website, the partner earns nothing. Partners should earn revenue share on **all** predictions on markets they created via their API key.
+When a host creates a private space and invites users, the `space_invites` rows are correctly inserted (9 exist in the database), but zero "Space Invite 🎙️" notifications have ever been created. The notification insert on line 134 of `CreateSpaceModal.tsx` silently fails — the Supabase client returns `{ error }` but the code never checks it, so the failure is invisible.
+
+### Root Cause
+The notification insert error is swallowed. The most likely cause is an RLS timing or evaluation issue. To make this robust, the fix will:
+
+1. **Add error checking** to the notification insert so failures surface as toast errors
+2. **Move notification creation server-side** by adding it to the `space_invites` table as a trigger — this runs as `SECURITY DEFINER` and bypasses RLS entirely, guaranteeing delivery
 
 ### Solution
 
-**1. Database Migration — Tag markets with their originating API key**
+**1. Database Migration — Create a trigger on `space_invites`**
 
-Add `api_key_id` column to the `markets` table:
+Add a trigger function that automatically creates a notification whenever a row is inserted into `space_invites`:
+
 ```sql
-ALTER TABLE public.markets ADD COLUMN IF NOT EXISTS api_key_id uuid REFERENCES public.api_keys(id) ON DELETE SET NULL;
-CREATE INDEX idx_markets_api_key ON public.markets (api_key_id) WHERE api_key_id IS NOT NULL;
+CREATE OR REPLACE FUNCTION public.notify_space_invitee()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+DECLARE
+  _host_name text;
+  _space_title text;
+BEGIN
+  SELECT p.display_name INTO _host_name
+  FROM profiles p WHERE p.id = NEW.inviter_id;
+
+  SELECT s.title INTO _space_title
+  FROM spaces s WHERE s.id = NEW.space_id;
+
+  INSERT INTO notifications (user_id, title, message, type, actor_id, market_id)
+  VALUES (
+    NEW.invitee_id,
+    'Space Invite 🎙️',
+    COALESCE(_host_name, 'Someone') || ' invited you to join "' || COALESCE(_space_title, 'a Space') || '"',
+    'info',
+    NEW.inviter_id,
+    NEW.space_id
+  );
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_notify_space_invitee
+AFTER INSERT ON public.space_invites
+FOR EACH ROW EXECUTE FUNCTION public.notify_space_invitee();
 ```
 
-**2. `supabase/functions/api-public/index.ts` — Store API key on market creation**
+**2. `src/components/social/CreateSpaceModal.tsx` — Remove client-side notification insert**
 
-In the `create-market` action (~line 378), add `api_key_id: apiKeyRecord.id` to the market insert payload. This tags every API-created market with the partner who created it.
+Remove lines 125–134 (the manual notification insert block). The trigger now handles this automatically and reliably whenever a `space_invites` row is created — whether from the modal, admin tools, or the co-host invite flow.
 
-**3. `supabase/functions/place-bet/index.ts` — Record partner revenue share on every prediction**
-
-After the existing commission logic (~line 298, after BC400 queue), add:
-- Fetch the market's `api_key_id` (already have `marketId` in context)
-- If `api_key_id` exists, look up the `affiliate_commission_percent` from `api_keys`
-- Calculate the partner's share as a percentage of the total prediction fee (same formula as existing affiliate tracking)
-- Insert into `affiliate_earnings` table
-- Queue a `pending_commission` of type `"partner"` for deferred 48h release to the API key owner's balance
-
-This means the market query at line 57 needs to also select `api_key_id`. The partner share comes **from the platform's portion** of the fee (not from the creator or referrer share).
-
-**4. `supabase/functions/process-pending-commissions/index.ts` — Handle `partner` type**
-
-Add handling for `type = 'partner'` commissions alongside the existing creator/referral logic — deduct from platform pool and credit to the API key owner's balance.
-
-### Fee Flow Example
-- User bets $100 on an API-created market
-- 10% prediction fee = $10
-- Creator gets their split (e.g. 30% of $10 = $3)
-- Referrer gets their split (if applicable)
-- BC400 pool gets its split
-- **Partner gets 5% of $10 = $0.50** (from platform's remaining portion)
-- Platform keeps the rest
+### Why This Is Better
+- **Guaranteed delivery**: Trigger runs as `SECURITY DEFINER`, bypassing RLS
+- **Personalized message**: Includes the host's display name in the notification
+- **Single source of truth**: Any code path that inserts into `space_invites` automatically generates a notification
+- **No silent failures**: Trigger errors will propagate to the insert call
 
 ### Files Changed
-- New migration (1 file)
-- `supabase/functions/api-public/index.ts` — 1 line addition
-- `supabase/functions/place-bet/index.ts` — ~25 lines added after BC400 section
-- `supabase/functions/process-pending-commissions/index.ts` — ~10 lines for partner type handling
+- New migration (1 file) — trigger function + trigger
+- `src/components/social/CreateSpaceModal.tsx` — remove ~10 lines (notification insert block)
 
