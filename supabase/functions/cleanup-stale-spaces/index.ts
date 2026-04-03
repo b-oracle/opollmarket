@@ -81,8 +81,9 @@ Deno.serve(async (req) => {
 
       const anyKeyUserActive = (recentKeyMessages ?? 0) > 0;
 
-      // End space if NO key user is connected OR none have recent activity
-      if (!anyKeyUserPresent || !anyKeyUserActive) {
+      // End space if NO key user is connected AND none have recent chat activity
+      // A connected host/speaker is considered active even without chat messages
+      if (!anyKeyUserPresent && !anyKeyUserActive) {
         const now = new Date().toISOString();
 
         // End the space
