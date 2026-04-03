@@ -63,7 +63,7 @@ const ChatView = () => {
         .select("*")
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true })
-        .limit(200);
+        .limit(200) as any;
       return (data || []) as Message[];
     },
     enabled: !!conversationId,
